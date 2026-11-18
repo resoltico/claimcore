@@ -31,6 +31,8 @@ type ReminderPartDescription =
         Plans: ValueChange<ReminderPlan>
         Action: ValueChange<ReminderAction> option
         Due: ValueChange<CalendarDate> option
+        Kind: ValueChange<ReminderKind> option
+        DoneOn: ValueChange<CalendarDate> option
         State: ValueChange<ReminderState> option
     }
 

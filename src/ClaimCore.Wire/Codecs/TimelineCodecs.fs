@@ -11,11 +11,13 @@ module TimelineCodecs =
     open ResponseScalars
 
     let private reminderDifference =
-        (record (fun id action due state ->
+        (record (fun id action due kind doneOn state ->
             {
                 ReminderDifference.ReminderId = id
                 Action = action
                 Due = due
+                Kind = kind
+                DoneOn = doneOn
                 State = state
             })
         : Fields<ReminderDifference, _>)
@@ -25,6 +27,18 @@ module TimelineCodecs =
             _.Action
             (nullable (ValueChangeCodecs.change "ReminderActionChange" reminderAction))
         |> field "due" _.Due (nullable (ValueChangeCodecs.change "ReminderDueChange" calendarDate))
+        |> field
+            "kind"
+            _.Kind
+            (nullable (
+                ValueChangeCodecs.change
+                    "ReminderKindChange"
+                    (VocabularyCodec.create ReminderKind.vocabulary)
+            ))
+        |> field
+            "doneOn"
+            _.DoneOn
+            (nullable (ValueChangeCodecs.change "ReminderDoneOnChange" calendarDate))
         |> field
             "state"
             _.State
@@ -316,7 +330,7 @@ module TimelineCodecs =
                     | _ -> None)
                     (record (fun index facets -> index, facets)
                      |> field "index" fst index
-                     |> field "facets" snd (boundedList 1 3 facets))
+                     |> field "facets" snd (boundedList 1 TimelineFacet.all.Length facets))
             ]
 
     let private overview =
@@ -356,6 +370,8 @@ module TimelineCodecs =
                     | JsonValue.String "ACTION" -> "action", 0
                     | JsonValue.String "DUE" -> "due", 1
                     | JsonValue.String "STATE" -> "state", 2
+                    | JsonValue.String "KIND" -> "kind", 3
+                    | JsonValue.String "DONE_ON" -> "doneOn", 4
                     | _ -> "", -1
 
                 let available =

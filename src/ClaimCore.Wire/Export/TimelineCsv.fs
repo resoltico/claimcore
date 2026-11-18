@@ -136,6 +136,14 @@ module TimelineCsv =
                     |> Option.toList
                     |> List.map (difference (prefix + "dueDate") CalendarDate.format)
                 yield!
+                    change.Kind
+                    |> Option.toList
+                    |> List.map (difference (prefix + "kind") ReminderKind.token)
+                yield!
+                    change.DoneOn
+                    |> Option.toList
+                    |> List.map (difference (prefix + "doneOn") CalendarDate.format)
+                yield!
                     change.State
                     |> Option.toList
                     |> List.map (difference (prefix + "state") ReminderState.token)

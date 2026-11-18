@@ -84,6 +84,8 @@ type InputTarget =
     | PaymentPayee
     | ReminderAction
     | ReminderDueDate
+    | ReminderPlanKind
+    | ReminderDoneOn
     | ExpectedWorkRevision
     | ExpectedReminderRevision
 

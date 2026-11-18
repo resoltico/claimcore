@@ -133,17 +133,18 @@ let tests =
                     let change =
                         { change with
                             Value =
-                                PartValue.Reminder
-                                    {
-                                        State = ReminderState.Completed
-                                        Plan =
-                                            Some
-                                                {
-                                                    Action = action
-                                                    Due =
-                                                        CalendarDate.parse "2026-11-16" |> required
-                                                }
-                                    }
+                                PartValue.Reminder(
+                                    ReminderValue.Available(
+                                        {
+                                            Action = action
+                                            Due = CalendarDate.parse "2026-11-16" |> required
+                                            Kind = ReminderKind.FollowUp
+                                        },
+                                        ReminderHandling.Completed(
+                                            CalendarDate.ofDate (System.DateOnly(2026, 11, 17))
+                                        )
+                                    )
+                                )
                             Revision = Revision.create 2L |> Option.get
                         }
 
@@ -167,7 +168,7 @@ let tests =
                     let restored = RetainedOperation.restore record.Root |> required
 
                     match restored.Changes.Head.Value with
-                    | PartValue.Reminder { Plan = Some plan } ->
+                    | PartValue.Reminder(ReminderValue.Available(plan, _)) ->
                         Expect.equal
                             (ReminderAction.format plan.Action)
                             (String.replicate 220 "x")

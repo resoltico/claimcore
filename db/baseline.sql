@@ -355,6 +355,7 @@ CREATE TABLE claimcore.cases (
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    deadline_due date CHECK (deadline_due BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     payable_currency text CHECK (payable_currency ~ '^[A-Z]{3}$'),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
@@ -362,7 +363,7 @@ CREATE TABLE claimcore.cases (
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]+$' AND octet_length(case_reference)<=32768),
     CONSTRAINT private_shape CHECK ((snapshot IS NULL)=(status IS NULL) AND (snapshot IS NULL)=(progress IS NULL)
         AND (snapshot IS NULL)=(search_text IS NULL)
-        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND outcome IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND outcome IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND deadline_due IS NULL AND work_search_text IS NULL))),
     CONSTRAINT claimed_shape CHECK ((claimed_amount IS NULL) = (claimed_currency IS NULL)),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
@@ -472,10 +473,12 @@ CREATE TABLE claimcore.reminders (
     state text CHECK (state ~ '^[A-Z][A-Z_]{0,39}$'),
     action text CHECK (action IS NULL OR (octet_length(action) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(action))),
     due date CHECK (due BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    kind text CHECK (kind ~ '^[A-Z][A-Z_]{0,39}$'),
+    done_on date CHECK (done_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     search_text text,
     changed_at timestamptz NOT NULL,
     recorded_by uuid NOT NULL REFERENCES claimcore.actors(actor_id),
-    CHECK (((snapshot IS NULL) AND state IS NULL AND action IS NULL AND due IS NULL AND search_text IS NULL) OR (snapshot IS NOT NULL AND state IS NOT NULL AND action IS NOT NULL AND due IS NOT NULL AND search_text IS NOT NULL))
+    CHECK (((snapshot IS NULL) AND state IS NULL AND action IS NULL AND due IS NULL AND kind IS NULL AND done_on IS NULL AND search_text IS NULL) OR (snapshot IS NOT NULL AND state IS NOT NULL AND action IS NOT NULL AND due IS NOT NULL AND kind IS NOT NULL AND search_text IS NOT NULL))
 );
 CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;

@@ -38,12 +38,6 @@ type PaymentValue =
         Entry: PaymentEntry option
     }
 
-type ReminderValue =
-    {
-        State: ReminderState
-        Plan: ReminderPlan option
-    }
-
 type NoteValue =
     { Removed: bool; Text: NoteText option }
 
@@ -123,7 +117,7 @@ module PartValue =
                 }
         | PartValue.Payment value -> PartValue.Payment { value with Entry = None }
         | PartValue.Work _ -> PartValue.Work None
-        | PartValue.Reminder value -> PartValue.Reminder { value with Plan = None }
+        | PartValue.Reminder value -> PartValue.Reminder(ReminderValue.Unavailable value.State)
         | PartValue.Note value -> PartValue.Note { value with Text = None }
         | PartValue.Party value -> PartValue.Party { value with Content = None }
         | PartValue.Link value -> PartValue.Link { value with Content = None }
@@ -205,11 +199,8 @@ module PartChange =
     let reminderSnapshot change =
         match change.Aggregate, change.Value with
         | AggregateReference.Family id, PartValue.Reminder value ->
-            match ReminderId.create change.PartId, value.Plan with
-            | Some reminder, Some plan ->
-                Reminder.ofAccepted reminder id change.Revision plan.Action plan.Due value.State
-                |> Result.toOption
-            | _ -> None
+            ReminderId.create change.PartId
+            |> Option.bind (fun reminder -> Reminder.ofValue reminder id change.Revision value)
         | _ -> None
 
     let noteSnapshot change =

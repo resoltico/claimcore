@@ -177,7 +177,7 @@ module internal FamilyParts =
                 state.Reminders
                 |> Map.map (fun _ part ->
                     { part with
-                        Value = { part.Value with Plan = None }
+                        Value = ReminderValue.Unavailable part.Value.State
                     })
         }
 
@@ -478,17 +478,21 @@ module internal FamilyParts =
                             Work = work
                         }))
 
-            let due =
+            let pending =
                 state.Reminders
                 |> Map.values
-                |> Seq.choose (fun part ->
-                    if part.Value.State = ReminderState.Pending then
-                        (part.Value.Plan |> Option.map _.Due)
-                    else
-                        None)
-                |> Seq.toList
+                |> Seq.choose (fun part -> ReminderValue.pendingPlan part.Value)
 
-            CaseIndex.create state.ChangedAt snapshot work due (currentParties state))
+            let due = pending |> Seq.map _.Due |> Seq.sort |> Seq.tryHead
+
+            let deadlineDue =
+                pending
+                |> Seq.filter (fun plan -> plan.Kind = ReminderKind.Deadline)
+                |> Seq.map _.Due
+                |> Seq.sort
+                |> Seq.tryHead
+
+            CaseIndex.create state.ChangedAt snapshot work due deadlineDue (currentParties state))
 
     /// Projection writers consume accepted values and aggregate-derived indexes in the same fold.
     let rows (state: FamilyParts) (changes: PartChange list) =

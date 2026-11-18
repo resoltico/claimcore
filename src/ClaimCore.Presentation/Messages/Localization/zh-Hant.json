@@ -3378,5 +3378,137 @@
   "field.linkNote.rule": {
     "text": "使用 1–{maximumScalars} 個 Unicode 字元，允許換行。",
     "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "跟進",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "跟進",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "需要後續跟進的事項。",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "需要在到期日之前完成的事項。",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "到期日已過，事項仍未完成。",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "如期完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "如期完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "事項已在到期日當天或之前完成。",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "逾期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "逾期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "事項已在到期日之後完成。",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "截止期限已取消。",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "這個未結案件有一項已逾期但仍未完成的事項。",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "不限",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "提醒類型",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "選擇跟進或截止期限。",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "選擇追蹤此事項的方式。",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "完成日期",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "輸入不晚於業務日期的公曆日期，格式為 YYYY-MM-DD。",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "填寫事項完成的日期。留白則使用當天日期。",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "提醒類型",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "依提醒類型篩選清單。",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "期限結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "期限結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "依期限結果篩選清單。",
+    "source": "fe701387e12a"
   }
 }

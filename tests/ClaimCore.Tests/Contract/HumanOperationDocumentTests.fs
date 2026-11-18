@@ -295,13 +295,15 @@ let tests =
                         )
 
                     let next =
-                        Reminder.ofAccepted
+                        Reminder.decode
                             second
                             parent
                             Revision.first
                             (ReminderAction.parse "Permitted next reminder" |> accepted)
                             (DomainInputs.date "2026-11-10")
+                            ReminderKind.FollowUp
                             ReminderState.Pending
+                            None
                         |> accepted
 
                     let version id snapshot =

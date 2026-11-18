@@ -51,6 +51,79 @@ let tests =
                         (reminderBinding after id Revision.first)
                         (planInputs "Another" "2026-11-21")
                     |> expectRefusal (Refusal.revisionConflict after.Reminders[id].Revision))
+            testCase "deadline kind and actual business completion date are recorded" (fun () ->
+                let state = family ()
+
+                let initial =
+                    inputs
+                        [
+                            text InputTarget.ReminderAction "Review dated evidence"
+                            text InputTarget.ReminderDueDate "2026-11-16"
+                            text InputTarget.ReminderPlanKind "DEADLINE"
+                        ]
+
+                let plan =
+                    ClaimCore.Domain.Tasks.Reminder.Create.decide
+                        (context 2)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        (Binding.ReminderNew(target state))
+                        initial
+                    |> accepted
+                    |> apply state
+
+                let defaultFamily, defaultReminder = reminder ()
+
+                Expect.equal
+                    (defaultFamily.Reminders[defaultReminder].Value.Plan |> Option.map _.Kind)
+                    (Some ReminderKind.FollowUp)
+                    "An omitted kind creates a follow-up"
+
+                let id = ReminderId.ofOperationId (operation 2)
+
+                Expect.equal
+                    (plan.Reminders[id].Value.Plan |> Option.map _.Kind)
+                    (Some ReminderKind.Deadline)
+                    "Creation independently accepts a deadline"
+
+                let supplied = context 3
+
+                let finish =
+                    { supplied with
+                        Decision =
+                            { supplied.Decision with
+                                BusinessDate = Some(System.DateOnly(2026, 11, 18))
+                            }
+                    }
+
+                let complete submitted =
+                    ClaimCore.Domain.Tasks.Reminder.Complete.decide
+                        finish
+                        environment
+                        (Some(DecisionFacts.fromReplay plan))
+                        (reminderBinding plan id Revision.first)
+                        submitted
+
+                for submission, expected in
+                    [
+                        InputMap.empty, "2026-11-18"
+                        inputs [ text InputTarget.ReminderDoneOn "2026-11-15" ], "2026-11-15"
+                    ] do
+                    let completed = complete submission |> accepted |> apply plan
+
+                    Expect.equal
+                        (completed.Reminders[id].Value.DoneOn |> Option.map CalendarDate.format)
+                        (Some expected)
+                        "Only completion carries the actual date"
+
+                let rejected =
+                    complete (inputs [ text InputTarget.ReminderDoneOn "2026-11-19" ])
+                    |> expectInputs
+
+                Expect.equal
+                    (rejected |> List.map (fun issue -> issue.Input, issue.Violation))
+                    [ TaskInputId.Target InputTarget.ReminderDoneOn, Violation.FutureDate ]
+                    "A future date is reported on the submitted completion field")
             testCase "unchanged edits do not produce events" (fun () ->
                 let state, id = reminder ()
 
@@ -114,17 +187,16 @@ let tests =
                             NaturalKey = None
                             Stamp = (context 3).Stamp
                             Value =
-                                ClaimCore.Domain.Changes.PartValue.Reminder
-                                    {
-                                        State = ReminderState.Pending
-                                        Plan =
-                                            Some
-                                                {
-                                                    Action = oldAction
-                                                    Due =
-                                                        CalendarDate.parse "2026-11-16" |> accepted
-                                                }
-                                    }
+                                ClaimCore.Domain.Changes.PartValue.Reminder(
+                                    ReminderValue.Available(
+                                        {
+                                            Action = oldAction
+                                            Due = CalendarDate.parse "2026-11-16" |> accepted
+                                            Kind = ReminderKind.FollowUp
+                                        },
+                                        ReminderHandling.Pending
+                                    )
+                                )
                         }
 
                     let state = apply state [ retainedChange ]

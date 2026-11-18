@@ -134,6 +134,8 @@ module EndpointDeclarations =
                     optional (field BusinessField.CaseReference)
                     optional TaskInputId.ReminderState
                     optional TaskInputId.ReminderDue
+                    optional TaskInputId.ReminderKindFilter
+                    optional TaskInputId.DeadlineOutcomeFilter
                     optional TaskInputId.Assignment
                     optional (target InputTarget.Text)
                     optional TaskInputId.IncludeInactive

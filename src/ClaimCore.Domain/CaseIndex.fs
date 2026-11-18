@@ -6,6 +6,7 @@ type CaseIndex =
     {
         Responsible: ActorId option
         FollowUp: CalendarDate option
+        DeadlineDue: CalendarDate option
         Status: CaseStatus option
         Progress: CaseProgress option
         ChangedAt: DateTimeOffset
@@ -24,6 +25,7 @@ module CaseIndex =
         (snapshot: CaseSnapshot)
         (work: CaseWorkSnapshot option)
         pendingDue
+        deadlineDue
         parties
         =
         let fields = CaseState.fields snapshot.State
@@ -37,7 +39,12 @@ module CaseIndex =
                 if snapshot.State = CaseState.Erased then
                     None
                 else
-                    pendingDue |> List.sort |> List.tryHead
+                    pendingDue
+            DeadlineDue =
+                if snapshot.State = CaseState.Erased then
+                    None
+                else
+                    deadlineDue
             Status = fields |> Option.map _.Status
             Outcome = fields |> Option.bind (_.Handling >> Handling.closure) |> Option.map _.Outcome
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)

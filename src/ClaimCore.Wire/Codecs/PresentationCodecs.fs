@@ -135,6 +135,8 @@ module PresentationCodecs =
             codeVariant many ClaimCore.Application.Contracts.View.vocabulary
             codeVariant many CaseDue.vocabulary
             codeVariant many ReminderDue.vocabulary
+            codeVariant many ReminderKind.vocabulary
+            codeVariant many DeadlineOutcome.vocabulary
         ]
         |> taggedOn "vocabulary" (if many then "PresentedCodes" else "PresentedCode")
 

@@ -342,6 +342,8 @@ let private reminderTimelineLimit () =
                             After = Some nextAction
                         }
                 Due = Some { Before = Some due; After = Some due }
+                Kind = None
+                DoneOn = None
                 State = None
             }
 
@@ -351,6 +353,8 @@ let private reminderTimelineLimit () =
                 ReminderId = first
                 Action = None
                 Due = None
+                Kind = None
+                DoneOn = None
                 State =
                     Some
                         {
@@ -370,6 +374,8 @@ let private reminderTimelineLimit () =
                             After = Some nextAction
                         }
                 Due = Some { Before = None; After = Some due }
+                Kind = None
+                DoneOn = None
                 State =
                     Some
                         {

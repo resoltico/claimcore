@@ -21,6 +21,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
+const deadlineOutcomeChoice = queryInput(apiEndpoints.reminderList, "input:deadlineOutcome");
+const kindChoice = queryInput(apiEndpoints.reminderList, "input:reminderKind");
 const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
 const assignmentChoice = queryInput(apiEndpoints.reminderList, "input:assignment");
 const dueChoice = queryInput(apiEndpoints.reminderList, "input:reminderDue");
@@ -144,6 +146,36 @@ const ReminderFilters = ({
         onChange={(value) => {
           if (isTerm("reminderStateSelection", value)) {
             change({ ...query, state: value });
+          }
+        }}
+      />
+      <Select
+        label={renderCatalogKey(p, kindChoice.labelId)}
+        value={query.kind ?? "ANY"}
+        options={kindChoice.choices
+          .filter((value) => isTerm("reminderKindSelection", value))
+          .map((value) => ({ value, label: p.term("reminderKindSelection", value) }))}
+        onChange={(value) => {
+          if (isTerm("reminderKindSelection", value)) {
+            change({ ...query, kind: value });
+          }
+        }}
+      />
+      <Select
+        label={renderCatalogKey(p, deadlineOutcomeChoice.labelId)}
+        value={query.deadlineOutcome ?? ""}
+        options={[
+          { value: "", label: p.text("ui.anyFilter") },
+          ...deadlineOutcomeChoice.choices
+            .filter((value) => isTerm("deadlineOutcome", value))
+            .map((value) => ({ value, label: p.term("deadlineOutcome", value) })),
+        ]}
+        onChange={(value) => {
+          const { deadlineOutcome: _outcome, ...rest } = query;
+          if (value === "") {
+            change(rest);
+          } else if (isTerm("deadlineOutcome", value)) {
+            change({ ...rest, deadlineOutcome: value });
           }
         }}
       />

@@ -800,6 +800,11 @@
                           "before": null,
                           "after": "2026-01-02"
                         },
+                        "kind": {
+                          "before": null,
+                          "after": "FOLLOW_UP"
+                        },
+                        "doneOn": null,
                         "state": {
                           "before": null,
                           "after": "PENDING"
@@ -850,6 +855,11 @@
                         "reminderId": "30000000-0000-7000-8000-000000000002",
                         "action": null,
                         "due": null,
+                        "kind": null,
+                        "doneOn": {
+                          "before": null,
+                          "after": "2026-01-01"
+                        },
                         "state": {
                           "before": "PENDING",
                           "after": "COMPLETED"
@@ -1568,7 +1578,9 @@
                 "revision": 3,
                 "action": "Contact insurer",
                 "dueDate": "2026-11-10",
-                "state": "PENDING"
+                "kind": "FOLLOW_UP",
+                "state": "PENDING",
+                "doneOn": null
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1617,7 +1629,9 @@
                   "revision": 3,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "PENDING"
+                  "kind": "FOLLOW_UP",
+                  "state": "PENDING",
+                  "doneOn": null
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1647,7 +1661,9 @@
                   "revision": 4,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "COMPLETED"
+                  "kind": "FOLLOW_UP",
+                  "state": "COMPLETED",
+                  "doneOn": "2026-11-02"
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1674,7 +1690,9 @@
                   "revision": 2,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "CANCELLED"
+                  "kind": "FOLLOW_UP",
+                  "state": "CANCELLED",
+                  "doneOn": null
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1999,7 +2017,9 @@
                       "revision": 1,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -2236,7 +2256,8 @@
                         "before": null,
                         "after": {
                           "action": "Contact insurer",
-                          "due": "2026-11-10"
+                          "due": "2026-11-10",
+                          "kind": "FOLLOW_UP"
                         }
                       },
                       "action": {
@@ -2247,6 +2268,11 @@
                         "before": null,
                         "after": "2026-11-10"
                       },
+                      "kind": {
+                        "before": null,
+                        "after": "FOLLOW_UP"
+                      },
+                      "doneOn": null,
                       "state": {
                         "before": null,
                         "after": "PENDING"

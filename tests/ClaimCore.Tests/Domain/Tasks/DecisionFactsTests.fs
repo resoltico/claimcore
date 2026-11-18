@@ -76,6 +76,8 @@ let private acquired () =
             LiveFamilySummary.PaymentCount = finance.PaymentCount
             PaymentTotals = finance.CurrencyTotals
             NextPendingDue = Some(date "2026-11-16")
+            NextDeadlineDue = None
+            RemainingDeadlineDue = None
             RemainingPendingDue = Some(date "2026-11-16")
         }
 

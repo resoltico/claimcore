@@ -3378,5 +3378,137 @@
   "field.linkNote.rule": {
     "text": "Use entre 1 y {maximumScalars} caracteres Unicode. Se permiten saltos de línea.",
     "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "Seguimiento",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "Seguimiento",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "Una acción a la que hay que dar seguimiento.",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "Plazo",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "Plazo",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "Una acción que debe finalizarse antes de que venza el plazo.",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "El plazo ha vencido y la acción sigue pendiente.",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "Cumplido",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "Cumplido",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "La acción se completó a más tardar en la fecha límite.",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "Incumplido",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "Incumplido",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "La acción se completó después de la fecha límite.",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "Cancelado",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "Cancelado",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "El plazo se canceló.",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "Plazo vencido",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "Plazo vencido",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "Este caso abierto tiene un plazo pendiente que ya ha vencido.",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "Cualquiera",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "Tipo de recordatorio",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "Seleccione seguimiento o plazo.",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "Elija cómo hacer el seguimiento de esta acción.",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "Fecha de finalización",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "Use una fecha gregoriana con el formato YYYY-MM-DD que no sea posterior a la fecha operativa.",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "Indique cuándo se terminó el trabajo. Deje el campo en blanco para usar la fecha de hoy.",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "Tipo de recordatorio",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "Filtre la lista por tipo de recordatorio.",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "Resultado del plazo",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "Resultado del plazo",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "Filtre la lista por resultado del plazo.",
+    "source": "fe701387e12a"
   }
 }

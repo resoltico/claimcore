@@ -28,15 +28,15 @@ module WorkCodecs =
         |> named "CaseWorkReadModel"
 
     let reminder =
-        (record (fun id parent revision action due state ->
-            Reminder.ofAccepted id parent revision action due state)
-        : Fields<Reminder, _>)
+        (record Reminder.decode: Fields<Reminder, _>)
         |> field "reminderId" Reminder.id reminderId
         |> field "caseId" Reminder.caseId caseId
         |> field "revision" Reminder.revision positiveRevision
         |> field "action" Reminder.action reminderAction
         |> field "dueDate" Reminder.due calendarDate
+        |> field "kind" Reminder.kind (VocabularyCodec.create ReminderKind.vocabulary)
         |> field "state" Reminder.state (VocabularyCodec.create ReminderState.vocabulary)
+        |> field "doneOn" Reminder.doneOn (nullable calendarDate)
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Reminder"
 

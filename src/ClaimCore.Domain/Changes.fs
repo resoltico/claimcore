@@ -20,6 +20,8 @@ type ReminderDifference =
         ReminderId: ReminderId
         Action: ValueChange<ReminderAction> option
         Due: ValueChange<CalendarDate> option
+        Kind: ValueChange<ReminderKind> option
+        DoneOn: ValueChange<CalendarDate> option
         State: ValueChange<ReminderState> option
     }
 
@@ -114,6 +116,8 @@ type TimelineFacet =
     | Action
     | Due
     | State
+    | Kind
+    | DoneOn
 
 module TimelineFacet =
     let vocabulary =
@@ -145,12 +149,16 @@ module TimelineDisclosure =
         | TimelineFacet.Action -> difference.Action.IsSome
         | TimelineFacet.Due -> difference.Due.IsSome
         | TimelineFacet.State -> difference.State.IsSome
+        | TimelineFacet.Kind -> difference.Kind.IsSome
+        | TimelineFacet.DoneOn -> difference.DoneOn.IsSome
 
     let private rank =
         function
         | TimelineFacet.Action -> 0
         | TimelineFacet.Due -> 1
         | TimelineFacet.State -> 2
+        | TimelineFacet.Kind -> 3
+        | TimelineFacet.DoneOn -> 4
 
     /// Canonical selectors are a bounded mechanical projection, never a second source of business values.
     let resolve (disclosure: TimelineDisclosure) =
@@ -203,6 +211,16 @@ module TimelineDisclosure =
                                 State =
                                     if List.contains TimelineFacet.State facets then
                                         difference.State
+                                    else
+                                        None
+                                Kind =
+                                    if List.contains TimelineFacet.Kind facets then
+                                        difference.Kind
+                                    else
+                                        None
+                                DoneOn =
+                                    if List.contains TimelineFacet.DoneOn facets then
+                                        difference.DoneOn
                                     else
                                         None
                             }

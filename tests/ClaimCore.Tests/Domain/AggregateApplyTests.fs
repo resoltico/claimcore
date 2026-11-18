@@ -145,14 +145,36 @@ let tests =
                                         |> Option.get
                                 }
                             Value =
-                                PartValue.Reminder
-                                    {
-                                        State = ReminderState.Pending
-                                        Plan = Some { Action = action; Due = due }
-                                    }
+                                PartValue.Reminder(
+                                    ReminderValue.Available(
+                                        {
+                                            Action = action
+                                            Due = due
+                                            Kind = ReminderKind.Deadline
+                                        },
+                                        ReminderHandling.Pending
+                                    )
+                                )
                         }
 
                     let state = CaseFamily.apply (Some state) reminder |> accepted
+
+                    let completed =
+                        match reminder.Value with
+                        | PartValue.Reminder(ReminderValue.Available(plan, _)) ->
+                            { reminder with
+                                Revision = nextRevision
+                                Value =
+                                    PartValue.Reminder(
+                                        ReminderValue.Available(
+                                            plan,
+                                            ReminderHandling.Completed due
+                                        )
+                                    )
+                            }
+                        | _ -> failtest "A private deadline is present before erasure"
+
+                    let state = CaseFamily.apply (Some state) completed |> accepted
 
                     let erase =
                         { initial with
@@ -183,11 +205,15 @@ let tests =
                     Expect.equal
                         (state.Reminders |> Map.values |> Seq.exactlyOne |> _.Value.Plan)
                         None
-                        "Reminder private values are unavailable"
+                        "The deadline kind and the rest of the plan are unavailable"
+
+                    Expect.isNone
+                        (state.Reminders |> Map.values |> Seq.exactlyOne |> _.Value.DoneOn)
+                        "Erasure clears the completion date"
 
                     Expect.equal
                         (state.Reminders |> Map.values |> Seq.exactlyOne |> _.Value.State)
-                        ReminderState.Pending
+                        ReminderState.Completed
                         "The accepted state remains retained"
 
                     Expect.isError

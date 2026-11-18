@@ -128,6 +128,21 @@ module Terms =
             rendered ReminderState.vocabulary
             reminderStateSelection
             rendered ReminderDue.vocabulary
+            rendered ReminderKind.vocabulary
+            rendered DeadlineOutcome.vocabulary
+            {
+                Name = Vocabulary.name ReminderKindSelection.vocabulary
+                Labels =
+                    Vocabulary.entries ReminderKindSelection.vocabulary
+                    |> List.map (fun (selection, token) ->
+                        token,
+                        match ReminderKindSelection.kind selection with
+                        | Some kind ->
+                            PresentationKeys.code
+                                (Vocabulary.name ReminderKind.vocabulary)
+                                (ReminderKind.token kind)
+                        | None -> "reminderKindSelection.ANY.label")
+            }
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary

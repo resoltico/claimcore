@@ -45,7 +45,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -60,7 +62,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -120,7 +124,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -135,7 +141,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -195,7 +203,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -210,7 +220,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 }
@@ -270,7 +282,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -285,7 +299,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }

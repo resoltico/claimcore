@@ -254,12 +254,17 @@ module internal WorkQueries =
 
                                                 let effective =
                                                     ReminderSelection.resolve
-                                                        request.View.IsSome
+                                                        (request.View.IsSome
+                                                         || request.DeadlineOutcome.IsSome)
                                                         request.State
                                                         request.IncludeInactive
 
                                                 let state =
                                                     ReminderStateSelection.state effective.State
+
+                                                let kind =
+                                                    request.Kind
+                                                    |> Option.bind ReminderKindSelection.kind
 
                                                 let includeInactive = effective.IncludeInactive
 
@@ -278,8 +283,14 @@ module internal WorkQueries =
                                                             state
                                                             |> Option.map ReminderState.token
                                                             |> Option.defaultValue ""
+                                                            kind
+                                                            |> Option.map ReminderKind.token
+                                                            |> Option.defaultValue ""
                                                             request.View
                                                             |> Option.map ReminderView.token
+                                                            |> Option.defaultValue ""
+                                                            request.DeadlineOutcome
+                                                            |> Option.map DeadlineOutcome.token
                                                             |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token
@@ -312,6 +323,9 @@ module internal WorkQueries =
                                                                 Selection = selection
                                                                 TargetCaseId = parentId
                                                                 State = state
+                                                                Kind = kind
+                                                                DeadlineOutcome =
+                                                                    request.DeadlineOutcome
                                                                 View = request.View
                                                                 Due = request.Due
                                                                 Text = text

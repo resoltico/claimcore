@@ -285,14 +285,16 @@ let completeByteGoldens =
                 CalendarDate.parse "2026-11-20" |> Result.defaultWith (fun _ -> failtest "Date")
 
             let reminder =
-                Reminder.ofAccepted
+                Reminder.decode
                     (ReminderId.create reminderRaw |> Option.get)
                     (CaseFixtures.caseId raw)
                     (CaseFixtures.revision 3L)
                     (ReminderAction.parse "+CSV, α \"quoted\""
                      |> Result.defaultWith (fun _ -> failtest "Action"))
                     due
-                    ReminderState.Pending
+                    ReminderKind.Deadline
+                    ReminderState.Completed
+                    (Some(CaseFixtures.date "2026-11-08"))
                 |> Result.defaultWith failtest
 
             let row: ReminderReadModel =
@@ -309,7 +311,7 @@ let completeByteGoldens =
                     RecordedBy = actor
                     Offers = []
                     Active = true
-                    Timing = Some ReminderDue.Upcoming
+                    Timing = None
                 }
 
             let render = MessageCatalogs.render LocalizationPolicy.defaultLanguage
@@ -320,7 +322,7 @@ let completeByteGoldens =
             Expect.equal
                 reminderBytes
                 (expected
-                    "caseId,caseReference,reminderId,revision,action,dueDate,state,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
+                    "caseId,caseReference,reminderId,revision,action,dueDate,state,kind,doneOn,deadlineOutcome,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
                     [
                         "019aa6a0-0000-7000-8000-000000000001"
                         "CSV-GOLDEN"
@@ -328,7 +330,10 @@ let completeByteGoldens =
                         "3"
                         "\"'+CSV, α \"\"quoted\"\"\""
                         "2026-11-20"
-                        "PENDING"
+                        "COMPLETED"
+                        "DEADLINE"
+                        "2026-11-08"
+                        "MET"
                         "2026-11-09T12:00:00.000000Z"
                         "019aa6a0-0000-7000-8000-000000000003"
                         "\"'+Recorder, α\""

@@ -183,14 +183,16 @@ let preview: PreviewReply =
     }
 
 let private reminder =
-    Reminder.ofAccepted
+    Reminder.decode
         (ReminderId.ofOperationId receipt.OperationId)
         snapshot.CaseId
         Revision.first
         (ReminderAction.parse "Contact claimant"
          |> Result.defaultWith (string >> invalidOp))
         (CalendarDate.ofDate basis.BusinessDate)
+        ReminderKind.FollowUp
         ReminderState.Pending
+        None
     |> Result.defaultWith invalidOp
 
 let private hostRead (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =

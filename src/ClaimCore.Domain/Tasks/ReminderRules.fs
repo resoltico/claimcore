@@ -13,20 +13,57 @@ module internal ReminderRules =
             |> Option.forall (fun part -> part.Value.Plan.IsSome)
         | _ -> true
 
-    let plan inputs =
+    let plan defaultKind inputs =
+        let kind =
+            Parsing.optionalText InputTarget.ReminderPlanKind inputs
+            |> Result.bind (function
+                | None -> Ok defaultKind
+                | Some token ->
+                    Vocabulary.tryParse ReminderKind.vocabulary token
+                    |> Option.map Ok
+                    |> Option.defaultValue (
+                        Error(Parsing.issue InputTarget.ReminderPlanKind Violation.TextRequired)
+                    ))
+
         Admission.map2
-            (fun action due ->
+            (fun (action, due) kind ->
                 {
                     ReminderPlan.Action = action
                     Due = due
+                    Kind = kind
                 })
-            (Parsing.scalar InputTarget.ReminderAction ReminderAction.parse inputs)
-            (Parsing.scalar InputTarget.ReminderDueDate CalendarDate.parse inputs)
+            (Admission.map2
+                (fun action due -> action, due)
+                (Parsing.scalar InputTarget.ReminderAction ReminderAction.parse inputs)
+                (Parsing.scalar InputTarget.ReminderDueDate CalendarDate.parse inputs))
+            kind
+
+    let doneOn inputs =
+        Parsing.optionalText InputTarget.ReminderDoneOn inputs
+        |> Result.bind (function
+            | None -> Ok None
+            | Some value ->
+                CalendarDate.parse value
+                |> Parsing.at InputTarget.ReminderDoneOn
+                |> Result.map Some)
+
+    let admitDoneOn (context: TaskContext) selected =
+        let today =
+            context.Decision.BusinessDate
+            |> Option.defaultWith (fun () -> invalidOp "Completion requires a business date.")
+
+        defaultArg selected (CalendarDate.ofDate today)
+        |> CalendarDate.admit today
+        |> Parsing.at InputTarget.ReminderDoneOn
+
+    let doneOnInput =
+        Declarations.optional (Declarations.target InputTarget.ReminderDoneOn)
 
     let planInputs =
         [
             Declarations.required (Declarations.target InputTarget.ReminderAction)
             Declarations.required (Declarations.target InputTarget.ReminderDueDate)
+            Declarations.optional (Declarations.target InputTarget.ReminderPlanKind)
         ]
 
     let identityInputs =
@@ -87,6 +124,8 @@ module internal ReminderRules =
                         InputValue.Text(ReminderAction.format plan.Action)
                         Declarations.target InputTarget.ReminderDueDate,
                         InputValue.Text(CalendarDate.format plan.Due)
+                        Declarations.target InputTarget.ReminderPlanKind,
+                        InputValue.Text(ReminderKind.token plan.Kind)
                     ])
             |> Option.defaultValue Map.empty
             |> Map.filter (fun input _ ->
@@ -131,7 +170,7 @@ module internal ReminderRules =
                         state
                         id
                         (Revision.successor before.Revision)
-                        { State = nextState; Plan = None }
+                        (ReminderValue.Unavailable nextState)
                 ])
             |> Parsing.reject
             |> Result.map (TaskContext.changes context)

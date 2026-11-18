@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   parseReminderQuery,
+  effectiveReminderSelection,
   remindersPath,
   parseReminderPageQuery,
   reminderPagePath,
@@ -106,4 +107,11 @@ it("represents explicit Any separately from the omitted ordinary Pending default
   expect(remindersPath({ state: "ANY", includeInactive: false })).toBe(
     "/reminders?state=ANY&includeInactive=false",
   );
+});
+
+it("uses the declared view defaults for a deadline outcome and round trips the filters", () => {
+  const query = parseReminderQuery("?kind=DEADLINE&deadlineOutcome=MET");
+  expect(remindersPath(query)).toBe("/reminders?kind=DEADLINE&deadlineOutcome=MET");
+  expect(effectiveReminderSelection(query)).toEqual({ state: "ANY", includeInactive: true });
+  expect(() => parseReminderQuery("?kind=DEADLINE&deadlineOutcome=PAID")).toThrow();
 });

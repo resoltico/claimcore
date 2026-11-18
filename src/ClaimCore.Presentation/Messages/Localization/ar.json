@@ -3378,5 +3378,137 @@
   "field.linkNote.rule": {
     "text": "استخدم من 1 إلى {maximumScalars} محرف Unicode. يُسمح بفواصل الأسطر.",
     "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "متابعة",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "متابعة",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "إجراء يستلزم المتابعة.",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "مهلة",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "مهلة",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "إجراء يجب إكماله بحلول تاريخ الاستحقاق.",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "متأخر",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "متأخر",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "انقضى تاريخ الاستحقاق وما زال الإجراء معلقًا.",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "مستوفى",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "مستوفى",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "اكتمل الإجراء بحلول تاريخ الاستحقاق.",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "فائت",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "فائت",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "اكتمل الإجراء بعد تاريخ الاستحقاق.",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "ملغى",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "ملغى",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "أُلغيت المهلة.",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "مهلة متأخرة",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "مهلة متأخرة",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "تتضمن هذه الحالة المفتوحة مهلة انقضت وما زال الإجراء المرتبط بها معلقًا.",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "أي نوع",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "نوع التذكير",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "اختر متابعة أو مهلة.",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "اختر طريقة تتبع هذا الإجراء.",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "تاريخ الإكمال",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "استخدم تاريخًا ميلاديًا بالتنسيق YYYY-MM-DD لا يتجاوز تاريخ العمل.",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "أدخل تاريخ إنجاز العمل. اترك الحقل فارغًا لاستخدام تاريخ اليوم.",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "نوع التذكير",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "صفِّ القائمة حسب نوع التذكير.",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "نتيجة المهلة",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "نتيجة المهلة",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "صفِّ القائمة حسب نتيجة المهلة.",
+    "source": "fe701387e12a"
   }
 }

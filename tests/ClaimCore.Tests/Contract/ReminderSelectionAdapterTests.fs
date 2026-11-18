@@ -45,13 +45,18 @@ let private page =
             |> List.map (fun (number, state) ->
                 {
                     ReminderReadModel.Reminder =
-                        Reminder.ofAccepted
+                        Reminder.decode
                             (ReminderId.create (id number) |> Option.get)
                             (CaseId.create (id 10) |> Option.get)
                             Revision.first
                             (ReminderAction.parse (sprintf "Row %d" number) |> required)
                             (CalendarDate.parse "2026-01-01" |> required)
+                            ReminderKind.FollowUp
                             state
+                            (if state = ReminderState.Completed then
+                                 Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+                             else
+                                 None)
                         |> required
                     Reference = CaseReference.parse "STATE-OPEN" |> required
                     Claimants = [ (PartyName.parse "Synthetic claimant" |> required) ]

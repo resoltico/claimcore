@@ -296,7 +296,7 @@ let tests =
                 let due = DomainInputs.date "2026-11-05"
 
                 let reminder =
-                    Reminder.ofAccepted
+                    Reminder.decode
                         (ReminderId.ofOperationId (
                             CaseFixtures.operationId (
                                 Guid.Parse "80000000-0000-7000-8000-000000000004"
@@ -307,7 +307,9 @@ let tests =
                         (ReminderAction.parse "Telephone claimant"
                          |> Result.defaultWith (fun error -> failtestf "%A" error))
                         due
+                        ReminderKind.FollowUp
                         ReminderState.Pending
+                        None
                     |> Result.defaultWith failtest
 
                 let reply: ReminderReadModel =

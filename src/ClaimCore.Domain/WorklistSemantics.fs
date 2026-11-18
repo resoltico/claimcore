@@ -43,6 +43,7 @@ type CaseWorkFacts =
         Responsible: (ActorId * bool) option
         NextPendingDue: CalendarDate option
         PaymentsNeedReview: bool
+        NextDeadlineDue: CalendarDate option
     }
 
 [<RequireQualifiedAccess>]
@@ -71,6 +72,7 @@ type ReminderView =
 
 [<RequireQualifiedAccess>]
 type CaseAttention =
+    | DeadlineOverdue
     | Overdue
     | DueToday
     | NoNextAction
@@ -92,6 +94,7 @@ type WorkPredicate =
     | NoNextDue
     | PaymentsNeedReview
     | NextDue of ReminderDue
+    | NextDeadlineDue of ReminderDue
     | ReminderState of ReminderState
     | ReminderDue of ReminderDue
 
@@ -156,6 +159,8 @@ module WorkSelection =
             | WorkPredicate.NoNextDue -> facts.NextPendingDue.IsNone
             | WorkPredicate.NextDue value ->
                 facts.NextPendingDue |> Option.exists (ReminderDue.matchesDate today value)
+            | WorkPredicate.NextDeadlineDue value ->
+                facts.NextDeadlineDue |> Option.exists (ReminderDue.matchesDate today value)
             | WorkPredicate.ReminderState value ->
                 reminder |> Option.exists (fun (state, _) -> state = value)
             | WorkPredicate.ReminderDue value ->
@@ -173,6 +178,7 @@ module CaseAttention =
     let plan reason =
         let attention =
             match reason with
+            | CaseAttention.DeadlineOverdue -> WorkSelection.Fact(WorkPredicate.NextDeadlineDue ReminderDue.Overdue)
             | CaseAttention.Overdue -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Overdue)
             | CaseAttention.DueToday -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Today)
             | CaseAttention.NoNextAction -> WorkSelection.Fact WorkPredicate.NoNextDue

@@ -33,16 +33,15 @@ let tests =
 
                     let due = CalendarDate.parse "2026-11-17" |> accepted
 
-                    let before =
+                    let plan =
                         {
-                            ReminderValue.Plan = Some { Action = action; Due = due }
-                            State = ReminderState.Pending
+                            ReminderPlan.Action = action
+                            Due = due
+                            Kind = ReminderKind.FollowUp
                         }
 
-                    let completed =
-                        { before with
-                            State = ReminderState.Completed
-                        }
+                    let before = ReminderValue.Available(plan, ReminderHandling.Pending)
+                    let completed = ReminderValue.Available(plan, ReminderHandling.Completed due)
 
                     let described description =
                         {
@@ -69,9 +68,10 @@ let tests =
                     let nextDue = CalendarDate.parse "2026-11-18" |> accepted
 
                     let reopened =
-                        { before with
-                            Plan = Some { Action = action; Due = nextDue }
-                        }
+                        ReminderValue.Available(
+                            { plan with Due = nextDue },
+                            ReminderHandling.Pending
+                        )
 
                     let reopenedView =
                         PartDescriptions.timeline

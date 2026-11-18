@@ -11,6 +11,8 @@ type LiveFamilySummary =
         PaymentTotals: Map<Currency, CurrencyPaymentTotals>
         NextPendingDue: CalendarDate option
         RemainingPendingDue: CalendarDate option
+        NextDeadlineDue: CalendarDate option
+        RemainingDeadlineDue: CalendarDate option
     }
 
 /// Requested point reads distinguish a known-absent child from a child never acquired.
@@ -54,20 +56,21 @@ type DecisionFacts =
 module DecisionFacts =
     let private minimum values = values |> Seq.sort |> Seq.tryHead
 
-    let private due (parts: FamilyParts) =
+    let private due (parts: FamilyParts) kind =
         parts.Reminders
         |> Map.values
-        |> Seq.choose (fun part ->
-            if part.Value.State = ReminderState.Pending then
-                (part.Value.Plan |> Option.map _.Due)
-            else
-                None)
+        |> Seq.choose (fun part -> ReminderValue.pendingPlan part.Value)
+        |> Seq.filter (fun plan -> kind |> Option.forall ((=) plan.Kind))
+        |> Seq.map _.Due
 
-    let private nextDue (parts: FamilyParts) summary =
+    let private nextDue (parts: FamilyParts) kind remaining =
         if parts.Case.Value.Lifecycle = Lifecycle.Erased then
             None
         else
-            Seq.append (summary.RemainingPendingDue |> Option.toList) (due parts) |> minimum
+            Seq.append (remaining |> Option.toList) (due parts kind) |> minimum
+
+    let private nextDeadline parts remaining =
+        nextDue parts (Some ReminderKind.Deadline) remaining
 
     let private validate (parts: FamilyParts) summary changes =
         let erased = parts.Case.Value.Lifecycle = Lifecycle.Erased
@@ -99,7 +102,8 @@ module DecisionFacts =
         if
             not financial
             || not selectedPrivate
-            || nextDue parts summary <> summary.NextPendingDue
+            || nextDue parts None summary.RemainingPendingDue <> summary.NextPendingDue
+            || nextDeadline parts summary.RemainingDeadlineDue <> summary.NextDeadlineDue
         then
             Error RecordViolation.InvalidSubjectState
         else
@@ -153,8 +157,10 @@ module DecisionFacts =
                     PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
                     PaymentTotals =
                         finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
-                    NextPendingDue = due parts |> minimum
+                    NextPendingDue = due parts None |> minimum
                     RemainingPendingDue = None
+                    NextDeadlineDue = nextDeadline parts None
+                    RemainingDeadlineDue = None
                 }
         }
 
@@ -193,7 +199,8 @@ module DecisionFacts =
         { summary with
             PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
             PaymentTotals = finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
-            NextPendingDue = nextDue parts summary
+            NextPendingDue = nextDue parts None summary.RemainingPendingDue
+            NextDeadlineDue = nextDeadline parts summary.RemainingDeadlineDue
         }
 
     /// Apply only the acquired parts; complete replay independently reconciles the full family.
@@ -219,6 +226,8 @@ module DecisionFacts =
                             PaymentTotals = Map.empty
                             NextPendingDue = None
                             RemainingPendingDue = None
+                            NextDeadlineDue = None
+                            RemainingDeadlineDue = None
                         }
 
                 let after = updatedSummary parts summary
@@ -286,12 +295,11 @@ module DecisionFacts =
                                 Work = value
                             }))
 
-                let due = facts.NextPendingDue |> Option.toList
-
                 changes,
                 CaseIndex.create
                     facts.ChangedAt
                     snapshot
                     work
-                    due
+                    facts.NextPendingDue
+                    facts.Summary.NextDeadlineDue
                     (FamilyParts.currentParties facts.Parts))

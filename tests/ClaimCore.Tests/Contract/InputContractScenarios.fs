@@ -271,6 +271,8 @@ let internal peopleFieldPresentation () =
             | TaskInputId.Target _ -> "field."
             | TaskInputId.ReminderState
             | TaskInputId.ReminderDue
+            | TaskInputId.ReminderKindFilter
+            | TaskInputId.DeadlineOutcomeFilter
             | TaskInputId.IncludeInactive
             | TaskInputId.Scope
             | TaskInputId.ActorId

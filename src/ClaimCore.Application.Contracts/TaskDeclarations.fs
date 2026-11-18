@@ -22,6 +22,9 @@ type TaskChoiceId =
     | ReminderDue
     | PaymentDirection
     | ClosureOutcome
+    | ReminderKind
+    | ReminderKindFilter
+    | DeadlineOutcomeFilter
     | RegistrationCorrection
     | DecisionCorrection
 
@@ -51,6 +54,9 @@ module TaskChoiceId =
         | TaskChoiceId.Assignment -> vocabularyTokens CaseAssignment.vocabulary
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
+        | TaskChoiceId.ReminderKind -> vocabularyTokens ReminderKind.vocabulary
+        | TaskChoiceId.DeadlineOutcomeFilter -> vocabularyTokens DeadlineOutcome.vocabulary
+        | TaskChoiceId.ReminderKindFilter -> vocabularyTokens ReminderKindSelection.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
         | TaskChoiceId.PaymentDirection -> vocabularyTokens PaymentDirection.vocabulary
         | TaskChoiceId.ClosureOutcome -> vocabularyTokens ClosureOutcome.vocabulary
@@ -78,6 +84,9 @@ module TaskChoiceId =
         | TaskChoiceId.Assignment -> Vocabulary.name CaseAssignment.vocabulary
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
+        | TaskChoiceId.ReminderKind -> Vocabulary.name ReminderKind.vocabulary
+        | TaskChoiceId.DeadlineOutcomeFilter -> Vocabulary.name DeadlineOutcome.vocabulary
+        | TaskChoiceId.ReminderKindFilter -> Vocabulary.name ReminderKindSelection.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
         | TaskChoiceId.PaymentDirection -> Vocabulary.name PaymentDirection.vocabulary
         | TaskChoiceId.ClosureOutcome -> Vocabulary.name ClosureOutcome.vocabulary
@@ -103,6 +112,9 @@ module TaskChoiceId =
         | TaskInputId.Assignment -> Some TaskChoiceId.Assignment
         | TaskInputId.Due -> Some TaskChoiceId.Due
         | TaskInputId.ReminderState -> Some TaskChoiceId.ReminderState
+        | TaskInputId.Target InputTarget.ReminderPlanKind -> Some TaskChoiceId.ReminderKind
+        | TaskInputId.DeadlineOutcomeFilter -> Some TaskChoiceId.DeadlineOutcomeFilter
+        | TaskInputId.ReminderKindFilter -> Some TaskChoiceId.ReminderKindFilter
         | TaskInputId.ReminderDue -> Some TaskChoiceId.ReminderDue
         | TaskInputId.Target(InputTarget.Group RecordGroup.Registration) ->
             Some TaskChoiceId.RegistrationCorrection
@@ -112,7 +124,7 @@ module TaskChoiceId =
         | TaskInputId.Target(InputTarget.Field BusinessField.Outcome) ->
             Some TaskChoiceId.ClosureOutcome
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter

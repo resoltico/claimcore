@@ -232,6 +232,14 @@ module ReviewScreen =
                     |> Option.map (
                         changed (prefix + "due") "field.reminderDueDate.label" PresentedValue.Date
                     )
+                    value.Kind
+                    |> Option.map (
+                        changed (prefix + "kind") "field.kind.label" (code ReminderKind.vocabulary)
+                    )
+                    value.DoneOn
+                    |> Option.map (
+                        changed (prefix + "doneOn") "field.doneOn.label" PresentedValue.Date
+                    )
                     value.State
                     |> Option.map (
                         changed

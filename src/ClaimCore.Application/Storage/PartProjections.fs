@@ -34,6 +34,7 @@ module internal PartProjections =
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.format)
             DatabaseSession.parameter index.WorkSearchText
             DatabaseSession.parameter (index.Outcome |> Option.map ClosureOutcome.token)
+            DatabaseSession.parameter (index.DeadlineDue |> Option.map CalendarDate.format)
         |]
 
     let private exactlyOne count =
@@ -143,7 +144,7 @@ module internal PartProjections =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text,outcome) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18,$19) ON CONFLICT(case_id) DO UPDATE SET case_reference=EXCLUDED.case_reference,revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text,outcome=EXCLUDED.outcome"
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text,outcome,deadline_due) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18,$19,$20::date) ON CONFLICT(case_id) DO UPDATE SET case_reference=EXCLUDED.case_reference,revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text,outcome=EXCLUDED.outcome,deadline_due=EXCLUDED.deadline_due"
                     (caseParameters id row.Snapshot row.Index)
                     token
 
@@ -201,23 +202,12 @@ module internal PartProjections =
                     token
 
             for reminder in row.Reminders do
-                let snapshot =
-                    reminder.Value.Plan
-                    |> Option.map (fun plan ->
-                        Reminder.ofAccepted
-                            reminder.Id
-                            id
-                            reminder.Revision
-                            plan.Action
-                            plan.Due
-                            reminder.Value.State
-                        |> Result.defaultWith (fun _ ->
-                            raise (RecordCorruptException "Reminder projection is invalid.")))
+                let snapshot = Reminder.ofValue reminder.Id id reminder.Revision reminder.Value
 
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,snapshot,state,action,due,search_text,changed_at,recorded_by) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10) ON CONFLICT(reminder_id) DO UPDATE SET revision=EXCLUDED.revision,snapshot=EXCLUDED.snapshot,state=EXCLUDED.state,action=EXCLUDED.action,due=EXCLUDED.due,search_text=EXCLUDED.search_text,changed_at=EXCLUDED.changed_at,recorded_by=EXCLUDED.recorded_by WHERE claimcore.reminders.case_id=EXCLUDED.case_id"
+                        "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,snapshot,state,action,due,search_text,changed_at,recorded_by,kind,done_on) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10,$11,$12::date) ON CONFLICT(reminder_id) DO UPDATE SET revision=EXCLUDED.revision,snapshot=EXCLUDED.snapshot,state=EXCLUDED.state,action=EXCLUDED.action,due=EXCLUDED.due,search_text=EXCLUDED.search_text,changed_at=EXCLUDED.changed_at,recorded_by=EXCLUDED.recorded_by,kind=EXCLUDED.kind,done_on=EXCLUDED.done_on WHERE claimcore.reminders.case_id=EXCLUDED.case_id"
                         [|
                             box (ReminderId.value reminder.Id)
                             box (CaseId.value id)
@@ -238,6 +228,12 @@ module internal PartProjections =
                             )
                             box reminder.Changed.RecordedAt
                             box (ActorId.value reminder.Changed.RecordedBy)
+                            optional (snapshot |> Option.map (Reminder.kind >> ReminderKind.token))
+                            optional (
+                                snapshot
+                                |> Option.bind Reminder.doneOn
+                                |> Option.map CalendarDate.format
+                            )
                         |]
                         token
 

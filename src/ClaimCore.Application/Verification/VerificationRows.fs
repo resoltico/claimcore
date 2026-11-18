@@ -166,6 +166,12 @@ module internal VerificationRows =
                                             VerificationFinding.CaseWorkProjection
                                             (fun () -> Projections.caseFollowUp row)
 
+                                    let! deadlineDue =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () -> Projections.caseDeadlineDue row)
+
                                     let! workSearchText =
                                         capture
                                             None
@@ -179,6 +185,7 @@ module internal VerificationRows =
                                         {
                                             Responsible = responsible
                                             FollowUp = followUp
+                                            DeadlineDue = deadlineDue
                                             Status = status
                                             Progress = progress
                                             ChangedAt = changedAt
@@ -286,6 +293,7 @@ module internal VerificationRows =
                                         (record.CaseId,
                                          record.Index.Responsible,
                                          record.Index.FollowUp,
+                                         record.Index.DeadlineDue,
                                          record.Index.WorkSearchText)
                                         :: workIndexes
 
@@ -527,12 +535,16 @@ module internal VerificationRows =
                     let expectedIndexes =
                         expectedCases
                         |> Map.map (fun id row ->
-                            id, row.Index.Responsible, row.Index.FollowUp, row.Index.WorkSearchText)
+                            id,
+                            row.Index.Responsible,
+                            row.Index.FollowUp,
+                            row.Index.DeadlineDue,
+                            row.Index.WorkSearchText)
 
                     return!
                         ProjectionVerification.rows
                             VerificationFinding.CaseWorkProjection
-                            (fun (id, _, _, _) -> id)
+                            (fun (id, _, _, _, _) -> id)
                             expectedIndexes
                             workIndexes
                 }

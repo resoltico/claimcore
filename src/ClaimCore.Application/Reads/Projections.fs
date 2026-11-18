@@ -42,7 +42,9 @@ module internal Projections =
         + DatabaseSession.dateExpression "received_on"
         + " AS received_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
+        + " AS follow_up,"
+        + DatabaseSession.dateExpression "deadline_due"
+        + " AS deadline_due,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
         + CaseIdentityReads.referenceAt "c.case_id" ""
         + " AS reserved_reference"
 
@@ -73,6 +75,10 @@ module internal Projections =
     let caseResponsibleActor row =
         DatabaseSession.namedOptional<Guid> "responsible_actor" row
         |> Option.map (DatabaseSession.admitted ActorId.create)
+
+    let caseDeadlineDue row =
+        DatabaseSession.namedOptionalCalendarDate "deadline_due" row
+        |> Option.map CalendarDate.ofDate
 
     let caseFollowUp row =
         DatabaseSession.namedOptionalCalendarDate "follow_up" row
@@ -108,6 +114,7 @@ module internal Projections =
         {
             Responsible = caseResponsibleActor row
             FollowUp = caseFollowUp row
+            DeadlineDue = caseDeadlineDue row
             Status = caseStatus row
             Progress = caseProgress row
             ChangedAt = caseChangedAt row

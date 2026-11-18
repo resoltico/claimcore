@@ -69,6 +69,10 @@ module CommandGrammar =
         | TaskInputId.ResponsibleActorFilter -> "responsibleActor"
         | TaskInputId.RoleFilter -> "role"
         | TaskInputId.ReminderDue -> "due"
+        | TaskInputId.DeadlineOutcomeFilter -> "deadline-outcome"
+        | TaskInputId.ReminderKindFilter
+        | TaskInputId.Target InputTarget.ReminderPlanKind -> "kind"
+        | TaskInputId.Target InputTarget.ReminderDoneOn -> "done-on"
         | TaskInputId.ReminderState -> "state"
         | TaskInputId.Target InputTarget.ReminderAction -> "action"
         | TaskInputId.Target InputTarget.ReminderDueDate -> "due"

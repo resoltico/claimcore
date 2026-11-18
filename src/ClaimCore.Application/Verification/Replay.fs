@@ -156,17 +156,7 @@ module internal Replay =
                 row.Reminders
                 |> List.map (fun reminder ->
                     let snapshot =
-                        reminder.Value.Plan
-                        |> Option.map (fun plan ->
-                            Reminder.ofAccepted
-                                reminder.Id
-                                caseId
-                                reminder.Revision
-                                plan.Action
-                                plan.Due
-                                reminder.Value.State
-                            |> Result.defaultWith (fun _ ->
-                                invalidOp "Aggregate-derived reminder is invalid."))
+                        Reminder.ofValue reminder.Id caseId reminder.Revision reminder.Value
 
                     reminder.Id,
                     {

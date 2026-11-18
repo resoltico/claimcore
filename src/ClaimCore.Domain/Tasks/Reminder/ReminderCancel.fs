@@ -47,9 +47,9 @@ let decide context environment (state: DecisionFacts option) binding (_: InputMa
                     state
                     command.ReminderId
                     (Revision.successor command.Before.Revision)
-                    { command.Before.Value with
-                        State = ReminderState.Cancelled
-                    }
+                    (match command.Before.Value.Plan with
+                     | Some plan -> ReminderValue.Available(plan, ReminderHandling.Cancelled)
+                     | None -> ReminderValue.Unavailable ReminderState.Cancelled)
             ])
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)

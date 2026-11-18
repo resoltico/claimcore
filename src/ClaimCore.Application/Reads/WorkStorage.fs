@@ -17,6 +17,8 @@ module internal WorkStorage =
             Selection: CaseSelection
             TargetCaseId: CaseId option
             State: ReminderState option
+            Kind: ReminderKind option
+            DeadlineOutcome: DeadlineOutcome option
             View: ReminderView option
             Due: ReminderDue option
             Text: CaseSearchText option
@@ -56,7 +58,9 @@ module internal WorkStorage =
     let reminderColumns =
         "r.reminder_id,r.case_id,r.revision,r.snapshot,r.state,r.action,"
         + DatabaseSession.dateExpression "r.due"
-        + " AS due,r.search_text,"
+        + " AS due,r.kind,"
+        + DatabaseSession.dateExpression "r.done_on"
+        + " AS done_on,r.search_text,"
         + DatabaseSession.instantExpression "r.changed_at"
         + " AS changed_at,r.recorded_by"
 
@@ -129,9 +133,20 @@ module internal WorkStorage =
             DatabaseSession.namedOptionalCalendarDate (name "due") row
             |> Option.map CalendarDate.ofDate
 
+        let kind = DatabaseSession.namedOptional<string> (name "kind") row
+
+        let doneOn =
+            DatabaseSession.namedOptionalCalendarDate (name "done_on") row
+            |> Option.map CalendarDate.ofDate
+
         let search = DatabaseSession.namedOptional<string> (name "search_text") row
 
-        let expectedStatus, expectedAction, expectedDue, expectedSearch =
+        let (expectedStatus,
+             expectedAction,
+             expectedDue,
+             expectedKind,
+             expectedDoneOn,
+             expectedSearch) =
             Reminder.columns value
 
         if bytes <> (value |> Option.map ReminderRecord.encodeSnapshot) then
@@ -150,6 +165,8 @@ module internal WorkStorage =
             state <> (expectedStatus |> Option.map ReminderState.token)
             || action <> (expectedAction |> Option.map ReminderAction.format)
             || due <> expectedDue
+            || kind <> (expectedKind |> Option.map ReminderKind.token)
+            || doneOn <> expectedDoneOn
             || search <> expectedSearch
         then
             raise (RecordCorruptException "Reminder columns disagree with snapshot.")
@@ -209,7 +226,9 @@ module internal WorkStorage =
         + " AS work_record_summary_changed_at,w.summary_recorded_by AS work_record_summary_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
         + "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
         + DatabaseSession.dateExpression "r.due"
-        + " AS next_due,r.search_text AS next_search_text,"
+        + " AS next_due,r.kind AS next_kind,"
+        + DatabaseSession.dateExpression "r.done_on"
+        + " AS next_done_on,r.search_text AS next_search_text,"
         + DatabaseSession.instantExpression "r.changed_at"
         + " AS next_changed_at,r.recorded_by AS next_recorded_by"
 
@@ -344,8 +363,33 @@ module internal WorkStorage =
 
             let active = CaseSelectionSql.selectionPredicate WorkSelection.activeOpen
 
+            let outcome, outcomeParameters =
+                match query.DeadlineOutcome with
+                | None -> "TRUE", [||]
+                | Some outcome ->
+                    let state, timing = DeadlineOutcome.plan outcome
+
+                    let date =
+                        match timing with
+                        | DeadlineTiming.PendingPastDue ->
+                            active
+                            + " AND "
+                            + CaseSelectionSql.datePredicate "r.due" ReminderDue.Overdue
+                        | DeadlineTiming.FinishedByDue -> "r.done_on <= r.due"
+                        | DeadlineTiming.FinishedAfterDue -> "r.done_on > r.due"
+                        | DeadlineTiming.Unrestricted -> "TRUE"
+
+                    let condition =
+                        $"r.kind={CaseSelectionSql.suffix 9} AND r.state={CaseSelectionSql.suffix 10} AND ({date})"
+
+                    condition,
+                    [|
+                        box (ReminderKind.token ReminderKind.Deadline)
+                        box (ReminderState.token state)
+                    |]
+
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ({CaseSelectionSql.suffix 1}::uuid IS NULL OR r.case_id={CaseSelectionSql.suffix 1}) AND ({CaseSelectionSql.suffix 2}::text IS NULL OR r.state={CaseSelectionSql.suffix 2}) AND ({view}) AND ({CaseSelectionSql.suffix 3} OR ({active})) AND ({due}) AND ({CaseSelectionSql.suffix 4}::text IS NULL OR r.search_text LIKE '%%'||{CaseSelectionSql.suffix 4}||'%%' ESCAPE chr(92)) AND ({CaseSelectionSql.suffix 5}::date IS NULL OR (r.due,r.reminder_id)>({CaseSelectionSql.suffix 5}::date,{CaseSelectionSql.suffix 6}::uuid)) ORDER BY r.due,r.reminder_id LIMIT {CaseSelectionSql.suffix 7}"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ({CaseSelectionSql.suffix 1}::uuid IS NULL OR r.case_id={CaseSelectionSql.suffix 1}) AND ({CaseSelectionSql.suffix 2}::text IS NULL OR r.state={CaseSelectionSql.suffix 2}) AND ({CaseSelectionSql.suffix 8}::text IS NULL OR r.kind={CaseSelectionSql.suffix 8}) AND ({view}) AND ({outcome}) AND ({CaseSelectionSql.suffix 3} OR ({active})) AND ({due}) AND ({CaseSelectionSql.suffix 4}::text IS NULL OR r.search_text LIKE '%%'||{CaseSelectionSql.suffix 4}||'%%' ESCAPE chr(92)) AND ({CaseSelectionSql.suffix 5}::date IS NULL OR (r.due,r.reminder_id)>({CaseSelectionSql.suffix 5}::date,{CaseSelectionSql.suffix 6}::uuid)) ORDER BY r.due,r.reminder_id LIMIT {CaseSelectionSql.suffix 7}"
 
             let parameters =
                 Array.append
@@ -362,9 +406,15 @@ module internal WorkStorage =
                             query.After |> Option.map (fun p -> ReminderId.value p.ReminderId)
                         )
                         box (query.Limit + 1)
+                        DatabaseSession.parameter (query.Kind |> Option.map ReminderKind.token)
                     |]
 
-            let! rows = DatabaseSession.namedRows connection sql parameters token
+            let! rows =
+                DatabaseSession.namedRows
+                    connection
+                    sql
+                    (Array.append parameters outcomeParameters)
+                    token
 
             let rows =
                 rows

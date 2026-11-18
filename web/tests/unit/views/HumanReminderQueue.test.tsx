@@ -225,6 +225,7 @@ it("takes one parent read and carries the selected reminder version through revi
       name: /complete/iu,
     }),
   );
+  await userEvent.click(await screen.findByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
   });

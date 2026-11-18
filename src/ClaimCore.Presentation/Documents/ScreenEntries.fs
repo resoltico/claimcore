@@ -184,6 +184,17 @@ module ScreenEntries =
                 Prominence.Primary
                 (PresentedValue.Date(Reminder.due reminder))
             value
+                (id + ".kind")
+                "field.kind.label"
+                Prominence.Secondary
+                (code ReminderKind.vocabulary (Reminder.kind reminder))
+            if Reminder.doneOn reminder |> Option.isSome then
+                value
+                    (id + ".doneOn")
+                    "field.doneOn.label"
+                    Prominence.Secondary
+                    (optional PresentedValue.Date (Reminder.doneOn reminder))
+            value
                 (id + ".state")
                 "input.reminderState.label"
                 Prominence.Primary

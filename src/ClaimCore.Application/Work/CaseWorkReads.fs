@@ -25,6 +25,7 @@ module internal CaseWorkReads =
                     assigned.ActorId, assigned.Availability = ActorAvailability.Available)
             NextPendingDue = work.FollowUp
             PaymentsNeedReview = record.Index.PaymentReview = Some true
+            NextDeadlineDue = record.Index.DeadlineDue
         }
 
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =
@@ -33,6 +34,7 @@ module internal CaseWorkReads =
             erased
             && record.Index.Responsible.IsNone
             && record.Index.FollowUp.IsNone
+            && record.Index.DeadlineDue.IsNone
             && record.Index.WorkSearchText.IsNone
         | Some summary ->
             let payload = summary.Work.Snapshot
@@ -291,6 +293,8 @@ module internal CaseWorkReads =
                                 }
                             TargetCaseId = Some record.CaseId
                             State = Some ReminderState.Pending
+                            Kind = None
+                            DeadlineOutcome = None
                             View = None
                             Due = None
                             Text = None

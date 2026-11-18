@@ -1,5 +1,6 @@
 import { reminderSelectionDefaults } from "@contracts/client";
 import type { CaseSelector, ReminderListRequest } from "@contracts/client";
+import type { Terms } from "@contracts/messages";
 import { isTerm } from "../presentation/terms";
 export type ReminderQuery = Omit<ReminderListRequest, "cursor" | "limit">;
 const invalidSelection = (): never => {
@@ -10,6 +11,8 @@ const selectionParameters = (search: string) => {
   const allowed = [
     "view",
     "state",
+    "kind",
+    "deadlineOutcome",
     "due",
     "assignment",
     "q",
@@ -56,58 +59,46 @@ const caseSelection = (params: URLSearchParams): CaseSelector | undefined => {
   }
   return { kind: "REFERENCE", caseReference };
 };
-const queryChoices = (
-  result: ReminderQuery,
-  values: {
-    view: string | null;
-    state: string | null;
-    due: string | null;
-    assignment: string | null;
-  },
-): ReminderQuery => ({
-  ...result,
-  ...(values.view !== null && isTerm("reminderView", values.view) ? { view: values.view } : {}),
-  ...(values.state !== null && isTerm("reminderStateSelection", values.state)
-    ? { state: values.state }
-    : {}),
-  ...(values.due !== null && isTerm("reminderDue", values.due) ? { due: values.due } : {}),
-  ...(values.assignment !== null && isTerm("assignment", values.assignment)
-    ? { assignment: values.assignment }
-    : {}),
-});
+const choice = <V extends keyof Terms>(
+  params: URLSearchParams,
+  key: string,
+  vocabulary: V,
+): Terms[V] | undefined => {
+  const value = params.get(key);
+  if (value === null) {
+    return undefined;
+  }
+  return isTerm(vocabulary, value) ? value : invalidSelection();
+};
 
 export const parseReminderQuery = (search: string): ReminderQuery => {
   const params = selectionParameters(search);
-  for (const [key, vocabulary] of [
-    ["view", "reminderView"],
-    ["state", "reminderStateSelection"],
-    ["due", "reminderDue"],
-    ["assignment", "assignment"],
-  ] as const) {
-    const value = params.get(key);
-    if (value !== null && !isTerm(vocabulary, value)) {
-      invalidSelection();
-    }
-  }
   const target = caseSelection(params);
-  const view = params.get("view");
-  const state = params.get("state");
-  const due = params.get("due");
-  const assignment = params.get("assignment");
+  const view = choice(params, "view", "reminderView");
+  const state = choice(params, "state", "reminderStateSelection");
+  const kind = choice(params, "kind", "reminderKindSelection");
+  const deadlineOutcome = choice(params, "deadlineOutcome", "deadlineOutcome");
+  const due = choice(params, "due", "reminderDue");
+  const assignment = choice(params, "assignment", "assignment");
   const text = params.get("q");
-  const result: ReminderQuery = {
+  return {
     ...(target === undefined ? {} : { target }),
+    ...(view === undefined ? {} : { view }),
+    ...(state === undefined ? {} : { state }),
+    ...(kind === undefined ? {} : { kind }),
+    ...(deadlineOutcome === undefined ? {} : { deadlineOutcome }),
+    ...(due === undefined ? {} : { due }),
+    ...(assignment === undefined ? {} : { assignment }),
     ...(text === null || text === "" ? {} : { text }),
     ...(params.has("includeInactive")
       ? { includeInactive: params.get("includeInactive") === "true" }
       : {}),
   };
-  return queryChoices(result, { view, state, due, assignment });
 };
 
 export const remindersPath = (query: ReminderQuery): string => {
   const params = new URLSearchParams();
-  for (const name of ["view", "state", "due", "assignment"] as const) {
+  for (const name of ["view", "state", "kind", "deadlineOutcome", "due", "assignment"] as const) {
     if (query[name] !== undefined) {
       params.set(name, query[name]);
     }
@@ -148,7 +139,7 @@ export const reminderPagePath = (query: ReminderQuery, manual: boolean): string 
 
 export const effectiveReminderSelection = (query: ReminderQuery) => {
   const defaults = reminderSelectionDefaults.find(
-    (row) => row.hasView === (query.view !== undefined),
+    (row) => row.hasView === (query.view !== undefined || query.deadlineOutcome !== undefined),
   );
   if (defaults === undefined) {
     throw new Error("The Core reminder defaults are missing.");

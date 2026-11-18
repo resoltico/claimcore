@@ -189,7 +189,7 @@ module PartCodecs =
         record (PartValue.Work None) |> build |> named "PartRetained.WORK"
 
     let private reminderRetained =
-        (record (fun state -> PartValue.Reminder { State = state; Plan = None })
+        (record (fun state -> PartValue.Reminder(ReminderValue.Unavailable state))
         : Fields<PartValue, _>)
         |> field "state" (reminder _.State) (VocabularyCodec.create ReminderState.vocabulary)
         |> build
@@ -358,15 +358,22 @@ module PartCodecs =
     let private reminderPrivate (retained: ReminderValue) =
         let plan = reminder (fun value -> value.Plan |> Option.defaultWith wrong)
 
-        (record (fun action due ->
-            PartValue.Reminder
-                { retained with
-                    Plan = Some { Action = action; Due = due }
-                })
+        (record (fun action due kind doneOn ->
+            ReminderValue.ofPrivate
+                retained.State
+                {
+                    Action = action
+                    Due = due
+                    Kind = kind
+                }
+                doneOn
+            |> Result.map PartValue.Reminder)
         : Fields<PartValue, _>)
         |> field "action" (plan >> _.Action) action
         |> field "due" (plan >> _.Due) date
-        |> build
+        |> field "kind" (plan >> _.Kind) (VocabularyCodec.create ReminderKind.vocabulary)
+        |> optionalField "doneOn" (reminder _.DoneOn) date
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let partyContent =
         (record PartyContent.create: Fields<PartyContent, _>)

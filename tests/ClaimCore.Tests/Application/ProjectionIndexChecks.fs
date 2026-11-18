@@ -17,7 +17,7 @@ let checks _installation instant =
     let snapshot =
         ClaimCore.Domain.Aggregates.CaseFamily.snapshot (decided ()) |> Option.get
 
-    let index = CaseIndex.create instant snapshot None [] []
+    let index = CaseIndex.create instant snapshot None None None []
 
     let record =
         {

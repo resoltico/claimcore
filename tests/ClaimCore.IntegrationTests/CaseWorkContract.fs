@@ -309,6 +309,8 @@ let internal assignmentAndDisclosure fixture =
             {
                 Target = Some(CaseSelector.Id caseId)
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None
@@ -666,6 +668,8 @@ let internal dueFiltersAndOrder fixture =
             {
                 Target = None
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = Some ReminderDue.Today
                 Assignment = None
                 Text = None
@@ -862,6 +866,8 @@ let internal reminderTiming fixture =
             {
                 Target = Some target
                 State = None
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None
@@ -961,6 +967,8 @@ let internal reminderTiming fixture =
             checkPage
                 { request with
                     State = Some(ReminderStateSelection.State ReminderState.Pending)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Today
                     Limit = 1
                 }
@@ -1010,6 +1018,8 @@ let internal reminderTiming fixture =
             checkPage
                 { request with
                     State = Some(ReminderStateSelection.State ReminderState.Pending)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Today
                 }
                 [ 703, Some ReminderDue.Today ]
@@ -1049,6 +1059,8 @@ let internal reminderTiming fixture =
                 { request with
                     IncludeInactive = Some true
                     State = Some(ReminderStateSelection.State ReminderState.Completed)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Overdue
                 }
                 [ 704, None ]
@@ -1657,6 +1669,8 @@ let internal finiteDateRange fixture =
             {
                 Target = Some(CaseSelector.Reference "DATE-MIN")
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None

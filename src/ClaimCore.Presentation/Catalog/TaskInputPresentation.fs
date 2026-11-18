@@ -27,6 +27,8 @@ module TaskInputPresentation =
         | TaskInputId.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
         | TaskInputId.ReminderState
         | TaskInputId.ReminderDue
+        | TaskInputId.ReminderKindFilter
+        | TaskInputId.DeadlineOutcomeFilter
         | TaskInputId.IncludeInactive
         | TaskInputId.Scope
         | TaskInputId.ActorId
@@ -55,6 +57,8 @@ module TaskInputPresentation =
         | TaskInputId.Due
         | TaskInputId.ReminderState
         | TaskInputId.ReminderDue
+        | TaskInputId.ReminderKindFilter
+        | TaskInputId.DeadlineOutcomeFilter
         | TaskInputId.IncludeInactive -> None
         | _ -> Some(messageKey input "hint")
 
@@ -78,6 +82,8 @@ module TaskInputPresentation =
             Some(ScalarRule.PlainText ReminderAction.constraints)
         | TaskInputId.Target InputTarget.ReminderDueDate ->
             Some(ScalarRule.PlannedDate CalendarDate.descriptor)
+        | TaskInputId.Target InputTarget.ReminderDoneOn ->
+            Some(ScalarRule.CalendarDate CalendarDate.descriptor)
         | TaskInputId.Target InputTarget.DirectorySearch ->
             Some(
                 ScalarRule.Text

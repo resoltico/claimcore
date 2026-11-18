@@ -46,6 +46,19 @@ module TimelineScreen =
                         PresentedValue.Date
                         change
             | None -> ()
+            match change.Kind with
+            | Some change ->
+                yield
+                    difference
+                        (prefix + "kind")
+                        "field.kind.label"
+                        (code ReminderKind.vocabulary)
+                        change
+            | None -> ()
+            match change.DoneOn with
+            | Some change ->
+                yield difference (prefix + "doneOn") "field.doneOn.label" PresentedValue.Date change
+            | None -> ()
             match change.State with
             | Some change ->
                 yield

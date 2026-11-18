@@ -26,6 +26,38 @@ module ReminderState =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+[<RequireQualifiedAccess>]
+type ReminderKind =
+    | FollowUp
+    | Deadline
+
+module ReminderKind =
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderKind> "reminderKind" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+    let defaultValue = ReminderKind.FollowUp
+
+[<RequireQualifiedAccess>]
+type ReminderKindSelection =
+    | Any
+    | Kind of ReminderKind
+
+module ReminderKindSelection =
+    let vocabulary =
+        Vocabulary.define
+            "reminderKindSelection"
+            (ReminderKindSelection.Any
+             :: (Vocabulary.all ReminderKind.vocabulary |> List.map ReminderKindSelection.Kind))
+            (function
+             | ReminderKindSelection.Any -> "ANY"
+             | ReminderKindSelection.Kind kind -> ReminderKind.token kind)
+
+    let kind =
+        function
+        | ReminderKindSelection.Any -> None
+        | ReminderKindSelection.Kind kind -> Some kind
+
 /// Query selection is distinct from the stored state: Any imposes no state constraint.
 [<RequireQualifiedAccess>]
 type ReminderStateSelection =
@@ -75,7 +107,69 @@ module ReminderSelection =
             IncludeInactive = Option.defaultValue basis.IncludeInactive includeInactive
         }
 
-/// Each accepted version is bounded independently of the number of other reminders.
+type ReminderPlan =
+    {
+        Action: ReminderAction
+        Due: CalendarDate
+        Kind: ReminderKind
+    }
+
+[<RequireQualifiedAccess>]
+type ReminderHandling =
+    | Pending
+    | Completed of doneOn: CalendarDate
+    | Cancelled
+
+module ReminderHandling =
+    let state =
+        function
+        | ReminderHandling.Pending -> ReminderState.Pending
+        | ReminderHandling.Completed _ -> ReminderState.Completed
+        | ReminderHandling.Cancelled -> ReminderState.Cancelled
+
+    let doneOn =
+        function
+        | ReminderHandling.Completed date -> Some date
+        | ReminderHandling.Pending
+        | ReminderHandling.Cancelled -> None
+
+/// The ledger retains structural state even when the private compartment has been erased.
+[<RequireQualifiedAccess>]
+type ReminderValue =
+    | Available of plan: ReminderPlan * handling: ReminderHandling
+    | Unavailable of ReminderState
+
+    member value.State =
+        match value with
+        | ReminderValue.Available(_, handling) -> ReminderHandling.state handling
+        | ReminderValue.Unavailable state -> state
+
+    member value.Plan =
+        match value with
+        | ReminderValue.Available(plan, _) -> Some plan
+        | ReminderValue.Unavailable _ -> None
+
+    member value.DoneOn =
+        match value with
+        | ReminderValue.Available(_, handling) -> ReminderHandling.doneOn handling
+        | ReminderValue.Unavailable _ -> None
+
+module ReminderValue =
+    let pendingPlan =
+        function
+        | ReminderValue.Available(plan, ReminderHandling.Pending) -> Some plan
+        | ReminderValue.Available _
+        | ReminderValue.Unavailable _ -> None
+
+    let ofPrivate state plan doneOn =
+        match state, doneOn with
+        | ReminderState.Pending, None -> Ok(ReminderValue.Available(plan, ReminderHandling.Pending))
+        | ReminderState.Completed, Some date ->
+            Ok(ReminderValue.Available(plan, ReminderHandling.Completed date))
+        | ReminderState.Cancelled, None ->
+            Ok(ReminderValue.Available(plan, ReminderHandling.Cancelled))
+        | _ -> Error "A completion date is required only for a completed reminder."
+
 /// Completion attribution belongs to the accepting ledger event, never caller input.
 type Reminder =
     private
@@ -83,33 +177,26 @@ type Reminder =
             Id: ReminderId
             CaseId: CaseId
             Revision: Revision
-            Action: ReminderAction
-            Due: CalendarDate
-            State: ReminderState
+            Plan: ReminderPlan
+            Handling: ReminderHandling
         }
-
-type ReminderPlan =
-    {
-        Action: ReminderAction
-        Due: CalendarDate
-    }
 
 [<RequireQualifiedAccess>]
 type ReminderRuleRefusal =
     | NotOffered of state: ReminderState
     | NoChanges
 
-/// A compound result is a fixed pair. Persistence must accept the whole result in one transaction.
 module Reminder =
     let id (value: Reminder) = value.Id
     let caseId (value: Reminder) = value.CaseId
     let revision (value: Reminder) = value.Revision
-    let action (value: Reminder) = value.Action
-    let due (value: Reminder) = value.Due
-    let state (value: Reminder) = value.State
+    let action (value: Reminder) = value.Plan.Action
+    let due (value: Reminder) = value.Plan.Due
+    let kind (value: Reminder) = value.Plan.Kind
+    let state (value: Reminder) = ReminderHandling.state value.Handling
+    let doneOn (value: Reminder) = ReminderHandling.doneOn value.Handling
 
-    /// Retained decoding checks structural representability, not current admission.
-    let ofAccepted id parent revision action due state =
+    let ofAccepted id parent revision plan handling =
         if revision = Revision.zero then
             Error "A reminder version must be positive."
         else
@@ -118,10 +205,28 @@ module Reminder =
                     Id = id
                     CaseId = parent
                     Revision = revision
-                    Action = action
-                    Due = due
-                    State = state
+                    Plan = plan
+                    Handling = handling
                 }
+
+    let ofValue id parent revision =
+        function
+        | ReminderValue.Available(plan, handling) ->
+            ofAccepted id parent revision plan handling |> Result.toOption
+        | ReminderValue.Unavailable _ -> None
+
+    let decode id parent revision action due kind state doneOn =
+        ReminderValue.ofPrivate
+            state
+            {
+                Action = action
+                Due = due
+                Kind = kind
+            }
+            doneOn
+        |> Result.bind (function
+            | ReminderValue.Available(plan, handling) -> ofAccepted id parent revision plan handling
+            | ReminderValue.Unavailable _ -> Error "A reminder snapshot requires private content.")
 
     let columns snapshot =
         let action = snapshot |> Option.map action
@@ -129,7 +234,57 @@ module Reminder =
         snapshot |> Option.map state,
         action,
         snapshot |> Option.map due,
+        snapshot |> Option.map kind,
+        snapshot |> Option.bind doneOn,
         action |> Option.map (ReminderAction.format >> TextSearch.normalize)
+
+[<RequireQualifiedAccess>]
+type DeadlineOutcome =
+    | Overdue
+    | Met
+    | Missed
+    | Cancelled
+
+[<RequireQualifiedAccess>]
+type DeadlineTiming =
+    | PendingPastDue
+    | FinishedByDue
+    | FinishedAfterDue
+    | Unrestricted
+
+module DeadlineOutcome =
+    let vocabulary =
+        Vocabulary.ofUnion<DeadlineOutcome> "deadlineOutcome" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
+    let plan =
+        function
+        | DeadlineOutcome.Overdue -> ReminderState.Pending, DeadlineTiming.PendingPastDue
+        | DeadlineOutcome.Met -> ReminderState.Completed, DeadlineTiming.FinishedByDue
+        | DeadlineOutcome.Missed -> ReminderState.Completed, DeadlineTiming.FinishedAfterDue
+        | DeadlineOutcome.Cancelled -> ReminderState.Cancelled, DeadlineTiming.Unrestricted
+
+    let ofTiming overdue reminder =
+        if Reminder.kind reminder <> ReminderKind.Deadline then
+            None
+        else
+            let state = Reminder.state reminder
+            let due = Reminder.due reminder
+            let doneOn = Reminder.doneOn reminder
+
+            Vocabulary.all vocabulary
+            |> List.tryFind (fun outcome ->
+                let expected, date = plan outcome
+
+                state = expected
+                && (match date with
+                    | DeadlineTiming.PendingPastDue -> overdue
+                    | DeadlineTiming.FinishedByDue ->
+                        doneOn |> Option.exists (fun value -> value <= due)
+                    | DeadlineTiming.FinishedAfterDue ->
+                        doneOn |> Option.exists (fun value -> value > due)
+                    | DeadlineTiming.Unrestricted -> true))
 
 [<RequireQualifiedAccess>]
 type DateRelation =

@@ -676,6 +676,9 @@ for (const { language, accent, mode, mobile } of contexts) {
     );
     await trigger.click();
     const dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
+      .click();
     const confirm = dialog.locator("[data-confirm-operation]");
     await expect(confirm).toBeEnabled();
     await expect(page.locator(".ui-completion-popover")).toBeVisible();

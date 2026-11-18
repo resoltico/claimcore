@@ -798,13 +798,18 @@ let reminderReviewDetails =
                                 |> Option.get
 
                             let reminder number revision action state =
-                                Reminder.ofAccepted
+                                Reminder.decode
                                     (reminderId number)
                                     current.CaseId
                                     revision
                                     (ReminderAction.parse action |> CaseBuilders.accepted)
                                     (DomainInputs.date "2026-11-09")
+                                    ReminderKind.FollowUp
                                     state
+                                    (if state = ReminderState.Completed then
+                                         Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+                                     else
+                                         None)
                                 |> CaseBuilders.accepted
 
                             let before =
@@ -825,15 +830,15 @@ let reminderReviewDetails =
                                 reminder 2 Revision.first "Next action" ReminderState.Pending
 
                             let value reminder =
-                                {
-                                    ReminderValue.Plan =
-                                        Some
-                                            {
-                                                Action = Reminder.action reminder
-                                                Due = Reminder.due reminder
-                                            }
-                                    State = Reminder.state reminder
-                                }
+                                ReminderValue.ofPrivate
+                                    (Reminder.state reminder)
+                                    {
+                                        Action = Reminder.action reminder
+                                        Due = Reminder.due reminder
+                                        Kind = Reminder.kind reminder
+                                    }
+                                    (Reminder.doneOn reminder)
+                                |> Result.defaultWith failtest
 
                             let described prior reminder =
                                 {

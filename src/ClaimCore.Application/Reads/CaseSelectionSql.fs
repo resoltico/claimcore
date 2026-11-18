@@ -104,6 +104,7 @@ module internal CaseSelectionSql =
             | WorkPredicate.PaymentsNeedReview -> "COALESCE(c.payment_review,FALSE)"
             | WorkPredicate.NoNextDue -> "c.follow_up IS NULL"
             | WorkPredicate.NextDue value -> datePredicate "c.follow_up" value
+            | WorkPredicate.NextDeadlineDue value -> datePredicate "c.deadline_due" value
             | WorkPredicate.ReminderState value ->
                 equal "r.state" ("reminder:" + ReminderState.token value)
             | WorkPredicate.ReminderDue value -> datePredicate "r.due" value

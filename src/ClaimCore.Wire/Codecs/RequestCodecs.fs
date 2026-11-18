@@ -304,11 +304,13 @@ module RequestCodecs =
         |> finishRead RequestSchemas.PeopleHistoryRequest
 
     let reminderSelectionFields =
-        (record (fun target state view due assignment search inactive ->
+        (record (fun target state kind deadlineOutcome view due assignment search inactive ->
             {
                 ReminderListRequest.Target = target
                 View = view
                 State = state
+                Kind = kind
+                DeadlineOutcome = deadlineOutcome
                 Due = due
                 Assignment = assignment
                 Text = search
@@ -319,6 +321,11 @@ module RequestCodecs =
         : Fields<ReminderListRequest, _>)
         |> optionalField "target" _.Target caseSelector
         |> optionalField "state" _.State (VocabularyCodec.create ReminderStateSelection.vocabulary)
+        |> optionalField "kind" _.Kind (VocabularyCodec.create ReminderKindSelection.vocabulary)
+        |> optionalField
+            "deadlineOutcome"
+            _.DeadlineOutcome
+            (VocabularyCodec.create DeadlineOutcome.vocabulary)
         |> optionalField "view" _.View (VocabularyCodec.create ReminderView.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
         |> optionalField

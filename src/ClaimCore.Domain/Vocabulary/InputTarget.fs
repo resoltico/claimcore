@@ -45,6 +45,8 @@ module InputTarget =
         | InputTarget.PaymentPayee -> "payee"
         | InputTarget.ReminderAction -> "reminderAction"
         | InputTarget.ReminderDueDate -> "reminderDueDate"
+        | InputTarget.ReminderPlanKind -> "kind"
+        | InputTarget.ReminderDoneOn -> "doneOn"
         | InputTarget.ExpectedWorkRevision -> "expectedWorkRevision"
         | InputTarget.ExpectedReminderRevision -> "expectedReminderRevision"
         | InputTarget.Text -> "text"

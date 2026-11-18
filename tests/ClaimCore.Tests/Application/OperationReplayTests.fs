@@ -398,20 +398,17 @@ let tests =
                     let forgedReminder =
                         forge completed (fun part ->
                             match part.Value with
-                            | PartValue.Reminder value ->
+                            | PartValue.Reminder(ReminderValue.Available(plan, handling)) ->
+                                let forged =
+                                    { plan with
+                                        Action = ReminderAction.parse "Forged" |> required
+                                    }
+
                                 { part with
                                     Value =
-                                        PartValue.Reminder
-                                            { value with
-                                                Plan =
-                                                    value.Plan
-                                                    |> Option.map (fun plan ->
-                                                        { plan with
-                                                            Action =
-                                                                ReminderAction.parse "Forged"
-                                                                |> required
-                                                        })
-                                            }
+                                        PartValue.Reminder(
+                                            ReminderValue.Available(forged, handling)
+                                        )
                                 }
                             | _ -> failtest "Reminder required")
 

@@ -318,13 +318,18 @@ let producerBudgets =
                     context
 
             let reminder id revision action state =
-                Reminder.ofAccepted
+                Reminder.decode
                     (ReminderId.create id |> Option.get)
                     CliReplyFixtures.snapshot.CaseId
                     (CaseFixtures.revision revision)
                     (ReminderAction.parse action |> CaseBuilders.accepted)
                     (DomainInputs.date "2026-11-04")
+                    ReminderKind.FollowUp
                     state
+                    (if state = ReminderState.Completed then
+                         Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+                     else
+                         None)
                 |> CaseBuilders.accepted
 
             let old =

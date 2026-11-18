@@ -106,15 +106,15 @@ let reminderReview
     context
     =
     let value reminder =
-        {
-            ReminderValue.Plan =
-                Some
-                    {
-                        Action = Reminder.action reminder
-                        Due = Reminder.due reminder
-                    }
-            State = Reminder.state reminder
-        }
+        ReminderValue.ofPrivate
+            (Reminder.state reminder)
+            {
+                Action = Reminder.action reminder
+                Due = Reminder.due reminder
+                Kind = Reminder.kind reminder
+            }
+            (Reminder.doneOn reminder)
+        |> Result.defaultWith invalidOp
 
     {
         OperationReview.Task = task

@@ -3378,5 +3378,137 @@
   "field.linkNote.rule": {
     "text": "1～{maximumScalars}文字のUnicode文字を使用してください。改行を使用できます。",
     "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "フォローアップ",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "フォローアップ",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "フォローアップが必要な作業です。",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "期日までに完了させる作業です。",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "期日を過ぎても作業が完了していません。",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "期限内",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "期限内",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "作業は期日までに完了しました。",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "期限後",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "期限後",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "作業は期日を過ぎてから完了しました。",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "取り消し済み",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "取り消し済み",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "期限は取り消されました。",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "期限超過の項目",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "期限超過の項目",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "この未完了の案件には、期日を過ぎた未完了の作業があります。",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "すべて",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "リマインダーの種類",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "フォローアップまたは期限を選択してください。",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "この作業の追跡方法を選びます。",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "完了日",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "業務日以前のグレゴリオ暦の日付を YYYY-MM-DD 形式で入力してください。",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "作業を終えた日です。空欄の場合は今日の日付を使用します。",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "リマインダーの種類",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "リマインダーの種類で一覧を絞り込みます。",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "期限の結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "期限の結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "期限の結果で一覧を絞り込みます。",
+    "source": "fe701387e12a"
   }
 }

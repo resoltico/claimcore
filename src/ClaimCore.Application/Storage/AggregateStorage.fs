@@ -296,12 +296,19 @@ module internal AggregateStorage =
                          + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL) AS next_due,"
                          + "(SELECT "
                          + DatabaseSession.dateExpression "min(due)"
-                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_due "
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_due,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND kind=$4) AS next_deadline,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND kind=$4 AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_deadline "
                          + "FROM claimcore.case_payments WHERE case_id=$1 AND NOT removed AND payment_date IS NOT NULL")
                         [|
                             box (CaseId.value id)
                             box (ReminderState.token ReminderState.Pending)
                             box (selection.Reminders |> List.map ReminderId.value |> List.toArray)
+                            box (ReminderKind.token ReminderKind.Deadline)
                         |]
 
                 let aggregate =
@@ -327,6 +334,8 @@ module internal AggregateStorage =
                         PaymentTotals = Map.tryFind id totals |> Option.defaultValue Map.empty
                         NextPendingDue = date "next_due"
                         RemainingPendingDue = date "remaining_due"
+                        NextDeadlineDue = date "next_deadline"
+                        RemainingDeadlineDue = date "remaining_deadline"
                     }
 
                 let facts =

@@ -52,13 +52,15 @@ let private read () =
         |> Option.get
 
     let reminder =
-        Reminder.ofAccepted
+        Reminder.decode
             reminderId
             snapshot.CaseId
             Revision.first
             (ReminderAction.parse "Core action seed" |> accepted)
             (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
+            ReminderKind.FollowUp
             ReminderState.Pending
+            None
         |> accepted
 
     let next =

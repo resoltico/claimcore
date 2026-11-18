@@ -32,6 +32,8 @@ type TaskInputId =
     | Due
     | ReminderState
     | ReminderDue
+    | ReminderKindFilter
+    | DeadlineOutcomeFilter
     | IncludeInactive
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -43,6 +45,8 @@ module TaskInputId =
         function
         | TaskInputId.Target target -> InputTarget.token target
         | TaskInputId.ReminderState -> "reminderState"
+        | TaskInputId.DeadlineOutcomeFilter -> "deadlineOutcome"
+        | TaskInputId.ReminderKindFilter -> "reminderKind"
         | TaskInputId.ReminderDue -> "reminderDue"
         | TaskInputId.IncludeInactive -> "includeInactive"
         | TaskInputId.Scope -> "scope"
@@ -85,6 +89,8 @@ module TaskInputId =
             TaskInputId.Due
             TaskInputId.ReminderState
             TaskInputId.ReminderDue
+            TaskInputId.ReminderKindFilter
+            TaskInputId.DeadlineOutcomeFilter
             TaskInputId.IncludeInactive
         ]
 

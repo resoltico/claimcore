@@ -14,6 +14,9 @@ module ReminderCsv =
                 "action"
                 "dueDate"
                 "state"
+                "kind"
+                "doneOn"
+                "deadlineOutcome"
                 "recordedAt"
                 "recordedBy.actorId"
                 "recordedBy.displayName"
@@ -34,6 +37,13 @@ module ReminderCsv =
                     ReminderAction.format (Reminder.action value)
                     CalendarDate.format (Reminder.due value)
                     ReminderState.token (Reminder.state value)
+                    ReminderKind.token (Reminder.kind value)
+                    Reminder.doneOn value
+                    |> Option.map CalendarDate.format
+                    |> Option.defaultValue ""
+                    row.DeadlineOutcome
+                    |> Option.map DeadlineOutcome.token
+                    |> Option.defaultValue ""
                     Csv.instant row.RecordedAt
                     ActorId.format row.RecordedBy.ActorId
                     Csv.actorName render row.RecordedBy

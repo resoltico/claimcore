@@ -234,6 +234,9 @@ type ReminderReadModel =
 
     member this.Acts = this.Offers |> List.map TaskOffer.id
 
+    member this.DeadlineOutcome =
+        DeadlineOutcome.ofTiming (this.Timing = Some ReminderDue.Overdue) this.Reminder
+
 type NoteReadModel =
     {
         NoteId: NoteId

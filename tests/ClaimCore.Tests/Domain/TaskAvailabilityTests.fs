@@ -64,9 +64,7 @@ let tests =
 
                         Expect.isNone offered.Blocked "Terminal work is available"
 
-                        Expect.isEmpty
-                            offered.Seeds
-                            "Complete and cancel accept no authored values"
+                        Expect.isEmpty offered.Seeds "Complete and cancel do not seed plan fields"
 
                     let plan =
                         Map.ofList
@@ -75,6 +73,8 @@ let tests =
                                 InputValue.Text "Request photographs"
                                 TaskInputId.Target InputTarget.ReminderDueDate,
                                 InputValue.Text "2026-11-16"
+                                TaskInputId.Target InputTarget.ReminderPlanKind,
+                                InputValue.Text "FOLLOW_UP"
                             ]
 
                     for available in
@@ -86,7 +86,7 @@ let tests =
                             (available environment (Some(DecisionFacts.fromReplay state)) binding)
                                 .Seeds
                             plan
-                            "Planning tasks acquire both current plan values"
+                            "Planning tasks acquire the current action, due date and kind"
 
                     let completed =
                         ClaimCore.Domain.Tasks.Reminder.Complete.decide

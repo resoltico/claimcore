@@ -369,7 +369,7 @@ module PartDescriptions =
             | Some(Some(ReminderState.Completed | ReminderState.Cancelled),
                    Some ReminderState.Pending),
               Some plan -> TimelineEvent.ReminderReopened(plan.Action, plan.Due)
-            | None, Some plan when value.Action.IsSome || value.Due.IsSome ->
+            | None, Some plan when value.Action.IsSome || value.Due.IsSome || value.Kind.IsSome ->
                 TimelineEvent.ReminderChanged plan.Action
             | _ -> generic
         | PartDescription.Note value ->
@@ -463,6 +463,8 @@ module PartDescriptions =
                                     ReminderId = id
                                     Action = value.Action
                                     Due = value.Due
+                                    Kind = value.Kind
+                                    DoneOn = value.DoneOn
                                     State = value.State
                                 }
                         ])
@@ -536,6 +538,12 @@ module PartDescriptions =
 
                                 if value.State.IsSome && not stateInEvent then
                                     TimelineFacet.State
+
+                                if value.Kind.IsSome then
+                                    TimelineFacet.Kind
+
+                                if value.DoneOn.IsSome then
+                                    TimelineFacet.DoneOn
                             ]
 
                         if facets.IsEmpty then
