@@ -1504,8 +1504,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
-    "source": "10559d041918"
+    "text": "مرجعك الخاص لهذا الملف، مثل CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "متى تقرر المبلغ الواجب دفعه.",
@@ -3218,5 +3218,41 @@
   "diagnostic.CLOSURE_OUTCOME_FORMAT": {
     "text": "اختر نتيجة إغلاق من القائمة.",
     "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "تغيير مرجع الملف",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "استبدل مرجع الملف الحالي. تبقى المراجع السابقة صالحة للعثور على الملف نفسه.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "تم تغيير مرجع الملف.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "اختر مرجعًا جديدًا لهذا الملف.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "المرجع الجديد",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "استخدم تنسيق مرجع الملف.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "أدخل المرجع الذي سيُستخدم لهذا الملف.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "المرجع السابق",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "سبب استئناف المعالجة.",
+    "source": "52db5e07d84d"
   }
 }

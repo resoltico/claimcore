@@ -101,6 +101,6 @@ it("takes the selected entry from identity while request constants derive from t
       target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
       expectedRevision: 4,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
 });

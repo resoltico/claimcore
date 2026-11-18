@@ -5,6 +5,7 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Tasks
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
 
 /// Live facts are acquired inside the snapshot used for the action, independently of prior offers.
 module internal ExecutionEnvironment =
@@ -30,7 +31,8 @@ module internal ExecutionEnvironment =
                         match caseTarget binding (Some inputs) with
                         | None -> return None
                         | Some target ->
-                            let! id = AggregateStorage.resolveCase tx target
+                            let! id =
+                                ClaimCore.Application.Reads.CaseIdentityReads.resolve tx target
 
                             return
                                 id
@@ -53,7 +55,8 @@ module internal ExecutionEnvironment =
                         match target with
                         | None -> return None
                         | Some target ->
-                            let! id = AggregateStorage.resolveCase tx target
+                            let! id =
+                                ClaimCore.Application.Reads.CaseIdentityReads.resolve tx target
 
                             match id with
                             | None -> return None
@@ -78,11 +81,33 @@ module internal ExecutionEnvironment =
                         | _ -> return None
                     }
 
+                let authoredReference =
+                    InputSelection.target InputTarget.NewCaseReference inputs
+                    |> Option.orElseWith (fun () ->
+                        InputSelection.target
+                            (InputTarget.Field BusinessField.CaseReference)
+                            inputs)
+                    |> Option.bind (CaseReference.parse >> Result.toOption)
+
+                let! referenceOwner =
+                    match authoredReference with
+                    | Some reference ->
+                        CaseIdentityReads.resolve
+                            tx
+                            (CaseSelector.Reference(CaseReference.format reference))
+                    | None -> System.Threading.Tasks.Task.FromResult None
+
                 let environment =
                     {
                         FamilyEnvironment.Requester = access
                         RequesterPrincipal = principal
                         Maintenance = maintenance
+                        ReferenceOwner =
+                            fun reference ->
+                                if authoredReference = Some reference then
+                                    referenceOwner
+                                else
+                                    None
                         AssigneeEligible =
                             fun id ->
                                 match family, responsible with
@@ -129,7 +154,7 @@ module internal ExecutionEnvironment =
                     match selector with
                     | None -> ()
                     | Some selector ->
-                        let! id = AggregateStorage.resolveCase tx selector
+                        let! id = ClaimCore.Application.Reads.CaseIdentityReads.resolve tx selector
 
                         match id with
                         | Some id -> cases <- Map.add (GrantTarget.canonical target) id cases

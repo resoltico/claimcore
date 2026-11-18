@@ -42,7 +42,9 @@ module internal Projections =
         + DatabaseSession.dateExpression "received_on"
         + " AS received_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
+        + CaseIdentityReads.referenceAt "c.case_id" ""
+        + " AS reserved_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -187,21 +189,6 @@ module internal Projections =
             | [] -> return None
             | [ row ] -> return Some(caseRow installationId row)
             | _ -> return raise (RecordCorruptException "Duplicate case projection.")
-        }
-
-    let caseByReference connection installationId reference token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    ($"SELECT {caseColumns} FROM claimcore.cases c WHERE upper(case_reference COLLATE \"C\")=$1")
-                    [| box (CaseReference.key reference) |]
-                    token
-
-            match rows with
-            | [] -> return None
-            | [ row ] -> return Some(caseRow installationId row)
-            | _ -> return raise (RecordCorruptException "Duplicate reference projection.")
         }
 
     let private role row =

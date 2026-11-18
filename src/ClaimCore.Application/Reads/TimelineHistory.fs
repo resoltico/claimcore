@@ -112,9 +112,27 @@ module internal TimelineHistory =
                                                         previous
                                             | None -> ()
 
+                                        let! basisReference =
+                                            match
+                                                entry.Operation.Changes
+                                                |> List.tryPick (fun change ->
+                                                    match change.Value with
+                                                    | PartValue.Case { Reference = Some _ } when
+                                                        change.Revision > Revision.first
+                                                        ->
+                                                        Some change.Revision
+                                                    | _ -> None)
+                                            with
+                                            | Some revision ->
+                                                match entry.Change.Aggregate with
+                                                | AggregateReference.Family id ->
+                                                    CaseIdentityReads.referenceBefore tx id revision
+                                                | _ -> invalidOp "Expected family operation."
+                                            | None -> System.Threading.Tasks.Task.FromResult None
+
                                         let described =
                                             PartDescriptions.familyVersions
-                                                reference
+                                                (defaultArg basisReference reference)
                                                 previous
                                                 entry.Operation.Changes
                                             |> Result.mapError (fun _ ->

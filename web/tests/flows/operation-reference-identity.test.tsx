@@ -76,5 +76,8 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   expect(draft.binding.target).toEqual({ kind: "ID", caseId: current.subject.caseId });
-  expect({ task: draft.task, inputs: draft.inputs }).toEqual({ task: "case.close", inputs: {} });
+  expect({ task: draft.task, inputs: draft.inputs }).toEqual({
+    task: "case.close",
+    inputs: { "field:outcome": "OTHER" },
+  });
 });

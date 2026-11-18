@@ -43,7 +43,7 @@ describe("core act metadata", () => {
         target: { kind: "REFERENCE", caseReference: fields.caseReference },
         expectedRevision: 1,
       },
-      inputs: {},
+      inputs: { "field:outcome": "OTHER" },
     });
   });
 });

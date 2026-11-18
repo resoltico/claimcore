@@ -30,6 +30,7 @@
     <Compile Include="Storage/PartProjections.fs" />
     <Compile Include="Storage/Schema/Baseline.fs" />
     <Compile Include="Storage/InstallationCheck/InstallationCheck.fs" />
+    <Compile Include="Reads/CaseIdentityReads.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Storage/Ledger/StoredEntries.fs" />
     <Compile Include="Storage/CheckpointEvidence.fs" />

@@ -214,7 +214,7 @@ module internal FamilyParts =
                         })
                 | None, _ -> Error RecordViolation.InvalidHistoryStart
                 | Some before, _ when
-                    change.NaturalKey.IsSome
+                    (change.NaturalKey.IsSome && change.Kind <> PartKind.Case)
                     || before.Case.Value.Lifecycle = Lifecycle.Erased
                     || EffectPosition.sequence change.Stamp.Position < before.Sequence
                     ->
@@ -224,7 +224,20 @@ module internal FamilyParts =
                 | Some before, PartValue.Case value when change.PartId = CaseId.value id ->
                     if not (version (Some before.Case) change) then
                         Error RecordViolation.InvalidRevisionSequence
-                    elif value.Reference.IsSome then
+                    elif
+                        change.NaturalKey
+                        |> Option.exists (fun key ->
+                            value.Reference |> Option.map CaseReference.format <> Some key)
+                    then
+                        invalid
+                    elif
+                        value.Reference.IsSome
+                        && (value.Reference = Some before.Reference
+                            || value.Lifecycle <> before.Case.Value.Lifecycle
+                            || value.Status <> before.Case.Value.Status
+                            || value.Content <> before.Case.Value.Content
+                            || value.Disposition.IsSome)
+                    then
                         invalid
                     elif
                         value.Lifecycle = Lifecycle.Erased
@@ -241,6 +254,7 @@ module internal FamilyParts =
                         |> Result.map (fun () ->
                             { before with
                                 CaseValue = accepted change (caseState value)
+                                ReferenceValue = defaultArg value.Reference before.Reference
                             })
                 | Some before, PartValue.Payment value ->
                     match OperationId.create change.PartId with

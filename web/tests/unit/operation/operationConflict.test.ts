@@ -179,7 +179,7 @@ it("refuses implicit preview and re-preparation for a different case target", ()
       },
       expectedRevision: 8,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
   expect(
     operationReducer(observed, {

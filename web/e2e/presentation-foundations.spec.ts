@@ -986,7 +986,8 @@ for (const language of ["en", "ar"] as const) {
                     stage: "OPENED",
                     reached: true,
                     date: "2026-09-01",
-                    amount: {
+                    value: {
+                      kind: "MONEY",
                       amount: "12.34",
                       currency: "EUR",
                       displayScale: 2,
@@ -996,19 +997,19 @@ for (const language of ["en", "ar"] as const) {
                     stage: "DECIDED",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                   {
                     stage: "PAID",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                   {
                     stage: "CLOSED",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                 ],
               },

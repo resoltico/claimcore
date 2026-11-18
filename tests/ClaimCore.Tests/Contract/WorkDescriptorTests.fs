@@ -231,6 +231,7 @@ let tests =
 
                 let reply: CaseReadModel =
                     {
+                        MatchedReference = None
                         Parties = []
                         PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get

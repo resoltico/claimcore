@@ -26,6 +26,7 @@ module InputTarget =
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
         | InputTarget.NoteId -> "noteId"
+        | InputTarget.NewCaseReference -> "newReference"
         | InputTarget.NoteText -> "noteText"
         | InputTarget.Parties -> "parties"
         | InputTarget.PartyId -> "partyId"

@@ -375,7 +375,7 @@
   "field.claimedCurrency.rule": "{length} uppercase ASCII letters from the supported active ISO 4217 currency list; no fund or non-national codes.",
   "field.claimedCurrency.hint": "The currency of the claimed amount.",
   "field.caseReference.rule": "Use 1 to {maximumCharacters} printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained.",
-  "field.caseReference.hint": "Your own reference for this case, for example CLM-2026-0001. It cannot be changed later.",
+  "field.caseReference.hint": "Your own reference for this case, for example CLM-2026-0001.",
   "field.paymentDecisionDate.hint": "When you decided the amount to pay.",
   "field.payableAmount.rule": "Use up to {maximumIntegerDigits} digits before the decimal point and up to {maximumFractionDigits} after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros.",
   "field.payableAmount.hint": "How much you decided should be paid.",
@@ -803,5 +803,14 @@
   "field.decisionBasis.hint": "Record the evidence or reasoning behind the decision.",
   "field.reopenReason.label": "Reopen reason",
   "label.closure": "Closure",
-  "diagnostic.CLOSURE_OUTCOME_FORMAT": "Choose a listed closure outcome."
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": "Choose a listed closure outcome.",
+  "task.case.changeReference.label": "Change case reference",
+  "task.case.changeReference.meaning": "Replace the current case reference. Earlier references still find this case.",
+  "task.case.changeReference.done": "Case reference changed.",
+  "task.case.changeReference.consequence": "Choose a new reference for this case.",
+  "field.newReference.label": "New reference",
+  "field.newReference.rule": "Use the case reference format.",
+  "field.newReference.hint": "Enter the reference to use for this case.",
+  "label.referenceChangedFrom": "Reference changed from",
+  "field.reopenReason.hint": "Why handling resumed."
 }

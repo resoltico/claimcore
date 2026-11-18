@@ -8,6 +8,7 @@ module Registry =
         [
             ClaimCore.Domain.Tasks.Case.Open.task
             ClaimCore.Domain.Tasks.Case.AmendRegistration.task
+            ClaimCore.Domain.Tasks.Case.ChangeReference.task
             ClaimCore.Domain.Tasks.Case.Correct.task
             ClaimCore.Domain.Tasks.Case.Decide.task
             ClaimCore.Domain.Tasks.Case.WithdrawDecision.task

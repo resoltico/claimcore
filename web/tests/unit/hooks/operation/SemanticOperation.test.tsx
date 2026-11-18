@@ -285,7 +285,7 @@ it("connects the actual form, Core review and journal-before-send to one exact p
       },
       expectedRevision: 7,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);

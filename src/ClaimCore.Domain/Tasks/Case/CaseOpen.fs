@@ -56,8 +56,6 @@ let check inputs =
 
 let private gate (state: DecisionFacts option) =
     match state with
-    | Some state when state.Case.Value.Lifecycle = Lifecycle.Erased ->
-        Some(FamilyRules.notOffered state)
     | Some _ -> Some(Refusal.Case CaseRefusal.CaseAlreadyExists)
     | None -> None
 
@@ -115,6 +113,11 @@ let decide
             else
                 Error(Refusal.revisionConflict Revision.zero))
         |> Result.bind (fun () -> parse (CaseAdmission.fieldAdmission today None) reference fields)
+        |> Result.bind (fun command ->
+            if (environment.ReferenceOwner command.Reference).IsSome then
+                Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
+            else
+                Ok command)
         |> Parsing.reject
         |> Result.bind (fun command ->
             PartyTasks.parseRows (context.Decision.Lifetime = DecisionLifetime.Recorded) inputs

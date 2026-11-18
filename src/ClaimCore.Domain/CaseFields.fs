@@ -66,6 +66,7 @@ type InputTarget =
     | Text
     | ReminderId
     | NoteId
+    | NewCaseReference
     | NoteText
     | Parties
     | PartyId

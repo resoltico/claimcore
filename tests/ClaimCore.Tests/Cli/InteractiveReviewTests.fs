@@ -44,6 +44,7 @@ let private current =
 
 let private caseReply =
     {
+        MatchedReference = None
         Parties = []
         PartyOffers = []
         FamilySequence = Sequence.create 1L |> Option.get

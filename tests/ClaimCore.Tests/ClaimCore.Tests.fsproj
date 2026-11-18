@@ -77,6 +77,7 @@
     <Compile Include="Domain/Tasks/PeopleEraseProfileTests.fs" />
     <Compile Include="Domain/Tasks/CaseOpenTests.fs" />
     <Compile Include="Domain/Tasks/CaseAmendRegistrationTests.fs" />
+    <Compile Include="Domain/Tasks/CaseChangeReferenceTests.fs" />
     <Compile Include="Domain/Tasks/CaseDecideTests.fs" />
     <Compile Include="Domain/Tasks/CaseRecordPaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseRemovePaymentTests.fs" />

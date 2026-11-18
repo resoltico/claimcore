@@ -1504,8 +1504,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "您为此案件指定的编号，例如 CLM-2026-0001。之后不可更改。",
-    "source": "10559d041918"
+    "text": "您为此案件指定的编号，例如 CLM-2026-0001。",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "决定赔付金额的日期。",
@@ -3218,5 +3218,41 @@
   "diagnostic.CLOSURE_OUTCOME_FORMAT": {
     "text": "请从列表中选择结案结果。",
     "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "更改案件编号",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "替换当前案件编号。之前的编号仍可用于找到同一案件。",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "案件编号已更改。",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "为此案件选择一个新编号。",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "新编号",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "请使用案件编号格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "输入此案件今后使用的编号。",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "更改前的编号",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "恢复处理的原因。",
+    "source": "52db5e07d84d"
   }
 }

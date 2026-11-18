@@ -528,7 +528,7 @@ test("paid description correction preserves payment, then a closed case accepts 
       },
       expectedRevision: 4,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
   expect(closed.outcome.kind).toBe("ACCEPTED");
   await page.reload();

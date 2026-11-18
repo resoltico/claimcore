@@ -489,6 +489,155 @@ let private roundTrips database =
             do! check state (revision + 1L)
     }
 
+let private referenceOwnership database =
+    task {
+        let! actor = VerificationSupport.populated database
+
+        let run number reference revision taskName inputs =
+            Service.executeSubmission
+                actor
+                (StoreFixtures.request database.Fixture number reference revision taskName inputs)
+                VerificationSupport.token
+
+        let get reference =
+            task {
+                let! result =
+                    Service.get
+                        actor
+                        {
+                            Target = CaseSelector.Reference reference
+                        }
+                        VerificationSupport.token
+
+                match result with
+                | Outcome.Succeeded value -> return value
+                | other ->
+                    return failtestf "Expected a case found by its reserved reference: %A" other
+            }
+
+        let change number binding revision reference =
+            run
+                number
+                binding
+                revision
+                "case.changeReference"
+                (Map.ofList
+                    [
+                        Submissions.input InputTarget.NewCaseReference,
+                        SubmissionValue.Text reference
+                    ])
+
+        let! introduced = change 50 "synthetic-a" 1L "REF-ALIAS"
+        StoreFixtures.accepted introduced |> ignore
+        let! current = get "REF-ALIAS"
+        let! matched = get "synthetic-a"
+
+        Expect.equal
+            matched.Snapshot
+            current.Snapshot
+            "Earlier reference resolves to the same current case"
+
+        Expect.equal
+            (CaseReference.format matched.Snapshot.Reference)
+            "REF-ALIAS"
+            "Reads use the current reference"
+
+        Expect.equal
+            (matched.MatchedReference |> Option.map CaseReference.format)
+            (Some "synthetic-a")
+            "Reads report the earlier matched reference"
+
+        for index, reference in [ 51, "synthetic-a"; 52, "SYNTHETIC-A" ] do
+            let! duplicate =
+                run
+                    index
+                    reference
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
+
+            Expect.equal
+                duplicate.Outcome
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                "Inherited references stay reserved"
+
+        let! returned = change 53 "REF-ALIAS" 2L "synthetic-a"
+        StoreFixtures.accepted returned |> ignore
+        let! alias = get "REF-ALIAS"
+
+        Expect.equal
+            (CaseReference.format alias.Snapshot.Reference)
+            "synthetic-a"
+            "A later return leaves the intervening reference reserved"
+
+        let! respelled = change 54 "REF-ALIAS" 3L "SYNTHETIC-A"
+        StoreFixtures.accepted respelled |> ignore
+        let! matched = get "synthetic-a"
+
+        Expect.equal
+            (matched.MatchedReference |> Option.map CaseReference.format)
+            (Some "synthetic-a")
+            "Exact earlier casing is a recorded spelling"
+
+        Expect.equal
+            (CaseReference.format matched.Snapshot.Reference)
+            "SYNTHETIC-A"
+            "Current casing is preserved"
+
+        let! steward =
+            StoreFixtures.grant
+                actor
+                (StoreFixtures.id database.Fixture 920000)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        StoreFixtures.acceptedPeople steward
+
+        let! voided =
+            run
+                55
+                "REF-ALIAS"
+                4L
+                "case.void"
+                (Map.ofList
+                    [
+                        Submissions.input InputTarget.Reason,
+                        SubmissionValue.Text "Entered in error"
+                    ])
+
+        StoreFixtures.accepted voided |> ignore
+        let! erased = run 56 "REF-ALIAS" 5L "case.erase" Map.empty
+        StoreFixtures.accepted erased |> ignore
+
+        for index, reference in [ 57, "REF-ALIAS"; 58, "synthetic-a" ] do
+            let! read = get reference
+
+            Expect.equal
+                read.Snapshot.State
+                CaseState.Erased
+                "Either reserved key resolves the erased case"
+
+            let! duplicate =
+                run
+                    index
+                    reference
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
+
+            Expect.equal
+                duplicate.Outcome
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                "Erasure does not release a reserved key"
+
+        let! _ = VerificationSupport.verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -503,6 +652,9 @@ let tests =
             testCaseAsync
                 "insert update void and erase round-trip exact snapshot bytes"
                 (VerificationSupport.run roundTrips)
+            testCaseAsync
+                "reference changes preserve alias ownership through erasure"
+                (VerificationSupport.run referenceOwnership)
             testCase "requires complete unique case membership" collection
             testCase "preserves live identity revision state and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState

@@ -40,7 +40,7 @@ it("the compiler rejects raw bytes and structural forgeries at mutation submissi
       target: { kind: "REFERENCE", caseReference: "CASE-1" },
       expectedRevision: 1,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   } as const;
   const forged = { endpoint: "operation.execute", bytes: "{}", input: source } as const;
   // @ts-expect-error -- A valid structural input still lacks the private prepared identity.

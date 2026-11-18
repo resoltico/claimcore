@@ -1504,8 +1504,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "この案件に付ける独自の番号です。例：CLM-2026-0001。後で変更することはできません。",
-    "source": "10559d041918"
+    "text": "この案件に付ける独自の参照番号です。例：CLM-2026-0001。",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "支払額を決定した日。",
@@ -3218,5 +3218,41 @@
   "diagnostic.CLOSURE_OUTCOME_FORMAT": {
     "text": "一覧から終了結果を選択してください。",
     "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "案件参照番号を変更する",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "現在の案件参照番号を変更します。以前の番号でも同じ案件を検索できます。",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "案件参照番号を変更しました。",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "この案件の新しい参照番号を選びます。",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "新しい参照番号",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "案件参照番号の形式を使用してください。",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "今後この案件に使用する参照番号を入力します。",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "変更前の参照番号",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "対応を再開した理由です。",
+    "source": "52db5e07d84d"
   }
 }

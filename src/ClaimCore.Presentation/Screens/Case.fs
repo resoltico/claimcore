@@ -153,6 +153,14 @@ module CaseScreen =
                     "field.caseReference.label"
                     Prominence.Primary
                     (PresentedValue.Reference reply.Snapshot.Reference)
+                match reply.MatchedReference with
+                | Some reference ->
+                    value
+                        "matchedReference"
+                        "label.referenceChangedFrom"
+                        Prominence.Secondary
+                        (PresentedValue.Reference reference)
+                | None -> ()
                 match CaseState.fields reply.Snapshot.State with
                 | Some facts ->
                     if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then

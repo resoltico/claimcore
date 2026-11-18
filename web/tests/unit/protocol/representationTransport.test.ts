@@ -114,7 +114,7 @@ const operationInput = {
     },
     expectedRevision: 1,
   },
-  inputs: {},
+  inputs: { "field:outcome": "OTHER" },
 } as const;
 const operationReview = {
   representation: "HUMAN",

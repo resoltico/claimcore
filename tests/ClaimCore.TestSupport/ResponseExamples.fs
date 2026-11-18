@@ -78,6 +78,7 @@ let peopleReceipt =
 
 let caseRead: CaseReadModel =
     {
+        MatchedReference = None
         FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
         Parties = []

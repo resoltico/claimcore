@@ -34,10 +34,13 @@ module internal FamilyReads =
         }
 
     let findCaseByReference (tx: ReadTx) reference =
-        let connection = tx.Connection
-        let installation = tx.InstallationId
-        let token = tx.CancellationToken
-        Projections.caseByReference connection installation reference token
+        task {
+            let! id = CaseIdentityReads.resolve tx (CaseSelector.Reference reference)
+
+            match id with
+            | Some id -> return! findCase tx id
+            | None -> return None
+        }
 
     let caseStageFacts (tx: ReadTx) caseId =
         let connection = tx.Connection

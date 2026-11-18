@@ -130,6 +130,7 @@ let internal retainedText () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        MatchedReference = None
                         Parties = []
                         PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get

@@ -269,6 +269,7 @@ type CaseParty =
 
 type CaseReadModel =
     {
+        MatchedReference: CaseReference option
         FamilySequence: Sequence
         Snapshot: CaseSnapshot
         LatestPayments: PaymentEntry list

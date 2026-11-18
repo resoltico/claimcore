@@ -82,7 +82,7 @@ module internal Engine =
             let mutable resolved = Map.empty
 
             for target in targets do
-                let! id = AggregateStorage.resolveCase tx target
+                let! id = ClaimCore.Application.Reads.CaseIdentityReads.resolve tx target
                 resolved <- Map.add (selectorKey target) id resolved
 
             return fun target -> Map.tryFind (selectorKey target) resolved |> Option.flatten
@@ -183,6 +183,7 @@ module internal Engine =
                             return Error(ExecutionStop.Failed CoreFault.InternalError)
                         else
                             let! resolve = resolver tx binding inputs None
+                            let resolvedBinding = OperationIntent.resolveBinding resolve binding
 
                             let authority =
                                 match declaration.Exposure with
@@ -235,10 +236,10 @@ module internal Engine =
                                             }
                                     }
 
-                                match snapshot.Decide decision binding inputs with
+                                match snapshot.Decide decision resolvedBinding inputs with
                                 | Error rejected -> return Error(rejection binding rejected)
                                 | Ok changes ->
-                                    match (snapshot.Availability binding).Blocked with
+                                    match (snapshot.Availability resolvedBinding).Blocked with
                                     | Some refusal -> return Error(ExecutionStop.Refused refusal)
                                     | None ->
                                         match
@@ -251,10 +252,7 @@ module internal Engine =
                                                     {
                                                         Snapshot = snapshot
                                                         Header = header
-                                                        Binding =
-                                                            OperationIntent.resolveBinding
-                                                                resolve
-                                                                binding
+                                                        Binding = resolvedBinding
                                                         Inputs = inputs
                                                         Changes = changes
                                                         Descriptions = descriptions

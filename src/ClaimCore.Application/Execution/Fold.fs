@@ -79,6 +79,10 @@ module internal Fold =
             FamilyEnvironment.Requester = requester state principal
             RequesterPrincipal = principal
             Maintenance = maintenance
+            ReferenceOwner =
+                fun reference ->
+                    Map.tryFind (PartKind.Case, CaseReference.identity reference) state.NaturalKeys
+                    |> Option.bind CaseId.create
             AssigneeEligible =
                 fun id ->
                     Map.tryFind id state.People

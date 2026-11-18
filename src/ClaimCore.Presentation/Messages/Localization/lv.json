@@ -1504,8 +1504,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001. Vēlāk to nevar mainīt.",
-    "source": "10559d041918"
+    "text": "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "Kad nolēmāt, kādu summu izmaksāt.",
@@ -3218,5 +3218,41 @@
   "diagnostic.CLOSURE_OUTCOME_FORMAT": {
     "text": "Izvēlieties vienu no norādītajiem slēgšanas iznākumiem.",
     "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "Mainīt lietas atsauci",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "Aizstājiet pašreizējo lietas atsauci. Ar agrākajām atsaucēm joprojām var atrast to pašu lietu.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "Lietas atsauce mainīta.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "Izvēlieties jaunu atsauci šai lietai.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "Jaunā atsauce",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "Izmantojiet lietas atsauces formātu.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "Ievadiet atsauci, ko turpmāk lietot šai lietai.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "Iepriekšējā atsauce",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "Kāpēc izskatīšana atsākās.",
+    "source": "52db5e07d84d"
   }
 }

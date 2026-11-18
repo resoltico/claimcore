@@ -153,9 +153,9 @@ module PartChange =
     /// Accepted-value views preserve unavailable private content instead of fabricating empty state.
     let caseSnapshot reference change =
         match change.Aggregate, change.Value with
-        | AggregateReference.Family id, PartValue.Case value when
-            value.Reference |> Option.forall ((=) reference)
-            ->
+        | AggregateReference.Family id, PartValue.Case value ->
+            let reference = defaultArg value.Reference reference
+
             let state =
                 match value.Lifecycle, value.Content with
                 | Lifecycle.Erased, None -> Some CaseState.Erased

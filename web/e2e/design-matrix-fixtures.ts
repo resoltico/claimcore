@@ -464,7 +464,7 @@ const advanceCase = async (page: Page, reference: string, state: CaseState, date
     ).operationId;
   }
   if (state === "closed") {
-    await caseAct(page, reference, 1, { task: "case.close", inputs: {} });
+    await caseAct(page, reference, 1, { task: "case.close", inputs: { "field:outcome": "OTHER" } });
   }
   if (state === "voided") {
     await caseAct(page, reference, 1, {
@@ -497,7 +497,7 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
   }
   expect(value.state.kind).toBe(lifecycle);
   if (value.state.kind !== "ERASED") {
-    expect(value.state.fields.status).toBe(state === "closed" ? "CLOSED" : "OPENED");
+    expect(value.state.fields.handling.kind).toBe(state === "closed" ? "CLOSED" : "OPEN");
     expect(value.state.fields.finance.decision !== null).toBe(
       state === "decided" || state === "paid",
     );

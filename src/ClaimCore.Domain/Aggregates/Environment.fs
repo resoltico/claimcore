@@ -9,6 +9,7 @@ type FamilyEnvironment =
         RequesterPrincipal: PrincipalKey
         Maintenance: bool
         AssigneeEligible: ActorId -> bool
+        ReferenceOwner: CaseReference -> CaseId option
     }
 
 type PersonEnvironment =

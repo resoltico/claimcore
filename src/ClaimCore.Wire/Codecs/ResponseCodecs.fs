@@ -263,8 +263,10 @@ module ResponseCodecs =
                 paymentPayees
                 changedAt
                 recordedBy
-                family ->
+                family
+                matchedReference ->
                 {
+                    MatchedReference = matchedReference
                     FamilySequence = family
                     Snapshot =
                         {
@@ -322,6 +324,7 @@ module ResponseCodecs =
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence
+        |> optionalField "matchedReference" _.MatchedReference caseReference
         |> build
         |> named "CaseView"
 

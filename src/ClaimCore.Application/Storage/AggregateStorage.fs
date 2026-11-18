@@ -182,7 +182,6 @@ module internal AggregateStorage =
 
                 let mutable parts = []
                 let mutable origins = Map.empty
-                let mutable reference = None
 
                 for row in located do
                     let idAt index =
@@ -215,20 +214,8 @@ module internal AggregateStorage =
                         corrupt
                             "Selected accepted part/origin disagrees with its owner and revision."
 
-                    if part.Kind = PartKind.Case then
-                        reference <-
-                            origin.NaturalKey
-                            |> Option.map (fun value ->
-                                CaseReference.parse value
-                                |> Result.defaultWith (fun _ ->
-                                    corrupt "Case creation reference is invalid."))
-
                     parts <- part :: parts
                     origins <- Map.add (part.Kind, part.PartId) origin.Stamp origins
-
-                let reference =
-                    reference
-                    |> Option.defaultWith (fun () -> corrupt "Case creation identity is absent.")
 
                 let sequence =
                     DatabaseSession.value<int64> 7 located.Head
@@ -237,7 +224,7 @@ module internal AggregateStorage =
                 return
                     Some
                         {
-                            Reference = reference
+                            Reference = projected.Snapshot.Reference
                             Sequence = sequence
                             Parts = parts
                             Origins = origins
@@ -811,37 +798,4 @@ module internal AggregateStorage =
                         (DatabaseSession.value<Guid> 0 row
                          |> DatabaseSession.admitted ActorId.create)
             | _ -> return corrupt "Principal key is duplicated."
-        }
-
-    let resolveCase (tx: ReadTx) selector =
-        task {
-            let key, identity =
-                match selector with
-                | CaseSelector.Id id -> None, Some id
-                | CaseSelector.Reference raw ->
-                    CaseReference.parse raw |> Result.toOption |> Option.map CaseReference.identity,
-                    None
-
-            if key.IsNone && identity.IsNone then
-                return None
-            else
-                let! rows =
-                    DatabaseSession.rows
-                        tx.Connection
-                        "SELECT DISTINCT aggregate_id FROM claimcore.ledger_effects WHERE aggregate_kind='FAMILY' AND (($1::uuid IS NOT NULL AND aggregate_id=$1) OR ($2::text IS NOT NULL AND upper(natural_key COLLATE \"C\")=$2))"
-                        [|
-                            DatabaseSession.parameter (identity |> Option.map CaseId.value)
-                            DatabaseSession.parameter key
-                        |]
-                        tx.CancellationToken
-
-                match rows with
-                | [] -> return None
-                | [ row ] ->
-                    return
-                        Some(
-                            DatabaseSession.value<Guid> 0 row
-                            |> DatabaseSession.admitted CaseId.create
-                        )
-                | _ -> return corrupt "Family selection is ambiguous."
         }

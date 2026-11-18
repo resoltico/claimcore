@@ -241,7 +241,7 @@ it("records a routine review with one consent action", async () => {
         },
         expectedRevision: 7,
       },
-      inputs: {},
+      inputs: { "field:outcome": "OTHER" },
     },
     routine,
   );

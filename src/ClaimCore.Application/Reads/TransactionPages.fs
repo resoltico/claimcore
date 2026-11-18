@@ -31,7 +31,8 @@ module internal TransactionPages =
 
     let grantPageSql =
         let grantedAt = DatabaseSession.instantExpression "p.recorded_at"
-        ($"SELECT g.role,c.case_reference,g.case_id,l.natural_key,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger_effects l ON l.part_kind='CASE' AND l.part_id=g.case_id AND l.revision=1 WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
+        let reference = CaseIdentityReads.referenceAt "g.case_id" ""
+        ($"SELECT g.role,c.case_reference,g.case_id,{reference},{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
 
     let page limit position rows =
         let visible = List.truncate limit rows

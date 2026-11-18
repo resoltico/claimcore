@@ -51,7 +51,7 @@ test("records instalments and removes the selected entry through one reviewed co
   if (read.outcome.kind !== "SUCCEEDED" || read.outcome.data.state.kind === "ERASED") {
     throw Error("Live payment read required");
   }
-  const first = read.outcome.data.latestPayments.find((entry) => entry.paidAmount === "40");
+  const first = read.outcome.data.latestPayments.find((entry) => entry.money.amount === "40");
   if (first === undefined) {
     throw Error("First accepting payment identity required");
   }
@@ -281,7 +281,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     throw new Error("Current financial position required after replay.");
   }
   expect(current.outcome.data.state.fields.finance.paymentCount).toBe(54);
-  expect(current.outcome.data.state.fields.finance.paidAmount).toBe("54");
+  expect(current.outcome.data.state.fields.finance.totals).toEqual([
+    { currency: "EUR", paid: "54", returned: "0" },
+  ]);
   const acceptedNotice = page.locator(".accepted-receipt");
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice

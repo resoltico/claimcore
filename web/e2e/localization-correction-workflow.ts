@@ -54,17 +54,15 @@ const setupDecision = {
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
     caseReference: reference,
-    status: "OPENED",
+    handling: { kind: "OPEN" },
     registration: {
       ...setupRegistration,
       claimedAmount: "1200.5",
     },
     finance: {
       decision: null,
-      paidAmount: "0",
+      totals: [],
       paymentCount: 0,
-      firstPaymentDate: null,
-      lastPaymentDate: null,
     },
   };
   const decided: CaseFields = {
@@ -79,10 +77,8 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     ...decided,
     finance: {
       ...decided.finance,
-      paidAmount: "300.25",
+      totals: [{ currency: "EUR", paid: "300.25", returned: "0" }],
       paymentCount: 1,
-      firstPaymentDate: "2026-09-05",
-      lastPaymentDate: "2026-09-05",
     },
   };
   const steps: SeedStep[] = [
@@ -110,10 +106,10 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   if (status === "CLOSED") {
     steps.push({
       task: "case.close",
-      inputs: {},
+      inputs: { "field:outcome": "OTHER" },
       fields: {
         ...paid,
-        status: "CLOSED",
+        handling: { kind: "CLOSED", outcome: "OTHER" },
       },
     });
   }
@@ -210,7 +206,7 @@ const acceptSetup = async (
               entry: {
                 paymentId: request.operationId,
                 paymentDate: "2026-09-05",
-                paidAmount: "300.25",
+                totals: [{ currency: "EUR", paid: "300.25", returned: "0" }],
               },
             },
           ]

@@ -179,6 +179,13 @@ module internal Queries =
                                                         Outcome.Failed
                                                             CoreFault.StoreIntegrityError
                                                 | Ok items, Ok notes ->
+                                                    let! matchedReference =
+                                                        CaseIdentityReads.matchedEarlier
+                                                            tx
+                                                            record.CaseId
+                                                            record.Snapshot.Reference
+                                                            selector
+
                                                     let! currentResult =
                                                         caseResult
                                                             services
@@ -196,6 +203,8 @@ module internal Queries =
                                                             (fun current ->
                                                                 Outcome.Succeeded
                                                                     { current with
+                                                                        MatchedReference =
+                                                                            matchedReference
                                                                         Disposition = disposition
                                                                         NextActions = items
                                                                         Notes = notes.Notes
@@ -558,55 +567,33 @@ module internal Queries =
                     |> Result.map List.rev)
         }
 
-    let private exactReference
-        (services: ServiceContext)
-        (tx: ReadTx)
-        (items: CaseSummary list)
-        text
-        =
+    let private exactReference (services: ServiceContext) (tx: ReadTx) text =
         task {
             match text |> Option.bind (CaseReference.parse >> Result.toOption) with
             | None -> return None
             | Some reference ->
-                let key = CaseReference.format reference |> CaseReference.key
+                let! record = FamilyReads.findCaseByReference tx (CaseReference.format reference)
 
-                match
-                    items
-                    |> List.tryFind (fun item ->
-                        CaseReference.key (CaseReference.format item.Reference) = key)
-                with
-                | Some item ->
-                    // This page item has already passed validation and snapshot disclosure.
+                match record with
+                | None -> return None
+                | Some record ->
+                    let! actor = AccessReads.access tx services.Principal (Some record.CaseId)
+
                     return
-                        Some
-                            {
-                                CaseRef.CaseId = item.CaseId
-                                CaseReference = item.Reference
-                            }
-                | None ->
-                    let! record =
-                        FamilyReads.findCaseByReference tx (CaseReference.format reference)
-
-                    match record with
-                    | None -> return None
-                    | Some record ->
-                        let! actor = AccessReads.access tx (services.Principal) (Some record.CaseId)
-
-                        return
-                            if
-                                CaseRecords.authorize
-                                    services.Principal
-                                    actor
-                                    Capability.ReadCase
-                                    (Some record)
-                            then
-                                Some
-                                    {
-                                        CaseRef.CaseId = record.CaseId
-                                        CaseReference = record.Snapshot.Reference
-                                    }
-                            else
-                                None
+                        if
+                            CaseRecords.authorize
+                                services.Principal
+                                actor
+                                Capability.ReadCase
+                                (Some record)
+                        then
+                            Some
+                                {
+                                    CaseRef.CaseId = record.CaseId
+                                    CaseReference = record.Snapshot.Reference
+                                }
+                        else
+                            None
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
@@ -657,7 +644,6 @@ module internal Queries =
                                                         exactReference
                                                             services
                                                             tx
-                                                            items
                                                             request.Filter.Text
 
                                                     return

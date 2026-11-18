@@ -2,14 +2,12 @@ import { registration } from "./inputs";
 import type { CaseFields } from "@contracts/client";
 export const caseFields: CaseFields = {
   caseReference: "CASE-1",
-  status: "OPENED",
+  handling: { kind: "OPEN" },
   registration: registration(),
   finance: {
     decision: null,
-    paidAmount: "0",
+    totals: [],
     paymentCount: 0,
-    firstPaymentDate: null,
-    lastPaymentDate: null,
   },
 };
 export const operationId = "10000000-0000-7000-8000-000000000001";

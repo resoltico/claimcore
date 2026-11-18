@@ -1504,8 +1504,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "Ihr eigenes Aktenzeichen für diesen Fall, zum Beispiel CLM-2026-0001. Es kann später nicht geändert werden.",
-    "source": "10559d041918"
+    "text": "Ihre eigene Referenz für diesen Fall, zum Beispiel CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "Wann Sie den zu zahlenden Betrag beschlossen haben.",
@@ -3218,5 +3218,41 @@
   "diagnostic.CLOSURE_OUTCOME_FORMAT": {
     "text": "Wählen Sie ein aufgeführtes Abschlussergebnis.",
     "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "Fallreferenz ändern",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "Ersetzen Sie die aktuelle Fallreferenz. Der Fall bleibt über frühere Referenzen auffindbar.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "Fallreferenz geändert.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "Wählen Sie eine neue Referenz für diesen Fall.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "Neue Referenz",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "Verwenden Sie das Format für Fallreferenzen.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "Geben Sie die künftig verwendete Referenz ein.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "Vorherige Referenz",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "Warum die Bearbeitung wieder aufgenommen wurde.",
+    "source": "52db5e07d84d"
   }
 }

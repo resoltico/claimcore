@@ -263,7 +263,8 @@ const current = {
                 stage: "OPENED",
                 reached: true,
                 date: "2026-09-02",
-                amount: {
+                value: {
+                  kind: "MONEY",
                   amount: "25000",
                   currency: "AED",
                   displayScale: 2,
@@ -273,7 +274,8 @@ const current = {
                 stage: "DECIDED",
                 reached: true,
                 date: "2026-10-10",
-                amount: {
+                value: {
+                  kind: "MONEY",
                   amount: "20000",
                   currency: "AED",
                   displayScale: 2,
@@ -283,13 +285,13 @@ const current = {
                 stage: "PAID",
                 reached: true,
                 date: "2026-10-12",
-                amount: null,
+                value: null,
               },
               {
                 stage: "CLOSED",
                 reached: false,
                 date: null,
-                amount: null,
+                value: null,
               },
             ],
           },

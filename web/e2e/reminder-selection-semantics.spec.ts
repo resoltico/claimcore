@@ -110,7 +110,7 @@ test("a Completed view shows its owner inactive default and explicit false remov
           target: { kind: "REFERENCE", caseReference: reference },
           expectedRevision: 1,
         },
-        inputs: {},
+        inputs: { "field:outcome": "OTHER" },
       });
     }
   }

@@ -156,7 +156,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   ) {
     throw new Error("Storage-refusal state positive control");
   }
-  expect(caseGetReply.outcome.data.state.fields.status).toBe("OPENED");
+  expect(caseGetReply.outcome.data.state.fields.handling.kind).toBe("OPEN");
   await page.evaluate(() => {
     (
       globalThis as unknown as {

@@ -14,8 +14,9 @@ module CaseDescription =
             })
 
     let describe reference (before: CaseValue option) (after: CaseValue) =
+        let nextReference = defaultArg after.Reference reference
         let prior = before |> Option.bind (fields reference)
-        let next = fields reference after
+        let next = fields nextReference after
 
         let moneyFields =
             [
@@ -27,7 +28,9 @@ module CaseDescription =
 
         let value isAfter field =
             if field = BusinessField.CaseReference then
-                if isAfter || before.IsSome then
+                if isAfter then
+                    Some(CaseFieldValue.Reference nextReference)
+                elif before.IsSome then
                     Some(CaseFieldValue.Reference reference)
                 else
                     None
