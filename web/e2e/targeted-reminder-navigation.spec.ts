@@ -36,7 +36,10 @@ test("discovers a case reminder queue, retains visible context through filters a
   await due;
   await page.getByRole("combobox", { name: "Responsibility", exact: true }).click();
   const assignment = reminderResponse(page);
-  await page.getByRole("option", { name: "Mine", exact: true }).click();
+  // Firefox's locator click scrolls the document and dismisses this nonmodal listbox.
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Mine", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
   await assignment;
   const search = page.getByRole("search", { name: "Reminders", exact: true });
   await search

@@ -159,7 +159,7 @@ it("publishes failure feedback for a new identity instead of retaining old pages
   view.rerender(<Harness actorId="00000000-0000-4000-8000-000000000002" />);
   await waitFor(() => {
     expect(screen.getByTestId("error")).toHaveTextContent("diagnostic");
+    expect(current!.loading).toBe(false);
+    expect(current!.views).toEqual([]);
   });
-  expect(current!.loading).toBe(false);
-  expect(current!.views).toEqual([]);
 });
