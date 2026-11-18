@@ -141,7 +141,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "CONTROL_CHARACTERS"
         }
       ]
@@ -215,7 +215,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "MALFORMED_UNICODE"
         }
       ]
@@ -225,7 +225,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "SURROUNDING_WHITESPACE"
         }
       ]
@@ -235,7 +235,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "TEXT_REQUIRED"
         }
       ]
@@ -245,7 +245,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "insurerName",
+          "field": "insurerClaimReference",
           "code": "TEXT_REQUIRED"
         }
       ]
@@ -265,7 +265,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "TOO_LONG"
         }
       ]
@@ -300,7 +300,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "claimantName",
+          "field": "policyNumber",
           "code": "FORMATTING_CHARACTER"
         }
       ]
@@ -591,34 +591,9 @@
       ]
     },
     {
-      "code": "DECISION_HAS_PAYMENTS",
-      "action": "CorrectInput",
-      "target": null
-    },
-    {
       "code": "PAYMENT_NOT_FOUND",
       "action": "ReviewLatest",
       "target": null
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "policyNumber",
-          "code": "TEXT_REQUIRED"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "insurerClaimReference",
-          "code": "TEXT_REQUIRED"
-        }
-      ]
     },
     {
       "code": "INVALID_INPUT",
@@ -685,46 +660,6 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "paidCurrency",
-          "code": "PAYMENT_CURRENCY_MISMATCH"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "payableCurrency",
-          "code": "PAYMENT_CURRENCY_MISMATCH"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "paidAmount",
-          "code": "PAYMENT_EXCEEDS_PAYABLE"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "payableAmount",
-          "code": "PAYMENT_EXCEEDS_PAYABLE"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
           "field": "payment",
           "code": "PAYMENT_COUNT_LIMIT"
         }
@@ -749,6 +684,130 @@
           "code": "EXPECTED_REVISION_RANGE"
         }
       ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "newReference",
+          "code": "REFERENCE_FORMAT"
+        },
+        {
+          "field": "outcome",
+          "code": "CLOSURE_OUTCOME_FORMAT"
+        },
+        {
+          "field": "closingNote",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "decisionBasis",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "direction",
+          "code": "PAYMENT_DIRECTION_FORMAT"
+        },
+        {
+          "field": "reference",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "payee",
+          "code": "PAYEE_UNAVAILABLE"
+        },
+        {
+          "field": "paidAmount",
+          "code": "PAYMENT_TOTAL_RANGE"
+        },
+        {
+          "field": "parties",
+          "code": "PARTY_COUNT_RANGE"
+        },
+        {
+          "field": "partyName",
+          "code": "PARTY_CONTENT_REQUIRED"
+        },
+        {
+          "field": "partyRole",
+          "code": "PARTY_ROLE_REQUIRED"
+        },
+        {
+          "field": "partyDetails",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "partyId",
+          "code": "PARTY_ID_REQUIRED"
+        },
+        {
+          "field": "expectedPartyRevision",
+          "code": "EXPECTED_REVISION_RANGE"
+        },
+        {
+          "field": "linkId",
+          "code": "LINK_ID_REQUIRED"
+        },
+        {
+          "field": "relatedCaseReference",
+          "code": "REFERENCE_FORMAT"
+        },
+        {
+          "field": "relatedCaseId",
+          "code": "CASE_ID_REQUIRED"
+        },
+        {
+          "field": "linkNote",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "kind",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "doneOn",
+          "code": "CALENDAR_DATE_REQUIRED"
+        },
+        {
+          "field": "doneOn",
+          "code": "FUTURE_DATE"
+        },
+        {
+          "field": "profile.digestEmail",
+          "code": "EMAIL_ADDRESS_INVALID"
+        }
+      ]
+    },
+    {
+      "code": "IDENTITY_RESERVED",
+      "action": "CorrectInput",
+      "target": null
+    },
+    {
+      "code": "NO_CHANGES",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "PARTY_LIMIT",
+      "action": "ReviewLatest",
+      "target": null
+    },
+    {
+      "code": "SELF_LINK",
+      "action": "CorrectInput",
+      "target": null
+    },
+    {
+      "code": "DUPLICATE_LINK",
+      "action": "CorrectInput",
+      "target": null
+    },
+    {
+      "code": "LINK_LIMIT_REACHED",
+      "action": "CorrectInput",
+      "target": null
     }
   ]
 }

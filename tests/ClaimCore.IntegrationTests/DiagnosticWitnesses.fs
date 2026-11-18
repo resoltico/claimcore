@@ -67,7 +67,11 @@ let internal baseline =
 
 let internal baselinePolicy code target action =
     match Map.tryFind (code, target) baseline.Value with
-    | Some expected -> Expect.equal (string action) expected "Captured repair action is preserved."
+    | Some expected ->
+        Expect.equal
+            (string action)
+            expected
+            (sprintf "Captured repair action for %s at %A." code target)
     | None ->
         failtestf "Request diagnostic is absent from the independent baseline: %s %A" code target
 
