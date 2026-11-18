@@ -137,8 +137,8 @@ let tests =
                                 "--registration"
                                 "update"
                                 "--clear-policy-number"
-                                "--policy-number"
-                                "Edited claimant"
+                                "--insurer-claim-reference"
+                                "Edited insurer reference"
                                 "--decision"
                                 "clear"
                             ]
@@ -155,7 +155,7 @@ let tests =
                                 TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 InputValue.Null
                                 TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
-                                InputValue.Text "Edited claimant"
+                                InputValue.Text "Edited insurer reference"
                             ])
                         "Omitted fields keep, explicit null clears")
             testCase "compound roles retain submitted order and explicit scope spelling" (fun () ->

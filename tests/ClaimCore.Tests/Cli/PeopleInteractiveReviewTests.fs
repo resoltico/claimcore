@@ -434,7 +434,12 @@ let tests =
                                     None,
                                     None
                                 )
-                            Inputs = Map.empty
+                            Inputs =
+                                Map.ofList
+                                    [
+                                        Submissions.field BusinessField.Outcome,
+                                        SubmissionValue.Text "OTHER"
+                                    ]
                         }
 
                     Expect.equal

@@ -20,28 +20,15 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
-        CaseSummaryFacts.Parties = Map.empty
+        CaseSummaryFacts.Parties =
+            Map.ofList
+                [
+                    PartyRole.Claimant, [ DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant" ]
+                    PartyRole.Insurer, [ DomainInputs.name "Synthetic insurer" ]
+                ]
         Fields =
             Map.ofList
                 [
-                    BusinessField.PolicyNumber,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Identifier(
-                                Identifier.parse "Synthetic, \"quoted\"\r\nclaimant"
-                                |> Result.defaultWith (string >> failwith)
-                            )
-                        )
-                    )
-                    BusinessField.InsurerClaimReference,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Identifier(
-                                Identifier.parse "Synthetic insurer"
-                                |> Result.defaultWith (string >> failwith)
-                            )
-                        )
-                    )
                     BusinessField.ClaimedAmount,
                     Some(
                         CaseFieldValue.Business(
@@ -61,26 +48,12 @@ let private facts =
 
 let private parties claimant insurer =
     { facts with
-        Fields =
-            facts.Fields
-            |> Map.add
-                BusinessField.PolicyNumber
-                (Some(
-                    CaseFieldValue.Business(
-                        Admitted.Identifier(
-                            Identifier.parse claimant |> Result.defaultWith (string >> failwith)
-                        )
-                    )
-                ))
-            |> Map.add
-                BusinessField.InsurerClaimReference
-                (Some(
-                    CaseFieldValue.Business(
-                        Admitted.Identifier(
-                            Identifier.parse insurer |> Result.defaultWith (string >> failwith)
-                        )
-                    )
-                ))
+        Parties =
+            Map.ofList
+                [
+                    PartyRole.Claimant, [ DomainInputs.name claimant ]
+                    PartyRole.Insurer, [ DomainInputs.name insurer ]
+                ]
     }
 
 let private row reference =
@@ -372,7 +345,7 @@ let tests =
                 Expect.equal code 0 "CSV succeeds"
                 let rows = parseCsv bytes
                 let columns = List.zip rows[0] rows[1] |> Map.ofList
-                Expect.equal columns["paidAmount"] "60.25" "Exact canonical paid amount"
+                Expect.equal columns["netPaid"] "60.25" "Exact canonical paid amount"
                 Expect.equal columns["paymentCount"] "2" "Entry count"
                 Expect.equal columns["lastPaymentDate"] "2026-08-21" "Canonical payment date"
 
@@ -551,13 +524,13 @@ let tests =
                             "state.kind"
                             "headline"
                             "attention"
-                            "state.fields.policyNumber"
-                            "state.fields.insurerClaimReference"
+                            "claimants"
+                            "insurers"
                             "state.fields.claimedAmount"
                             "state.fields.claimedCurrency"
                             "state.fields.payableAmount"
                             "state.fields.payableCurrency"
-                            "paidAmount"
+                            "netPaid"
                             "paymentCount"
                             "lastPaymentDate"
                             "responsible.actorId"

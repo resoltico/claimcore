@@ -155,7 +155,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                     "case.close"
                     (operation ())
                     (Binding.Case(CaseSelector.Reference "RESP-B", Revision.first))
-                    Map.empty)
+                    (Map.ofList
+                        [ Submissions.field BusinessField.Outcome, SubmissionValue.Text "OTHER" ]))
 
         do!
             execute

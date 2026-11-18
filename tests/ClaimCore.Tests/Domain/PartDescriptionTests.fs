@@ -164,7 +164,7 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
-                            InputMap.empty
+                            (closingInputs "SETTLED")
                         |> accepted
 
                     match
@@ -212,15 +212,19 @@ let tests =
                             (Some { Before = None; After = Some false })
                             "New live entry"
 
-                        let paid =
-                            finance.Money
-                            |> List.find (fun field -> field.FieldName = BusinessField.PaidAmount)
+                        let net totals =
+                            totals
+                            |> Option.map (fun (total: PaymentTotals) ->
+                                DecimalTotal.format total.NetPaid)
 
                         Expect.equal
-                            (paid.Change.Before |> Option.map Money.value,
-                             paid.Change.After |> Option.map Money.value)
-                            (Some 0M, Some 25.50M)
-                            "Before and after financial context"
+                            (net entry.Totals.Before, net entry.Totals.After)
+                            (Some "0", Some "25.5")
+                            "Before and after net in the decision currency"
+
+                        Expect.isEmpty
+                            finance.Money
+                            "Payment changes carry their own financial context"
                     | _ -> failtest "Expected the entry and financial part descriptions")
             testCase "work describes independent assignment and summary changes" (fun () ->
                 let state = family ()
@@ -493,7 +497,7 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay historical))
                             (caseBinding historical)
-                            InputMap.empty
+                            (closingInputs "SETTLED")
                         |> accepted
 
                     match changes.Head.Value with

@@ -129,15 +129,6 @@ let samples =
         reason "case.reopen"
         reason "case.void"
         reason "case.reinstate"
-        {
-            Task = "case.changeReference"
-            Inputs =
-                inputs
-                    [
-                        TaskInputId.Target InputTarget.NewCaseReference,
-                        InputValue.Text "ORACLE-REVISED"
-                    ]
-        }
         bare "case.erase"
     ]
 
@@ -168,8 +159,7 @@ let private text field (witness: Witness) =
 
 let private activeEligible (fields: CaseFields) witness =
     match witness.Task with
-    | "case.close"
-    | "case.changeReference" -> true
+    | "case.close" -> true
     | "case.amendRegistration" -> fields.Decision.IsNone
     | "case.decide"
     | "case.recordPayment" -> true
@@ -182,7 +172,6 @@ let private eligible (fields: CaseFields) witness =
     match witness.Task with
     | "case.open" -> false
     | "case.reopen" -> fields.Status = CaseStatus.Closed
-    | "case.changeReference" -> CaseReference.format fields.CaseReference <> "ORACLE-REVISED"
     | "case.correct" -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields witness
@@ -197,14 +186,14 @@ let allows state witness =
     | CaseState.Voided _, _ -> false
 
 let offered state =
-    let lifecycleCommands =
+    let existing =
         samples
         |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
         |> Set.ofList
 
     match state with
-    | CaseState.Active _ -> Set.add "case.changeReference" lifecycleCommands
-    | _ -> lifecycleCommands
+    | CaseState.Active _ -> Set.add "case.changeReference" existing
+    | _ -> existing
 
 let private finance decision paid count =
     let currency = Currency.parse "EUR" |> required
@@ -269,10 +258,6 @@ let private changed (fields: CaseFields) witness =
                     }
         }
     | "case.reopen" -> { fields with Handling = Handling.Open }
-    | "case.changeReference" ->
-        { fields with
-            CaseReference = CaseReference.parse "ORACLE-REVISED" |> required
-        }
     | _ -> fields
 
 let advance (before: Model) stale witness operation sequence =
