@@ -24,7 +24,8 @@ module internal CaseRecords =
         CaseFamily.validateSnapshot record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun () ->
-            let index = CaseIndex.create record.Index.ChangedAt record.Snapshot None None None parties
+            let index =
+                CaseIndex.create record.Index.ChangedAt record.Snapshot None None None parties
 
             let expected =
                 { index with

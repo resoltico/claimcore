@@ -189,7 +189,8 @@ module CaseAttention =
     let plan reason =
         let attention =
             match reason with
-            | CaseAttention.DeadlineOverdue -> WorkSelection.Fact(WorkPredicate.NextDeadlineDue ReminderDue.Overdue)
+            | CaseAttention.DeadlineOverdue ->
+                WorkSelection.Fact(WorkPredicate.NextDeadlineDue ReminderDue.Overdue)
             | CaseAttention.Overdue -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Overdue)
             | CaseAttention.DueToday -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Today)
             | CaseAttention.NoNextAction -> WorkSelection.Fact WorkPredicate.NoNextDue
