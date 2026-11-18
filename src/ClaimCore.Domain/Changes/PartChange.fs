@@ -222,6 +222,11 @@ module PartChange =
             )
         | _ -> None
 
+    let reopenReason change =
+        match change.Value with
+        | PartValue.Case value -> value.ReopenReason
+        | _ -> None
+
     let disposition change =
         match change.Value with
         | PartValue.Case value -> value.Disposition

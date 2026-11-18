@@ -264,6 +264,10 @@ module internal ReceiptReads =
                                                                                 Disposition =
                                                                                     description
                                                                                         .Disposition
+                                                                                ReopenReason =
+                                                                                    PartChange
+                                                                                        .reopenReason
+                                                                                        change
                                                                                 RecordedFields =
                                                                                     fields
                                                                                         declaration

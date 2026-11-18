@@ -572,6 +572,7 @@ let receiptStatusAndProgress =
             {
                 State = state
                 Disposition = None
+                ReopenReason = None
                 RecordedFields = recorded
                 Payments = []
             }

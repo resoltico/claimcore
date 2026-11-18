@@ -56,6 +56,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                                     LiveCase.ofState (familySnapshot (opened ())).State
                                     |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }

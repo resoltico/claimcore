@@ -94,6 +94,39 @@ module ReceiptScreen =
                        Revision = item.Revision
                        State = LiveCase.toState live.State
                    })
+               @ (let fields = CaseState.fields (LiveCase.toState live.State)
+
+                  fields
+                  |> Option.bind (_.Handling >> Handling.closure)
+                  |> Option.map (fun closure ->
+                      section
+                          "label.closure"
+                          [
+                              value
+                                  "outcome"
+                                  "field.outcome.label"
+                                  Prominence.Primary
+                                  (code ClosureOutcome.vocabulary closure.Outcome)
+                              value
+                                  "closingNote"
+                                  "field.closingNote.label"
+                                  Prominence.Detail
+                                  (closure.Note
+                                   |> optional (NoteText.format >> PresentedValue.Narrative))
+                          ])
+                  |> Option.toList)
+               @ (live.ReopenReason
+                  |> Option.map (fun reason ->
+                      section
+                          "field.reopenReason.label"
+                          [
+                              value
+                                  "reopenReason"
+                                  "field.reopenReason.label"
+                                  Prominence.Primary
+                                  (PresentedValue.Narrative(Reason.format reason))
+                          ])
+                  |> Option.toList)
                @ (live.Disposition
                   |> Option.map (fun disposition ->
                       section

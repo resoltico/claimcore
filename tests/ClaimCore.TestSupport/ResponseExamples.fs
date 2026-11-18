@@ -51,6 +51,7 @@ let receipt: OperationReceipt =
                             {
                                 State = LiveCase.ofState snapshot.State |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }

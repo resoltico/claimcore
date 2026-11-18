@@ -23,16 +23,18 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    ((record (fun state disposition fields payment ->
+                    ((record (fun state disposition reopenReason fields payment ->
                         {
                             DisclosedCaseReceipt.State = state
                             Disposition = disposition
+                            ReopenReason = reopenReason
                             RecordedFields = fields
                             Payments = payment
                         })
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
                      |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
+                     |> optionalField "reopenReason" _.ReopenReason reason
                      |> field
                          "recordedFields"
                          _.RecordedFields

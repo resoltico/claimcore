@@ -139,6 +139,7 @@ let internal replayAndRefusal fixture =
                     {
                         State = LiveCase.ofState record.Snapshot.State |> Option.get
                         Disposition = None
+                        ReopenReason = None
                         RecordedFields =
                             [
                                 BusinessField.IncidentDate

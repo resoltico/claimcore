@@ -10,6 +10,7 @@ type DisclosedCaseReceipt =
     {
         State: LiveCase
         Disposition: CaseDisposition option
+        ReopenReason: Reason option
         RecordedFields: BusinessField list
         Payments: PaymentDifference list
     }

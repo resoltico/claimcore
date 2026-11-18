@@ -98,6 +98,7 @@ let receipt id (reference: string) : OperationReceipt =
                             {
                                 State = LiveCase.ofState (view reference).State |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }
