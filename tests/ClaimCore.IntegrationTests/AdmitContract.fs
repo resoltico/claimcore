@@ -49,6 +49,7 @@ let private execute (owner: ServiceContext) operation target taskName values =
 let private profile =
     {
         ActorProfileInput.DisplayName = "Authored admission name"
+        DigestEmail = None
         Contact = Some "authored@example.invalid"
     }
 

@@ -202,6 +202,7 @@ let private currentProfileGuard (database: PostgresFixture.Database) =
                 (Submissions.profile
                     {
                         DisplayName = "Contact cleared"
+                        DigestEmail = None
                         Contact = None
                     })
 
@@ -239,6 +240,7 @@ let private currentProfileGuard (database: PostgresFixture.Database) =
                 (Submissions.profile
                     {
                         DisplayName = "Replacement after erasure"
+                        DigestEmail = None
                         Contact = Some "synthetic-contact"
                     })
         // An old retained erasure cannot authorize clearing a later private revision.
@@ -259,6 +261,7 @@ let private currentProfileGuard (database: PostgresFixture.Database) =
                 (Submissions.profile
                     {
                         DisplayName = "Synthetic profile"
+                        DigestEmail = None
                         Contact = None
                     })
 

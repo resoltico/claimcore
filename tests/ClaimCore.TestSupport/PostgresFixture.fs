@@ -59,6 +59,19 @@ type internal Database =
             BusinessTimeZone = this.Fixture.Calendar.TimeZoneId
         }
 
+let private runtimeRole = "claimcore_runtime"
+let private runtimePassword = "synthetic-only"
+
+let private runtimeSettings (container: PostgreSqlContainer) =
+    NpgsqlConnectionStringBuilder(
+        container.GetConnectionString(),
+        Username = runtimeRole,
+        Password = runtimePassword
+    )
+
+let internal runtimeConnectionString (database: Database) =
+    (runtimeSettings database.Container).ConnectionString
+
 let private container () =
     let value =
         (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
@@ -147,7 +160,7 @@ let private createInZone owner timeZone poolCapacity =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "CREATE ROLE claimcore_runtime LOGIN PASSWORD 'synthetic-only'"
+                    $"CREATE ROLE {runtimeRole} LOGIN PASSWORD '{runtimePassword}'"
                     [||]
                     CancellationToken.None
 
@@ -161,9 +174,7 @@ let private createInZone owner timeZone poolCapacity =
                     CancellationToken.None
 
             stage <- SetupStage.RuntimeAdmission
-            let settings = NpgsqlConnectionStringBuilder(container.GetConnectionString())
-            settings.Username <- "claimcore_runtime"
-            settings.Password <- "synthetic-only"
+            let settings = runtimeSettings container
             poolCapacity |> Option.iter (fun capacity -> settings.MaxPoolSize <- capacity)
             let runtime = NpgsqlDataSource.Create(settings.ConnectionString)
             sources <- runtime :: sources

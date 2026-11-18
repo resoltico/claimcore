@@ -133,14 +133,16 @@ module PartCodecs =
         |> build
 
     let profile =
-        (record (fun name contact ->
+        (record (fun name contact email ->
             {
                 ActorProfile.DisplayName = name
                 Contact = contact
+                DigestEmail = email
             })
         : Fields<ActorProfile, _>)
         |> field "displayName" _.DisplayName (scalar PartyName.parse PartyName.format)
         |> field "contact" _.Contact (nullable (scalar ContactText.parse ContactText.format))
+        |> optionalField "digestEmail" _.DigestEmail (scalar EmailAddress.parse EmailAddress.format)
         |> build
 
     let work =

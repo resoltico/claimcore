@@ -31,6 +31,7 @@ let private profile =
     ActorProfile.parse
         {
             DisplayName = "Current person"
+            DigestEmail = None
             Contact = None
         }
     |> CaseBuilders.accepted
@@ -121,6 +122,7 @@ let private run words (answer: string option) =
                                                     Some
                                                         {
                                                             DisplayName = "Current person"
+                                                            DigestEmail = None
                                                             Contact = None
                                                         }
                                                 Items = []
@@ -147,6 +149,7 @@ let private run words (answer: string option) =
                                         ActorProfile.parse
                                             {
                                                 DisplayName = text InputTarget.ProfileDisplayName
+                                                DigestEmail = None
                                                 Contact = None
                                             }
                                         |> CaseBuilders.accepted
@@ -180,6 +183,7 @@ let private run words (answer: string option) =
                                         change
                                             (Some profile.DisplayName)
                                             (afterProfile |> Option.map _.DisplayName)
+                                    DigestEmail = None
                                     Contact = None
                                     Grants = []
                                 }

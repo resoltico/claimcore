@@ -112,6 +112,7 @@ let tests =
                             Some
                                 {
                                     DisplayName = DomainInputs.name "Target"
+                                    DigestEmail = None
                                     Contact = None
                                 }
                     }

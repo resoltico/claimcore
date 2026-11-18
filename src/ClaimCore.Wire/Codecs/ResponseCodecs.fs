@@ -129,14 +129,16 @@ module ResponseCodecs =
     let private maximumInstallationOffers = 1 + TaskVocabulary.count ActSubject.People
 
     let private profileInput =
-        (record (fun name contact ->
+        (record (fun name contact email ->
             {
                 ActorProfileInput.DisplayName = name
                 Contact = contact
+                DigestEmail = email
             })
         : Fields<ActorProfileInput, _>)
         |> field "displayName" _.DisplayName text
         |> field "contact" _.Contact (nullable text)
+        |> optionalField "digestEmail" _.DigestEmail text
         |> build
         |> named "ActorProfileInput"
 

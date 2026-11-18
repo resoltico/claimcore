@@ -228,6 +228,35 @@ Access requests contain unverified hints, grant no rights and expire after 30 da
 at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
 can create another request. Names become profiles only after an owner enters and confirms them.
 
+## Daily reminder digest
+
+An Owner opts a person in by setting their digest address. Once per business day after the
+configured local time, the host can send one count-only email to each opted-in, enabled person.
+The Reminders link opens the Mine view. Counts use the person's current case access and
+responsibility. The digest is a daily prompt. Consult Reminders for current deadline status.
+
+Set the following required environment variables together. Leave the group unset to disable delivery.
+
+| Setting | Value |
+| --- | --- |
+| `CLAIMCORE_DIGEST_SMTP_HOST` | SMTP relay hostname or IP address. |
+| `CLAIMCORE_DIGEST_SMTP_PORT` | SMTP port, from 1 to 65535. |
+| `CLAIMCORE_DIGEST_SMTP_TLS` | `IMPLICIT` for a TLS connection or `STARTTLS` for a required upgrade. |
+| `CLAIMCORE_DIGEST_FROM` | Sender mailbox address accepted by the relay. |
+| `CLAIMCORE_DIGEST_TIME` | Local time in `HH:MM` format in the installation business zone. |
+
+`CLAIMCORE_DIGEST_LANGUAGE` is an offered message language and defaults to `en`. For an authenticated
+relay, set `CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE` to a private UTF-8 file with the username on the first
+line and password on the second. Set `CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE` to a private PEM file
+when the relay uses a private trust root. The relay hostname is verified in both TLS modes.
+See [Private configuration](#private-configuration) for file admission. A digest worker consumes
+one additional connection pool slot.
+
+Hosts coordinate claims through the installation database. A claim allows one attempt across all
+hosts. An empty queue skips delivery. Relay failures and missed days are recorded or skipped with
+no resend. Monitor the digest outcomes in host logs and the `claimcore_digest_total` counter.
+Logs identify the account and the outcome. The counter is grouped by outcome.
+
 ## Database clock
 
 Operation IDs have a ten-minute first-execution lifetime with two minutes of future allowance.

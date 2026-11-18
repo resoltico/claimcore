@@ -41,7 +41,13 @@ let private named fixture number target name =
         (number)
         (target)
         "people.register"
-        (ClaimCore.TestSupport.Submissions.profile ({ DisplayName = name; Contact = None }))
+        (ClaimCore.TestSupport.Submissions.profile (
+            {
+                DisplayName = name
+                Contact = None
+                DigestEmail = None
+            }
+        ))
 
 let private target (receipt: OperationReceipt) =
     match receipt.Subject with
@@ -208,6 +214,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Current Alice"
+                            DigestEmail = None
                             Contact = None
                         }
                     )))
@@ -268,6 +275,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Saved Bob"
+                            DigestEmail = None
                             Contact = None
                         }
                     )))
@@ -306,6 +314,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Current private Bob"
+                            DigestEmail = None
                             Contact = None
                         }
                     )))

@@ -242,6 +242,7 @@ module TaskAffordances =
     let requestActions (value: AccessRequest) =
         let hints =
             {
+                DigestEmail = None
                 ActorProfileInput.DisplayName =
                     value.Claims.Name
                     |> Option.orElse value.Claims.PreferredUsername

@@ -39,6 +39,7 @@ let internal lifecycle fixture =
                         (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Summary editor"
+                                DigestEmail = None
                                 Contact = None
                             }
                         ))

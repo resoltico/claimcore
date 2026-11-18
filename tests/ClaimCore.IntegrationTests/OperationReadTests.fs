@@ -335,6 +335,7 @@ let private profileReplayBeforeAdmission () =
         let input: ActorProfileInput =
             {
                 DisplayName = " retained name "
+                DigestEmail = None
                 Contact = Some " retained contact "
             }
 

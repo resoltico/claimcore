@@ -3770,5 +3770,101 @@
   "daysOpenBand.366+.label": {
     "text": "366 vai vairāk dienu",
     "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "Dienas atgādinājumi ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "Atveriet savus atgādinājumus vietnē {url}.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "Nokavētie termiņi",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "Šodienas termiņi",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "Gaidāmie termiņi",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "Nokavētās turpmākās darbības",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "Šodienas turpmākās darbības",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "Nosūtīts",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "Neizdevās",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "Nav sūtāmu atgādinājumu",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "Kopsavilkuma e-pasts",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "Norādiet dienas atgādinājumu kopsavilkuma adresi.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "Izmantojiet e-pasta adresi ar ne vairāk kā {maximumCharacters} rakstzīmēm.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "Norādiet e-pasta adresi ar vienu @ zīmi un punktu domēnā.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "Nokavētie termiņi — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "Nokavētie termiņi",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "Šodienas termiņi — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "Šodienas termiņi",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "Gaidāmie termiņi — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "Gaidāmie termiņi",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "Nokavētās turpmākās darbības — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "Nokavētās turpmākās darbības",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "Šodienas turpmākās darbības — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "Šodienas turpmākās darbības",
+    "source": "e04e8b1f370c"
   }
 }

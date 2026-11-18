@@ -544,6 +544,7 @@ let tests =
                                 (ClaimCore.TestSupport.Submissions.profile
                                     {
                                         DisplayName = "Person"
+                                        DigestEmail = None
                                         Contact = None
                                     }))
 

@@ -31,7 +31,13 @@ let private principal subject =
     PrincipalKey.human "https://issuer.example/" subject |> valid
 
 let private profile name =
-    ActorProfile.parse { DisplayName = name; Contact = None } |> valid
+    ActorProfile.parse
+        {
+            DisplayName = name
+            Contact = None
+            DigestEmail = None
+        }
+    |> valid
 
 let private rootInputs
     (principal: PrincipalKey option)

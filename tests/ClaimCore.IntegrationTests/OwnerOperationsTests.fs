@@ -364,7 +364,13 @@ let private pruning (database: PostgresFixture.Database) =
             (8L, 7L)
             "Independent live and expired population"
 
-        let! report = Housekeeping.prune database.OwnerSource database.Installation 2 token
+        let! report =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                2
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
 
         Expect.equal report.SessionsDeleted 2L "Housekeeping deletes only the bounded locked batch"
         Expect.equal report.AccessRequestsDeleted 0L "No access hints were expired"
@@ -508,8 +514,21 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,8) n"
                 [||]
 
-        let first = Housekeeping.prune database.OwnerSource database.Installation 4 token
-        let second = Housekeeping.prune database.OwnerSource database.Installation 4 token
+        let first =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                4
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
+
+        let second =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                4
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
 
         let renewal =
             sessions.Renew(live.Value, SessionResults.principal, [| 2uy |], (fun _ -> true), token)

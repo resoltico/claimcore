@@ -56,6 +56,7 @@ type InputTarget =
     | PrincipalSubject
     | ProfileDisplayName
     | ProfileContact
+    | ProfileDigestEmail
     | DirectorySearch
     | Grants
     | Role

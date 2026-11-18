@@ -68,6 +68,7 @@ let private csvSubjects () =
                     Enabled = None
                     ProfilePresent = None
                     DisplayName = None
+                    DigestEmail = None
                     Contact = None
                     Grants = []
                 }

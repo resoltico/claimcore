@@ -3770,5 +3770,101 @@
   "daysOpenBand.366+.label": {
     "text": "٣٦٦ يومًا فأكثر",
     "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "ملخص التذكيرات اليومي ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "افتح تذكيراتك على {url}.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "المواعيد النهائية المتأخرة",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "المواعيد النهائية المستحقة اليوم",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "المواعيد النهائية القادمة",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "المتابعات المتأخرة",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "المتابعات المستحقة اليوم",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "تم الإرسال",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "تعذّر الإرسال",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "لا توجد تذكيرات للإرسال",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "بريد الملخص",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "أدخل عنوان البريد الإلكتروني لملخص التذكيرات اليومي.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "استخدم عنوان بريد إلكتروني لا يتجاوز {maximumCharacters} محرفًا.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "أدخل عنوان بريد إلكتروني بعلامة @ واحدة ونقطة في النطاق.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "المواعيد النهائية المتأخرة — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "المواعيد النهائية المتأخرة",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "المواعيد النهائية المستحقة اليوم — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "المواعيد النهائية المستحقة اليوم",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "المواعيد النهائية القادمة — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "المواعيد النهائية القادمة",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "المتابعات المتأخرة — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "المتابعات المتأخرة",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "المتابعات المستحقة اليوم — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "المتابعات المستحقة اليوم",
+    "source": "e04e8b1f370c"
   }
 }

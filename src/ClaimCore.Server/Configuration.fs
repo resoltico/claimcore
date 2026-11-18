@@ -222,7 +222,24 @@ module Configuration =
 
             let configuredDigest =
                 try
-                    DigestConfiguration.load ()
+                    let digest = DigestConfiguration.load ()
+
+                    if digest.IsSome then
+                        let minimum =
+                            AdmissionPolicy.minimumPoolCapacity configuredLimits.CorePermitLimit
+                            + AdmissionPolicy.digest
+
+                        if
+                            not (
+                                ClaimCore.Application.Runtime.supportsCapacity
+                                    minimum
+                                    configuredConnection
+                            )
+                        then
+                            digest |> Option.iter DigestConfiguration.dispose
+                            WebStartupDiagnostics.refuse WebStartupProblem.PoolCapacityInsufficient
+
+                    digest
                 with _ ->
                     configuredCertificate.Dispose()
                     reraise ()

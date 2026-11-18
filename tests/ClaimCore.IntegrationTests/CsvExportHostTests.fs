@@ -147,6 +147,7 @@ let private qualify () =
                         (Submissions.profile
                             {
                                 ActorProfileInput.DisplayName = sprintf "=CSV α \"person %d\"" index
+                                DigestEmail = None
                                 Contact = None
                             })
 

@@ -254,7 +254,12 @@ let internal malformedWrites fixture =
             (principal "new-person")
             None
             "people.register"
-            (Submissions.profile { DisplayName = ""; Contact = None }))
+            (Submissions.profile
+                {
+                    DisplayName = ""
+                    Contact = None
+                    DigestEmail = None
+                }))
             .GetAwaiter()
             .GetResult()
         (ClaimCore.TestSupport.Submissions.createRaw)

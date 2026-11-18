@@ -4,6 +4,12 @@ Use **People and access** to add accounts, update names and contact details, and
 make these changes. An auditor can review people and access without changing them. See the
 [operating guide](operating.md#access-review-and-sessions) for identity-provider and session controls.
 
+## Digest address
+
+An Owner can use the profile edit action to set or clear a person's daily reminder digest address.
+The address controls delivery of the daily counts and is cleared by profile erasure. See
+[Daily reminder digest](operating.md#daily-reminder-digest) for the service settings.
+
 ## Add a person
 
 Choose **Add person**, enter their sign-in identity, and give them a name. Contact details are optional.

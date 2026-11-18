@@ -24,6 +24,18 @@ module internal ActorCodecs =
                 unitVariant "ERASED" DisplayName.Erased
             ]
 
+    let emailAddress =
+        boundedUtf8Text 1 (4 * EmailAddress.MaximumCharacters)
+        |> interpret
+            (fun path raw ->
+                EmailAddress.parse raw
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid email address."
+                    }))
+            EmailAddress.format
+
     let profile =
         let contact =
             boundedUtf8Text 1 PartyName.MaximumBytes
@@ -37,14 +49,16 @@ module internal ActorCodecs =
                         }))
                 ContactText.format
 
-        (record (fun name contact ->
+        (record (fun name contact email ->
             {
                 ActorProfile.DisplayName = name
                 Contact = contact
+                DigestEmail = email
             })
         : Fields<ActorProfile, _>)
         |> field "displayName" _.DisplayName partyName
         |> field "contact" _.Contact (nullable contact)
+        |> optionalField "digestEmail" _.DigestEmail emailAddress
         |> build
         |> named "ActorProfile"
 

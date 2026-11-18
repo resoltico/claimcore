@@ -61,7 +61,7 @@ module internal PartProjections =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.actors(actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,principal_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(actor_id) DO UPDATE SET principal_key=EXCLUDED.principal_key,issuer=EXCLUDED.issuer,subject=EXCLUDED.subject,enabled=EXCLUDED.enabled,display_name=EXCLUDED.display_name,contact=EXCLUDED.contact,display_name_search=EXCLUDED.display_name_search,contact_search=EXCLUDED.contact_search,revision=EXCLUDED.revision WHERE claimcore.actors.principal_kind=EXCLUDED.principal_kind"
+                    "INSERT INTO claimcore.actors(actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,principal_key,digest_email) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(actor_id) DO UPDATE SET principal_key=EXCLUDED.principal_key,issuer=EXCLUDED.issuer,subject=EXCLUDED.subject,enabled=EXCLUDED.enabled,display_name=EXCLUDED.display_name,contact=EXCLUDED.contact,digest_email=EXCLUDED.digest_email,display_name_search=EXCLUDED.display_name_search,contact_search=EXCLUDED.contact_search,revision=EXCLUDED.revision WHERE claimcore.actors.principal_kind=EXCLUDED.principal_kind"
                     [|
                         box (ActorId.value actor.ActorId)
                         box (Vocabulary.token PrincipalKind.vocabulary kind)
@@ -79,6 +79,11 @@ module internal PartProjections =
                         optional row.ContactSearch
                         box (Revision.value row.Revision)
                         box (PrincipalKey.naturalKey actor.Principal)
+                        optional (
+                            actor.Profile
+                            |> Option.bind _.DigestEmail
+                            |> Option.map EmailAddress.format
+                        )
                     |]
                     token
 

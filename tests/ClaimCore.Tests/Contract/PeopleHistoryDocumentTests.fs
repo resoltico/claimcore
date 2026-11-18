@@ -59,6 +59,7 @@ let tests =
                                     Enabled = None
                                     ProfilePresent = None
                                     DisplayName = None
+                                    DigestEmail = None
                                     Contact = None
                                     Grants =
                                         [
@@ -88,6 +89,7 @@ let tests =
                                             }
                                     ProfilePresent = None
                                     DisplayName = None
+                                    DigestEmail = None
                                     Contact = None
                                     Grants = []
                                 }

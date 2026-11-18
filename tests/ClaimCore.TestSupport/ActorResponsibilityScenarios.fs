@@ -85,7 +85,12 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                             (Submissions.principal target
                              |> Map.fold
                                  (fun values key value -> Map.add key value values)
-                                 (Submissions.profile { DisplayName = name; Contact = None })))
+                                 (Submissions.profile
+                                     {
+                                         DisplayName = name
+                                         Contact = None
+                                         DigestEmail = None
+                                     })))
 
                 return target, ActorId.ofOperationId (CaseFixtures.operationId registration)
             }

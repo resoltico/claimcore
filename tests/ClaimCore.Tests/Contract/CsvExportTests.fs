@@ -67,6 +67,7 @@ let tests =
                                 }
                         ProfilePresent = None
                         DisplayName = None
+                        DigestEmail = None
                         Contact = None
                         Grants = []
                     }
@@ -365,6 +366,7 @@ let completeByteGoldens =
                                     }
                             ProfilePresent = None
                             DisplayName = None
+                            DigestEmail = None
                             Contact = None
                             Grants = []
                         }

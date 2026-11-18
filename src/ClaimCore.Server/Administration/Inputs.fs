@@ -214,6 +214,7 @@ module Inputs =
                     let profile =
                         {
                             ActorProfileInput.DisplayName = values["--owner-name"]
+                            DigestEmail = None
                             Contact = Map.tryFind "--owner-contact" values
                         }
 

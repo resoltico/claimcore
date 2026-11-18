@@ -123,6 +123,7 @@
     <Compile Include="Domain/CaseWorkValueTests.fs" />
     <Compile Include="Domain/RegistrationIdentifiersTests.fs" />
     <Compile Include="Domain/ActorProfileTests.fs" />
+    <Compile Include="Domain/ReminderDigestTests.fs" />
     <Compile Include="Contract/ActorReferenceContractTests.fs" />
     <Compile Include="Domain/ExpiryFrontierTests.fs" />
     <Compile Include="Contract/TextFormatTests.fs" />

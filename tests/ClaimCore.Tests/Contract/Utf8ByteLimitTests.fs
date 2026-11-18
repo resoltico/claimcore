@@ -114,6 +114,7 @@ let tests =
                                  (Submissions.profile
                                      {
                                          DisplayName = String('x', 1025)
+                                         DigestEmail = None
                                          Contact = None
                                      }))
 

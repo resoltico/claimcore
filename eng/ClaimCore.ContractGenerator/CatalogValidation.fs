@@ -59,6 +59,9 @@ module CatalogValidation =
         for KeyValue(key, arguments) in ClaimCore.Presentation.TimelineEventPresentation.contracts do
             matches key arguments
 
+        for key, arguments in DigestMessage.contracts do
+            matches key arguments
+
         for KeyValue(key, _) in templates do
             if
                 key.StartsWith("cli.", System.StringComparison.Ordinal)
@@ -143,6 +146,7 @@ module CatalogValidation =
                 "ui"
                 "cli"
                 "timeline"
+                "digest"
                 "change"
             ]
             @ (Terms.all |> List.map _.Name)

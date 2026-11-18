@@ -64,6 +64,7 @@ module CommandGrammar =
         | TaskInputId.Target InputTarget.PrincipalSubject -> "subject"
         | TaskInputId.Target InputTarget.ProfileDisplayName -> "name"
         | TaskInputId.Target InputTarget.ProfileContact -> "contact"
+        | TaskInputId.Target InputTarget.ProfileDigestEmail -> "digestEmail"
         | TaskInputId.CaseView
         | TaskInputId.ReminderView -> "view"
         | TaskInputId.ResponsibleActorFilter -> "responsibleActor"

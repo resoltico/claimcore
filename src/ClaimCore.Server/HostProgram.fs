@@ -185,6 +185,15 @@ let private configuredBuilder
         ))
     |> ignore
 
+    configuration.Digest
+    |> Option.iter (fun digest ->
+        builder.Services.AddHostedService<DigestService>(fun _ ->
+            new DigestService(
+                DigestService.runDue Console.Error configuration.Binding.Origin runtime digest,
+                TimeProvider.System
+            ))
+        |> ignore)
+
     builder.Services.AddAuthorization() |> ignore
     builder
 

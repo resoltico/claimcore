@@ -132,6 +132,7 @@
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="InitializationPostgresTests.fs" />
     <Compile Include="HousekeepingPostgresTests.fs" />
+    <Compile Include="DigestPostgresTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="RuntimeInstallationTests.fs" />
     <Compile Include="ReviewedMutationTests.fs" />

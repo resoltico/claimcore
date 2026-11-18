@@ -130,6 +130,8 @@ module Terms =
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered ReminderState.vocabulary
+            rendered DigestCountKind.vocabulary
+            rendered DigestOutcome.vocabulary
             reminderStateSelection
             rendered ReminderDue.vocabulary
             rendered ReminderKind.vocabulary

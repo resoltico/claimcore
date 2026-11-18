@@ -143,6 +143,10 @@ module ScalarGuidance =
         | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.PartyName) ->
             forProfileName
         | TaskInputId.Target InputTarget.ProfileContact -> forProfileContact
+        | TaskInputId.Target InputTarget.ProfileDigestEmail ->
+            message
+                key
+                [ "maximumCharacters", GuidanceArgument.Count EmailAddress.MaximumCharacters ]
         | TaskInputId.Target InputTarget.Parties ->
             message key [ "maximumParties", GuidanceArgument.Count PartyContent.MaximumCurrent ]
         | TaskInputId.Target InputTarget.PartyDetails ->

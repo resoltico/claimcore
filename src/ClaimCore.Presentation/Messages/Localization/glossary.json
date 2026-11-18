@@ -280,5 +280,17 @@
     "de": "Partei",
     "es": "Parte",
     "forbidden": {}
+  },
+  "digest": {
+    "en": "digest",
+    "lv": "kopsavilkums",
+    "ar": "ملخص",
+    "ko": "요약",
+    "ja": "まとめ",
+    "zh-Hans": "摘要",
+    "zh-Hant": "摘要",
+    "de": "Übersicht",
+    "es": "resumen",
+    "forbidden": {}
   }
 }

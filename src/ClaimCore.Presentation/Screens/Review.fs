@@ -351,6 +351,13 @@ module ReviewScreen =
                             "field.profile.contact.label"
                             (ContactText.format >> PresentedValue.Text)
                     )
+                    value.DigestEmail
+                    |> Option.map (
+                        changed
+                            (prefix + "digestEmail")
+                            "field.profile.digestEmail.label"
+                            (EmailAddress.format >> PresentedValue.Text)
+                    )
                 ]
                 |> List.choose id
 

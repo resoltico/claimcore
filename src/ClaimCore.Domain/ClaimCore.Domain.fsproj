@@ -30,6 +30,7 @@
     <Compile Include="Grants.fs" />
     <Compile Include="CaseReporting.fs" />
     <Compile Include="WorklistSemantics.fs" />
+    <Compile Include="ReminderDigest.fs" />
     <Compile Include="CaseStages.fs" />
     <Compile Include="Reads.fs" />
     <Compile Include="Tasks/TaskId.fs" />

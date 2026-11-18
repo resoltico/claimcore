@@ -423,11 +423,24 @@ CREATE TABLE claimcore.actors (
     contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
     display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
     contact_search text CHECK (contact_search IS NULL OR (octet_length(contact_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(contact_search))),
-    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
+    digest_email text CHECK (digest_email IS NULL OR (octet_length(digest_email) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(digest_email))),
+    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR (contact IS NULL AND digest_email IS NULL)) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
 );
 
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
 CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public.gin_trgm_ops);
+
+CREATE TABLE claimcore.digest_runs (
+    -- An actor's creation operation survives projection rebuilds.
+    actor_id uuid NOT NULL REFERENCES claimcore.ledger(operation_id),
+    digest_date date NOT NULL,
+    claimed_at timestamptz NOT NULL,
+    outcome text CHECK (outcome IS NULL OR outcome ~ '^[A-Z][A-Z_]{0,39}$'),
+    completed_at timestamptz,
+    PRIMARY KEY (actor_id,digest_date),
+    CHECK ((outcome IS NULL)=(completed_at IS NULL)),
+    CHECK (completed_at IS NULL OR completed_at>=claimed_at)
+);
 
 -- Bounded authentication hints, never ledger evidence. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
@@ -629,7 +642,7 @@ BEGIN
     IF EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind=NEW.erases_kind AND c.owner_id=NEW.erases_id
         AND c.payload IS NOT NULL AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(NEW.operation_sequence,NEW.effect_index))
         OR EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=NEW.erases_id AND a.revision=NEW.revision
-           AND (a.display_name IS NOT NULL OR a.contact IS NOT NULL OR a.display_name_search IS NOT NULL OR a.contact_search IS NOT NULL)) THEN
+           AND (a.display_name IS NOT NULL OR a.contact IS NOT NULL OR a.digest_email IS NOT NULL OR a.display_name_search IS NOT NULL OR a.contact_search IS NOT NULL)) THEN
         RAISE EXCEPTION 'accepted profile erasure must clear covered private values atomically' USING ERRCODE='CC003';
     END IF;
     RETURN NULL;
@@ -693,7 +706,7 @@ GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,sma
 GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
-GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
+GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request, claimcore.digest_runs TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;

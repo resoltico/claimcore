@@ -627,7 +627,7 @@ module internal AggregateStorage =
             let! rows =
                 DatabaseSession.rows
                     tx.Connection
-                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key FROM claimcore.actors WHERE actor_id=$1"
+                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key,digest_email FROM claimcore.actors WHERE actor_id=$1"
                     [| box (ActorId.value id) |]
                     tx.CancellationToken
 
@@ -650,20 +650,10 @@ module internal AggregateStorage =
                     corrupt "Person principal key disagrees with its identity."
 
                 let profile =
-                    match
-                        DatabaseSession.optional<string> 4 row,
-                        DatabaseSession.optional<string> 5 row
-                    with
-                    | None, None -> None
-                    | Some displayName, contact ->
-                        ActorProfile.restore
-                            {
-                                DisplayName = displayName
-                                Contact = contact
-                            }
-                        |> Result.map Some
-                        |> Result.defaultWith (fun _ -> corrupt "Person profile is invalid.")
-                    | _ -> corrupt "Person profile is incomplete."
+                    Projections.profileWithDigest
+                        (DatabaseSession.optional<string> 4 row)
+                        (DatabaseSession.optional<string> 5 row)
+                        (DatabaseSession.optional<string> 10 row)
 
                 let actor =
                     {

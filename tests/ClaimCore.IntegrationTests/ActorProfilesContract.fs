@@ -63,6 +63,7 @@ let internal lifecycle fixture =
         let profile: ActorProfileInput =
             {
                 DisplayName = "Authored profile name"
+                DigestEmail = None
                 Contact = Some "private-contact@example.test"
             }
 
@@ -175,6 +176,7 @@ let internal lifecycle fixture =
         let replacement: ActorProfileInput =
             {
                 DisplayName = "New authored profile"
+                DigestEmail = None
                 Contact = None
             }
 
@@ -259,6 +261,7 @@ let internal registrationIsolation fixture =
         let profile: ActorProfileInput =
             {
                 DisplayName = "Distinct authored name"
+                DigestEmail = None
                 Contact = Some "distinct-private-contact"
             }
 

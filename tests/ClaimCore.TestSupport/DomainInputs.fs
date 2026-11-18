@@ -200,12 +200,14 @@ let paymentStateFrom values =
 let actorProfile: ActorProfileInput =
     {
         DisplayName = "Synthetic account"
+        DigestEmail = None
         Contact = None
     }
 
 let ownerProfile: ActorProfileInput =
     {
         DisplayName = "Synthetic owner"
+        DigestEmail = None
         Contact = None
     }
 
@@ -214,7 +216,12 @@ let actorReference id =
 
 let namedActorReference id name =
     let profile =
-        ActorProfile.parse { DisplayName = name; Contact = None }
+        ActorProfile.parse
+            {
+                DisplayName = name
+                Contact = None
+                DigestEmail = None
+            }
         |> Result.defaultWith (fun _ -> failtest "Invalid authored fixture name")
 
     ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)

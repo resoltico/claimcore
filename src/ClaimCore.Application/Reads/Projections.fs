@@ -22,18 +22,21 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let profile (name: string option) (contact: string option) =
-        match name, contact with
-        | None, None -> None
-        | Some name, contact ->
+    let profileWithDigest (name: string option) (contact: string option) (email: string option) =
+        match name, contact, email with
+        | None, None, None -> None
+        | Some name, contact, email ->
             ActorProfile.restore
                 {
                     DisplayName = name
                     Contact = contact
+                    DigestEmail = email
                 }
             |> parsed
             |> Some
-        | None, Some _ -> raise (RecordCorruptException "Contact without an actor display name.")
+        | None, _, _ -> raise (RecordCorruptException "Profile data without an actor display name.")
+
+    let profile name contact = profileWithDigest name contact None
 
     let caseColumns =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
@@ -385,6 +388,15 @@ module internal Projections =
                 |> parsed
             Enabled = required 4 row
             Profile = profile (optional<string> 5 row) (optional<string> 6 row)
+        }
+
+    let actorRowWithDigest index row =
+        { actorRow row with
+            Profile =
+                profileWithDigest
+                    (optional<string> 5 row)
+                    (optional<string> 6 row)
+                    (optional<string> index row)
         }
 
     let grantRow row : GrantRow * GrantPosition =

@@ -16,6 +16,7 @@ module internal AdmissionPolicy =
     let sessions = 4
     let readiness = 2
     let housekeeping = 1
+    let digest = 1
     let maximumCorePermits = 4
 
     let maximumQueuedWriters = 8

@@ -68,7 +68,11 @@ let tests =
                                         (Some 0L)
                                         "people.register"
                                         (ClaimCore.TestSupport.Submissions.profile (
-                                            { DisplayName = name; Contact = None }
+                                            {
+                                                DisplayName = name
+                                                Contact = None
+                                                DigestEmail = None
+                                            }
                                         ))
 
                                 return! Service.executeSubmission (admin) submission (token)

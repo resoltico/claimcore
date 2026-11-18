@@ -132,11 +132,11 @@ module internal PeopleReads =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE actor_id=$1"
+                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,digest_email FROM claimcore.actors WHERE actor_id=$1"
                     [| box (ActorId.value id) |]
                     token
 
-            return rows |> List.tryExactlyOne |> Option.map Projections.actorRow
+            return rows |> List.tryExactlyOne |> Option.map (Projections.actorRowWithDigest 7)
         }
 
     let enabledHumanOwners (tx: ReadTx) () =

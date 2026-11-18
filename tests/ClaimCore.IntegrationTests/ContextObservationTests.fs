@@ -270,6 +270,7 @@ let peoplePageBasis =
                                     (ClaimCore.TestSupport.Submissions.profile (
                                         {
                                             DisplayName = "Basis profile"
+                                            DigestEmail = None
                                             Contact = None
                                         }
                                     ))

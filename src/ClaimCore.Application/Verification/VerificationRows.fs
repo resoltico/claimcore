@@ -418,9 +418,9 @@ module internal VerificationRows =
                                 VerificationFinding.PeopleProfileProjection
                                 (fun (id, _, _, _, _) -> id)
                                 profiles
-                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision FROM claimcore.actors ORDER BY actor_id"
+                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,digest_email FROM claimcore.actors ORDER BY actor_id"
                                 (fun row ->
-                                    let actor = Projections.actorRow row
+                                    let actor = Projections.actorRowWithDigest 10 row
 
                                     actor.ActorId,
                                     actor.Profile,

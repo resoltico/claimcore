@@ -1,5 +1,8 @@
 namespace ClaimCore.Domain
 
+open System
+open System.Text
+
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type ContactText = private ContactText of PartyName
 
@@ -13,25 +16,63 @@ module ContactText =
     let admit (ContactText value) =
         PartyName.admit value |> Result.map ContactText
 
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type EmailAddress = private EmailAddress of string
+
+module EmailAddress =
+    [<Literal>]
+    let MaximumCharacters = 254
+
+    [<Literal>]
+    let MaximumLocalCharacters = 64
+
+    let descriptor = ScalarText.descriptor None (Some MaximumCharacters)
+    let format (EmailAddress value) = value
+
+    let parse (value: string) =
+        let invalid = Error Violation.EmailAddressInvalid
+
+        if not (UnicodeText.isPersisted value) then
+            invalid
+        else
+            let count (text: string) = text.EnumerateRunes() |> Seq.length
+
+            match value.Split '@' with
+            | [| local; domain |] when
+                count local >= 1
+                && count local <= MaximumLocalCharacters
+                && count value <= MaximumCharacters
+                && domain.Contains '.'
+                && not (
+                    value.EnumerateRunes()
+                    |> Seq.exists (fun rune -> Rune.IsWhiteSpace rune || Rune.IsControl rune)
+                )
+                ->
+                Ok(EmailAddress value)
+            | _ -> invalid
+
 [<RequireQualifiedAccess>]
 type ActorProfileField =
     | DisplayName
     | Contact
+    | DigestEmail
 
 type ActorProfileInput =
     {
         DisplayName: string
         Contact: string option
+        DigestEmail: string option
     }
 
 type ActorProfile =
     {
         DisplayName: PartyName
         Contact: ContactText option
+        DigestEmail: EmailAddress option
     }
 
 module ActorProfile =
-    let private combine displayName contact =
+    let private combine displayName contact digestEmail =
         let issues =
             [
                 match displayName with
@@ -40,14 +81,18 @@ module ActorProfile =
                 match contact with
                 | Error issue -> yield ActorProfileField.Contact, issue
                 | Ok _ -> ()
+                match digestEmail with
+                | Error issue -> yield ActorProfileField.DigestEmail, issue
+                | Ok _ -> ()
             ]
 
-        match displayName, contact with
-        | Ok displayName, Ok contact ->
+        match displayName, contact, digestEmail with
+        | Ok displayName, Ok contact, Ok digestEmail ->
             Ok
                 {
                     ActorProfile.DisplayName = displayName
                     Contact = contact
+                    DigestEmail = digestEmail
                 }
         | _ -> Error issues
 
@@ -57,6 +102,9 @@ module ActorProfile =
             (match input.Contact with
              | None -> Ok None
              | Some raw -> ContactText.parse raw |> Result.bind contact |> Result.map Some)
+            (match input.DigestEmail with
+             | None -> Ok None
+             | Some raw -> EmailAddress.parse raw |> Result.map Some)
 
     /// Current authoring policy consumes already parsed profile values.
     let admit (profile: ActorProfile) =
@@ -65,6 +113,7 @@ module ActorProfile =
             (match profile.Contact with
              | None -> Ok None
              | Some value -> ContactText.admit value |> Result.map Some)
+            (Ok profile.DigestEmail)
 
     let parse input =
         parseWith PartyName.admit ContactText.admit input
@@ -76,6 +125,7 @@ module ActorProfile =
         {
             DisplayName = PartyName.format profile.DisplayName
             Contact = profile.Contact |> Option.map ContactText.format
+            DigestEmail = profile.DigestEmail |> Option.map EmailAddress.format
         }
 
 [<RequireQualifiedAccess>]

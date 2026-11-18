@@ -69,6 +69,7 @@ let private state principal (view: AccessView) =
             ActorProfile.parse
                 {
                     DisplayName = "Synthetic target"
+                    DigestEmail = None
                     Contact = None
                 }
             |> required

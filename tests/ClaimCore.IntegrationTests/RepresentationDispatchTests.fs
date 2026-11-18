@@ -255,6 +255,7 @@ let private dispatch () =
                         (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Auditor input"
+                                DigestEmail = None
                                 Contact = None
                             }
                         ))
@@ -308,6 +309,7 @@ let private dispatch () =
             (Some
                 {
                     DisplayName = "Auditor input"
+                    DigestEmail = None
                     Contact = None
                 })
             "Core editable profile"

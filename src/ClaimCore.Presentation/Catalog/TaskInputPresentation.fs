@@ -76,6 +76,8 @@ module TaskInputPresentation =
         | TaskInputId.CaseDate _ -> Some(ScalarRule.PlannedDate CalendarDate.descriptor)
         | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.Reason) ->
             Some(ScalarRule.Text PartyName.descriptor)
+        | TaskInputId.Target InputTarget.ProfileDigestEmail ->
+            Some(ScalarRule.Text EmailAddress.descriptor)
         | TaskInputId.Target InputTarget.ProfileContact ->
             Some(ScalarRule.Text ContactText.descriptor)
         | TaskInputId.Target InputTarget.PartyName -> Some(ScalarRule.Text PartyName.descriptor)

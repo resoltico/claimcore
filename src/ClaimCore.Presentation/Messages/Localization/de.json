@@ -3770,5 +3770,101 @@
   "daysOpenBand.366+.label": {
     "text": "366 Tage oder mehr",
     "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "Tägliche Erinnerungsübersicht ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "Ihre Erinnerungen unter {url} öffnen.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "Überfällige Fristen",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "Heute fällige Fristen",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "Bevorstehende Fristen",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "Überfällige Folgemaßnahmen",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "Heute fällige Folgemaßnahmen",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "Gesendet",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "Fehlgeschlagen",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "Keine Erinnerungen zum Senden",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "E-Mail für die Übersicht",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "Adresse für die tägliche Erinnerungsübersicht eingeben.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "Eine E-Mail-Adresse mit höchstens {maximumCharacters} Zeichen verwenden.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "Eine E-Mail-Adresse mit einem @ und einem Punkt in der Domain eingeben.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "Überfällige Fristen — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "Überfällige Fristen",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "Heute fällige Fristen — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "Heute fällige Fristen",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "Bevorstehende Fristen — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "Bevorstehende Fristen",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "Überfällige Folgemaßnahmen — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "Überfällige Folgemaßnahmen",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "Heute fällige Folgemaßnahmen — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "Heute fällige Folgemaßnahmen",
+    "source": "e04e8b1f370c"
   }
 }

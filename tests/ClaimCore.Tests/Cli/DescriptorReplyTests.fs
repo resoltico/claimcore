@@ -28,6 +28,7 @@ let private peopleReview () =
                     }
             ProfilePresent = None
             DisplayName = None
+            DigestEmail = None
             Contact = None
             Grants =
                 [
@@ -346,6 +347,7 @@ let assigneePresentation =
                         ActorProfile.parse
                             {
                                 DisplayName = "Anna Ozola"
+                                DigestEmail = None
                                 Contact = None
                             }
                         |> CaseBuilders.accepted
@@ -459,6 +461,7 @@ let fullDirectoryAndAuditDetails =
                 ActorProfile.parse
                     {
                         DisplayName = "Earlier profile"
+                        DigestEmail = None
                         Contact = Some "historical-only@example.test"
                     }
                 |> CaseBuilders.accepted
@@ -474,6 +477,7 @@ let fullDirectoryAndAuditDetails =
                     Enabled = None
                     ProfilePresent = None
                     DisplayName = None
+                    DigestEmail = None
                     Contact = None
                     Grants = []
                 }
@@ -586,6 +590,7 @@ let fullDirectoryAndAuditDetails =
                                     { item.Changes with
                                         Profiles = { Before = None; After = None }
                                         DisplayName = None
+                                        DigestEmail = None
                                         Contact = None
                                     }
                             })

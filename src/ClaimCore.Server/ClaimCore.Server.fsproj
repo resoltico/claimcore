@@ -57,6 +57,7 @@
     <Compile Include="WebProbe.fs" />
     <Compile Include="ProcessLifetime.fs" />
     <Compile Include="HousekeepingService.fs" />
+    <Compile Include="DigestService.fs" />
     <Compile Include="HostProgram.fs" />
     <Compile Include="Administration/Inputs.fs" />
     <Compile Include="Administration/Replies.fs" />

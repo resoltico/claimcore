@@ -271,6 +271,7 @@ let private pagingAndRights (database: PostgresFixture.Database) service =
                 (Submissions.profile
                     {
                         DisplayName = "Scoped reader"
+                        DigestEmail = None
                         Contact = None
                     })
 

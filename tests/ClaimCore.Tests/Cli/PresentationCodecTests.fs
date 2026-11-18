@@ -199,6 +199,7 @@ let producerBudgets =
                 ActorProfile.parse
                     {
                         DisplayName = String.replicate PartyName.MaximumCharacters "😀"
+                        DigestEmail = None
                         Contact = Some(String.replicate PartyName.MaximumCharacters "😀")
                     }
                 |> CaseBuilders.accepted
@@ -278,6 +279,7 @@ let producerBudgets =
                                 Before = None
                                 After = profile.Contact
                             }
+                    DigestEmail = None
                     Grants = grantFacts
                 }
 
@@ -423,6 +425,7 @@ let primaryPeopleChanges =
                         Enabled = None
                         ProfilePresent = None
                         DisplayName = None
+                        DigestEmail = None
                         Contact = None
                         Grants =
                             [

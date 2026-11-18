@@ -415,6 +415,7 @@ let private peoplePreviewFrame
         ActorProfile.parse
             {
                 DisplayName = if registering then "Authored" else "Synthetic account"
+                DigestEmail = None
                 Contact = None
             }
         |> CaseBuilders.accepted
@@ -467,6 +468,7 @@ let private peoplePreviewFrame
                         }
                 else
                     None
+            DigestEmail = None
             Contact = None
             Grants =
                 if grantBefore <> grantAfter then

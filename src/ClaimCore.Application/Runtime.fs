@@ -13,13 +13,22 @@ open ClaimCore.Application.Contracts
 
 open System
 open System.Threading
+open System.Threading.Tasks
 open ClaimCore.Application
 open Npgsql
 
 /// The admitted runtime owns storage lifetime without exposing provider types.
 type IRuntime =
     inherit IDisposable
-    abstract Housekeep: CancellationToken -> System.Threading.Tasks.Task<HousekeepingReport>
+    abstract Housekeep: (DateTimeOffset -> DateOnly) * CancellationToken -> Task<HousekeepingReport>
+
+    abstract RunDigests:
+        WorkDateBasis *
+        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<bool>) *
+        (ActorId -> DigestOutcome -> unit) *
+        CancellationToken ->
+            Task<unit>
+
     abstract Sessions: ISessionStore
     abstract Installation: Installation
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
@@ -29,8 +38,11 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
     member _.Store = LedgerStore(source, installation, Transactions.timeouts) :> IStore
 
     interface IRuntime with
-        member _.Housekeep token =
-            Housekeeping.prune source installation Housekeeping.DefaultBatch token
+        member _.Housekeep(dateAt, token) =
+            Housekeeping.prune source installation Housekeeping.DefaultBatch dateAt token
+
+        member _.RunDigests(basis, send, record, token) =
+            DigestDispatch.run source installation basis send record token
 
         member _.Sessions = SessionStore(source, installation) :> ISessionStore
         member _.Installation = installation

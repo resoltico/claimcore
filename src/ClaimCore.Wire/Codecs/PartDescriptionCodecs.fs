@@ -102,7 +102,7 @@ module PartDescriptionCodecs =
         |> named "ReminderPlan"
 
     let person =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 ->
+        (record (fun v0 v1 v2 v3 v4 v5 email v6 ->
             {
                 PersonPartDescription.Profiles = v0
                 Principal = v1
@@ -110,6 +110,7 @@ module PartDescriptionCodecs =
                 ProfilePresent = v3
                 DisplayName = v4
                 Contact = v5
+                DigestEmail = email
                 Grants = v6
             })
         : Fields<PersonPartDescription, _>)
@@ -147,6 +148,10 @@ module PartDescriptionCodecs =
                                  }))
                          ContactText.format)
             ))
+        |> optionalField
+            "digestEmail"
+            _.DigestEmail
+            (ValueChangeCodecs.change "DigestEmailChange" ActorCodecs.emailAddress)
         |> field "grants" _.Grants (list PeopleAdmission.MaximumGrants assignment)
         |> build
         |> named "PersonPartDescription"

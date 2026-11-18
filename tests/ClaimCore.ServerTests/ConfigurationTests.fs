@@ -217,7 +217,8 @@ let private expectDigestFault code setting =
             "The fault contains no submitted inputs"
 
 let private digestAvailability () =
-    configured (fun _ _ ->
+    configured (fun _ connection ->
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
         let withoutSettings = Configuration.load ()
         use _withoutCertificates = Configuration.ownCertificates withoutSettings
         Expect.isNone withoutSettings.Digest "Absent settings disable digest"
@@ -267,7 +268,9 @@ let private digestAvailability () =
         Expect.equal digest.Smtp.Tls DigestSmtpTls.Implicit "Implicit TLS")
 
 let private digestPrivateFiles () =
-    configured (fun directory _ ->
+    configured (fun directory connection ->
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+
         for setting, value in digestSettings do
             Environment.SetEnvironmentVariable(setting, value)
 

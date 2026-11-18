@@ -61,6 +61,7 @@ let private peopleReview () =
                         After = Some false
                     }
             DisplayName = None
+            DigestEmail = None
             Contact = None
             Grants = []
         }

@@ -25,6 +25,7 @@ let private actorId =
 let private profile =
     {
         ActorProfileInput.DisplayName = "Editable seed"
+        DigestEmail = None
         Contact = Some "contact@example.test"
     }
 

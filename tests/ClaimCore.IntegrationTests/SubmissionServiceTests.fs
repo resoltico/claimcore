@@ -305,6 +305,7 @@ let private widePrincipal (database: PostgresFixture.Database) =
                          (Submissions.profile
                              {
                                  DisplayName = "A wide identity"
+                                 DigestEmail = None
                                  Contact = None
                              }))
 
@@ -365,6 +366,7 @@ let private replayPermission (database: PostgresFixture.Database) =
                      (Submissions.profile
                          {
                              DisplayName = "Other manager"
+                             DigestEmail = None
                              Contact = None
                          })
                  |> Map.add
@@ -396,6 +398,7 @@ let private replayPermission (database: PostgresFixture.Database) =
                      (Submissions.profile
                          {
                              DisplayName = "Replay target"
+                             DigestEmail = None
                              Contact = None
                          }))
 

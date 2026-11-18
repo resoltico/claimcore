@@ -63,6 +63,7 @@ type PersonPartDescription =
         ProfilePresent: ValueChange<bool> option
         DisplayName: ValueChange<PartyName> option
         Contact: ValueChange<ContactText> option
+        DigestEmail: ValueChange<EmailAddress> option
         Grants: GrantAssignmentChange list
     }
 

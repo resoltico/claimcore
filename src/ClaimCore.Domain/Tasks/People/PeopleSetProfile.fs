@@ -9,9 +9,9 @@ open ClaimCore.Domain.Tasks.Declarations
 
 let declaration =
     let profile =
-        profile
+        profile @ [ optional (target InputTarget.ProfileDigestEmail) ]
         |> List.map (fun input ->
-            if input.Input = target InputTarget.ProfileContact then
+            if input.Mode = TaskInputMode.Optional then
                 { input with Clearable = true }
             else
                 input)
@@ -50,6 +50,10 @@ let availability environment state binding =
                         profile.Contact
                         |> Option.map (ContactText.format >> InputValue.Text)
                         |> Option.defaultValue InputValue.Null
+                        target InputTarget.ProfileDigestEmail,
+                        profile.DigestEmail
+                        |> Option.map (EmailAddress.format >> InputValue.Text)
+                        |> Option.defaultValue InputValue.Null
                     ]
         }
 
@@ -63,7 +67,15 @@ let decide context environment (state: Person option) binding inputs =
     |> Result.bind (fun state ->
         parse inputs
         |> Result.bind (fun command ->
-            PersonInputs.admitProfile context command.Profile
+            let profile =
+                if Map.containsKey (target InputTarget.ProfileDigestEmail) inputs.Values then
+                    command.Profile
+                else
+                    { command.Profile with
+                        DigestEmail = state.Actor.Profile |> Option.bind _.DigestEmail
+                    }
+
+            PersonInputs.admitProfile context profile
             |> Result.map (fun profile ->
                 [
                     PersonRules.change

@@ -644,11 +644,13 @@ let private profileAndDirectoryEvidence fixture actor =
                     if contact then
                         {
                             ActorProfileInput.DisplayName = "Valid name"
+                            DigestEmail = None
                             Contact = Some raw
                         }
                     else
                         {
                             ActorProfileInput.DisplayName = raw
+                            DigestEmail = None
                             Contact = None
                         }
 

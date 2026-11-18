@@ -21,6 +21,7 @@ type Violation =
     | PartyContentRequired
     | PartyCountRange
     | LinkIdRequired
+    | EmailAddressInvalid
     | UpdateRequired
     | CalendarDateRequired
     | FutureDate

@@ -278,7 +278,14 @@ let tests =
                             do!
                                 fails (fun () ->
                                     task {
-                                        let! _ = runtime.Housekeep CancellationToken.None in
+                                        let! _ =
+                                            runtime.Housekeep(
+                                                (fun instant ->
+                                                    System.DateOnly.FromDateTime
+                                                        instant.UtcDateTime),
+                                                CancellationToken.None
+                                            ) in
+
                                         return ()
                                     })
 

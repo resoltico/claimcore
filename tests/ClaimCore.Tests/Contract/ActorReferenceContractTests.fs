@@ -26,6 +26,7 @@ let tests =
                     ActorProfile.parse
                         {
                             DisplayName = "Anna Ozola"
+                            DigestEmail = None
                             Contact = Some "private-contact@example.test"
                         }
                     |> accepted

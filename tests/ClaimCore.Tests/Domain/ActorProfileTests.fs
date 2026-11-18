@@ -17,6 +17,7 @@ let tests =
                     ActorProfile.parse
                         {
                             DisplayName = " "
+                            DigestEmail = None
                             Contact = Some "\n"
                         }
 
@@ -31,6 +32,7 @@ let tests =
                 let input (contact: string) : ActorProfileInput =
                     {
                         DisplayName = "Anna Ozola"
+                        DigestEmail = None
                         Contact = Some contact
                     }
 
@@ -48,6 +50,7 @@ let tests =
                     let retained: ActorProfileInput =
                         {
                             DisplayName = " retained name "
+                            DigestEmail = None
                             Contact = Some " retained contact "
                         }
 
