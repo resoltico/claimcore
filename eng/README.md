@@ -11,7 +11,7 @@ the applicable final stages once, choosing CI or local execution as their owner.
 | [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Only contracts; runtime catalogs resolve in Presentation; [generation instructions](../docs/contributing.md#generated-contracts) |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; native and acceptance checks verify actual publication contents |
 
-The [source release procedure](../docs/contributing.md#source-releases) explains the owner's inputs to the
+The [release procedure](../docs/contributing.md#releases) explains the owner's inputs to the
 [release workflow](../.github/workflows/release.yml).
 CI success records executed checks, without granting release approval.
 

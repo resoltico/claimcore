@@ -1,4 +1,4 @@
-name: Publish source release
+name: Publish release
 run-name: Publish ${{ inputs.tag }}
 
 on:
@@ -22,14 +22,17 @@ concurrency:
 
 jobs:
   release:
-    name: Publish verified source release
+    name: Publish verified release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 45
     environment: release
     permissions:
       actions: read # Read the CI conclusion for the tagged commit.
       contents: write # Create the release for the existing tag.
+      packages: write # Publish the server image to GHCR.
+    env:
+      IMAGE_REPOSITORY: ghcr.io/resoltico/claimcore-server
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -70,10 +73,8 @@ jobs:
         run: |
           dotnet restore eng/ClaimCore.ContractGenerator --locked-mode
           dotnet run --project eng/ClaimCore.ContractGenerator --configuration Release --no-restore -- --check-translations
-      - name: Publish the qualified changelog section
+      - name: Prepare the qualified changelog section
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
           CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
           CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
         run: |
@@ -87,4 +88,26 @@ jobs:
           ' > notes.md
           test -s notes.md
 
-          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md
+      - name: Build the server and CLI distribution
+        env:
+          CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
+          RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release
+        run: bash eng/build-release-artifacts.sh "$RELEASE_ARTIFACTS" "$IMAGE_REPOSITORY:$CANDIDATE_VERSION"
+      - name: Publish the versioned server image and release files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
+          REGISTRY_USER: ${{ github.actor }}
+          RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release
+        run: |
+          set -euo pipefail
+          image="$IMAGE_REPOSITORY:$CANDIDATE_VERSION"
+          printf '%s\n' "$GH_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          docker push "$image" | tee "$RUNNER_TEMP/claimcore-image-push.log"
+          digest="$(sed -nE 's/^[^ ]+: digest: (sha256:[0-9a-f]{64}) size: [0-9]+$/\1/p' "$RUNNER_TEMP/claimcore-image-push.log")"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          printf "\\nServer image: \`%s@%s\`\\n" "$IMAGE_REPOSITORY" "$digest" >> notes.md
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md \
+            "$RELEASE_ARTIFACTS/SOURCE.tar.gz" "$RELEASE_ARTIFACTS/SHA256SUMS" "$RELEASE_ARTIFACTS"/claimcore-cli-*.tar.gz

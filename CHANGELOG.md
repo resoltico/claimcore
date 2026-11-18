@@ -26,6 +26,7 @@
 - CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
 - The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.
 - Worklist filters, due/assignment classification and assignee eligibility share core plans across lists and counts; clearing private projections requires accepted erasure evidence.
+- Releases include a server image by digest and CLI archives with checksums. See the [production Compose setup](docs/operating.md#install-from-release-artifacts).
 
 ## [0.19.0] - 2026-11-17
 

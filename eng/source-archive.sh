@@ -22,6 +22,6 @@ else
   exit 1
 fi
 # Untracked files are excluded. Stage new source files before publishing a checkout.
-tar -cf "${staging}/source.tar" --null -T "${staging}/SOURCE-FILES"
-tar -rf "${staging}/source.tar" -C "${staging}" SOURCE-FILES
+tar --no-xattrs -cf "${staging}/source.tar" --null -T "${staging}/SOURCE-FILES"
+tar --no-xattrs -rf "${staging}/source.tar" -C "${staging}" SOURCE-FILES
 gzip -c "${staging}/source.tar" > "${output}"

@@ -302,10 +302,11 @@ The Playwright version in [web/package.json](../web/package.json) is constrained
 that accessible-name references work across execution worlds before changing that pin.
 Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and disclosure controls intact.
 
-## Source releases
+## Releases
 
-Versioning, tags and publication require owner authorization. The
-[release workflow](../.github/workflows/release.yml) publishes the tagged commit's dated CHANGELOG section.
+Versioning, tags and publication require owner authorization. The release publishes the tagged
+commit's dated CHANGELOG section, its source and CLI archives with checksums, and its server image.
+See the [release workflow](../.github/workflows/release.yml).
 Prepare dependencies, documentation, the version in [Directory.Build.props](../Directory.Build.props)
 and the dated release notes together. Regenerate contracts after changing the version. Keep an empty
 `Unreleased` section above the dated section and leave published release history unchanged.
@@ -326,8 +327,8 @@ gh workflow run release.yml --ref main -f tag="$claimcore_release_tag" -f expect
 ```
 
 Publication checks the annotated tag, expected SHA, main-branch CI evidence and all offered translations.
-Confirm the workflow succeeded and the public release contains the dated changelog section. Passing
-checks alone does not authorize merging or releasing. Keep public reports free of private inputs.
+Confirm the workflow succeeded and the public release contains the dated changelog section, the
+archive checksums and the server image digest. Keep public reports free of private inputs.
 
 ## Licensing and contributions
 

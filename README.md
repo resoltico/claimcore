@@ -51,7 +51,7 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 | Coordinate changes | Reviewed versions, atomic acceptance and exact-operation recovery | Resolving business conflicts and uncertain external actions |
 | Inspect recorded work | Authorized receipts and history, verification and checkpoint comparison | Independent checkpoint custody and protection against trusted-administrator rewriting |
 | Remove private contents | Case/profile erasure within the live installation | Retention and disposal of backups, exports and other copies |
-| Run the service | HTTPS host, source-built CLI and a local evaluation Compose setup | Production deployment, capacity, monitoring, certificates and backups |
+| Run the service | Server image, native CLI archives, production Compose template and local evaluation setup | Deployment, capacity, monitoring, certificates and backups |
 | Handle money | Payment decisions and assertions of actual payments | Transfers, refunds, banking and accounting integrations |
 
 ## Languages
@@ -62,7 +62,7 @@ RTL. Release qualification requires current translations in every offered langua
 AI-assisted and await human linguistic review; see the [language status](docs/glossary.md#language-review).
 
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
-The owner reviews and merges work; releases distribute source through
-[GitHub Releases](https://github.com/resoltico/claimcore/releases).
+The owner reviews and merges work. Releases provide source and CLI archives with checksums and record
+the corresponding server image digest. See [GitHub Releases](https://github.com/resoltico/claimcore/releases).
 Original code and documentation use [AGPL-3.0-only](LICENSE). See [licensing, source and contribution terms](PROJECT-NOTICE.md) and the [commercial licensing status](LICENSE-COMMERCIAL.md). Third-party terms remain separate.
 [CHANGELOG.md](CHANGELOG.md) owns release summaries.
