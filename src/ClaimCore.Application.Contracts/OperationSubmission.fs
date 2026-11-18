@@ -385,10 +385,20 @@ module OperationSubmission =
         | Some value -> Ok value
         | None -> Error SubmissionProblem.Shape)
 
+    let private withDeclaredDefaults (declaration: TaskDeclaration) values =
+        (values, declaration.Inputs)
+        ||> List.fold (fun values input ->
+            match input.DefaultText with
+            | Some text when not (Map.containsKey input.Input values) ->
+                Map.add input.Input (SubmissionValue.Text text) values
+            | _ -> values)
+
     let assemble (submission: SubmissionEnvelope<int64, Guid>) =
         declared submission.Task
         |> bind (fun declaration ->
-            validate declaration.Inputs declaration.Collections submission.Inputs
+            let values = withDeclaredDefaults declaration submission.Inputs
+
+            validate declaration.Inputs declaration.Collections values
             |> bind (fun () ->
                 map2
                     (fun binding inputs ->
@@ -397,7 +407,7 @@ module OperationSubmission =
                             Inputs = inputs
                         })
                     (admitBinding declaration submission.Binding)
-                    (mapInputs declaration.Collections submission.Inputs)))
+                    (mapInputs declaration.Collections values)))
 
     let admit envelope =
         match assemble envelope with
@@ -566,8 +576,10 @@ module OperationSubmission =
         declared draft.Task
         |> bind (fun declaration ->
             let authored =
-                validate declaration.Inputs declaration.Collections draft.Inputs
-                |> bind (fun () -> mapInputs declaration.Collections draft.Inputs)
+                let values = withDeclaredDefaults declaration draft.Inputs
+
+                validate declaration.Inputs declaration.Collections values
+                |> bind (fun () -> mapInputs declaration.Collections values)
                 |> bind (checkInputs declaration)
 
             collect
@@ -673,8 +685,11 @@ module SubmissionAssembly =
     let defaults (declaration: TaskDeclaration) =
         declaration.Inputs
         |> List.choose (fun input ->
-            match input.Input with
-            | TaskInputId.Target(InputTarget.Group _) when input.Source = InputSource.Authored ->
+            match input.DefaultText, input.Input with
+            | Some text, _ -> Some(input.Input, SubmissionValue.Text text)
+            | None, TaskInputId.Target(InputTarget.Group _) when
+                input.Source = InputSource.Authored
+                ->
                 Some(
                     input.Input,
                     SubmissionValue.Text(CorrectionGroupAction.token CorrectionGroupAction.Keep)

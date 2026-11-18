@@ -79,7 +79,6 @@ type CaseRefusal =
     | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
-    | DecisionHasPayments
     | PaymentNotFound
     | PartyLimit
 

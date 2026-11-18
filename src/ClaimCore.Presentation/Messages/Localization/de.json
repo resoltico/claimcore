@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "Datum und Betrag einer tatsächlich geleisteten Zahlung in der Entscheidungswährung erfassen. Dadurch wird keine Überweisung ausgeführt oder geprüft.",
-    "source": "572c7a975cf2"
+    "text": "Erfassen Sie tatsächlich gezahltes oder zurückgezahltes Geld mit Datum, Betrag und Währung des Eintrags.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "Konto registrieren",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "Die Zahlungsentscheidung entfernen, bevor etwas bezahlt wurde. Ihr Verlauf bleibt erhalten.",
-    "source": "4579673a4146"
+    "text": "Ziehen Sie die Entscheidung zurück. Zahlungseinträge und Entscheidungsverlauf bleiben erhalten.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "Fallaufgaben",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "Verwenden Sie die Entscheidungswährung.",
-    "source": "6cf93e635901"
+    "text": "Verwenden Sie die Währung dieses Eintrags.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} ASCII-Großbuchstaben aus der Liste unterstützter aktiver ISO-4217-Währungen, passend zur Entscheidungswährung; keine Fonds- oder nicht nationalen Codes.",
-    "source": "1a3ba1179c9c"
+    "text": "{length} ASCII-Großbuchstaben aus der Liste der unterstützten aktiven ISO-4217-Währungen.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "Zahlungs-ID",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "Gezahlte Summen nach Währung",
-    "source": "b0f6fe6c2d8f"
+    "text": "Netto gezahlt nach Währung",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "{paid} von {payable} gezahlt.",
@@ -2479,21 +2479,9 @@
     "text": "Geben Sie einen Zahlungsbetrag größer als null ein.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "Zahlungen und Zahlungsentscheidung müssen dieselbe Währung verwenden.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "Die gezahlte Summe darf den zahlbaren Betrag nicht überschreiten.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "Verwenden Sie die UUID des Vorgangs, der den Zahlungseintrag angenommen hat.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "Eine Entscheidung mit Zahlungseinträgen kann nicht zurückgenommen oder geleert werden. Entfernen Sie Einträge nur, wenn sie irrtümlich erfasst wurden.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "Dieser Zahlungseintrag ist nicht mehr vorhanden. Lesen Sie vor dem Fortfahren den aktuellen Fall.",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "Die Versionsnummer der ausgewählten Partei verwenden.",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "Gezahlt",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "Gezahlt",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "Zurückgezahlt",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "Zurückgezahlt",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "An den Empfänger gezahltes Geld.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "Vom Empfänger zurückgezahltes Geld.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "Überzahlt",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "Zahlungen prüfen",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "Richtung",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "Externe Referenz",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "Zahlungsempfänger",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "Wählen Sie, ob Geld gezahlt oder zurückgezahlt wurde.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "Geben Sie die Referenz der Banktransaktion oder des Schreibens ein.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "Geben Sie die ID eines aktuellen Beteiligten dieses Falls ein.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "Wählen Sie Gezahlt oder Zurückgezahlt.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "Verwenden Sie die ID eines aktuellen Beteiligten.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "Netto gezahlt",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "Einbezogene Fälle",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "Wählen Sie Gezahlt oder Zurückgezahlt.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "Diese Zahlung würde den exakten Wertebereich der Währungssumme überschreiten.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "Wählen Sie einen aktuellen Beteiligten dieses Falls.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "Entfernter Beteiligter",
+    "source": "551b332ea085"
   }
 }

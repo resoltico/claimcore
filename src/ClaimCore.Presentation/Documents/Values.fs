@@ -306,7 +306,7 @@ type RegionStage =
         Stage: CaseStageKind
         Reached: bool
         Date: CalendarDate option
-        Amount: PresentedMoney option
+        StageValue: PresentedValue option
         Meter: PresentedMoneyMeter option
         Link: Link option
         Actions: Affordance list

@@ -236,7 +236,7 @@ let completeByteGoldens =
                     NextAction = None
                     Responsible = None
                     PendingReminders = 0L
-                    Paid = None
+                    NetPaid = None
                     PaymentCount = 0L
                     LastPaymentDate = None
                 }

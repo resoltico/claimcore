@@ -30,7 +30,8 @@ let private integration (database: PostgresFixture.Database) =
         let fixture = database.Fixture
         let! owner = populated database
 
-        for operation, role in [ 669, Role.DataSteward; 670, Role.Auditor ] do
+        for operation, role in
+            [ 668, Role.PaymentRecorder; 669, Role.DataSteward; 670, Role.Auditor ] do
             let! grant =
                 grant
                     owner
@@ -172,6 +173,38 @@ let private integration (database: PostgresFixture.Database) =
             "Anna Liepa; Jānis Bērziņš"
             "CSV joins current claimants in creation order"
 
+        let payment fields =
+            Map.ofList
+                [
+                    Submissions.field BusinessField.PaymentDate, SubmissionValue.Text "2026-08-20"
+                    Submissions.field BusinessField.PaidAmount, SubmissionValue.Text "25"
+                    Submissions.field BusinessField.PaidCurrency, SubmissionValue.Text "EUR"
+                    Submissions.input InputTarget.PaymentPayee,
+                    SubmissionValue.Text(PartyId.format party.PartyId)
+                ]
+            |> Map.fold
+                (fun next key value ->
+                    if Map.containsKey key next then
+                        next
+                    else
+                        Map.add key value next)
+                fields
+
+        let changePayment operation task selection inputs =
+            Service.executeSubmission
+                owner
+                (Submissions.createRaw task (id fixture operation) selection inputs)
+                token
+
+        let! paymentReceipt =
+            changePayment
+                676
+                "case.recordPayment"
+                (OperationBinding.Case(target, 1L, None, None))
+                (payment Map.empty)
+
+        accepted paymentReceipt |> ignore
+
         let! removed = execute 673 "party.remove" 2L Map.empty
         accepted removed |> ignore
         let! current = Service.get owner { Target = target } token
@@ -181,7 +214,83 @@ let private integration (database: PostgresFixture.Database) =
             (subject.Parties |> List.tail |> List.map _.PartyId)
             "Removal hides only the targeted party"
 
-        let afterRemoval = read current
+        let currentPayment = read current
+        let removedPayee = currentPayment.PaymentPayees |> List.exactlyOne
+        Expect.isTrue removedPayee.Removed "Existing payments retain the removed party marker"
+
+        Expect.equal
+            (removedPayee.Name |> Option.map PartyName.format)
+            (Some "Anna Liepa")
+            "The last recorded name stays available"
+
+        let! rejected =
+            changePayment
+                677
+                "case.recordPayment"
+                (OperationBinding.Case(
+                    target,
+                    Revision.value currentPayment.Snapshot.Revision,
+                    None,
+                    None
+                ))
+                (payment Map.empty)
+
+        Expect.equal
+            (match rejected.Outcome with
+             | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+                 InputIssues.toList issues |> List.map _.Violation
+             | other -> failtestf "Expected payee refusal: %A" other)
+            [ Violation.PayeeUnavailable ]
+            "New entries cannot use a removed payee"
+
+        let payee = subject.Parties[1].PartyId
+
+        let replacement =
+            Map.ofList
+                [
+                    Submissions.field BusinessField.PaidCurrency, SubmissionValue.Text "USD"
+                    Submissions.input InputTarget.PaymentDirection, SubmissionValue.Text "RETURNED"
+                    Submissions.input InputTarget.PaymentReference,
+                    SubmissionValue.Text "BANK-2026-1"
+                    Submissions.input InputTarget.PaymentPayee,
+                    SubmissionValue.Text(PartyId.format payee)
+                ]
+
+        let! corrected =
+            changePayment
+                678
+                "case.correctPayment"
+                (OperationBinding.Case(
+                    target,
+                    Revision.value currentPayment.Snapshot.Revision,
+                    Some(id fixture 676),
+                    None
+                ))
+                (payment replacement)
+
+        accepted corrected |> ignore
+
+        let! correctedCase = Service.get owner { Target = target } token
+        let currentEntry = (read correctedCase).LatestPayments |> List.exactlyOne
+
+        Expect.equal
+            (PaymentEntry.direction currentEntry)
+            PaymentDirection.Returned
+            "Direction corrected"
+
+        Expect.equal (PaymentEntry.money currentEntry |> Money.currency) "USD" "Currency corrected"
+
+        Expect.equal
+            (PaymentEntry.reference currentEntry |> Option.map Identifier.format)
+            (Some "BANK-2026-1")
+            "Evidence reference corrected"
+
+        Expect.equal
+            (PaymentEntry.payee currentEntry)
+            (Some payee)
+            "Payee corrected in the same operation"
+
+        let afterRemoval = read correctedCase
 
         let retainedQuery =
             { query with

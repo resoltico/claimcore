@@ -44,7 +44,8 @@ module CaseCsv =
             column "insurers" (parties PartyRole.Insurer)
             for field in CaseSummaryFields.declarations do
                 column ("state.fields." + field.Key) (listedValue field.Field)
-            column "paidAmount" (fun row -> row.Paid |> Option.map Money.format)
+            column "netPaid" (fun row ->
+                row.NetPaid |> Option.map (fun total -> DecimalTotal.format total.NetPaid))
             column "paymentCount" (fun row ->
                 Some(row.PaymentCount.ToString(CultureInfo.InvariantCulture)))
             column "lastPaymentDate" (fun row ->

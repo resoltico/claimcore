@@ -9,20 +9,8 @@ open ClaimCore.Json
 module CaseTotalsCodecs =
     open Codec
 
-    let total =
-        boundedText 1 (DecimalTotal.MaximumIntegerDigits + DecimalTotal.MaximumFractionalDigits + 1)
-        |> interpret
-            (fun path raw ->
-                match DecimalTotal.parse raw with
-                | Ok value when DecimalTotal.format value = raw -> Ok value
-                | _ ->
-                    Error
-                        {
-                            Path = path
-                            Reason = "Expected an unsigned canonical exact decimal total."
-                        })
-            DecimalTotal.format
-        |> named "DecimalTotal"
+    let total = ResponseScalars.decimalTotal false
+    let signedTotal = ResponseScalars.decimalTotal true
 
     let private currency =
         ResponseScalars.currency
@@ -36,17 +24,19 @@ module CaseTotalsCodecs =
                     }))
             Currency.format
 
-    let private currencyTotal =
-        (record (fun currency amount ->
+    let private currencyTotal signed =
+        (record (fun currency amount cases ->
             {
                 CurrencyTotal.Currency = currency
                 Amount = amount
+                Cases = cases
             })
         : Fields<CurrencyTotal, _>)
         |> field "currency" _.Currency currency
-        |> field "amount" _.Amount total
+        |> field "amount" _.Amount (if signed then signedTotal else total)
+        |> field "cases" _.Cases (integer 0L SafeInteger.Maximum)
         |> build
-        |> named "CurrencyTotal"
+        |> named (if signed then "CurrencyNetTotal" else "CurrencyTotal")
 
     let private count name vocabulary =
         (record (fun value count ->
@@ -102,19 +92,19 @@ module CaseTotalsCodecs =
         |> named "CaseWorklistCounts"
 
     let summary =
-        (record (fun counts claimed payable paid basis ->
+        (record (fun counts claimed payable netPaid basis ->
             {
                 CaseWorklistSummary.Basis = basis
                 Counts = counts
                 Claimed = claimed
                 Payable = payable
-                Paid = paid
+                NetPaid = netPaid
             })
         : Fields<CaseWorklistSummary, _>)
         |> field "counts" _.Counts counts
-        |> field "claimed" _.Claimed (list 17576 currencyTotal)
-        |> field "payable" _.Payable (list 17576 currencyTotal)
-        |> field "paid" _.Paid (list 17576 currencyTotal)
+        |> field "claimed" _.Claimed (list 17576 (currencyTotal false))
+        |> field "payable" _.Payable (list 17576 (currencyTotal false))
+        |> field "netPaid" _.NetPaid (list 17576 (currencyTotal true))
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> build
         |> named "CaseWorklistSummary"

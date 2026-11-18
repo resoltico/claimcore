@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "以决定币种记录实际付款的日期和金额。此操作不会执行或核验转账。",
-    "source": "572c7a975cf2"
+    "text": "使用条目的日期、金额和币种记录实际支付或退回的款项。",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "注册账户",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "在支付任何款项之前移除付款决定。历史记录仍会保留。",
-    "source": "4579673a4146"
+    "text": "撤回决定。保留现有付款条目和决定历史。",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "案件任务",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "使用决定币种。",
-    "source": "6cf93e635901"
+    "text": "请使用此条目的币种。",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "使用受支持的现行 ISO 4217 货币列表中的 {length} 个大写 ASCII 字母，且须与决定币种一致；不得使用基金代码及非国家货币代码。",
-    "source": "1a3ba1179c9c"
+    "text": "从受支持的现行 ISO 4217 币种列表中选择由 {length} 个大写 ASCII 字母组成的代码。",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "付款 ID",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "按币种统计的已付总额",
-    "source": "b0f6fe6c2d8f"
+    "text": "按币种统计的净付款额",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "已付 {paid}，应付 {payable}。",
@@ -2479,21 +2479,9 @@
     "text": "请输入大于零的付款金额。",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "付款与赔付决定必须使用相同币种。",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "已付总额不得超过应付金额。",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "请使用受理该已记录付款的操作 UUID。",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "已有付款记录的决定不能撤回或清除。仅在记录有误时移除付款记录。",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "此付款记录已不存在。继续前请读取案件的当前状态。",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "使用所选当事方的版本号。",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "已向收款人支付的款项。",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "收款人退回的款项。",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "超额付款",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "付款需要核查",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "付款方向",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "外部参考编号",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "收款人",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "请选择已付款还是已退回。",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "请输入银行交易或函件的参考编号。",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "请输入此案件当前当事方的 ID。",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "请选择已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "请使用当前当事方的 ID。",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "净付款额",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "计入的案件数",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "请选择已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "此付款将使该币种的合计超出精确范围。",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "请选择此案件当前的当事方。",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "已移除的当事方",
+    "source": "551b332ea085"
   }
 }

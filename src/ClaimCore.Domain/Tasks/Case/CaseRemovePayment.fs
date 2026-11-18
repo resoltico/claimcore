@@ -30,8 +30,7 @@ let check (_: InputMap) = []
 let private gate =
     CaseRules.gate true (fun state ->
         state.Case.Value.Content
-        |> Option.exists (fun content ->
-            content.Finance.Decision.IsSome && content.Finance.PaymentCount > 0L))
+        |> Option.exists (fun content -> content.Finance.PaymentCount > 0L))
 
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
@@ -56,27 +55,24 @@ let decide context environment (state: DecisionFacts option) binding (_: InputMa
                     if Revision.value part.Revision = Revision.Maximum then
                         Error(Rejection.InvalidState RecordViolation.InvalidRevisionSequence)
                     else
-                        DecisionFacts.remainingPaymentDates command.PaymentId state
-                        |> Result.mapError Rejection.InvalidState
-                        |> Result.bind (fun bounds ->
-                            FinancialPosition.remove entry bounds before.Finance
-                            |> Result.mapError (fun _ ->
-                                Rejection.InvalidState RecordViolation.InvalidPaymentState)
-                            |> Result.map (fun finance ->
-                                [
-                                    FamilyRules.change
-                                        context
-                                        state.Id
-                                        (OperationId.value id)
-                                        (Revision.successor part.Revision)
-                                        (PartValue.Payment { Removed = true; Entry = Some entry })
-                                    CaseRules.change
-                                        context
-                                        state
-                                        { state.Case.Value with
-                                            Content = Some { before with Finance = finance }
-                                        }
-                                ])))
+                        FinancialPosition.remove entry before.Finance
+                        |> Result.mapError (fun _ ->
+                            Rejection.InvalidState RecordViolation.InvalidPaymentState)
+                        |> Result.map (fun finance ->
+                            [
+                                FamilyRules.change
+                                    context
+                                    state.Id
+                                    (OperationId.value id)
+                                    (Revision.successor part.Revision)
+                                    (PartValue.Payment { Removed = true; Entry = Some entry })
+                                CaseRules.change
+                                    context
+                                    state
+                                    { state.Case.Value with
+                                        Content = Some { before with Finance = finance }
+                                    }
+                            ]))
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 

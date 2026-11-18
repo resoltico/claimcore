@@ -58,6 +58,7 @@ let private facts state responsible due : CaseWorkFacts =
     {
         State = state
         Responsible = responsible
+        PaymentsNeedReview = false
         NextPendingDue = due
     }
 

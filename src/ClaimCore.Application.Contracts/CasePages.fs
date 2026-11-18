@@ -33,7 +33,7 @@ type CaseSummary =
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64
-        Paid: Money option
+        NetPaid: PaymentTotals option
         PaymentCount: int64
         LastPaymentDate: CalendarDate option
     }

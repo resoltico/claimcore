@@ -138,6 +138,8 @@ module ScalarGuidance =
                 [
                     "maximumScalars", GuidanceArgument.Count PartyDetails.constraints.MaximumScalars
                 ]
+        | TaskInputId.Target InputTarget.PaymentReference ->
+            message key [ "maximumCharacters", GuidanceArgument.Count Identifier.MaximumCharacters ]
         | TaskInputId.Target InputTarget.NoteText ->
             message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | TaskInputId.Target InputTarget.ReminderAction ->

@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "تسجيل تاريخ دفعة تمت فعليًا ومبلغها بعملة القرار. لا يؤدي ذلك إلى تنفيذ تحويل أو التحقق منه.",
-    "source": "572c7a975cf2"
+    "text": "سجّل المبلغ المدفوع أو المُعاد فعليًا مع تاريخ القيد ومبلغه وعملته.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "تسجيل حساب",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "إزالة قرار الدفع قبل دفع أي مبلغ. يبقى سجله محفوظًا.",
-    "source": "4579673a4146"
+    "text": "اسحب القرار. تبقى قيود الدفع وسجل القرار محفوظة.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "مهام الملف",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "استخدم عملة القرار.",
-    "source": "6cf93e635901"
+    "text": "استخدم عملة هذا القيد.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة المدعومة، مطابقة لعملة القرار؛ لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
-    "source": "1a3ba1179c9c"
+    "text": "أدخل {length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة والمدعومة.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "معرّف الدفعة",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "إجمالي المدفوع حسب العملة",
-    "source": "b0f6fe6c2d8f"
+    "text": "صافي المدفوع حسب العملة",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "دُفع {paid} من {payable}.",
@@ -2479,21 +2479,9 @@
     "text": "أدخل مبلغ دفعة أكبر من الصفر.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "يجب أن تكون عملة الدفعات مطابقة لعملة القرار.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "استخدم معرّف UUID للعملية التي قُبلت بها الدفعة المسجلة.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "لا يمكن سحب قرار له قيود دفع أو إزالته. لا تُزل القيود إلا إذا سُجّلت بالخطأ.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "استخدم رقم نسخة الطرف المحدد.",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "مُعاد",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "مُعاد",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "المبلغ المدفوع للمستفيد.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "المبلغ الذي أعاده المستفيد.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "مدفوع زائد",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "دفعات تستلزم المراجعة",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "اتجاه الدفع",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "مرجع خارجي",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "المستفيد",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "اختر ما إذا كان المبلغ قد دُفع أم أُعيد.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "أدخل مرجع العملية المصرفية أو الخطاب.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "أدخل معرّف طرف حالي في هذا الملف.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "اختر مدفوع أو مُعاد.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "استخدم معرّف طرف حالي.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "صافي المدفوع",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "الملفات المحتسبة",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "اختر مدفوع أو مُعاد.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "ستجعل هذه الدفعة إجمالي العملة يتجاوز نطاقه الدقيق.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "اختر طرفًا حاليًا في هذا الملف.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "طرف محذوف",
+    "source": "551b332ea085"
   }
 }

@@ -20,6 +20,7 @@ type TaskChoiceId =
     | Due
     | ReminderState
     | ReminderDue
+    | PaymentDirection
     | RegistrationCorrection
     | DecisionCorrection
 
@@ -50,6 +51,7 @@ module TaskChoiceId =
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
+        | TaskChoiceId.PaymentDirection -> vocabularyTokens PaymentDirection.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
             CorrectionGroupAction.actions RecordGroup.Registration
             |> List.map CorrectionGroupAction.token
@@ -75,11 +77,13 @@ module TaskChoiceId =
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
+        | TaskChoiceId.PaymentDirection -> Vocabulary.name PaymentDirection.vocabulary
         | TaskChoiceId.RegistrationCorrection
         | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary
 
     let ofInput =
         function
+        | TaskInputId.Target InputTarget.PaymentDirection -> Some TaskChoiceId.PaymentDirection
         | TaskInputId.Target InputTarget.Role -> Some TaskChoiceId.Role
         | TaskInputId.Target InputTarget.PartyRole -> Some TaskChoiceId.PartyRole
         | TaskInputId.Target InputTarget.PrincipalKind -> Some TaskChoiceId.PrincipalKind
@@ -103,7 +107,7 @@ module TaskChoiceId =
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter

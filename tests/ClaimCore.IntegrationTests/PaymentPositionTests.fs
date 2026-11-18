@@ -288,7 +288,7 @@ let private actualPayments () =
         let current = read ()
         let financial = CaseState.fields current.Snapshot.State |> Option.get |> _.Finance
         check 51L financial.PaymentCount "Fifty-one payments were not retained."
-        check 51M (Amount.value financial.PaidAmount) "Paid total mismatch."
+        check "51" (CaseFixtures.netPaid "EUR" financial) "Paid total mismatch."
 
         check 3 current.LatestPayments.Length "Case latest slice is not bounded to three."
 
@@ -318,7 +318,7 @@ let private actualPayments () =
             read () |> _.Snapshot.State |> CaseState.fields |> Option.get |> _.Finance
 
         check 50L after.PaymentCount "Replay recreated a removed payment."
-        check 50M (Amount.value after.PaidAmount) "Removal aggregate mismatch."
+        check "50" (CaseFixtures.netPaid "EUR" after) "Removal aggregate mismatch."
 
         let checkpoint = verified ()
 
@@ -592,22 +592,24 @@ let private lockedBounds () =
                 "Locked removal changes count exactly once"
 
             Expect.equal
-                (Amount.value finance.PaidAmount)
-                (decimal entries.Length)
+                (CaseFixtures.netPaid "EUR" finance)
+                (string entries.Length)
                 "Exact independently tracked sum"
 
-            let dates = entries |> List.map snd
+            let latest = entries |> List.map snd |> List.sortDescending |> List.tryHead
 
-            let bounds =
-                if dates.IsEmpty then
-                    None
-                else
-                    PaymentDateBounds.create (List.min dates) (List.max dates)
+            let paidStep =
+                match current with
+                | Outcome.Succeeded value ->
+                    match value.Stages with
+                    | CaseStageDisplay.Tracker(_, stages) ->
+                        stages
+                        |> List.find (fun stage -> stage.Stage = CaseStageKind.Paid)
+                        |> _.Date
+                    | CaseStageDisplay.Erased -> None
+                | other -> failtestf "Expected payment stage: %A" other
 
-            Expect.equal
-                finance.PaymentDates
-                bounds
-                "Sole extrema, ties and final absence match the accepted entry set"
+            Expect.equal paidStep latest "Latest paid date agrees with the projection after removal"
 
         checkPosition ()
         let selected = [ fst earlier; fst (List.last entries) ]

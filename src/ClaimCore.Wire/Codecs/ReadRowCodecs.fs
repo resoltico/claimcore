@@ -150,7 +150,7 @@ module internal ReadRowCodecs =
                     Responsible = responsible
                     PendingReminders = pending
                     Stages = stages
-                    Paid = paid
+                    NetPaid = paid
                     PaymentCount = paymentCount
                     LastPaymentDate = lastPaymentDate
                 })
@@ -171,7 +171,7 @@ module internal ReadRowCodecs =
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
-        |> field "paid" _.Paid (nullable money)
+        |> field "netPaid" _.NetPaid (nullable PaymentCodecs.totals)
         |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
         |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
         |> build

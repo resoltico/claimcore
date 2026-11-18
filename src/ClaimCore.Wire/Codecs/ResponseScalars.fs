@@ -14,6 +14,34 @@ open System.Globalization
 module ResponseScalars =
     open Codec
 
+    let decimalTotal signed =
+        let grammar, parse, name, extra =
+            if signed then
+                DecimalTotal.signedGrammar, DecimalTotal.parseSigned, "DecimalTotal", 1
+            else
+                DecimalTotal.Grammar, DecimalTotal.parse, "NonnegativeDecimalTotal", 0
+
+        patternedText
+            1
+            (DecimalTotal.MaximumIntegerDigits
+             + DecimalTotal.MaximumFractionalDigits
+             + 1
+             + extra)
+            ("^(?:" + grammar + ")(?![\\s\\S])")
+            None
+        |> interpret
+            (fun path raw ->
+                match parse raw with
+                | Ok value when DecimalTotal.format value = raw -> Ok value
+                | _ ->
+                    Error
+                        {
+                            Path = path
+                            Reason = "Expected a canonical exact decimal total."
+                        })
+            DecimalTotal.format
+        |> named name
+
     let revision =
         RequestCodecs.revision |> map (Revision.create >> Option.get) Revision.value
 

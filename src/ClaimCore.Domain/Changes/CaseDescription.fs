@@ -63,8 +63,6 @@ module CaseDescription =
                 money (fun fields -> Registration.claimed fields.Registration)
                 BusinessField.PayableAmount,
                 money (fun fields -> fields.Finance.Decision |> Option.map Decision.payable)
-                BusinessField.PaidAmount,
-                money (fun fields -> FinancialPosition.totals fields.Finance |> Option.map _.Paid)
             ]
             |> List.choose (fun (field, change) ->
                 change

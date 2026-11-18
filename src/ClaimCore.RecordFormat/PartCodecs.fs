@@ -279,26 +279,24 @@ module PartCodecs =
                     Finance = finance
                 }
 
-            CaseFamily.validateContent content
-            |> Result.bind (fun () ->
-                if retained.Lifecycle = Lifecycle.Erased then
-                    Error RecordViolation.InvalidSubjectState
-                else
-                    let disposition =
-                        reason
-                        |> Option.map (fun reason ->
-                            if retained.Lifecycle = Lifecycle.Voided then
-                                CaseDisposition.Voided reason
-                            else
-                                CaseDisposition.Reinstated reason)
+            if retained.Lifecycle = Lifecycle.Erased then
+                Error RecordViolation.InvalidSubjectState
+            else
+                let disposition =
+                    reason
+                    |> Option.map (fun reason ->
+                        if retained.Lifecycle = Lifecycle.Voided then
+                            CaseDisposition.Voided reason
+                        else
+                            CaseDisposition.Reinstated reason)
 
-                    Ok(
-                        PartValue.Case
-                            { retained with
-                                Content = Some content
-                                Disposition = disposition
-                            }
-                    )))
+                Ok(
+                    PartValue.Case
+                        { retained with
+                            Content = Some content
+                            Disposition = disposition
+                        }
+                ))
         : Fields<PartValue, _>)
         |> field "registration" (content >> _.Registration) RecordCodecs.registration
         |> field "finance" (content >> _.Finance) (FinancialCodecs.position RecordCodecs.decision)
@@ -310,15 +308,10 @@ module PartCodecs =
             })
 
     let private paymentPrivate id (retained: PaymentValue) =
-        let entry = payment (fun value -> value.Entry |> Option.defaultWith wrong)
-
-        (record (fun date amount ->
-            PaymentEntry.create id date amount
-            |> Result.map (fun entry -> PartValue.Payment { retained with Entry = Some entry }))
-        : Fields<PartValue, _>)
-        |> field "paymentDate" (entry >> PaymentEntry.date) date
-        |> field "paidAmount" (entry >> PaymentEntry.amount) (scalar Amount.parse Amount.format)
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+        FinancialCodecs.privateEntry id
+        |> map
+            (fun entry -> PartValue.Payment { retained with Entry = Some entry })
+            (payment (fun value -> value.Entry |> Option.defaultWith wrong))
 
     let private reminderPrivate (retained: ReminderValue) =
         let plan = reminder (fun value -> value.Plan |> Option.defaultWith wrong)

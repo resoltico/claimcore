@@ -88,6 +88,7 @@ let private idleConfirmation () =
                                         PartyOffers = []
                                         FamilySequence = Sequence.create 1L |> Option.get
                                         LatestPayments = []
+                                        PaymentPayees = []
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
                                         Disposition = None

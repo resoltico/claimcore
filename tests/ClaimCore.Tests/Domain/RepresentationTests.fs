@@ -74,23 +74,13 @@ let tests =
                             Sequence.successor (Sequence.create 9007199254740991L |> Option.get)
                             |> ignore)
                         "Sequence cannot advance beyond the exact integer bound")
-            testCase "financial position cannot construct payments without a decision" (fun () ->
+            testCase "financial storage refuses missing buckets for a nonzero count" (fun () ->
                 Expect.isError
-                    (FinancialPosition.create
-                        None
-                        (Amount.parse "1" |> Result.defaultWith (string >> failtest))
-                        1L
-                        (PaymentDateBounds.create
-                            (DomainInputs.date "2026-08-20")
-                            (DomainInputs.date "2026-08-20")))
-                    "Invalid state is rejected at construction"
+                    (FinancialPosition.create None Map.empty 1L)
+                    "Contradictory counts and buckets are unavailable"
 
                 Expect.equal
-                    (FinancialPosition.create
-                        None
-                        (Amount.parse "0" |> Result.defaultWith (string >> failtest))
-                        0L
-                        None)
+                    (FinancialPosition.create None Map.empty 0L)
                     (Ok FinancialPosition.undecided)
                     "No accepted financial facts is undecided")
         ]

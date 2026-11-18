@@ -35,28 +35,39 @@ module FinancialCodecs =
                     }))
             CalendarDate.format
 
-    let entry =
-        let identity =
-            uuid
-            |> interpret
-                (fun path value ->
-                    OperationId.create value
-                    |> Option.map Ok
-                    |> Option.defaultValue (
-                        Error
-                            {
-                                Path = path
-                                Reason = "A payment identity is its accepting operation UUID."
-                            }
-                    ))
-                OperationId.value
+    let private currency = RecordScalars.scalar Currency.parse Currency.format
 
-        (record PaymentEntry.create: Fields<PaymentEntry, _>)
-        |> field "paymentId" PaymentEntry.id identity
+    let private money =
+        (record Money.create: Fields<Money, _>)
+        |> field "amount" Money.amount amount
+        |> field "currency" Money.currencyValue currency
+        |> build
+
+    let private direction = VocabularyCodec.create PaymentDirection.vocabulary
+
+    let private entryDetails fields =
+        fields
+        |> field "direction" PaymentEntry.direction direction
+        |> field "money" PaymentEntry.money money
         |> field "paymentDate" PaymentEntry.date date
-        |> field "paidAmount" PaymentEntry.amount amount
+        |> field
+            "reference"
+            PaymentEntry.reference
+            (nullable (RecordScalars.scalar Identifier.parse Identifier.format))
+        |> field
+            "payee"
+            PaymentEntry.payee
+            (nullable (RecordScalars.identifier PartyId.create PartyId.value))
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
+
+    let entry =
+        (record PaymentEntry.create: Fields<PaymentEntry, _>)
+        |> field "paymentId" PaymentEntry.id RecordScalars.operationId
+        |> entryDetails
         |> named "PaymentEntry"
+
+    let privateEntry id =
+        (record (PaymentEntry.create id): Fields<PaymentEntry, _>) |> entryDetails
 
     let difference =
         tagged
@@ -78,33 +89,52 @@ module FinancialCodecs =
                     (record id |> field "entry" id entry)
             ]
 
-    let position decision =
-        (record (fun decision paid count first last ->
-            let dates =
-                match first, last with
-                | None, None -> Ok None
-                | Some first, Some last ->
-                    PaymentDateBounds.create first last
-                    |> Option.map (Some >> Ok)
-                    |> Option.defaultValue (Error FinancialPositionIssue.InconsistentAggregate)
-                | _ -> Error FinancialPositionIssue.InconsistentAggregate
+    let private decimalTotal =
+        patternedText
+            1
+            (DecimalTotal.MaximumIntegerDigits + DecimalTotal.MaximumFractionalDigits + 1)
+            ("^(?:" + DecimalTotal.Grammar + ")$")
+            None
+        |> interpret
+            (fun path raw ->
+                match DecimalTotal.parse raw with
+                | Ok value when DecimalTotal.format value = raw -> Ok value
+                | _ ->
+                    Error
+                        {
+                            Path = path
+                            Reason = "Invalid canonical payment total."
+                        })
+            DecimalTotal.format
 
-            dates |> Result.bind (FinancialPosition.create decision paid count))
+    let private currencyTotals =
+        (record (fun currency paid returned ->
+            currency,
+            {
+                CurrencyPaymentTotals.Paid = paid
+                Returned = returned
+            })
+        : Fields<Currency * CurrencyPaymentTotals, _>)
+        |> field "currency" fst currency
+        |> field "paid" (snd >> _.Paid) decimalTotal
+        |> field "returned" (snd >> _.Returned) decimalTotal
+        |> build
+
+    let position decision =
+        (record (fun decision totals count ->
+            let indexed = Map.ofList totals
+
+            if indexed.Count <> List.length totals then
+                Error FinancialPositionIssue.InconsistentAggregate
+            else
+                FinancialPosition.create decision indexed count)
         : Fields<FinancialPosition, _>)
         |> field "decision" _.Decision (nullable decision)
-        |> field "paidAmount" _.PaidAmount amount
+        |> field "totals" (_.CurrencyTotals >> Map.toList) (list 17576 currencyTotals)
         |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
-        |> field
-            "firstPaymentDate"
-            (fun value -> value.PaymentDates |> Option.map _.Earliest)
-            (nullable date)
-        |> field
-            "lastPaymentDate"
-            (fun value -> value.PaymentDates |> Option.map _.Latest)
-            (nullable date)
         |> buildResult (fun path _ ->
             {
                 Path = path
-                Reason = "Financial decision, paid total, count and date boundaries must agree."
+                Reason = "Invalid financial aggregate."
             })
         |> named "FinancialPosition"

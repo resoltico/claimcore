@@ -177,8 +177,8 @@ let tests =
                         correct 5 3 "2026-02-04" "250" "EUR" before |> accepted |> apply before
 
                     Expect.equal
-                        (finance after).PaidAmount
-                        (finance before).PaidAmount
+                        (finance after).CurrencyTotals
+                        (finance before).CurrencyTotals
                         "Exact equal amount remains correctable"
 
                     Expect.equal
@@ -199,49 +199,25 @@ let tests =
                         (PaymentEntry.id after.Payments[operation 5].Value.Entry.Value)
                         (operation 5)
                         "Replacement identity equals correction operation")
-            testCase "tied earliest and latest dates retain remaining extrema" (fun () ->
-                let before =
-                    decided ()
-                    |> pay 3 "2026-02-02" "10"
-                    |> pay 4 "2026-02-02" "20"
-                    |> pay 5 "2026-02-05" "30"
-                    |> pay 6 "2026-02-05" "40"
+            testCase "replacement cannot exceed today or assert nonpositive money" (fun () ->
+                let before = decided () |> pay 3 "2026-02-02" "25"
 
-                let after = correct 7 3 "2026-02-04" "15" "EUR" before |> accepted |> apply before
-                let after = correct 8 5 "2026-02-03" "25" "EUR" after |> accepted |> apply after
-                let bounds = (finance after).PaymentDates |> Option.get
+                for date, amount, currency, violation in
+                    [
+                        "2026-11-16", "20", "EUR", Violation.FutureDate
+                        "2026-02-03", "0", "EUR", Violation.PaymentAmountPositive
+                    ] do
+                    let result = correct 4 3 date amount currency before
+                    let issues = result |> expectInputs
 
-                Expect.equal
-                    (CalendarDate.format bounds.Earliest, CalendarDate.format bounds.Latest)
-                    ("2026-02-02", "2026-02-05")
-                    "Other entries keep both tied extrema"
+                    Expect.isTrue
+                        (issues |> List.exists (fun issue -> issue.Violation = violation))
+                        "The independent intended rule refuses before changes exist"
 
-                Expect.equal
-                    (Amount.value (finance after).PaidAmount)
-                    100M
-                    "Exact replacements reconcile the remaining set")
-            testCase
-                "replacement cannot change currency exceed today or assert nonpositive money"
-                (fun () ->
-                    let before = decided () |> pay 3 "2026-02-02" "25"
-
-                    for date, amount, currency, violation in
-                        [
-                            "2026-02-03", "20", "USD", Violation.PaymentCurrencyMismatch
-                            "2026-11-16", "20", "EUR", Violation.FutureDate
-                            "2026-02-03", "0", "EUR", Violation.PaymentAmountPositive
-                        ] do
-                        let result = correct 4 3 date amount currency before
-                        let issues = result |> expectInputs
-
-                        Expect.isTrue
-                            (issues |> List.exists (fun issue -> issue.Violation = violation))
-                            "The independent intended rule refuses before changes exist"
-
-                        Expect.equal
-                            (Amount.value (finance before).PaidAmount)
-                            25M
-                            "Original immutable input remains intact")
+                    Expect.equal
+                        (CaseFixtures.netPaid "EUR" (finance before))
+                        "25"
+                        "Original immutable input remains intact")
             testCase "closed voided and erased cases require eligible current state" (fun () ->
                 let paid = decided () |> pay 3 "2026-02-02" "25"
 

@@ -22,12 +22,21 @@ module CaseTotalsScreen =
             section
                 title
                 (items
-                 |> List.map (fun item ->
-                     value
-                         (Currency.format item.Currency)
-                         "label.total"
-                         Prominence.Primary
-                         (PresentedValue.moneyTotal item.Currency item.Amount)))
+                 |> List.collect (fun item ->
+                     let currency = Currency.format item.Currency
+
+                     [
+                         value
+                             currency
+                             "label.total"
+                             Prominence.Primary
+                             (PresentedValue.moneyTotal item.Currency item.Amount)
+                         value
+                             (currency + ".cases")
+                             "label.contributingCases"
+                             Prominence.Secondary
+                             (PresentedValue.Count item.Cases)
+                     ]))
 
         [
             section
@@ -46,7 +55,7 @@ module CaseTotalsScreen =
             group "input.progress.label" CaseProgress.vocabulary reply.Counts.Progress
             totals "label.claimedTotals" reply.Claimed
             totals "label.payableTotals" reply.Payable
-            totals "label.paidTotals" reply.Paid
+            totals "label.paidTotals" reply.NetPaid
         ]
 
 

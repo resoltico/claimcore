@@ -14,7 +14,7 @@ type CaseIndex =
         ReceivedOn: CalendarDate option
         Claimed: Money option
         Payable: Money option
-        Paid: Money option
+        PaymentReview: bool option
     }
 
 module CaseIndex =
@@ -46,10 +46,9 @@ module CaseIndex =
                 fields
                 |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
             Claimed = fields |> Option.bind (fun fields -> Registration.claimed fields.Registration)
-            Paid =
+            PaymentReview =
                 fields
-                |> Option.bind (fun fields ->
-                    FinancialPosition.totals fields.Finance |> Option.map _.Paid)
+                |> Option.map (fun fields -> FinancialPosition.needsReview fields.Finance)
             Payable =
                 fields
                 |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)

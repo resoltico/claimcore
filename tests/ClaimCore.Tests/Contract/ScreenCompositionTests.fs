@@ -135,9 +135,11 @@ let tests =
                             After =
                                 Some
                                     {
-                                        Paid = CaseFixtures.money "100" "EUR"
+                                        NetPaid =
+                                            DecimalTotal.parse "100"
+                                            |> Result.toOption
+                                            |> Option.get
                                         Payable = CaseFixtures.money "300" "EUR"
-                                        Remaining = CaseFixtures.money "200" "EUR"
                                     }
                         }
 

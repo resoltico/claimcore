@@ -8,9 +8,7 @@ open ClaimCore.Domain.Changes
 type LiveFamilySummary =
     {
         PaymentCount: int64
-        Paid: Amount
-        PaymentDates: PaymentDateBounds option
-        RemainingPaymentDates: (OperationId * PaymentDateBounds option) option
+        PaymentTotals: Map<Currency, CurrencyPaymentTotals>
         NextPendingDue: CalendarDate option
         RemainingPendingDue: CalendarDate option
     }
@@ -53,12 +51,6 @@ type DecisionFacts =
     member this.NextPendingDue = this.Summary.NextPendingDue
 
 module DecisionFacts =
-    let private paymentBounds entries =
-        match entries |> Seq.map PaymentEntry.date |> Seq.sort |> Seq.toList with
-        | [] -> None
-        | first :: rest ->
-            PaymentDateBounds.create first (List.tryLast rest |> Option.defaultValue first)
-
     let private minimum values = values |> Seq.sort |> Seq.tryHead
 
     let private due (parts: FamilyParts) =
@@ -81,15 +73,10 @@ module DecisionFacts =
 
         let financial =
             match parts.Case.Value.Content with
-            | None ->
-                erased
-                && summary.PaymentCount = 0L
-                && Amount.value summary.Paid = 0M
-                && summary.PaymentDates.IsNone
+            | None -> erased && summary.PaymentCount = 0L && summary.PaymentTotals.IsEmpty
             | Some content ->
                 content.Finance.PaymentCount = summary.PaymentCount
-                && content.Finance.PaidAmount = summary.Paid
-                && content.Finance.PaymentDates = summary.PaymentDates
+                && content.Finance.CurrencyTotals = summary.PaymentTotals
 
         let selectedPrivate =
             (if erased then
@@ -137,11 +124,7 @@ module DecisionFacts =
                     | PartKind.Party -> true
                     | PartKind.Person -> false)
 
-            let correlated =
-                summary.RemainingPaymentDates
-                |> Option.forall (fun (id, _) -> Set.contains id scope.Payments)
-
-            if not scoped || not correlated then
+            if not scoped then
                 Error RecordViolation.InvalidSubjectState
             else
                 validate current summary parts
@@ -165,30 +148,12 @@ module DecisionFacts =
             Summary =
                 {
                     PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
-                    Paid =
-                        finance
-                        |> Option.map _.PaidAmount
-                        |> Option.defaultWith (fun () ->
-                            Amount.parse "0" |> Result.toOption |> Option.get)
-                    PaymentDates = finance |> Option.bind _.PaymentDates
-                    RemainingPaymentDates = None
+                    PaymentTotals =
+                        finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
                     NextPendingDue = due parts |> minimum
                     RemainingPendingDue = None
                 }
         }
-
-    let remainingPaymentDates selected (facts: DecisionFacts) =
-        match facts.Summary.RemainingPaymentDates, facts.Coverage with
-        | Some(id, dates), _ when id = selected -> Ok dates
-        | _, Replay complete ->
-            complete.Payments
-            |> Map.remove selected
-            |> Map.values
-            |> Seq.filter (fun part -> not part.Value.Removed)
-            |> Seq.choose _.Value.Entry
-            |> paymentBounds
-            |> Ok
-        | _ -> Error RecordViolation.InvalidPaymentState
 
     let requireSelection binding (facts: DecisionFacts) =
         let covered =
@@ -224,21 +189,12 @@ module DecisionFacts =
 
         { summary with
             PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
-            Paid =
-                finance
-                |> Option.map _.PaidAmount
-                |> Option.defaultWith (fun () -> Amount.parse "0" |> Result.toOption |> Option.get)
-            PaymentDates = finance |> Option.bind _.PaymentDates
+            PaymentTotals = finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
             NextPendingDue = nextDue parts summary
         }
 
     /// Apply only the acquired parts; complete replay independently reconciles the full family.
     let apply (before: DecisionFacts option) changes =
-        let check _ (value: CaseValue) =
-            value.Content
-            |> Option.map FamilyParts.validateContent
-            |> Option.defaultValue (Ok())
-
         let initial = before |> Option.map _.Parts
 
         changes
@@ -246,7 +202,7 @@ module DecisionFacts =
             (fun result change ->
                 result
                 |> Result.bind (fun parts ->
-                    FamilyParts.applyWith check parts change |> Result.map Some))
+                    FamilyParts.applyWith (fun _ _ -> Ok()) parts change |> Result.map Some))
             (Ok initial)
         |> Result.bind (function
             | None -> Error RecordViolation.InvalidSubjectState
@@ -257,9 +213,7 @@ module DecisionFacts =
                     | None ->
                         {
                             PaymentCount = 0L
-                            Paid = Amount.parse "0" |> Result.toOption |> Option.get
-                            PaymentDates = None
-                            RemainingPaymentDates = None
+                            PaymentTotals = Map.empty
                             NextPendingDue = None
                             RemainingPendingDue = None
                         }
@@ -267,25 +221,30 @@ module DecisionFacts =
                 let after = updatedSummary parts summary
                 let paymentDelta = changes |> List.choose PartChange.paymentDifference
 
-                let countDelta =
-                    paymentDelta
-                    |> List.sumBy (function
-                        | PaymentDifference.Recorded _ -> 1L
-                        | PaymentDifference.Removed _ -> -1L)
+                let expected =
+                    let initial =
+                        before
+                        |> Option.bind (fun facts -> facts.Case.Value.Content)
+                        |> Option.map _.Finance
+                        |> Option.defaultValue FinancialPosition.undecided
 
-                let paidDelta =
-                    paymentDelta
-                    |> List.sumBy (function
-                        | PaymentDifference.Recorded entry ->
-                            Amount.value (PaymentEntry.amount entry)
-                        | PaymentDifference.Removed entry ->
-                            -(Amount.value (PaymentEntry.amount entry)))
+                    (Ok initial, paymentDelta)
+                    ||> List.fold (fun previous change ->
+                        previous
+                        |> Result.bind (
+                            match change with
+                            | PaymentDifference.Recorded entry -> FinancialPosition.add entry
+                            | PaymentDifference.Removed entry -> FinancialPosition.remove entry
+                        ))
 
-                if
-                    parts.Case.Value.Lifecycle <> Lifecycle.Erased
-                    && (after.PaymentCount <> summary.PaymentCount + countDelta
-                        || Amount.value after.Paid <> Amount.value summary.Paid + paidDelta)
-                then
+                let matches =
+                    match expected with
+                    | Ok expected ->
+                        after.PaymentCount = expected.PaymentCount
+                        && after.PaymentTotals = expected.CurrencyTotals
+                    | Error _ -> false
+
+                if parts.Case.Value.Lifecycle <> Lifecycle.Erased && not matches then
                     Error RecordViolation.InvalidPaymentState
                 else
                     validate parts after changes

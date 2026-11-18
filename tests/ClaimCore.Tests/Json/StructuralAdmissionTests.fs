@@ -59,42 +59,14 @@ let tests =
                         "Independent structural mutations refuse"
 
                 Expect.isFalse constructed "Structural failures never manufacture typed values")
-            testCase
-                "the authored financial differential is structural data but fails core semantics"
-                (fun () ->
-                    let raw =
-                        bytes
-                            """{"entries":[{"kind":"RECORDED","entry":{"paymentId":"019fc6e8-1813-7000-8000-000000000001","paymentDate":"2026-11-08","paidAmount":"1"}}],"before":null,"after":{"payable":{"amount":"100","currency":"EUR"},"paid":{"amount":"1","currency":"EUR"},"remaining":{"amount":"98","currency":"EUR"}}}"""
+            testCase "payment changes decode without a decision" (fun () ->
+                let raw =
+                    bytes
+                        """{"entries":[{"kind":"RECORDED","entry":{"paymentId":"019fc6e8-1813-7000-8000-000000000001","direction":"RETURNED","money":{"amount":"1","currency":"EUR"},"paymentDate":"2026-11-08","reference":null,"payee":null}}],"before":null,"after":null}"""
 
-                    Expect.isOk
-                        (Codec.validate Limits.MaximumResponseBytes PaymentCodecs.changes raw)
-                        "No financial equation is added to structural validation"
-
-                    Expect.isError
-                        (Codec.decode Limits.MaximumResponseBytes PaymentCodecs.changes raw)
-                        "The core-owned totals constructor refuses the inconsistent equation"
-
-                    let corrected =
-                        Encoding.UTF8.GetString(raw).Replace("\"98\"", "\"99\"") |> bytes
-
-                    Expect.isOk
-                        (Codec.decode Limits.MaximumResponseBytes PaymentCodecs.changes corrected)
-                        "Correcting only the independent total admits the same wire structure"
-
-                    let money amount =
-                        Money.create
-                            (Amount.parse amount
-                             |> Result.defaultWith (fun error -> failtestf "%A" error))
-                            (Currency.parse "EUR"
-                             |> Result.defaultWith (fun error -> failtestf "%A" error))
-
-                    Expect.isError
-                        (PaymentTotals.create (money "100") (money "1") (money "98"))
-                        "Independent core admission"
-
-                    Expect.isOk
-                        (PaymentTotals.create (money "100") (money "1") (money "99"))
-                        "The exact equation admits at its owner")
+                Expect.isOk
+                    (Codec.decode Limits.MaximumResponseBytes PaymentCodecs.changes raw)
+                    "Decision context is optional")
             testCase
                 "the structural byte boundary retains Unicode duplicate-key and integer safeguards"
                 (fun () ->

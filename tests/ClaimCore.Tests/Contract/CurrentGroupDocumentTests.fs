@@ -18,7 +18,6 @@ let private caseRead () =
         FinancialPosition.withDecision
             (Some(DomainInputs.admittedDecision DomainInputs.decision))
             fields.Finance
-        |> Result.defaultWith (fun error -> failtestf "%A" error)
 
     let state = CaseState.Active { fields with Finance = finance }
 

@@ -33,7 +33,7 @@ let availability environment state binding =
         state
         |> Option.bind (fun state -> state.Case.Value.Content)
         |> Option.bind (fun content ->
-            if CaseProgress.ofFinancial content.Finance = CaseProgress.Paid then
+            if (CaseProgress.ofFinancial content.Finance |> CaseProgress.completesPayment) then
                 Some 0
             else
                 None)

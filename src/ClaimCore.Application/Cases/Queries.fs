@@ -70,12 +70,19 @@ module internal Queries =
                 ->
                 let! authors = PeopleReads.actorRefs tx [ facts.RecordedBy ]
 
+                let! paidDates =
+                    PaymentStorage.latestPaidDates
+                        tx.Connection
+                        [ record.CaseId ]
+                        tx.CancellationToken
+
                 return
                     match
                         CaseStages.describe
                             record.Snapshot.State
                             (Some facts.OpenedOn)
-                            facts.ClosedOn,
+                            facts.ClosedOn
+                            (Map.tryFind record.CaseId paidDates),
                         Map.tryFind facts.RecordedBy authors,
                         Ok facts.Disposition
                     with
@@ -444,6 +451,7 @@ module internal Queries =
         paused
         (work: CaseWorkView)
         next
+        lastPayment
         parties
         record
         =
@@ -471,18 +479,14 @@ module internal Queries =
                         })
                 Responsible = work.Responsible
                 PendingReminders = work.PendingReminders
-                Paid =
+                NetPaid =
                     CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields ->
-                        FinancialPosition.totals fields.Finance |> Option.map _.Paid)
+                    |> Option.bind (fun fields -> FinancialPosition.totals fields.Finance)
                 PaymentCount =
                     CaseState.fields record.Snapshot.State
                     |> Option.map (fun fields -> fields.Finance.PaymentCount)
                     |> Option.defaultValue 0L
-                LastPaymentDate =
-                    CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields ->
-                        fields.Finance.PaymentDates |> Option.map _.Latest)
+                LastPaymentDate = lastPayment
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->
@@ -525,6 +529,12 @@ module internal Queries =
             let! actor =
                 AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
 
+            let! paidDates =
+                PaymentStorage.latestPaidDates
+                    tx.Connection
+                    (records |> List.map _.CaseId)
+                    tx.CancellationToken
+
             return
                 work
                 |> Result.bind (fun work ->
@@ -540,6 +550,7 @@ module internal Queries =
                                     paused
                                     (Map.find record.CaseId work)
                                     (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
+                                    (Map.tryFind record.CaseId paidDates)
                                     (Map.tryFind record.CaseId parties |> Option.defaultValue [])
                                     record
                                 |> Result.map (fun value -> value :: values)))

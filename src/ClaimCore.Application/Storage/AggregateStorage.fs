@@ -66,7 +66,6 @@ module internal AggregateStorage =
             Reminders: ReminderId list
             Notes: NoteId list
             Parties: PartyId list
-            ExcludedPayment: OperationId option
             Operation: OperationId option
         }
 
@@ -76,18 +75,9 @@ module internal AggregateStorage =
             Reminders = []
             Notes = []
             Parties = []
-            ExcludedPayment = None
             Operation = None
         }
 
-    let private bounds earliest latest =
-        match earliest, latest with
-        | None, None -> None
-        | Some earliest, Some latest ->
-            PaymentDateBounds.create earliest latest
-            |> Option.map Some
-            |> Option.defaultWith (fun () -> corrupt "Projected payment extrema are unordered.")
-        | _ -> corrupt "Projected payment extrema are incomplete."
 
     let private readFamilyRoots (selection: Selection) (tx: ReadTx) id =
         task {
@@ -279,17 +269,6 @@ module internal AggregateStorage =
                 let origins = roots.Origins
                 let projected = roots.Projected
 
-                let rows sql parameters =
-                    task {
-                        roundTrips <- roundTrips + 1
-
-                        let! values =
-                            DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
-
-                        materialized <- materialized + values.Length
-                        return values
-                    }
-
                 let namedRows sql parameters =
                     task {
                         roundTrips <- roundTrips + 1
@@ -320,29 +299,16 @@ module internal AggregateStorage =
 
                 let! aggregate =
                     namedRows
-                        ("SELECT count(*) AS payment_count,coalesce(sum(paid_amount),0)::text AS paid,"
-                         + DatabaseSession.dateExpression "min(payment_date)"
-                         + " AS first_payment,"
-                         + DatabaseSession.dateExpression "max(payment_date)"
-                         + " AS last_payment,"
-                         + DatabaseSession.dateExpression
-                             "min(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
-                         + " AS remaining_first,"
-                         + DatabaseSession.dateExpression
-                             "max(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
-                         + " AS remaining_last,"
+                        ("SELECT count(*) AS payment_count,"
                          + "(SELECT "
                          + DatabaseSession.dateExpression "min(due)"
-                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL) AS next_due,"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL) AS next_due,"
                          + "(SELECT "
                          + DatabaseSession.dateExpression "min(due)"
-                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($4::uuid[]))) AS remaining_due "
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_due "
                          + "FROM claimcore.case_payments WHERE case_id=$1 AND NOT removed AND payment_date IS NOT NULL")
                         [|
                             box (CaseId.value id)
-                            DatabaseSession.parameter (
-                                selection.ExcludedPayment |> Option.map OperationId.value
-                            )
                             box (ReminderState.token ReminderState.Pending)
                             box (selection.Reminders |> List.map ReminderId.value |> List.toArray)
                         |]
@@ -356,22 +322,18 @@ module internal AggregateStorage =
                     DatabaseSession.namedOptionalCalendarDate name aggregate
                     |> Option.map CalendarDate.ofDate
 
-                let paid =
-                    DatabaseSession.namedValue<string> "paid" aggregate
-                    |> Amount.parse
-                    |> Result.defaultWith (fun _ ->
-                        corrupt "Projected paid total is outside its canonical range.")
+                let! totals = PaymentStorage.totals tx.Connection (Some id) tx.CancellationToken
+                roundTrips <- roundTrips + 1
+
+                materialized <-
+                    materialized
+                    + (Map.tryFind id totals |> Option.map Map.count |> Option.defaultValue 0)
 
                 let summary =
                     {
                         LiveFamilySummary.PaymentCount =
                             DatabaseSession.namedValue<int64> "payment_count" aggregate
-                        Paid = paid
-                        PaymentDates = bounds (date "first_payment") (date "last_payment")
-                        RemainingPaymentDates =
-                            selection.ExcludedPayment
-                            |> Option.map (fun selected ->
-                                selected, bounds (date "remaining_first") (date "remaining_last"))
+                        PaymentTotals = Map.tryFind id totals |> Option.defaultValue Map.empty
                         NextPendingDue = date "next_due"
                         RemainingPendingDue = date "remaining_due"
                     }
@@ -448,10 +410,8 @@ module internal AggregateStorage =
                 | _ -> corrupt "Consumed work projection disagrees with its accepted root."
 
                 let! paymentRows =
-                    rows
-                        ("SELECT payment_id,accepting_sequence,effect_index,"
-                         + DatabaseSession.dateExpression "payment_date"
-                         + ",paid_amount,removed FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=ANY($2::uuid[])")
+                    namedRows
+                        ($"SELECT {PaymentStorage.columns},accepting_sequence,effect_index,removed FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=ANY($2::uuid[])")
                         [|
                             box (CaseId.value id)
                             box (paymentIds |> List.map OperationId.value |> List.toArray)
@@ -462,7 +422,7 @@ module internal AggregateStorage =
 
                 for row in paymentRows do
                     let payment =
-                        DatabaseSession.value<Guid> 0 row
+                        DatabaseSession.namedValue<Guid> "payment_id" row
                         |> DatabaseSession.admitted OperationId.create
 
                     let part =
@@ -472,19 +432,17 @@ module internal AggregateStorage =
 
                     let origin = Map.find (PartKind.Payment, OperationId.value payment) origins
 
-                    let expectedDate =
-                        part.Value.Entry |> Option.map (PaymentEntry.date >> CalendarDate.value)
-
-                    let expectedAmount =
-                        part.Value.Entry |> Option.map (PaymentEntry.amount >> Amount.value)
+                    let entry =
+                        DatabaseSession.namedOptional<DateOnly> "payment_date" row
+                        |> Option.map (fun _ -> PaymentStorage.row row)
 
                     if
-                        DatabaseSession.value<int64> 1 row
+                        DatabaseSession.namedValue<int64> "accepting_sequence" row
                         <> Sequence.value (EffectPosition.sequence origin.Position)
-                        || DatabaseSession.value<int> 2 row <> EffectPosition.index origin.Position
-                        || DatabaseSession.optionalCalendarDate 3 row <> expectedDate
-                        || DatabaseSession.optional<decimal> 4 row <> expectedAmount
-                        || DatabaseSession.value<bool> 5 row <> part.Value.Removed
+                        || DatabaseSession.namedValue<int> "effect_index" row
+                           <> EffectPosition.index origin.Position
+                        || entry <> part.Value.Entry
+                        || DatabaseSession.namedValue<bool> "removed" row <> part.Value.Removed
                     then
                         corrupt "Selected payment values/origin disagree with their accepted root."
 
@@ -648,7 +606,6 @@ module internal AggregateStorage =
             | Binding.CasePayment(_, _, payment) ->
                 { emptySelection with
                     Payments = [ payment ]
-                    ExcludedPayment = Some payment
                 }
             | Binding.Reminder(_, reminder, _) ->
                 { emptySelection with

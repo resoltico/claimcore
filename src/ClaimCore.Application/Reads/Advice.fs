@@ -75,6 +75,13 @@ module internal Advice =
             | Some { Facts = state; Origins = origins }, Ok snapshot when
                 DecisionFacts.snapshot state = Some snapshot && state.Sequence = familySequence
                 ->
+                let! payees =
+                    PaymentStorage.payees
+                        tx.Connection
+                        record.CaseId
+                        latestPayments
+                        tx.CancellationToken
+
                 let environment =
                     {
                         FamilyEnvironment.Requester = actor
@@ -221,6 +228,7 @@ module internal Advice =
                                 FamilySequence = familySequence
                                 Snapshot = snapshot
                                 LatestPayments = latestPayments
+                                PaymentPayees = payees
                                 Stages = stages
                                 Disposition = None
                                 NextActions = []

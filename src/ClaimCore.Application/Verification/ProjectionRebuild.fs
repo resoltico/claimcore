@@ -87,6 +87,7 @@ module internal ProjectionRebuild =
                                 "reminders"
                                 "case_work"
                                 "case_payments"
+                                "case_payment_totals"
                                 "cases"
                                 "actors"
                             ] do

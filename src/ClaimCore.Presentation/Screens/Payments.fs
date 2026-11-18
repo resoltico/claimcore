@@ -11,34 +11,50 @@ module PaymentsScreen =
             DisplayScale = Money.displayScale value
         }
 
+    let netPaid (totals: PaymentTotals) =
+        PresentedValue.moneyTotal (Money.currencyValue totals.Payable) totals.NetPaid
+
     let meter (position: FinancialPosition) =
         FinancialPosition.totals position
-        |> Option.map (fun totals ->
-            {
-                PresentedMoneyMeter.Current = money totals.Paid
-                Target = money totals.Payable
-                Complete = CaseProgress.ofFinancial position = CaseProgress.Paid
-                Description =
+        |> Option.bind (fun totals ->
+            let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
+
+            if totals.NetPaid < DecimalTotal.zero || totals.NetPaid > payable then
+                None
+            else
+                let current =
+                    DecimalTotal.format totals.NetPaid
+                    |> Amount.parse
+                    |> Result.defaultWith (fun _ ->
+                        invalidOp "Net payment lies within payable bounds.")
+                    |> fun amount -> Money.create amount (Money.currencyValue totals.Payable)
+
+                Some
                     {
-                        MessageId = "label.paymentProgress"
-                        Arguments =
-                            Map.ofList["paid", PresentedValue.money totals.Paid
-                                       "payable", PresentedValue.money totals.Payable]
-                    }
-            })
+                        PresentedMoneyMeter.Current = money current
+                        Target = money totals.Payable
+                        Complete =
+                            CaseProgress.ofFinancial position |> CaseProgress.completesPayment
+                        Description =
+                            {
+                                MessageId = "label.paymentProgress"
+                                Arguments =
+                                    Map.ofList
+                                        [
+                                            "paid", PresentedValue.money current
+                                            "payable", PresentedValue.money totals.Payable
+                                        ]
+                            }
+                    })
 
-    let tableWithControls select controls (position: FinancialPosition) entries =
+    let tableWithControls
+        select
+        controls
+        (position: FinancialPosition)
+        (payees: PaymentPayee list)
+        entries
+        =
         let totals = FinancialPosition.totals position
-
-        let amount row =
-            let entry = select row
-
-            match totals with
-            | Some totals ->
-                PresentedValue.money (
-                    Money.create (PaymentEntry.amount entry) (Money.currencyValue totals.Payable)
-                )
-            | None -> invalidOp "Payment entries require a decision."
 
         let definitions =
             [
@@ -48,7 +64,18 @@ module PaymentsScreen =
                     Prominence.Primary
                     false
                     (select >> PaymentEntry.date >> PresentedValue.Date)
-                column "paidAmount" "field.paidAmount.label" Prominence.Primary true amount
+                column
+                    "paidAmount"
+                    "field.paidAmount.label"
+                    Prominence.Primary
+                    true
+                    (select >> PaymentEntry.money >> PresentedValue.money)
+                column
+                    "direction"
+                    "field.direction.label"
+                    Prominence.Secondary
+                    false
+                    (select >> PaymentEntry.direction >> code PaymentDirection.vocabulary)
             ]
 
         let table =
@@ -66,6 +93,40 @@ module PaymentsScreen =
                                     section
                                         "label.recordDetails"
                                         [
+                                            value
+                                                "reference"
+                                                "field.reference.label"
+                                                Prominence.Detail
+                                                (PaymentEntry.reference entry
+                                                 |> optional (
+                                                     Identifier.format >> PresentedValue.Identifier
+                                                 ))
+                                            match PaymentEntry.payee entry with
+                                            | None -> ()
+                                            | Some party ->
+                                                let payee =
+                                                    payees
+                                                    |> List.tryFind (fun payee -> payee.Id = party)
+
+                                                value
+                                                    "payee"
+                                                    "field.payee.label"
+                                                    Prominence.Detail
+                                                    (match payee with
+                                                     | Some payee ->
+                                                         optional PresentedValue.Party payee.Name
+                                                     | None ->
+                                                         PresentedValue.Identifier(
+                                                             PartyId.format party
+                                                         ))
+
+                                                if payee |> Option.exists _.Removed then
+                                                    value
+                                                        "payeeState"
+                                                        "field.payee.label"
+                                                        Prominence.Detail
+                                                        (PresentedValue.Message
+                                                            "label.removedPayee")
                                             value
                                                 "paymentId"
                                                 "field.paymentId.label"
@@ -104,34 +165,32 @@ module PaymentsScreen =
                                 "field.payableAmount.label"
                                 Prominence.Primary
                                 (totals |> Option.map _.Payable |> optional PresentedValue.money)
-                            value
-                                "paid"
-                                "label.paid"
-                                Prominence.Primary
-                                (totals |> Option.map _.Paid |> optional PresentedValue.money)
-                            value
-                                "remaining"
-                                "label.remaining"
-                                Prominence.Primary
-                                (totals |> Option.map _.Remaining |> optional PresentedValue.money)
+                            for KeyValue(currency, buckets) in position.CurrencyTotals do
+                                value
+                                    ("netPaid." + Currency.format currency)
+                                    "label.netPaid"
+                                    Prominence.Primary
+                                    (PresentedValue.moneyTotal
+                                        currency
+                                        (CurrencyPaymentTotals.net buckets))
                         ]
                 ]
         }
 
     let table position entries =
-        tableWithControls id (fun _ -> None, []) position entries
+        tableWithControls id (fun _ -> None, []) position [] entries
 
     /// Receipts retain the direction and identity of every accepted payment change.
     let changes position differences =
         let table =
-            tableWithControls PaymentDifference.entry (fun _ -> None, []) position differences
+            tableWithControls PaymentDifference.entry (fun _ -> None, []) position [] differences
 
         { table with
             Columns =
                 table.Columns
                 @ [
                     {
-                        Key = "direction"
+                        Key = "change"
                         LabelId = "label.action"
                         Prominence = Prominence.Primary
                         IsMoney = false
@@ -199,12 +258,9 @@ module PaymentsScreen =
                                     TaskAffordances.paymentEntryActions
                                         value.CaseId
                                         value.Revision
-                                        (position.Decision
-                                         |> Option.map (Decision.payable >> Money.currency)
-                                         |> Option.defaultWith (fun () ->
-                                             invalidOp "A payment requires a decision."))
                                         item)
                                 position
+                                value.Payees
                                 value.Items
                         ))
                 ]

@@ -133,11 +133,14 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableAmountProjection
                                             (fun () -> Projections.casePayableAmount row)
 
-                                    let! paidAmount =
+                                    let! paymentReview =
                                         capture
                                             None
-                                            VerificationFinding.CasePaidAmountProjection
-                                            (fun () -> Projections.casePaidAmount row)
+                                            VerificationFinding.CasePaymentReviewProjection
+                                            (fun () ->
+                                                DatabaseSession.namedOptional<bool>
+                                                    "payment_review"
+                                                    row)
 
                                     let! payableCurrency =
                                         capture
@@ -180,8 +183,7 @@ module internal VerificationRows =
                                                 Projections.indexedMoney
                                                     claimedAmount
                                                     claimedCurrency
-                                            Paid =
-                                                Projections.indexedMoney paidAmount payableCurrency
+                                            PaymentReview = paymentReview
                                             Payable =
                                                 Projections.indexedMoney
                                                     payableAmount
@@ -255,8 +257,8 @@ module internal VerificationRows =
 
                                     do!
                                         column
-                                            VerificationFinding.CasePaidAmountProjection
-                                            (fun row -> row.Index.Paid |> Option.map Money.value)
+                                            VerificationFinding.CasePaymentReviewProjection
+                                            (fun row -> row.Index.PaymentReview)
 
                                     let! bases = bases
 

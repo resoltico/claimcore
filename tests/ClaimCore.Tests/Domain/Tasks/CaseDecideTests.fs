@@ -13,7 +13,7 @@ let tests =
         "task case.decide"
         [
             testCase
-                "decisions can be replaced while accepted payments constrain currency and amount"
+                "revision can change payable currency and later withdraw without losing entries"
                 (fun () ->
                     let state = decided () |> pay 3 "2026-02-02" "25.50"
 
@@ -23,51 +23,38 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
-                            (decisionInputs "2026-02-01" "1200" "EUR")
+                            (decisionInputs "2026-02-01" "1000" "USD")
                         |> accepted
                         |> apply state
 
-                    let finance = after.Case.Value.Content |> Option.get |> _.Finance
+                    let finance = after.Case.Value.Content.Value.Finance
 
                     Expect.equal
-                        (finance.Decision |> Option.map (Decision.payable >> Money.value))
-                        (Some 1200M)
-                        "Accepted replacement"
+                        (ClaimCore.TestSupport.CaseFixtures.netPaid "EUR" finance)
+                        "25.5"
+                        "Original currency remains"
 
                     Expect.equal
-                        (Amount.value finance.PaidAmount)
-                        25.50M
-                        "The existing payment remains exact"
+                        (CaseProgress.ofFinancial finance)
+                        CaseProgress.Decided
+                        "USD is unpaid"
 
-                    let currency =
-                        Decide.decide
-                            (context 4)
+                    let withdrawn =
+                        ClaimCore.Domain.Tasks.Case.WithdrawDecision.decide
+                            (context 5)
                             environment
-                            (Some(DecisionFacts.fromReplay state))
-                            (caseBinding state)
-                            (decisionInputs "2026-02-01" "1000" "USD")
-                        |> expectInputs
+                            (Some(DecisionFacts.fromReplay after))
+                            (caseBinding after)
+                            InputMap.empty
+                        |> accepted
+                        |> apply after
 
-                    Expect.isTrue
-                        (currency
-                         |> List.exists (fun issue ->
-                             issue.Violation = Violation.PaymentCurrencyMismatch))
-                        "Paid currency cannot change"
+                    Expect.equal
+                        withdrawn.Payments
+                        state.Payments
+                        "Decision operations preserve every entry"
 
-                    let amount =
-                        Decide.decide
-                            (context 4)
-                            environment
-                            (Some(DecisionFacts.fromReplay state))
-                            (caseBinding state)
-                            (decisionInputs "2026-02-01" "20" "EUR")
-                        |> expectInputs
-
-                    Expect.isTrue
-                        (amount
-                         |> List.exists (fun issue ->
-                             issue.Violation = Violation.PaymentExceedsPayable))
-                        "Payable cannot fall below paid")
+                    Expect.isNone withdrawn.Case.Value.Content.Value.Finance.Decision "Withdrawn")
             testCase "a decision can predate receipt" (fun () ->
                 let state = family ()
 
@@ -154,7 +141,7 @@ let tests =
 
                     let finance = zero.Case.Value.Content |> Option.get |> _.Finance
                     Expect.equal finance.PaymentCount 0L "No fictitious transfer"
-                    Expect.isNone finance.PaymentDates "No invented payment date"
+                    Expect.isTrue finance.CurrencyTotals.IsEmpty "No invented payment totals"
                     Expect.isEmpty zero.Payments "No payment part is created")
             testCase
                 "decision-date reaffirmation survives rollback but a changed or withdrawn date is new"

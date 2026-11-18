@@ -150,6 +150,13 @@ module internal PaymentQueries =
                                                                     else
                                                                         None)
 
+                                                            let! payees =
+                                                                PaymentStorage.payees
+                                                                    tx.Connection
+                                                                    parent.CaseId
+                                                                    (rows.Items |> List.map fst)
+                                                                    tx.CancellationToken
+
                                                             return
                                                                 Outcome.Succeeded
                                                                     {
@@ -183,6 +190,7 @@ module internal PaymentQueries =
                                                                                             actions
                                                                                                 entry
                                                                                     })
+                                                                        Payees = payees
                                                                         NextCursor =
                                                                             rows.Next
                                                                             |> Option.map (

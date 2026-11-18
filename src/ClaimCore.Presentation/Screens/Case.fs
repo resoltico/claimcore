@@ -232,13 +232,11 @@ module CaseScreen =
                                                 PaymentsScreen.meter fields.Finance)
                                         else
                                             None
-                                    Amount =
-                                        step.Amount
-                                        |> Option.map (fun money ->
-                                            {
-                                                PresentedMoney.Value = money
-                                                DisplayScale = Money.displayScale money
-                                            })
+                                    StageValue =
+                                        step.NetPaid
+                                        |> Option.map PaymentsScreen.netPaid
+                                        |> Option.orElseWith (fun () ->
+                                            step.Amount |> Option.map PresentedValue.money)
                                 })
                     }
 
@@ -382,23 +380,14 @@ module CaseScreen =
                                                         ClientCompositions.paymentCorrection
                                                         reply.Advice.Acts
                                                 then
-                                                    let currency =
-                                                        fields.Finance.Decision
-                                                        |> Option.map (
-                                                            Decision.payable >> Money.currency
-                                                        )
-                                                        |> Option.defaultWith (fun () ->
-                                                            invalidOp
-                                                                "A payment requires a decision.")
-
                                                     yield
                                                         TaskAffordances.paymentCorrectionEntry
                                                             reply.Snapshot.CaseId
                                                             reply.Snapshot.Revision
-                                                            currency
                                                             entry
                                             ])
                                         fields.Finance
+                                        reply.PaymentPayees
                                         reply.LatestPayments
                                 ))
                     | None -> ()

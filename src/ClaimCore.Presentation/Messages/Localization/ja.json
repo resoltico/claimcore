@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "実際に行われた支払いの日付と金額を、支払決定の通貨で記録します。送金の実行や確認は行いません。",
-    "source": "572c7a975cf2"
+    "text": "実際の支払いまたは返金を、その日付、金額、通貨で記録します。",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "アカウントを登録",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "支払う前に支払決定を取り消します。履歴は保持されます。",
-    "source": "4579673a4146"
+    "text": "決定を取り消します。既存の支払い記録と決定の履歴は保持されます。",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "案件の作業",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "支払決定の通貨を使用してください。",
-    "source": "6cf93e635901"
+    "text": "この記録の通貨を使用してください。",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "対応する有効なISO 4217通貨一覧のASCII大文字{length}文字を使用し、支払決定の通貨と一致させてください。ファンドや非国家通貨のコードは使用できません。",
-    "source": "1a3ba1179c9c"
+    "text": "対応する有効なISO 4217通貨コードのASCII英大文字{length}文字。",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "支払ID",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "通貨別支払済合計",
-    "source": "b0f6fe6c2d8f"
+    "text": "通貨別純支払額",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "{payable}のうち{paid}を支払済み。",
@@ -2479,21 +2479,9 @@
     "text": "ゼロより大きい支払額を入力してください。",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "支払いと支払決定には同じ通貨を使用してください。",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "支払済合計を支払決定額より多くすることはできません。",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "登録済み支払記録を受理した操作のUUIDを使用してください。",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "支払記録がある支払決定は撤回またはクリアできません。支払記録の削除は誤登録の場合に限ってください。",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "この支払記録は現在存在しません。続行する前に案件の現在の状態を読み込んでください。",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "選択した関係者のリビジョン番号を使用してください。",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "支払い",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "支払い",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "返金",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "返金",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "受取人に支払われた金額です。",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "受取人から返金された金額です。",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "過払い",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "支払いの確認が必要",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "支払い方向",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "外部参照",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "受取人",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "支払いか返金かを選択してください。",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "銀行取引または書面の参照番号を入力してください。",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "この案件の現行の関係者のIDを入力してください。",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "支払いまたは返金を選択してください。",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "現行の関係者のIDを使用してください。",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "純支払額",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "集計対象の案件数",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "支払いまたは返金を選択してください。",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "この支払いで通貨別合計が正確に扱える範囲を超えます。",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "この案件の現行の関係者を選択してください。",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "削除済みの関係者",
+    "source": "551b332ea085"
   }
 }

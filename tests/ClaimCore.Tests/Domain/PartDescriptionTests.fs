@@ -523,7 +523,7 @@ let tests =
                     let _, index = CaseFamily.rows erased erasure |> accepted
 
                     Expect.isNone
-                        index.Paid
+                        index.PaymentReview
                         "Erasure yields unavailable money, not a fabricated zero"
 
                     Expect.isNone index.Claimed "No private claim is reconstructed")

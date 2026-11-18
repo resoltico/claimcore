@@ -21,6 +21,7 @@ let stageDisplay state =
         state
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        None
     |> Result.defaultWith invalidOp
 
 

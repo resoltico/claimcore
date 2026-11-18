@@ -93,10 +93,7 @@ let tests =
                 (fun () ->
                     let decision = DomainInputs.admittedDecision DomainInputs.decision
 
-                    let finance =
-                        FinancialPosition.withDecision (Some decision) fields.Finance
-                        |> Result.toOption
-                        |> Option.get
+                    let finance = FinancialPosition.withDecision (Some decision) fields.Finance
 
                     let changedDecision =
                         Decision.replace
@@ -112,8 +109,6 @@ let tests =
 
                     let changedFinance =
                         FinancialPosition.withDecision (Some changedDecision) finance
-                        |> Result.toOption
-                        |> Option.get
 
                     let description =
                         CaseDescription.describe

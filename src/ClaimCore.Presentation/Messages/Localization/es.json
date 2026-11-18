@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "Registrar la fecha y el importe de un pago realizado, en la moneda de la decisión. Esto no ejecuta ni verifica una transferencia.",
-    "source": "572c7a975cf2"
+    "text": "Registre el dinero pagado o devuelto con la fecha, el importe y la divisa del asiento.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "Registrar una cuenta",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "Quitar la decisión de pago antes de que se haya pagado algo. Se conserva su historial.",
-    "source": "4579673a4146"
+    "text": "Retire la decisión. Se conservan los asientos de pago y el historial de la decisión.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "Tareas del expediente",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "Use la moneda de la decisión.",
-    "source": "6cf93e635901"
+    "text": "Utilice la divisa de este asiento.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} letras ASCII mayúsculas de la lista de monedas ISO 4217 activas y admitidas, coincidiendo con la moneda de la decisión; sin códigos de fondos ni códigos no nacionales.",
-    "source": "1a3ba1179c9c"
+    "text": "{length} letras ASCII mayúsculas de la lista de divisas activas ISO 4217 admitidas.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "ID del pago",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "Totales pagados por moneda",
-    "source": "b0f6fe6c2d8f"
+    "text": "Pagado neto por divisa",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "Pagado {paid} de {payable}.",
@@ -2479,21 +2479,9 @@
     "text": "Introduzca un importe de pago mayor que cero.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "Los pagos y la decisión deben usar la misma moneda.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "El total pagado no puede superar el importe pagadero.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "Use el UUID de la operación que aceptó el asiento de pago registrado.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "Una decisión con asientos de pago no se puede retirar ni borrar. Elimine asientos solo si se registraron por error.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "Este asiento de pago ya no está presente. Consulte el expediente actual antes de continuar.",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "Usa el número de versión de la parte seleccionada.",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "Devuelto",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "Devuelto",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "Dinero pagado a la persona destinataria.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "Dinero devuelto por la persona destinataria.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "Pagado en exceso",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "Pagos pendientes de revisión",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "Sentido",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "Referencia externa",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "Beneficiario",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "Indique si el dinero se pagó o se devolvió.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "Introduzca la referencia de la operación bancaria o de la carta.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "Introduzca el identificador de una parte actual de este expediente.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "Elija Pagado o Devuelto.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "Utilice el identificador de una parte actual.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "Pagado neto",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "Expedientes incluidos",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "Elija Pagado o Devuelto.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "Este pago haría que el total de la divisa superara el intervalo exacto.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "Elija una parte actual de este expediente.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "Parte retirada",
+    "source": "551b332ea085"
   }
 }

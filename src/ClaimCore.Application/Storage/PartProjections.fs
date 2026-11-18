@@ -3,6 +3,7 @@ namespace ClaimCore.Application.Storage
 open System
 open ClaimCore.Domain
 open ClaimCore.Application.Execution
+open ClaimCore.Application.Reads
 open ClaimCore.RecordFormat
 
 /// The sole SQL writer for aggregate-derived projection rows.
@@ -28,7 +29,7 @@ module internal PartProjections =
             DatabaseSession.parameter (index.Claimed |> Option.map Money.currency)
             DatabaseSession.parameter (index.Payable |> Option.map Money.value)
             DatabaseSession.parameter (index.Payable |> Option.map Money.currency)
-            DatabaseSession.parameter (index.Paid |> Option.map Money.value)
+            DatabaseSession.parameter index.PaymentReview
             DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.format)
             DatabaseSession.parameter index.WorkSearchText
@@ -141,35 +142,35 @@ module internal PartProjections =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,paid_amount=EXCLUDED.paid_amount,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
                     (caseParameters id row.Snapshot row.Index)
                     token
 
             exactlyOne changed
 
             for payment in row.Payments do
-                let! changed =
-                    DatabaseSession.execute
+                let content =
+                    match payment.Value.Entry with
+                    | None -> PaymentProjectionContent.Cleared payment.Value.Removed
+                    | Some entry -> PaymentProjectionContent.Available(entry, payment.Value.Removed)
+
+                do!
+                    PaymentStorage.restore
                         connection
-                        "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7) ON CONFLICT(payment_id) DO UPDATE SET payment_date=EXCLUDED.payment_date,paid_amount=EXCLUDED.paid_amount,removed=EXCLUDED.removed WHERE claimcore.case_payments.case_id=EXCLUDED.case_id AND claimcore.case_payments.accepting_sequence=EXCLUDED.accepting_sequence AND claimcore.case_payments.effect_index=EXCLUDED.effect_index"
-                        [|
-                            box (CaseId.value id)
-                            box (OperationId.value payment.Id)
-                            box (Sequence.value (EffectPosition.sequence payment.Origin.Position))
-                            box (EffectPosition.index payment.Origin.Position)
-                            optional (
-                                payment.Value.Entry
-                                |> Option.map (PaymentEntry.date >> CalendarDate.format)
-                            )
-                            optional (
-                                payment.Value.Entry
-                                |> Option.map (PaymentEntry.amount >> Amount.value)
-                            )
-                            box payment.Value.Removed
-                        |]
+                        {
+                            CaseId = id
+                            PaymentId = payment.Id
+                            Position = payment.Origin.Position
+                            Content = content
+                        }
                         token
 
-                exactlyOne changed
+            let totals =
+                CaseState.fields row.Snapshot.State
+                |> Option.map (fun facts -> facts.Finance.CurrencyTotals)
+                |> Option.defaultValue Map.empty
+
+            do! PaymentStorage.updateTotals connection id totals token
 
             let work = row.Work
 
@@ -285,7 +286,7 @@ module internal PartProjections =
                 // Erasure clears existing child projections without opening their private roots.
                 for sql in
                     [
-                        "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL,currency=NULL,direction=NULL,reference=NULL,payee_id=NULL WHERE case_id=$1"
                         "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.notes SET text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.case_parties SET role=NULL,name=NULL,details=NULL WHERE case_id=$1"

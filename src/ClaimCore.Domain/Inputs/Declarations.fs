@@ -46,6 +46,7 @@ type TaskInputDeclaration =
         Atom: TaskAtom
         Multiple: bool
         Retention: InputRetention
+        DefaultText: string option
         ChoicesFrom: string option
         ChoicesWhen: TaskInputChoicesWhen list
     }
@@ -80,6 +81,7 @@ module TaskInputDeclaration =
                   TaskInputId.Target(InputTarget.PrincipalKind | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.Role | InputTarget.Scope)
                 | _, TaskInputId.Scope -> InputRetention.Retained
                 | _ -> InputRetention.Erasable
+            DefaultText = None
             ChoicesFrom =
                 if input = TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor) then
                     Some "case.assignees"

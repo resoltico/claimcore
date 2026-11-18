@@ -108,7 +108,7 @@ module TaskAffordances =
             []
             Map.empty
 
-    let paymentCorrectionEntry id revision currency entry =
+    let paymentCorrectionEntry id revision entry =
         let task = ClientCompositions.paymentCorrection
 
         offered
@@ -121,17 +121,35 @@ module TaskAffordances =
                     (Some(OperationId.value (PaymentEntry.id entry)))
                     None
             ))
-            (Map.ofList [ field BusinessField.PaidCurrency, text currency ])
+            (Map.ofList
+                [
+                    field BusinessField.PaymentDate,
+                    text (CalendarDate.format (PaymentEntry.date entry))
+                    field BusinessField.PaidAmount, text (Amount.format (PaymentEntry.amount entry))
+                    field BusinessField.PaidCurrency,
+                    text (Money.currency (PaymentEntry.money entry))
+                    TaskInputId.Target InputTarget.PaymentDirection,
+                    text (PaymentDirection.token (PaymentEntry.direction entry))
+                    match PaymentEntry.reference entry with
+                    | Some reference ->
+                        TaskInputId.Target InputTarget.PaymentReference,
+                        text (Identifier.format reference)
+                    | None -> ()
+                    match PaymentEntry.payee entry with
+                    | Some payee ->
+                        TaskInputId.Target InputTarget.PaymentPayee, text (PartyId.format payee)
+                    | None -> ()
+                ])
             (authored task)
             Map.empty
 
-    let paymentEntryActions id revision currency (item: CasePaymentItem) =
+    let paymentEntryActions id revision (item: CasePaymentItem) =
         item.Actions
         |> List.map (fun task ->
             if task = ClientCompositions.paymentRemoval then
                 paymentRemoveEntry id revision item.Entry
             elif task = ClientCompositions.paymentCorrection then
-                paymentCorrectionEntry id revision currency item.Entry
+                paymentCorrectionEntry id revision item.Entry
             else
                 invalidArg "item" "A payment item contains an undeclared action.")
 

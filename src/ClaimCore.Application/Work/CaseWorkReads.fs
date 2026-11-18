@@ -24,6 +24,7 @@ module internal CaseWorkReads =
                 |> Option.map (fun assigned ->
                     assigned.ActorId, assigned.Availability = ActorAvailability.Available)
             NextPendingDue = work.FollowUp
+            PaymentsNeedReview = record.Index.PaymentReview = Some true
         }
 
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =

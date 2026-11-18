@@ -57,30 +57,38 @@ module TimelineCsv =
                     let entry = PaymentDifference.entry changed
                     let prefix = "payment." + OperationId.format (PaymentEntry.id entry) + "."
                     let date = CalendarDate.format (PaymentEntry.date entry)
-                    let amount = Amount.format (PaymentEntry.amount entry)
+                    let money = PaymentEntry.money entry
 
-                    match changed with
-                    | PaymentDifference.Recorded _ ->
-                        yield prefix + "paymentDate", "", date
-                        yield prefix + "paidAmount", "", amount
-                    | PaymentDifference.Removed _ ->
-                        yield prefix + "paymentDate", date, ""
-                        yield prefix + "paidAmount", amount, ""
+                    let cells =
+                        [
+                            "paymentDate", date
+                            "amount", Money.format money
+                            "currency", Money.currency money
+                            "direction", PaymentDirection.token (PaymentEntry.direction entry)
+                            "reference",
+                            PaymentEntry.reference entry
+                            |> Option.map Identifier.format
+                            |> Option.defaultValue ""
+                            "payee",
+                            PaymentEntry.payee entry
+                            |> Option.map PartyId.format
+                            |> Option.defaultValue ""
+                        ]
+
+                    for name, value in cells do
+                        match changed with
+                        | PaymentDifference.Recorded _ -> yield prefix + name, "", value
+                        | PaymentDifference.Removed _ -> yield prefix + name, value, ""
                 yield
                     difference
-                        "paid"
-                        (fun money -> Money.format money + " " + Money.currency money)
+                        "netPaid"
+                        (fun (totals: PaymentTotals) ->
+                            DecimalTotal.format totals.NetPaid
+                            + " "
+                            + Money.currency totals.Payable)
                         {
-                            Before = change.Before |> Option.map _.Paid
-                            After = change.After |> Option.map _.Paid
-                        }
-                yield
-                    difference
-                        "remaining"
-                        (fun money -> Money.format money + " " + Money.currency money)
-                        {
-                            Before = change.Before |> Option.map _.Remaining
-                            After = change.After |> Option.map _.Remaining
+                            Before = change.Before
+                            After = change.After
                         }
             ]
         | TimelineChange.Note(_, id, text) ->

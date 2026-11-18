@@ -15,14 +15,21 @@ module internal CaseSummaryQuery =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid case aggregate.")
 
-    let private total currency amount =
+    let private total signed count currency amount =
         match currency, amount with
         | None, None -> None
         | Some currency, Some amount ->
             Some
                 {
                     CurrencyTotal.Currency = Currency.parse currency |> admitted
-                    Amount = DecimalTotal.parse amount |> admitted
+                    Amount =
+                        (if signed then
+                             DecimalTotal.parseSigned
+                         else
+                             DecimalTotal.parse)
+                            amount
+                        |> admitted
+                    Cases = count
                 }
         | _ -> raise (RecordCorruptException "Incomplete aggregate amount and currency.")
 
@@ -46,6 +53,8 @@ module internal CaseSummaryQuery =
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid aggregate progress.")))
 
+        let count = DatabaseSession.value<int64> 3 row
+
         {
             CaseCountGroup.Responsibility =
                 DatabaseSession.optional<string> 8 row
@@ -60,17 +69,17 @@ module internal CaseSummaryQuery =
             Lifecycle = lifecycle
             Status = status
             Progress = progress
-            Count = DatabaseSession.value<int64> 3 row
+            Count = count
             Claimed =
                 total
+                    false
+                    count
                     (DatabaseSession.optional<string> 4 row)
                     (DatabaseSession.optional<string> 5 row)
-            Paid =
-                total
-                    (DatabaseSession.optional<string> 6 row)
-                    (DatabaseSession.optional<string> 10 row)
             Payable =
                 total
+                    false
+                    count
                     (DatabaseSession.optional<string> 6 row)
                     (DatabaseSession.optional<string> 7 row)
         }
@@ -80,14 +89,30 @@ module internal CaseSummaryQuery =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}),sum(c.paid_amount)::text FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10")
+                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}) FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10")
                     (CaseSelectionSql.parameters selection)
                     token
+
+            let! netPaid =
+                DatabaseSession.rows
+                    connection
+                    ($"SELECT p.currency,sum(p.paid-p.returned)::text,count(*) FROM claimcore.cases c JOIN claimcore.case_payment_totals p ON p.case_id=c.case_id WHERE {CaseSelectionSql.predicate selection} GROUP BY p.currency ORDER BY p.currency COLLATE \"C\"")
+                    (CaseSelectionSql.parameters selection)
+                    token
+
+            let netPaid =
+                netPaid
+                |> List.choose (fun row ->
+                    total
+                        true
+                        (DatabaseSession.value<int64> 2 row)
+                        (Some(DatabaseSession.value<string> 0 row))
+                        (Some(DatabaseSession.value<string> 1 row)))
 
             return
                 rows
                 |> List.map group
-                |> CaseWorklistSummary.fromGroups selection.DateBasis
+                |> CaseWorklistSummary.fromGroups selection.DateBasis netPaid
                 |> Result.defaultWith (fun _ ->
                     raise (RecordCorruptException "Invalid case totals or counts."))
         }

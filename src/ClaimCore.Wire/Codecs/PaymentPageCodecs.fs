@@ -34,7 +34,7 @@ module PaymentPageCodecs =
                 "PaymentFinancialState"
                 (record id |> field "finance" id ResponseCodecs.financialPosition)
 
-        (record (fun basis id reference revision workRevision state items cursor ->
+        (record (fun basis id reference revision workRevision state items payees cursor ->
             {
                 CasePaymentPage.Basis = basis
                 CaseId = id
@@ -43,6 +43,7 @@ module PaymentPageCodecs =
                 WorkRevision = workRevision
                 State = state
                 Items = items
+                Payees = payees
                 NextCursor = cursor
             })
         : Fields<CasePaymentPage, _>)
@@ -53,6 +54,7 @@ module PaymentPageCodecs =
         |> field "workRevision" _.WorkRevision ResponseScalars.revision
         |> field "state" _.State state
         |> field "items" _.Items (list PaymentPaging.MaximumLimit item)
+        |> field "payees" _.Payees (list PaymentPaging.MaximumLimit PaymentCodecs.payee)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "CasePaymentPage"

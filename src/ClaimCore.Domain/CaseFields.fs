@@ -70,6 +70,9 @@ type InputTarget =
     | PartyDetails
     | ExpectedPartyRevision
     | PaymentId
+    | PaymentDirection
+    | PaymentReference
+    | PaymentPayee
     | ReminderAction
     | ReminderDueDate
     | ExpectedWorkRevision
@@ -466,11 +469,26 @@ module private PaymentAmount =
         else
             Error Violation.PaymentAmountPositive
 
+[<RequireQualifiedAccess>]
+type PaymentDirection =
+    | Paid
+    | Returned
+
+module PaymentDirection =
+    let vocabulary =
+        Vocabulary.ofUnion<PaymentDirection> "paymentDirection" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+    let defaultValue = PaymentDirection.Paid
+
 type Payment =
     private
         {
             Date: CalendarDate
-            Paid: Money
+            Money: Money
+            Direction: PaymentDirection
+            Reference: Identifier option
+            Payee: PartyId option
         }
 
 module PaymentInput =
@@ -491,7 +509,17 @@ module PaymentInput =
 
 module Payment =
     let date (record: Payment) = record.Date
-    let paid (record: Payment) = record.Paid
+    let money (record: Payment) = record.Money
+    let direction (record: Payment) = record.Direction
+    let reference (record: Payment) = record.Reference
+    let payee (record: Payment) = record.Payee
+
+    let withDetails direction reference payee payment =
+        { payment with
+            Direction = direction
+            Reference = reference
+            Payee = payee
+        }
 
     let create members =
         match List.sortBy fst members with
@@ -502,7 +530,10 @@ module Payment =
             |> Result.map (fun amount ->
                 {
                     Date = date
-                    Paid = Money.create amount currency
+                    Money = Money.create amount currency
+                    Direction = PaymentDirection.defaultValue
+                    Reference = None
+                    Payee = None
                 })
             |> Result.mapError (fun _ -> "A payment amount must be positive.")
         | _ -> Error "Invalid payment members."
@@ -510,8 +541,8 @@ module Payment =
     let values (record: Payment) =
         [
             BusinessField.PaymentDate, Admitted.Date record.Date
-            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Paid)
-            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Paid)
+            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Money)
+            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Money)
         ]
 
     let replace members value =
@@ -547,27 +578,37 @@ module Payment =
 
     let parse input = parseWith (fun _ -> Ok) input
 
-/// The accepting operation identifies an entry; its currency belongs to the retained decision.
+/// The accepting operation identifies an entry; its money and evidence belong to that entry.
 type PaymentEntry =
     private
         {
             Id: OperationId
             Date: CalendarDate
-            Amount: Amount
+            Money: Money
+            Direction: PaymentDirection
+            Reference: Identifier option
+            Payee: PartyId option
         }
 
 module PaymentEntry =
-    let id entry = entry.Id
-    let date entry = entry.Date
-    let amount entry = entry.Amount
+    let id (entry: PaymentEntry) = entry.Id
+    let date (entry: PaymentEntry) = entry.Date
+    let money (entry: PaymentEntry) = entry.Money
+    let amount entry = money entry |> Money.amount
+    let direction (entry: PaymentEntry) = entry.Direction
+    let reference (entry: PaymentEntry) = entry.Reference
+    let payee (entry: PaymentEntry) = entry.Payee
 
-    let create id date amount =
-        PaymentAmount.validate amount
-        |> Result.map (fun amount ->
+    let create id direction money date reference payee =
+        PaymentAmount.validate (Money.amount money)
+        |> Result.map (fun _ ->
             {
                 Id = id
                 Date = date
-                Amount = amount
+                Money = money
+                Direction = direction
+                Reference = reference
+                Payee = payee
             })
         |> Result.mapError (fun _ -> "A payment entry amount must be positive.")
 
@@ -575,5 +616,8 @@ module PaymentEntry =
         {
             Id = id
             Date = Payment.date payment
-            Amount = Money.amount (Payment.paid payment)
+            Money = Payment.money payment
+            Direction = Payment.direction payment
+            Reference = Payment.reference payment
+            Payee = Payment.payee payment
         }

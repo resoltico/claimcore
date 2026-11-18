@@ -350,7 +350,7 @@ CREATE TABLE claimcore.cases (
     claimed_amount numeric(22,4),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4),
-    paid_amount numeric(22,4),
+    payment_review boolean,
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
@@ -361,10 +361,9 @@ CREATE TABLE claimcore.cases (
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]+$' AND octet_length(case_reference)<=32768),
     CONSTRAINT private_shape CHECK ((snapshot IS NULL)=(status IS NULL) AND (snapshot IS NULL)=(progress IS NULL)
         AND (snapshot IS NULL)=(search_text IS NULL)
-        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
     CONSTRAINT claimed_shape CHECK ((claimed_amount IS NULL) = (claimed_currency IS NULL)),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
-    CONSTRAINT paid_shape CHECK ((paid_amount IS NULL) = (payable_amount IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
@@ -387,12 +386,24 @@ CREATE TABLE claimcore.case_payments (
     FOREIGN KEY(accepting_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     payment_date date CHECK (payment_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     paid_amount numeric(22,4),
+    currency text CHECK (currency ~ '^[A-Z]{3}$'),
+    direction text CHECK (direction ~ '^[A-Z][A-Z_]{0,39}$'),
+    reference text,
+    payee_id uuid,
     removed boolean NOT NULL,
-    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL)),
+    CONSTRAINT payment_private_shape CHECK ((payment_date IS NULL) = (paid_amount IS NULL)
+        AND (payment_date IS NULL) = (currency IS NULL) AND (payment_date IS NULL) = (direction IS NULL)
+        AND (payment_date IS NOT NULL OR (reference IS NULL AND payee_id IS NULL))),
     UNIQUE (accepting_sequence, effect_index)
 );
 CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,accepting_sequence DESC,effect_index DESC) WHERE NOT removed AND payment_date IS NOT NULL;
-CREATE INDEX case_payments_current_dates ON claimcore.case_payments(case_id,payment_date,payment_id) WHERE NOT removed AND payment_date IS NOT NULL;
+CREATE TABLE claimcore.case_payment_totals (
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    currency text NOT NULL CHECK (currency ~ '^[A-Z]{3}$'),
+    paid numeric(44,4) NOT NULL,
+    returned numeric(44,4) NOT NULL,
+    PRIMARY KEY (case_id,currency)
+);
 
 CREATE TABLE claimcore.actors (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
@@ -485,6 +496,7 @@ CREATE TABLE claimcore.case_parties (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     created_sequence bigint NOT NULL,
     created_effect_index integer NOT NULL CHECK (created_effect_index BETWEEN 0 AND 49),
+    UNIQUE(case_id,party_id),
     UNIQUE(created_sequence,created_effect_index),
     FOREIGN KEY(created_sequence,created_effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     removed boolean NOT NULL,
@@ -494,6 +506,10 @@ CREATE TABLE claimcore.case_parties (
     CHECK ((role IS NULL AND name IS NULL AND details IS NULL) OR role IS NOT NULL)
 );
 CREATE INDEX case_parties_current ON claimcore.case_parties(case_id,created_sequence,created_effect_index) WHERE NOT removed;
+ALTER TABLE claimcore.case_payments ADD CONSTRAINT payment_payee_ownership
+    FOREIGN KEY (case_id,payee_id) REFERENCES claimcore.case_parties(case_id,party_id)
+    DEFERRABLE INITIALLY DEFERRED;
+
 
 CREATE TABLE claimcore.grants (
     granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
@@ -543,7 +559,8 @@ BEGIN
     IF erased THEN
         IF root.snapshot IS NOT NULL OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects e
             WHERE e.part_kind='CASE' AND e.part_id=family_id AND e.revision=root.revision AND e.erases_kind='FAMILY' AND e.erases_id=family_id)
-            OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND (payment_date IS NOT NULL OR paid_amount IS NOT NULL))
+            OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND payment_date IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_payment_totals WHERE case_id=family_id)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.notes WHERE case_id=family_id AND text IS NOT NULL)
@@ -568,6 +585,7 @@ BEGIN
 END;
 $$;
 CREATE CONSTRAINT TRIGGER cases_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.cases DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER payment_totals_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_payment_totals DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER payments_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_payments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER work_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_work DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER reminders_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.reminders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
@@ -643,6 +661,7 @@ GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.l
     TO claimcore_runtime;
 GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb) TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;

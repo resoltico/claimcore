@@ -34,7 +34,8 @@ type VerificationFinding =
     | CaseClaimedAmountProjection
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection
-    | CasePaidAmountProjection
+    | CasePaymentReviewProjection
+    | CasePaymentTotalsProjection
     | CasePayableCurrencyProjection
     | PeopleProjection
     | PeopleProfileProjection

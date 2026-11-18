@@ -263,6 +263,7 @@ module ResponseCodecs =
                 parties
                 partyOffers
                 latestPayments
+                paymentPayees
                 changedAt
                 recordedBy
                 family ->
@@ -287,6 +288,7 @@ module ResponseCodecs =
                     Parties = parties
                     PartyOffers = partyOffers |> List.map TaskOffer.Declared
                     LatestPayments = latestPayments
+                    PaymentPayees = paymentPayees
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                 })
@@ -316,6 +318,10 @@ module ResponseCodecs =
             "latestPayments"
             _.LatestPayments
             (list PaymentPaging.PreviewLimit PaymentCodecs.entry)
+        |> field
+            "paymentPayees"
+            _.PaymentPayees
+            (list PaymentPaging.PreviewLimit PaymentCodecs.payee)
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence

@@ -1,223 +1,151 @@
 namespace ClaimCore.Domain
 
-open System
-
-type PaymentTotals =
-    {
-        Payable: Money
-        Paid: Money
-        Remaining: Money
-    }
-
-module PaymentTotals =
-    let create payable paid remaining =
-        if
-            Money.currency payable = Money.currency paid
-            && Money.currency payable = Money.currency remaining
-            && Money.value paid + Money.value remaining = Money.value payable
-        then
-            Ok
-                {
-                    Payable = payable
-                    Paid = paid
-                    Remaining = remaining
-                }
-        else
-            Error "Payment totals require one currency and paid plus remaining equal to payable."
-
-/// Bounded date facts belong to an exact active-entry set, not an arbitrary read page.
-type PaymentDateBounds =
-    private
-        {
-            EarliestValue: CalendarDate
-            LatestValue: CalendarDate
-        }
-
-    member this.Earliest = this.EarliestValue
-    member this.Latest = this.LatestValue
-
-module PaymentDateBounds =
-    let create (earliest: CalendarDate) (latest: CalendarDate) =
-        if earliest <= latest then
-            Some
-                {
-                    EarliestValue = earliest
-                    LatestValue = latest
-                }
-        else
-            None
-
 [<RequireQualifiedAccess>]
 type FinancialPositionIssue =
     | InconsistentAggregate
     | CountOutOfRange
-    | DecisionRequired
-    | DecisionHasPayments
-    | CurrencyMismatch
-    | ExceedsPayable
-    | FuturePayment
+    | TotalOutOfRange
     | InvalidRemovalContext
 
-/// Only accepted facts are stored: classification and remaining money are derived.
+type CurrencyPaymentTotals =
+    {
+        Paid: DecimalTotal
+        Returned: DecimalTotal
+    }
+
+module CurrencyPaymentTotals =
+    let zero =
+        {
+            Paid = DecimalTotal.zero
+            Returned = DecimalTotal.zero
+        }
+
+    let net total =
+        DecimalTotal.sum [ total.Paid; DecimalTotal.negate total.Returned ]
+        |> Result.defaultWith (fun _ ->
+            invalidOp "Non-negative payment buckets have a bounded difference.")
+
+type PaymentTotals =
+    {
+        Payable: Money
+        NetPaid: DecimalTotal
+    }
+
+/// Current payments are retained as exact, non-negative buckets by currency and direction.
 type FinancialPosition =
     private
         {
             DecisionValue: Decision option
-            PaidValue: Amount
+            TotalsValue: Map<Currency, CurrencyPaymentTotals>
             CountValue: int64
-            DateValues: PaymentDateBounds option
         }
 
     member this.Decision = this.DecisionValue
-    member this.PaidAmount = this.PaidValue
+    member this.CurrencyTotals = this.TotalsValue
     member this.PaymentCount = this.CountValue
-    member this.PaymentDates = this.DateValues
 
 module FinancialPosition =
-    let private amount (value: decimal) =
-        value.ToString("0.####", Globalization.CultureInfo.InvariantCulture)
-        |> Amount.parse
-        |> Result.defaultWith (fun _ ->
-            invalidOp "A bounded financial amount must be representable.")
-
-    let private zero = amount 0M
-    // Every active entry is positive and has the Amount precision, so its minimum contribution is exact.
-    let private quantum = 1M / pown 10M Amount.MaximumFractionalDigits
-
-    let create
-        (decision: Decision option)
-        (paid: Amount)
-        (count: int64)
-        (dates: PaymentDateBounds option)
-        =
-        let paidValue = Amount.value paid
-
-        let consistent =
-            if count = 0L then
-                paidValue = 0M && Option.isNone dates
-            else
-                paidValue >= decimal count * quantum
-                && (dates
-                    |> Option.exists (fun bounds -> count <> 1L || bounds.Earliest = bounds.Latest))
-
+    let create decision totals count =
         if count < 0L || count > SafeInteger.Maximum then
             Error FinancialPositionIssue.CountOutOfRange
-        elif not consistent then
+        elif
+            (Map.isEmpty totals <> (count = 0L))
+            || totals
+               |> Map.exists (fun _ totals ->
+                   totals.Paid < DecimalTotal.zero
+                   || totals.Returned < DecimalTotal.zero
+                   || totals = CurrencyPaymentTotals.zero)
+        then
             Error FinancialPositionIssue.InconsistentAggregate
         else
-            match decision with
-            | None when count <> 0L || paidValue <> 0M ->
-                Error FinancialPositionIssue.DecisionRequired
-            | Some value when paidValue > Money.value (Decision.payable value) ->
-                Error FinancialPositionIssue.ExceedsPayable
-            | _ ->
-                Ok
-                    {
-                        DecisionValue = decision
-                        PaidValue = paid
-                        CountValue = count
-                        DateValues = dates
-                    }
+            Ok
+                {
+                    DecisionValue = decision
+                    TotalsValue = totals
+                    CountValue = count
+                }
 
     let undecided =
         {
             DecisionValue = None
-            PaidValue = zero
+            TotalsValue = Map.empty
             CountValue = 0L
-            DateValues = None
         }
 
-    let isPaid (position: FinancialPosition) =
-        position.Decision
-        |> Option.exists (fun decision ->
-            Amount.value position.PaidAmount = Money.value (Decision.payable decision))
+    let withDecision decision position =
+        { position with
+            DecisionValue = decision
+        }
+
+    let netIn currency (position: FinancialPosition) =
+        position.CurrencyTotals
+        |> Map.tryFind currency
+        |> Option.map CurrencyPaymentTotals.net
+        |> Option.defaultValue DecimalTotal.zero
 
     let totals (position: FinancialPosition) =
         position.Decision
         |> Option.map (fun decision ->
             let payable = Decision.payable decision
-            let currency = Money.currencyValue payable
 
-            PaymentTotals.create
-                payable
-                (Money.create position.PaidAmount currency)
-                (Money.create
-                    (amount (Money.value payable - Amount.value position.PaidAmount))
-                    currency)
-            |> Result.defaultWith invalidOp)
+            {
+                Payable = payable
+                NetPaid = netIn (Money.currencyValue payable) position
+            })
 
-    let withDecision decision (position: FinancialPosition) =
-        match position.Decision, decision with
-        | _, None when position.PaymentCount > 0L ->
-            Error FinancialPositionIssue.DecisionHasPayments
-        | Some before, Some after when
-            position.PaymentCount > 0L
-            && Money.currency (Decision.payable before)
-               <> Money.currency (Decision.payable after)
-            ->
-            Error FinancialPositionIssue.CurrencyMismatch
-        | _ -> create decision position.PaidAmount position.PaymentCount position.PaymentDates
+    let needsReview (position: FinancialPosition) =
+        (totals position
+         |> Option.exists (fun totals ->
+             totals.NetPaid > DecimalTotal.ofAmount (Money.amount totals.Payable)))
+        || position.CurrencyTotals
+           |> Map.exists (fun _ totals -> CurrencyPaymentTotals.net totals < DecimalTotal.zero)
 
-    let record today (payment: Payment) (position: FinancialPosition) =
-        match position.Decision with
-        | None -> Error FinancialPositionIssue.DecisionRequired
-        | Some decision ->
-            let paid = Payment.paid payment
-            let date = Payment.date payment
-            let value = Money.value paid
+    let private adjust combine issue direction money totals =
+        let currency = Money.currencyValue money
 
-            if value <= 0M then
-                Error FinancialPositionIssue.InconsistentAggregate
-            elif Money.currency paid <> Money.currency (Decision.payable decision) then
-                Error FinancialPositionIssue.CurrencyMismatch
-            elif CalendarDate.value date > today then
-                Error FinancialPositionIssue.FuturePayment
-            elif position.PaymentCount = SafeInteger.Maximum then
-                Error FinancialPositionIssue.CountOutOfRange
-            elif
-                value > Money.value (Decision.payable decision) - Amount.value position.PaidAmount
-            then
-                Error FinancialPositionIssue.ExceedsPayable
+        let original =
+            Map.tryFind currency totals |> Option.defaultValue CurrencyPaymentTotals.zero
+
+        let amount = DecimalTotal.ofAmount (Money.amount money) |> combine
+
+        let previous, update =
+            match direction with
+            | PaymentDirection.Paid -> original.Paid, fun value -> { original with Paid = value }
+            | PaymentDirection.Returned ->
+                original.Returned, fun value -> { original with Returned = value }
+
+        match DecimalTotal.sum [ previous; amount ] with
+        | Ok value when value >= DecimalTotal.zero ->
+            let next = update value
+
+            if next = CurrencyPaymentTotals.zero then
+                Ok(Map.remove currency totals)
             else
-                let earliest, latest =
-                    match position.PaymentDates with
-                    | None -> date, date
-                    | Some dates -> min date dates.Earliest, max date dates.Latest
+                Ok(Map.add currency next totals)
+        | _ -> Error issue
 
-                create
-                    position.Decision
-                    (amount (Amount.value position.PaidAmount + value))
-                    (position.PaymentCount + 1L)
-                    (PaymentDateBounds.create earliest latest)
-
-    /// Remaining extrema must be supplied by the store from the same locked active-entry set.
-    /// This validates their relationship to the selected entry; replay independently derives them.
-    let remove
-        (selected: PaymentEntry)
-        (remainingDates: PaymentDateBounds option)
-        (position: FinancialPosition)
-        =
-        let date = PaymentEntry.date selected
-
-        let paid =
-            Amount.value position.PaidAmount - Amount.value (PaymentEntry.amount selected)
-
-        let validBounds =
-            match position.PaymentDates, remainingDates with
-            | Some before, None ->
-                position.PaymentCount = 1L && date = before.Earliest && date = before.Latest
-            | Some before, Some after ->
-                position.PaymentCount > 1L
-                && date >= before.Earliest
-                && date <= before.Latest
-                && after.Earliest >= before.Earliest
-                && after.Latest <= before.Latest
-                && (date = before.Earliest || after.Earliest = before.Earliest)
-                && (date = before.Latest || after.Latest = before.Latest)
-            | _ -> false
-
-        if not validBounds || paid < 0M then
-            Error FinancialPositionIssue.InvalidRemovalContext
+    let add entry (position: FinancialPosition) =
+        if position.PaymentCount = SafeInteger.Maximum then
+            Error FinancialPositionIssue.CountOutOfRange
         else
-            create position.Decision (amount paid) (position.PaymentCount - 1L) remainingDates
-            |> Result.mapError (fun _ -> FinancialPositionIssue.InvalidRemovalContext)
+            adjust
+                id
+                FinancialPositionIssue.TotalOutOfRange
+                (PaymentEntry.direction entry)
+                (PaymentEntry.money entry)
+                position.CurrencyTotals
+            |> Result.bind (fun totals ->
+                create position.Decision totals (position.PaymentCount + 1L))
+
+    let remove entry (position: FinancialPosition) =
+        adjust
+            DecimalTotal.negate
+            FinancialPositionIssue.InvalidRemovalContext
+            (PaymentEntry.direction entry)
+            (PaymentEntry.money entry)
+            position.CurrencyTotals
+        |> Result.bind (fun totals -> create position.Decision totals (position.PaymentCount - 1L))
+
+    let rebuild entries =
+        (Ok undecided, entries)
+        ||> Seq.fold (fun state entry -> state |> Result.bind (add entry))

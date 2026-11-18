@@ -63,7 +63,10 @@ module internal ReplyTextFormat =
         let culture = displayCulture rendering
 
         let whole =
-            BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
+            if parts[0] = "-0" then
+                culture.NumberFormat.NegativeSign + (0).ToString("N0", culture)
+            else
+                BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
 
         let fraction = if parts.Length = 1 then "" else parts[1]
         let padded = fraction.PadRight(scale, '0')

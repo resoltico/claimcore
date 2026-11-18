@@ -135,14 +135,12 @@ let private permissions (environment: FamilyEnvironment) (state: DecisionFacts) 
 let decisionChoices (finance: FinancialPosition) =
     if finance.Decision.IsNone then
         [ CorrectionGroupAction.Keep ]
-    elif finance.PaymentCount = 0L then
+    else
         [
             CorrectionGroupAction.Keep
             CorrectionGroupAction.Update
             CorrectionGroupAction.Clear
         ]
-    else
-        [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
 
 let availability environment state binding =
     let offered =
@@ -233,29 +231,18 @@ let private apply (before: CaseContent) command =
             Ok(Some(DecisionUpdate.apply update current))
 
     decision
-    |> Result.bind (fun next ->
-        Admission.collect
-            [
-                CaseAdmission.decisionChange before.Finance next
-                CaseAdmission.crossFinancial next before.Finance
-            ]
-        |> Result.map (fun () -> next))
     |> Parsing.reject
     |> Result.bind (fun decision ->
-        FinancialPosition.withDecision decision before.Finance
-        |> Result.mapError (fun _ ->
-            Rejection.InvalidState RecordViolation.InvalidFinancialPosition)
-        |> Result.bind (fun finance ->
-            let after =
-                {
-                    Registration = registration
-                    Finance = finance
-                }
+        let after =
+            {
+                Registration = registration
+                Finance = FinancialPosition.withDecision decision before.Finance
+            }
 
-            if after = before then
-                Error(Rejection.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges))
-            else
-                Ok after))
+        if after = before then
+            Error(Rejection.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges))
+        else
+            Ok after)
 
 let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs

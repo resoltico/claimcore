@@ -73,13 +73,7 @@ module PartDescriptionCodecs =
         |> build
         |> named "ChangeReferences"
 
-    let totals =
-        (record (fun v0 v1 v2 -> PaymentTotals.create v0 v1 v2): Fields<PaymentTotals, _>)
-        |> field "payable" _.Payable (money)
-        |> field "paid" _.Paid (money)
-        |> field "remaining" _.Remaining (money)
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
-        |> named "PaymentTotals"
+    let totals = PaymentCodecs.totals
 
     let workValues =
         (record (fun v0 v1 ->

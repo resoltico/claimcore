@@ -67,8 +67,6 @@ type CaseFamily =
     member this.ChangedAt = this.Value.ChangedAt
 
 module internal FamilyParts =
-    let validateContent (content: CaseContent) = CaseAdmission.financial content.Finance
-
     let validateSnapshot (snapshot: CaseSnapshot) =
         if snapshot.Revision < Revision.first then
             Error RecordViolation.RevisionOutOfRange
@@ -77,12 +75,7 @@ module internal FamilyParts =
             | None -> Ok()
             | Some fields when fields.CaseReference <> snapshot.Reference ->
                 Error RecordViolation.ReferenceMismatch
-            | Some fields ->
-                validateContent
-                    {
-                        Registration = fields.Registration
-                        Finance = fields.Finance
-                    }
+            | Some _ -> Ok()
 
     let private financial
         (payments: Map<OperationId, AcceptedPart<PaymentValue>>)
@@ -91,32 +84,22 @@ module internal FamilyParts =
         match value.Content with
         | None -> Ok()
         | Some content ->
-            validateContent content
-            |> Result.bind (fun () ->
-                let active =
-                    payments
-                    |> Map.values
-                    |> Seq.filter (fun part -> not part.Value.Removed)
-                    |> Seq.toList
+            let active =
+                payments
+                |> Map.values
+                |> Seq.filter (fun part -> not part.Value.Removed)
+                |> Seq.toList
 
-                let entries = active |> List.choose _.Value.Entry
-                let dates = entries |> List.map PaymentEntry.date |> List.sort
+            let entries = active |> List.choose _.Value.Entry
 
-                let bounds =
-                    match dates with
-                    | [] -> None
-                    | first :: _ -> PaymentDateBounds.create first (List.last dates)
-
-                if
-                    entries.Length <> active.Length
-                    || int64 entries.Length <> content.Finance.PaymentCount
-                    || (entries |> List.sumBy (PaymentEntry.amount >> Amount.value))
-                       <> Amount.value content.Finance.PaidAmount
-                    || bounds <> content.Finance.PaymentDates
-                then
-                    Error RecordViolation.InvalidPaymentState
-                else
-                    Ok())
+            match FinancialPosition.rebuild entries with
+            | Ok finance when
+                entries.Length = active.Length
+                && finance.PaymentCount = content.Finance.PaymentCount
+                && finance.CurrencyTotals = content.Finance.CurrencyTotals
+                ->
+                Ok()
+            | _ -> Error RecordViolation.InvalidPaymentState
 
     let private caseState (value: CaseValue) : CasePartState =
         {
@@ -635,18 +618,9 @@ module internal FamilyParts =
 
     /// The selected-parts constructor is internal; DecisionFacts adds its explicit aggregate facts.
     let restoreSelected id reference sequence parts origins =
-        restoreParts
-            (fun _ (value: CaseValue) ->
-                value.Content |> Option.map validateContent |> Option.defaultValue (Ok()))
-            (fun _ _ -> Ok())
-            id
-            reference
-            sequence
-            parts
-            origins
+        restoreParts (fun _ _ -> Ok()) (fun _ _ -> Ok()) id reference sequence parts origins
 
 module CaseFamily =
-    let validateContent = FamilyParts.validateContent
     let validateSnapshot = FamilyParts.validateSnapshot
 
     let apply state change =

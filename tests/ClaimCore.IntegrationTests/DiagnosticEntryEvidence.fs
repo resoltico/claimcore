@@ -206,8 +206,8 @@ let entriesEvidence () =
             Expect.equal fields.Finance.PaymentCount 51L "Recording remains available above fifty"
 
             Expect.equal
-                (Amount.value fields.Finance.PaidAmount)
-                51M
+                (CaseFixtures.netPaid "EUR" fields.Finance)
+                "51"
                 "Removing 100 from 150 then adding 1 yields fifty-one euros"
         | _ -> failtest "The authorized payment witness requires a disclosed result"
 
@@ -220,18 +220,23 @@ let technicalCountEvidence () =
     let valid value =
         Result.defaultWith (fun error -> failtestf "Technical boundary fixture: %A" error) value
 
-    let date = CaseFixtures.date "2026-08-20"
-
     let decision =
         DomainInputs.decisionWith [ BusinessField.PayableAmount, "999999999999999999" ] decision
         |> DomainInputs.admittedDecision
 
+    let currency = Currency.parse "EUR" |> valid
+
+    let amounts =
+        {
+            CurrencyPaymentTotals.Paid = DecimalTotal.parse "1000000000000" |> valid
+            Returned = DecimalTotal.zero
+        }
+
     let finance =
         FinancialPosition.create
             (Some decision)
-            (Amount.parse "1000000000000" |> valid)
+            (Map.ofList [ currency, amounts ])
             SafeInteger.Maximum
-            (PaymentDateBounds.create date date)
         |> valid
 
     let payment =
@@ -244,7 +249,11 @@ let technicalCountEvidence () =
         |> DomainInputs.admittedPayment
 
     Expect.equal
-        (FinancialPosition.record (DateOnly(2026, 9, 7)) payment finance)
+        (FinancialPosition.add
+            (PaymentEntry.recorded
+                (CaseFixtures.operationId (Guid.Parse "10000000-0000-7000-8000-000000000001"))
+                payment)
+            finance)
         (Error FinancialPositionIssue.CountOutOfRange)
         "The financial owner refuses safe-integer saturation without constructing an impossible-sized family"
     // This boundary cannot be reached in a finite PostgreSQL fixture. Verify its public

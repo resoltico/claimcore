@@ -158,17 +158,9 @@ let private activeEligible (fields: CaseFields) witness =
     match witness.Task with
     | "case.close" -> true
     | "case.amendRegistration" -> fields.Decision.IsNone
-    | "case.decide" ->
-        Amount.value fields.Finance.PaidAmount
-        <= (if text BusinessField.PayableAmount witness = "0" then
-                0M
-            else
-                750M)
-    | "case.withdrawDecision" -> fields.Decision.IsSome && fields.Finance.PaymentCount = 0L
-    | "case.recordPayment" ->
-        fields.Decision.IsSome
-        && fields.Finance.PaymentCount = 0L
-        && (fields.Decision |> Option.map (Decision.payable >> Money.value)) = Some 750M
+    | "case.decide"
+    | "case.recordPayment" -> true
+    | "case.withdrawDecision" -> fields.Decision.IsSome
     | "case.removePayment"
     | "case.correctPayment" -> fields.Finance.PaymentCount > 0L
     | _ -> false
@@ -195,9 +187,23 @@ let offered state =
     |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
     |> Set.ofList
 
-let private finance decision paid count dates =
-    FinancialPosition.create decision (Amount.parse paid |> required) count dates
-    |> required
+let private finance decision paid count =
+    let currency = Currency.parse "EUR" |> required
+
+    let totals =
+        if count = 0L then
+            Map.empty
+        else
+            Map.ofList
+                [
+                    currency,
+                    {
+                        CurrencyPaymentTotals.Paid = DecimalTotal.parse paid |> required
+                        Returned = DecimalTotal.zero
+                    }
+                ]
+
+    FinancialPosition.create decision totals count |> required
 
 let private changed (fields: CaseFields) witness =
     match witness.Task with
@@ -219,28 +225,20 @@ let private changed (fields: CaseFields) witness =
             |> required
 
         { fields with
-            Finance =
-                FinancialPosition.create
-                    (Some value)
-                    fields.Finance.PaidAmount
-                    fields.Finance.PaymentCount
-                    fields.Finance.PaymentDates
-                |> required
+            Finance = FinancialPosition.withDecision (Some value) fields.Finance
         }
     | "case.withdrawDecision" ->
         { fields with
-            Finance = FinancialPosition.undecided
+            Finance = FinancialPosition.withDecision None fields.Finance
         }
     | "case.recordPayment"
     | "case.correctPayment" ->
-        let date = CalendarDate.parse "2026-08-20" |> required
-
         { fields with
-            Finance = finance fields.Decision "750" 1L (PaymentDateBounds.create date date)
+            Finance = finance fields.Decision "750" 1L
         }
     | "case.removePayment" ->
         { fields with
-            Finance = finance fields.Decision "0" 0L None
+            Finance = finance fields.Decision "0" 0L
         }
     | "case.close" ->
         { fields with

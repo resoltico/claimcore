@@ -134,6 +134,7 @@ let internal retainedText () =
                         PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
+                        PaymentPayees = []
                         Mine = false
                         Work = Inputs.workView snapshot.State
                         Disposition = None

@@ -318,7 +318,7 @@ let private bounded (database: PostgresFixture.Database) =
             "One active replacement, no intermediate or duplicate payment"
 
         Expect.equal
-            (Amount.value finance.PaidAmount)
+            (CaseFixtures.netPaid "EUR" finance |> Decimal.Parse)
             (31M + expectedReplacement)
             "Only selected money changed"
 
@@ -357,8 +357,9 @@ let private bounded (database: PostgresFixture.Database) =
         Expect.equal
             (CaseState.fields remaining.Snapshot.State
              |> Option.get
-             |> _.Finance.PaidAmount
-             |> Amount.value)
+             |> _.Finance
+             |> CaseFixtures.netPaid "EUR"
+             |> Decimal.Parse)
             31M
             "Removing the replacement preserves every unrelated payment"
 

@@ -66,18 +66,7 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
 
             let! content = CaseRules.acceptedContent gate state
 
-            do!
-                Admission.collect
-                    [
-                        CaseAdmission.decisionChange content.Finance (Some command.Decision)
-                        CaseAdmission.crossFinancial (Some command.Decision) content.Finance
-                    ]
-                |> Parsing.reject
-
-            let! finance =
-                FinancialPosition.withDecision (Some command.Decision) content.Finance
-                |> Result.mapError (fun _ ->
-                    Rejection.InvalidState RecordViolation.InvalidFinancialPosition)
+            let finance = FinancialPosition.withDecision (Some command.Decision) content.Finance
 
             return
                 [

@@ -85,7 +85,7 @@ let private parties claimant insurer =
 
 let private row reference =
     {
-        Paid = None
+        NetPaid = None
         PaymentCount = 0L
         LastPaymentDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
@@ -354,7 +354,13 @@ let tests =
                 let exported =
                     { original with
                         Headline = CaseHeadline.PartlyPaid
-                        Paid = Some(DomainInputs.money "60.25" "EUR")
+                        NetPaid =
+                            Some
+                                {
+                                    Payable = DomainInputs.money "100" "EUR"
+                                    NetPaid =
+                                        DecimalTotal.parse "60.25" |> Result.toOption |> Option.get
+                                }
                         PaymentCount = 2L
                         LastPaymentDate = Some(DomainInputs.date "2026-08-21")
                         State = CaseState.Active { facts with Fields = values }

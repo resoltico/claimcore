@@ -272,6 +272,7 @@ type CaseReadModel =
         FamilySequence: Sequence
         Snapshot: CaseSnapshot
         LatestPayments: PaymentEntry list
+        PaymentPayees: PaymentPayee list
         Advice: CaseAdvice
         Mine: bool
         Work: CaseWorkView

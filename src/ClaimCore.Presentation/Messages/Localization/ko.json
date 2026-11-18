@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "실제로 지급한 날짜와 금액을 결정 통화로 기록합니다. 이 작업은 송금을 실행하거나 확인하지 않습니다.",
-    "source": "572c7a975cf2"
+    "text": "실제로 지급하거나 반환한 금액을 해당 항목의 날짜, 금액 및 통화로 기록합니다.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "계정 등록",
@@ -200,8 +200,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "지급 전에 지급 결정을 제거합니다. 이력은 유지됩니다.",
-    "source": "4579673a4146"
+    "text": "결정을 철회합니다. 기존 지급 항목과 결정 이력은 유지됩니다.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "청구 건 작업",
@@ -2420,12 +2420,12 @@
     "source": "ae69c7acaee6"
   },
   "field.paidCurrency.hint": {
-    "text": "결정 통화를 사용하세요.",
-    "source": "6cf93e635901"
+    "text": "이 항목의 통화를 사용하세요.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "지원되는 활성 ISO 4217 통화 목록의 ASCII 대문자 {length}자를 사용하며 결정 통화와 일치해야 합니다. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
-    "source": "1a3ba1179c9c"
+    "text": "지원되는 활성 ISO 4217 통화 코드 목록의 ASCII 대문자 {length}자를 입력하세요.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "지급 ID",
@@ -2460,8 +2460,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "통화별 지급 합계",
-    "source": "b0f6fe6c2d8f"
+    "text": "통화별 순지급액",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "{payable} 중 {paid} 지급됨.",
@@ -2479,21 +2479,9 @@
     "text": "0보다 큰 지급액을 입력하세요.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "지급과 지급 결정에는 같은 통화를 사용해야 합니다.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "지급 합계는 지급 결정액을 초과할 수 없습니다.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "기록된 지급 내역을 수락한 작업의 UUID를 사용하세요.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "지급 내역이 있는 결정은 철회하거나 지울 수 없습니다. 잘못 기록한 내역만 제거하세요.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "이 지급 내역은 더 이상 존재하지 않습니다. 계속하기 전에 현재 청구 건을 조회하세요.",
@@ -3042,5 +3030,93 @@
   "field.expectedPartyRevision.rule": {
     "text": "선택한 당사자의 버전 번호를 사용하세요.",
     "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "지급",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "지급",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "반환",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "반환",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "수취인에게 지급된 금액입니다.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "수취인이 반환한 금액입니다.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "초과 지급",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "지급 내역 검토 필요",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "지급 방향",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "외부 참조",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "수취인",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "금액이 지급되었는지 반환되었는지 선택하세요.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "은행 거래 또는 서신의 참조를 입력하세요.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "이 청구 건의 현재 당사자 ID를 입력하세요.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "지급 또는 반환을 선택하세요.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "현재 당사자의 ID를 사용하세요.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "순지급액",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "집계에 포함된 청구 건",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "지급 또는 반환을 선택하세요.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "이 지급으로 통화별 총액이 정확하게 처리할 수 있는 범위를 벗어납니다.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "이 청구 건의 현재 당사자를 선택하세요.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "제거된 당사자",
+    "source": "551b332ea085"
   }
 }

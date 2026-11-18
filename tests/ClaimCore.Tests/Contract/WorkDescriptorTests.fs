@@ -250,6 +250,7 @@ let tests =
                             }
                         Advice = Inputs.caseAdvice state
                         LatestPayments = []
+                        PaymentPayees = []
                         Mine = false
                         Headline = CaseHeadline.Erased
                         Attention = []

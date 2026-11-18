@@ -503,14 +503,19 @@ let receiptStatusAndProgress =
         |> FinancialPosition.withDecision (
             Some(DomainInputs.admittedDecision DomainInputs.decision)
         )
-        |> accepted
 
     let payment =
         DomainInputs.paymentWith [ BusinessField.PaidAmount, "100" ] DomainInputs.payment
         |> DomainInputs.admittedPayment
 
     let partlyPaid =
-        decided |> FinancialPosition.record (DateOnly(2026, 8, 20)) payment |> accepted
+        decided
+        |> FinancialPosition.add (
+            PaymentEntry.recorded
+                (CaseFixtures.operationId (System.Guid.Parse "10000000-0000-7000-8000-000000000001"))
+                payment
+        )
+        |> accepted
 
     let render act disclosure =
         let receipt =

@@ -22,10 +22,13 @@ let private read () =
         |> FinancialPosition.withDecision (
             Some(DomainInputs.admittedDecision DomainInputs.decision)
         )
-        |> accepted
 
     let finance =
-        FinancialPosition.record DomainInputs.workBasis.BusinessDate payment finance
+        FinancialPosition.add
+            (PaymentEntry.recorded
+                (CaseFixtures.operationId (System.Guid.Parse "10000000-0000-7000-8000-000000000001"))
+                payment)
+            finance
         |> accepted
 
     let snapshot =
@@ -85,6 +88,7 @@ let private read () =
         Snapshot = snapshot
         Advice = advice
         LatestPayments = [ PaymentEntry.recorded ResponseExamples.receipt.OperationId payment ]
+        PaymentPayees = []
         NextActions = [ next ]
     }
 

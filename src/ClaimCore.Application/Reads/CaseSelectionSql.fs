@@ -101,6 +101,7 @@ module internal CaseSelectionSql =
             | WorkPredicate.Unassigned -> "c.responsible_actor IS NULL"
             | WorkPredicate.AssigneeUnavailable ->
                 $"c.responsible_actor IS NOT NULL AND NOT ({available})"
+            | WorkPredicate.PaymentsNeedReview -> "COALESCE(c.payment_review,FALSE)"
             | WorkPredicate.NoNextDue -> "c.follow_up IS NULL"
             | WorkPredicate.NextDue value -> datePredicate "c.follow_up" value
             | WorkPredicate.ReminderState value ->

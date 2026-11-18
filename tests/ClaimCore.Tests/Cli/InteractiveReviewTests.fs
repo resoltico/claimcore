@@ -48,6 +48,7 @@ let private caseReply =
         PartyOffers = []
         FamilySequence = Sequence.create 1L |> Option.get
         LatestPayments = []
+        PaymentPayees = []
         Mine = false
         Work = Inputs.workView current.State
         Disposition = None

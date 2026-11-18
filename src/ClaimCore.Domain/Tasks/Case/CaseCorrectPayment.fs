@@ -20,7 +20,7 @@ let declaration =
          :: caseTarget
          :: revision
          :: (required (target InputTarget.PaymentId) |> bound)
-         :: group TaskInputMode.Required RecordGroup.Payment)
+         :: RecordPayment.paymentInputs)
 
 let private capability = Capability.RecordPayment
 let check = RecordPayment.check
@@ -28,26 +28,10 @@ let check = RecordPayment.check
 let private gate =
     CaseRules.gate true (fun state ->
         state.Case.Value.Content
-        |> Option.exists (fun value ->
-            value.Finance.Decision.IsSome && value.Finance.PaymentCount > 0L))
+        |> Option.exists (fun content -> content.Finance.PaymentCount > 0L))
 
 let availability environment state binding =
-    let offered =
-        CaseRules.availability declaration environment state binding capability gate
-
-    let currency =
-        state
-        |> Option.bind (fun state -> state.Case.Value.Content)
-        |> Option.bind (fun value -> value.Finance.Decision)
-        |> Option.map (Decision.payable >> Money.currency)
-
-    { offered with
-        Seeds =
-            currency
-            |> Option.map (fun value ->
-                Map.ofList [ field BusinessField.PaidCurrency, InputValue.Text value ])
-            |> Option.defaultValue Map.empty
-    }
+    CaseRules.availability declaration environment state binding capability gate
 
 let private selected (state: DecisionFacts) id =
     match Map.tryFind id state.Payments with
@@ -61,8 +45,7 @@ let decide context environment (state: DecisionFacts option) binding inputs =
     match state, binding, context.Decision.BusinessDate with
     | Some state, Binding.CasePayment(_, _, id), Some today ->
         result {
-            let fields = CaseParsing.values inputs
-            let syntax = CaseParsing.payment (fun _ -> Ok) fields
+            let syntax = RecordPayment.parse Ok (fun _ -> Ok) inputs
 
             do!
                 CaseRules.admitInputs syntax context environment state binding capability
@@ -71,9 +54,13 @@ let decide context environment (state: DecisionFacts option) binding inputs =
             let! before = CaseRules.acceptedContent gate state
 
             let! replacement =
-                CaseParsing.payment (CaseAdmission.fieldAdmission today None) fields
+                RecordPayment.parse
+                    Identifier.admit
+                    (CaseAdmission.fieldAdmission today None)
+                    inputs
                 |> Parsing.reject
 
+            do! RecordPayment.admitPayee state replacement
             let! part = selected state id
 
             let! entry =
@@ -89,20 +76,15 @@ let decide context environment (state: DecisionFacts option) binding inputs =
                 else
                     Ok()
 
-            let! bounds =
-                DecisionFacts.remainingPaymentDates id state
-                |> Result.mapError Rejection.InvalidState
-
             let! removed =
-                FinancialPosition.remove entry bounds before.Finance
+                FinancialPosition.remove entry before.Finance
                 |> Result.mapError (fun _ ->
                     Rejection.InvalidState RecordViolation.InvalidPaymentState)
 
-            let! finance =
-                FinancialPosition.record today replacement removed
-                |> Result.mapError RecordPayment.failure
-
             let recorded = PaymentEntry.recorded context.Stamp.OperationId replacement
+
+            let! finance =
+                FinancialPosition.add recorded removed |> Result.mapError RecordPayment.failure
 
             return
                 [

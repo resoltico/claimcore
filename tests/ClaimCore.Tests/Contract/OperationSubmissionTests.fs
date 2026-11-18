@@ -209,14 +209,16 @@ let tests =
             testCase "input key order does not change the typed canonical-intent input" (fun () ->
                 let first =
                     decode (
-                        amend "\"field:policyNumber\":\"PN-1\",\"field:insurerClaimReference\":\"Name\""
+                        amend
+                            "\"field:policyNumber\":\"PN-1\",\"field:insurerClaimReference\":\"Name\""
                     )
                     |> accepted
                     |> fun submission -> submission.Operation
 
                 let second =
                     decode (
-                        amend "\"field:insurerClaimReference\":\"Name\",\"field:policyNumber\":\"PN-1\""
+                        amend
+                            "\"field:insurerClaimReference\":\"Name\",\"field:policyNumber\":\"PN-1\""
                     )
                     |> accepted
                     |> fun submission -> submission.Operation

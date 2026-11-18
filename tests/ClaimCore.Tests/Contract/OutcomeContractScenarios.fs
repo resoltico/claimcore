@@ -111,6 +111,7 @@ let internal queryCodecs () =
                         PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
+                        PaymentPayees = []
                         Mine = false
                         Work = Inputs.workView view.State
                         Disposition = None

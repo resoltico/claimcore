@@ -1,292 +1,170 @@
 module ClaimCore.Tests.FinancialPositionTests
 
-open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 
-let private accepted value =
-    Result.defaultWith (fun error -> failtestf "%A" error) value
+let private accepted result =
+    result |> Result.defaultWith (fun error -> failtestf "%A" error)
 
-let private amount value = Amount.parse value |> accepted
-let private date value = DomainInputs.date value
+let private eur = Currency.parse "EUR" |> accepted
+let private usd = Currency.parse "USD" |> accepted
 
-let private bounds first last =
-    PaymentDateBounds.create (date first) (date last) |> Option.get
+let private total value =
+    DecimalTotal.parseSigned value |> accepted
 
-let private decision value currency =
-    DomainInputs.decisionWith
+let private date = DomainInputs.date
+
+let private decision amount currency =
+    DomainInputs.decisionFrom
         [
-            BusinessField.PaymentDecisionDate, "2026-01-10"
-            BusinessField.PayableAmount, value
+            BusinessField.PaymentDecisionDate, "2026-11-01"
+            BusinessField.PayableAmount, amount
             BusinessField.PayableCurrency, currency
         ]
-        DomainInputs.decision
     |> DomainInputs.admittedDecision
 
-let private payment value currency day =
-    DomainInputs.paymentWith
-        [
-            BusinessField.PaidAmount, value
-            BusinessField.PaidCurrency, currency
-            BusinessField.PaymentDate, day
-        ]
-        DomainInputs.payment
-    |> DomainInputs.admittedPayment
+let private entry ordinal direction dateText amount currency =
+    let identity =
+        System.Guid.Parse(sprintf "10000000-0000-7000-8000-%012d" ordinal)
+        |> OperationId.create
+        |> Option.get
 
-let private position payable paid count dates =
-    FinancialPosition.create (Some(decision payable "EUR")) (amount paid) count dates
-    |> accepted
-
-let private entry day paid =
     PaymentEntry.create
-        (CaseFixtures.operationId (Guid.Parse "10000000-0000-7000-8000-000000000001"))
-        (date day)
-        (amount paid)
+        identity
+        direction
+        (DomainInputs.money amount currency)
+        (date dateText)
+        None
+        None
     |> accepted
 
-let private today = DateOnly(2026, 1, 31)
+let private add payment position =
+    FinancialPosition.add payment position |> accepted
+
+let private decide amount currency position =
+    FinancialPosition.withDecision (Some(decision amount currency)) position
 
 [<Tests>]
 let tests =
     testList
         "private financial position"
         [
-            testCase "constructors reject contradictory aggregate and boundary facts" (fun () ->
-                Expect.isEmpty
-                    (typeof<FinancialPosition>.GetConstructors())
-                    "Only validated creation is public"
+            testCase "overpayment, returns and zero payable classify exact net" (fun () ->
+                let original = FinancialPosition.undecided |> decide "100" "EUR"
+                let paid = original |> add (entry 1 PaymentDirection.Paid "2026-11-03" "120" "EUR")
+                Expect.equal (FinancialPosition.netIn eur paid) (total "120") "Exact overpayment"
+                Expect.equal (CaseProgress.ofFinancial paid) CaseProgress.Overpaid "Overpaid"
+                Expect.isTrue (FinancialPosition.needsReview paid) "Overpayment needs review"
 
-                Expect.isNone
-                    (PaymentDateBounds.create (date "2026-01-12") (date "2026-01-11"))
-                    "Dates are ordered"
-
-                for paid, count, dates in
-                    [
-                        "1", 0L, None
-                        "0", 1L, Some(bounds "2026-01-11" "2026-01-11")
-                        "1", 1L, None
-                        "1", 1L, Some(bounds "2026-01-11" "2026-01-12")
-                        "0.0001", 2L, Some(bounds "2026-01-11" "2026-01-11")
-                        "0", 0L, Some(bounds "2026-01-11" "2026-01-11")
-                        "1", -1L, None
-                        "1", SafeInteger.Maximum + 1L, None
-                    ] do
-                    Expect.isError
-                        (FinancialPosition.create
-                            (Some(decision "10" "EUR"))
-                            (amount paid)
-                            count
-                            dates)
-                        "Impossible facts never construct a trusted position"
-
-                Expect.isError
-                    (FinancialPosition.create
-                        None
-                        (amount "1")
-                        1L
-                        (Some(bounds "2026-01-11" "2026-01-11")))
-                    "Payments require a decision"
-
-                Expect.isError
-                    (FinancialPosition.create
-                        (Some(decision "10" "EUR"))
-                        (amount "11")
-                        1L
-                        (Some(bounds "2026-01-11" "2026-01-11")))
-                    "No overpayment"
-
-                Expect.isOk
-                    (FinancialPosition.create
-                        (Some(decision "10" "EUR"))
-                        (amount "1")
-                        1L
-                        (Some(bounds "2026-01-09" "2026-01-09")))
-                    "A payment date may precede the decision")
-            testCase
-                "progress and same-currency totals are derived including zero payable"
-                (fun () ->
-                    Expect.equal
-                        (CaseProgress.ofFinancial FinancialPosition.undecided)
-                        CaseProgress.Undecided
-                        "Absent decision"
-
-                    Expect.isNone
-                        (FinancialPosition.totals FinancialPosition.undecided)
-                        "No currency is invented"
-
-                    for payable, paid, count, dates, expected in
-                        [
-                            "0", "0", 0L, None, CaseProgress.Paid
-                            "100", "0", 0L, None, CaseProgress.Decided
-                            "100",
-                            "40",
-                            2L,
-                            Some(bounds "2026-01-11" "2026-01-12"),
-                            CaseProgress.PartlyPaid
-                            "100",
-                            "100",
-                            2L,
-                            Some(bounds "2026-01-11" "2026-01-12"),
-                            CaseProgress.Paid
-                        ] do
-                        let value = position payable paid count dates
-
-                        Expect.equal
-                            (CaseProgress.ofFinancial value)
-                            expected
-                            "No independently stored progress tag"
-
-                        let totals = FinancialPosition.totals value |> Option.get
-
-                        Expect.equal
-                            (Money.value totals.Paid + Money.value totals.Remaining)
-                            (Money.value totals.Payable)
-                            "Exact conservation"
-
-                        Expect.equal
-                            (Money.currency totals.Remaining)
-                            "EUR"
-                            "Decision owns currency")
-            testCase "fifty-one entries are representable without a business count cap" (fun () ->
-                let start = position "100" "0" 0L None
-
-                let final =
-                    [ 1..51 ]
-                    |> List.fold
-                        (fun current _ ->
-                            FinancialPosition.record
-                                today
-                                (payment "1" "EUR" "2026-01-11")
-                                current
-                            |> accepted)
-                        start
-
-                Expect.equal final.PaymentCount 51L "Count exceeds the removed design limit"
-                Expect.equal (Amount.value final.PaidAmount) 51M "Paid total is exact"
+                let returned =
+                    paid |> add (entry 2 PaymentDirection.Returned "2026-11-06" "20" "EUR")
 
                 Expect.equal
-                    (Money.value ((FinancialPosition.totals final |> Option.get).Remaining))
-                    49M
-                    "Remaining is derived")
-            testCase "record enforces currency payable and newly asserted business dates" (fun () ->
-                let start = position "10" "9" 1L (Some(bounds "2026-01-11" "2026-01-11"))
+                    (FinancialPosition.netIn eur returned)
+                    (total "100")
+                    "Return offsets payment"
+
+                Expect.equal (CaseProgress.ofFinancial returned) CaseProgress.Paid "Paid"
+                Expect.equal returned.PaymentCount 2L "Both entries remain current"
+
+                Expect.isFalse
+                    (FinancialPosition.needsReview returned)
+                    "Exact payable needs no review"
+
+                let zero = FinancialPosition.undecided |> decide "0" "EUR"
 
                 Expect.equal
-                    (FinancialPosition.record today (payment "1" "USD" "2026-01-12") start)
-                    (Error FinancialPositionIssue.CurrencyMismatch)
-                    "Currency cannot drift"
-
-                Expect.equal
-                    (FinancialPosition.record today (payment "2" "EUR" "2026-01-12") start)
-                    (Error FinancialPositionIssue.ExceedsPayable)
-                    "Bound before addition"
-
-                Expect.equal
-                    (FinancialPosition.record today (payment "1" "EUR" "2026-02-01") start)
-                    (Error FinancialPositionIssue.FuturePayment)
-                    "New dates use supplied business date"
-
-                let acceptedFuture = position "100" "1" 1L (Some(bounds "2026-01-20" "2026-01-20"))
-
-                let earlier =
-                    FinancialPosition.record
-                        (DateOnly(2026, 1, 15))
-                        (payment "1" "EUR" "2026-01-15")
-                        acceptedFuture
-                    |> accepted
-
-                Expect.equal
-                    (earlier.PaymentDates |> Option.map _.Latest)
-                    (Some(date "2026-01-20"))
-                    "Clock rollback does not re-admit retained dates")
-            testCase "technical count saturation refuses without overflow" (fun () ->
-                let full =
-                    position
-                        "999999999999999999"
-                        "1000000000000"
-                        SafeInteger.Maximum
-                        (Some(bounds "2026-01-11" "2026-01-11"))
-
-                Expect.equal
-                    (FinancialPosition.record today (payment "1" "EUR" "2026-01-11") full)
-                    (Error FinancialPositionIssue.CountOutOfRange)
-                    "Exact-integer range is explicit")
-            testCase "decision correction and clearing preserve current paid facts" (fun () ->
-                let value = position "100" "40" 2L (Some(bounds "2026-01-11" "2026-01-12"))
-
-                Expect.equal
-                    (FinancialPosition.withDecision None value)
-                    (Error FinancialPositionIssue.DecisionHasPayments)
-                    "Cannot clear a paid decision"
-
-                Expect.equal
-                    (FinancialPosition.withDecision (Some(decision "100" "USD")) value)
-                    (Error FinancialPositionIssue.CurrencyMismatch)
-                    "Cannot relabel active entries"
-
-                Expect.equal
-                    (FinancialPosition.withDecision (Some(decision "39" "EUR")) value)
-                    (Error FinancialPositionIssue.ExceedsPayable)
-                    "Cannot reduce below exact paid"
-
-                let corrected =
-                    FinancialPosition.withDecision (Some(decision "40" "EUR")) value |> accepted
-
-                Expect.equal
-                    (CaseProgress.ofFinancial corrected)
+                    (CaseProgress.ofFinancial zero)
                     CaseProgress.Paid
-                    "Progress changes from facts"
-
-                let cleared =
-                    FinancialPosition.withDecision None (position "100" "0" 0L None) |> accepted
-
-                Expect.equal
-                    cleared
-                    FinancialPosition.undecided
-                    "No independently retained decision flags")
+                    "Zero payable is paid")
             testCase
-                "sole and extrema removals validate remaining context including ties"
+                "payment buckets are independent of decision presence, date and currency"
                 (fun () ->
-                    let sole = position "100" "5" 1L (Some(bounds "2026-01-11" "2026-01-11"))
-
-                    let empty =
-                        FinancialPosition.remove (entry "2026-01-11" "5") None sole |> accepted
-
-                    Expect.equal empty.PaymentCount 0L "Sole removal clears count"
-                    Expect.isNone empty.PaymentDates "Sole removal clears both extrema"
-                    let all = position "100" "20" 4L (Some(bounds "2026-01-11" "2026-01-15"))
-
-                    let tied =
-                        FinancialPosition.remove
-                            (entry "2026-01-11" "5")
-                            (Some(bounds "2026-01-11" "2026-01-15"))
-                            all
-                        |> accepted
-
-                    Expect.equal tied.PaymentCount 3L "Tied extremum may remain"
-
-                    let next =
-                        FinancialPosition.remove
-                            (entry "2026-01-11" "5")
-                            (Some(bounds "2026-01-12" "2026-01-15"))
-                            all
-                        |> accepted
+                    let dollars = entry 1 PaymentDirection.Paid "2026-10-01" "50" "USD"
+                    let initial = FinancialPosition.undecided |> add dollars
 
                     Expect.equal
-                        (next.PaymentDates |> Option.map _.Earliest)
-                        (Some(date "2026-01-12"))
-                        "Sole earliest can advance"
+                        (CaseProgress.ofFinancial initial)
+                        CaseProgress.Undecided
+                        "No decision required"
 
-                    for selected, remaining in
-                        [
-                            entry "2026-01-13" "5", Some(bounds "2026-01-12" "2026-01-15")
-                            entry "2026-01-11" "5", Some(bounds "2026-01-11" "2026-01-14")
-                            entry "2026-01-10" "5", Some(bounds "2026-01-11" "2026-01-15")
-                            entry "2026-01-11" "5", None
-                        ] do
-                        Expect.equal
-                            (FinancialPosition.remove selected remaining all)
-                            (Error FinancialPositionIssue.InvalidRemovalContext)
-                            "Unaffected extrema cannot disappear or move")
+                    Expect.equal
+                        (FinancialPosition.netIn usd initial)
+                        (total "50")
+                        "The entry keeps USD"
+
+                    let revised = initial |> decide "100" "EUR"
+
+                    Expect.equal
+                        (CaseProgress.ofFinancial revised)
+                        CaseProgress.Decided
+                        "No net EUR payment"
+
+                    Expect.equal
+                        (FinancialPosition.netIn usd revised)
+                        (total "50")
+                        "Currency change keeps entries"
+
+                    let again = revised |> FinancialPosition.withDecision None
+                    Expect.equal again initial "Withdrawal preserves the finance buckets")
+            testCase
+                "negative net in any currency requires review and removing an entry subtracts its bucket"
+                (fun () ->
+                    let returned = entry 1 PaymentDirection.Returned "2026-11-12" "30" "EUR"
+                    let paid = entry 2 PaymentDirection.Paid "2026-11-12" "50" "USD"
+                    let both = FinancialPosition.undecided |> add returned |> add paid
+
+                    Expect.equal
+                        (FinancialPosition.netIn eur both)
+                        (total "-30")
+                        "A net return is signed"
+
+                    Expect.isTrue
+                        (FinancialPosition.needsReview both)
+                        "A negative bucket requires review"
+
+                    let remaining = FinancialPosition.remove returned both |> accepted
+
+                    Expect.equal
+                        (Map.keys remaining.CurrencyTotals |> Seq.toList)
+                        [ usd ]
+                        "Only USD remains"
+
+                    Expect.equal
+                        (FinancialPosition.netIn usd remaining)
+                        (total "50")
+                        "Other buckets stay exact"
+
+                    Expect.equal remaining.PaymentCount 1L "Only the removed entry leaves")
+            testCase
+                "signed net retains fractional precision and totals reject a forty-first digit"
+                (fun () ->
+                    Expect.equal
+                        (DecimalTotal.format (total "-0.0001"))
+                        "-0.0001"
+                        "Fractional sign"
+
+                    let maximum = total "9999999999999999999999999999999999999999.9999"
+
+                    let buckets =
+                        {
+                            CurrencyPaymentTotals.Paid = maximum
+                            Returned = DecimalTotal.zero
+                        }
+
+                    let position =
+                        FinancialPosition.create None (Map.ofList [ eur, buckets ]) 1L |> accepted
+
+                    let added = entry 1 PaymentDirection.Paid "2026-11-01" "0.0001" "EUR"
+
+                    Expect.equal
+                        (FinancialPosition.add added position)
+                        (Error FinancialPositionIssue.TotalOutOfRange)
+                        "An out-of-range total is refused"
+
+                    Expect.equal
+                        (FinancialPosition.netIn eur position)
+                        maximum
+                        "Before-state is exact")
         ]

@@ -10,6 +10,7 @@ type CurrencyTotal =
     {
         Currency: Currency
         Amount: DecimalTotal
+        Cases: int64
     }
 
 type CaseCountGroup =
@@ -22,7 +23,6 @@ type CaseCountGroup =
         Count: int64
         Claimed: CurrencyTotal option
         Payable: CurrencyTotal option
-        Paid: CurrencyTotal option
     }
 
 type CaseWorklistCounts =
@@ -41,7 +41,7 @@ type CaseWorklistSummary =
         Counts: CaseWorklistCounts
         Claimed: CurrencyTotal list
         Payable: CurrencyTotal list
-        Paid: CurrencyTotal list
+        NetPaid: CurrencyTotal list
     }
 
 module CaseWorklistSummary =
@@ -71,83 +71,65 @@ module CaseWorklistSummary =
                         {
                             CurrencyTotal.Currency = currency
                             Amount = amount
+                            Cases = entries |> List.sumBy _.Cases
                         }
                         :: collected)))
             (Ok [])
         |> Result.map List.rev
 
     let private valid (group: CaseCountGroup) =
-        let actionable =
-            group.Lifecycle = Lifecycle.Active && group.Status = Some CaseStatus.Opened
-
-        let dueActive = group.Due <> CaseDue.Inactive
-
         group.Count >= 0L
-        && actionable = dueActive
-        && (group.Lifecycle <> Lifecycle.Erased || group.Responsibility.IsNone)
-        && (match group.Lifecycle with
-            | Lifecycle.Erased ->
-                group.Status.IsNone
-                && group.Progress.IsNone
-                && group.Claimed.IsNone
-                && group.Payable.IsNone
-                && group.Paid.IsNone
-            | Lifecycle.Active
-            | Lifecycle.Voided ->
-                group.Status.IsSome
-                && group.Progress.IsSome
-                && ((group.Progress = Some CaseProgress.Undecided) = group.Payable.IsNone)
-                && (group.Paid.IsNone = group.Payable.IsNone)
-                && (match group.Payable, group.Paid with
-                    | Some payable, Some paid ->
-                        payable.Currency = paid.Currency && paid.Amount <= payable.Amount
-                    | None, None -> true
-                    | _ -> false))
+        && (group.Lifecycle <> Lifecycle.Erased
+            || (group.Claimed.IsNone && group.Payable.IsNone))
+        && ([ group.Claimed; group.Payable ]
+            |> List.choose id
+            |> List.forall (fun total -> total.Cases >= 0L && total.Cases <= group.Count))
 
-    let fromGroups basis (groups: CaseCountGroup list) =
+    let fromGroups basis (netPaid: CurrencyTotal list) (groups: CaseCountGroup list) =
         let total = groups |> List.sumBy (fun group -> BigInteger group.Count)
 
-        if total > BigInteger Sequence.Maximum || not (groups |> List.forall valid) then
+        if
+            total > BigInteger Sequence.Maximum
+            || not (groups |> List.forall valid)
+            || (netPaid |> List.distinctBy _.Currency |> List.length) <> netPaid.Length
+            || (netPaid
+                |> List.exists (fun value -> value.Cases < 0L || BigInteger value.Cases > total))
+        then
             Error "Invalid case count group."
         else
             totals _.Claimed groups
             |> Result.bind (fun claimed ->
                 totals _.Payable groups
-                |> Result.bind (fun payable ->
-                    totals _.Paid groups
-                    |> Result.map (fun paid ->
-                        {
-                            Basis = basis
-                            Counts =
-                                {
-                                    Assignment =
-                                        counts
-                                            (Vocabulary.all CaseAssignment.vocabulary)
-                                            _.Responsibility
-                                            groups
-                                    Due =
-                                        counts
-                                            (Vocabulary.all CaseDue.vocabulary)
-                                            (fun group -> Some group.Due)
-                                            groups
-                                    Total = int64 total
-                                    Lifecycles =
-                                        counts
-                                            (Vocabulary.all Lifecycle.vocabulary)
-                                            (fun group -> Some group.Lifecycle)
-                                            groups
-                                    Statuses =
-                                        counts
-                                            (Vocabulary.all CaseStatus.vocabulary)
-                                            _.Status
-                                            groups
-                                    Progress =
-                                        counts
-                                            (Vocabulary.all CaseProgress.vocabulary)
-                                            _.Progress
-                                            groups
-                                }
-                            Claimed = claimed
-                            Payable = payable
-                            Paid = paid
-                        })))
+                |> Result.map (fun payable ->
+                    {
+                        Basis = basis
+                        Counts =
+                            {
+                                Assignment =
+                                    counts
+                                        (Vocabulary.all CaseAssignment.vocabulary)
+                                        _.Responsibility
+                                        groups
+                                Due =
+                                    counts
+                                        (Vocabulary.all CaseDue.vocabulary)
+                                        (fun group -> Some group.Due)
+                                        groups
+                                Total = int64 total
+                                Lifecycles =
+                                    counts
+                                        (Vocabulary.all Lifecycle.vocabulary)
+                                        (fun group -> Some group.Lifecycle)
+                                        groups
+                                Statuses =
+                                    counts (Vocabulary.all CaseStatus.vocabulary) _.Status groups
+                                Progress =
+                                    counts
+                                        (Vocabulary.all CaseProgress.vocabulary)
+                                        _.Progress
+                                        groups
+                            }
+                        Claimed = claimed
+                        Payable = payable
+                        NetPaid = netPaid
+                    }))

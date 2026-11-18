@@ -83,6 +83,7 @@ let caseRead: CaseReadModel =
         Parties = []
         PartyOffers = []
         LatestPayments = []
+        PaymentPayees = []
         Advice = Inputs.caseAdvice snapshot.State
         Mine = false
         Work = Inputs.workView snapshot.State
@@ -285,6 +286,7 @@ let internal replies () : IEndpointOutput list =
                                 (fun (fields: CaseFields) -> fields.Finance)
                                 snapshot.State
                         Items = []
+                        Payees = []
                         NextCursor = None
                     })
         yield!
@@ -325,7 +327,7 @@ let internal replies () : IEndpointOutput list =
                         Basis = basis
                         Claimed = []
                         Payable = []
-                        Paid = []
+                        NetPaid = []
                         Counts =
                             {
                                 Total = 0L

@@ -229,9 +229,7 @@ let private negativeControls () =
     let withoutPayments (snapshot: CaseSnapshot) =
         let fields = snapshot.State |> CaseState.fields |> Option.get
 
-        let finance =
-            FinancialPosition.create fields.Decision (Amount.parse "0" |> required) 0L None
-            |> required
+        let finance = FinancialPosition.create fields.Decision Map.empty 0L |> required
 
         { snapshot with
             State = CaseState.Active { fields with Finance = finance }

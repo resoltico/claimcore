@@ -30,6 +30,7 @@ let private fullyPaid tasks =
         Work = Inputs.workView snapshot.State
         Stages = DomainInputs.stageDisplay snapshot.State
         LatestPayments = [ state.Payments[operation 3].Value.Entry |> Option.get ]
+        PaymentPayees = []
     }
 
 [<Tests>]

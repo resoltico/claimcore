@@ -3,6 +3,7 @@ module ClaimCore.Tests.DecisionFactsTests
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
+open ClaimCore.TestSupport
 open ClaimCore.Domain.Changes
 open ClaimCore.Tests.TaskBuilders
 
@@ -72,10 +73,7 @@ let private acquired () =
     let summary =
         {
             LiveFamilySummary.PaymentCount = finance.PaymentCount
-            Paid = finance.PaidAmount
-            PaymentDates = finance.PaymentDates
-            RemainingPaymentDates =
-                Some(operation 3, PaymentDateBounds.create (date "2026-02-03") (date "2026-02-03"))
+            PaymentTotals = finance.CurrencyTotals
             NextPendingDue = Some(date "2026-11-16")
             RemainingPendingDue = Some(date "2026-11-16")
         }
@@ -159,11 +157,8 @@ let tests =
                         "No reminder child map was needed for the exact next due"
 
                     Expect.equal
-                        (live.Case.Value.Content
-                         |> Option.get
-                         |> _.Finance.PaidAmount
-                         |> Amount.value)
-                        10M
+                        (CaseFixtures.netPaid "EUR" live.Case.Value.Content.Value.Finance)
+                        "10"
                         "Only the selected amount is removed")
             testCase
                 "a plausible financial root that disagrees with accepted payment deltas refuses"
@@ -190,12 +185,20 @@ let tests =
                             | PartValue.Case value ->
                                 let content = value.Content |> Option.get
 
+                                let currency = Currency.parse "EUR" |> accepted
+
+                                let amounts =
+                                    {
+                                        CurrencyPaymentTotals.Paid =
+                                            DecimalTotal.parse "11" |> accepted
+                                        Returned = DecimalTotal.zero
+                                    }
+
                                 let finance =
                                     FinancialPosition.create
                                         content.Finance.Decision
-                                        (Amount.parse "11" |> accepted)
+                                        (Map.ofList [ currency, amounts ])
                                         content.Finance.PaymentCount
-                                        content.Finance.PaymentDates
                                     |> accepted
 
                                 { change with
@@ -212,7 +215,7 @@ let tests =
                         (Error RecordViolation.InvalidPaymentState)
                         "The check detects an inconsistent paid delta rather than accepting a plausible result")
             testCase
-                "selected private values and remainder correlation cannot silently become omissions"
+                "selected private values and currency totals cannot silently become omissions"
                 (fun () ->
                     let complete, parts, origins, summary, _ = acquired ()
 
@@ -239,9 +242,7 @@ let tests =
 
                     let wrong =
                         { summary with
-                            RemainingPaymentDates =
-                                summary.RemainingPaymentDates
-                                |> Option.map (fun (_, dates) -> operation 99, dates)
+                            PaymentTotals = Map.empty
                         }
 
                     Expect.isError
@@ -253,7 +254,7 @@ let tests =
                             origins
                             wrong
                             scope)
-                        "A remainder for another selection cannot construct admitted decision facts")
+                        "An incomplete currency projection cannot construct admitted decision facts")
             testCase
                 "unqueried selections and another operation cannot masquerade as known absence"
                 (fun () ->

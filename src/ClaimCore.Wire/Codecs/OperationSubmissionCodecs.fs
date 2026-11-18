@@ -52,7 +52,7 @@ module OperationSubmissionCodecs =
         |> List.map (fun input ->
             input.Input,
             TaskInputId.token input.Input,
-            input.Mode <> TaskInputMode.Required,
+            input.Mode <> TaskInputMode.Required || input.DefaultText.IsSome,
             scalar input)
         |> fieldMapWithPresence
 
@@ -63,7 +63,7 @@ module OperationSubmissionCodecs =
             |> List.map (fun input ->
                 input.Input,
                 TaskInputId.token input.Input,
-                input.Mode <> TaskInputMode.Required,
+                input.Mode <> TaskInputMode.Required || input.DefaultText.IsSome,
                 scalar input)
 
         let collections =

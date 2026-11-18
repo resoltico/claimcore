@@ -53,12 +53,12 @@ module PresentationCodecs =
 
     let private totalValue =
         let maximum =
-            DecimalTotal.MaximumIntegerDigits + DecimalTotal.MaximumFractionalDigits + 1
+            DecimalTotal.MaximumIntegerDigits + DecimalTotal.MaximumFractionalDigits + 2
 
-        let pattern = "^(?:" + DecimalTotal.Grammar + ")(?![\\s\\S])"
+        let pattern = "^(?:" + DecimalTotal.signedGrammar + ")(?![\\s\\S])"
 
         patternedText 1 maximum pattern None
-        |> parsed DecimalTotal.parse DecimalTotal.format
+        |> parsed DecimalTotal.parseSigned DecimalTotal.format
 
     let private moneyFields =
         (record (fun amount currency scale ->
@@ -117,6 +117,7 @@ module PresentationCodecs =
             codeVariant many Lifecycle.vocabulary
             codeVariant many CaseStatus.vocabulary
             codeVariant many CaseProgress.vocabulary
+            codeVariant many PaymentDirection.vocabulary
             codeVariant many CaseAssignment.vocabulary
             codeVariant many Role.vocabulary
             codeVariant many ScopeKind.vocabulary
@@ -750,7 +751,7 @@ module PresentationCodecs =
         |> named "PresentedRowDetail"
 
     let private stage =
-        (record (fun stage reached date amount meter link actions ->
+        (record (fun stage reached date stageValue meter link actions ->
             {
                 RegionStage.Stage = stage
                 Link = link
@@ -758,13 +759,13 @@ module PresentationCodecs =
                 Meter = meter
                 Reached = reached
                 Date = date
-                Amount = amount
+                StageValue = stageValue
             })
         : Fields<RegionStage, _>)
         |> field "stage" _.Stage (VocabularyCodec.create CaseStageKind.vocabulary)
         |> field "reached" _.Reached boolean
         |> field "date" _.Date (nullable calendarDate)
-        |> field "amount" _.Amount (nullable (moneyFields |> build))
+        |> field "value" _.StageValue (nullable value)
         |> optionalField "meter" _.Meter moneyMeter
         |> optionalField "link" _.Link link
         |> optionalField

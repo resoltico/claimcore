@@ -64,21 +64,10 @@ module TimelineScreen =
     /// Differences are supplied by the authorized core snapshot, never reconstructed by a renderer.
 
     let private paymentSections compact (changes: PaymentCollectionDifference) =
-        let context removed =
-            (if removed then changes.Before else changes.After)
-            |> Option.defaultWith (fun () ->
-                invalidOp "A payment change requires its financial context.")
-
         [
             for change in changes.Entries do
                 let entry = PaymentDifference.entry change
 
-                let removed =
-                    match change with
-                    | PaymentDifference.Removed _ -> true
-                    | _ -> false
-
-                let totals = context removed
                 let prefix = "payment." + OperationId.format (PaymentEntry.id entry)
 
                 yield
@@ -94,11 +83,18 @@ module TimelineScreen =
                                 (prefix + ".amount")
                                 "field.paidAmount.label"
                                 Prominence.Primary
-                                (PresentedValue.money (
-                                    Money.create
-                                        (PaymentEntry.amount entry)
-                                        (Money.currencyValue totals.Payable)
-                                ))
+                                (PresentedValue.money (PaymentEntry.money entry))
+                            value
+                                (prefix + ".direction")
+                                "field.direction.label"
+                                Prominence.Secondary
+                                (code PaymentDirection.vocabulary (PaymentEntry.direction entry))
+                            value
+                                (prefix + ".reference")
+                                "field.reference.label"
+                                Prominence.Detail
+                                (PaymentEntry.reference entry
+                                 |> optional (Identifier.format >> PresentedValue.Identifier))
                             if not compact then
                                 value
                                     (prefix + ".id")
@@ -115,10 +111,10 @@ module TimelineScreen =
                         "label.paymentTotals"
                         [
                             value
-                                "paid"
-                                "label.paid"
+                                "netPaid"
+                                "label.netPaid"
                                 Prominence.Primary
-                                (PresentedValue.money totals.Paid)
+                                (PaymentsScreen.netPaid totals)
                             value
                                 "payable"
                                 "field.payableAmount.label"
@@ -129,22 +125,12 @@ module TimelineScreen =
             if not compact then
                 yield
                     difference
-                        "paid"
-                        "label.paid"
-                        PresentedValue.money
+                        "netPaid"
+                        "label.netPaid"
+                        PaymentsScreen.netPaid
                         {
-                            Before = changes.Before |> Option.map _.Paid
-                            After = changes.After |> Option.map _.Paid
-                        }
-
-                yield
-                    difference
-                        "remaining"
-                        "label.remaining"
-                        PresentedValue.money
-                        {
-                            Before = changes.Before |> Option.map _.Remaining
-                            After = changes.After |> Option.map _.Remaining
+                            Before = changes.Before
+                            After = changes.After
                         }
         ]
 

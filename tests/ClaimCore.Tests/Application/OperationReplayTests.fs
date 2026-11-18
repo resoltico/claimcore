@@ -548,8 +548,13 @@ let tests =
                                 let changed =
                                     PaymentEntry.create
                                         (PaymentEntry.id entry)
+                                        (PaymentEntry.direction entry)
+                                        (Money.create
+                                            (Amount.parse "99" |> required)
+                                            (PaymentEntry.money entry |> Money.currencyValue))
                                         (PaymentEntry.date entry)
-                                        (Amount.parse "99" |> required)
+                                        (PaymentEntry.reference entry)
+                                        (PaymentEntry.payee entry)
                                     |> required
 
                                 { part with

@@ -26,6 +26,7 @@
     <Compile Include="Storage/PrincipalLock.fs" />
     <Compile Include="Storage/ExpiryFrontierStorage.fs" />
     <Compile Include="Storage/Ledger/OperationStorage.fs" />
+    <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Storage/PartProjections.fs" />
     <Compile Include="Storage/Schema/Baseline.fs" />
     <Compile Include="Storage/InstallationCheck/InstallationCheck.fs" />
@@ -34,7 +35,6 @@
     <Compile Include="Storage/CheckpointEvidence.fs" />
     <Compile Include="Storage/AccessRequests.fs" />
     <Compile Include="Reads/PeopleStateStorage.fs" />
-    <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Storage/Ledger/Transactions.fs" />
     <Compile Include="Storage/RegisterMaintenanceStore.fs" />
     <Compile Include="Storage/SessionStore.fs" />

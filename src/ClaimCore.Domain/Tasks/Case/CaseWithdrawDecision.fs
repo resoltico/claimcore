@@ -25,8 +25,7 @@ let check (_: InputMap) = []
 let private gate =
     CaseRules.gate true (fun state ->
         state.Case.Value.Content
-        |> Option.exists (fun content ->
-            content.Finance.Decision.IsSome && content.Finance.PaymentCount = 0L))
+        |> Option.exists (fun content -> content.Finance.Decision.IsSome))
 
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
@@ -42,7 +41,7 @@ let decide context environment (state: DecisionFacts option) binding (_: InputMa
                 {
                     Content =
                         { content with
-                            Finance = FinancialPosition.undecided
+                            Finance = FinancialPosition.withDecision None content.Finance
                         }
                 }
 
@@ -58,15 +57,7 @@ let decide context environment (state: DecisionFacts option) binding (_: InputMa
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
 let decideRetained context environment state binding (_: InputMap) =
-    let publicGate state =
-        FamilyRules.active true state
-        |> Option.orElseWith (fun () ->
-            if state.Payments |> Map.exists (fun _ part -> not part.Value.Removed) then
-                Some(FamilyRules.notOffered state)
-            else
-                None)
-
-    CaseRules.retained context environment state binding capability publicGate id
+    CaseRules.retained context environment state binding capability (FamilyRules.active true) id
 
 let task =
     Task.Family

@@ -32,6 +32,7 @@ type Violation =
     | DuplicateGrant
     | PaymentCountLimit
     | PaymentAmountPositive
-    | PaymentCurrencyMismatch
-    | PaymentExceedsPayable
+    | PaymentDirectionFormat
+    | PaymentTotalRange
+    | PayeeUnavailable
     | PaymentIdRequired
