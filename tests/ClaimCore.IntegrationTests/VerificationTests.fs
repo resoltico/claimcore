@@ -37,7 +37,12 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
                     CaseState.map
                         (fun fields ->
                             { fields with
-                                Status = CaseStatus.Closed
+                                Handling =
+                                    Handling.Closed
+                                        {
+                                            Outcome = ClosureOutcome.Settled
+                                            Note = None
+                                        }
                             })
                         snapshot.State
             }

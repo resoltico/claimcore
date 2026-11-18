@@ -30,7 +30,7 @@ let private snapshot (reference: string) : CaseSnapshot =
             CaseState.Active(
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = CaseFixtures.registration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
@@ -191,7 +191,12 @@ let private erasedState () =
 let private projectionFields: CaseFields =
     {
         CaseReference = CaseFixtures.reference "synthetic-layout"
-        Status = CaseStatus.Closed
+        Handling =
+            Handling.Closed
+                {
+                    Outcome = ClosureOutcome.Settled
+                    Note = None
+                }
         Registration =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith

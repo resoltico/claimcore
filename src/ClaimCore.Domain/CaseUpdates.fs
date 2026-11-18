@@ -8,14 +8,15 @@ type RegistrationUpdate<'value> = private RegistrationUpdate of Map<BusinessFiel
 type RegistrationUpdateInput = RegistrationUpdate<string>
 type ValidRegistrationUpdate = RegistrationUpdate<Admitted>
 
-type DecisionUpdate<'date, 'money> =
+type DecisionUpdate<'date, 'money, 'note> =
     {
         Date: 'date option
         Payable: 'money option
+        Basis: 'note option option
     }
 
-type DecisionUpdateInput = DecisionUpdate<string, MoneyInput>
-type ValidDecisionUpdate = DecisionUpdate<CalendarDate, Money>
+type DecisionUpdateInput = DecisionUpdate<string, MoneyInput, string>
+type ValidDecisionUpdate = DecisionUpdate<CalendarDate, Money, NoteText>
 
 module private UpdateParsing =
     let errors field =
@@ -184,10 +185,11 @@ module RegistrationUpdateInput =
     let parse input = parseWith (fun _ -> Ok) input
 
 module DecisionUpdate =
-    let map date money (input: DecisionUpdate<_, _>) =
+    let map date money note (input: DecisionUpdate<_, _, _>) =
         {
             Date = Option.map date input.Date
             Payable = Option.map money input.Payable
+            Basis = input.Basis |> Option.map (Option.map note)
         }
 
     let values (update: ValidDecisionUpdate) =
@@ -196,6 +198,9 @@ module DecisionUpdate =
                 update.Date
                 |> Option.map (fun v -> BusinessField.PaymentDecisionDate, Admitted.Date v)
                 |> Option.toList
+            match update.Basis |> Option.flatten with
+            | Some note -> yield BusinessField.DecisionBasis, Admitted.Note note
+            | None -> ()
             match update.Payable with
             | None -> ()
             | Some money ->
@@ -204,10 +209,16 @@ module DecisionUpdate =
         ]
 
     let authored update : DecisionUpdateInput =
-        map CalendarDate.format MoneyInput.ofMoney update
+        map CalendarDate.format MoneyInput.ofMoney NoteText.format update
 
     let apply update current =
-        Decision.replace (values update) current
+        let original =
+            if update.Basis = Some None then
+                Decision.clearBasis current
+            else
+                current
+
+        Decision.replace (values update) original
         |> Result.defaultWith (fun _ -> invalidOp "A typed decision merge must succeed.")
 
 module DecisionUpdateInput =
@@ -217,6 +228,9 @@ module DecisionUpdateInput =
                 input.Date
                 |> Option.map (fun value -> BusinessField.PaymentDecisionDate, Some value)
                 |> Option.toList
+            match input.Basis with
+            | Some note -> yield BusinessField.DecisionBasis, note
+            | None -> ()
             match input.Payable with
             | None -> ()
             | Some value ->
@@ -232,6 +246,7 @@ module DecisionUpdateInput =
 
             {
                 DecisionUpdateInput.Date = value BusinessField.PaymentDecisionDate
+                Basis = Map.tryFind BusinessField.DecisionBasis fields
                 Payable =
                     match
                         value BusinessField.PayableAmount, value BusinessField.PayableCurrency
@@ -255,6 +270,9 @@ module DecisionUpdateInput =
                 Map.tryFind field fields |> Option.flatten
 
             {
+                Basis =
+                    Map.tryFind BusinessField.DecisionBasis fields
+                    |> Option.map (Option.map FieldValue.note)
                 ValidDecisionUpdate.Date =
                     value BusinessField.PaymentDecisionDate |> Option.map FieldValue.date
                 Payable =

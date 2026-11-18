@@ -68,7 +68,7 @@ let tests =
                 let fields =
                     {
                         CaseFields.CaseReference = DomainInputs.reference "LIST-1"
-                        Status = CaseStatus.Opened
+                        Handling = Handling.Open
                         Registration = DomainInputs.admittedRegistration DomainInputs.registration
                         Finance = FinancialPosition.undecided
                     }

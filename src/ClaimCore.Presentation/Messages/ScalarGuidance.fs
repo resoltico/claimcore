@@ -81,6 +81,19 @@ module ScalarGuidance =
                     "scalar.text.guidance"
                     [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
             )
+        | FieldValueKind.NoteText ->
+            Some(
+                message
+                    "scalar.narrative.guidance"
+                    [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
+            )
+        | FieldValueKind.Reason ->
+            Some(
+                message
+                    "scalar.text.guidance"
+                    [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
+            )
+        | FieldValueKind.ClosureOutcome
         | FieldValueKind.Status -> None
 
     let forField field =
@@ -94,7 +107,7 @@ module ScalarGuidance =
     let forReason =
         message
             (TaskInputPresentation.messageKey (TaskInputId.Target InputTarget.Reason) "rule")
-            [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
+            [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
 
     let forSearchText =
         message

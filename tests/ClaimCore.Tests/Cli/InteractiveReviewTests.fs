@@ -136,7 +136,12 @@ let private review =
                 current.State
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
         }
 
@@ -273,7 +278,14 @@ let private harness language answer scenario =
                                                                 current.State
                                                                 |> CaseState.map (fun fields ->
                                                                     { fields with
-                                                                        Status = CaseStatus.Closed
+                                                                        Handling =
+                                                                            Handling.Closed
+                                                                                {
+                                                                                    Outcome =
+                                                                                        ClosureOutcome
+                                                                                            .Settled
+                                                                                    Note = None
+                                                                                }
                                                                     })
                                                         }
 

@@ -26,7 +26,7 @@ let snapshot: CaseSnapshot =
             CaseState.Active
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = DomainInputs.admittedRegistration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }

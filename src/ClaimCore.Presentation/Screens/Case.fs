@@ -233,8 +233,10 @@ module CaseScreen =
                                         else
                                             None
                                     StageValue =
-                                        step.NetPaid
-                                        |> Option.map PaymentsScreen.netPaid
+                                        step.Outcome
+                                        |> Option.map (code ClosureOutcome.vocabulary)
+                                        |> Option.orElseWith (fun () ->
+                                            step.NetPaid |> Option.map PaymentsScreen.netPaid)
                                         |> Option.orElseWith (fun () ->
                                             step.Amount |> Option.map PresentedValue.money)
                                 })
@@ -355,6 +357,29 @@ module CaseScreen =
 
                     match CaseState.fields reply.Snapshot.State with
                     | Some fields ->
+                        match Handling.closure fields.Handling with
+                        | Some closure ->
+                            yield
+                                entryRegion
+                                    RegionRole.Facts
+                                    (Some "label.closure")
+                                    [
+                                        value
+                                            "outcome"
+                                            "field.outcome.label"
+                                            Prominence.Primary
+                                            (code ClosureOutcome.vocabulary closure.Outcome)
+                                        value
+                                            "closingNote"
+                                            "field.closingNote.label"
+                                            Prominence.Detail
+                                            (closure.Note
+                                             |> optional (
+                                                 NoteText.format >> PresentedValue.Narrative
+                                             ))
+                                    ]
+                        | None -> ()
+
                         yield
                             region
                                 RegionRole.Payments

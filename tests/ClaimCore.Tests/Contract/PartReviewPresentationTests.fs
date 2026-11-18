@@ -23,7 +23,15 @@ let private caseValue status finance =
     {
         CaseValue.Reference = None
         Lifecycle = Lifecycle.Active
-        Status = status
+        Handling =
+            if status = CaseStatus.Opened then
+                Handling.Open
+            else
+                Handling.Closed
+                    {
+                        Outcome = ClosureOutcome.Settled
+                        Note = None
+                    }
         Content =
             Some
                 {
@@ -31,6 +39,7 @@ let private caseValue status finance =
                     Finance = finance
                 }
         Disposition = None
+        ReopenReason = None
     }
 
 [<Tests>]

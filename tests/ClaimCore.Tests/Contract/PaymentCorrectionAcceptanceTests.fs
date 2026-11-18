@@ -48,9 +48,10 @@ let private saturated caseRevision paymentRevision (state: CaseFamily) =
                 {
                     Reference = None
                     Lifecycle = Lifecycle.Active
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Content = state.Case.Value.Content
                     Disposition = None
+                    ReopenReason = None
                 })
             (CaseId.value state.Id)
             caseRevision

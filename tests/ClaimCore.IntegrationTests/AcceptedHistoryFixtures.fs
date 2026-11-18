@@ -89,8 +89,9 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                 {
                                                     Reference = Some reference
                                                     Lifecycle = Lifecycle.Active
-                                                    Status = CaseStatus.Opened
+                                                    Handling = Handling.Open
                                                     Disposition = None
+                                                    ReopenReason = None
                                                     Content =
                                                         Some
                                                             {

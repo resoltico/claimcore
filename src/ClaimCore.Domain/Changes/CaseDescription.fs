@@ -8,7 +8,7 @@ module CaseDescription =
         |> Option.map (fun content ->
             {
                 CaseFields.CaseReference = reference
-                Status = value.Status
+                Handling = value.Handling
                 Registration = content.Registration
                 Finance = content.Finance
             })
@@ -53,6 +53,17 @@ module CaseDescription =
                             Before = difference.Before
                             After = difference.After
                         }))
+
+        let changes =
+            changes
+            @ (after.ReopenReason
+               |> Option.map (fun reason ->
+                   {
+                       FieldName = BusinessField.ReopenReason
+                       Before = None
+                       After = Some(CaseFieldValue.Business(Admitted.Reason reason))
+                   })
+               |> Option.toList)
 
         let money select =
             Difference.value (prior |> Option.bind select) (next |> Option.bind select)

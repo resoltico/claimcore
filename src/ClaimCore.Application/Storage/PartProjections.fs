@@ -33,6 +33,7 @@ module internal PartProjections =
             DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.format)
             DatabaseSession.parameter index.WorkSearchText
+            DatabaseSession.parameter (index.Outcome |> Option.map ClosureOutcome.token)
         |]
 
     let private exactlyOne count =
@@ -142,7 +143,7 @@ module internal PartProjections =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text,outcome) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18,$19) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text,outcome=EXCLUDED.outcome WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
                     (caseParameters id row.Snapshot row.Index)
                     token
 

@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "Noņemta puse",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "Noregulēts",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "Noregulēts",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "Noraidīts",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "Noraidīts",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "Atsaukts",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "Atsaukts",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "Dublikāts",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "Dublikāts",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "Cits",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "Cits",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "Lietas izskatīšana beidzās ar noregulējumu.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "Prasījums tika noraidīts.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "Prasījums tika atsaukts.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "Cita lieta attiecas uz to pašu prasījumu.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "Izskatīšana beidzās cita iemesla dēļ.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "Iznākums",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "Izvēlieties, kāpēc izskatīšana beidzās.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "Izvēlieties vienu no norādītajiem iznākumiem.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "Slēgšanas piezīme",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "Norādiet svarīgos slēgšanas apstākļus.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "Lēmuma pamatojums",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "Ierakstiet pierādījumus vai pamatojumu lēmumam.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "Atkārtotas atvēršanas iemesls",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "Slēgšana",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "Izvēlieties vienu no norādītajiem slēgšanas iznākumiem.",
+    "source": "ed45fada7999"
   }
 }

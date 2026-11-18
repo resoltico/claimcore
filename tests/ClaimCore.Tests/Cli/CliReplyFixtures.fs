@@ -29,7 +29,7 @@ let snapshot =
     let fields: CaseFields =
         {
             CaseReference = CaseFixtures.reference "x"
-            Status = CaseStatus.Opened
+            Handling = Handling.Open
             Registration =
                 CaseFixtures.registration (
                     ClaimCore.TestSupport.DomainInputs.registrationWith

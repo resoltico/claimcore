@@ -24,13 +24,14 @@ module internal CaseStageCodecs =
         |> named "CaseStageOutline"
 
     let private step =
-        (record (fun stage completed date amount netPaid ->
+        (record (fun stage completed date amount netPaid outcome ->
             {
                 CaseStageEntry.Stage = stage
                 Completed = completed
                 Date = date
                 Amount = amount
                 NetPaid = netPaid
+                Outcome = outcome
             })
         : Fields<CaseStageEntry, _>)
         |> field "stage" _.Stage kind
@@ -38,6 +39,7 @@ module internal CaseStageCodecs =
         |> field "date" _.Date (nullable calendarDate)
         |> field "amount" _.Amount (nullable money)
         |> field "netPaid" _.NetPaid (nullable PaymentCodecs.totals)
+        |> field "outcome" _.Outcome (nullable (VocabularyCodec.create ClosureOutcome.vocabulary))
         |> build
         |> named "CaseStageEntry"
 

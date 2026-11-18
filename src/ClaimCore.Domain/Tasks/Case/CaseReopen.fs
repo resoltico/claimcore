@@ -15,12 +15,14 @@ let declaration =
         ActFamily.Business
         Consequence.Routine
         [ Capability.Close ]
-        [ operation; caseTarget; revision ]
+        [ operation; caseTarget; revision; required (target InputTarget.Reason) ]
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command = { Status: CaseStatus }
-let check (_: InputMap) = []
+let private parse admit inputs =
+    Parsing.scalar InputTarget.Reason (Reason.parse >> Result.bind admit) inputs
+
+let check inputs = Parsing.check (parse Ok) inputs
 
 let private gate =
     CaseRules.gate false (fun state -> state.Case.Value.Status = CaseStatus.Closed)
@@ -28,24 +30,30 @@ let private gate =
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
 
-let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
+let private accept context environment (state: DecisionFacts option) binding reason =
     match state, binding with
     | Some state, Binding.Case _ ->
         CaseRules.admit context environment state binding capability gate
-        |> Result.map (fun () ->
-            let command = { Status = CaseStatus.Opened }
-
+        |> Result.bind (fun () -> reason)
+        |> Result.map (fun reason ->
             [
-                CaseRules.change
+                CaseRules.reopen
                     context
                     state
                     { state.Case.Value with
-                        Status = command.Status
+                        Handling = Handling.Open
                     }
+                    reason
             ])
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
+let decide context environment state binding inputs =
+    accept context environment state binding (parse Reason.admit inputs |> Result.map Some)
+
+let decideRetained context environment state binding (_: InputMap) =
+    accept context environment state binding (Ok None)
 
 let task =
     Task.Family
@@ -60,7 +68,7 @@ let task =
             Check = check
             Availability = availability
             Decide = decide
-            DecideRetained = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

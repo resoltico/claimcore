@@ -65,7 +65,7 @@ let view reference : CaseSnapshot =
             CaseState.Active
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = DomainInputs.admittedRegistration registration
                     Finance = FinancialPosition.undecided
                 }

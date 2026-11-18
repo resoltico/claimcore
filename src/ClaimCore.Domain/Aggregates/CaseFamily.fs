@@ -20,9 +20,11 @@ type NoteState =
 type CasePartState =
     {
         Lifecycle: Lifecycle
-        Status: CaseStatus
+        Handling: Handling
         Content: CaseContent option
     }
+
+    member this.Status = Handling.status this.Handling
 
 type internal FamilyParts =
     {
@@ -104,7 +106,7 @@ module internal FamilyParts =
     let private caseState (value: CaseValue) : CasePartState =
         {
             Lifecycle = value.Lifecycle
-            Status = value.Status
+            Handling = value.Handling
             Content = value.Content
         }
 
@@ -143,7 +145,11 @@ module internal FamilyParts =
         { state with
             CaseValue =
                 { state.Case with
-                    Value = { state.Case.Value with Content = None }
+                    Value =
+                        { state.Case.Value with
+                            Content = None
+                            Handling = Handling.clearNote state.Case.Value.Handling
+                        }
                 }
             PaymentsValue =
                 state.Payments
@@ -390,7 +396,7 @@ module internal FamilyParts =
             |> Option.map (fun content ->
                 {
                     CaseReference = state.Reference
-                    Status = value.Status
+                    Handling = value.Handling
                     Registration = content.Registration
                     Finance = content.Finance
                 })

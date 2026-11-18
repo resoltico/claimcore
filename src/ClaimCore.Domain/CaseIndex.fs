@@ -15,6 +15,7 @@ type CaseIndex =
         Claimed: Money option
         Payable: Money option
         PaymentReview: bool option
+        Outcome: ClosureOutcome option
     }
 
 module CaseIndex =
@@ -38,6 +39,7 @@ module CaseIndex =
                 else
                     pendingDue |> List.sort |> List.tryHead
             Status = fields |> Option.map _.Status
+            Outcome = fields |> Option.bind (_.Handling >> Handling.closure) |> Option.map _.Outcome
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
             ChangedAt = changedAt
             SearchText = fields |> Option.map (CaseSearch.text parties)

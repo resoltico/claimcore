@@ -59,7 +59,7 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
-                            InputMap.empty
+                            (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
                         |> accepted
 
                     let caseChange =
@@ -87,7 +87,7 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
-                            InputMap.empty
+                            (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
                         |> accepted
 
                     let invalid =

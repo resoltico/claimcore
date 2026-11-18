@@ -67,19 +67,16 @@ module ResponseCodecs =
     let financialPosition = ClaimCore.RecordFormat.FinancialCodecs.position decision
 
     let caseFields =
-        (record (fun reference status registration finance ->
+        (record (fun reference handling registration finance ->
             {
                 CaseFields.CaseReference = reference
-                Status = status
+                Handling = handling
                 Registration = registration
                 Finance = finance
             })
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
-        |> field
-            (BusinessField.key BusinessField.Status)
-            _.Status
-            (VocabularyCodec.create CaseStatus.vocabulary)
+        |> field "handling" _.Handling ClaimCore.RecordFormat.HandlingCodecs.value
         |> field "registration" _.Registration registration
         |> field "finance" _.Finance financialPosition
         |> build

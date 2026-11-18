@@ -32,6 +32,15 @@ module ScreenEntries =
             PresentedValue.Text(Identifier.format value)
         | CaseFieldValue.Business(Admitted.Description value) ->
             PresentedValue.Narrative(IncidentDescription.format value)
+        | CaseFieldValue.Business(Admitted.Note value) ->
+            PresentedValue.Narrative(NoteText.format value)
+        | CaseFieldValue.Business(Admitted.Reason value) ->
+            PresentedValue.Narrative(Reason.format value)
+        | CaseFieldValue.Business(Admitted.Outcome value) ->
+            PresentedValue.Code(
+                Vocabulary.name ClosureOutcome.vocabulary,
+                ClosureOutcome.token value
+            )
         | CaseFieldValue.Business(Admitted.Amount value) -> PresentedValue.Text(Amount.format value)
         | CaseFieldValue.Business(Admitted.Currency value) ->
             PresentedValue.Code("currency", Currency.format value)

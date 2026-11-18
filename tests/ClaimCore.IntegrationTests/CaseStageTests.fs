@@ -94,7 +94,18 @@ let tests =
                     (ClaimCore.Application.Storage.DatabaseSession.value<string> 0 date.Head)
                     "Opening date is actual retained ledger metadata"
 
-                let! closed = write (78001) (1L) "case.close" (Map.empty)
+                let close outcome =
+                    [ Submissions.field BusinessField.Outcome, SubmissionValue.Text outcome ]
+                    |> Map.ofList
+
+                let reason =
+                    Map.ofList
+                        [
+                            Submissions.input InputTarget.Reason,
+                            SubmissionValue.Text "Additional documents received"
+                        ]
+
+                let! closed = write 78001 1L "case.close" (close "WITHDRAWN")
                 accepted closed |> ignore
                 let! current = get ()
 
@@ -111,6 +122,11 @@ let tests =
                         "Closing preserves original opening date"
 
                     Expect.isSome steps[3].Date "Close has a retained date"
+
+                    Expect.equal
+                        steps[3].Outcome
+                        (Some ClosureOutcome.Withdrawn)
+                        "Closed stage shows the asserted outcome"
                 | other -> failtestf "Expected closed tracker: %A" other
 
                 let! voided =
@@ -185,7 +201,7 @@ let tests =
                     ))
                     "Work changes do not replace latest case-fact act"
 
-                let! reopened = write (78005) (4L) "case.reopen" (Map.empty)
+                let! reopened = write 78005 4L "case.reopen" reason
                 accepted reopened |> ignore
                 let! current = get ()
 
@@ -196,4 +212,63 @@ let tests =
                         None
                         "Reopened tracker does not reuse an earlier close date"
                 | other -> failtestf "Expected restored tracker: %A" other
+
+                let! decision =
+                    write
+                        78007
+                        5L
+                        "case.decide"
+                        (Map.ofList
+                            [
+                                Submissions.field BusinessField.PaymentDecisionDate,
+                                SubmissionValue.Text "2026-08-15"
+                                Submissions.field BusinessField.PayableAmount,
+                                SubmissionValue.Text "100"
+                                Submissions.field BusinessField.PayableCurrency,
+                                SubmissionValue.Text "EUR"
+                                Submissions.field BusinessField.DecisionBasis,
+                                SubmissionValue.Text "Deductible EUR 100 applied"
+                            ])
+
+                let decision = accepted decision |> caseReceipt
+
+                match decision.Snapshot with
+                | SnapshotDisclosure.Disclosed live ->
+                    let basis =
+                        LiveCase.toState live.State
+                        |> CaseState.fields
+                        |> Option.bind _.Decision
+                        |> Option.bind Decision.basis
+                        |> Option.map NoteText.format
+
+                    Expect.equal
+                        basis
+                        (Some "Deductible EUR 100 applied")
+                        "Receipt discloses the decision basis"
+                | _ -> failtest "Expected disclosed receipt"
+
+                let! closedAgain = write 78008 6L "case.close" (close "DECLINED")
+                accepted closedAgain |> ignore
+                let! current = get ()
+                let current = read current
+
+                match current.Stages with
+                | CaseStageDisplay.Tracker(CaseStageKind.Closed, steps) ->
+                    Expect.equal
+                        steps[3].Outcome
+                        (Some ClosureOutcome.Declined)
+                        "Latest close determines current outcome"
+                | other -> failtestf "Expected tracker after the second close: %A" other
+
+                let! closeHistory =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT count(*) FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON l.sequence=e.operation_sequence WHERE l.task=$1 AND e.part_id=$2"
+                        [| box "case.close"; box (CaseId.value receipt.CaseId) |]
+                        token
+
+                Expect.equal
+                    (DatabaseSession.value<int64> 0 closeHistory.Head)
+                    2L
+                    "Both close operations survive"
             }))

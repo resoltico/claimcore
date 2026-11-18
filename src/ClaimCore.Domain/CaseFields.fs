@@ -32,6 +32,10 @@ type BusinessField =
     | PaymentDecisionDate
     | PayableAmount
     | PayableCurrency
+    | DecisionBasis
+    | Outcome
+    | ClosingNote
+    | ReopenReason
     | PaymentDate
     | PaidAmount
     | PaidCurrency
@@ -125,7 +129,11 @@ module BusinessField =
                 | Some RecordGroup.Payment -> Some CaseSection.Payment
                 | None -> None
             AllowsAbsence = group = Some RecordGroup.Registration
-            IsAuthored = field <> BusinessField.Status
+            IsAuthored =
+                match field with
+                | BusinessField.Status
+                | BusinessField.ReopenReason -> false
+                | _ -> true
             Pairs = pairs
         }
     // Domain owns value structure and amount/currency relationships.
@@ -169,6 +177,16 @@ module BusinessField =
                 (Some BusinessField.PayableCurrency)
         | BusinessField.PayableCurrency ->
             descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) None
+        | BusinessField.DecisionBasis ->
+            { descriptor field FieldValueKind.NoteText (Some RecordGroup.Decision) None with
+                AllowsAbsence = true
+            }
+        | BusinessField.Outcome -> descriptor field FieldValueKind.ClosureOutcome None None
+        | BusinessField.ClosingNote ->
+            { descriptor field FieldValueKind.NoteText None None with
+                AllowsAbsence = true
+            }
+        | BusinessField.ReopenReason -> descriptor field FieldValueKind.Reason None None
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) None
         | BusinessField.PaidAmount ->
@@ -396,6 +414,7 @@ type Decision =
         {
             Date: CalendarDate
             Payable: Money
+            Basis: NoteText option
         }
 
 module DecisionInput =
@@ -417,24 +436,35 @@ module DecisionInput =
 module Decision =
     let date (record: Decision) = record.Date
     let payable (record: Decision) = record.Payable
+    let basis (record: Decision) = record.Basis
 
     let create members =
-        match List.sortBy fst members with
+        let basis, required =
+            members |> List.partition (fst >> (=) BusinessField.DecisionBasis)
+
+        match List.sortBy fst required, basis with
         | [ BusinessField.PaymentDecisionDate, Admitted.Date date
             BusinessField.PayableAmount, Admitted.Amount amount
-            BusinessField.PayableCurrency, Admitted.Currency currency ] ->
+            BusinessField.PayableCurrency, Admitted.Currency currency ],
+          ([] | [ BusinessField.DecisionBasis, Admitted.Note _ ]) ->
             Ok
                 {
                     Date = date
                     Payable = Money.create amount currency
+                    Basis = basis |> List.tryHead |> Option.map (snd >> FieldValue.note)
                 }
         | _ -> Error "Invalid decision members."
+
+    let clearBasis decision = { decision with Basis = None }
 
     let values (record: Decision) =
         [
             BusinessField.PaymentDecisionDate, Admitted.Date record.Date
             BusinessField.PayableAmount, Admitted.Amount(Money.amount record.Payable)
             BusinessField.PayableCurrency, Admitted.Currency(Money.currencyValue record.Payable)
+            match record.Basis with
+            | Some basis -> BusinessField.DecisionBasis, Admitted.Note basis
+            | None -> ()
         ]
 
     let replace members value =

@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "已移除的当事方",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "已拒绝",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "已拒绝",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "重复",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "重复",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "因达成和解而结束处理。",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "索赔已被拒绝。",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "索赔已被撤回。",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "另一个案件涵盖同一索赔。",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "因其他原因结束处理。",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "结果",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "请选择结束处理的原因。",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "请从列表中选择一个结果。",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "结案备注",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "请记录有关结案的背景。",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "决定依据",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "请记录决定的证据或理由。",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "重新开案原因",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "结案",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "请从列表中选择结案结果。",
+    "source": "ed45fada7999"
   }
 }

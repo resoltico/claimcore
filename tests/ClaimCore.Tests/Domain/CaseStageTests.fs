@@ -27,12 +27,22 @@ let tests =
             testCase "closing without financial groups retains absent stages" (fun () ->
                 let fields =
                     { viewFields ((CaseFamily.snapshot >> Option.get) (opened ())) with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     }
 
                 let current, steps = describe (CaseState.Active fields) |> tracker
 
                 Expect.equal current CaseStageKind.Closed "Closed is the current step"
+
+                Expect.equal
+                    steps[3].Outcome
+                    (Some ClosureOutcome.Settled)
+                    "The tracker uses the recorded outcome"
 
                 Expect.equal
                     (steps |> List.map (fun s -> s.Stage, s.Completed, s.Date))
@@ -112,10 +122,29 @@ let tests =
                         (describe CaseState.Erased)
                         CaseStageDisplay.Erased
                         "Erasure has no factual tracker")
+            testCase "closed storage requires an outcome token" (fun () ->
+                let decode (text: string) =
+                    ClaimCore.Json.Codec.decode
+                        2048
+                        ClaimCore.RecordFormat.HandlingCodecs.value
+                        (System.Text.Encoding.UTF8.GetBytes text)
+
+                Expect.isError
+                    (decode """{"kind":"CLOSED"}""")
+                    "Missing outcome is structurally invalid"
+
+                Expect.isOk
+                    (decode """{"kind":"CLOSED","outcome":"DECLINED"}""")
+                    "Authored outcome control")
             testCase "missing retained completion dates fail rather than fabricate" (fun () ->
                 let fields =
                     { viewFields ((CaseFamily.snapshot >> Option.get) (opened ())) with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     }
 
                 Expect.isError

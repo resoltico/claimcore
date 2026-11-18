@@ -95,10 +95,10 @@ let internal updateCase
                                 Reference =
                                     before.Reference |> Option.map (fun _ -> snapshot.Reference)
                                 Lifecycle = CaseState.lifecycle snapshot.State
-                                Status =
+                                Handling =
                                     CaseState.fields snapshot.State
-                                    |> Option.map _.Status
-                                    |> Option.defaultValue before.Status
+                                    |> Option.map _.Handling
+                                    |> Option.defaultValue before.Handling
                                 Content = content
                             }
                 }

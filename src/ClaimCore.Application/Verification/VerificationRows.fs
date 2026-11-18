@@ -133,6 +133,12 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableAmountProjection
                                             (fun () -> Projections.casePayableAmount row)
 
+                                    let! outcome =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseOutcomeProjection
+                                            (fun () -> Projections.caseOutcome row)
+
                                     let! paymentReview =
                                         capture
                                             None
@@ -184,6 +190,7 @@ module internal VerificationRows =
                                                     claimedAmount
                                                     claimedCurrency
                                             PaymentReview = paymentReview
+                                            Outcome = outcome
                                             Payable =
                                                 Projections.indexedMoney
                                                     payableAmount
@@ -259,6 +266,10 @@ module internal VerificationRows =
                                         column
                                             VerificationFinding.CasePaymentReviewProjection
                                             (fun row -> row.Index.PaymentReview)
+
+                                    do!
+                                        column VerificationFinding.CaseOutcomeProjection (fun row ->
+                                            row.Index.Outcome)
 
                                     let! bases = bases
 

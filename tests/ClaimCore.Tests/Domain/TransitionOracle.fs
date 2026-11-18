@@ -140,7 +140,7 @@ let initial =
                     CaseState.Active
                         {
                             CaseReference = reference
-                            Status = CaseStatus.Opened
+                            Handling = Handling.Open
                             Registration = registration "Example Claimant Ltd"
                             Finance = FinancialPosition.undecided
                         }
@@ -242,12 +242,14 @@ let private changed (fields: CaseFields) witness =
         }
     | "case.close" ->
         { fields with
-            Status = CaseStatus.Closed
+            Handling =
+                Handling.Closed
+                    {
+                        Outcome = ClosureOutcome.Settled
+                        Note = None
+                    }
         }
-    | "case.reopen" ->
-        { fields with
-            Status = CaseStatus.Opened
-        }
+    | "case.reopen" -> { fields with Handling = Handling.Open }
     | _ -> fields
 
 let advance (before: Model) stale witness operation sequence =

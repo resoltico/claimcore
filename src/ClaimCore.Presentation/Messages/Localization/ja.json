@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "削除済みの関係者",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "解決済み",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "解決済み",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "否認",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "否認",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "取り下げ",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "取り下げ",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "合意により対応を終了しました。",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "請求が否認されました。",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "請求が取り下げられました。",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "別の案件で同じ請求を扱っています。",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "別の理由で対応を終了しました。",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "結果",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "対応を終了した理由を選択してください。",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "一覧から結果を1つ選択してください。",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "終了時のメモ",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "終了に関する情報を記録してください。",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "決定の根拠",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "決定の証拠や理由を記録してください。",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "再開の理由",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "終了",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "一覧から終了結果を選択してください。",
+    "source": "ed45fada7999"
   }
 }

@@ -150,12 +150,13 @@ module PartCodecs =
         |> build
 
     let private caseRetained =
-        (record (fun reference lifecycle status ->
+        (record (fun reference lifecycle handling ->
             PartValue.Case
                 {
                     Reference = reference
                     Lifecycle = lifecycle
-                    Status = status
+                    Handling = handling
+                    ReopenReason = None
                     Content = None
                     Disposition = None
                 })
@@ -165,7 +166,10 @@ module PartCodecs =
             (case _.Reference)
             (scalar CaseReference.parse CaseReference.format)
         |> field "lifecycle" (case _.Lifecycle) (VocabularyCodec.create Lifecycle.vocabulary)
-        |> field "status" (case _.Status) (VocabularyCodec.create CaseStatus.vocabulary)
+        |> field
+            "handling"
+            (case (_.Handling >> Handling.clearNote))
+            HandlingCodecs.retainedHandling
         |> build
         |> named "PartRetained.CASE"
 
@@ -272,35 +276,58 @@ module PartCodecs =
                     | CaseDisposition.Voided reason
                     | CaseDisposition.Reinstated reason -> reason))
 
-        (record (fun registration finance reason ->
-            let content =
-                {
-                    CaseContent.Registration = registration
-                    Finance = finance
-                }
+        (record
+            (fun
+                registration
+                finance
+                reason
+                (closingNote: NoteText option)
+                (reopenedBecause: Reason option) ->
+                let content =
+                    {
+                        CaseContent.Registration = registration
+                        Finance = finance
+                    }
 
-            if retained.Lifecycle = Lifecycle.Erased then
-                Error RecordViolation.InvalidSubjectState
-            else
-                let disposition =
-                    reason
-                    |> Option.map (fun reason ->
-                        if retained.Lifecycle = Lifecycle.Voided then
-                            CaseDisposition.Voided reason
-                        else
-                            CaseDisposition.Reinstated reason)
+                if
+                    retained.Lifecycle = Lifecycle.Erased
+                    || (closingNote.IsSome && retained.Status <> CaseStatus.Closed)
+                    || (reopenedBecause.IsSome && retained.Status <> CaseStatus.Opened)
+                then
+                    Error RecordViolation.InvalidSubjectState
+                else
+                    let disposition =
+                        reason
+                        |> Option.map (fun reason ->
+                            if retained.Lifecycle = Lifecycle.Voided then
+                                CaseDisposition.Voided reason
+                            else
+                                CaseDisposition.Reinstated reason)
 
-                Ok(
-                    PartValue.Case
-                        { retained with
-                            Content = Some content
-                            Disposition = disposition
-                        }
-                ))
+                    let handling =
+                        match retained.Handling with
+                        | Handling.Open -> Handling.Open
+                        | Handling.Closed closure ->
+                            Handling.Closed { closure with Note = closingNote }
+
+                    Ok(
+                        PartValue.Case
+                            { retained with
+                                Content = Some content
+                                Disposition = disposition
+                                Handling = handling
+                                ReopenReason = reopenedBecause
+                            }
+                    ))
         : Fields<PartValue, _>)
         |> field "registration" (content >> _.Registration) RecordCodecs.registration
         |> field "finance" (content >> _.Finance) (FinancialCodecs.position RecordCodecs.decision)
         |> optionalField "reason" reason (scalar Reason.parse Reason.format)
+        |> optionalField
+            "closingNote"
+            (case (_.Handling >> Handling.closure >> Option.bind _.Note))
+            (scalar NoteText.parse NoteText.format)
+        |> optionalField "reopenReason" (case _.ReopenReason) (scalar Reason.parse Reason.format)
         |> buildResult (fun path _ ->
             {
                 Path = path

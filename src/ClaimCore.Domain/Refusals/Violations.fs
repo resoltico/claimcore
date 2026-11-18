@@ -35,4 +35,5 @@ type Violation =
     | PaymentDirectionFormat
     | PaymentTotalRange
     | PayeeUnavailable
+    | ClosureOutcomeFormat
     | PaymentIdRequired

@@ -132,6 +132,7 @@ module Terms =
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
             rendered PaymentDirection.vocabulary
+            rendered ClosureOutcome.vocabulary
             rendered CaseStageKind.vocabulary
             rendered CaseHeadline.vocabulary
             rendered CaseAttention.vocabulary

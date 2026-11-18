@@ -25,7 +25,7 @@ let progressWire =
             let fields: CaseFields =
                 {
                     CaseReference = ClaimCore.TestSupport.CaseFixtures.reference "WIRE-STATES"
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration =
                         ClaimCore.TestSupport.CaseFixtures.registration
                             ClaimCore.TestSupport.DomainInputs.registration

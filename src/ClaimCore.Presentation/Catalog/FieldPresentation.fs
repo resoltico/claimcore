@@ -66,7 +66,9 @@ module FieldPresentation =
         | FieldValueKind.PartyName
         | FieldValueKind.Identifier -> "scalar.text.guidance"
         | FieldValueKind.HandlingSummary
+        | FieldValueKind.NoteText
         | FieldValueKind.IncidentDescription -> "scalar.narrative.guidance"
+        | FieldValueKind.Reason -> "scalar.text.guidance"
         | _ -> Vocabulary.messageKey BusinessField.vocabulary field "rule"
 
     let descriptor field =
@@ -93,4 +95,16 @@ module FieldPresentation =
         | FieldValueKind.Amount -> ScalarRule.Amount Money.descriptor.Amount
         | FieldValueKind.Currency -> ScalarRule.Currency Money.descriptor.Currency
         | FieldValueKind.Reference -> ScalarRule.Text CaseReference.descriptor
+        | FieldValueKind.NoteText -> ScalarRule.PlainText NoteText.constraints
+        | FieldValueKind.Reason -> ScalarRule.Text PartyName.descriptor
+        | FieldValueKind.ClosureOutcome ->
+            ScalarRule.Text
+                {
+                    Format =
+                        {
+                            MinimumCharacters = 1
+                            Grammar = None
+                        }
+                    MaximumCharacters = None
+                }
         | FieldValueKind.Status -> ScalarRule.CaseStatus { AllowedValues = CaseStatus.all }

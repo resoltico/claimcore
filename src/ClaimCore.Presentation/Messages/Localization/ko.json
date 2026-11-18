@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "제거된 당사자",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "합의 완료",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "합의 완료",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "거절",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "거절",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "철회",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "철회",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "중복",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "중복",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "합의로 처리가 끝났습니다.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "청구가 거절되었습니다.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "청구가 철회되었습니다.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "다른 청구 건에서 동일한 청구를 다룹니다.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "다른 사유로 처리가 끝났습니다.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "결과",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "처리가 끝난 이유를 선택하세요.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "목록에서 결과를 선택하세요.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "종결 메모",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "종결에 관련된 내용을 기록하세요.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "결정 근거",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "결정에 사용한 증거나 이유를 기록하세요.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "다시 여는 이유",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "종결",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "목록에서 종결 결과를 선택하세요.",
+    "source": "ed45fada7999"
   }
 }

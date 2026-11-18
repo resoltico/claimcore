@@ -30,7 +30,12 @@ let private reviewed frame =
                 current.State
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
         }
 

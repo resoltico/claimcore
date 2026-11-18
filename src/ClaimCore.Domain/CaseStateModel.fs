@@ -1,14 +1,42 @@
 namespace ClaimCore.Domain
 
+type Closure =
+    {
+        Outcome: ClosureOutcome
+        Note: NoteText option
+    }
+
+[<RequireQualifiedAccess>]
+type Handling =
+    | Open
+    | Closed of Closure
+
+module Handling =
+    let status =
+        function
+        | Handling.Open -> CaseStatus.Opened
+        | Handling.Closed _ -> CaseStatus.Closed
+
+    let closure =
+        function
+        | Handling.Open -> None
+        | Handling.Closed closure -> Some closure
+
+    let clearNote =
+        function
+        | Handling.Open -> Handling.Open
+        | Handling.Closed closure -> Handling.Closed { closure with Note = None }
+
 /// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
         CaseReference: CaseReference
-        Status: CaseStatus
+        Handling: Handling
         Registration: Registration
         Finance: FinancialPosition
     }
 
+    member this.Status = Handling.status this.Handling
     member this.Decision = this.Finance.Decision
 
 
@@ -119,6 +147,14 @@ module CaseFields =
         match field with
         | BusinessField.CaseReference -> Some(CaseFieldValue.Reference fields.CaseReference)
         | BusinessField.Status -> Some(CaseFieldValue.Status fields.Status)
+        | BusinessField.Outcome ->
+            Handling.closure fields.Handling
+            |> Option.map (_.Outcome >> Admitted.Outcome >> CaseFieldValue.Business)
+        | BusinessField.ClosingNote ->
+            Handling.closure fields.Handling
+            |> Option.bind _.Note
+            |> Option.map (Admitted.Note >> CaseFieldValue.Business)
+        | BusinessField.ReopenReason -> None
         | BusinessField.PaidAmount
         | BusinessField.PaidCurrency
         | BusinessField.PaymentDate -> None

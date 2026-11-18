@@ -27,6 +27,7 @@ type CaseStageEntry =
         Date: CalendarDate option
         Amount: Money option
         NetPaid: PaymentTotals option
+        Outcome: ClosureOutcome option
     }
 
 [<RequireQualifiedAccess>]
@@ -93,6 +94,7 @@ module CaseStages =
                         Date = date
                         Amount = amount
                         NetPaid = None
+                        Outcome = None
                     }
 
                 Ok(
@@ -110,10 +112,12 @@ module CaseStages =
                             { step CaseStageKind.Paid latestPayment None with
                                 NetPaid = FinancialPosition.totals fields.Finance
                             }
-                            step
-                                CaseStageKind.Closed
-                                (if fields.Status = CaseStatus.Closed then closed else None)
-                                (if fields.Status = CaseStatus.Closed then payable else None)
+                            { step
+                                  CaseStageKind.Closed
+                                  (if fields.Status = CaseStatus.Closed then closed else None)
+                                  None with
+                                Outcome = Handling.closure fields.Handling |> Option.map _.Outcome
+                            }
                         ]
                     )
                 )

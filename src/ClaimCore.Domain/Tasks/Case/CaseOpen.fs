@@ -131,9 +131,10 @@ let decide
                       (PartValue.Case
                           {
                               Disposition = None
+                              ReopenReason = None
                               Reference = Some command.Reference
                               Lifecycle = Lifecycle.Active
-                              Status = CaseStatus.Opened
+                              Handling = Handling.Open
                               Content =
                                   Some
                                       {
@@ -180,9 +181,10 @@ let decideRetained (context: TaskContext) (environment: FamilyEnvironment) state
                           {
                               Reference = Some reference
                               Lifecycle = Lifecycle.Active
-                              Status = CaseStatus.Opened
+                              Handling = Handling.Open
                               Content = None
                               Disposition = None
+                              ReopenReason = None
                           }) with
                     NaturalKey = Some(CaseReference.format reference)
                 }

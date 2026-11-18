@@ -90,7 +90,8 @@ module PartDescriptions =
                                     {
                                         CaseValue.Reference = Some reference
                                         Lifecycle = state.Case.Value.Lifecycle
-                                        Status = state.Case.Value.Status
+                                        Handling = state.Case.Value.Handling
+                                        ReopenReason = None
                                         Content = state.Case.Value.Content
                                         Disposition = None
                                     })

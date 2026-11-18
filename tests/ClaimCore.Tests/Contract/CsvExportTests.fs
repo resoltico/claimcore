@@ -210,7 +210,7 @@ let completeByteGoldens =
             let fields =
                 {
                     CaseFields.CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = registration
                     Finance = FinancialPosition.undecided
                 }

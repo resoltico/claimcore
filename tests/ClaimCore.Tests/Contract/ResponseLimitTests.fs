@@ -27,7 +27,12 @@ let private maximum = 9007199254740991L
 let private fields length : CaseFields =
     {
         CaseReference = CaseFixtures.reference reference
-        Status = CaseStatus.Closed
+        Handling =
+            Handling.Closed
+                {
+                    Outcome = ClosureOutcome.Settled
+                    Note = None
+                }
         Registration =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith

@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "طرف محذوف",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "تمت التسوية",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "تمت التسوية",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "مرفوض",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "مرفوض",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "مسحوب",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "مسحوب",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "مكرر",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "مكرر",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "أخرى",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "أخرى",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "انتهت المعالجة بتسوية.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "رُفضت المطالبة.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "سُحبت المطالبة.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "يغطي ملف آخر المطالبة نفسها.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "انتهت المعالجة لسبب آخر.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "النتيجة",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "اختر سبب انتهاء المعالجة.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "اختر نتيجة من القائمة.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "ملاحظة الإغلاق",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "سجّل السياق المهم للإغلاق.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "أساس القرار",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "سجّل الأدلة أو الأسباب التي استند إليها القرار.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "سبب إعادة الفتح",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "الإغلاق",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "اختر نتيجة إغلاق من القائمة.",
+    "source": "ed45fada7999"
   }
 }

@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "Parte retirada",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "Resuelto",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "Resuelto",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "Rechazado",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "Rechazado",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "Retirado",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "Retirado",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "Duplicado",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "Duplicado",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "Otro",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "Otro",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "La tramitación terminó con un acuerdo.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "Se rechazó la reclamación.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "Se retiró la reclamación.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "Otro expediente cubre la misma reclamación.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "La tramitación terminó por otro motivo.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "Resultado",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "Elija por qué terminó la tramitación.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "Elija uno de los resultados de la lista.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "Nota de cierre",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "Registre el contexto pertinente del cierre.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "Fundamento de la decisión",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "Registre las pruebas o los motivos de la decisión.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "Motivo de reapertura",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "Cierre",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "Elija un resultado de cierre de la lista.",
+    "source": "ed45fada7999"
   }
 }

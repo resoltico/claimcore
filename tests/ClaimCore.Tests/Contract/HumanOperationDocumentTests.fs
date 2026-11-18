@@ -95,7 +95,12 @@ let private closedReceipt () =
                 |> LiveCase.toState
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
                 |> LiveCase.ofState
                 |> Option.get
@@ -621,7 +626,12 @@ let receiptStatusAndProgress =
                         (disclosed
                             (LiveCase.Active
                                 { fields with
-                                    Status = CaseStatus.Closed
+                                    Handling =
+                                        Handling.Closed
+                                            {
+                                                Outcome = ClosureOutcome.Settled
+                                                Note = None
+                                            }
                                     Finance = decided
                                 })
                             [])

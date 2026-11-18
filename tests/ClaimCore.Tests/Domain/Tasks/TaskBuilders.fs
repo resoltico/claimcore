@@ -112,9 +112,10 @@ let initialChange =
             PartValue.Case
                 {
                     Disposition = None
+                    ReopenReason = None
                     Reference = Some reference
                     Lifecycle = Lifecycle.Active
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Content =
                         Some
                             {
@@ -145,6 +146,12 @@ let apply state changes =
     |> List.fold (fun state change -> Some(CaseFamily.apply state change |> accepted)) (Some state)
     |> Option.get
 
+let closingInputs outcome =
+    inputs [ text (InputTarget.Field BusinessField.Outcome) outcome ]
+
+let reopeningInputs reason =
+    inputs [ text InputTarget.Reason reason ]
+
 let setCase lifecycle status (state: CaseFamily) =
     let change =
         { initialChange with
@@ -156,13 +163,22 @@ let setCase lifecycle status (state: CaseFamily) =
                     {
                         CaseValue.Reference = None
                         Lifecycle = lifecycle
-                        Status = status
+                        Handling =
+                            if status = CaseStatus.Opened then
+                                Handling.Open
+                            else
+                                Handling.Closed
+                                    {
+                                        Outcome = ClosureOutcome.Settled
+                                        Note = None
+                                    }
                         Content =
                             if lifecycle = Lifecycle.Erased then
                                 None
                             else
                                 state.Case.Value.Content
                         Disposition = None
+                        ReopenReason = None
                     }
             Erases =
                 if lifecycle = Lifecycle.Erased then

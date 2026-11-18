@@ -24,10 +24,13 @@ type CaseValue =
     {
         Reference: CaseReference option
         Lifecycle: Lifecycle
-        Status: CaseStatus
+        Handling: Handling
         Content: CaseContent option
         Disposition: CaseDisposition option
+        ReopenReason: Reason option
     }
+
+    member this.Status = Handling.status this.Handling
 
 type PaymentValue =
     {
@@ -107,6 +110,8 @@ module PartValue =
                 { value with
                     Content = None
                     Disposition = None
+                    Handling = Handling.clearNote value.Handling
+                    ReopenReason = None
                 }
         | PartValue.Payment value -> PartValue.Payment { value with Entry = None }
         | PartValue.Work _ -> PartValue.Work None
@@ -160,7 +165,7 @@ module PartChange =
                             lifecycle
                             {
                                 CaseReference = reference
-                                Status = value.Status
+                                Handling = value.Handling
                                 Registration = content.Registration
                                 Finance = content.Finance
                             }

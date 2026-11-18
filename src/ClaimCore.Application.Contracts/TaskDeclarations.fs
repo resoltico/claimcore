@@ -21,6 +21,7 @@ type TaskChoiceId =
     | ReminderState
     | ReminderDue
     | PaymentDirection
+    | ClosureOutcome
     | RegistrationCorrection
     | DecisionCorrection
 
@@ -52,6 +53,7 @@ module TaskChoiceId =
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
         | TaskChoiceId.PaymentDirection -> vocabularyTokens PaymentDirection.vocabulary
+        | TaskChoiceId.ClosureOutcome -> vocabularyTokens ClosureOutcome.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
             CorrectionGroupAction.actions RecordGroup.Registration
             |> List.map CorrectionGroupAction.token
@@ -78,6 +80,7 @@ module TaskChoiceId =
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
         | TaskChoiceId.PaymentDirection -> Vocabulary.name PaymentDirection.vocabulary
+        | TaskChoiceId.ClosureOutcome -> Vocabulary.name ClosureOutcome.vocabulary
         | TaskChoiceId.RegistrationCorrection
         | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary
 
@@ -106,6 +109,8 @@ module TaskChoiceId =
         | TaskInputId.Target(InputTarget.Group RecordGroup.Decision) ->
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
+        | TaskInputId.Target(InputTarget.Field BusinessField.Outcome) ->
+            Some TaskChoiceId.ClosureOutcome
         | TaskInputId.Target(InputTarget.Field _)
         | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
         | TaskInputId.ActorId

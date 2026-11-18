@@ -141,6 +141,7 @@ let decisionUpdate (input: DecisionInput) : DecisionUpdateInput =
 
     {
         Date = Some(value BusinessField.PaymentDecisionDate)
+        Basis = None
         Payable =
             Some
                 {

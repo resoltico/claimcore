@@ -1,6 +1,20 @@
 namespace ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
+type ClosureOutcome =
+    | Settled
+    | Declined
+    | Withdrawn
+    | Duplicate
+    | Other
+
+module ClosureOutcome =
+    let vocabulary =
+        Vocabulary.ofUnion<ClosureOutcome> "closureOutcome" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
 type FieldValueKind =
     | CalendarDate
     | Country
@@ -14,6 +28,9 @@ type FieldValueKind =
     | ActorId
     | PlannedDate
     | HandlingSummary
+    | NoteText
+    | ClosureOutcome
+    | Reason
 
 module FieldValueKind =
     let vocabulary =
@@ -28,6 +45,9 @@ type Admitted =
     | Description of IncidentDescription
     | Amount of Amount
     | Currency of Currency
+    | Note of NoteText
+    | Outcome of ClosureOutcome
+    | Reason of Reason
 
 [<Struct>]
 type Authored = private Authored of string
@@ -46,6 +66,9 @@ module FieldValue =
         | Admitted.Identifier _ -> FieldValueKind.Identifier
         | Admitted.Amount _ -> FieldValueKind.Amount
         | Admitted.Currency _ -> FieldValueKind.Currency
+        | Admitted.Note _ -> FieldValueKind.NoteText
+        | Admitted.Outcome _ -> FieldValueKind.ClosureOutcome
+        | Admitted.Reason _ -> FieldValueKind.Reason
 
     let parse kind value =
         match kind with
@@ -57,6 +80,12 @@ module FieldValue =
             IncidentDescription.parse value |> Result.map Admitted.Description
         | FieldValueKind.Amount -> Amount.parse value |> Result.map Admitted.Amount
         | FieldValueKind.Currency -> Currency.parse value |> Result.map Admitted.Currency
+        | FieldValueKind.NoteText -> NoteText.parse value |> Result.map Admitted.Note
+        | FieldValueKind.Reason -> Reason.parse value |> Result.map Admitted.Reason
+        | FieldValueKind.ClosureOutcome ->
+            Vocabulary.tryParse ClosureOutcome.vocabulary value
+            |> Option.map (Admitted.Outcome >> Ok)
+            |> Option.defaultValue (Error Violation.ClosureOutcomeFormat)
         | FieldValueKind.ActorId
         | FieldValueKind.HandlingSummary
         | FieldValueKind.PlannedDate
@@ -72,6 +101,9 @@ module FieldValue =
         | Admitted.Identifier value -> Identifier.format value
         | Admitted.Amount value -> Amount.format value
         | Admitted.Currency value -> Currency.format value
+        | Admitted.Note value -> NoteText.format value
+        | Admitted.Outcome value -> ClosureOutcome.token value
+        | Admitted.Reason value -> Reason.format value
 
     let admit today =
         function
@@ -83,6 +115,14 @@ module FieldValue =
         | Admitted.Country value -> CountryCode.admit value |> Result.map Admitted.Country
         | Admitted.Amount value -> Amount.admit value |> Result.map Admitted.Amount
         | Admitted.Currency value -> Currency.admit value |> Result.map Admitted.Currency
+        | Admitted.Note value -> NoteText.admit value |> Result.map Admitted.Note
+        | Admitted.Reason value -> Reason.admit value |> Result.map Admitted.Reason
+        | Admitted.Outcome value -> Ok(Admitted.Outcome value)
+
+    let note =
+        function
+        | Admitted.Note value -> value
+        | _ -> invalidOp "The declared field requires a note."
 
     let date =
         function

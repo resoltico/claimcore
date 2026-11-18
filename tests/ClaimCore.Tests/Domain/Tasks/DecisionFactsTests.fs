@@ -43,9 +43,10 @@ let private acquired () =
                     {
                         Reference = None
                         Lifecycle = complete.Case.Value.Lifecycle
-                        Status = complete.Case.Value.Status
+                        Handling = complete.Case.Value.Handling
                         Content = complete.Case.Value.Content
                         Disposition = None
+                        ReopenReason = None
                     }
             Erases = None
             Stamp = complete.Case.Stamp

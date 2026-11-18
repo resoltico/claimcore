@@ -165,6 +165,13 @@ module PaymentsScreen =
                                 "field.payableAmount.label"
                                 Prominence.Primary
                                 (totals |> Option.map _.Payable |> optional PresentedValue.money)
+                            value
+                                "decisionBasis"
+                                "field.decisionBasis.label"
+                                Prominence.Detail
+                                (position.Decision
+                                 |> Option.bind Decision.basis
+                                 |> optional (NoteText.format >> PresentedValue.Narrative))
                             for KeyValue(currency, buckets) in position.CurrencyTotals do
                                 value
                                     ("netPaid." + Currency.format currency)

@@ -6,21 +6,21 @@ open ClaimCore.Application.Contracts
 
 /// Codec and rendering fixtures use the same accepted-part descriptions as real replies.
 let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) context =
-    let status =
+    let handling =
         CaseState.fields after.State
         |> Option.orElseWith (fun () ->
             before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
-        |> Option.map _.Status
-        |> Option.defaultValue CaseStatus.Opened
+        |> Option.map _.Handling
+        |> Option.defaultValue Handling.Open
 
     let value (snapshot: CaseSnapshot) =
         {
             CaseValue.Reference = None
             Lifecycle = CaseState.lifecycle snapshot.State
-            Status =
+            Handling =
                 CaseState.fields snapshot.State
-                |> Option.map _.Status
-                |> Option.defaultValue status
+                |> Option.map _.Handling
+                |> Option.defaultValue (Handling.clearNote handling)
             Content =
                 CaseState.fields snapshot.State
                 |> Option.map (fun fields ->
@@ -29,6 +29,7 @@ let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) 
                         Finance = fields.Finance
                     })
             Disposition = None
+            ReopenReason = None
         }
 
     {

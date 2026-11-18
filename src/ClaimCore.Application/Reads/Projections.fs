@@ -42,7 +42,7 @@ module internal Projections =
         + DatabaseSession.dateExpression "received_on"
         + " AS received_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -95,6 +95,13 @@ module internal Projections =
         | Some amount, Some currency -> Some(Money.create amount currency)
         | _ -> raise (RecordCorruptException "Incomplete indexed amount and currency.")
 
+    let caseOutcome row =
+        DatabaseSession.namedOptional<string> "outcome" row
+        |> Option.map (fun value ->
+            Vocabulary.tryParse ClosureOutcome.vocabulary value
+            |> Option.defaultWith (fun () ->
+                raise (RecordCorruptException "Invalid indexed closure outcome.")))
+
     let caseIndex row : CaseIndex =
         {
             Responsible = caseResponsibleActor row
@@ -108,6 +115,7 @@ module internal Projections =
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
             PaymentReview = DatabaseSession.namedOptional<bool> "payment_review" row
+            Outcome = caseOutcome row
         }
 
 

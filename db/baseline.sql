@@ -351,6 +351,7 @@ CREATE TABLE claimcore.cases (
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4),
     payment_review boolean,
+    outcome text CHECK (outcome ~ '^[A-Z][A-Z_]{0,39}$'),
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
@@ -361,7 +362,7 @@ CREATE TABLE claimcore.cases (
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]+$' AND octet_length(case_reference)<=32768),
     CONSTRAINT private_shape CHECK ((snapshot IS NULL)=(status IS NULL) AND (snapshot IS NULL)=(progress IS NULL)
         AND (snapshot IS NULL)=(search_text IS NULL)
-        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND outcome IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
     CONSTRAINT claimed_shape CHECK ((claimed_amount IS NULL) = (claimed_currency IS NULL)),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)

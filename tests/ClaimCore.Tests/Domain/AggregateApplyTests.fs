@@ -38,9 +38,10 @@ let private initial =
             PartValue.Case
                 {
                     Disposition = None
+                    ReopenReason = None
                     Reference = Some reference
                     Lifecycle = Lifecycle.Active
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Content = None
                 }
         Erases = None
@@ -71,9 +72,15 @@ let tests =
                             PartValue.Case
                                 {
                                     Disposition = None
+                                    ReopenReason = None
                                     Reference = None
                                     Lifecycle = Lifecycle.Active
-                                    Status = CaseStatus.Closed
+                                    Handling =
+                                        Handling.Closed
+                                            {
+                                                Outcome = ClosureOutcome.Settled
+                                                Note = None
+                                            }
                                     Content = None
                                 }
                     }
@@ -155,9 +162,10 @@ let tests =
                                 PartValue.Case
                                     {
                                         Disposition = None
+                                        ReopenReason = None
                                         Reference = None
                                         Lifecycle = Lifecycle.Erased
-                                        Status = CaseStatus.Opened
+                                        Handling = Handling.Open
                                         Content = None
                                     }
                             Erases = Some(CompartmentOwner.Family caseId)

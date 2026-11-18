@@ -13,7 +13,7 @@ let tests =
         let value: CaseFields =
             {
                 CaseReference = DomainInputs.reference "PROGRESS-CORE"
-                Status = CaseStatus.Opened
+                Handling = Handling.Open
                 Registration = DomainInputs.admittedRegistration DomainInputs.registration
                 Finance = FinancialPosition.undecided
             }

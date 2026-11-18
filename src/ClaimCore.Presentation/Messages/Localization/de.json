@@ -3118,5 +3118,105 @@
   "label.removedPayee": {
     "text": "Entfernter Beteiligter",
     "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "Reguliert",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "Reguliert",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "Abgelehnt",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "Abgelehnt",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "Zurückgezogen",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "Zurückgezogen",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "Doppelt",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "Doppelt",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "Sonstiges",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "Sonstiges",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "Die Bearbeitung endete mit einer Regulierung.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "Der Anspruch wurde abgelehnt.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "Der Anspruch wurde zurückgezogen.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "Ein anderer Fall betrifft denselben Anspruch.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "Die Bearbeitung endete aus einem anderen Grund.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "Ergebnis",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "Wählen Sie den Grund für den Abschluss der Bearbeitung.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "Wählen Sie eines der aufgeführten Ergebnisse.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "Abschlussnotiz",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "Erfassen Sie den relevanten Kontext zum Abschluss.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "Entscheidungsgrundlage",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "Erfassen Sie die Nachweise oder Gründe für die Entscheidung.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "Grund für erneute Öffnung",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "Abschluss",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "Wählen Sie ein aufgeführtes Abschlussergebnis.",
+    "source": "ed45fada7999"
   }
 }
