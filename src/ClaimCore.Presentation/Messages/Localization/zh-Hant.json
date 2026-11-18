@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "不再需要處理時關閉案件。關閉不代表索賠已付款。",
-    "source": "6059fdf3ac25"
+    "text": "記錄結束處理的原因，並在需要時新增結案備註。",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "更正案件資料",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "更正已登記的索賠或賠付決定事實。付款記錄維持不變，應付金額不得低於已付總額。",
-    "source": "c115bf28430f"
+    "text": "更正此案件中選取的登記資訊或決定資訊。",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "記錄賠付決定",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "重新打開案件。資訊和歷史記錄仍會保留。",
-    "source": "9afd35e2c444"
+    "text": "請說明恢復處理此案件的原因。",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "撤銷角色",
@@ -2440,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "此記錄中實際支付的金額。",
-    "source": "d79a30c73c31"
+    "text": "此項目實際支付或退回的金額。",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "請輸入正數金額。小數點前最多 {maximumIntegerDigits} 位，小數點後最多 {maximumFractionDigits} 位。使用 ASCII 數字及點號，不得包含空格、正負號、逗號或多餘的前導零。",
@@ -2449,7 +2449,7 @@
   },
   "field.paidCurrency.label": {
     "text": "付款幣別",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "請使用此項目的幣別。",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "將錯誤登記的付款紀錄替換為正確的日期和金額。此操作不會退款或執行轉帳。先前的歷史紀錄將保留。",
-    "source": "538255858894"
+    "text": "使用正確的日期、方向、金額、參考編號和收款人取代誤錄的付款項目。回執會標明兩個項目。",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "付款紀錄已更正。",

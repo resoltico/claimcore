@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "Slēgt lietu, kad vairs nav jāveic darbs. Slēgšana nenozīmē, ka prasījums ir apmaksāts.",
-    "source": "6059fdf3ac25"
+    "text": "Ierakstiet izskatīšanas beigu iemeslu un, ja vajadzīgs, slēgšanas piezīmi.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "Labot lietas faktus",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "Labot reģistrētos atlīdzības pieteikuma vai lēmuma datus. Maksājumu ieraksti nemainās, un izmaksājamā summa nedrīkst būt mazāka par samaksāto kopsummu.",
-    "source": "c115bf28430f"
+    "text": "Labojiet atlasītos šīs lietas reģistrācijas vai lēmuma faktus.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "Reģistrēt izmaksas lēmumu",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "Atvērt lietu no jauna. Informācija un vēsture paliek saglabāta.",
-    "source": "9afd35e2c444"
+    "text": "Norādiet, kāpēc atsākat šīs lietas izskatīšanu.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "Atsaukt lomu",
@@ -2440,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "Šajā ierakstā faktiski samaksātā summa.",
-    "source": "d79a30c73c31"
+    "text": "Šajā ierakstā samaksātā vai atmaksātā summa.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "Ievadiet pozitīvu summu. Ne vairāk kā {maximumIntegerDigits} cipari pirms punkta un {maximumFractionDigits} pēc tā; izmantojiet ASCII ciparus un punktu.",
@@ -2449,7 +2449,7 @@
   },
   "field.paidCurrency.label": {
     "text": "Maksājuma valūta",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "Izmantojiet šī ieraksta valūtu.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Aizstājiet kļūdaini reģistrētu maksājuma ierakstu ar pareizo datumu un summu. Tas neatmaksā un neveic pārskaitījumu. Iepriekšējā vēsture saglabājas.",
-    "source": "538255858894"
+    "text": "Aizstājiet kļūdainu maksājuma ierakstu ar pareizo datumu, virzienu, summu, atsauci un saņēmēju. Kvītī ir norādīti abi ieraksti.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "Maksājuma ieraksts izlabots.",

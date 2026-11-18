@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "Cerrar el expediente cuando no quede trabajo pendiente. Cerrarlo no significa que se haya pagado la reclamación.",
-    "source": "6059fdf3ac25"
+    "text": "Registre por qué terminó la tramitación y añada una nota de cierre si hace falta.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "Corregir los datos del expediente",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "Corregir datos registrados de la reclamación o de la decisión de pago. Los asientos de pago no cambian y el importe pagadero no puede ser inferior al total pagado.",
-    "source": "c115bf28430f"
+    "text": "Corrija los datos de registro o de decisión seleccionados de este expediente.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "Registrar la decisión de pago",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "Reabrir el expediente. Se conservan sus datos e historial.",
-    "source": "9afd35e2c444"
+    "text": "Indique el motivo para reanudar la tramitación de este expediente.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "Revocar un rol",
@@ -2440,16 +2440,16 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "El importe realmente pagado en este asiento.",
-    "source": "d79a30c73c31"
+    "text": "El importe pagado o devuelto en este asiento.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "Introduzca un importe positivo, con hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Use dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales innecesarios.",
     "source": "58353f96c69b"
   },
   "field.paidCurrency.label": {
-    "text": "Moneda del pago",
-    "source": "ae69c7acaee6"
+    "text": "Divisa del pago",
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "Utilice la divisa de este asiento.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Sustituya un asiento de pago registrado por error por la fecha y el importe correctos. Esto no reembolsa ni ejecuta una transferencia. Se conserva el historial anterior.",
-    "source": "538255858894"
+    "text": "Sustituya un asiento de pago erróneo con la fecha, el sentido, el importe, la referencia y el beneficiario correctos. El recibo identifica ambos asientos.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "Asiento de pago corregido.",

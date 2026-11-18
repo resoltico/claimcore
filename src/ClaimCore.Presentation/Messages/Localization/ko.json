@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "더 이상 필요한 업무가 없으면 청구 건을 종료합니다. 종료가 보험금 지급을 의미하지는 않습니다.",
-    "source": "6059fdf3ac25"
+    "text": "처리가 끝난 이유를 기록하고 필요하면 종결 메모를 추가하세요.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "청구 건 정보 정정",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "등록된 청구 또는 지급 결정 사실을 정정합니다. 지급 내역은 변경되지 않으며 지급 결정액은 지급 합계보다 적을 수 없습니다.",
-    "source": "c115bf28430f"
+    "text": "이 청구 건에서 선택한 등록 정보 또는 결정 정보를 정정합니다.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "지급 결정 기록",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "청구 건을 다시 엽니다. 정보와 이력은 유지됩니다.",
-    "source": "9afd35e2c444"
+    "text": "이 청구 건의 처리를 재개하는 이유를 입력하세요.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "역할 회수",
@@ -2440,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "이 내역에서 실제로 지급한 금액입니다.",
-    "source": "d79a30c73c31"
+    "text": "이 항목에서 지급하거나 반환한 금액입니다.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "양수를 입력하세요. 소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 점을 사용하고 공백, 부호, 쉼표, 불필요한 앞자리 0은 넣지 마세요.",
@@ -2449,7 +2449,7 @@
   },
   "field.paidCurrency.label": {
     "text": "지급 통화",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "이 항목의 통화를 사용하세요.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "잘못 기록한 지급 항목을 올바른 날짜와 금액으로 대체합니다. 환불이나 송금을 실행하지 않습니다. 이전 이력은 유지됩니다.",
-    "source": "538255858894"
+    "text": "잘못 기록한 지급 항목을 올바른 날짜, 방향, 금액, 참조 및 수취인으로 교체합니다. 확인서에는 두 항목이 표시됩니다.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "지급 기록이 정정되었습니다.",

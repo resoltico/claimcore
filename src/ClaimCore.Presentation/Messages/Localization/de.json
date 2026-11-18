@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "Den Fall schließen, wenn keine Arbeit mehr nötig ist. Ein geschlossener Fall ist nicht zwangsläufig bezahlt.",
-    "source": "6059fdf3ac25"
+    "text": "Erfassen Sie den Grund für den Abschluss der Bearbeitung und bei Bedarf eine Abschlussnotiz.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "Falldaten korrigieren",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "Erfasste Anspruchs- oder Zahlungsentscheidungsdaten berichtigen. Zahlungseinträge bleiben unverändert; der zahlbare Betrag darf die gezahlte Summe nicht unterschreiten.",
-    "source": "c115bf28430f"
+    "text": "Korrigieren Sie ausgewählte Registrierungs- oder Entscheidungsdaten dieses Falls.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "Zahlungsentscheidung erfassen",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "Den Fall erneut öffnen. Seine Angaben und sein Verlauf bleiben erhalten.",
-    "source": "9afd35e2c444"
+    "text": "Geben Sie den Grund für die Wiederaufnahme der Bearbeitung an.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "Rolle entziehen",
@@ -2440,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "Der in diesem Eintrag tatsächlich gezahlte Betrag.",
-    "source": "d79a30c73c31"
+    "text": "Der in diesem Eintrag gezahlte oder zurückgezahlte Betrag.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "Geben Sie einen positiven Betrag ein. Höchstens {maximumIntegerDigits} Ziffern vor und {maximumFractionDigits} nach dem Dezimalpunkt. Verwenden Sie ASCII-Ziffern und einen Punkt; keine Leerzeichen, Vorzeichen, Kommas oder überflüssigen führenden Nullen.",
@@ -2449,7 +2449,7 @@
   },
   "field.paidCurrency.label": {
     "text": "Zahlungswährung",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "Verwenden Sie die Währung dieses Eintrags.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Ersetzen Sie einen irrtümlich erfassten Zahlungseintrag durch das richtige Datum und den richtigen Betrag. Dies erstattet kein Geld und führt keine Überweisung aus. Der bisherige Verlauf bleibt erhalten.",
-    "source": "538255858894"
+    "text": "Ersetzen Sie einen irrtümlichen Zahlungseintrag durch das richtige Datum, die Richtung, den Betrag, die Referenz und den Empfänger. Der Beleg nennt beide Einträge.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "Zahlungseintrag korrigiert.",

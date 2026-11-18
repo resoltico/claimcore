@@ -44,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "إغلاق الملف عندما لا تبقى أعمال مطلوبة. لا يعني الإغلاق أن المطالبة دُفعت.",
-    "source": "6059fdf3ac25"
+    "text": "سجّل سبب انتهاء المعالجة وأضف ملاحظة إغلاق عند الحاجة.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "تصحيح وقائع الملف",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "تصحيح بيانات المطالبة أو القرار المسجلة. تبقى الدفعات دون تغيير، ولا يجوز أن يقل المبلغ المستحق عن إجمالي المدفوع.",
-    "source": "c115bf28430f"
+    "text": "صحّح بيانات التسجيل أو القرار المحددة في هذا الملف.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "تسجيل قرار الدفع",
@@ -192,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "إعادة فتح الملف. تبقى تفاصيله وسجله محفوظين.",
-    "source": "9afd35e2c444"
+    "text": "اذكر سبب استئناف العمل على هذا الملف.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "سحب دور",
@@ -2440,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "المبلغ المدفوع فعليًا في هذه الدفعة.",
-    "source": "d79a30c73c31"
+    "text": "المبلغ المدفوع أو المُعاد في هذا القيد.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "أدخل مبلغًا موجبًا بما لا يزيد عن {maximumIntegerDigits} رقمًا قبل النقطة و{maximumFractionDigits} بعدها. استخدم أرقام ASCII ونقطة.",
@@ -2449,7 +2449,7 @@
   },
   "field.paidCurrency.label": {
     "text": "عملة الدفع",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
     "text": "استخدم عملة هذا القيد.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "استبدل قيد دفعة سُجّل بالخطأ بالتاريخ والمبلغ الصحيحين. لا يؤدي ذلك إلى رد أموال أو تنفيذ تحويل. يبقى السجل السابق محفوظًا.",
-    "source": "538255858894"
+    "text": "استبدل قيد الدفع المسجّل بالخطأ بالتاريخ والاتجاه والمبلغ والمرجع والمستفيد الصحيحين. يحدّد الإيصال القيدين.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "تم تصحيح قيد الدفعة.",
