@@ -103,7 +103,16 @@ let private prepared arguments =
     |> Result.defaultWith (fun issues -> failtestf "Request preparation failed: %A" issues)
 
 let private verbPreparation () =
-    let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
+    let args =
+        [
+            "case"
+            "close"
+            "--outcome"
+            "other"
+            "SYNTHETIC"
+            "--expected-revision"
+            "1"
+        ]
 
     let actual =
         Grammar.prepareOffline (args @ [ "--dry-run" ])
@@ -167,7 +176,7 @@ let private verbPreparation () =
 
     for rejected in
         [
-            [ "case"; "close"; "SYNTHETIC" ]
+            [ "case"; "close"; "--outcome"; "other"; "SYNTHETIC" ]
             args @ [ "--expected-revision"; "2" ]
             args @ [ "--unknown"; "x" ]
             args @ [ "extra" ]
@@ -690,7 +699,16 @@ let recoveryCommands =
                 (fun () ->
                     let input =
                         Frames.input
-                            (prepared [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ])
+                            (prepared
+                                [
+                                    "case"
+                                    "close"
+                                    "--outcome"
+                                    "other"
+                                    "SYNTHETIC"
+                                    "--expected-revision"
+                                    "1"
+                                ])
                                 .Invocation
 
                     let fields =

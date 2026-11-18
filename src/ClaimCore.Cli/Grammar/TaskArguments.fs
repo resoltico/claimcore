@@ -89,6 +89,7 @@ module internal TaskArguments =
                 if
                     acquired.IsNone
                     && input.Required
+                    && input.Declaration.DefaultText.IsNone
                     && input.Argument = CommandArgument.Named
                     && not clear
                     && not (incomplete && input.Declaration.Source = InputSource.ExpectedRevision)

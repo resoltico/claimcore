@@ -163,6 +163,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
             [
                 "case"
                 "close"
+                "--outcome"
+                "other"
                 reference
                 "--operation-id"
                 refusedOperation

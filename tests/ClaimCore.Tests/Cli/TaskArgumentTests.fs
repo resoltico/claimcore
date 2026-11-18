@@ -64,7 +64,17 @@ let tests =
                         "Read selection"
 
                     let submitted =
-                        input [ "case"; "close"; "--case-id"; id; "--expected-revision"; "3" ]
+                        input
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "--case-id"
+                                id
+                                "--expected-revision"
+                                "3"
+                            ]
 
                     match submitted.Envelope.Binding with
                     | OperationBinding.Case(CaseSelector.Id actual, 3L, None, None) ->
@@ -211,8 +221,24 @@ let tests =
                                 "set"
                                 "--clear-contact"
                             ]
-                            [ "case"; "close"; "TASK"; "--expected-revision"; "-1" ]
-                            [ "case"; "close"; "TASK"; "--expected-revision"; "9007199254740992" ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "TASK"
+                                "--expected-revision"
+                                "-1"
+                            ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "TASK"
+                                "--expected-revision"
+                                "9007199254740992"
+                            ]
                             [
                                 "case"
                                 "correct"

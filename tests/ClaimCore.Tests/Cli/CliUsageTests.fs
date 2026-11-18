@@ -23,7 +23,8 @@ type private Example =
         Suggestion: string option
     }
 
-let private close = [ "case"; "close"; "REF"; "--expected-revision"; "1" ]
+let private close =
+    [ "case"; "close"; "--outcome"; "other"; "REF"; "--expected-revision"; "1" ]
 
 let private correct =
     [
@@ -42,14 +43,14 @@ let private examples =
     [
         {
             Name = "missing revision"
-            Arguments = [ "case"; "close"; "REF" ]
+            Arguments = [ "case"; "close"; "--outcome"; "other"; "REF" ]
             Message = "missingOption"
             Values = [ "flag", "--expected-revision" ]
             Suggestion = None
         }
         {
             Name = "misspelled option"
-            Arguments = [ "case"; "close"; "REF"; "--expected-revison"; "1" ]
+            Arguments = [ "case"; "close"; "--outcome"; "other"; "REF"; "--expected-revison"; "1" ]
             Message = "unknownOptionFor"
             Values = [ "flag", "--expected-revison"; "command", "case close" ]
             Suggestion = Some "--expected-revision"
@@ -63,7 +64,7 @@ let private examples =
         }
         {
             Name = "missing reference"
-            Arguments = [ "case"; "close"; "--expected-revision"; "1" ]
+            Arguments = [ "case"; "close"; "--outcome"; "other"; "--expected-revision"; "1" ]
             Message = "missingOperand"
             Values = [ "operand", "CASE-REFERENCE" ]
             Suggestion = None
@@ -77,7 +78,8 @@ let private examples =
         }
         {
             Name = "invalid integer"
-            Arguments = [ "case"; "close"; "REF"; "--expected-revision"; "three" ]
+            Arguments =
+                [ "case"; "close"; "--outcome"; "other"; "REF"; "--expected-revision"; "three" ]
             Message = "invalidInteger"
             Values = [ "flag", "--expected-revision"; "value", "three" ]
             Suggestion = None
@@ -116,7 +118,7 @@ let private examples =
         }
         {
             Name = "dangling option"
-            Arguments = [ "case"; "close"; "REF"; "--expected-revision" ]
+            Arguments = [ "case"; "close"; "--outcome"; "other"; "REF"; "--expected-revision" ]
             Message = "missingValue"
             Values = [ "flag", "--expected-revision" ]
             Suggestion = None

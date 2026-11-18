@@ -218,6 +218,8 @@ let tests =
                             [
                                 "case"
                                 "close"
+                                "--outcome"
+                                "other"
                                 "--expected-revision=7"
                                 "--preview"
                                 "--"
@@ -521,7 +523,15 @@ let tests =
                 (fun () ->
                     let arguments =
                         explicitOperation
-                            [ "case"; "close"; "--expected-revision=7"; "--"; "--dry-run" ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "--expected-revision=7"
+                                "--"
+                                "--dry-run"
+                            ]
 
                     Expect.isNone
                         (Grammar.prepareOffline arguments |> required)

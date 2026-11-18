@@ -21,7 +21,7 @@ let smoke =
 
             for arguments, expectedCode, expectedText in
                 [
-                    [ "case"; "close"; "REF" ], 64, "--expected-revision"
+                    [ "case"; "close"; "--outcome"; "other"; "REF" ], 64, "--expected-revision"
                     [ "help"; "case"; "open" ], 0, "Open a case"
                     [ "schema"; "invocation" ], 0, "endpoint"
                     [ "case"; "get"; "REF"; "--dry-run" ], 0, "case.get"

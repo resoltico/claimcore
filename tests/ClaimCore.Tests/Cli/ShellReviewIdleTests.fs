@@ -72,7 +72,7 @@ let private idleConfirmation () =
         let clock = Clock()
         use provider = new Provider(clock)
         use credentials = session provider
-        use terminal = new Terminal([ ShellLine.Text "case close x" ])
+        use terminal = new Terminal([ ShellLine.Text "case close --outcome other x" ])
 
         let invoke frame dispatched cancelled =
             task {

@@ -95,7 +95,7 @@ let private uncertainContinues () =
         let clock = Clock()
 
         let mutation =
-            "case close REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
+            "case close --outcome other REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
 
         use terminal =
             new Terminal(
@@ -250,7 +250,7 @@ let private failedStatusRetainsUncertainty () =
             new Terminal(
                 [
                     ShellLine.Text
-                        "case close REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
+                        "case close --outcome other REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
                 ]
             )
 

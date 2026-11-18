@@ -403,6 +403,8 @@ let tests =
                                 [
                                     "case"
                                     "close"
+                                    "--outcome"
+                                    "other"
                                     "CASE-1"
                                     "--expected-revision"
                                     "1"
