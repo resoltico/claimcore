@@ -73,13 +73,7 @@ module PartDescriptionCodecs =
         |> build
         |> named "ChangeReferences"
 
-    let totals =
-        (record (fun v0 v1 v2 -> PaymentTotals.create v0 v1 v2): Fields<PaymentTotals, _>)
-        |> field "payable" _.Payable (money)
-        |> field "paid" _.Paid (money)
-        |> field "remaining" _.Remaining (money)
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
-        |> named "PaymentTotals"
+    let totals = PaymentCodecs.totals
 
     let workValues =
         (record (fun v0 v1 ->
@@ -94,14 +88,21 @@ module PartDescriptionCodecs =
         |> named "CaseWork"
 
     let plan =
-        (record (fun v0 v1 -> { ReminderPlan.Action = v0; Due = v1 }): Fields<ReminderPlan, _>)
+        (record (fun action due kind ->
+            {
+                ReminderPlan.Action = action
+                Due = due
+                Kind = kind
+            })
+        : Fields<ReminderPlan, _>)
         |> field "action" _.Action (reminderAction)
-        |> field "due" _.Due (calendarDate)
+        |> field "due" _.Due calendarDate
+        |> field "kind" _.Kind (VocabularyCodec.create ReminderKind.vocabulary)
         |> build
         |> named "ReminderPlan"
 
     let person =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 ->
+        (record (fun v0 v1 v2 v3 v4 v5 email v6 ->
             {
                 PersonPartDescription.Profiles = v0
                 Principal = v1
@@ -109,6 +110,7 @@ module PartDescriptionCodecs =
                 ProfilePresent = v3
                 DisplayName = v4
                 Contact = v5
+                DigestEmail = email
                 Grants = v6
             })
         : Fields<PersonPartDescription, _>)
@@ -146,6 +148,10 @@ module PartDescriptionCodecs =
                                  }))
                          ContactText.format)
             ))
+        |> optionalField
+            "digestEmail"
+            _.DigestEmail
+            (ValueChangeCodecs.change "DigestEmailChange" ActorCodecs.emailAddress)
         |> field "grants" _.Grants (list PeopleAdmission.MaximumGrants assignment)
         |> build
         |> named "PersonPartDescription"
@@ -219,12 +225,14 @@ module PartDescriptionCodecs =
         |> named "WorkPartDescription"
 
     let reminder =
-        (record (fun v0 v1 v2 v3 ->
+        (record (fun plans action due kind doneOn state ->
             {
-                ReminderPartDescription.Plans = v0
-                Action = v1
-                Due = v2
-                State = v3
+                ReminderPartDescription.Plans = plans
+                Action = action
+                Due = due
+                Kind = kind
+                DoneOn = doneOn
+                State = state
             })
         : Fields<ReminderPartDescription, _>)
         |> field "plans" _.Plans (ValueChangeCodecs.change "ReminderPlans" plan)
@@ -233,6 +241,18 @@ module PartDescriptionCodecs =
             _.Action
             (nullable (ValueChangeCodecs.change "ReminderActionChange" reminderAction))
         |> field "due" _.Due (nullable (ValueChangeCodecs.change "ReminderDueChange" calendarDate))
+        |> field
+            "kind"
+            _.Kind
+            (nullable (
+                ValueChangeCodecs.change
+                    "ReminderKindChange"
+                    (VocabularyCodec.create ReminderKind.vocabulary)
+            ))
+        |> field
+            "doneOn"
+            _.DoneOn
+            (nullable (ValueChangeCodecs.change "ReminderDoneOnChange" calendarDate))
         |> field
             "state"
             _.State
@@ -243,6 +263,18 @@ module PartDescriptionCodecs =
             ))
         |> build
         |> named "ReminderPartDescription"
+
+    let relatedCaseContent =
+        (record (fun target note ->
+            {
+                RelatedCaseContent.Target = target
+                Note = note
+            })
+        : Fields<RelatedCaseContent, _>)
+        |> field "target" _.Target caseId
+        |> field "note" _.Note (nullable noteText)
+        |> build
+        |> named "RelatedCaseContent"
 
     let note =
         (record (fun v0 v1 ->
@@ -258,6 +290,21 @@ module PartDescriptionCodecs =
             (nullable (ValueChangeCodecs.change "NoteRemovedChange" boolean))
         |> build
         |> named "NotePartDescription"
+
+    let party =
+        (record (fun content removed ->
+            {
+                PartyPartDescription.Content = content
+                Removed = removed
+            })
+        : Fields<PartyPartDescription, _>)
+        |> field "content" _.Content (ValueChangeCodecs.change "PartyContentChange" partyContent)
+        |> field
+            "removed"
+            _.Removed
+            (nullable (ValueChangeCodecs.change "PartyRemovedChange" boolean))
+        |> build
+        |> named "PartyPartDescription"
 
     let description =
         tagged
@@ -298,6 +345,24 @@ module PartDescriptionCodecs =
                     | PartDescription.Note value -> Some value
                     | _ -> None)
                     (record id |> field "changes" id note)
+                variant
+                    "PARTY"
+                    PartDescription.Party
+                    (function
+                    | PartDescription.Party value -> Some value
+                    | _ -> None)
+                    (record id |> field "changes" id party)
+                variant
+                    "LINK"
+                    PartDescription.Link
+                    (function
+                    | PartDescription.Link value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field
+                         "changes"
+                         id
+                         (ValueChangeCodecs.change "RelatedCaseChange" relatedCaseContent))
                 variant
                     "PERSON"
                     PartDescription.Person

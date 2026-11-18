@@ -36,17 +36,14 @@ let tests =
                         "Registration is unchanged"
 
                     Expect.equal content.Finance.PaymentCount 0L "No payments fabricated")
-            testCase "missing decisions and active payments prevent withdrawal" (fun () ->
-                for state, headline in
-                    [
-                        family (), CaseHeadline.Undecided
-                        decided () |> pay 3 "2026-02-02" "1", CaseHeadline.PartlyPaid
-                    ] do
-                    Withdraw.decide
-                        (context 4)
-                        environment
-                        (Some(DecisionFacts.fromReplay state))
-                        (caseBinding state)
-                        InputMap.empty
-                    |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
+            testCase "missing decisions refuse withdrawal" (fun () ->
+                let state = family ()
+
+                Withdraw.decide
+                    (context 4)
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    (caseBinding state)
+                    InputMap.empty
+                |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)))
         ]

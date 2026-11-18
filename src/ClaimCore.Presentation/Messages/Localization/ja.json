@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "サインイン ID を変更",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "このアカウントを新しい発行者とサブジェクトに関連付けます。アカウントのロールと作業記録は保持されます。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "サインイン ID を変更しました。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "システム所有者のアクセスを復旧",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "対象者のシステム所有者としてのアクセスを復旧するか、新しい所有者を登録します。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "このサインイン ID は別のアカウント用に予約されています。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "このアカウントはすでにこのサインイン ID を使用しています。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "現在の ID でサインインしても、このアカウントは開けなくなります。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "請求内容を更新",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "必要な作業がなくなったら案件を終了します。終了しても請求が支払済みであるとは限りません。",
-    "source": "6059fdf3ac25"
+    "text": "対応を終了した理由を記録し、必要に応じて終了時のメモを追加してください。",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "案件情報を訂正",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "登録済みの請求または支払決定の事実を訂正します。支払記録は変更されず、支払決定額を支払済み合計より少なくすることはできません。",
-    "source": "c115bf28430f"
+    "text": "この案件の選択した登録情報または決定情報を訂正します。",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "支払決定を記録",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "事故、請求者、保険会社、請求額を登録します。",
-    "source": "bd4ea9e91f3a"
+    "text": "参照番号を指定して案件を開きます。分かっている登録情報を記録してください。",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "最初の所有者を設定",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "実際に行われた支払いの日付と金額を、支払決定の通貨で記録します。送金の実行や確認は行いません。",
-    "source": "572c7a975cf2"
+    "text": "実際の支払いまたは返金を、その日付、金額、通貨で記録します。",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "アカウントを登録",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "案件を再開します。情報と履歴は保持されます。",
-    "source": "9afd35e2c444"
+    "text": "この案件の対応を再開する理由を入力してください。",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "役割を取り消す",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "支払う前に支払決定を取り消します。履歴は保持されます。",
-    "source": "4579673a4146"
+    "text": "決定を取り消します。既存の支払い記録と決定の履歴は保持されます。",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "案件の作業",
@@ -319,9 +351,9 @@
     "text": "次の対応",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "通知日（古い順）",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "受付日（古い順）",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "最近の変更",
@@ -367,10 +399,6 @@
     "text": "この案件番号は既に存在します。",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "日付の順序が正しくありません。",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "制御文字は使用できません。",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "ISO 3166-1で正式に割り当てられた国コード、XK、またはZZを使用してください。対応コードはhelp schemaで確認できます。",
-    "source": "b1c9f16ea7e3"
+    "text": "ISO 3166-1で正式に割り当てられた国コード、またはXKを使用してください。対応コードはヘルプのスキーマを参照してください。",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "対応する有効なISO 4217通貨コードを使用してください。ファンドや非国家通貨のコードは使用できません。help schemaを参照してください。",
@@ -627,10 +655,6 @@
     "text": "案件番号",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "請求者名",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "請求額",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "事故の説明",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "通知日",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "保険会社",
-    "source": "949b10334d29"
+  "field.receivedDate.label": {
+    "text": "受付日",
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "ページ件数",
@@ -1175,10 +1195,6 @@
     "text": "支払記録担当者",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "不明または国際",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "1つの案件",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "記録日時",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "システムの運用者",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "記録者",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "事故が発生した日。",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "この事故を最初に知った日。",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "貴所でこの請求を受け付けた日です。",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "ISO 3166-1で正式に割り当てられたコード、またはXKを使用してください。{unknownCode}は不明または国際を表します。",
-    "source": "0ba1fe273220"
+    "text": "ISO 3166-1で正式に割り当てられたコード、またはXKを使用してください。",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "事故が発生した国。",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "何が起きたか、この請求に必要な詳細を記入してください。",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "請求を行う人または会社。",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "この請求を担当する保険会社。",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "この案件に付ける独自の番号です。例：CLM-2026-0001。後で変更することはできません。",
-    "source": "10559d041918"
+    "text": "この案件に付ける独自の参照番号です。例：CLM-2026-0001。",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "支払額を決定した日。",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "案件番号、案件情報の最終変更、通知日、最も早い未完了リマインダーの日付で並べ替えます。情報の変更は新しい順、通知日とリマインダーの日付は古い順とし、日付がないものは最後に置きます。同じ値の場合は案件番号順です。",
-    "source": "009775c9c5fe"
+    "text": "参照番号、案件情報の最終変更、受付日、または未完了の最も早いリマインダー日で並べ替えます。変更は新しい順、受付日とリマインダー日は古い順で、日付がないものは最後です。同順位は参照番号順です。",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "結果の並び順を選択してください。",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "LVなどの対応国コード、またはXK、ZZを選択してください。",
-    "source": "d1667b590685"
+    "text": "LVやXKなど、対応する国コードを選択してください。",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "EURなどの対応通貨コードを選択してください。ファンドや非国家通貨のコードは使用できません。",
@@ -2428,24 +2440,24 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "この記録で実際に支払われた金額です。",
-    "source": "d79a30c73c31"
+    "text": "この記録で支払った金額または返金した金額です。",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "正の金額を入力してください。小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用し、空白、符号、カンマ、不要な先頭ゼロは入力しないでください。",
     "source": "58353f96c69b"
   },
   "field.paidCurrency.label": {
-    "text": "支払通貨",
-    "source": "ae69c7acaee6"
+    "text": "支払い通貨",
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "支払決定の通貨を使用してください。",
-    "source": "6cf93e635901"
+    "text": "この記録の通貨を使用してください。",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "対応する有効なISO 4217通貨一覧のASCII大文字{length}文字を使用し、支払決定の通貨と一致させてください。ファンドや非国家通貨のコードは使用できません。",
-    "source": "1a3ba1179c9c"
+    "text": "対応する有効なISO 4217通貨コードのASCII英大文字{length}文字。",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "支払ID",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "通貨別支払済合計",
-    "source": "b0f6fe6c2d8f"
+    "text": "通貨別純支払額",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "{payable}のうち{paid}を支払済み。",
@@ -2499,21 +2511,9 @@
     "text": "ゼロより大きい支払額を入力してください。",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "支払いと支払決定には同じ通貨を使用してください。",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "支払済合計を支払決定額より多くすることはできません。",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "登録済み支払記録を受理した操作のUUIDを使用してください。",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "支払記録がある支払決定は撤回またはクリアできません。支払記録の削除は誤登録の場合に限ってください。",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "この支払記録は現在存在しません。続行する前に案件の現在の状態を読み込んでください。",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "誤って記録した支払を正しい日付と金額に置き換えます。返金や送金は実行されません。以前の履歴は保持されます。",
-    "source": "538255858894"
+    "text": "誤って記録した支払いを、正しい日付、方向、金額、参照番号、受取人で置き換えます。受領記録には両方の記録が表示されます。",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "支払記録を訂正しました。",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "すべて",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "関係者を追加",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "この案件に関係する当事者を記録します。",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "関係者を追加しました。",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "関係者情報を更新",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "この関係者の役割、名前、詳細を変更します。",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "関係者情報を更新しました。",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "関係者を削除",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "現在の案件からこの関係者を削除します。以前の情報は履歴に残ります。",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "関係者を削除しました。",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "関係者",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "判明している関係者を追加してください。",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "関係者の役割",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "関係者が案件にどう関与しているかを選択してください。",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "関係者名",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "分かっていれば個人または組織の名前を入力してください。",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "関係者の詳細",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "分かっていれば連絡先または住所を記録してください。",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "Unicode 文字を 1～{maximumScalars} 文字使用してください。改行できます。",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "関係者 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "この案件の関係者を選択してください。",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "確認済みの関係者のリビジョン",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "確認したリビジョンを使用してください。",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "関係者の UUID を使用してください。",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "関係者の役割を選択してください。",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "名前または詳細を入力してください。",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "この案件の関係者数が上限に達しました。",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "指定した関係者数が上限を超えています。",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "請求者",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "保険会社",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "請求者",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "保険会社",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "代理人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "関係者",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "関係者",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "関係者の変更を記録しました。",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "請求者",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "請求を行う当事者です。",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "保険会社",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "請求に関連する保険を提供する当事者です。",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "代理人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "案件の関係者を代理する当事者です。",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "別の役割で案件に関与する当事者です。",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "関係者は最大 {maximumParties} 件追加できます。",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "一覧から役割を 1 つ選択してください。",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "変更する関係者の ID を使用してください。",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "選択した関係者のリビジョン番号を使用してください。",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "支払い",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "支払い",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "返金",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "返金",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "受取人に支払われた金額です。",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "受取人から返金された金額です。",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "過払い",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "支払いの確認が必要",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "支払い方向",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "外部参照",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "受取人",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "支払いか返金かを選択してください。",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "銀行取引または書面の参照番号を入力してください。",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "この案件の現行の関係者のIDを入力してください。",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "支払いまたは返金を選択してください。",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "現行の関係者のIDを使用してください。",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "純支払額",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "集計対象の案件数",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "支払いまたは返金を選択してください。",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "この支払いで通貨別合計が正確に扱える範囲を超えます。",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "この案件の現行の関係者を選択してください。",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "削除済みの関係者",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "解決済み",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "解決済み",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "否認",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "否認",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "取り下げ",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "取り下げ",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "合意により対応を終了しました。",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "請求が否認されました。",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "請求が取り下げられました。",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "別の案件で同じ請求を扱っています。",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "別の理由で対応を終了しました。",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "結果",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "対応を終了した理由を選択してください。",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "一覧から結果を1つ選択してください。",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "終了時のメモ",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "終了に関する情報を記録してください。",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "決定の根拠",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "決定の証拠や理由を記録してください。",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "再開の理由",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "終了",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "一覧から終了結果を選択してください。",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "案件参照番号を変更する",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "現在の案件参照番号を変更します。以前の番号でも同じ案件を検索できます。",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "案件参照番号を変更しました。",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "この案件の新しい参照番号を選びます。",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "新しい参照番号",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "案件参照番号の形式を使用してください。",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "今後この案件に使用する参照番号を入力します。",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "変更前の参照番号",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "対応を再開した理由です。",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "関連案件を追加",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "この案件を閲覧できる別の案件に関連付けます。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "案件を関連付けました。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "参照番号または ID で案件を選択してください。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "案件の関連付けを解除",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "この案件から選択した関連付けを削除します。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "案件の関連付けを解除しました。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "ここで案件間の関連付けを解除することを確認してください。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件の関連付け",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件の関連付けが変更されました",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "関連付け ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "関連付けを記録した操作の UUID を使用してください。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "解除する関連付けを識別します。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "関連案件の参照番号",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "案件参照番号の形式を使用してください。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "参照番号を入力するか、関連案件 ID 欄を使用します。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "関連案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "案件の UUID を使用してください。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "参照番号を入力しない場合は ID を入力します。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "関連付けメモ",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "これらの案件が関連する理由を説明してください。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "関連案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "この案件からの関連付け",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "この案件への関連付け",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "関連案件は表示できません",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "閲覧可能な関連付けの件数",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "既存の案件の関連付けを選択してください。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件を同じ案件に関連付けることはできません。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "この案件は選択した案件にすでに関連付けられています。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "別の関連付けを追加する前に、既存の関連付けを解除してください。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "1～{maximumScalars}文字のUnicode文字を使用してください。改行を使用できます。",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "フォローアップ",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "フォローアップ",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "フォローアップが必要な作業です。",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "期日までに完了させる作業です。",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "期日を過ぎても作業が完了していません。",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "期限内",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "期限内",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "作業は期日までに完了しました。",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "期限後",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "期限後",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "作業は期日を過ぎてから完了しました。",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "取り消し済み",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "取り消し済み",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "期限は取り消されました。",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "期限超過の項目",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "期限超過の項目",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "この未完了の案件には、期日を過ぎた未完了の作業があります。",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "すべて",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "リマインダーの種類",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "フォローアップまたは期限を選択してください。",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "この作業の追跡方法を選びます。",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "完了日",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "業務日以前のグレゴリオ暦の日付を YYYY-MM-DD 形式で入力してください。",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "作業を終えた日です。空欄の場合は今日の日付を使用します。",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "リマインダーの種類",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "リマインダーの種類で一覧を絞り込みます。",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "期限の結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "期限の結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "期限の結果で一覧を絞り込みます。",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "案件を登録した月ごとにグループ分けします。",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "登録月",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "案件を受領した月ごとにグループ分けします。",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "受領月",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "案件を終了した月ごとにグループ分けします。",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "終了月",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "案件を記録された終了理由ごとにグループ分けします。",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "終了結果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "案件を担当アカウントごとにグループ分けします。",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "担当アカウント",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "案件を登録から終了または今日までの日数でグループ分けします。",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "処理日数",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "受領日は未記録です。",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "記録なし",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "案件は現在終了していません。",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "未終了",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "案件の担当アカウントは未設定です。",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "担当未設定",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0～30日",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31～90日",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91～180日",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181～365日",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366日以上",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "0～30日間開いていた案件です。",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "31～90日間開いていた案件です。",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "91～180日間開いていた案件です。",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "181～365日間開いていた案件です。",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "366日以上間開いていた案件です。",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "この概要で案件をグループ分けする基準を選びます。",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "登録日（開始）",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "登録日（終了）",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "受領日（開始）",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "受領日（終了）",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "終了日（開始）",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "終了日（終了）",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "以降に活動なし",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "グループ分けの基準",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "登録月",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "受領月",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "終了月",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "終了結果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "担当アカウント",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "処理日数",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "記録なし",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "未終了",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "担当未設定",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "案件のグループ",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "通貨",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "請求額がある案件",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "支払予定額がある案件",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "支払いがある案件",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "この概要は作成時点の案件情報を反映します。",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0～30日",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31～90日",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91～180日",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181～365日",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366日以上",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "リマインダーの日次まとめ（{count}）",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "{url} で自分のリマインダーを開いてください。",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "期限を過ぎた締切",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "今日が締切",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "今後の締切",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "期限を過ぎたフォローアップ",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "今日のフォローアップ",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "送信済み",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "送信失敗",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "送信対象のリマインダーなし",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "まとめのメールアドレス",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "日次リマインダーのまとめを受け取るアドレスを入力してください。",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "{maximumCharacters} 文字以内のメールアドレスを使用してください。",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "@ が 1 つあり、ドメインにピリオドを含むメールアドレスを入力してください。",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "期限を過ぎた締切 — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "期限を過ぎた締切",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "今日が締切 — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "今日が締切",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "今後の締切 — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "今後の締切",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "期限を過ぎたフォローアップ — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "期限を過ぎたフォローアップ",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "今日のフォローアップ — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "今日のフォローアップ",
+    "source": "e04e8b1f370c"
   }
 }

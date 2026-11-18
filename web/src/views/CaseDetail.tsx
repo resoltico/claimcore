@@ -109,6 +109,17 @@ const CurrentPresentation = ({
       <div className="case-workspace">
         <div className="case-main-column">
           {facts}
+          {view === null || !disclosureAvailable ? null : (
+            <ScreenView
+              view={view}
+              roles={["RELATED_CASES"]}
+              timeZone={current.basis.observation.timeZone}
+              actionsDisabled={!authoringAvailable || panels.editing}
+              onAction={(action, _row, origin) => {
+                panels.onLinkAction(action, origin);
+              }}
+            />
+          )}
           {panels.notes}
           {timeline}
         </div>

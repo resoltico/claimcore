@@ -4,10 +4,14 @@ open ClaimCore.Domain
 
 /// The only inventory of ledgered tasks, including the operator-only initializer.
 module Registry =
+    let provisionOwner = ClaimCore.Domain.Tasks.People.ProvisionOwner.task
+    let recoverOwner = ClaimCore.Domain.Tasks.People.RecoverOwner.task
+
     let all =
         [
             ClaimCore.Domain.Tasks.Case.Open.task
             ClaimCore.Domain.Tasks.Case.AmendRegistration.task
+            ClaimCore.Domain.Tasks.Case.ChangeReference.task
             ClaimCore.Domain.Tasks.Case.Correct.task
             ClaimCore.Domain.Tasks.Case.Decide.task
             ClaimCore.Domain.Tasks.Case.WithdrawDecision.task
@@ -19,18 +23,25 @@ module Registry =
             ClaimCore.Domain.Tasks.Case.Close.task
             ClaimCore.Domain.Tasks.Case.Reopen.task
             ClaimCore.Domain.Tasks.Case.Erase.task
-            ClaimCore.Domain.Tasks.People.ProvisionOwner.task
+            provisionOwner
+            recoverOwner
             ClaimCore.Domain.Tasks.People.Register.task
             ClaimCore.Domain.Tasks.People.Grant.task
             ClaimCore.Domain.Tasks.People.Revoke.task
             ClaimCore.Domain.Tasks.People.Enable.task
             ClaimCore.Domain.Tasks.People.Disable.task
             ClaimCore.Domain.Tasks.People.SetProfile.task
+            ClaimCore.Domain.Tasks.People.ChangeSignInIdentity.task
             ClaimCore.Domain.Tasks.People.EraseProfile.task
             ClaimCore.Domain.Tasks.People.Admit.task
             ClaimCore.Domain.Tasks.Work.Update.task
+            ClaimCore.Domain.Tasks.Party.PartyTasks.add
+            ClaimCore.Domain.Tasks.Party.PartyTasks.update
+            ClaimCore.Domain.Tasks.Party.PartyTasks.remove
             ClaimCore.Domain.Tasks.Note.Add.task
             ClaimCore.Domain.Tasks.Note.Remove.task
+            ClaimCore.Domain.Tasks.Link.Add.task
+            ClaimCore.Domain.Tasks.Link.Remove.task
             ClaimCore.Domain.Tasks.Reminder.Create.task
             ClaimCore.Domain.Tasks.Reminder.Update.task
             ClaimCore.Domain.Tasks.Reminder.Complete.task

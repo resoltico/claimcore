@@ -430,5 +430,13 @@
   "cli.family.browserSessions": {
     "text": "جلسات متصفح ClaimCore",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "أطراف الملف",
+    "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "ارتباطات الملفات",
+    "source": "99bba925fcb4"
   }
 }

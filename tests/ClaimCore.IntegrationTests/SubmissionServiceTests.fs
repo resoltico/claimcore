@@ -139,7 +139,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 (Binding.CaseNew Revision.zero)
                 (opening.Envelope.Inputs
                  |> Map.add
-                     (Submissions.field BusinessField.ClaimantName)
+                     (Submissions.field BusinessField.PolicyNumber)
                      (SubmissionValue.Text "Different claimant"))
 
         let! conflict = Service.executeSubmission services changed token
@@ -193,7 +193,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 "case.close"
                 (id fixture 30)
                 (Binding.Case(CaseSelector.Id parent, Revision.first))
-                Map.empty
+                CaseTransitionInputs.closed
 
         let! closed = Service.executeSubmission services close token
         accepted closed |> ignore
@@ -203,7 +203,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 "case.close"
                 (id fixture 31)
                 (Binding.Case(CaseSelector.Id parent, Revision.first))
-                Map.empty
+                CaseTransitionInputs.closed
 
         let! stale = Service.executeSubmission services staleClose token
 
@@ -305,6 +305,7 @@ let private widePrincipal (database: PostgresFixture.Database) =
                          (Submissions.profile
                              {
                                  DisplayName = "A wide identity"
+                                 DigestEmail = None
                                  Contact = None
                              }))
 
@@ -365,6 +366,7 @@ let private replayPermission (database: PostgresFixture.Database) =
                      (Submissions.profile
                          {
                              DisplayName = "Other manager"
+                             DigestEmail = None
                              Contact = None
                          })
                  |> Map.add
@@ -396,6 +398,7 @@ let private replayPermission (database: PostgresFixture.Database) =
                      (Submissions.profile
                          {
                              DisplayName = "Replay target"
+                             DigestEmail = None
                              Contact = None
                          }))
 

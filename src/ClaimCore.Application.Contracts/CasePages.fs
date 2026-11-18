@@ -7,6 +7,7 @@ open System
 type CaseSummaryFacts =
     {
         Fields: Map<BusinessField, CaseFieldValue option>
+        Parties: Map<PartyRole, PartyName list>
     }
 
 type CaseNextAction =
@@ -32,7 +33,7 @@ type CaseSummary =
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64
-        Paid: Money option
+        NetPaid: PaymentTotals option
         PaymentCount: int64
         LastPaymentDate: CalendarDate option
     }

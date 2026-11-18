@@ -13,6 +13,7 @@ let private stages =
             "build-and-start"
             "owner-login"
             "owner-context"
+            "first-case"
             "restart"
             "logout"
             "qualified"

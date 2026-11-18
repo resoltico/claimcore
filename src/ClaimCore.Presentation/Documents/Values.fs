@@ -231,6 +231,8 @@ type RegionRole =
     | Work
     | NextActions
     | Notes
+    | Parties
+    | RelatedCases
     | Activity
     | Results
     | Totals
@@ -305,7 +307,7 @@ type RegionStage =
         Stage: CaseStageKind
         Reached: bool
         Date: CalendarDate option
-        Amount: PresentedMoney option
+        StageValue: PresentedValue option
         Meter: PresentedMoneyMeter option
         Link: Link option
         Actions: Affordance list
@@ -328,7 +330,7 @@ type RegionTimelineEntry =
     {
         Key: string
         When: DateTimeOffset
-        Who: ActorRef
+        Who: PresentedValue
         Summary: PresentedMessage
         Highlights: Section list
         Details: Section list

@@ -20,7 +20,7 @@ let private actor =
         "Core account caption"
 
 let private reminder =
-    Reminder.ofAccepted
+    Reminder.decode
         (ReminderId.create (Guid.Parse "00000000-0000-4000-8000-000000000003")
          |> Option.get)
         parent
@@ -28,7 +28,9 @@ let private reminder =
         (ReminderAction.parse "Core action caption"
          |> Result.defaultWith (string >> failtest))
         (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
+        ReminderKind.FollowUp
         ReminderState.Pending
+        None
     |> Result.defaultWith failtest
 
 let case: CaseSummary =
@@ -46,7 +48,7 @@ let case: CaseSummary =
         NextAction = None
         Responsible = None
         PendingReminders = 0L
-        Paid = None
+        NetPaid = None
         PaymentCount = 0L
         LastPaymentDate = None
     }
@@ -68,7 +70,7 @@ let private documents () =
         {
             Reminder = reminder
             Reference = case.Reference
-            ClaimantName = DomainInputs.name "Core claimant"
+            Claimants = [ (DomainInputs.name "Core claimant") ]
             Responsible = None
             RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = actor

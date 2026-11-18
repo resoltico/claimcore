@@ -15,7 +15,7 @@ let private verbArguments verb (bytes: byte array) =
     let input = source.RootElement.GetProperty "input"
     let binding = input.GetProperty "binding"
 
-    let flag (value: JsonProperty) =
+    let scalarFlag (value: JsonProperty) =
         let name =
             System.Text.RegularExpressions.Regex
                 .Replace(
@@ -27,10 +27,17 @@ let private verbArguments verb (bytes: byte array) =
 
         [ "--" + name; value.Value.GetString() |> nonNull ]
 
+    let flags (value: JsonProperty) =
+        match value.Name with
+        | "input:parties" ->
+            value.Value.EnumerateArray()
+            |> Seq.collect (fun row -> [ "--party"; row.GetRawText() ])
+        | _ -> scalarFlag value |> Seq.ofList
+
     let values (element: JsonElement) =
         element.EnumerateObject()
         |> Seq.filter (fun field -> field.Name <> "field:caseReference")
-        |> Seq.collect flag
+        |> Seq.collect flags
         |> Seq.toList
 
     let details = values (input.GetProperty "inputs")
@@ -136,8 +143,13 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
     Expect.equal (view.GetProperty("revision").GetInt64()) 6L "Six acts"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("status").GetString())
-        "OPENED"
+        (view
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("handling")
+            .GetProperty("kind")
+            .GetString())
+        "OPEN"
         "Reopened"
 
     Expect.equal
@@ -250,6 +262,9 @@ let private erasedView (tombstone: JsonElement) =
             "mine"
             "nextActions"
             "notes"
+            "parties"
+            "partyActs"
+            "paymentPayees"
             "recordedBy"
             "revision"
             "stages"
@@ -287,6 +302,9 @@ let private erasedView (tombstone: JsonElement) =
         (tombstone.GetProperty("latestPayments").GetArrayLength())
         0
         "No payment identity, amount or date survives case erasure"
+
+    for field in [ "parties"; "partyActs"; "paymentPayees" ] do
+        Expect.equal (tombstone.GetProperty(field).GetArrayLength()) 0 ("Erasure clears " + field)
 
     let notes = tombstone.GetProperty("notes")
     Expect.equal (notes.GetProperty("items").GetArrayLength()) 0 "No current note text survives"
@@ -524,14 +542,14 @@ let private inputBoundaries fixture =
 
 let private supplementary fixture =
     let reference = Guid.NewGuid().ToString("N") + "-unicode"
-    let name = String.replicate 200 "🙂"
+    let name = String.replicate 80 "🙂"
 
     let values =
         ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentCountry, "LT"
-                BusinessField.ClaimantName, name
-                BusinessField.InsurerName, name
+                BusinessField.PolicyNumber, name
+                BusinessField.InsurerClaimReference, name
                 BusinessField.ClaimedAmount, "1.0000"
             ]
             ClaimCore.TestSupport.DomainInputs.registration
@@ -564,7 +582,7 @@ let private supplementary fixture =
             .GetProperty("state")
             .GetProperty("fields")
             .GetProperty("registration")
-            .GetProperty("claimantName")
+            .GetProperty("policyNumber")
             .GetString()
 
     Expect.isTrue (actualName = name) "Scalar boundary exact without public business-text output"

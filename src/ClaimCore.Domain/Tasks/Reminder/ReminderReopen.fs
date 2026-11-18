@@ -54,10 +54,10 @@ let decide context environment (state: DecisionFacts option) binding inputs =
                             state
                             id
                             (Revision.successor before.Revision)
-                            {
-                                State = ReminderState.Pending
-                                Plan = Some { plan with Due = command.Due }
-                            }
+                            (ReminderValue.Available(
+                                { plan with Due = command.Due },
+                                ReminderHandling.Pending
+                            ))
                     ]))
         |> Result.map (TaskContext.changes context)
 

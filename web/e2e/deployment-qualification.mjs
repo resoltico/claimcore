@@ -220,6 +220,7 @@ const qualify = async (origin, ca) => {
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
     const requester = await owner(context, origin, fingerprint, csrf);
+    progress("first-case");
     const input = {
       operationId: operationId(),
       task: "case.open",
@@ -227,10 +228,18 @@ const qualify = async (origin, ca) => {
       inputs: {
         "field:caseReference": "DEPLOYMENT-001",
         "field:incidentDate": requester.businessDate,
-        "field:incidentNotificationDate": requester.businessDate,
+        "field:receivedDate": requester.businessDate,
         "field:incidentCountry": "LV",
-        "field:claimantName": "Synthetic deployment claimant",
-        "field:insurerName": "Synthetic deployment insurer",
+        "input:parties": [
+          {
+            "input:partyRole": "CLAIMANT",
+            "input:partyName": "Synthetic deployment claimant",
+          },
+          {
+            "input:partyRole": "INSURER",
+            "input:partyName": "Synthetic deployment insurer",
+          },
+        ],
         "field:claimedAmount": "100",
         "field:claimedCurrency": "EUR",
       },

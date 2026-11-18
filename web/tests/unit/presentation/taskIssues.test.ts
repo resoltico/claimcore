@@ -7,7 +7,6 @@ const issue = (input: HumanInputIssue["input"], ordinal: number | null): HumanIn
   input,
   row: ordinal,
   message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
-  related: null,
 });
 it("correlates submitted ordinals through the captured map rather than edited row order", () => {
   const rows = Object.freeze({ peopleGrants: Object.freeze(["original-a", "original-b"]) });

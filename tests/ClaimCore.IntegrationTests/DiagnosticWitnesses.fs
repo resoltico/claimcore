@@ -67,7 +67,11 @@ let internal baseline =
 
 let internal baselinePolicy code target action =
     match Map.tryFind (code, target) baseline.Value with
-    | Some expected -> Expect.equal (string action) expected "Captured repair action is preserved."
+    | Some expected ->
+        Expect.equal
+            (string action)
+            expected
+            (sprintf "Captured repair action for %s at %A." code target)
     | None ->
         failtestf "Request diagnostic is absent from the independent baseline: %s %A" code target
 
@@ -144,37 +148,37 @@ let internal textRequests fixture () =
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("") ]
+                [ BusinessField.PolicyNumber, ("") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (String(char 0xD800, 1)) ]
+                [ BusinessField.PolicyNumber, (String(char 0xD800, 1)) ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (" Synthetic") ]
+                [ BusinessField.PolicyNumber, (" Synthetic") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (String('x', 201)) ]
+                [ BusinessField.PolicyNumber, (String('x', 201)) ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("Synthetic\nParty") ]
+                [ BusinessField.PolicyNumber, ("Synthetic\nParty") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("Synthetic​Party") ]
+                [ BusinessField.PolicyNumber, ("Synthetic​Party") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.InsurerName, ("") ]
+                [ BusinessField.InsurerClaimReference, ("") ]
                 (registration))
     ]
 
@@ -188,19 +192,14 @@ let internal registrationRequests fixture () =
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.IncidentNotificationDate, ("not-a-date") ]
-                (registration))
-        opening
-            fixture
-            (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.IncidentDate, ("2026-08-05") ]
+                [ BusinessField.ReceivedDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, ("2027-01-01")
-                    BusinessField.IncidentNotificationDate, ("2027-01-02")
+                    BusinessField.ReceivedDate, ("2027-01-02")
                 ]
                 (registration))
         opening

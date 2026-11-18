@@ -20,21 +20,15 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
-        CaseSummaryFacts.Fields =
+        CaseSummaryFacts.Parties =
             Map.ofList
                 [
-                    BusinessField.ClaimantName,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Name(DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant")
-                        )
-                    )
-                    BusinessField.InsurerName,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Name(DomainInputs.name "Synthetic insurer")
-                        )
-                    )
+                    PartyRole.Claimant, [ DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant" ]
+                    PartyRole.Insurer, [ DomainInputs.name "Synthetic insurer" ]
+                ]
+        Fields =
+            Map.ofList
+                [
                     BusinessField.ClaimedAmount,
                     Some(
                         CaseFieldValue.Business(
@@ -54,19 +48,17 @@ let private facts =
 
 let private parties claimant insurer =
     { facts with
-        Fields =
-            facts.Fields
-            |> Map.add
-                BusinessField.ClaimantName
-                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name claimant))))
-            |> Map.add
-                BusinessField.InsurerName
-                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name insurer))))
+        Parties =
+            Map.ofList
+                [
+                    PartyRole.Claimant, [ DomainInputs.name claimant ]
+                    PartyRole.Insurer, [ DomainInputs.name insurer ]
+                ]
     }
 
 let private row reference =
     {
-        Paid = None
+        NetPaid = None
         PaymentCount = 0L
         LastPaymentDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
@@ -335,7 +327,13 @@ let tests =
                 let exported =
                     { original with
                         Headline = CaseHeadline.PartlyPaid
-                        Paid = Some(DomainInputs.money "60.25" "EUR")
+                        NetPaid =
+                            Some
+                                {
+                                    Payable = DomainInputs.money "100" "EUR"
+                                    NetPaid =
+                                        DecimalTotal.parse "60.25" |> Result.toOption |> Option.get
+                                }
                         PaymentCount = 2L
                         LastPaymentDate = Some(DomainInputs.date "2026-08-21")
                         State = CaseState.Active { facts with Fields = values }
@@ -347,7 +345,7 @@ let tests =
                 Expect.equal code 0 "CSV succeeds"
                 let rows = parseCsv bytes
                 let columns = List.zip rows[0] rows[1] |> Map.ofList
-                Expect.equal columns["paidAmount"] "60.25" "Exact canonical paid amount"
+                Expect.equal columns["netPaid"] "60.25" "Exact canonical paid amount"
                 Expect.equal columns["paymentCount"] "2" "Entry count"
                 Expect.equal columns["lastPaymentDate"] "2026-08-21" "Canonical payment date"
 
@@ -526,13 +524,13 @@ let tests =
                             "state.kind"
                             "headline"
                             "attention"
-                            "state.fields.claimantName"
-                            "state.fields.insurerName"
+                            "claimants"
+                            "insurers"
                             "state.fields.claimedAmount"
                             "state.fields.claimedCurrency"
                             "state.fields.payableAmount"
                             "state.fields.payableCurrency"
-                            "paidAmount"
+                            "netPaid"
                             "paymentCount"
                             "lastPaymentDate"
                             "responsible.actorId"

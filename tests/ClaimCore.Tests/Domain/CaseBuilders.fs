@@ -46,9 +46,10 @@ let opened () =
                     {
                         Reference = Some reference
                         Lifecycle = Lifecycle.Active
-                        Status = CaseStatus.Opened
+                        Handling = Handling.Open
                         Content = Some content
                         Disposition = None
+                        ReopenReason = None
                     }
         }
 

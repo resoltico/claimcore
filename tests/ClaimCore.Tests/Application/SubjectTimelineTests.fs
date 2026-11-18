@@ -46,11 +46,14 @@ let tests =
                 Expect.isError (ReminderAction.admit action) "Negative authoring control"
                 let due = CalendarDate.parse "2026-11-20" |> accepted
 
-                let before =
+                let plan =
                     {
-                        ReminderValue.Plan = Some { Action = action; Due = due }
-                        State = ReminderState.Pending
+                        ReminderPlan.Action = action
+                        Due = due
+                        Kind = ReminderKind.FollowUp
                     }
+
+                let before = ReminderValue.Available(plan, ReminderHandling.Pending)
 
                 let reminderId = ReminderId.create id |> Option.get
 
@@ -64,6 +67,13 @@ let tests =
                                 ReminderId = reminderId
                                 Action = Some { Before = None; After = Some action }
                                 Due = Some { Before = None; After = Some due }
+                                Kind =
+                                    Some
+                                        {
+                                            Before = None
+                                            After = Some ReminderKind.FollowUp
+                                        }
+                                DoneOn = None
                                 State =
                                     Some
                                         {
@@ -74,10 +84,7 @@ let tests =
                     ]
                     "Accepted creation"
 
-                let after =
-                    { before with
-                        State = ReminderState.Completed
-                    }
+                let after = ReminderValue.Available(plan, ReminderHandling.Completed due)
 
                 Expect.equal
                     (ReminderDescription.describe (Some before) after
@@ -89,6 +96,8 @@ let tests =
                                 ReminderId = reminderId
                                 Action = None
                                 Due = None
+                                Kind = None
+                                DoneOn = Some { Before = None; After = Some due }
                                 State =
                                     Some
                                         {
@@ -97,7 +106,7 @@ let tests =
                                         }
                             }
                     ]
-                    "Completion changes only state")
+                    "Completion records state and date")
             testCase
                 "note descriptions preserve accepted add and removal identity and text"
                 (fun () ->

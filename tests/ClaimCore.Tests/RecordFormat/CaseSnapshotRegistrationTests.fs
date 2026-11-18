@@ -1,4 +1,4 @@
-module ClaimCore.Tests.CaseSnapshotChronologyTests
+module ClaimCore.Tests.CaseSnapshotRegistrationTests
 
 open System
 open System.Text
@@ -9,7 +9,7 @@ open ClaimCore.TestSupport
 
 [<Tests>]
 let tests =
-    testCase "permanent snapshot decoding rejects reversed registration chronology" (fun () ->
+    testCase "registration decoding preserves independently authored dates" (fun () ->
         let reference = CaseReference.parse "CHRONOLOGY" |> Result.toOption |> Option.get
 
         let id =
@@ -25,7 +25,7 @@ let tests =
                     CaseState.Active
                         {
                             CaseReference = reference
-                            Status = CaseStatus.Opened
+                            Handling = Handling.Open
                             Registration =
                                 DomainInputs.admittedRegistration DomainInputs.registration
                             Finance = FinancialPosition.undecided
@@ -39,4 +39,6 @@ let tests =
             Encoding.UTF8.GetString(bytes).Replace("2026-08-01", "2026-08-04")
             |> Encoding.UTF8.GetBytes
 
-        Expect.isError (CaseRecord.decodeSnapshot reversed) "Permanent decode enforces chronology")
+        Expect.isOk
+            (CaseRecord.decodeSnapshot reversed)
+            "The two dates remain independently representable")

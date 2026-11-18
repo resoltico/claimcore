@@ -225,7 +225,7 @@ let tests =
                                 }
                             Stamp =
                                 { original.Stamp with
-                                    ActorId = readable.Actor.Value.ActorId
+                                    Authority = Authority.Actor readable.Actor.Value.ActorId
                                 }
                         }
 
@@ -363,7 +363,12 @@ let workPolicy =
                         snapshot.State
                         |> CaseState.map (fun fields ->
                             { fields with
-                                Status = CaseStatus.Closed
+                                Handling =
+                                    Handling.Closed
+                                        {
+                                            Outcome = ClosureOutcome.Settled
+                                            Note = None
+                                        }
                             })
                 }
 

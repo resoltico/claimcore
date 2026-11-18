@@ -256,7 +256,7 @@ let private erasure fixture =
         let! rows =
             DatabaseSession.rows
                 connection
-                "SELECT status,progress,search_text,changed_at,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency FROM claimcore.cases WHERE case_reference='work-13'"
+                "SELECT status,progress,search_text,changed_at,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency FROM claimcore.cases WHERE case_reference='work-13'"
                 [||]
                 token
 

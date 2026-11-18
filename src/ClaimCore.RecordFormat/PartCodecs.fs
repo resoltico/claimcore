@@ -28,9 +28,19 @@ module PartCodecs =
         | PartValue.Reminder value -> get value
         | _ -> wrong ()
 
+    let private link get =
+        function
+        | PartValue.Link value -> get value
+        | _ -> wrong ()
+
     let private note get =
         function
         | PartValue.Note value -> get value
+        | _ -> wrong ()
+
+    let private party get =
+        function
+        | PartValue.Party value -> get value
         | _ -> wrong ()
 
     let private person get =
@@ -123,14 +133,16 @@ module PartCodecs =
         |> build
 
     let profile =
-        (record (fun name contact ->
+        (record (fun name contact email ->
             {
                 ActorProfile.DisplayName = name
                 Contact = contact
+                DigestEmail = email
             })
         : Fields<ActorProfile, _>)
         |> field "displayName" _.DisplayName (scalar PartyName.parse PartyName.format)
         |> field "contact" _.Contact (nullable (scalar ContactText.parse ContactText.format))
+        |> optionalField "digestEmail" _.DigestEmail (scalar EmailAddress.parse EmailAddress.format)
         |> build
 
     let work =
@@ -145,12 +157,13 @@ module PartCodecs =
         |> build
 
     let private caseRetained =
-        (record (fun reference lifecycle status ->
+        (record (fun reference lifecycle handling ->
             PartValue.Case
                 {
                     Reference = reference
                     Lifecycle = lifecycle
-                    Status = status
+                    Handling = handling
+                    ReopenReason = None
                     Content = None
                     Disposition = None
                 })
@@ -160,7 +173,10 @@ module PartCodecs =
             (case _.Reference)
             (scalar CaseReference.parse CaseReference.format)
         |> field "lifecycle" (case _.Lifecycle) (VocabularyCodec.create Lifecycle.vocabulary)
-        |> field "status" (case _.Status) (VocabularyCodec.create CaseStatus.vocabulary)
+        |> field
+            "handling"
+            (case (_.Handling >> Handling.clearNote))
+            HandlingCodecs.retainedHandling
         |> build
         |> named "PartRetained.CASE"
 
@@ -175,7 +191,7 @@ module PartCodecs =
         record (PartValue.Work None) |> build |> named "PartRetained.WORK"
 
     let private reminderRetained =
-        (record (fun state -> PartValue.Reminder { State = state; Plan = None })
+        (record (fun state -> PartValue.Reminder(ReminderValue.Unavailable state))
         : Fields<PartValue, _>)
         |> field "state" (reminder _.State) (VocabularyCodec.create ReminderState.vocabulary)
         |> build
@@ -187,6 +203,20 @@ module PartCodecs =
         |> field "removed" (note _.Removed) boolean
         |> build
         |> named "PartRetained.NOTE"
+
+    let private partyRetained =
+        (record (fun removed -> PartValue.Party { Removed = removed; Content = None })
+        : Fields<PartValue, _>)
+        |> field "removed" (party _.Removed) boolean
+        |> build
+        |> named "PartRetained.PARTY"
+
+    let private linkRetained =
+        (record (fun removed -> PartValue.Link { Removed = removed; Content = None })
+        : Fields<PartValue, _>)
+        |> field "removed" (link _.Removed) boolean
+        |> build
+        |> named "PartRetained.LINK"
 
     let private personRetained =
         (record (fun principal enabled grants ->
@@ -211,6 +241,8 @@ module PartCodecs =
         | PartKind.Work -> workRetained
         | PartKind.Reminder -> reminderRetained
         | PartKind.Note -> noteRetained
+        | PartKind.Party -> partyRetained
+        | PartKind.Link -> linkRetained
         | PartKind.Person -> personRetained
 
     let withCompartment present =
@@ -231,8 +263,10 @@ module PartCodecs =
         | PartValue.Case value -> value.Lifecycle <> Lifecycle.Erased
         | PartValue.Payment _
         | PartValue.Work _
-        | PartValue.Reminder _ -> true
+        | PartValue.Reminder _
+        | PartValue.Party _ -> true
         | PartValue.Note value -> not value.Removed
+        | PartValue.Link value -> not value.Removed
         | PartValue.Person value -> value.Profile <> ProfileValue.Absent
 
     let private available =
@@ -242,6 +276,8 @@ module PartCodecs =
         | PartValue.Work value -> value.IsSome
         | PartValue.Reminder value -> value.Plan.IsSome
         | PartValue.Note value -> value.Removed || value.Text.IsSome
+        | PartValue.Party value -> value.Content.IsSome
+        | PartValue.Link value -> value.Removed || value.Content.IsSome
         | PartValue.Person value ->
             match value.Profile with
             | ProfileValue.Present None -> false
@@ -257,16 +293,24 @@ module PartCodecs =
                     | CaseDisposition.Voided reason
                     | CaseDisposition.Reinstated reason -> reason))
 
-        (record (fun registration finance reason ->
-            let content =
-                {
-                    CaseContent.Registration = registration
-                    Finance = finance
-                }
+        (record
+            (fun
+                registration
+                finance
+                reason
+                (closingNote: NoteText option)
+                (reopenedBecause: Reason option) ->
+                let content =
+                    {
+                        CaseContent.Registration = registration
+                        Finance = finance
+                    }
 
-            CaseFamily.validateContent content
-            |> Result.bind (fun () ->
-                if retained.Lifecycle = Lifecycle.Erased then
+                if
+                    retained.Lifecycle = Lifecycle.Erased
+                    || (closingNote.IsSome && retained.Status <> CaseStatus.Closed)
+                    || (reopenedBecause.IsSome && retained.Status <> CaseStatus.Opened)
+                then
                     Error RecordViolation.InvalidSubjectState
                 else
                     let disposition =
@@ -277,17 +321,30 @@ module PartCodecs =
                             else
                                 CaseDisposition.Reinstated reason)
 
+                    let handling =
+                        match retained.Handling with
+                        | Handling.Open -> Handling.Open
+                        | Handling.Closed closure ->
+                            Handling.Closed { closure with Note = closingNote }
+
                     Ok(
                         PartValue.Case
                             { retained with
                                 Content = Some content
                                 Disposition = disposition
+                                Handling = handling
+                                ReopenReason = reopenedBecause
                             }
-                    )))
+                    ))
         : Fields<PartValue, _>)
         |> field "registration" (content >> _.Registration) RecordCodecs.registration
         |> field "finance" (content >> _.Finance) (FinancialCodecs.position RecordCodecs.decision)
         |> optionalField "reason" reason (scalar Reason.parse Reason.format)
+        |> optionalField
+            "closingNote"
+            (case (_.Handling >> Handling.closure >> Option.bind _.Note))
+            (scalar NoteText.parse NoteText.format)
+        |> optionalField "reopenReason" (case _.ReopenReason) (scalar Reason.parse Reason.format)
         |> buildResult (fun path _ ->
             {
                 Path = path
@@ -295,28 +352,42 @@ module PartCodecs =
             })
 
     let private paymentPrivate id (retained: PaymentValue) =
-        let entry = payment (fun value -> value.Entry |> Option.defaultWith wrong)
-
-        (record (fun date amount ->
-            PaymentEntry.create id date amount
-            |> Result.map (fun entry -> PartValue.Payment { retained with Entry = Some entry }))
-        : Fields<PartValue, _>)
-        |> field "paymentDate" (entry >> PaymentEntry.date) date
-        |> field "paidAmount" (entry >> PaymentEntry.amount) (scalar Amount.parse Amount.format)
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+        FinancialCodecs.privateEntry id
+        |> map
+            (fun entry -> PartValue.Payment { retained with Entry = Some entry })
+            (payment (fun value -> value.Entry |> Option.defaultWith wrong))
 
     let private reminderPrivate (retained: ReminderValue) =
         let plan = reminder (fun value -> value.Plan |> Option.defaultWith wrong)
 
-        (record (fun action due ->
-            PartValue.Reminder
-                { retained with
-                    Plan = Some { Action = action; Due = due }
-                })
+        (record (fun action due kind doneOn ->
+            ReminderValue.ofPrivate
+                retained.State
+                {
+                    Action = action
+                    Due = due
+                    Kind = kind
+                }
+                doneOn
+            |> Result.map PartValue.Reminder)
         : Fields<PartValue, _>)
         |> field "action" (plan >> _.Action) action
         |> field "due" (plan >> _.Due) date
-        |> build
+        |> field "kind" (plan >> _.Kind) (VocabularyCodec.create ReminderKind.vocabulary)
+        |> optionalField "doneOn" (reminder _.DoneOn) date
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+
+    let partyContent =
+        (record PartyContent.create: Fields<PartyContent, _>)
+        |> field "role" _.Role (VocabularyCodec.create PartyRole.vocabulary)
+        |> field "name" _.Name (nullable (scalar PartyName.parse PartyName.format))
+        |> field "details" _.Details (nullable (scalar PartyDetails.parse PartyDetails.format))
+        |> buildResult (fun path _ ->
+            {
+                Path = path
+                Reason = "At least one party name or detail must be present."
+            })
+        |> named "PartyContent"
 
     let privateValueCodec partId value =
         match value with
@@ -339,6 +410,23 @@ module PartCodecs =
             |> map
                 (fun text -> PartValue.Note { retained with Text = Some text })
                 (note (fun value -> value.Text |> Option.defaultWith wrong))
+        | PartValue.Party retained ->
+            partyContent
+            |> map
+                (fun content -> PartValue.Party { retained with Content = Some content })
+                (party (fun value -> value.Content |> Option.defaultWith wrong))
+        | PartValue.Link retained ->
+            let content = link (fun value -> value.Content |> Option.defaultWith wrong)
+
+            (record (fun target note ->
+                PartValue.Link
+                    { retained with
+                        Content = Some { Target = target; Note = note }
+                    })
+            : Fields<PartValue, _>)
+            |> field "target" (content >> _.Target) caseId
+            |> optionalField "note" (content >> _.Note) (scalar NoteText.parse NoteText.format)
+            |> build
         | PartValue.Person retained ->
             profile
             |> map
@@ -363,6 +451,7 @@ module PartCodecs =
                 value.Entry
                 |> Option.forall (fun entry -> OperationId.value (PaymentEntry.id entry) = partId)
             | PartValue.Note value -> not value.Removed || value.Text.IsNone
+            | PartValue.Link value -> not value.Removed || value.Content.IsNone
             | _ -> true
 
         if not valid then

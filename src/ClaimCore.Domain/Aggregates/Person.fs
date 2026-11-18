@@ -30,13 +30,6 @@ type Person =
     member this.ProfileErasure = this.ProfileErasureValue
 
 module Person =
-    let creationPrincipal (changes: PartChange list) =
-        changes
-        |> List.tryPick (fun change ->
-            match change.Aggregate, change.Value with
-            | AggregateReference.Person _, PartValue.Person value -> value.Principal
-            | _ -> None)
-
     let access (state: Person) =
         {
             ActorAccess.Actor = state.Actor
@@ -78,6 +71,17 @@ module Person =
                         && change.Erases.IsNone
                         && value.Enabled
                         && List.forall _.Active value.Grants
+                        ->
+                        Some principal
+                    | Some before, Some principal, _ when
+                        let kind, _, _ = PrincipalKey.parts principal
+                        let currentKind, _, _ = PrincipalKey.parts before.Actor.Principal
+
+                        kind = currentKind
+                        && principal <> before.Actor.Principal
+                        && change.Erases.IsNone
+                        && (change.NaturalKey
+                            |> Option.forall ((=) (PrincipalKey.naturalKey principal)))
                         ->
                         Some principal
                     | Some before, None, _ when change.NaturalKey.IsNone ->
@@ -145,6 +149,7 @@ module Person =
     let restore
         (origin: PartChange)
         (latest: PartChange)
+        (identity: PartChange)
         (actor: Actor)
         revision
         (grants: Map<ActorGrant, EffectPosition>)
@@ -152,8 +157,13 @@ module Person =
         =
         let invalid = Error RecordViolation.InvalidSubjectState
 
-        match origin.Value, latest.Value with
-        | PartValue.Person created, PartValue.Person current ->
+        match origin.Value, latest.Value, identity.Value with
+        | PartValue.Person created, PartValue.Person current, PartValue.Person identified ->
+            let sameKind (other: PrincipalKey) =
+                let kind, _, _ = PrincipalKey.parts actor.Principal
+                let otherKind, _, _ = PrincipalKey.parts other
+                kind = otherKind
+
             let valid =
                 origin.Aggregate = AggregateReference.Person actor.ActorId
                 && latest.Aggregate = origin.Aggregate
@@ -164,14 +174,24 @@ module Person =
                 && revision >= Revision.first
                 && latest.Stamp.Position >= origin.Stamp.Position
                 && actor.ActorId = ActorId.ofOperationId origin.Stamp.OperationId
-                && created.Principal = Some actor.Principal
-                && origin.NaturalKey = Some(PrincipalKey.naturalKey actor.Principal)
+                && (created.Principal
+                    |> Option.exists (fun principal ->
+                        sameKind principal
+                        && origin.NaturalKey = Some(PrincipalKey.naturalKey principal)))
+                && identity.Aggregate = origin.Aggregate
+                && identity.PartId = origin.PartId
+                && identity.Revision >= origin.Revision
+                && identity.Revision <= latest.Revision
+                && identity.Stamp.Position >= origin.Stamp.Position
+                && identity.Stamp.Position <= latest.Stamp.Position
+                && identified.Principal = Some actor.Principal
+                && (identity.NaturalKey
+                    |> Option.forall ((=) (PrincipalKey.naturalKey actor.Principal)))
                 && origin.Erases.IsNone
                 && created.Enabled
                 && created.Profile <> ProfileValue.Absent
-                && (if revision = Revision.first then
-                        current.Principal = created.Principal
-                        && latest.NaturalKey = origin.NaturalKey
+                && (if identity.Revision = latest.Revision then
+                        identity = latest
                     else
                         current.Principal.IsNone && latest.NaturalKey.IsNone)
                 && current.Enabled = actor.Enabled

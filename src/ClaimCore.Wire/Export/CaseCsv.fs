@@ -12,19 +12,24 @@ module CaseCsv =
     type private CsvColumn =
         {
             Key: string
-            Value: WorkDateBasis -> CaseSummary -> string option
+            Value: WorkDateBasis -> CaseSummary -> CsvValue
         }
 
     let private column key read =
         {
             Key = key
-            Value = fun _ row -> read row
+            Value = fun _ row -> read row |> Option.defaultValue "" |> CsvValue.Text
         }
 
     let private listedValue field (row: CaseSummary) =
         CaseState.fields row.State
         |> Option.bind (fun facts -> Map.tryFind field facts.Fields |> Option.flatten)
         |> Option.map CaseFieldValue.format
+
+    let private parties role (row: CaseSummary) =
+        CaseState.fields row.State
+        |> Option.bind (fun facts -> Map.tryFind role facts.Parties)
+        |> Option.map (List.map PartyName.format >> String.concat "; ")
 
     let private columns =
         [
@@ -35,9 +40,18 @@ module CaseCsv =
             column "headline" (fun row -> Some(CaseHeadline.token row.Headline))
             column "attention" (fun row ->
                 Some(row.Attention |> List.map CaseAttention.token |> String.concat ";"))
+            column "claimants" (parties PartyRole.Claimant)
+            column "insurers" (parties PartyRole.Insurer)
             for field in CaseSummaryFields.declarations do
                 column ("state.fields." + field.Key) (listedValue field.Field)
-            column "paidAmount" (fun row -> row.Paid |> Option.map Money.format)
+            {
+                Key = "netPaid"
+                Value =
+                    fun _ row ->
+                        row.NetPaid
+                        |> Option.map (fun total -> CsvValue.ExactTotal total.NetPaid)
+                        |> Option.defaultValue (CsvValue.Text "")
+            }
             column "paymentCount" (fun row ->
                 Some(row.PaymentCount.ToString(CultureInfo.InvariantCulture)))
             column "lastPaymentDate" (fun row ->
@@ -74,11 +88,11 @@ module CaseCsv =
                 Key = "basis.businessDate"
                 Value =
                     fun basis _ ->
-                        Some(CalendarDate.ofDate basis.BusinessDate |> CalendarDate.format)
+                        CsvValue.Text(CalendarDate.ofDate basis.BusinessDate |> CalendarDate.format)
             }
             {
                 Key = "basis.timeZone"
-                Value = fun basis _ -> Some basis.TimeZoneId
+                Value = fun basis _ -> CsvValue.Text basis.TimeZoneId
             }
         ]
 
@@ -89,9 +103,7 @@ module CaseCsv =
     let csvChunks basis rows =
         rows
         |> Seq.map (fun row ->
-            columns
-            |> List.map (fun column -> column.Value basis row |> Option.defaultValue "")
-            |> csv)
+            columns |> List.map (fun column -> column.Value basis row) |> Csv.typedRow)
 
     let csvRows basis rows =
         csvChunks basis rows |> Seq.toArray |> Array.concat

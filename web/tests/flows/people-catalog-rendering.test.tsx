@@ -127,10 +127,10 @@ const authorPeople = async (kind: PeopleInput["task"]) => {
   });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(8);
+    expect(optionValues(control)).toHaveLength(9);
   });
   await chooseOption(user, control, kind);
-  if (kind === "people.register" || kind === "people.admit") {
+  if (["people.register", "people.admit", "people.changeSignInIdentity"].includes(kind)) {
     input("input:principal.issuer", "https://issuer.example/");
     input("input:principal.subject", "synthetic-catalogue-human");
   }
@@ -157,6 +157,7 @@ const examples = peopleActs.filter(({ kind }) =>
   [
     "people.admit",
     "people.setProfile",
+    "people.changeSignInIdentity",
     "people.revoke",
     "people.eraseProfile",
     "people.disable",
@@ -223,7 +224,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
   });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(8);
+    expect(optionValues(control)).toHaveLength(9);
   });
   await chooseOption(
     user,

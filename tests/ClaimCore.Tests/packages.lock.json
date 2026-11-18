@@ -225,6 +225,11 @@
         "resolved": "18.4.0",
         "contentHash": "4L6m2kS2pY5uJ9cpeRxzW22opr6ttScIRqsOpMDQpgENp/ZwxkkQCcmc6LRSURo2dFaaSW5KVflQZvroiJ7Wzg=="
       },
+      "MimeKit.Core": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "0RLaVyex/BjUGqiw9xtGwzyCMaBcsu33Rth61bDCeVeQaaQK7tjcy4TA+nHKTqwUdp4OGd+gnhuq2fuR+c20qA=="
+      },
       "Mono.Cecil": {
         "type": "Transitive",
         "resolved": "0.11.6",
@@ -285,6 +290,7 @@
           "ClaimCore.RecordFormat": "[0.19.0, )",
           "ClaimCore.Wire": "[0.19.0, )",
           "FSharp.Core": "[11.0.101, )",
+          "MailKit": "[5.0.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[11.0.0, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[11.0.0, )"
         }
@@ -407,6 +413,15 @@
         "contentHash": "YyuyW1KaCotSTuEBMt5NTXecuKwX2kU0FmaJ+X39QdQvYGAlOv2Yfp8Vo2vVihw6+3EEcpbDKgfiaoJ3EyI8Fg==",
         "dependencies": {
           "Duende.IdentityModel": "8.1.0"
+        }
+      },
+      "MailKit": {
+        "type": "CentralTransitive",
+        "requested": "[5.0.0, )",
+        "resolved": "5.0.0",
+        "contentHash": "PG6hnsklTzd/iK9A6j03OxDOas9mh8zOBkbPzcsLmFOODE8Hw3HTy7HAKiJvVHXNpKc3/KMVG/4QvOAKCBbGhA==",
+        "dependencies": {
+          "MimeKit.Core": "5.0.0"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {

@@ -50,10 +50,10 @@ it("the persistent App masks a replaced session's authored registration and perm
   const user = userEvent.setup();
   const view = render(<App />);
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  await screen.findByRole("textbox", { name: "Claimant name" });
+  await screen.findByRole("textbox", { name: "Policy number" });
   fillRegistrationInputs({
     caseReference: "REFRESH-DRAFT",
-    claimantName: "AUTHORED_REFRESH_CANARY",
+    policyNumber: "AUTHORED_REFRESH_CANARY",
   });
   const pending = Promise.withResolvers<ApiResult<ServiceResponse<"context">>>();
   const [initial] = context.mock.results;
@@ -72,7 +72,7 @@ it("the persistent App masks a replaced session's authored registration and perm
     pending.resolve(await original);
     await pending.promise;
   });
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
   await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
   const discard = screen.queryByRole("button", { name: "Discard and leave" });
@@ -80,7 +80,7 @@ it("the persistent App masks a replaced session's authored registration and perm
     await user.click(discard);
   }
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  expect(await screen.findByRole("textbox", { name: "Claimant name" })).toHaveValue("");
+  expect(await screen.findByRole("textbox", { name: "Policy number" })).toHaveValue("");
   expect(preview).not.toHaveBeenCalled();
 });
 
@@ -136,7 +136,7 @@ it("masks a prior session’s private uncertain request and recovers only its id
   const user = userEvent.setup();
   const view = render(<App />);
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  await screen.findByRole("textbox", { name: "Claimant name" });
+  await screen.findByRole("textbox", { name: "Policy number" });
   fillRegistrationInputs({ caseReference: "UNCERTAIN_OWNER_CANARY" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();

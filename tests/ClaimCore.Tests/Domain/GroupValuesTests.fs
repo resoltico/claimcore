@@ -9,50 +9,30 @@ let tests =
     testList
         "complete typed business groups"
         [
-            testCase "registration constructors reject reversed chronology" (fun () ->
-                let original = DomainInputs.admittedRegistration DomainInputs.registration
-                let values = Registration.values original
+            testCase
+                "authored constructors reject incomplete money pairs, duplicate and foreign fields"
+                (fun () ->
+                    let values = RegistrationInput.values DomainInputs.registration
 
-                let set field date =
-                    values
-                    |> List.map (fun (key, value) ->
-                        key,
-                        if key = field then
-                            Admitted.Date(CaseFixtures.date date)
-                        else
-                            value)
+                    Expect.isError
+                        (RegistrationInput.create (
+                            values |> List.filter (fst >> (<>) BusinessField.ClaimedAmount)
+                        ))
+                        "A lone currency is invalid"
 
-                Expect.isError
-                    (Registration.create (set BusinessField.IncidentDate "2026-08-04"))
-                    "Incident after notification is permanently invalid"
+                    Expect.isError
+                        (RegistrationInput.create (
+                            values @ [ BusinessField.IncidentDate, "2026-08-01" ]
+                        ))
+                        "A field cannot occur twice"
 
-                Expect.isOk
-                    (Registration.create (set BusinessField.IncidentDate "2026-08-03"))
-                    "Same-day chronology is valid"
+                    Expect.isError
+                        (DecisionInput.create values)
+                        "Registration values cannot construct a decision"
 
-            )
-            testCase "authored constructors reject missing duplicate and foreign fields" (fun () ->
-                let values = RegistrationInput.values DomainInputs.registration
-
-                Expect.isError
-                    (RegistrationInput.create (
-                        values |> List.filter (fst >> (<>) BusinessField.IncidentDate)
-                    ))
-                    "The required incident date cannot be omitted"
-
-                Expect.isError
-                    (RegistrationInput.create (
-                        values @ [ BusinessField.IncidentDate, "2026-08-01" ]
-                    ))
-                    "A field cannot occur twice"
-
-                Expect.isError
-                    (DecisionInput.create values)
-                    "Registration values cannot construct a decision"
-
-                Expect.isOk
-                    (RegistrationInput.create values)
-                    "A complete authored group remains constructible")
+                    Expect.isOk
+                        (RegistrationInput.create values)
+                        "A complete authored group remains constructible")
             testCase "admitted constructors enforce value kinds and completeness" (fun () ->
                 let values =
                     Registration.values (
@@ -72,9 +52,9 @@ let tests =
 
                 Expect.isError
                     (Registration.create (
-                        values |> List.filter (fst >> (<>) BusinessField.ClaimantName)
+                        values |> List.filter (fst >> (<>) BusinessField.ClaimedCurrency)
                     ))
-                    "A required name cannot be omitted"
+                    "A lone amount is invalid"
 
                 Expect.isOk
                     (Registration.create values)

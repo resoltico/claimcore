@@ -51,6 +51,11 @@ let internal genesis fixture =
         match result with
         | Ok(Verdict.Proceed receipt) ->
             Expect.equal receipt.Position.Sequence Sequence.first "First operation sequence"
+
+            Expect.equal
+                receipt.RecordedBy
+                AuthorityRef.Operator
+                "The operator records initialization"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -68,8 +73,9 @@ let internal genesis fixture =
                 CancellationToken.None
 
         match observed.Outcome with
-        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) ->
+        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, false)) ->
             Expect.equal receipt.Position.Sequence Sequence.first "Readable accepting root"
+            Expect.equal receipt.RecordedBy AuthorityRef.Operator "The owner did not execute it"
         | other -> failtestf "Missing accepted owner root: %A" other
 
     }
@@ -103,7 +109,13 @@ let internal replayAndRefusal fixture =
         let! stale =
             (Service.executeSubmission
                 actor
-                (((request (fixture) (11) ("CONTRACT-001") (2L) "case.close" (Map.empty))))
+                (((request
+                    (fixture)
+                    (11)
+                    ("CONTRACT-001")
+                    (2L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (CancellationToken.None))
 
         match stale.Outcome with
@@ -127,16 +139,15 @@ let internal replayAndRefusal fixture =
                     {
                         State = LiveCase.ofState record.Snapshot.State |> Option.get
                         Disposition = None
+                        ReopenReason = None
                         RecordedFields =
                             [
                                 BusinessField.IncidentDate
-                                BusinessField.IncidentNotificationDate
+                                BusinessField.ReceivedDate
                                 BusinessField.IncidentCountry
                                 BusinessField.IncidentDescription
                                 BusinessField.PolicyNumber
                                 BusinessField.InsurerClaimReference
-                                BusinessField.ClaimantName
-                                BusinessField.InsurerName
                                 BusinessField.ClaimedAmount
                                 BusinessField.ClaimedCurrency
                             ]
@@ -242,6 +253,80 @@ let internal lockedView fixture =
         Expect.equal calls 1 "Callback called once"
     }
 
+let internal operatorFamilyRefusal fixture =
+    task {
+        let! actor = caseWorker fixture
+
+        let submission =
+            request
+                fixture
+                12
+                "OPERATOR-FAMILY"
+                0L
+                "case.open"
+                (Submissions.fields (RegistrationInput.values registration))
+
+        let command = Submissions.command submission
+
+        let client, operator =
+            match ClaimCore.Domain.Tasks.Registry.find submission.Task with
+            | Some(ClaimCore.Domain.Tasks.Task.Family selected as client) ->
+                client,
+                ClaimCore.Domain.Tasks.Task.Family
+                    { selected with
+                        Declaration =
+                            { selected.Declaration with
+                                Exposure = TaskExposure.Operator
+                            }
+                    }
+            | _ -> failtest "Expected a family task"
+
+        let! result =
+            fixture.Store.Write
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let context =
+                                    {
+                                        DecisionContext.BusinessDate =
+                                            Some(fixture.Calendar.DateAt tx.ObservedAt)
+                                        ObservedAt = tx.ObservedAt
+                                        Principal = actor.Principal
+                                        Access = AccessView.empty
+                                        Maintenance = false
+                                        Lifetime = DecisionLifetime.Execution None
+                                    }
+
+                                let prepare selected =
+                                    Engine.prepare
+                                        tx
+                                        tx.Head
+                                        context
+                                        selected
+                                        (CaseFixtures.operationId submission.OperationId)
+                                        command.Binding
+                                        command.Inputs
+
+                                let! control = prepare client
+                                Expect.isOk control "The family operation passes actor attribution"
+
+                                let! refused = prepare operator
+
+                                match refused with
+                                | Error(ExecutionStop.Failed CoreFault.InternalError) ->
+                                    return Verdict.Proceed()
+                                | _ ->
+                                    return
+                                        failtest
+                                            "The engine did not reject operator family authority."
+                            }
+                    CancellationToken = CancellationToken.None
+                }
+
+        Expect.equal result (Ok(Verdict.Proceed())) "Neither operation was appended"
+    }
+
 let internal caseUpdate fixture =
     task {
         let! actor = caseWorker fixture
@@ -265,7 +350,13 @@ let internal caseUpdate fixture =
         let! closed =
             (Service.executeSubmission
                 actor
-                (((request (fixture) (11) ("CONTRACT-001") (1L) "case.close" (Map.empty))))
+                (((request
+                    (fixture)
+                    (11)
+                    ("CONTRACT-001")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (CancellationToken.None))
 
         let receipt = accepted closed

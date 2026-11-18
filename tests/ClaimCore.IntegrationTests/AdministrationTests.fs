@@ -61,6 +61,7 @@ let private discovery binary connection =
                 [
                     "serve"
                     "initialize"
+                    "recover-owner"
                     "verify"
                     "rebuild"
                     "admit-restored-installation"

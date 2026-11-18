@@ -6,21 +6,21 @@ open ClaimCore.Application.Contracts
 
 /// Codec and rendering fixtures use the same accepted-part descriptions as real replies.
 let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) context =
-    let status =
+    let handling =
         CaseState.fields after.State
         |> Option.orElseWith (fun () ->
             before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
-        |> Option.map _.Status
-        |> Option.defaultValue CaseStatus.Opened
+        |> Option.map _.Handling
+        |> Option.defaultValue Handling.Open
 
     let value (snapshot: CaseSnapshot) =
         {
             CaseValue.Reference = None
             Lifecycle = CaseState.lifecycle snapshot.State
-            Status =
+            Handling =
                 CaseState.fields snapshot.State
-                |> Option.map _.Status
-                |> Option.defaultValue status
+                |> Option.map _.Handling
+                |> Option.defaultValue (Handling.clearNote handling)
             Content =
                 CaseState.fields snapshot.State
                 |> Option.map (fun fields ->
@@ -29,10 +29,12 @@ let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) 
                         Finance = fields.Finance
                     })
             Disposition = None
+            ReopenReason = None
         }
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Target = ReviewTarget.Case(after.CaseId, after.Reference)
         Binding = binding
         References = { Actors = []; Cases = [] }
@@ -78,7 +80,8 @@ let workReview
         |> Seq.toList
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = actors; Cases = [] }
@@ -105,18 +108,19 @@ let reminderReview
     context
     =
     let value reminder =
-        {
-            ReminderValue.Plan =
-                Some
-                    {
-                        Action = Reminder.action reminder
-                        Due = Reminder.due reminder
-                    }
-            State = Reminder.state reminder
-        }
+        ReminderValue.ofPrivate
+            (Reminder.state reminder)
+            {
+                Action = Reminder.action reminder
+                Due = Reminder.due reminder
+                Kind = Reminder.kind reminder
+            }
+            (Reminder.doneOn reminder)
+        |> Result.defaultWith invalidOp
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = []; Cases = [] }
@@ -150,7 +154,8 @@ let personReview
     context
     =
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Person target
         References = references

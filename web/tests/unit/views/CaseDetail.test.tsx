@@ -59,7 +59,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
   );
   expect(await screen.findByText(/Erased\. Only/u)).toBeVisible();
   expect(document.body).toHaveTextContent("ERASED-1");
-  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="policyNumber"]')).toBeNull();
   expect(screen.queryByText("Available acts")).toBeNull();
 });
 

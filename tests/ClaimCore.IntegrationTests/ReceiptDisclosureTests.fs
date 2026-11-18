@@ -82,6 +82,7 @@ let tests =
                                  (Submissions.profile
                                      {
                                          DisplayName = Role.token role
+                                         DigestEmail = None
                                          Contact = None
                                      })
                              |> Map.add
@@ -286,6 +287,7 @@ let foreignScope =
                              (Submissions.profile
                                  {
                                      DisplayName = "Scoped caller"
+                                     DigestEmail = None
                                      Contact = None
                                  }))
 
@@ -317,7 +319,7 @@ let foreignScope =
                         "case.close"
                         originalB.OperationId
                         (Binding.Case(CaseSelector.Id caseA, Revision.first))
-                        Map.empty
+                        CaseTransitionInputs.closed
 
                 let! visible = Service.executeSubmission scoped reused token |> Async.AwaitTask
 

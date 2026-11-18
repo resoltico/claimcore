@@ -354,7 +354,10 @@ module internal PeopleQueries =
                                                                 PeopleReads.actorRefs
                                                                     tx
                                                                     (page.Items
-                                                                     |> List.map _.GrantedBy
+                                                                     |> List.choose (
+                                                                         _.GrantedBy
+                                                                         >> Authority.actorId
+                                                                     )
                                                                      |> List.distinct)
 
                                                             let rowControls (grant: ScopedGrant) =
@@ -416,9 +419,10 @@ module internal PeopleQueries =
                                                             let items =
                                                                 page.Items
                                                                 |> List.map (fun row ->
-                                                                    Map.tryFind
+                                                                    Authority.reference
+                                                                        (fun id ->
+                                                                            Map.tryFind id authors)
                                                                         row.GrantedBy
-                                                                        authors
                                                                     |> Option.map (fun author ->
                                                                         {
                                                                             GrantReadModel.Controls =

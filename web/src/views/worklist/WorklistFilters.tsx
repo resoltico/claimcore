@@ -7,7 +7,7 @@ import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm, isVocabulary } from "../../presentation/terms";
 import { queryInput } from "../../protocol/taskCatalog";
-import type { WorklistQuery } from "../../routing/worklistQuery";
+import { reportDateFields, type WorklistQuery } from "../../routing/worklistQuery";
 type Props = { query: WorklistQuery; onChange: (query: WorklistQuery) => void };
 const selectSet = (
   query: WorklistQuery,
@@ -134,6 +134,34 @@ const OrderControl = ({ query, onChange }: Props) => {
     />
   );
 };
+const ReportDates = ({ query, onChange }: Props) => {
+  const p = usePresentation();
+  return (
+    <details>
+      <summary>{p.text("ui.reportingDates")}</summary>
+      <fieldset>
+        <legend className="sr-only">{p.text("ui.reportingDates")}</legend>
+        {reportDateFields.map((field) => {
+          const input = queryInput(apiEndpoints.caseList, `input:${field}`);
+          return (
+            <label key={field}>
+              {renderCatalogKey(p, input.labelId)}
+              <input
+                type="date"
+                value={query[field] ?? ""}
+                onChange={(event) => {
+                  const { [field]: _previous, ...manual } = query;
+                  const { value } = event.target;
+                  onChange(value === "" ? manual : { ...manual, [field]: value });
+                }}
+              />
+            </label>
+          );
+        })}
+      </fieldset>
+    </details>
+  );
+};
 const FilterControls = (props: Props) => (
   <div className="worklist-filters">
     {inputs.map((input) => (
@@ -142,6 +170,7 @@ const FilterControls = (props: Props) => (
         <WorkChoice input={input} {...props} />
       </span>
     ))}
+    <ReportDates {...props} />
     <OrderControl {...props} />
   </div>
 );

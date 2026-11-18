@@ -17,6 +17,14 @@ type internal IRuntime =
     abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
     abstract Housekeep: CancellationToken -> Task<ClaimCore.Application.HousekeepingReport>
     abstract Sessions: ClaimCore.Application.ISessionStore
+
+    abstract RunDigests:
+        WorkDateBasis *
+        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<bool>) *
+        (ActorId -> DigestOutcome -> unit) *
+        CancellationToken ->
+            Task<unit>
+
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
@@ -92,7 +100,16 @@ type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: 
                 | None -> return raise (OperationCanceledException(token))
                 | Some lease ->
                     use _lease = lease
-                    return! storage.Housekeep token
+                    return! storage.Housekeep(calendar.DateAt, token)
+            }
+
+        member _.RunDigests(basis, send, record, token) =
+            task {
+                match gate.Acquire() with
+                | None -> return raise (OperationCanceledException(token))
+                | Some lease ->
+                    use _lease = lease
+                    return! storage.RunDigests(basis, send, record, token)
             }
 
         member _.Sessions = sessions

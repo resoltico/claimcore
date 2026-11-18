@@ -15,7 +15,7 @@ open ClaimCore.Application.Contracts
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore"
+    let identifier = "claimcore-format-7"
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()
@@ -180,6 +180,8 @@ module internal Baseline =
                             let! present = exists connection token
 
                             if present then
+                                let! _ = require connection token
+
                                 return
                                     raise (OperatorFaultException OperatorFault.AlreadyInitialized)
                             else

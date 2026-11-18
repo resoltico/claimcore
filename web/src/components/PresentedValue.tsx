@@ -3,14 +3,12 @@ import type { PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { moneyWithScale } from "../presentation/format";
-import { productMetadata } from "../protocol/productMetadata";
 import { ActorIdentity } from "./ActorIdentity";
 import { CharacterWarning } from "./CharacterWarning";
 import { StateChip } from "./StateChip";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";
 
-const country = productMetadata.catalog.fields.find((field) => field.valueKind === "COUNTRY")!;
 type Scalar = Extract<
   Value,
   {
@@ -45,7 +43,7 @@ const ScalarValue = ({ value, timeZone }: { value: Scalar; timeZone: string }) =
     case "CURRENCY":
       return <IdentifierValue value={value.value} />;
     case "COUNTRY":
-      return <CountryValue value={value.value} field={country} />;
+      return <CountryValue value={value.value} />;
     case "PARTY":
     case "TEXT":
     case "NARRATIVE":

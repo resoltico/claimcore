@@ -43,8 +43,10 @@ module internal Engine =
             | Binding.CasePayment(_, revision, _)
             | Binding.CaseErase(_, revision, _)
             | Binding.Work(_, revision)
+            | Binding.Party(_, _, revision)
             | Binding.Reminder(_, _, revision) -> Revision.value revision = Revision.Maximum
-            | Binding.Note _ -> true // Removal reviews the selected note's current accepted version.
+            | Binding.Note _
+            | Binding.Link _ -> true // Removal reviews the selected child's current accepted version.
             | _ -> false
 
         match OperationSubmission.refusal rejected with
@@ -81,7 +83,7 @@ module internal Engine =
             let mutable resolved = Map.empty
 
             for target in targets do
-                let! id = AggregateStorage.resolveCase tx target
+                let! id = ClaimCore.Application.Reads.CaseIdentityReads.resolve tx target
                 resolved <- Map.add (selectorKey target) id resolved
 
             return fun target -> Map.tryFind (selectorKey target) resolved |> Option.flatten
@@ -97,11 +99,16 @@ module internal Engine =
         inputs
         =
         task {
+            let declaration = Task.declaration selected
+
             if tx.ObservedAt <> context.ObservedAt then
                 return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
+            elif
+                declaration.Exposure = TaskExposure.Operator
+                && declaration.Aggregate <> AggregateKind.Person
+            then
+                return Error(ExecutionStop.Failed CoreFault.InternalError)
             else
-                let declaration = Task.declaration selected
-
                 let! access = ExecutionEnvironment.requester tx context.Principal
 
                 if
@@ -177,17 +184,16 @@ module internal Engine =
                             return Error(ExecutionStop.Failed CoreFault.InternalError)
                         else
                             let! resolve = resolver tx binding inputs None
+                            let resolvedBinding = OperationIntent.resolveBinding resolve binding
 
-                            let actor =
-                                snapshot.Requester.Actor
-                                |> Option.map _.ActorId
-                                |> Option.orElseWith (fun () ->
-                                    if declaration.Exposure = TaskExposure.Operator then
-                                        Some(ActorId.ofOperationId operation)
-                                    else
-                                        None)
+                            let authority =
+                                match declaration.Exposure with
+                                | TaskExposure.Operator -> Some Authority.Operator
+                                | TaskExposure.Client ->
+                                    snapshot.Requester.Actor
+                                    |> Option.map (_.ActorId >> Authority.Actor)
 
-                            match actor with
+                            match authority with
                             | None ->
                                 return
                                     Error(
@@ -195,7 +201,7 @@ module internal Engine =
                                             Refusal.Access AccessRefusal.ResourceUnavailable
                                         )
                                     )
-                            | Some actor ->
+                            | Some authority ->
                                 let businessDate =
                                     if declaration.Aggregate = AggregateKind.Person then
                                         None
@@ -208,7 +214,7 @@ module internal Engine =
                                         Sequence = Sequence.successor head.Sequence
                                         PreviousHash = head.EntryHash
                                         OperationId = operation
-                                        ActorId = actor
+                                        Authority = authority
                                         RecordedAt = tx.ObservedAt
                                         BusinessDate = businessDate
                                     }
@@ -223,7 +229,7 @@ module internal Engine =
                                         Stamp =
                                             {
                                                 OperationId = operation
-                                                ActorId = actor
+                                                Authority = authority
                                                 RecordedAt = tx.ObservedAt
                                                 Position =
                                                     EffectPosition.create header.Sequence 0
@@ -231,10 +237,10 @@ module internal Engine =
                                             }
                                     }
 
-                                match snapshot.Decide decision binding inputs with
+                                match snapshot.Decide decision resolvedBinding inputs with
                                 | Error rejected -> return Error(rejection binding rejected)
                                 | Ok changes ->
-                                    match (snapshot.Availability binding).Blocked with
+                                    match (snapshot.Availability resolvedBinding).Blocked with
                                     | Some refusal -> return Error(ExecutionStop.Refused refusal)
                                     | None ->
                                         match
@@ -247,10 +253,7 @@ module internal Engine =
                                                     {
                                                         Snapshot = snapshot
                                                         Header = header
-                                                        Binding =
-                                                            OperationIntent.resolveBinding
-                                                                resolve
-                                                                binding
+                                                        Binding = resolvedBinding
                                                         Inputs = inputs
                                                         Changes = changes
                                                         Descriptions = descriptions
@@ -323,12 +326,20 @@ module internal Engine =
                                  |> Option.defaultValue Map.empty)
                                 plan.Changes
 
+                        let! reportDates =
+                            PartProjections.previousReportDates
+                                tx.Connection
+                                family.Id
+                                tx.CancellationToken
+
                         match
                             ProjectionRows.decision
                                 family
                                 plan.Changes
                                 origins
                                 (Map.tryFind family.Id summaries)
+                                (CalendarDate.ofDate plan.Header.BusinessDate.Value)
+                                reportDates
                         with
                         | Error _ -> return Error CoreFault.StoreIntegrityError
                         | Ok rows ->

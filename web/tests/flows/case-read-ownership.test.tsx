@@ -26,7 +26,7 @@ const observation = (name: string, revision: number) =>
           target: { kind: "ID", caseId: current.subject.caseId },
           expectedRevision: revision,
         },
-        { ...prefixedInputs("field:", { ...fields.registration, claimantName: name }) },
+        { ...prefixedInputs("field:", { ...fields.registration, policyNumber: name }) },
         [...registrationInputs],
         {},
       ),
@@ -92,7 +92,7 @@ it("rejects an obsolete case read after A to B to A and never rebases authored r
   });
   expect(
     result.current.currentCase?.actions.find((action) => action.task === "case.amendRegistration")
-      ?.seeds["field:claimantName"],
+      ?.seeds["field:policyNumber"],
   ).toBe("CURRENT_A");
   expect(result.current.currentCase?.subject.revision).toBe(9);
   expect(result.current.bindingSource).toMatchObject({ kind: "CASE", expectedRevision: 4 });

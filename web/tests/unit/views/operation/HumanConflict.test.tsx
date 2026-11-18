@@ -62,7 +62,7 @@ const input = {
     },
     expectedRevision: 7,
   },
-  inputs: {},
+  inputs: { "field:outcome": "OTHER" },
 } as const;
 const snapshot: RevisionConflictSnapshot = {
   minimumRevision: 5,

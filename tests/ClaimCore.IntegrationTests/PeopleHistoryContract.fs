@@ -145,8 +145,14 @@ let internal factsAndPaging fixture =
 
         Expect.isTrue
             (entries
-             |> List.forall (fun entry -> entry.RecordedBy.ActorId = entries[7].Target.ActorId))
-            "The executing actor is retained"
+             |> List.take 7
+             |> List.forall (fun entry -> entry.RecordedBy = AuthorityRef.Actor entries[7].Target))
+            "The executing actor is retained for account operations"
+
+        Expect.equal
+            entries[7].RecordedBy
+            AuthorityRef.Operator
+            "Provisioning records the installation operator"
 
         let! first = read owner None None 2
         let! second = read owner None (page first).NextCursor 2

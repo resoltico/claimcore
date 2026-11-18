@@ -25,10 +25,11 @@ test("records instalments and removes the selected entry through one reviewed co
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-04",
     "Paid amount": "40",
+    "Payment currency": "EUR",
   });
   const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("40.00 EUR");
-  await expect(payments.locator('[data-entry="remaining"]')).toContainText("60.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("40.00 EUR");
+  await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(
     page.locator('.case-detail .code-value[data-vocabulary="progress"][data-code="PARTLY_PAID"]'),
   ).toBeVisible();
@@ -40,8 +41,9 @@ test("records instalments and removes the selected entry through one reviewed co
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "20",
+    "Payment currency": "EUR",
   });
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("60.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("60.00 EUR");
   const read = await workRequest(page, "case.get", {
     target: {
       kind: "REFERENCE",
@@ -51,7 +53,7 @@ test("records instalments and removes the selected entry through one reviewed co
   if (read.outcome.kind !== "SUCCEEDED" || read.outcome.data.state.kind === "ERASED") {
     throw Error("Live payment read required");
   }
-  const first = read.outcome.data.latestPayments.find((entry) => entry.paidAmount === "40");
+  const first = read.outcome.data.latestPayments.find((entry) => entry.money.amount === "40");
   if (first === undefined) {
     throw Error("First accepting payment identity required");
   }
@@ -94,8 +96,8 @@ test("records instalments and removes the selected entry through one reviewed co
   await confirm.click();
   await expect(dialog).toHaveCount(0);
   await expectCaseReadsSettled(page);
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("20.00 EUR");
-  await expect(payments.locator('[data-entry="remaining"]')).toContainText("80.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("20.00 EUR");
+  await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(payments.locator("tbody tr")).toHaveCount(1);
   expect(writes).toBe(1);
   await page.setViewportSize({
@@ -222,8 +224,8 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   await expectCaseReadsSettled(page);
   const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   await expect(payments.locator('[data-entry="paymentCount"] dd')).toHaveText("55");
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("55.00 EUR");
-  await expect(payments.locator('[data-entry="remaining"]')).toContainText("45.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("55.00 EUR");
+  await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(payments.locator("tbody tr")).toHaveCount(3);
   await page.screenshot({
     path: info.outputPath("workspace-payments-en-light.png"),
@@ -266,8 +268,8 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   await recordReviewed(page);
   expect((await execution).request().postData()).toBe(reviewed.request().postData());
   await expect(payments.locator('[data-entry="paymentCount"] dd')).toHaveText("54");
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("54.00 EUR");
-  await expect(payments.locator('[data-entry="remaining"]')).toContainText("46.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("54.00 EUR");
+  await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(payments.locator("tbody tr")).toHaveCount(3);
   const replay = await workRequest(page, "operation.execute", original);
   expect(replay.outcome.kind).toBe("ALREADY_ACCEPTED");
@@ -281,7 +283,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     throw new Error("Current financial position required after replay.");
   }
   expect(current.outcome.data.state.fields.finance.paymentCount).toBe(54);
-  expect(current.outcome.data.state.fields.finance.paidAmount).toBe("54");
+  expect(current.outcome.data.state.fields.finance.totals).toEqual([
+    { currency: "EUR", paid: "54", returned: "0" },
+  ]);
   const acceptedNotice = page.locator(".accepted-receipt");
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice

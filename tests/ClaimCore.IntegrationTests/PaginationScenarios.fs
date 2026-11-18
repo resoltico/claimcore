@@ -96,7 +96,7 @@ let internal createHistory fixture (actor: ServiceContext) =
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
                 (ClaimCore.TestSupport.DomainInputs.registrationWith
-                    [ BusinessField.ClaimantName, ("Party " + string n) ]
+                    [ BusinessField.PolicyNumber, ("Party " + string n) ]
                     (registration))
 
             let! amended =
@@ -174,12 +174,16 @@ let internal differentHistoryResource
 let internal appendHistory fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 52L do
-            let taskName = if revision % 2L = 1L then "case.close" else "case.reopen"
+            let taskName, inputs =
+                if revision % 2L = 1L then
+                    "case.close", CaseTransitionInputs.closed
+                else
+                    "case.reopen", CaseTransitionInputs.reopened
 
             let! result =
                 Service.executeSubmission
                     actor
-                    (request fixture (20 + int revision) "LONG-HISTORY" revision taskName Map.empty)
+                    (request fixture (20 + int revision) "LONG-HISTORY" revision taskName inputs)
                     CancellationToken.None
 
             accepted result |> ignore

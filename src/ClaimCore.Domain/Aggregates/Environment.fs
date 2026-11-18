@@ -9,6 +9,8 @@ type FamilyEnvironment =
         RequesterPrincipal: PrincipalKey
         Maintenance: bool
         AssigneeEligible: ActorId -> bool
+        ReferenceOwner: CaseReference -> CaseId option
+        RelatedCase: CaseSelector -> (CaseId * Lifecycle) option
     }
 
 type PersonEnvironment =
@@ -20,4 +22,5 @@ type PersonEnvironment =
         EnabledHumanOwners: int
         ActorCount: int
         TargetPrincipal: PrincipalKey option
+        PrincipalOwner: ActorId option
     }

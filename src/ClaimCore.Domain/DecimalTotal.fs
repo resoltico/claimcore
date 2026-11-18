@@ -3,7 +3,7 @@ namespace ClaimCore.Domain
 open System.Globalization
 open System.Numerics
 
-/// Exact nonnegative totals use four decimal places internally, beyond System.Decimal's range.
+/// Exact totals use four decimal places internally, beyond System.Decimal's range.
 [<Struct>]
 type DecimalTotal = private DecimalTotal of BigInteger
 
@@ -32,9 +32,11 @@ module DecimalTotal =
     let zero = DecimalTotal 0I
 
     let format (DecimalTotal units) =
-        let integer = units / scale
-        let fractional = units % scale
-        let whole = integer.ToString(CultureInfo.InvariantCulture)
+        let absolute = BigInteger.Abs units
+        let integer = absolute / scale
+        let fractional = absolute % scale
+        let sign = if units.Sign < 0 then "-" else ""
+        let whole = sign + integer.ToString(CultureInfo.InvariantCulture)
 
         if fractional.IsZero then
             whole
@@ -57,7 +59,7 @@ module DecimalTotal =
 
         max
             (Money.minimumDisplayScale currency)
-            (meaningful MaximumFractionalDigits (units % scale))
+            (meaningful MaximumFractionalDigits (BigInteger.Abs units % scale))
 
     let parse raw =
         ScalarText.parse None 0 raw
@@ -79,13 +81,29 @@ module DecimalTotal =
 
                 Ok(DecimalTotal(integer * scale + fraction)))
 
+    let signedGrammar = "-?" + Grammar
+
+    let negate (DecimalTotal value) = DecimalTotal(-value)
+
+    let parseSigned (raw: string) =
+        if raw.StartsWith("-", System.StringComparison.Ordinal) then
+            parse (raw.Substring 1) |> Result.map negate
+        else
+            parse raw
+
+    let ofAmount amount =
+        Amount.format amount
+        |> parse
+        |> Result.defaultWith (fun _ ->
+            invalidOp "An admitted amount must fit an exact decimal total.")
+
     let sum values =
         let (DecimalTotal initial) = zero
 
         let units =
             values |> Seq.fold (fun total (DecimalTotal value) -> total + value) initial
 
-        if units < 0I || units > maximum then
+        if BigInteger.Abs units > maximum then
             Error violation
         else
             Ok(DecimalTotal units)

@@ -136,12 +136,20 @@
         "inputs": {
           "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
-          "field:claimantName": "x",
-          "field:insurerName": "x",
           "field:claimedAmount": "0",
-          "field:claimedCurrency": "EUR"
+          "field:claimedCurrency": "EUR",
+          "input:parties": [
+            {
+              "input:partyRole": "CLAIMANT",
+              "input:partyName": "x"
+            },
+            {
+              "input:partyRole": "INSURER",
+              "input:partyName": "x"
+            }
+          ]
         }
       }
     },
@@ -169,12 +177,20 @@
         "inputs": {
           "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
-          "field:claimantName": "x",
-          "field:insurerName": "x",
           "field:claimedAmount": "0",
-          "field:claimedCurrency": "EUR"
+          "field:claimedCurrency": "EUR",
+          "input:parties": [
+            {
+              "input:partyRole": "CLAIMANT",
+              "input:partyName": "x"
+            },
+            {
+              "input:partyRole": "INSURER",
+              "input:partyName": "x"
+            }
+          ]
         }
       }
     },
@@ -301,16 +317,16 @@
         "inputs": {
           "group:registration": "UPDATE",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
-          "field:claimantName": "x",
-          "field:insurerName": "x",
           "field:claimedAmount": "0",
           "field:claimedCurrency": "EUR",
           "group:decision": "UPDATE",
           "field:paymentDecisionDate": "2026-01-01",
           "field:payableAmount": "0",
-          "field:payableCurrency": "EUR"
+          "field:payableCurrency": "EUR",
+          "field:policyNumber": "x",
+          "field:insurerClaimReference": "x"
         }
       }
     },
@@ -425,10 +441,8 @@
         "inputs": {
           "group:registration": "UPDATE",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
-          "field:claimantName": "x",
-          "field:insurerName": "x",
           "field:claimedAmount": "0",
           "field:claimedCurrency": "EUR",
           "group:decision": "UPDATE",
@@ -436,7 +450,9 @@
           "field:payableAmount": "0",
           "field:payableCurrency": "EUR",
           "group:payment": "REPLACE",
-          "field:paymentDate": "2026-01-01"
+          "field:paymentDate": "2026-01-01",
+          "field:policyNumber": "x",
+          "field:insurerClaimReference": "x"
         }
       }
     },
@@ -561,6 +577,17 @@
       "direction": "request",
       "valid": false,
       "value": {}
+    },
+    {
+      "id": "case.summary-received-month",
+      "endpoint": "case.summary",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "groupBy": "RECEIVED_MONTH",
+        "registeredFrom": "2026-01-01",
+        "registeredThrough": "2026-01-31"
+      }
     }
   ]
 }

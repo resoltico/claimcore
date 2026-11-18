@@ -62,6 +62,7 @@ let configuration certificate =
         SessionAbsolute = TimeSpan.FromHours 8.
         RequestGate = limits
         Oidc = Some oidc
+        Digest = None
     }
 
 let private services (builder: WebApplicationBuilder) sessions =

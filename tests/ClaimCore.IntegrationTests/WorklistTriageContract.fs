@@ -40,7 +40,7 @@ let private openCase fixture owner number (seed: CaseSeed) =
     let values =
         DomainInputs.registrationWith
             [
-                BusinessField.IncidentNotificationDate, seed.Notification
+                BusinessField.ReceivedDate, seed.Notification
                 BusinessField.ClaimedAmount, seed.Amount
                 BusinessField.ClaimedCurrency, seed.Currency
             ]
@@ -158,7 +158,15 @@ let private setup fixture =
                 "case.decide"
                 (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision)))
 
-        do! execute (fixture) (owner) (25) ("TRIAGE-A") (2L) "case.close" (Map.empty)
+        do!
+            execute
+                (fixture)
+                (owner)
+                (25)
+                ("TRIAGE-A")
+                (2L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         do!
             execute
@@ -207,7 +215,7 @@ let private setup fixture =
 
 let private summary actor filter =
     task {
-        let! result = Service.caseSummary actor filter token
+        let! result = Service.caseSummary actor (CaseSummaryRequest.ungrouped filter) token
 
         match result with
         | Outcome.Succeeded result -> return result
@@ -319,7 +327,7 @@ let internal oldestPaging fixture =
 
         let filter =
             { CaseListFilter.empty<string> with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
             }
 
         let! first = list owner filter None
@@ -527,7 +535,9 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 false
 
         acceptedPeople revoked
-        let! deniedSummary = Service.caseSummary viewer opened token
+
+        let! deniedSummary =
+            Service.caseSummary viewer (CaseSummaryRequest.ungrouped opened) token
 
         Expect.equal
             deniedSummary

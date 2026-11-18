@@ -6,6 +6,7 @@ type CaseProgress =
     | Decided
     | PartlyPaid
     | Paid
+    | Overpaid
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseProgress =
@@ -15,14 +16,25 @@ module CaseProgress =
     let token = Vocabulary.token vocabulary
 
     let ofFinancial (position: FinancialPosition) =
-        if position.Decision.IsNone then
-            CaseProgress.Undecided
-        elif FinancialPosition.isPaid position then
-            CaseProgress.Paid
-        elif Amount.value position.PaidAmount = 0M then
-            CaseProgress.Decided
-        else
-            CaseProgress.PartlyPaid
+        match FinancialPosition.totals position with
+        | None -> CaseProgress.Undecided
+        | Some totals ->
+            let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
+
+            if totals.NetPaid > payable then
+                CaseProgress.Overpaid
+            elif totals.NetPaid = payable then
+                CaseProgress.Paid
+            elif totals.NetPaid > DecimalTotal.zero then
+                CaseProgress.PartlyPaid
+            else
+                CaseProgress.Decided
+
+    let completesPayment =
+        function
+        | CaseProgress.Paid
+        | CaseProgress.Overpaid -> true
+        | _ -> false
 
 /// Core facts needed to classify a case in a worklist. Availability is resolved by the core read.
 type CaseWorkFacts =
@@ -30,6 +42,9 @@ type CaseWorkFacts =
         State: CaseState<CaseStatus * CaseProgress>
         Responsible: (ActorId * bool) option
         NextPendingDue: CalendarDate option
+        PaymentsNeedReview: bool
+        NextDeadlineDue: CalendarDate option
+        ReportDates: (CaseReportDates * CalendarDate option) option
     }
 
 [<RequireQualifiedAccess>]
@@ -58,11 +73,13 @@ type ReminderView =
 
 [<RequireQualifiedAccess>]
 type CaseAttention =
+    | DeadlineOverdue
     | Overdue
     | DueToday
     | NoNextAction
     | Unassigned
     | AssigneeUnavailable
+    | PaymentsNeedReview
     | ReadyToClose
 
 /// Closed work predicates. Absence never satisfies a value/date comparison.
@@ -76,9 +93,12 @@ type WorkPredicate =
     | Unassigned
     | AssigneeUnavailable
     | NoNextDue
+    | PaymentsNeedReview
     | NextDue of ReminderDue
+    | NextDeadlineDue of ReminderDue
     | ReminderState of ReminderState
     | ReminderDue of ReminderDue
+    | CaseDate of CaseDateFilter * CalendarDate option
 
 [<RequireQualifiedAccess>]
 type WorkSelection =
@@ -128,6 +148,15 @@ module WorkSelection =
             | WorkPredicate.Progress value ->
                 CaseState.fields facts.State
                 |> Option.exists (fun (_, progress) -> progress = value)
+            | WorkPredicate.CaseDate(filter, bound) ->
+                let field, _ = CaseDateFilter.bound filter
+
+                let date =
+                    facts.ReportDates
+                    |> Option.bind (fun (dates, received) ->
+                        CaseReportDates.value dates received field)
+
+                CaseDateFilter.matches filter bound date
             | WorkPredicate.Mine ->
                 facts.Responsible |> Option.exists (fun (actor, _) -> Some actor = requester)
             | WorkPredicate.Responsible value ->
@@ -137,9 +166,12 @@ module WorkSelection =
             | WorkPredicate.Unassigned -> facts.Responsible.IsNone
             | WorkPredicate.AssigneeUnavailable ->
                 facts.Responsible |> Option.exists (fun (_, available) -> not available)
+            | WorkPredicate.PaymentsNeedReview -> facts.PaymentsNeedReview
             | WorkPredicate.NoNextDue -> facts.NextPendingDue.IsNone
             | WorkPredicate.NextDue value ->
                 facts.NextPendingDue |> Option.exists (ReminderDue.matchesDate today value)
+            | WorkPredicate.NextDeadlineDue value ->
+                facts.NextDeadlineDue |> Option.exists (ReminderDue.matchesDate today value)
             | WorkPredicate.ReminderState value ->
                 reminder |> Option.exists (fun (state, _) -> state = value)
             | WorkPredicate.ReminderDue value ->
@@ -155,16 +187,25 @@ module CaseAttention =
     let token = Vocabulary.token vocabulary
 
     let plan reason =
-        let predicate =
+        let attention =
             match reason with
-            | CaseAttention.Overdue -> WorkPredicate.NextDue ReminderDue.Overdue
-            | CaseAttention.DueToday -> WorkPredicate.NextDue ReminderDue.Today
-            | CaseAttention.NoNextAction -> WorkPredicate.NoNextDue
-            | CaseAttention.Unassigned -> WorkPredicate.Unassigned
-            | CaseAttention.AssigneeUnavailable -> WorkPredicate.AssigneeUnavailable
-            | CaseAttention.ReadyToClose -> WorkPredicate.Progress CaseProgress.Paid
+            | CaseAttention.DeadlineOverdue ->
+                WorkSelection.Fact(WorkPredicate.NextDeadlineDue ReminderDue.Overdue)
+            | CaseAttention.Overdue -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Overdue)
+            | CaseAttention.DueToday -> WorkSelection.Fact(WorkPredicate.NextDue ReminderDue.Today)
+            | CaseAttention.NoNextAction -> WorkSelection.Fact WorkPredicate.NoNextDue
+            | CaseAttention.Unassigned -> WorkSelection.Fact WorkPredicate.Unassigned
+            | CaseAttention.AssigneeUnavailable ->
+                WorkSelection.Fact WorkPredicate.AssigneeUnavailable
+            | CaseAttention.PaymentsNeedReview ->
+                WorkSelection.Fact WorkPredicate.PaymentsNeedReview
+            | CaseAttention.ReadyToClose ->
+                Vocabulary.all CaseProgress.vocabulary
+                |> List.filter CaseProgress.completesPayment
+                |> List.map (WorkPredicate.Progress >> WorkSelection.Fact)
+                |> WorkSelection.Any
 
-        WorkSelection.All [ WorkSelection.activeOpen; WorkSelection.Fact predicate ]
+        WorkSelection.All [ WorkSelection.activeOpen; attention ]
 
     let at today facts =
         all
@@ -289,7 +330,8 @@ module CaseHeadline =
         | CaseState.Erased -> CaseHeadline.Erased
         | CaseState.Voided _ -> CaseHeadline.Voided
         | CaseState.Active(CaseStatus.Closed, _) -> CaseHeadline.Closed
-        | CaseState.Active(CaseStatus.Opened, CaseProgress.Paid) -> CaseHeadline.Paid
+        | CaseState.Active(CaseStatus.Opened, (CaseProgress.Paid | CaseProgress.Overpaid)) ->
+            CaseHeadline.Paid
         | CaseState.Active(CaseStatus.Opened, CaseProgress.PartlyPaid) -> CaseHeadline.PartlyPaid
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Decided) -> CaseHeadline.Decided
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided) -> CaseHeadline.Undecided

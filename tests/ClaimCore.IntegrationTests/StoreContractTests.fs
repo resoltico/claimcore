@@ -156,6 +156,9 @@ let internal tests factory =
                 "people preview writes nothing and exact replay precedes fresh-state refusal"
                 (withFixture factory PeopleReviewContract.peopleReviewReplay)
             testCaseAsync
+                "sign-in identity change preserves an assigned case and its account history"
+                (withFixture factory ActorProfilesContract.signInIdentityChange)
+            testCaseAsync
                 "people loading stays bounded to the requested and accepted scopes"
                 (withFixture factory ScopedPeopleContract.scopedPeople)
             testCaseAsync
@@ -170,6 +173,9 @@ let internal tests factory =
             testCaseAsync
                 "successive writes load the current head case and existing identity once"
                 (withFixture factory LedgerWriteContract.lockedView)
+            testCaseAsync
+                "operator authority cannot execute a family operation"
+                (withFixture factory LedgerWriteContract.operatorFamilyRefusal)
             testCaseAsync
                 "update advances revision and reads back complete fields"
                 (withFixture factory LedgerWriteContract.caseUpdate)

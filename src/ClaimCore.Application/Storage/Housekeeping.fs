@@ -11,13 +11,20 @@ open ClaimCore.Application
 open System
 open System.Threading
 open Npgsql
+open ClaimCore.Domain
 
 /// Operational expiry is independent of ledger order. Each locked candidate is rechecked before deletion.
 module internal Housekeeping =
     let DefaultBatch = 128
     let MaximumBatch = 1000
 
-    let internal prune (source: NpgsqlDataSource) installation limit (token: CancellationToken) =
+    let internal prune
+        (source: NpgsqlDataSource)
+        installation
+        limit
+        dateAt
+        (token: CancellationToken)
+        =
         if limit < 1 || limit > MaximumBatch then
             invalidArg (nameof limit) "Use a bounded positive housekeeping batch."
 
@@ -55,6 +62,15 @@ module internal Housekeeping =
                              + AccessRequests.expiredPredicate "a."
                              + " RETURNING 1) SELECT count(*) FROM deleted")
                             [| box instant; box limit |]
+                            token
+
+                    let oldest = ReminderDigest.retainFrom (dateAt instant)
+
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "DELETE FROM claimcore.digest_runs WHERE digest_date<$1"
+                            [| box oldest |]
                             token
 
                     do! DatabaseSession.commit transaction token

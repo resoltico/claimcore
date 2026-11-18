@@ -64,7 +64,17 @@ let tests =
                         "Read selection"
 
                     let submitted =
-                        input [ "case"; "close"; "--case-id"; id; "--expected-revision"; "3" ]
+                        input
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "--case-id"
+                                id
+                                "--expected-revision"
+                                "3"
+                            ]
 
                     match submitted.Envelope.Binding with
                     | OperationBinding.Case(CaseSelector.Id actual, 3L, None, None) ->
@@ -111,6 +121,7 @@ let tests =
                             InputValue.Text "1.2300"
                             TaskInputId.Target(InputTarget.Field BusinessField.PaidCurrency),
                             InputValue.Text "EUR"
+                            TaskInputId.Target InputTarget.PaymentDirection, InputValue.Text "PAID"
                         ])
                     "No authored precision normalization")
             testCase
@@ -127,8 +138,8 @@ let tests =
                                 "--registration"
                                 "update"
                                 "--clear-policy-number"
-                                "--claimant-name"
-                                "Edited claimant"
+                                "--insurer-claim-reference"
+                                "Edited insurer reference"
                                 "--decision"
                                 "clear"
                             ]
@@ -144,8 +155,10 @@ let tests =
                                 InputValue.Text "CLEAR"
                                 TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 InputValue.Null
-                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
-                                InputValue.Text "Edited claimant"
+                                TaskInputId.Target(
+                                    InputTarget.Field BusinessField.InsurerClaimReference
+                                ),
+                                InputValue.Text "Edited insurer reference"
                             ])
                         "Omitted fields keep, explicit null clears")
             testCase "compound roles retain submitted order and explicit scope spelling" (fun () ->
@@ -211,8 +224,24 @@ let tests =
                                 "set"
                                 "--clear-contact"
                             ]
-                            [ "case"; "close"; "TASK"; "--expected-revision"; "-1" ]
-                            [ "case"; "close"; "TASK"; "--expected-revision"; "9007199254740992" ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "TASK"
+                                "--expected-revision"
+                                "-1"
+                            ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "TASK"
+                                "--expected-revision"
+                                "9007199254740992"
+                            ]
                             [
                                 "case"
                                 "correct"

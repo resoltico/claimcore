@@ -18,7 +18,7 @@ module Tasks = ClaimCore.Tests.TaskBuilders
 
 let private variedCase =
     property {
-        let! count = Gen.int32 (Range.constant 1 200)
+        let! count = Gen.int32 (Range.constant 1 80)
         let! glyph = Gen.item [ "a"; "Ā"; "ش"; "😀" ]
         let! amount = Gen.item [ "1"; "10.0000"; "999999999999999999.9999" ]
         let! sequence = Gen.item [ 1L; 2L; 1000L; Sequence.Maximum ]
@@ -27,7 +27,7 @@ let private variedCase =
         let values =
             Tasks.openingInputs.Values
             |> Map.add
-                (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+                (TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber))
                 (InputValue.Text name)
             |> Map.add
                 (TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount))
@@ -62,8 +62,9 @@ let private variedCase =
             restored = record
             && (match restored.Changes.Head.Value with
                 | PartValue.Case { Content = Some content } ->
-                    PartyName.format (Registration.claimant content.Registration) = name
-                    && (Registration.claimed content.Registration |> Money.format) =
+                    Identifier.format (Registration.policyNumber content.Registration |> Option.get) =
+                        name
+                    && (Registration.claimed content.Registration |> Option.get |> Money.format) =
                         (Amount.parse amount |> required |> Amount.format)
                 | _ -> false)
     }
@@ -132,17 +133,18 @@ let tests =
                     let change =
                         { change with
                             Value =
-                                PartValue.Reminder
-                                    {
-                                        State = ReminderState.Completed
-                                        Plan =
-                                            Some
-                                                {
-                                                    Action = action
-                                                    Due =
-                                                        CalendarDate.parse "2026-11-16" |> required
-                                                }
-                                    }
+                                PartValue.Reminder(
+                                    ReminderValue.Available(
+                                        {
+                                            Action = action
+                                            Due = CalendarDate.parse "2026-11-16" |> required
+                                            Kind = ReminderKind.FollowUp
+                                        },
+                                        ReminderHandling.Completed(
+                                            CalendarDate.ofDate (System.DateOnly(2026, 11, 17))
+                                        )
+                                    )
+                                )
                             Revision = Revision.create 2L |> Option.get
                         }
 
@@ -166,7 +168,7 @@ let tests =
                     let restored = RetainedOperation.restore record.Root |> required
 
                     match restored.Changes.Head.Value with
-                    | PartValue.Reminder { Plan = Some plan } ->
+                    | PartValue.Reminder(ReminderValue.Available(plan, _)) ->
                         Expect.equal
                             (ReminderAction.format plan.Action)
                             (String.replicate 220 "x")

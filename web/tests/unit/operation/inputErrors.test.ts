@@ -18,13 +18,11 @@ it("maps supplied HUMAN input identities in their original order without reconst
       {
         input: "field:incidentDate",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
       {
-        input: "field:claimantName",
+        input: "field:policyNumber",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
     ],
@@ -33,12 +31,12 @@ it("maps supplied HUMAN input identities in their original order without reconst
     kind: "local",
     reason: "invalidInput",
   });
-  expect(Object.keys(errors)).toEqual(["field:incidentDate", "field:claimantName"]);
+  expect(Object.keys(errors)).toEqual(["field:incidentDate", "field:policyNumber"]);
   expect(errors["field:incidentDate"]).toEqual({
     kind: "humanIssues",
     issues: [rejection.issues[0]],
   });
-  expect(errors["field:claimantName"]).toEqual({
+  expect(errors["field:policyNumber"]).toEqual({
     kind: "humanIssues",
     issues: [rejection.issues[1]],
   });

@@ -21,19 +21,21 @@ module CaseSection =
 [<RequireQualifiedAccess>]
 type BusinessField =
     | IncidentDate
-    | IncidentNotificationDate
+    | ReceivedDate
     | IncidentCountry
     | IncidentDescription
     | PolicyNumber
     | InsurerClaimReference
-    | ClaimantName
-    | InsurerName
     | ClaimedAmount
     | ClaimedCurrency
     | CaseReference
     | PaymentDecisionDate
     | PayableAmount
     | PayableCurrency
+    | DecisionBasis
+    | Outcome
+    | ClosingNote
+    | ReopenReason
     | PaymentDate
     | PaidAmount
     | PaidCurrency
@@ -54,6 +56,7 @@ type InputTarget =
     | PrincipalSubject
     | ProfileDisplayName
     | ProfileContact
+    | ProfileDigestEmail
     | DirectorySearch
     | Grants
     | Role
@@ -64,10 +67,26 @@ type InputTarget =
     | Text
     | ReminderId
     | NoteId
+    | NewCaseReference
+    | LinkId
+    | LinkTargetReference
+    | LinkTargetId
+    | LinkNote
     | NoteText
+    | Parties
+    | PartyId
+    | PartyRole
+    | PartyName
+    | PartyDetails
+    | ExpectedPartyRevision
     | PaymentId
+    | PaymentDirection
+    | PaymentReference
+    | PaymentPayee
     | ReminderAction
     | ReminderDueDate
+    | ReminderPlanKind
+    | ReminderDoneOn
     | ExpectedWorkRevision
     | ExpectedReminderRevision
 
@@ -117,8 +136,12 @@ module BusinessField =
                 | Some RecordGroup.Decision -> Some CaseSection.Decision
                 | Some RecordGroup.Payment -> Some CaseSection.Payment
                 | None -> None
-            AllowsAbsence = false
-            IsAuthored = field <> BusinessField.Status
+            AllowsAbsence = group = Some RecordGroup.Registration
+            IsAuthored =
+                match field with
+                | BusinessField.Status
+                | BusinessField.ReopenReason -> false
+                | _ -> true
             Pairs = pairs
         }
     // Domain owns value structure and amount/currency relationships.
@@ -126,7 +149,7 @@ module BusinessField =
         match field with
         | BusinessField.IncidentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) None
-        | BusinessField.IncidentNotificationDate ->
+        | BusinessField.ReceivedDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) None
         | BusinessField.IncidentDescription ->
             { descriptor
@@ -143,10 +166,6 @@ module BusinessField =
             }
         | BusinessField.IncidentCountry ->
             descriptor field FieldValueKind.Country (Some RecordGroup.Registration) None
-        | BusinessField.ClaimantName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) None
-        | BusinessField.InsurerName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) None
         | BusinessField.ClaimedAmount ->
             descriptor
                 field
@@ -166,6 +185,16 @@ module BusinessField =
                 (Some BusinessField.PayableCurrency)
         | BusinessField.PayableCurrency ->
             descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) None
+        | BusinessField.DecisionBasis ->
+            { descriptor field FieldValueKind.NoteText (Some RecordGroup.Decision) None with
+                AllowsAbsence = true
+            }
+        | BusinessField.Outcome -> descriptor field FieldValueKind.ClosureOutcome None None
+        | BusinessField.ClosingNote ->
+            { descriptor field FieldValueKind.NoteText None None with
+                AllowsAbsence = true
+            }
+        | BusinessField.ReopenReason -> descriptor field FieldValueKind.Reason None None
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) None
         | BusinessField.PaidAmount ->
@@ -216,6 +245,18 @@ module GroupValues =
         then
             Error
                 "A group requires its declared mandatory fields and no duplicate or undeclared members."
+        elif
+            supplied
+            |> List.exists (fun field ->
+                (BusinessField.describe field).Pairs
+                |> Option.exists (fun pair -> not (List.contains pair supplied)))
+            || (expected
+                |> Set.exists (fun field ->
+                    (BusinessField.describe field).Pairs
+                    |> Option.exists (fun pair ->
+                        List.contains pair supplied && not (List.contains field supplied))))
+        then
+            Error "An amount and its currency must be supplied together."
         else
             Ok(GroupValues(group, Map.ofList members))
 
@@ -270,8 +311,6 @@ type RegistrationInput = private RegistrationInput of GroupValues<Authored>
 type Registration = private Registration of GroupValues<Admitted>
 
 module RegistrationInput =
-    let value field (RegistrationInput values) = GroupValues.raw field values
-
     let tryValue field (RegistrationInput values) =
         GroupValues.tryValue field values |> Option.map Authored.format
 
@@ -294,30 +333,22 @@ module RegistrationInput =
 module Registration =
     let values (Registration values) = GroupValues.items values
 
-    let private requiredValue field (Registration values) =
-        GroupValues.tryValue field values |> Option.get
-
     let private optional field (Registration values) = GroupValues.tryValue field values
 
     let incidentDate record =
-        requiredValue BusinessField.IncidentDate record |> FieldValue.date
+        optional BusinessField.IncidentDate record |> Option.map FieldValue.date
 
-    let incidentNotificationDate record =
-        requiredValue BusinessField.IncidentNotificationDate record |> FieldValue.date
+    let receivedDate record =
+        optional BusinessField.ReceivedDate record |> Option.map FieldValue.date
 
     let country record =
-        requiredValue BusinessField.IncidentCountry record |> FieldValue.country
-
-    let claimant record =
-        requiredValue BusinessField.ClaimantName record |> FieldValue.name
-
-    let insurer record =
-        requiredValue BusinessField.InsurerName record |> FieldValue.name
+        optional BusinessField.IncidentCountry record |> Option.map FieldValue.country
 
     let claimed record =
-        Money.create
-            (requiredValue BusinessField.ClaimedAmount record |> FieldValue.amount)
-            (requiredValue BusinessField.ClaimedCurrency record |> FieldValue.currency)
+        Option.map2
+            Money.create
+            (optional BusinessField.ClaimedAmount record |> Option.map FieldValue.amount)
+            (optional BusinessField.ClaimedCurrency record |> Option.map FieldValue.currency)
 
     let description record =
         optional BusinessField.IncidentDescription record
@@ -340,12 +371,7 @@ module Registration =
             then
                 Error "A field requires its declared value kind."
             else
-                let registration = Registration values
-
-                if incidentDate registration > incidentNotificationDate registration then
-                    Error "Incident must be on or before notification."
-                else
-                    Ok registration)
+                Ok(Registration values))
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -365,22 +391,19 @@ module Registration =
         |> RegistrationInput.create
         |> Result.defaultWith invalidOp
 
-    let private order parsed =
-        let date field =
-            parsed
-            |> List.find (fst >> (=) field)
-            |> snd
-            |> Result.toOption
-            |> Option.map FieldValue.date
-
-        match date BusinessField.IncidentDate, date BusinessField.IncidentNotificationDate with
-        | Some incident, Some notification when incident > notification ->
-            [ BusinessField.IncidentNotificationDate, Violation.ChronologicalOrder ]
-        | _ -> []
-
     let internal parsePreparedWith admit parsed =
         let admitted = GroupValues.check admit parsed
-        let errors = GroupValues.errors admitted @ order parsed
+
+        let supplied field =
+            admitted |> List.exists (fst >> (=) field)
+
+        let paired =
+            match supplied BusinessField.ClaimedAmount, supplied BusinessField.ClaimedCurrency with
+            | true, false -> [ BusinessField.ClaimedCurrency, Violation.TextRequired ]
+            | false, true -> [ BusinessField.ClaimedAmount, Violation.TextRequired ]
+            | _ -> []
+
+        let errors = GroupValues.errors admitted @ paired
 
         if List.isEmpty errors then
             GroupValues.admitted admitted |> create |> Result.defaultWith invalidOp |> Ok
@@ -399,6 +422,7 @@ type Decision =
         {
             Date: CalendarDate
             Payable: Money
+            Basis: NoteText option
         }
 
 module DecisionInput =
@@ -420,24 +444,35 @@ module DecisionInput =
 module Decision =
     let date (record: Decision) = record.Date
     let payable (record: Decision) = record.Payable
+    let basis (record: Decision) = record.Basis
 
     let create members =
-        match List.sortBy fst members with
+        let basis, required =
+            members |> List.partition (fst >> (=) BusinessField.DecisionBasis)
+
+        match List.sortBy fst required, basis with
         | [ BusinessField.PaymentDecisionDate, Admitted.Date date
             BusinessField.PayableAmount, Admitted.Amount amount
-            BusinessField.PayableCurrency, Admitted.Currency currency ] ->
+            BusinessField.PayableCurrency, Admitted.Currency currency ],
+          ([] | [ BusinessField.DecisionBasis, Admitted.Note _ ]) ->
             Ok
                 {
                     Date = date
                     Payable = Money.create amount currency
+                    Basis = basis |> List.tryHead |> Option.map (snd >> FieldValue.note)
                 }
         | _ -> Error "Invalid decision members."
+
+    let clearBasis decision = { decision with Basis = None }
 
     let values (record: Decision) =
         [
             BusinessField.PaymentDecisionDate, Admitted.Date record.Date
             BusinessField.PayableAmount, Admitted.Amount(Money.amount record.Payable)
             BusinessField.PayableCurrency, Admitted.Currency(Money.currencyValue record.Payable)
+            match record.Basis with
+            | Some basis -> BusinessField.DecisionBasis, Admitted.Note basis
+            | None -> ()
         ]
 
     let replace members value =
@@ -472,11 +507,26 @@ module private PaymentAmount =
         else
             Error Violation.PaymentAmountPositive
 
+[<RequireQualifiedAccess>]
+type PaymentDirection =
+    | Paid
+    | Returned
+
+module PaymentDirection =
+    let vocabulary =
+        Vocabulary.ofUnion<PaymentDirection> "paymentDirection" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+    let defaultValue = PaymentDirection.Paid
+
 type Payment =
     private
         {
             Date: CalendarDate
-            Paid: Money
+            Money: Money
+            Direction: PaymentDirection
+            Reference: Identifier option
+            Payee: PartyId option
         }
 
 module PaymentInput =
@@ -497,7 +547,17 @@ module PaymentInput =
 
 module Payment =
     let date (record: Payment) = record.Date
-    let paid (record: Payment) = record.Paid
+    let money (record: Payment) = record.Money
+    let direction (record: Payment) = record.Direction
+    let reference (record: Payment) = record.Reference
+    let payee (record: Payment) = record.Payee
+
+    let withDetails direction reference payee payment =
+        { payment with
+            Direction = direction
+            Reference = reference
+            Payee = payee
+        }
 
     let create members =
         match List.sortBy fst members with
@@ -508,7 +568,10 @@ module Payment =
             |> Result.map (fun amount ->
                 {
                     Date = date
-                    Paid = Money.create amount currency
+                    Money = Money.create amount currency
+                    Direction = PaymentDirection.defaultValue
+                    Reference = None
+                    Payee = None
                 })
             |> Result.mapError (fun _ -> "A payment amount must be positive.")
         | _ -> Error "Invalid payment members."
@@ -516,8 +579,8 @@ module Payment =
     let values (record: Payment) =
         [
             BusinessField.PaymentDate, Admitted.Date record.Date
-            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Paid)
-            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Paid)
+            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Money)
+            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Money)
         ]
 
     let replace members value =
@@ -553,27 +616,37 @@ module Payment =
 
     let parse input = parseWith (fun _ -> Ok) input
 
-/// The accepting operation identifies an entry; its currency belongs to the retained decision.
+/// The accepting operation identifies an entry; its money and evidence belong to that entry.
 type PaymentEntry =
     private
         {
             Id: OperationId
             Date: CalendarDate
-            Amount: Amount
+            Money: Money
+            Direction: PaymentDirection
+            Reference: Identifier option
+            Payee: PartyId option
         }
 
 module PaymentEntry =
-    let id entry = entry.Id
-    let date entry = entry.Date
-    let amount entry = entry.Amount
+    let id (entry: PaymentEntry) = entry.Id
+    let date (entry: PaymentEntry) = entry.Date
+    let money (entry: PaymentEntry) = entry.Money
+    let amount entry = money entry |> Money.amount
+    let direction (entry: PaymentEntry) = entry.Direction
+    let reference (entry: PaymentEntry) = entry.Reference
+    let payee (entry: PaymentEntry) = entry.Payee
 
-    let create id date amount =
-        PaymentAmount.validate amount
-        |> Result.map (fun amount ->
+    let create id direction money date reference payee =
+        PaymentAmount.validate (Money.amount money)
+        |> Result.map (fun _ ->
             {
                 Id = id
                 Date = date
-                Amount = amount
+                Money = money
+                Direction = direction
+                Reference = reference
+                Payee = payee
             })
         |> Result.mapError (fun _ -> "A payment entry amount must be positive.")
 
@@ -581,5 +654,8 @@ module PaymentEntry =
         {
             Id = id
             Date = Payment.date payment
-            Amount = Money.amount (Payment.paid payment)
+            Money = Payment.money payment
+            Direction = Payment.direction payment
+            Reference = Payment.reference payment
+            Payee = Payment.payee payment
         }

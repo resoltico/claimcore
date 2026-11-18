@@ -56,6 +56,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                                     LiveCase.ofState (familySnapshot (opened ())).State
                                     |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }
@@ -68,7 +69,10 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                 BusinessDate = DateOnly(2026, 10, 13)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
     }
 
 let internal people =

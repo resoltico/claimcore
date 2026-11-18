@@ -44,8 +44,13 @@ let private current =
 
 let private caseReply =
     {
+        MatchedReference = None
+        Parties = []
+        PartyOffers = []
+        RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
         LatestPayments = []
+        PaymentPayees = []
         Mine = false
         Work = Inputs.workView current.State
         Disposition = None
@@ -133,7 +138,12 @@ let private review =
                 current.State
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
         }
 
@@ -270,7 +280,14 @@ let private harness language answer scenario =
                                                                 current.State
                                                                 |> CaseState.map (fun fields ->
                                                                     { fields with
-                                                                        Status = CaseStatus.Closed
+                                                                        Handling =
+                                                                            Handling.Closed
+                                                                                {
+                                                                                    Outcome =
+                                                                                        ClosureOutcome
+                                                                                            .Settled
+                                                                                    Note = None
+                                                                                }
                                                                     })
                                                         }
 
@@ -470,7 +487,10 @@ let tests =
                     let h =
                         harness (RenderingContext.forLanguage "en") (Some "yes") Scenario.Accepted
 
-                    Expect.equal (run [ "case"; "close"; "x" ] h) 0 "Accepted execution"
+                    Expect.equal
+                        (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                        0
+                        "Accepted execution"
 
                     Expect.equal
                         (endpoints h)
@@ -514,7 +534,7 @@ let tests =
                 let h = harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
 
                 Expect.equal
-                    (run [ "case"; "close"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
                     0
                     "Decline is a completed human choice"
 
@@ -534,13 +554,13 @@ let tests =
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
                     let h = harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
-                    run [ "case"; "close"; "x" ] h |> ignore
+                    run [ "case"; "close"; "--outcome"; "other"; "x" ] h |> ignore
                     Expect.equal h.Calls.Count 3 "Only an explicit affirmative answer can execute")
             testCase "a stale revision stays a definite refusal without retry" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Stale
 
                 Expect.equal
-                    (run [ "case"; "close"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
                     2
                     "The service still enforces its locked revision"
 
@@ -555,7 +575,11 @@ let tests =
                     "Execute retains the reviewed revision")
             testCase "a refused read stops before id allocation preview or confirmation" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.ReadRefused
-                Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Read refusal is preserved"
+
+                Expect.equal
+                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    2
+                    "Read refusal is preserved"
 
                 Expect.equal
                     (endpoints h)
@@ -568,14 +592,25 @@ let tests =
                 let h =
                     harness (RenderingContext.forLanguage "en") (Some "y") Scenario.PreviewRefused
 
-                Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Preview refusal is preserved"
+                Expect.equal
+                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    2
+                    "Preview refusal is preserved"
+
                 Expect.equal h.Calls.Count 3 "No execute follows a refused review"
                 Expect.equal (h.ReadCount()) 0 "No confirmation follows refusal")
             testCase "nonterminal omission remains a usage error" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
-                unavailable { h.Console with IsInteractive = false } [ "case"; "close"; "x" ]
 
-                match Grammar.prepare (fun () -> string identity) [ "case"; "close"; "x" ] with
+                unavailable
+                    { h.Console with IsInteractive = false }
+                    [ "case"; "close"; "--outcome"; "other"; "x" ]
+
+                match
+                    Grammar.prepare
+                        (fun () -> string identity)
+                        [ "case"; "close"; "--outcome"; "other"; "x" ]
+                with
                 | Error issues ->
                     Expect.contains
                         issues
@@ -588,13 +623,18 @@ let tests =
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
 
                 for format in [ "json"; "csv" ] do
-                    unavailable h.Console [ "case"; "close"; "x"; "--format"; format ]
-                    unavailable h.Console [ "case"; "close"; "x"; "--format=" + format ]
+                    unavailable
+                        h.Console
+                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format"; format ]
+
+                    unavailable
+                        h.Console
+                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format=" + format ]
 
                 Expect.isError
                     (Grammar.prepare
                         (fun () -> string identity)
-                        [ "case"; "close"; "x"; "--format"; "json" ])
+                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format"; "json" ])
                     "JSON omission remains usage-invalid"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
@@ -640,7 +680,16 @@ let tests =
                             Scenario.Accepted
 
                     Expect.equal
-                        (run [ "case"; "close"; "x"; "--language=" + language ] h)
+                        (run
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "x"
+                                "--language=" + language
+                            ]
+                            h)
                         0
                         "Localized confirmation"
 
@@ -650,7 +699,8 @@ let tests =
                         "A real localized prompt is displayed"
 
                     Expect.equal
-                        (CliInvocations.usageLanguage [ "case"; "close"; "--language=" + language ])
+                        (CliInvocations.usageLanguage
+                            [ "case"; "close"; "--outcome"; "other"; "--language=" + language ])
                         language
                         "Assigned language options also localize usage errors")
             testCase "new language confirmations require a localized affirmative" (fun () ->
@@ -673,16 +723,25 @@ let tests =
                             "Missing or negative answers cannot dispatch")
             testCase "explicit preview remains preview-only without asking to execute" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
-                Expect.equal (run [ "case"; "close"; "x"; "--preview" ] h) 0 "Preview completed"
+
+                Expect.equal
+                    (run [ "case"; "close"; "--outcome"; "other"; "x"; "--preview" ] h)
+                    0
+                    "Preview completed"
+
                 Expect.equal h.Calls.Count 3 "Preview does not execute"
                 Expect.equal (h.ReadCount()) 0 "Preview does not request mutation consent")
             testCase "offline dry-run and explicit revisions keep their normal paths" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
-                unavailable h.Console [ "case"; "close"; "x"; "--dry-run" ]
-                unavailable h.Console [ "case"; "close"; "x"; "--expected-revision"; "7" ]
+                unavailable h.Console [ "case"; "close"; "--outcome"; "other"; "x"; "--dry-run" ]
+
+                unavailable
+                    h.Console
+                    [ "case"; "close"; "--outcome"; "other"; "x"; "--expected-revision"; "7" ]
 
                 let draft =
-                    Grammar.prepareOffline [ "case"; "close"; "x"; "--dry-run" ]
+                    Grammar.prepareOffline
+                        [ "case"; "close"; "--outcome"; "other"; "x"; "--dry-run" ]
                     |> CaseBuilders.accepted
                     |> Option.get
 
@@ -696,7 +755,20 @@ let tests =
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
                 let supplied = Guid.Parse "80000000-0000-7000-8000-000000000099"
-                run [ "case"; "close"; "x"; "--operation-id"; string supplied ] h |> ignore
+
+                run
+                    [
+                        "case"
+                        "close"
+                        "--outcome"
+                        "other"
+                        "x"
+                        "--operation-id"
+                        string supplied
+                    ]
+                    h
+                |> ignore
+
                 Expect.equal (h.Generated()) 0 "An explicit id is not silently replaced"
 
                 Expect.equal
@@ -726,13 +798,18 @@ let reminderReviewDetails =
                                 |> Option.get
 
                             let reminder number revision action state =
-                                Reminder.ofAccepted
+                                Reminder.decode
                                     (reminderId number)
                                     current.CaseId
                                     revision
                                     (ReminderAction.parse action |> CaseBuilders.accepted)
                                     (DomainInputs.date "2026-11-09")
+                                    ReminderKind.FollowUp
                                     state
+                                    (if state = ReminderState.Completed then
+                                         Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+                                     else
+                                         None)
                                 |> CaseBuilders.accepted
 
                             let before =
@@ -753,15 +830,15 @@ let reminderReviewDetails =
                                 reminder 2 Revision.first "Next action" ReminderState.Pending
 
                             let value reminder =
-                                {
-                                    ReminderValue.Plan =
-                                        Some
-                                            {
-                                                Action = Reminder.action reminder
-                                                Due = Reminder.due reminder
-                                            }
-                                    State = Reminder.state reminder
-                                }
+                                ReminderValue.ofPrivate
+                                    (Reminder.state reminder)
+                                    {
+                                        Action = Reminder.action reminder
+                                        Due = Reminder.due reminder
+                                        Kind = Reminder.kind reminder
+                                    }
+                                    (Reminder.doneOn reminder)
+                                |> Result.defaultWith failtest
 
                             let described prior reminder =
                                 {
@@ -777,7 +854,8 @@ let reminderReviewDetails =
 
                             let core =
                                 {
-                                    OperationReview.Task =
+                                    OperationReview.ChangesOwnSignInIdentity = false
+                                    Task =
                                         TaskId.ofLiteral (
                                             if compound then
                                                 "reminder.completeAndPlanNext"
@@ -862,11 +940,14 @@ let reminderReviewDetails =
                                             {
                                                 Reminder = before
                                                 Reference = current.Reference
-                                                ClaimantName =
-                                                    DomainInputs.name "Reminder claimant"
+                                                Claimants =
+                                                    [ (DomainInputs.name "Reminder claimant") ]
                                                 Responsible = None
                                                 RecordedAt = DomainInputs.workBasis.ObservedAt
-                                                RecordedBy = CliReplyFixtures.receipt.RecordedBy
+                                                RecordedBy =
+                                                    CliReplyFixtures.receipt.RecordedBy
+                                                    |> AuthorityRef.actor
+                                                    |> Option.get
                                                 Offers =
                                                     [
                                                         Inputs.offeredTask

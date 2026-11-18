@@ -122,7 +122,7 @@ const openDraft = async () => {
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   const reference = await screen.findByRole("textbox", { name: "Case reference" });
   await user.type(reference, "CURRENT-OFFER");
-  const claimant = screen.getByRole("textbox", { name: "Claimant name" });
+  const claimant = screen.getByRole("textbox", { name: "Policy number" });
   await user.type(claimant, "Owned creation draft");
   const date = screen.getByRole("group", { name: "Incident date" });
   const day = date.querySelector<HTMLElement>('[data-type="day"]');
@@ -142,7 +142,7 @@ const completeRegistration = async (user: ReturnType<typeof userEvent.setup>) =>
     if (control === null) {
       throw new Error("An actual catalog field is required.");
     }
-    if (name === "incidentDate" || name === "incidentNotificationDate") {
+    if (name === "incidentDate" || name === "receivedDate") {
       const [year, month, day] = value.split("-");
       for (const [part, text] of [
         ["year", year!],
@@ -183,7 +183,7 @@ it.each([false, true])(
     expect(review).not.toBeDisabled();
     await freshContext(context, false, scopedRegistrar);
     expect(screen.queryByRole("textbox", { name: "Case reference" })).toBeNull();
-    expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
     expect(document.querySelector("button[data-confirm-operation]")).toBeNull();
     expect(preview).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
@@ -294,19 +294,19 @@ it("retains owned local creation fields through Settings while the unavailable O
   });
   render(<App />);
   const { user } = await openDraft();
-  const claimant = screen.getByRole("textbox", { name: "Claimant name" });
+  const claimant = screen.getByRole("textbox", { name: "Policy number" });
   await user.type(claimant, " revised{Enter}");
   await freshContext(context, false);
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Settings" }));
   await screen.findByRole("heading", { name: "Settings", level: 1 });
   await user.click(screen.getByRole("button", { name: "Return to workspace" }));
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   await freshContext(context, true);
   expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");
-  expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
+  expect(screen.getByRole("textbox", { name: "Policy number" })).toHaveValue(
     "Owned creation draft revised",
   );
   expect(
@@ -330,9 +330,9 @@ it("keeps creation authoring locked during preparation, submission and an unknow
   const { user } = await openDraft();
   await completeRegistration(user);
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  expect(screen.getByRole("textbox", { name: "Claimant name" })).toBeDisabled();
+  expect(screen.getByRole("textbox", { name: "Policy number" })).toBeDisabled();
   await freshContext(context, false);
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   const prepared = preview.mock.calls[0]?.[0];
   if (prepared === undefined) {
     throw new Error("An actual prepared request is required.");
@@ -350,7 +350,7 @@ it("keeps creation authoring locked during preparation, submission and an unknow
   const confirm = await screen.findByRole("button", { name: "Open a case" });
   await user.click(confirm);
   expect(execute).toHaveBeenCalledOnce();
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   await act(async () => {
     submitting.resolve({
       kind: "deliveryFailure",
@@ -362,7 +362,7 @@ it("keeps creation authoring locked during preparation, submission and an unknow
     expect(screen.getByRole("dialog")).toHaveTextContent("could not confirm");
   });
   await freshContext(context, false);
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(preview).toHaveBeenCalledTimes(2);
   expect(execute).toHaveBeenCalledOnce();
 });

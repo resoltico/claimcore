@@ -22,10 +22,12 @@ let private capability = List.exactlyOne declaration.Capabilities
 
 type private Command = { Plan: ReminderPlan }
 
-let private parse inputs =
-    ReminderRules.plan inputs |> Result.map (fun plan -> { Plan = plan })
+let private parse defaultKind inputs =
+    ReminderRules.plan defaultKind inputs
+    |> Result.map (fun plan -> { Plan = plan })
 
-let check inputs = Parsing.check parse inputs
+let check inputs =
+    Parsing.check (parse ReminderKind.defaultValue) inputs
 
 let private current = ReminderRules.current true [ ReminderState.Pending ]
 
@@ -39,7 +41,12 @@ let decide context environment (state: DecisionFacts option) binding inputs =
         FamilyRules.admit context environment state binding capability (FamilyRules.active false)
         |> Result.bind (fun () -> current state binding)
         |> Result.bind (fun (id, before) ->
-            parse inputs
+            let currentKind =
+                before.Value.Plan
+                |> Option.map _.Kind
+                |> Option.defaultValue ReminderKind.defaultValue
+
+            parse currentKind inputs
             |> Result.bind (fun command ->
                 if before.Value.Plan = Some command.Plan then
                     Error(Refusal.Reminder ReminderRuleRefusal.NoChanges)
@@ -61,10 +68,7 @@ let decide context environment (state: DecisionFacts option) binding inputs =
                                 state
                                 id
                                 (Revision.successor before.Revision)
-                                {
-                                    State = ReminderState.Pending
-                                    Plan = Some plan
-                                }
+                                (ReminderValue.Available(plan, ReminderHandling.Pending))
                         ])))
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)

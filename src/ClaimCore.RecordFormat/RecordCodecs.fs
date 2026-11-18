@@ -62,18 +62,18 @@ module internal RecordCodecs =
         |> named "Decision"
 
     let private businessFields
-        (fields: Fields<CaseFields, CaseStatus -> Registration -> FinancialPosition -> 'Result>)
+        (fields: Fields<CaseFields, Handling -> Registration -> FinancialPosition -> 'Result>)
         =
         fields
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
+        |> field "handling" _.Handling HandlingCodecs.value
         |> field "registration" _.Registration registration
         |> field "finance" _.Finance (FinancialCodecs.position decision)
 
     let caseFields =
-        (record (fun reference status registration finance ->
+        (record (fun reference handling registration finance ->
             {
                 CaseFields.CaseReference = reference
-                Status = status
+                Handling = handling
                 Registration = registration
                 Finance = finance
             })
@@ -84,10 +84,10 @@ module internal RecordCodecs =
 
     /// Private compartment values borrow their immutable reference from the public root.
     let privateCaseFields reference =
-        (record (fun status registration finance ->
+        (record (fun handling registration finance ->
             {
                 CaseFields.CaseReference = reference
-                Status = status
+                Handling = handling
                 Registration = registration
                 Finance = finance
             })

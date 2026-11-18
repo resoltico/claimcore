@@ -20,9 +20,11 @@ type NoteState =
 type CasePartState =
     {
         Lifecycle: Lifecycle
-        Status: CaseStatus
+        Handling: Handling
         Content: CaseContent option
     }
+
+    member this.Status = Handling.status this.Handling
 
 type internal FamilyParts =
     {
@@ -33,6 +35,9 @@ type internal FamilyParts =
         WorkValue: AcceptedPart<CaseWork option> option
         RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
         NotesValue: Map<NoteId, AcceptedPart<NoteState>>
+        PartiesValue: Map<PartyId, AcceptedPart<PartyValue>>
+        PartyOrigins: Map<PartyId, EffectPosition>
+        LinksValue: Map<LinkId, AcceptedPart<LinkValue>>
         SequenceValue: Sequence
     }
 
@@ -43,6 +48,8 @@ type internal FamilyParts =
     member this.Work = this.WorkValue
     member this.Reminders = this.RemindersValue
     member this.Notes = this.NotesValue
+    member this.Parties = this.PartiesValue
+    member this.Links = this.LinksValue
     member this.Sequence = this.SequenceValue
     member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
 
@@ -59,13 +66,12 @@ type CaseFamily =
     member this.Work = this.Value.Work
     member this.Reminders = this.Value.Reminders
     member this.Notes = this.Value.Notes
+    member this.Parties = this.Value.Parties
+    member this.Links = this.Value.Links
     member this.Sequence = this.Value.Sequence
     member this.ChangedAt = this.Value.ChangedAt
 
 module internal FamilyParts =
-    let validateContent (content: CaseContent) =
-        CaseAdmission.financial content.Registration content.Finance
-
     let validateSnapshot (snapshot: CaseSnapshot) =
         if snapshot.Revision < Revision.first then
             Error RecordViolation.RevisionOutOfRange
@@ -74,12 +80,7 @@ module internal FamilyParts =
             | None -> Ok()
             | Some fields when fields.CaseReference <> snapshot.Reference ->
                 Error RecordViolation.ReferenceMismatch
-            | Some fields ->
-                validateContent
-                    {
-                        Registration = fields.Registration
-                        Finance = fields.Finance
-                    }
+            | Some _ -> Ok()
 
     let private financial
         (payments: Map<OperationId, AcceptedPart<PaymentValue>>)
@@ -88,37 +89,27 @@ module internal FamilyParts =
         match value.Content with
         | None -> Ok()
         | Some content ->
-            validateContent content
-            |> Result.bind (fun () ->
-                let active =
-                    payments
-                    |> Map.values
-                    |> Seq.filter (fun part -> not part.Value.Removed)
-                    |> Seq.toList
+            let active =
+                payments
+                |> Map.values
+                |> Seq.filter (fun part -> not part.Value.Removed)
+                |> Seq.toList
 
-                let entries = active |> List.choose _.Value.Entry
-                let dates = entries |> List.map PaymentEntry.date |> List.sort
+            let entries = active |> List.choose _.Value.Entry
 
-                let bounds =
-                    match dates with
-                    | [] -> None
-                    | first :: _ -> PaymentDateBounds.create first (List.last dates)
-
-                if
-                    entries.Length <> active.Length
-                    || int64 entries.Length <> content.Finance.PaymentCount
-                    || (entries |> List.sumBy (PaymentEntry.amount >> Amount.value))
-                       <> Amount.value content.Finance.PaidAmount
-                    || bounds <> content.Finance.PaymentDates
-                then
-                    Error RecordViolation.InvalidPaymentState
-                else
-                    Ok())
+            match FinancialPosition.rebuild entries with
+            | Ok finance when
+                entries.Length = active.Length
+                && finance.PaymentCount = content.Finance.PaymentCount
+                && finance.CurrencyTotals = content.Finance.CurrencyTotals
+                ->
+                Ok()
+            | _ -> Error RecordViolation.InvalidPaymentState
 
     let private caseState (value: CaseValue) : CasePartState =
         {
             Lifecycle = value.Lifecycle
-            Status = value.Status
+            Handling = value.Handling
             Content = value.Content
         }
 
@@ -134,11 +125,34 @@ module internal FamilyParts =
             (previous |> Option.map _.Revision |> Option.defaultValue Revision.zero)
             change.Revision
 
+    let private partyId (caseStamp: SubjectStamp) (origin: SubjectStamp) =
+        if origin.OperationId = caseStamp.OperationId then
+            let ordinal = EffectPosition.index origin.Position - 1
+
+            if ordinal >= 0 && ordinal < PartyContent.MaximumCurrent then
+                Some(PartyId.derive origin.OperationId ordinal)
+            else
+                None
+        else
+            Some(PartyId.ofOperationId origin.OperationId)
+
+    let currentParties (state: FamilyParts) =
+        state.Parties
+        |> Map.toSeq
+        |> Seq.filter (fun (_, part) -> not part.Value.Removed)
+        |> Seq.sortBy (fun (id, _) -> Map.find id state.PartyOrigins)
+        |> Seq.choose (fun (_, part) -> part.Value.Content)
+        |> Seq.toList
+
     let private clear state =
         { state with
             CaseValue =
                 { state.Case with
-                    Value = { state.Case.Value with Content = None }
+                    Value =
+                        { state.Case.Value with
+                            Content = None
+                            Handling = Handling.clearNote state.Case.Value.Handling
+                        }
                 }
             PaymentsValue =
                 state.Payments
@@ -146,12 +160,24 @@ module internal FamilyParts =
                     { part with
                         Value = { part.Value with Entry = None }
                     })
+            PartiesValue =
+                state.Parties
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Content = None }
+                    })
+            LinksValue =
+                state.Links
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Content = None }
+                    })
             WorkValue = state.Work |> Option.map (fun part -> { part with Value = None })
             RemindersValue =
                 state.Reminders
                 |> Map.map (fun _ part ->
                     { part with
-                        Value = { part.Value with Plan = None }
+                        Value = ReminderValue.Unavailable part.Value.State
                     })
         }
 
@@ -191,11 +217,14 @@ module internal FamilyParts =
                             WorkValue = None
                             RemindersValue = Map.empty
                             NotesValue = Map.empty
+                            PartiesValue = Map.empty
+                            PartyOrigins = Map.empty
+                            LinksValue = Map.empty
                             SequenceValue = EffectPosition.sequence change.Stamp.Position
                         })
                 | None, _ -> Error RecordViolation.InvalidHistoryStart
                 | Some before, _ when
-                    change.NaturalKey.IsSome
+                    (change.NaturalKey.IsSome && change.Kind <> PartKind.Case)
                     || before.Case.Value.Lifecycle = Lifecycle.Erased
                     || EffectPosition.sequence change.Stamp.Position < before.Sequence
                     ->
@@ -205,7 +234,20 @@ module internal FamilyParts =
                 | Some before, PartValue.Case value when change.PartId = CaseId.value id ->
                     if not (version (Some before.Case) change) then
                         Error RecordViolation.InvalidRevisionSequence
-                    elif value.Reference.IsSome then
+                    elif
+                        change.NaturalKey
+                        |> Option.exists (fun key ->
+                            value.Reference |> Option.map CaseReference.format <> Some key)
+                    then
+                        invalid
+                    elif
+                        value.Reference.IsSome
+                        && (value.Reference = Some before.Reference
+                            || value.Lifecycle <> before.Case.Value.Lifecycle
+                            || value.Status <> before.Case.Value.Status
+                            || value.Content <> before.Case.Value.Content
+                            || value.Disposition.IsSome)
+                    then
                         invalid
                     elif
                         value.Lifecycle = Lifecycle.Erased
@@ -222,6 +264,7 @@ module internal FamilyParts =
                         |> Result.map (fun () ->
                             { before with
                                 CaseValue = accepted change (caseState value)
+                                ReferenceValue = defaultArg value.Reference before.Reference
                             })
                 | Some before, PartValue.Payment value ->
                     match OperationId.create change.PartId with
@@ -295,6 +338,55 @@ module internal FamilyParts =
                                 }
                     | Some _ -> Error RecordViolation.InvalidRevisionSequence
                     | None -> invalid
+                | Some before, PartValue.Party value ->
+                    match PartyId.create change.PartId with
+                    | Some party when version (Map.tryFind party before.Parties) change ->
+                        let valid =
+                            match Map.tryFind party before.Parties with
+                            | None ->
+                                not value.Removed
+                                && partyId before.Case.Stamp change.Stamp = Some party
+                            | Some previous ->
+                                not previous.Value.Removed
+                                && (not value.Removed || previous.Value.Content = value.Content)
+
+                        if valid then
+                            let origins =
+                                if Map.containsKey party before.PartyOrigins then
+                                    before.PartyOrigins
+                                else
+                                    Map.add party change.Stamp.Position before.PartyOrigins
+
+                            Ok
+                                { before with
+                                    PartiesValue =
+                                        Map.add party (accepted change value) before.Parties
+                                    PartyOrigins = origins
+                                }
+                        else
+                            invalid
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
+                | Some before, PartValue.Link value ->
+                    match LinkId.create change.PartId with
+                    | Some link when version (Map.tryFind link before.Links) change ->
+                        let valid =
+                            match Map.tryFind link before.Links with
+                            | None ->
+                                not value.Removed
+                                && link = LinkId.ofOperationId change.Stamp.OperationId
+                            | Some existing ->
+                                not existing.Value.Removed && value.Removed && value.Content.IsNone
+
+                        if valid then
+                            Ok
+                                { before with
+                                    LinksValue = Map.add link (accepted change value) before.Links
+                                }
+                        else
+                            invalid
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
                 | Some before, PartValue.Note value ->
                     match NoteId.create change.PartId with
                     | Some note when version (Map.tryFind note before.Notes) change ->
@@ -348,7 +440,7 @@ module internal FamilyParts =
             |> Option.map (fun content ->
                 {
                     CaseReference = state.Reference
-                    Status = value.Status
+                    Handling = value.Handling
                     Registration = content.Registration
                     Finance = content.Finance
                 })
@@ -386,17 +478,21 @@ module internal FamilyParts =
                             Work = work
                         }))
 
-            let due =
+            let pending =
                 state.Reminders
                 |> Map.values
-                |> Seq.choose (fun part ->
-                    if part.Value.State = ReminderState.Pending then
-                        (part.Value.Plan |> Option.map _.Due)
-                    else
-                        None)
-                |> Seq.toList
+                |> Seq.choose (fun part -> ReminderValue.pendingPlan part.Value)
 
-            CaseIndex.create state.ChangedAt snapshot work due)
+            let due = pending |> Seq.map _.Due |> Seq.sort |> Seq.tryHead
+
+            let deadlineDue =
+                pending
+                |> Seq.filter (fun plan -> plan.Kind = ReminderKind.Deadline)
+                |> Seq.map _.Due
+                |> Seq.sort
+                |> Seq.tryHead
+
+            CaseIndex.create state.ChangedAt snapshot work due deadlineDue (currentParties state))
 
     /// Projection writers consume accepted values and aggregate-derived indexes in the same fold.
     let rows (state: FamilyParts) (changes: PartChange list) =
@@ -422,6 +518,7 @@ module internal FamilyParts =
                         |> List.exists (fun change ->
                             match change.Value with
                             | PartValue.Note value -> not value.Removed && value.Text.IsNone
+                            | PartValue.Party value -> value.Content.IsNone
                             | PartValue.Reminder value -> value.Plan.IsNone
                             | _ -> false))
 
@@ -466,7 +563,15 @@ module internal FamilyParts =
                         | PartKind.Work -> change.PartId = CaseId.value id
                         | PartKind.Payment
                         | PartKind.Reminder
-                        | PartKind.Note -> change.PartId = OperationId.value origin.OperationId
+                        | PartKind.Note
+                        | PartKind.Link -> change.PartId = OperationId.value origin.OperationId
+                        | PartKind.Party ->
+                            let caseOrigin = Map.tryFind (PartKind.Case, CaseId.value id) origins
+
+                            caseOrigin
+                            |> Option.exists (fun stamp ->
+                                partyId stamp origin |> Option.map PartyId.value =
+                                    Some change.PartId)
                         | PartKind.Person -> false)
                 | None -> false)
 
@@ -524,6 +629,22 @@ module internal FamilyParts =
                         | _ -> None)
                     |> Map.ofList
 
+                let parties =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, PartyId.create change.PartId with
+                        | PartValue.Party value, Some party -> Some(party, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
+                let links =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, LinkId.create change.PartId with
+                        | PartValue.Link value, Some link -> Some(link, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
                 let state =
                     {
                         Identity = id
@@ -533,6 +654,12 @@ module internal FamilyParts =
                         WorkValue = work
                         RemindersValue = reminders
                         NotesValue = notes
+                        PartiesValue = parties
+                        PartyOrigins =
+                            parties
+                            |> Map.map (fun party _ ->
+                                (Map.find (PartKind.Party, PartyId.value party) origins).Position)
+                        LinksValue = links
                         SequenceValue = sequence
                     }
 
@@ -555,18 +682,9 @@ module internal FamilyParts =
 
     /// The selected-parts constructor is internal; DecisionFacts adds its explicit aggregate facts.
     let restoreSelected id reference sequence parts origins =
-        restoreParts
-            (fun _ (value: CaseValue) ->
-                value.Content |> Option.map validateContent |> Option.defaultValue (Ok()))
-            (fun _ _ -> Ok())
-            id
-            reference
-            sequence
-            parts
-            origins
+        restoreParts (fun _ _ -> Ok()) (fun _ _ -> Ok()) id reference sequence parts origins
 
 module CaseFamily =
-    let validateContent = FamilyParts.validateContent
     let validateSnapshot = FamilyParts.validateSnapshot
 
     let apply state change =

@@ -64,11 +64,16 @@ module CommandGrammar =
         | TaskInputId.Target InputTarget.PrincipalSubject -> "subject"
         | TaskInputId.Target InputTarget.ProfileDisplayName -> "name"
         | TaskInputId.Target InputTarget.ProfileContact -> "contact"
+        | TaskInputId.Target InputTarget.ProfileDigestEmail -> "digestEmail"
         | TaskInputId.CaseView
         | TaskInputId.ReminderView -> "view"
         | TaskInputId.ResponsibleActorFilter -> "responsibleActor"
         | TaskInputId.RoleFilter -> "role"
         | TaskInputId.ReminderDue -> "due"
+        | TaskInputId.DeadlineOutcomeFilter -> "deadline-outcome"
+        | TaskInputId.ReminderKindFilter
+        | TaskInputId.Target InputTarget.ReminderPlanKind -> "kind"
+        | TaskInputId.Target InputTarget.ReminderDoneOn -> "done-on"
         | TaskInputId.ReminderState -> "state"
         | TaskInputId.Target InputTarget.ReminderAction -> "action"
         | TaskInputId.Target InputTarget.ReminderDueDate -> "due"
@@ -192,27 +197,26 @@ module CommandGrammar =
     let collections operation =
         (TaskDeclarations.describe operation).Collections
         |> List.map (fun item ->
-            match item.Collection with
-            | TaskCollectionId.PeopleGrants ->
-                {
-                    Collection = item.Collection
-                    Name = TaskInputId.Target InputTarget.Grants
-                    LabelId =
-                        TaskInputPresentation.messageKey
-                            (TaskInputId.Target InputTarget.Grants)
-                            "label"
-                    MinimumItems = item.MinimumRows
-                    MaximumItems = TaskCollectionId.maximumRows item.Collection
-                })
+            let input = TaskCollectionId.input item.Collection
+
+            {
+                Collection = item.Collection
+                Name = input
+                LabelId = TaskInputPresentation.messageKey input "label"
+                MinimumItems = item.MinimumRows
+                MaximumItems = TaskCollectionId.maximumRows item.Collection
+            })
 
     let collectionFlag (definition: CommandCollection) =
         match definition.Collection with
+        | TaskCollectionId.Parties -> "--party"
         | TaskCollectionId.PeopleGrants ->
             "--" + kebab (inputName (TaskInputId.Target InputTarget.Role))
 
     let collectionPlaceholder (definition: CommandCollection) =
         match definition.Collection with
         | TaskCollectionId.PeopleGrants -> "ROLE[@CASE-REF]"
+        | TaskCollectionId.Parties -> "JSON"
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 

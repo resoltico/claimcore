@@ -9,6 +9,7 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Execution
 open ClaimCore.RecordFormat
 
 /// Conflicts and ordinary history share the same accepted-version projection and disclosure.
@@ -64,7 +65,10 @@ module internal TimelineHistory =
         task {
             let mutable authors = Map.empty
 
-            for id in page.Items |> List.map _.ActorId |> List.distinct do
+            for id in
+                page.Items
+                |> List.map (fun entry -> ProjectionRows.familyActor entry.Authority)
+                |> List.distinct do
                 let! person = AggregateStorage.person tx id
 
                 match person with
@@ -108,9 +112,27 @@ module internal TimelineHistory =
                                                         previous
                                             | None -> ()
 
+                                        let! basisReference =
+                                            match
+                                                entry.Operation.Changes
+                                                |> List.tryPick (fun change ->
+                                                    match change.Value with
+                                                    | PartValue.Case { Reference = Some _ } when
+                                                        change.Revision > Revision.first
+                                                        ->
+                                                        Some change.Revision
+                                                    | _ -> None)
+                                            with
+                                            | Some revision ->
+                                                match entry.Change.Aggregate with
+                                                | AggregateReference.Family id ->
+                                                    CaseIdentityReads.referenceBefore tx id revision
+                                                | _ -> invalidOp "Expected family operation."
+                                            | None -> System.Threading.Tasks.Task.FromResult None
+
                                         let described =
                                             PartDescriptions.familyVersions
-                                                reference
+                                                (defaultArg basisReference reference)
                                                 previous
                                                 entry.Operation.Changes
                                             |> Result.mapError (fun _ ->
@@ -163,7 +185,8 @@ module internal TimelineHistory =
                                     Revision = entry.Change.Revision
                                 }
                             RecordedAt = entry.RecordedAt
-                            RecordedBy = Map.find entry.ActorId authors
+                            RecordedBy =
+                                Map.find (ProjectionRows.familyActor entry.Authority) authors
                             Changes = changes
                         }
 

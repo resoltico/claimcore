@@ -195,8 +195,11 @@ module internal InteractiveReview =
             match draft.Input.Binding, raw with
             | OperationBinding.Case(_, _, Some expected, _),
               Some(OperationBinding.Case(_, _, Some actual, _)) -> expected = actual
-            | OperationBinding.Note(_, Some expected), Some(OperationBinding.Note(_, Some actual)) ->
+            | OperationBinding.Note(_, Some expected), Some(OperationBinding.Note(_, Some actual))
+            | OperationBinding.Link(_, Some expected), Some(OperationBinding.Link(_, Some actual)) ->
                 expected = actual
+            | OperationBinding.Party(_, Some(expected, _)),
+              Some(OperationBinding.Party(_, Some(actual, _))) -> expected = actual
             | OperationBinding.Reminder(_, Some(expected, _)),
               Some(OperationBinding.Reminder(_, Some(actual, _))) -> expected = actual
             | OperationBinding.People(Some expected, _),
@@ -375,6 +378,8 @@ module internal InteractiveReview =
         | OperationBinding.Case(target, _, _, _)
         | OperationBinding.Work(target, _)
         | OperationBinding.Note(target, _)
+        | OperationBinding.Party(target, _)
+        | OperationBinding.Link(target, _)
         | OperationBinding.Reminder(target, _) ->
             readPages
                 newId

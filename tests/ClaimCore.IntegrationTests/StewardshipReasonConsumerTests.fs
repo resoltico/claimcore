@@ -124,7 +124,7 @@ let private scenario database =
                     | Some reason ->
                         Map.ofList
                             [ Submissions.input InputTarget.Reason, SubmissionValue.Text reason ]
-                    | None -> Submissions.fields [ BusinessField.ClaimantName, "Later claimant" ]
+                    | None -> Submissions.fields [ BusinessField.PolicyNumber, "Later claimant" ]
 
                 let! reply =
                     Service.executeSubmission

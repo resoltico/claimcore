@@ -15,51 +15,108 @@ let declaration =
         ActFamily.Business
         Consequence.Routine
         [ Capability.Close ]
-        [ operation; caseTarget; revision ]
+        [
+            operation
+            caseTarget
+            revision
+            required (field BusinessField.Outcome) |> retained
+            optional (field BusinessField.ClosingNote)
+        ]
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command = { Status: CaseStatus }
-let check (_: InputMap) = []
+let private outcome inputs =
+    let field = InputTarget.Field BusinessField.Outcome
+
+    Parsing.scalar
+        field
+        (fun value ->
+            Vocabulary.tryParse ClosureOutcome.vocabulary value
+            |> Option.map Ok
+            |> Option.defaultValue (Error Violation.ClosureOutcomeFormat))
+        inputs
+
+let private note admit inputs =
+    let field = InputTarget.Field BusinessField.ClosingNote
+
+    Parsing.optionalText field inputs
+    |> Result.bind (function
+        | None -> Ok None
+        | Some value ->
+            NoteText.parse value |> Result.bind admit |> Parsing.at field |> Result.map Some)
+
+let private parse admit inputs =
+    Admission.map2
+        (fun outcome note ->
+            {
+                Closure.Outcome = outcome
+                Note = note
+            })
+        (outcome inputs)
+        (note admit inputs)
+
+let check inputs = Parsing.check (parse Ok) inputs
 
 let private gate =
-    CaseRules.gate false (fun state -> state.Case.Value.Status = CaseStatus.Opened)
+    CaseRules.gate false (fun state -> state.Case.Value.Handling = Handling.Open)
 
 let availability environment state binding =
     let offered =
         CaseRules.availability declaration environment state binding capability gate
 
-    let recommendation =
+    let recommendation, outcome =
         state
         |> Option.bind (fun state -> state.Case.Value.Content)
-        |> Option.bind (fun content ->
-            if CaseProgress.ofFinancial content.Finance = CaseProgress.Paid then
-                Some 0
+        |> Option.bind (fun content -> FinancialPosition.totals content.Finance)
+        |> Option.map (fun totals ->
+            let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
+
+            if payable = DecimalTotal.zero then
+                Some 0, Some ClosureOutcome.Declined
+            elif totals.NetPaid >= payable then
+                Some 0, Some ClosureOutcome.Settled
             else
-                None)
+                None, None)
+        |> Option.defaultValue (None, None)
 
     { offered with
         Recommendation = recommendation
+        Seeds =
+            outcome
+            |> Option.map (fun outcome ->
+                Map.ofList
+                    [ field BusinessField.Outcome, InputValue.Text(ClosureOutcome.token outcome) ])
+            |> Option.defaultValue Map.empty
     }
 
-let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
+let private accept context environment (state: DecisionFacts option) binding parsed =
     match state, binding with
     | Some state, Binding.Case _ ->
         CaseRules.admit context environment state binding capability gate
-        |> Result.map (fun () ->
-            let command = { Status = CaseStatus.Closed }
-
+        |> Result.bind (fun () -> parsed)
+        |> Result.map (fun closure ->
             [
                 CaseRules.change
                     context
                     state
                     { state.Case.Value with
-                        Status = command.Status
+                        Handling = Handling.Closed closure
                     }
             ])
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
+let decide context environment state binding inputs =
+    accept context environment state binding (parse NoteText.admit inputs)
+
+let decideRetained context environment state binding inputs =
+    accept
+        context
+        environment
+        state
+        binding
+        (outcome inputs |> Result.map (fun value -> { Outcome = value; Note = None }))
 
 let task =
     Task.Family
@@ -74,7 +131,7 @@ let task =
             Check = check
             Availability = availability
             Decide = decide
-            DecideRetained = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

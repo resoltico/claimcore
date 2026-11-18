@@ -52,10 +52,20 @@ module internal ControlHints =
             ]
         | Binding.Work(value, revision) ->
             selection value @ [ version InputTarget.ExpectedWorkRevision revision ]
+        | Binding.PartyNew value
         | Binding.NoteNew value
+        | Binding.LinkNew value
         | Binding.ReminderNew value -> selection value
         | Binding.Note(value, id) ->
             selection value @ [ target InputTarget.NoteId, NoteId.format id ]
+        | Binding.Party(value, id, revision) ->
+            selection value
+            @ [
+                target InputTarget.PartyId, PartyId.format id
+                version InputTarget.ExpectedPartyRevision revision
+            ]
+        | Binding.Link(value, id) ->
+            selection value @ [ target InputTarget.LinkId, LinkId.format id ]
         | Binding.Reminder(value, id, revision) ->
             selection value
             @ [

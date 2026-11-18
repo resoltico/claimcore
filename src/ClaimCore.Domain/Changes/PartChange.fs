@@ -24,10 +24,13 @@ type CaseValue =
     {
         Reference: CaseReference option
         Lifecycle: Lifecycle
-        Status: CaseStatus
+        Handling: Handling
         Content: CaseContent option
         Disposition: CaseDisposition option
+        ReopenReason: Reason option
     }
+
+    member this.Status = Handling.status this.Handling
 
 type PaymentValue =
     {
@@ -35,14 +38,20 @@ type PaymentValue =
         Entry: PaymentEntry option
     }
 
-type ReminderValue =
-    {
-        State: ReminderState
-        Plan: ReminderPlan option
-    }
-
 type NoteValue =
     { Removed: bool; Text: NoteText option }
+
+type PartyValue =
+    {
+        Removed: bool
+        Content: PartyContent option
+    }
+
+type LinkValue =
+    {
+        Removed: bool
+        Content: RelatedCaseContent option
+    }
 
 /// Assignments are accepted values, not instructions to re-run a grant business rule.
 /// A new accepting position is the enclosing part change's position.
@@ -80,6 +89,8 @@ type PartValue =
     | Work of CaseWork option
     | Reminder of ReminderValue
     | Note of NoteValue
+    | Party of PartyValue
+    | Link of LinkValue
     | Person of PersonValue
 
 module PartValue =
@@ -90,6 +101,8 @@ module PartValue =
         | PartValue.Work _ -> PartKind.Work
         | PartValue.Reminder _ -> PartKind.Reminder
         | PartValue.Note _ -> PartKind.Note
+        | PartValue.Party _ -> PartKind.Party
+        | PartValue.Link _ -> PartKind.Link
         | PartValue.Person _ -> PartKind.Person
 
     let clear =
@@ -99,11 +112,15 @@ module PartValue =
                 { value with
                     Content = None
                     Disposition = None
+                    Handling = Handling.clearNote value.Handling
+                    ReopenReason = None
                 }
         | PartValue.Payment value -> PartValue.Payment { value with Entry = None }
         | PartValue.Work _ -> PartValue.Work None
-        | PartValue.Reminder value -> PartValue.Reminder { value with Plan = None }
+        | PartValue.Reminder value -> PartValue.Reminder(ReminderValue.Unavailable value.State)
         | PartValue.Note value -> PartValue.Note { value with Text = None }
+        | PartValue.Party value -> PartValue.Party { value with Content = None }
+        | PartValue.Link value -> PartValue.Link { value with Content = None }
         | PartValue.Person value ->
             PartValue.Person
                 { value with
@@ -139,9 +156,9 @@ module PartChange =
     /// Accepted-value views preserve unavailable private content instead of fabricating empty state.
     let caseSnapshot reference change =
         match change.Aggregate, change.Value with
-        | AggregateReference.Family id, PartValue.Case value when
-            value.Reference |> Option.forall ((=) reference)
-            ->
+        | AggregateReference.Family id, PartValue.Case value ->
+            let reference = defaultArg value.Reference reference
+
             let state =
                 match value.Lifecycle, value.Content with
                 | Lifecycle.Erased, None -> Some CaseState.Erased
@@ -151,7 +168,7 @@ module PartChange =
                             lifecycle
                             {
                                 CaseReference = reference
-                                Status = value.Status
+                                Handling = value.Handling
                                 Registration = content.Registration
                                 Finance = content.Finance
                             }
@@ -182,11 +199,8 @@ module PartChange =
     let reminderSnapshot change =
         match change.Aggregate, change.Value with
         | AggregateReference.Family id, PartValue.Reminder value ->
-            match ReminderId.create change.PartId, value.Plan with
-            | Some reminder, Some plan ->
-                Reminder.ofAccepted reminder id change.Revision plan.Action plan.Due value.State
-                |> Result.toOption
-            | _ -> None
+            ReminderId.create change.PartId
+            |> Option.bind (fun reminder -> Reminder.ofValue reminder id change.Revision value)
         | _ -> None
 
     let noteSnapshot change =
@@ -206,6 +220,11 @@ module PartChange =
                 else
                     PaymentDifference.Recorded
             )
+        | _ -> None
+
+    let reopenReason change =
+        match change.Value with
+        | PartValue.Case value -> value.ReopenReason
         | _ -> None
 
     let disposition change =

@@ -72,6 +72,24 @@ const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
   left.kind === "ID"
     ? right.kind === "ID" && left.caseId === right.caseId
     : right.kind === "REFERENCE" && left.caseReference === right.caseReference;
+const sameChild = (left: OperationBinding, right: OperationBinding): boolean => {
+  if ("partyId" in left) {
+    return "partyId" in right && left.partyId === right.partyId;
+  }
+  if ("reminderId" in left) {
+    return "reminderId" in right && left.reminderId === right.reminderId;
+  }
+  if ("linkId" in left) {
+    return "linkId" in right && left.linkId === right.linkId;
+  }
+  if ("noteId" in left) {
+    return "noteId" in right && left.noteId === right.noteId;
+  }
+  if ("paymentId" in left) {
+    return "paymentId" in right && left.paymentId === right.paymentId;
+  }
+  return true;
+};
 /** Rebasing preserves the selected entity and operation task. */
 export const sameConflictTarget = (
   before: OperationSubmission,
@@ -88,10 +106,5 @@ export const sameConflictTarget = (
   ) {
     return false;
   }
-  if (left.kind === "REMINDER" && right.kind === "REMINDER") {
-    return (
-      !("reminderId" in left) || ("reminderId" in right && left.reminderId === right.reminderId)
-    );
-  }
-  return true;
+  return sameChild(left, right);
 };

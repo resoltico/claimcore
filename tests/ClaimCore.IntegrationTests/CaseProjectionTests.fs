@@ -30,7 +30,7 @@ let private snapshot (reference: string) : CaseSnapshot =
             CaseState.Active(
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = CaseFixtures.registration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
@@ -41,7 +41,8 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = snapshot.CaseId
         Snapshot = snapshot
-        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
+        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None None None []
+        ReportDates = CaseReportDates.record (CalendarDate.ofDate DateOnly.MinValue) None None
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
@@ -191,13 +192,18 @@ let private erasedState () =
 let private projectionFields: CaseFields =
     {
         CaseReference = CaseFixtures.reference "synthetic-layout"
-        Status = CaseStatus.Closed
+        Handling =
+            Handling.Closed
+                {
+                    Outcome = ClosureOutcome.Settled
+                    Note = None
+                }
         Registration =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
-                        BusinessField.ClaimantName, ("Synthetic claimant")
-                        BusinessField.InsurerName, ("Synthetic insurer")
+                        BusinessField.PolicyNumber, ("Synthetic claimant")
+                        BusinessField.InsurerClaimReference, ("Synthetic insurer")
                         BusinessField.ClaimedAmount, ("1234.5678")
                     ]
                     (DomainInputs.registration)
@@ -267,14 +273,19 @@ let private projectionBindings () =
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
                 "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
                 "work_search_text", box DBNull.Value
-                "notified_on", box "2026-08-03 AD"
+                "received_on", box "2026-08-03 AD"
                 "responsible_actor", box DBNull.Value
                 "follow_up", box DBNull.Value
+                "deadline_due", box DBNull.Value
                 "claimed_amount", box "1234.5678"
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
                 "payable_currency", box "USD"
-                "paid_amount", box "987.6543"
+                "payment_review", box false
+                "outcome", box "SETTLED"
+                "registered_on", box "0001-01-01 AD"
+                "closed_on", box DBNull.Value
+                "last_activity_on", box "0001-01-01 AD"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)
@@ -293,11 +304,14 @@ let private projectionBindings () =
             "snapshot", box [| 0uy |]
             "status", box "UNKNOWN"
             "progress", box "UNKNOWN"
+            "payment_review", box "TRUE"
+            "outcome", box "UNKNOWN"
             "changed_at", box "invalid"
             "search_text", box 44
             "work_search_text", box 44
             "responsible_actor", box Guid.Empty
             "follow_up", box "invalid"
+            "deadline_due", box "invalid"
         ] do
         Expect.throwsT<RecordCorruptException>
             (fun () ->
@@ -450,7 +464,7 @@ let private roundTrips database =
                     RegistrationUpdateInput.values (
                         DomainInputs.registrationUpdate (
                             DomainInputs.registrationWith
-                                [ BusinessField.ClaimantName, "Changed synthetic" ]
+                                [ BusinessField.PolicyNumber, "Changed synthetic" ]
                                 DomainInputs.registration
                         )
                     )
@@ -484,6 +498,155 @@ let private roundTrips database =
             do! check state (revision + 1L)
     }
 
+let private referenceOwnership database =
+    task {
+        let! actor = VerificationSupport.populated database
+
+        let run number reference revision taskName inputs =
+            Service.executeSubmission
+                actor
+                (StoreFixtures.request database.Fixture number reference revision taskName inputs)
+                VerificationSupport.token
+
+        let get reference =
+            task {
+                let! result =
+                    Service.get
+                        actor
+                        {
+                            Target = CaseSelector.Reference reference
+                        }
+                        VerificationSupport.token
+
+                match result with
+                | Outcome.Succeeded value -> return value
+                | other ->
+                    return failtestf "Expected a case found by its reserved reference: %A" other
+            }
+
+        let change number binding revision reference =
+            run
+                number
+                binding
+                revision
+                "case.changeReference"
+                (Map.ofList
+                    [
+                        Submissions.input InputTarget.NewCaseReference,
+                        SubmissionValue.Text reference
+                    ])
+
+        let! introduced = change 50 "synthetic-a" 1L "REF-ALIAS"
+        StoreFixtures.accepted introduced |> ignore
+        let! current = get "REF-ALIAS"
+        let! matched = get "synthetic-a"
+
+        Expect.equal
+            matched.Snapshot
+            current.Snapshot
+            "Earlier reference resolves to the same current case"
+
+        Expect.equal
+            (CaseReference.format matched.Snapshot.Reference)
+            "REF-ALIAS"
+            "Reads use the current reference"
+
+        Expect.equal
+            (matched.MatchedReference |> Option.map CaseReference.format)
+            (Some "synthetic-a")
+            "Reads report the earlier matched reference"
+
+        for index, reference in [ 51, "synthetic-a"; 52, "SYNTHETIC-A" ] do
+            let! duplicate =
+                run
+                    index
+                    reference
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
+
+            Expect.equal
+                duplicate.Outcome
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                "Inherited references stay reserved"
+
+        let! returned = change 53 "REF-ALIAS" 2L "synthetic-a"
+        StoreFixtures.accepted returned |> ignore
+        let! alias = get "REF-ALIAS"
+
+        Expect.equal
+            (CaseReference.format alias.Snapshot.Reference)
+            "synthetic-a"
+            "A later return leaves the intervening reference reserved"
+
+        let! respelled = change 54 "REF-ALIAS" 3L "SYNTHETIC-A"
+        StoreFixtures.accepted respelled |> ignore
+        let! matched = get "synthetic-a"
+
+        Expect.equal
+            (matched.MatchedReference |> Option.map CaseReference.format)
+            (Some "synthetic-a")
+            "Exact earlier casing is a recorded spelling"
+
+        Expect.equal
+            (CaseReference.format matched.Snapshot.Reference)
+            "SYNTHETIC-A"
+            "Current casing is preserved"
+
+        let! steward =
+            StoreFixtures.grant
+                actor
+                (StoreFixtures.id database.Fixture 920000)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        StoreFixtures.acceptedPeople steward
+
+        let! voided =
+            run
+                55
+                "REF-ALIAS"
+                4L
+                "case.void"
+                (Map.ofList
+                    [
+                        Submissions.input InputTarget.Reason,
+                        SubmissionValue.Text "Entered in error"
+                    ])
+
+        StoreFixtures.accepted voided |> ignore
+        let! erased = run 56 "REF-ALIAS" 5L "case.erase" Map.empty
+        StoreFixtures.accepted erased |> ignore
+
+        for index, reference in [ 57, "REF-ALIAS"; 58, "synthetic-a" ] do
+            let! read = get reference
+
+            Expect.equal
+                read.Snapshot.State
+                CaseState.Erased
+                "Either reserved key resolves the erased case"
+
+            let! duplicate =
+                run
+                    index
+                    reference
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
+
+            Expect.equal
+                duplicate.Outcome
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                "Erasure does not release a reserved key"
+
+        let! _ = VerificationSupport.verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -498,6 +661,9 @@ let tests =
             testCaseAsync
                 "insert update void and erase round-trip exact snapshot bytes"
                 (VerificationSupport.run roundTrips)
+            testCaseAsync
+                "reference changes preserve alias ownership through erasure"
+                (VerificationSupport.run referenceOwnership)
             testCase "requires complete unique case membership" collection
             testCase "preserves live identity revision state and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState

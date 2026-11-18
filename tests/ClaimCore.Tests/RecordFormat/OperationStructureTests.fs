@@ -147,7 +147,7 @@ let tests =
                         [
                             { stamp with OperationId = other }
                             { stamp with
-                                ActorId = ActorId.ofOperationId other
+                                Authority = Authority.Actor(ActorId.ofOperationId other)
                             }
                             { stamp with
                                 RecordedAt = stamp.RecordedAt.AddTicks 10L
@@ -283,7 +283,7 @@ let tests =
                                         Stamp =
                                             {
                                                 OperationId = header.OperationId
-                                                ActorId = header.ActorId
+                                                Authority = header.Authority
                                                 RecordedAt = header.RecordedAt
                                                 Position =
                                                     EffectPosition.create header.Sequence index

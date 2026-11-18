@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "Cambiar la identidad de inicio de sesión",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "Vincula esta cuenta a un nuevo emisor y sujeto. La cuenta conserva sus roles y el trabajo registrado.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "Se cambió la identidad de inicio de sesión.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "Recuperar el acceso de propietario de la instalación",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "Restablece el acceso de una persona como propietaria de la instalación o registra a un nuevo propietario.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "Esta identidad de inicio de sesión está reservada para otra cuenta.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "Esta cuenta ya utiliza esta identidad de inicio de sesión.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "Si inicias sesión con tu identidad actual, ya no podrás abrir esta cuenta.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "Actualizar los datos de la reclamación",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "Cerrar el expediente cuando no quede trabajo pendiente. Cerrarlo no significa que se haya pagado la reclamación.",
-    "source": "6059fdf3ac25"
+    "text": "Registre por qué terminó la tramitación y añada una nota de cierre si hace falta.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "Corregir los datos del expediente",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "Corregir datos registrados de la reclamación o de la decisión de pago. Los asientos de pago no cambian y el importe pagadero no puede ser inferior al total pagado.",
-    "source": "c115bf28430f"
+    "text": "Corrija los datos de registro o de decisión seleccionados de este expediente.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "Registrar la decisión de pago",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
-    "source": "bd4ea9e91f3a"
+    "text": "Abra un caso con una referencia. Registre los datos que conozca.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "Configurar el primer propietario",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "Registrar la fecha y el importe de un pago realizado, en la moneda de la decisión. Esto no ejecuta ni verifica una transferencia.",
-    "source": "572c7a975cf2"
+    "text": "Registre el dinero pagado o devuelto con la fecha, el importe y la divisa del asiento.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "Registrar una cuenta",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "Reabrir el expediente. Se conservan sus datos e historial.",
-    "source": "9afd35e2c444"
+    "text": "Indique el motivo para reanudar la tramitación de este expediente.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "Revocar un rol",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "Quitar la decisión de pago antes de que se haya pagado algo. Se conserva su historial.",
-    "source": "4579673a4146"
+    "text": "Retire la decisión. Se conservan los asientos de pago y el historial de la decisión.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "Tareas del expediente",
@@ -319,9 +351,9 @@
     "text": "Próximo seguimiento",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "Fecha de notificación (más antigua primero)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "Recibido (más antiguo primero)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "Modificados recientemente",
@@ -367,10 +399,6 @@
     "text": "La referencia del expediente ya existe.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "Estas fechas están en un orden incorrecto.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "No se permiten caracteres de control.",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "Use un código de país asignado oficialmente según ISO 3166-1, XK o ZZ. Consulte los códigos admitidos con help schema.",
-    "source": "b1c9f16ea7e3"
+    "text": "Use un código de país asignado oficialmente según ISO 3166-1 o XK. Consulte el esquema de ayuda para ver los códigos admitidos.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "Use un código de moneda ISO 4217 activo y admitido. No se aceptan códigos de fondos ni códigos no nacionales. Consulte help schema.",
@@ -627,10 +655,6 @@
     "text": "Referencia del expediente",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "Nombre del reclamante",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "Importe reclamado",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "Descripción del incidente",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "Fecha de notificación",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "Aseguradora",
-    "source": "949b10334d29"
+  "field.receivedDate.label": {
+    "text": "Recibido",
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "Tamaño de página",
@@ -1175,10 +1195,6 @@
     "text": "Registrador de pagos",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "Desconocido o internacional",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "Un expediente",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "Registrado el",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "Operador de la instalación",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "Registrado por",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "Cuándo ocurrió el incidente.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "Cuándo tuviste conocimiento de este incidente por primera vez.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "Cuándo recibió su oficina esta reclamación.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "Use un código asignado oficialmente según ISO 3166-1 o XK. {unknownCode} significa desconocido o internacional.",
-    "source": "0ba1fe273220"
+    "text": "Use un código asignado oficialmente según ISO 3166-1 o XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "Dónde ocurrió el incidente.",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "Qué ocurrió. Añade los detalles relevantes para esta reclamación.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "La persona o empresa que presenta la reclamación.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "La aseguradora responsable de la reclamación.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "Tu propia referencia para este expediente, por ejemplo CLM-2026-0001. No se puede cambiar después.",
-    "source": "10559d041918"
+    "text": "Su propia referencia para este expediente, por ejemplo CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "Cuándo decidiste el importe a pagar.",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "Ordenar por referencia, último cambio de datos del expediente, fecha de notificación o fecha más próxima de recordatorio pendiente. Los cambios de datos van del más reciente al más antiguo; las fechas de notificación y de recordatorios, de la más antigua a la más reciente, con las fechas ausentes al final. La referencia resuelve los empates.",
-    "source": "009775c9c5fe"
+    "text": "Ordene por referencia, último cambio de datos del caso, fecha de recepción o primera fecha de recordatorio pendiente. Los cambios más recientes aparecen primero. Las fechas de recepción y de recordatorio más antiguas aparecen primero y las que faltan, al final. La referencia resuelve los empates.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "Elige cómo ordenar los resultados.",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "Elija un código de país admitido, como LV, o XK o ZZ.",
-    "source": "d1667b590685"
+    "text": "Elija un código de país admitido, por ejemplo LV o XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "Elija un código de moneda admitido, como EUR. No se aceptan códigos de fondos ni códigos no nacionales.",
@@ -2428,24 +2440,24 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "El importe realmente pagado en este asiento.",
-    "source": "d79a30c73c31"
+    "text": "El importe pagado o devuelto en este asiento.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "Introduzca un importe positivo, con hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Use dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales innecesarios.",
     "source": "58353f96c69b"
   },
   "field.paidCurrency.label": {
-    "text": "Moneda del pago",
-    "source": "ae69c7acaee6"
+    "text": "Divisa del pago",
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "Use la moneda de la decisión.",
-    "source": "6cf93e635901"
+    "text": "Utilice la divisa de este asiento.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} letras ASCII mayúsculas de la lista de monedas ISO 4217 activas y admitidas, coincidiendo con la moneda de la decisión; sin códigos de fondos ni códigos no nacionales.",
-    "source": "1a3ba1179c9c"
+    "text": "{length} letras ASCII mayúsculas de la lista de divisas activas ISO 4217 admitidas.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "ID del pago",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "Totales pagados por moneda",
-    "source": "b0f6fe6c2d8f"
+    "text": "Pagado neto por divisa",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "Pagado {paid} de {payable}.",
@@ -2499,21 +2511,9 @@
     "text": "Introduzca un importe de pago mayor que cero.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "Los pagos y la decisión deben usar la misma moneda.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "El total pagado no puede superar el importe pagadero.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "Use el UUID de la operación que aceptó el asiento de pago registrado.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "Una decisión con asientos de pago no se puede retirar ni borrar. Elimine asientos solo si se registraron por error.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "Este asiento de pago ya no está presente. Consulte el expediente actual antes de continuar.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Sustituya un asiento de pago registrado por error por la fecha y el importe correctos. Esto no reembolsa ni ejecuta una transferencia. Se conserva el historial anterior.",
-    "source": "538255858894"
+    "text": "Sustituya un asiento de pago erróneo con la fecha, el sentido, el importe, la referencia y el beneficiario correctos. El recibo identifica ambos asientos.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "Asiento de pago corregido.",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "Cualquiera",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "Añadir parte",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "Registra una parte vinculada a este expediente.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "Parte añadida.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "Actualizar parte",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "Cambia el rol, el nombre o los datos de esta parte.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "Parte actualizada.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "Retirar parte",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "Retira esta parte del expediente actual. Los datos anteriores se conservan en el historial.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "Parte retirada.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "Partes",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "Añade las partes conocidas.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "Rol de la parte",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "Selecciona cómo participa la parte.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "Nombre de la parte",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "Indica el nombre de la persona u organización si lo conoces.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "Datos de la parte",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "Indica los datos de contacto o la dirección si los conoces.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "Usa entre 1 y {maximumScalars} caracteres Unicode. Se admiten saltos de línea.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "ID de la parte",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "Selecciona una parte de este expediente.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "Versión revisada de la parte",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "Usa la versión que revisaste.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "Usa el UUID de la parte.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "Selecciona un rol para la parte.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "Indica un nombre o datos de contacto.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "El expediente ha alcanzado el límite de partes.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "El número de partes supera el límite.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "Reclamantes",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "Aseguradoras",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "Reclamante",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "Aseguradora",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "Representante",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "Otra",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "Parte",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "Parte",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "Cambio de parte registrado.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "Reclamante",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "Una parte que presenta la reclamación.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "Aseguradora",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "Una parte que proporciona el seguro relacionado con la reclamación.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "Representante",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "Una parte que actúa en nombre de alguien implicado en el expediente.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "Otra",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "Una parte que interviene en el expediente con otro rol.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "Añade hasta {maximumParties} partes.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "Elige uno de los roles de la lista.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "Usa el identificador de la parte que quieras cambiar.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "Usa el número de versión de la parte seleccionada.",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "Devuelto",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "Devuelto",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "Dinero pagado a la persona destinataria.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "Dinero devuelto por la persona destinataria.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "Pagado en exceso",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "Pagos pendientes de revisión",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "Sentido",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "Referencia externa",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "Beneficiario",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "Indique si el dinero se pagó o se devolvió.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "Introduzca la referencia de la operación bancaria o de la carta.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "Introduzca el identificador de una parte actual de este expediente.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "Elija Pagado o Devuelto.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "Utilice el identificador de una parte actual.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "Pagado neto",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "Expedientes incluidos",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "Elija Pagado o Devuelto.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "Este pago haría que el total de la divisa superara el intervalo exacto.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "Elija una parte actual de este expediente.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "Parte retirada",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "Resuelto",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "Resuelto",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "Rechazado",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "Rechazado",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "Retirado",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "Retirado",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "Duplicado",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "Duplicado",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "Otro",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "Otro",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "La tramitación terminó con un acuerdo.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "Se rechazó la reclamación.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "Se retiró la reclamación.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "Otro expediente cubre la misma reclamación.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "La tramitación terminó por otro motivo.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "Resultado",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "Elija por qué terminó la tramitación.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "Elija uno de los resultados de la lista.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "Nota de cierre",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "Registre el contexto pertinente del cierre.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "Fundamento de la decisión",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "Registre las pruebas o los motivos de la decisión.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "Motivo de reapertura",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "Cierre",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "Elija un resultado de cierre de la lista.",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "Cambiar la referencia del expediente",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "Sustituya la referencia actual. Las referencias anteriores siguen encontrando el mismo expediente.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "Se cambió la referencia del expediente.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "Elija una nueva referencia para este expediente.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "Nueva referencia",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "Use el formato de referencia del expediente.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "Introduzca la referencia que desea usar para este expediente.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "Referencia anterior",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "Por qué se reanudó la tramitación.",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "Añadir expediente relacionado",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "Vincule este expediente con otro que pueda consultar.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "Se vinculó el expediente relacionado.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "Elija un expediente por su referencia o ID.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "Quitar vínculo con expediente",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "Quite de este expediente el vínculo seleccionado.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "Se quitó el vínculo con el expediente.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "Confirme que estos expedientes ya no deben estar vinculados aquí.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "Vínculo con expediente",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "Se cambiaron los vínculos con expedientes",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "ID del vínculo",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "Use el UUID de la operación que registró el vínculo.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "Identifica el vínculo que va a quitar.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "Referencia del expediente relacionado",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "Use el formato de referencia del expediente.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "Introduzca una referencia o use el campo ID del expediente relacionado.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "ID del expediente relacionado",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "Use el UUID del expediente.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "Introduzca un ID si deja en blanco la referencia.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "Nota del vínculo",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "Explique por qué se relacionan estos expedientes.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "Expedientes relacionados",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "Vínculos desde este expediente",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "Vínculos a este expediente",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "Expediente relacionado no disponible",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "Vínculos entrantes visibles",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "Seleccione un vínculo existente con un expediente.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "Un expediente no puede vincularse consigo mismo.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "Este expediente ya está vinculado con el seleccionado.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "Quite un vínculo existente antes de añadir otro.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "Use entre 1 y {maximumScalars} caracteres Unicode. Se permiten saltos de línea.",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "Seguimiento",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "Seguimiento",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "Una acción a la que hay que dar seguimiento.",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "Plazo",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "Plazo",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "Una acción que debe finalizarse antes de que venza el plazo.",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "El plazo ha vencido y la acción sigue pendiente.",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "Cumplido",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "Cumplido",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "La acción se completó a más tardar en la fecha límite.",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "Incumplido",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "Incumplido",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "La acción se completó después de la fecha límite.",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "Cancelado",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "Cancelado",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "El plazo se canceló.",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "Plazo vencido",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "Plazo vencido",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "Este caso abierto tiene un plazo pendiente que ya ha vencido.",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "Cualquiera",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "Tipo de recordatorio",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "Seleccione seguimiento o plazo.",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "Elija cómo hacer el seguimiento de esta acción.",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "Fecha de finalización",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "Use una fecha gregoriana con el formato YYYY-MM-DD que no sea posterior a la fecha operativa.",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "Indique cuándo se terminó el trabajo. Deje el campo en blanco para usar la fecha de hoy.",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "Tipo de recordatorio",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "Filtre la lista por tipo de recordatorio.",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "Resultado del plazo",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "Resultado del plazo",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "Filtre la lista por resultado del plazo.",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "Los casos se agrupan por mes de registro.",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "Mes de registro",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "Los casos se agrupan por mes de recepción.",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "Mes de recepción",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "Los casos se agrupan por mes de cierre.",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "Mes de cierre",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "Los casos se agrupan por el motivo de cierre registrado.",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "Resultado del cierre",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "Los casos se agrupan por cuenta responsable.",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "Cuenta responsable",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "Los casos se agrupan por los días entre el registro y el cierre o la fecha actual.",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "Días abierto",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "La fecha de recepción sigue sin registrarse.",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "Sin registrar",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "El caso carece de un cierre vigente.",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "Sin cerrar",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "El caso carece de una cuenta responsable.",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "Sin asignar",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0–30 días",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31–90 días",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91–180 días",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181–365 días",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366 días o más",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "Casos que estuvieron abiertos durante 0–30 días.",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "Casos que estuvieron abiertos durante 31–90 días.",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "Casos que estuvieron abiertos durante 91–180 días.",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "Casos que estuvieron abiertos durante 181–365 días.",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "Casos que estuvieron abiertos durante 366 días o más.",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "Elige cómo agrupar los casos en este resumen.",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "Registrado desde",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "Registrado hasta",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "Recibido desde",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "Recibido hasta",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "Cerrado desde",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "Cerrado hasta",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "Sin actividad desde",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "Agrupar por",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "Mes de registro",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "Mes de recepción",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "Mes de cierre",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "Resultado del cierre",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "Cuenta responsable",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "Días abierto",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "Sin registrar",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "Sin cerrar",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "Sin asignar",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "Grupos de casos",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "Moneda",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "Casos con importe reclamado",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "Casos con importe a pagar",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "Casos con pagos",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "Este resumen refleja los datos de los casos cuando se preparó.",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0–30 días",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31–90 días",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91–180 días",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181–365 días",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366 días o más",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "Resumen diario de recordatorios ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "Abre tus recordatorios en {url}.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "Plazos vencidos",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "Plazos que vencen hoy",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "Próximos plazos",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "Seguimientos atrasados",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "Seguimientos para hoy",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "Enviado",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "Fallido",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "Sin recordatorios para enviar",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "Correo del resumen",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "Indica la dirección que recibirá el resumen diario de recordatorios.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "Usa una dirección de correo de hasta {maximumCharacters} caracteres.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "Indica una dirección de correo con una sola arroba y un punto en el dominio.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "Plazos vencidos — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "Plazos vencidos",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "Plazos que vencen hoy — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "Plazos que vencen hoy",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "Próximos plazos — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "Próximos plazos",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "Seguimientos atrasados — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "Seguimientos atrasados",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "Seguimientos para hoy — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "Seguimientos para hoy",
+    "source": "e04e8b1f370c"
   }
 }

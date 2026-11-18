@@ -8,6 +8,16 @@ open ClaimCore.Domain.Inputs
 open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 
+let internal paymentInputs =
+    group TaskInputMode.Required RecordGroup.Payment
+    @ [
+        { required (target InputTarget.PaymentDirection) with
+            DefaultText = Some(PaymentDirection.token PaymentDirection.defaultValue)
+        }
+        optional (target InputTarget.PaymentReference)
+        optional (target InputTarget.PaymentPayee)
+    ]
+
 let declaration =
     family
         "case.recordPayment"
@@ -16,68 +26,92 @@ let declaration =
         ActFamily.Business
         Consequence.Routine
         [ Capability.RecordPayment ]
-        (operation
-         :: caseTarget
-         :: revision
-         :: group TaskInputMode.Required RecordGroup.Payment)
+        (operation :: caseTarget :: revision :: paymentInputs)
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command = { Payment: Payment }
+let internal parse admitReference admit inputs =
+    let direction =
+        Parsing.optionalText InputTarget.PaymentDirection inputs
+        |> Result.bind (function
+            | None -> Ok PaymentDirection.defaultValue
+            | Some value ->
+                Vocabulary.tryParse PaymentDirection.vocabulary value
+                |> Option.map Ok
+                |> Option.defaultValue (Error Violation.PaymentDirectionFormat)
+                |> Parsing.at InputTarget.PaymentDirection)
 
-let private parse admit fields =
-    CaseParsing.payment admit fields
-    |> Result.map (fun payment -> { Payment = payment })
+    let optional target parse =
+        Parsing.optionalText target inputs
+        |> Result.bind (function
+            | None -> Ok None
+            | Some value -> parse value |> Parsing.at target |> Result.map Some)
+
+    let payee =
+        optional InputTarget.PaymentPayee (fun value ->
+            match System.Guid.TryParseExact(value, "D") with
+            | true, id ->
+                PartyId.create id
+                |> Option.map Ok
+                |> Option.defaultValue (Error Violation.PayeeUnavailable)
+            | _ -> Error Violation.PayeeUnavailable)
+
+    let details =
+        Admission.map2
+            (fun direction reference -> direction, reference)
+            direction
+            (optional InputTarget.PaymentReference (Identifier.parse >> Result.bind admitReference))
+
+    Admission.map2
+        (fun payment ((direction, reference), payee) ->
+            Payment.withDetails direction reference payee payment)
+        (CaseParsing.payment admit (CaseParsing.values inputs))
+        (Admission.map2 (fun details payee -> details, payee) details payee)
 
 let check inputs =
-    Parsing.check (CaseParsing.values >> parse (fun _ -> Ok)) inputs
+    Parsing.check (parse Ok (fun _ -> Ok)) inputs
 
-let private gate =
-    CaseRules.gate true (fun state ->
-        state.Case.Value.Content
-        |> Option.exists (fun content ->
-            content.Finance.Decision
-            |> Option.exists (fun decision ->
-                Amount.value content.Finance.PaidAmount < Money.value (Decision.payable decision))))
+let private gate = FamilyRules.active true
 
 let availability environment state binding =
     let offered =
         CaseRules.availability declaration environment state binding capability gate
 
-    let currency =
+    let recommendation =
         state
-        |> Option.bind (fun state -> state.Case.Value.Content)
-        |> Option.bind (fun content -> content.Finance.Decision)
-        |> Option.map (Decision.payable >> Money.currency)
+        |> Option.bind (fun (state: DecisionFacts) -> state.Case.Value.Content)
+        |> Option.bind (fun content ->
+            match CaseProgress.ofFinancial content.Finance with
+            | CaseProgress.Decided
+            | CaseProgress.PartlyPaid -> Some 0
+            | _ -> None)
 
     { offered with
-        Recommendation = Some 0
-        Seeds =
-            currency
-            |> Option.map (fun value ->
-                Map.ofList [ field BusinessField.PaidCurrency, InputValue.Text value ])
-            |> Option.defaultValue Map.empty
+        Recommendation = recommendation
     }
+
+let internal admitPayee (state: DecisionFacts) payment =
+    let valid =
+        Payment.payee payment
+        |> Option.forall (fun id ->
+            Map.tryFind id state.Parties
+            |> Option.exists (fun part -> not part.Value.Removed && part.Value.Content.IsSome))
+
+    if valid then
+        Ok()
+    else
+        Refusal.invalidInput (InputTarget.PaymentPayee, Violation.PayeeUnavailable)
+        |> Rejection.ofRefusal
+        |> Error
 
 let internal failure =
     function
-    | FinancialPositionIssue.CurrencyMismatch ->
-        Rejection.ofRefusal (
-            Refusal.invalidInput (
-                InputTarget.Field BusinessField.PaidCurrency,
-                Violation.PaymentCurrencyMismatch
-            )
-        )
-    | FinancialPositionIssue.ExceedsPayable ->
+    | FinancialPositionIssue.TotalOutOfRange ->
         Rejection.ofRefusal (
             Refusal.invalidInput (
                 InputTarget.Field BusinessField.PaidAmount,
-                Violation.PaymentExceedsPayable
+                Violation.PaymentTotalRange
             )
-        )
-    | FinancialPositionIssue.FuturePayment ->
-        Rejection.ofRefusal (
-            Refusal.invalidInput (InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate)
         )
     | FinancialPositionIssue.CountOutOfRange ->
         Rejection.ofRefusal (
@@ -89,8 +123,7 @@ let internal failure =
     | _ -> Rejection.InvalidState RecordViolation.InvalidFinancialPosition
 
 let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
-    let fields = CaseParsing.values inputs
-    let syntax = parse (fun _ -> Ok) fields
+    let syntax = parse Ok (fun _ -> Ok) inputs
 
     match state, binding, context.Decision.BusinessDate with
     | Some state, Binding.Case _, Some today ->
@@ -99,19 +132,13 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
                 CaseRules.admitInputs syntax context environment state binding capability
                 |> Parsing.reject
 
-            let before = state.Case.Value.Content
 
             let admit = CaseAdmission.fieldAdmission today None
 
-            let! command =
-                Admission.map2
-                    (fun command () -> command)
-                    (parse admit fields)
-                    (CaseParsing.chronology before false false fields)
-                |> CaseInput.ordered
-                |> Parsing.reject
+            let! payment = parse Identifier.admit admit inputs |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
+            do! admitPayee state payment
 
             do!
                 if Map.containsKey context.Stamp.OperationId state.Payments then
@@ -119,11 +146,9 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
                 else
                     Ok()
 
-            let! finance =
-                FinancialPosition.record today command.Payment content.Finance
-                |> Result.mapError failure
+            let entry = PaymentEntry.recorded context.Stamp.OperationId payment
 
-            let entry = PaymentEntry.recorded context.Stamp.OperationId command.Payment
+            let! finance = FinancialPosition.add entry content.Finance |> Result.mapError failure
 
             return
                 [

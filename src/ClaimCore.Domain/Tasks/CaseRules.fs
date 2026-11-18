@@ -76,14 +76,21 @@ module internal CaseRules =
     let acceptedContent gate state =
         checkState gate state |> Result.bind (fun () -> content state)
 
-    let changeWithDisposition context (state: DecisionFacts) (value: CasePartState) disposition =
+    let private changeWithPrivate
+        context
+        (state: DecisionFacts)
+        (value: CasePartState)
+        disposition
+        reopenReason
+        =
         let accepted =
             {
                 CaseValue.Reference = None
                 Lifecycle = value.Lifecycle
-                Status = value.Status
+                Handling = value.Handling
                 Content = value.Content
                 Disposition = disposition
+                ReopenReason = reopenReason
             }
 
         FamilyRules.change
@@ -93,8 +100,14 @@ module internal CaseRules =
             (Revision.successor state.Case.Revision)
             (PartValue.Case accepted)
 
+    let changeWithDisposition context state value disposition =
+        changeWithPrivate context state value disposition None
+
     let change context state value =
-        changeWithDisposition context state value None
+        changeWithPrivate context state value None None
+
+    let reopen context state value reason =
+        changeWithPrivate context state value None reason
 
     let seeds fields =
         fields

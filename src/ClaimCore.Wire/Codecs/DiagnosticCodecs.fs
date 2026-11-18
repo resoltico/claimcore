@@ -82,57 +82,46 @@ module DiagnosticCodecs =
                    + TaskCollectionId.maximumRows collection.Collection * collection.Inputs.Length)))
         |> List.max
 
-    let private relatedDate =
-        (record (fun field value ->
-            {
-                RelatedDate.Field = field
-                Value = value
-            })
-        : Fields<RelatedDate, _>)
-        |> field "field" _.Field (VocabularyCodec.create BusinessField.vocabulary)
-        |> field
-            "value"
-            _.Value
-            (ResponseScalars.date
-             |> map
-                 (CalendarDate.parse >> Result.defaultWith (fun _ -> invalidOp "Admitted date"))
-                 CalendarDate.format)
-        |> build
-        |> named "RelatedDate"
-
     let private issueVariants =
         let fields =
-            record (fun target related row -> target, related, row)
+            record (fun target row -> target, row)
             |> field
                 "input"
-                (fun (field, _, _) -> field)
+                fst
                 (Vocabulary.define
                     "inputIssueTarget"
                     (Vocabulary.all InputTarget.vocabulary)
                     (TaskInputId.Target >> TaskInputId.token)
                  |> VocabularyCodec.create
                  |> named "InputIssueTarget")
-            |> optionalField "relatedDate" (fun (_, related, _) -> related) relatedDate
             |> field
                 "row"
-                (fun (_, _, row) -> row)
+                snd
                 (nullable (
-                    integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
-                    |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64)
+                    integer
+                        0L
+                        (int64 (max PeopleAdmission.MaximumGrants PartyContent.MaximumCurrent - 1))
+                    |> map int int64
                 ))
 
         violationVariants
         |> List.map (
             extendVariant
-                (fun (target, related, row) violation ->
+                (fun (target, row) violation ->
                     {
                         Target = target
                         Violation = violation
-                        GrantRow = row
-                        RelatedDate = related
+                        Row =
+                            row
+                            |> Option.bind (
+                                TaskRowTarget.create (TaskCollectionId.ofRowInput target)
+                            )
                     })
                 (fun issue ->
-                    Some((issue.Target, issue.RelatedDate, issue.GrantRow), issue.Violation))
+                    Some(
+                        (issue.Target, issue.Row |> Option.map TaskRowTarget.ordinal),
+                        issue.Violation
+                    ))
                 fields
         )
 

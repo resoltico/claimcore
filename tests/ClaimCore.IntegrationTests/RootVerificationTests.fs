@@ -31,7 +31,13 @@ let private rehashedCase (database: PostgresFixture.Database) =
         let! closed =
             Service.executeSubmission
                 actor
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         accepted closed |> ignore
@@ -46,7 +52,12 @@ let private rehashedCase (database: PostgresFixture.Database) =
                     CaseState.map
                         (fun fields ->
                             { fields with
-                                Status = CaseStatus.Closed
+                                Handling =
+                                    Handling.Closed
+                                        {
+                                            Outcome = ClosureOutcome.Settled
+                                            Note = None
+                                        }
                             })
                         snapshot.State
             }
@@ -131,9 +142,11 @@ let private actors (database: PostgresFixture.Database) =
             rewrite database receipt.Position.Sequence (fun retained ->
                 rehashed
                     { retained.Root.Header with
-                        ActorId =
-                            ActorId.ofOperationId (
-                                CaseFixtures.operationId (id database.Fixture 20)
+                        Authority =
+                            Authority.Actor(
+                                ActorId.ofOperationId (
+                                    CaseFixtures.operationId (id database.Fixture 20)
+                                )
                             )
                     }
                     retained.Root.Structure.Task

@@ -52,7 +52,7 @@ module OperationSubmissionCodecs =
         |> List.map (fun input ->
             input.Input,
             TaskInputId.token input.Input,
-            input.Mode <> TaskInputMode.Required,
+            input.Mode <> TaskInputMode.Required || input.DefaultText.IsSome,
             scalar input)
         |> fieldMapWithPresence
 
@@ -63,7 +63,7 @@ module OperationSubmissionCodecs =
             |> List.map (fun input ->
                 input.Input,
                 TaskInputId.token input.Input,
-                input.Mode <> TaskInputMode.Required,
+                input.Mode <> TaskInputMode.Required || input.DefaultText.IsSome,
                 scalar input)
 
         let collections =
@@ -80,7 +80,7 @@ module OperationSubmissionCodecs =
                         | SubmissionValue.Rows rows -> rows
                         | _ -> invalidOp "Collection task input required.")
 
-                input, TaskInputId.token input, false, codec)
+                input, TaskInputId.token input, collection.MinimumRows = 0, codec)
 
         fieldMapWithPresence (members @ collections)
 
@@ -109,6 +109,11 @@ module OperationSubmissionCodecs =
         | OperationBinding.Work(_, revision) -> revision
         | _ -> invalidOp "Work binding required."
 
+    let private partyTarget =
+        function
+        | OperationBinding.Party(target, _) -> target
+        | _ -> invalidOp "Party binding required."
+
     let private noteTarget =
         function
         | OperationBinding.Note(target, _) -> target
@@ -118,6 +123,16 @@ module OperationSubmissionCodecs =
         function
         | OperationBinding.Note(_, note) -> selected "Note selection required." note
         | _ -> invalidOp "Note binding required."
+
+    let private linkTarget =
+        function
+        | OperationBinding.Link(target, _) -> target
+        | _ -> invalidOp "Link binding required."
+
+    let private linkId =
+        function
+        | OperationBinding.Link(_, link) -> selected "Link selection required." link
+        | _ -> invalidOp "Link binding required."
 
     let private reminderTarget =
         function
@@ -217,6 +232,42 @@ module OperationSubmissionCodecs =
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> field "noteId" noteId uuid
                 |> build
+            | ActSubject.Party when declaration.Creates ->
+                record (fun target -> OperationBinding.Party(target, None))
+                |> fixedField "kind" "PARTY"
+                |> field "target" partyTarget RequestCodecs.caseSelector
+                |> build
+            | ActSubject.Party ->
+                record (fun target id revision ->
+                    OperationBinding.Party(target, Some(id, revision)))
+                |> fixedField "kind" "PARTY"
+                |> field "target" partyTarget RequestCodecs.caseSelector
+                |> field
+                    "partyId"
+                    (function
+                    | OperationBinding.Party(_, current) ->
+                        (selected "Party selection required." current) |> fst
+                    | _ -> invalidOp "Party binding required.")
+                    uuid
+                |> field
+                    "expectedRevision"
+                    (function
+                    | OperationBinding.Party(_, current) ->
+                        (selected "Party selection required." current) |> snd
+                    | _ -> invalidOp "Party binding required.")
+                    version
+                |> build
+            | ActSubject.Link when declaration.Creates ->
+                record (fun target -> OperationBinding.Link(target, None))
+                |> fixedField "kind" "LINK"
+                |> field "target" linkTarget RequestCodecs.caseSelector
+                |> build
+            | ActSubject.Link ->
+                record (fun target link -> OperationBinding.Link(target, Some link))
+                |> fixedField "kind" "LINK"
+                |> field "target" linkTarget RequestCodecs.caseSelector
+                |> field "linkId" linkId uuid
+                |> build
             | ActSubject.Reminder when declaration.Creates ->
                 record (fun target -> OperationBinding.Reminder(target, None))
                 |> fixedField "kind" "REMINDER"
@@ -263,6 +314,10 @@ module OperationSubmissionCodecs =
             | BindingShape.Reminder -> "REMINDER"
             | BindingShape.NoteNew -> "NOTE.new"
             | BindingShape.Note -> "NOTE"
+            | BindingShape.PartyNew -> "PARTY.new"
+            | BindingShape.Party -> "PARTY"
+            | BindingShape.LinkNew -> "LINK.new"
+            | BindingShape.Link -> "LINK"
             | BindingShape.PeopleNew -> "PEOPLE.new"
             | BindingShape.People -> "PEOPLE"
 

@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 6),
+    installation_format smallint NOT NULL CHECK (installation_format = 7),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -68,15 +68,16 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=6),
+    installation_format smallint NOT NULL CHECK (installation_format=7),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
-    actor_id uuid NOT NULL CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
+    actor_id uuid CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
     business_date date CHECK (business_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     aggregate_kind text NOT NULL CHECK (aggregate_kind IN ('FAMILY','PERSON')),
     task text COLLATE "C" NOT NULL CHECK (task ~ $task$\A[a-z]+(\.[a-z][A-Za-z]*)+\Z$task$),
     structure jsonb NOT NULL CHECK (jsonb_typeof(structure)='object'),
-    CHECK ((aggregate_kind='PERSON')=(business_date IS NULL))
+    CHECK ((aggregate_kind='PERSON')=(business_date IS NULL)),
+    CONSTRAINT ledger_family_actor CHECK (actor_id IS NOT NULL OR aggregate_kind='PERSON')
 );
 CREATE TABLE claimcore.ledger_effects (
     operation_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
@@ -271,7 +272,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>6
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>7
        OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
        OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
@@ -345,25 +346,29 @@ CREATE TABLE claimcore.cases (
                        AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
     ),
     search_text text CHECK (search_text IS NULL OR octet_length(search_text) BETWEEN 1 AND 1048576),
-    notified_on date CHECK (notified_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    received_on date CHECK (received_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    registered_on date NOT NULL CHECK (registered_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    closed_on date CHECK (closed_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    last_activity_on date NOT NULL CHECK (last_activity_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     claimed_amount numeric(22,4),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4),
-    paid_amount numeric(22,4),
+    payment_review boolean,
+    outcome text CHECK (outcome ~ '^[A-Z][A-Z_]{0,39}$'),
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    deadline_due date CHECK (deadline_due BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     payable_currency text CHECK (payable_currency ~ '^[A-Z]{3}$'),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     -- The format bounds encoded storage; Domain owns reference and financial admission.
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]+$' AND octet_length(case_reference)<=32768),
     CONSTRAINT private_shape CHECK ((snapshot IS NULL)=(status IS NULL) AND (snapshot IS NULL)=(progress IS NULL)
-        AND (snapshot IS NULL)=(search_text IS NULL) AND (snapshot IS NULL)=(notified_on IS NULL)
-        AND (snapshot IS NULL)=(claimed_amount IS NULL) AND (snapshot IS NULL)=(claimed_currency IS NULL)
-        AND (snapshot IS NOT NULL OR (paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+        AND (snapshot IS NULL)=(search_text IS NULL)
+        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND payment_review IS NULL AND outcome IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND deadline_due IS NULL AND work_search_text IS NULL))),
+    CONSTRAINT claimed_shape CHECK ((claimed_amount IS NULL) = (claimed_currency IS NULL)),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
-    CONSTRAINT paid_shape CHECK ((paid_amount IS NULL) = (payable_amount IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
@@ -375,7 +380,7 @@ CREATE INDEX cases_work_search ON claimcore.cases USING gin (work_search_text pu
 
 CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
-CREATE INDEX cases_notified ON claimcore.cases (notified_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
+CREATE INDEX cases_received ON claimcore.cases (received_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
 
 -- Payment IDs and removal markers remain reserved. Parent erasure clears private amounts and dates.
 CREATE TABLE claimcore.case_payments (
@@ -386,12 +391,24 @@ CREATE TABLE claimcore.case_payments (
     FOREIGN KEY(accepting_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     payment_date date CHECK (payment_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     paid_amount numeric(22,4),
+    currency text CHECK (currency ~ '^[A-Z]{3}$'),
+    direction text CHECK (direction ~ '^[A-Z][A-Z_]{0,39}$'),
+    reference text,
+    payee_id uuid,
     removed boolean NOT NULL,
-    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL)),
+    CONSTRAINT payment_private_shape CHECK ((payment_date IS NULL) = (paid_amount IS NULL)
+        AND (payment_date IS NULL) = (currency IS NULL) AND (payment_date IS NULL) = (direction IS NULL)
+        AND (payment_date IS NOT NULL OR (reference IS NULL AND payee_id IS NULL))),
     UNIQUE (accepting_sequence, effect_index)
 );
 CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,accepting_sequence DESC,effect_index DESC) WHERE NOT removed AND payment_date IS NOT NULL;
-CREATE INDEX case_payments_current_dates ON claimcore.case_payments(case_id,payment_date,payment_id) WHERE NOT removed AND payment_date IS NOT NULL;
+CREATE TABLE claimcore.case_payment_totals (
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    currency text NOT NULL CHECK (currency ~ '^[A-Z]{3}$'),
+    paid numeric(44,4) NOT NULL,
+    returned numeric(44,4) NOT NULL,
+    PRIMARY KEY (case_id,currency)
+);
 
 CREATE TABLE claimcore.actors (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
@@ -406,11 +423,24 @@ CREATE TABLE claimcore.actors (
     contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
     display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
     contact_search text CHECK (contact_search IS NULL OR (octet_length(contact_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(contact_search))),
-    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
+    digest_email text CHECK (digest_email IS NULL OR (octet_length(digest_email) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(digest_email))),
+    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR (contact IS NULL AND digest_email IS NULL)) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
 );
 
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
 CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public.gin_trgm_ops);
+
+CREATE TABLE claimcore.digest_runs (
+    -- An actor's creation operation survives projection rebuilds.
+    actor_id uuid NOT NULL REFERENCES claimcore.ledger(operation_id),
+    digest_date date NOT NULL,
+    claimed_at timestamptz NOT NULL,
+    outcome text CHECK (outcome IS NULL OR outcome ~ '^[A-Z][A-Z_]{0,39}$'),
+    completed_at timestamptz,
+    PRIMARY KEY (actor_id,digest_date),
+    CHECK ((outcome IS NULL)=(completed_at IS NULL)),
+    CHECK (completed_at IS NULL OR completed_at>=claimed_at)
+);
 
 -- Bounded authentication hints, never ledger evidence. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
@@ -459,10 +489,12 @@ CREATE TABLE claimcore.reminders (
     state text CHECK (state ~ '^[A-Z][A-Z_]{0,39}$'),
     action text CHECK (action IS NULL OR (octet_length(action) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(action))),
     due date CHECK (due BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    kind text CHECK (kind ~ '^[A-Z][A-Z_]{0,39}$'),
+    done_on date CHECK (done_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     search_text text,
     changed_at timestamptz NOT NULL,
     recorded_by uuid NOT NULL REFERENCES claimcore.actors(actor_id),
-    CHECK (((snapshot IS NULL) AND state IS NULL AND action IS NULL AND due IS NULL AND search_text IS NULL) OR (snapshot IS NOT NULL AND state IS NOT NULL AND action IS NOT NULL AND due IS NOT NULL AND search_text IS NOT NULL))
+    CHECK (((snapshot IS NULL) AND state IS NULL AND action IS NULL AND due IS NULL AND kind IS NULL AND done_on IS NULL AND search_text IS NULL) OR (snapshot IS NOT NULL AND state IS NOT NULL AND action IS NOT NULL AND due IS NOT NULL AND kind IS NOT NULL AND search_text IS NOT NULL))
 );
 CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
@@ -477,6 +509,40 @@ CREATE TABLE claimcore.notes (
     text text CHECK (text IS NULL OR (octet_length(text) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(text)))
 );
 CREATE INDEX notes_current ON claimcore.notes(case_id,created_sequence DESC) WHERE text IS NOT NULL;
+
+CREATE TABLE claimcore.case_parties (
+    party_id uuid PRIMARY KEY CHECK (party_id <> '00000000-0000-0000-0000-000000000000'),
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
+    created_sequence bigint NOT NULL,
+    created_effect_index integer NOT NULL CHECK (created_effect_index BETWEEN 0 AND 49),
+    UNIQUE(case_id,party_id),
+    UNIQUE(created_sequence,created_effect_index),
+    FOREIGN KEY(created_sequence,created_effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
+    removed boolean NOT NULL,
+    role text CHECK (role IS NULL OR role ~ '^[A-Z][A-Z_]{0,39}$'),
+    name text CHECK (name IS NULL OR (octet_length(name) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(name))),
+    details text CHECK (details IS NULL OR (octet_length(details) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(details))),
+    CHECK ((role IS NULL AND name IS NULL AND details IS NULL) OR role IS NOT NULL)
+);
+CREATE INDEX case_parties_current ON claimcore.case_parties(case_id,created_sequence,created_effect_index) WHERE NOT removed;
+ALTER TABLE claimcore.case_payments ADD CONSTRAINT payment_payee_ownership
+    FOREIGN KEY (case_id,payee_id) REFERENCES claimcore.case_parties(case_id,party_id)
+    DEFERRABLE INITIALLY DEFERRED;
+
+
+CREATE TABLE claimcore.case_links (
+    link_id uuid PRIMARY KEY CHECK (link_id <> '00000000-0000-0000-0000-000000000000'),
+    source_case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    target_case_id uuid REFERENCES claimcore.cases(case_id) DEFERRABLE INITIALLY DEFERRED,
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
+    removed boolean NOT NULL,
+    note text CHECK (note IS NULL OR (octet_length(note) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(note))),
+    CHECK (target_case_id IS NOT NULL OR note IS NULL),
+    CHECK (NOT removed OR target_case_id IS NULL)
+);
+CREATE INDEX case_links_source ON claimcore.case_links(source_case_id);
+CREATE INDEX case_links_target ON claimcore.case_links(target_case_id);
 
 CREATE TABLE claimcore.grants (
     granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
@@ -516,7 +582,13 @@ CREATE FUNCTION claimcore.projection_erasure_integrity()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 DECLARE family_id uuid; root claimcore.cases%ROWTYPE; erased boolean;
 BEGIN
-    IF TG_TABLE_NAME='ledger_effects' THEN family_id:=NEW.erases_id; ELSE family_id:=NEW.case_id; END IF;
+    IF TG_TABLE_NAME='ledger_effects' THEN
+        family_id:=NEW.erases_id;
+    ELSIF TG_TABLE_NAME='case_links' THEN
+        family_id:=NEW.source_case_id;
+    ELSE
+        family_id:=NEW.case_id;
+    END IF;
     IF TG_TABLE_NAME='ledger_effects' AND EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind='FAMILY' AND c.owner_id=family_id AND c.payload IS NOT NULL) THEN
         RAISE EXCEPTION 'accepted family erasure must clear retained private values atomically' USING ERRCODE='CC003';
     END IF;
@@ -526,10 +598,13 @@ BEGIN
     IF erased THEN
         IF root.snapshot IS NOT NULL OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects e
             WHERE e.part_kind='CASE' AND e.part_id=family_id AND e.revision=root.revision AND e.erases_kind='FAMILY' AND e.erases_id=family_id)
-            OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND (payment_date IS NOT NULL OR paid_amount IS NOT NULL))
+            OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND payment_date IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_payment_totals WHERE case_id=family_id)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL))
-            OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL))
+            OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR kind IS NOT NULL OR done_on IS NOT NULL OR search_text IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.notes WHERE case_id=family_id AND text IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND (target_case_id IS NOT NULL OR note IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND ledger_compartments.owner_id=family_id AND payload IS NOT NULL) THEN
             RAISE EXCEPTION 'accepted family erasure must clear every owned private value' USING ERRCODE='CC003';
         END IF;
@@ -537,7 +612,9 @@ BEGIN
         IF root.snapshot IS NULL
             OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND payment_date IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND snapshot IS NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND revision>0 AND snapshot IS NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND NOT removed AND target_case_id IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.notes n WHERE n.case_id=family_id AND n.text IS NULL AND NOT EXISTS(
                 SELECT 1 FROM claimcore.ledger_effects e WHERE e.part_kind='NOTE' AND e.part_id=n.note_id
                   AND e.aggregate_kind='FAMILY' AND e.aggregate_id=family_id AND e.retained->>'removed'='true'
@@ -549,10 +626,13 @@ BEGIN
 END;
 $$;
 CREATE CONSTRAINT TRIGGER cases_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.cases DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER payment_totals_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_payment_totals DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER payments_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_payments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER work_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_work DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER reminders_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.reminders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER parties_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_parties DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER notes_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.notes DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER case_links_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_links DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
 CREATE CONSTRAINT TRIGGER accepted_family_erasure_integrity AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.erases_kind='FAMILY') EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
@@ -562,7 +642,7 @@ BEGIN
     IF EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind=NEW.erases_kind AND c.owner_id=NEW.erases_id
         AND c.payload IS NOT NULL AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(NEW.operation_sequence,NEW.effect_index))
         OR EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=NEW.erases_id AND a.revision=NEW.revision
-           AND (a.display_name IS NOT NULL OR a.contact IS NOT NULL OR a.display_name_search IS NOT NULL OR a.contact_search IS NOT NULL)) THEN
+           AND (a.display_name IS NOT NULL OR a.contact IS NOT NULL OR a.digest_email IS NOT NULL OR a.display_name_search IS NOT NULL OR a.contact_search IS NOT NULL)) THEN
         RAISE EXCEPTION 'accepted profile erasure must clear covered private values atomically' USING ERRCODE='CC003';
     END IF;
     RETURN NULL;
@@ -623,9 +703,10 @@ GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.l
     TO claimcore_runtime;
 GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb) TO claimcore_runtime;
-GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.actors TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
-GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
+GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request, claimcore.digest_runs TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;

@@ -437,3 +437,16 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (height < 36rem) {
+  .ui-dialog-overlay--end .ui-dialog {
+    overflow-y: auto;
+  }
+  .ui-dialog-overlay--end [role="dialog"] {
+    display: block;
+    block-size: auto;
+  }
+  .ui-dialog-overlay--end .ui-dialog-body {
+    overflow: visible;
+  }
+}

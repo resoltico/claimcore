@@ -15,7 +15,6 @@ const error = (field: "issuer" | "subject"): Notice => ({
     {
       input: field === "issuer" ? "input:principal.issuer" : "input:principal.subject",
       row: null,
-      related: null,
       message: { messageId: "diagnostic.PRINCIPAL_FORMAT.gui", arguments: [] },
     },
   ],

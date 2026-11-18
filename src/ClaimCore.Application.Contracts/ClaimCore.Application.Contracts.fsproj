@@ -12,13 +12,13 @@
     <Compile Include="SessionTermination.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="TaskOffer.fs" />
+    <Compile Include="PaymentPages.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="CasePages.fs" />
-    <Compile Include="PaymentPages.fs" />
     <Compile Include="CaseTotals.fs" />
     <Compile Include="PeoplePages.fs" />
     <Compile Include="WorkReads.fs" />

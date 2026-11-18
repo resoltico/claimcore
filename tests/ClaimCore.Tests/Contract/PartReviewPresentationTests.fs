@@ -23,7 +23,15 @@ let private caseValue status finance =
     {
         CaseValue.Reference = None
         Lifecycle = Lifecycle.Active
-        Status = status
+        Handling =
+            if status = CaseStatus.Opened then
+                Handling.Open
+            else
+                Handling.Closed
+                    {
+                        Outcome = ClosureOutcome.Settled
+                        Note = None
+                    }
         Content =
             Some
                 {
@@ -31,6 +39,7 @@ let private caseValue status finance =
                     Finance = finance
                 }
         Disposition = None
+        ReopenReason = None
     }
 
 [<Tests>]
@@ -93,10 +102,7 @@ let tests =
                 (fun () ->
                     let decision = DomainInputs.admittedDecision DomainInputs.decision
 
-                    let finance =
-                        FinancialPosition.withDecision (Some decision) fields.Finance
-                        |> Result.toOption
-                        |> Option.get
+                    let finance = FinancialPosition.withDecision (Some decision) fields.Finance
 
                     let changedDecision =
                         Decision.replace
@@ -112,8 +118,6 @@ let tests =
 
                     let changedFinance =
                         FinancialPosition.withDecision (Some changedDecision) finance
-                        |> Result.toOption
-                        |> Option.get
 
                     let description =
                         CaseDescription.describe

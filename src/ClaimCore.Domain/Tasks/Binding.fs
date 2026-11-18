@@ -18,6 +18,10 @@ type Binding =
     | Reminder of CaseSelector * ReminderId * Revision
     | NoteNew of CaseSelector
     | Note of CaseSelector * NoteId
+    | PartyNew of CaseSelector
+    | Party of CaseSelector * PartyId * Revision
+    | LinkNew of CaseSelector
+    | Link of CaseSelector * LinkId
     | PeopleNew of Revision
     | People of ActorId * Revision
 
@@ -31,7 +35,11 @@ module Binding =
         | Binding.ReminderNew target
         | Binding.Reminder(target, _, _)
         | Binding.NoteNew target
-        | Binding.Note(target, _) -> Some target
+        | Binding.Note(target, _)
+        | Binding.PartyNew target
+        | Binding.Party(target, _, _)
+        | Binding.LinkNew target
+        | Binding.Link(target, _) -> Some target
         | _ -> None
 
 [<RequireQualifiedAccess>]
@@ -45,10 +53,18 @@ type BindingShape =
     | Reminder
     | NoteNew
     | Note
+    | PartyNew
+    | Party
+    | LinkNew
+    | Link
     | PeopleNew
     | People
 
 module BindingShape =
+    let all =
+        Vocabulary.ofUnion<BindingShape> "bindingShape" TokenCasing.ScreamingSnake None
+        |> Vocabulary.all
+
     let ofValue =
         function
         | Binding.CaseNew _ -> BindingShape.CaseNew
@@ -60,5 +76,9 @@ module BindingShape =
         | Binding.Reminder _ -> BindingShape.Reminder
         | Binding.NoteNew _ -> BindingShape.NoteNew
         | Binding.Note _ -> BindingShape.Note
+        | Binding.PartyNew _ -> BindingShape.PartyNew
+        | Binding.Party _ -> BindingShape.Party
+        | Binding.LinkNew _ -> BindingShape.LinkNew
+        | Binding.Link _ -> BindingShape.Link
         | Binding.PeopleNew _ -> BindingShape.PeopleNew
         | Binding.People _ -> BindingShape.People

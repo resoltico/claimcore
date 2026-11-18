@@ -206,6 +206,38 @@ module BindingCodecs =
         |> build
         |> named "Binding.NOTE"
 
+    let linkNew =
+        (record Binding.LinkNew: Fields<Binding, _>)
+        |> fixedField "kind" "LINK"
+        |> field
+            "target"
+            (function
+            | Binding.LinkNew target -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> build
+        |> named "Binding.LINK.new"
+
+    let link =
+        let identity = identifier LinkId.create LinkId.value
+
+        (record (fun target id -> Binding.Link(target, id)): Fields<Binding, _>)
+        |> fixedField "kind" "LINK"
+        |> field
+            "target"
+            (function
+            | Binding.Link(target, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "linkId"
+            (function
+            | Binding.Link(_, id) -> id
+            | _ -> mismatch ())
+            identity
+        |> build
+        |> named "Binding.LINK"
+
     let peopleNew =
         (record Binding.PeopleNew: Fields<Binding, _>)
         |> fixedField "kind" "PEOPLE"
@@ -236,90 +268,92 @@ module BindingCodecs =
         |> build
         |> named "Binding.PEOPLE"
 
-    let forDeclaration (declaration: TaskDeclaration) =
-        match declaration.Target with
-        | ActSubject.Case when declaration.Creates -> caseNew
-        | ActSubject.Case when declaration.ReviewsFamilySequence -> caseErase
-        | ActSubject.Case when
-            declaration.Inputs
-            |> List.exists (fun input ->
-                input.Input = TaskInputId.Target InputTarget.PaymentId
-                && input.Source = InputSource.Binding)
-            ->
-            casePayment
-        | ActSubject.Case -> caseExisting
-        | ActSubject.Work -> work
-        | ActSubject.Note when declaration.Creates -> noteNew
-        | ActSubject.Note -> note
-        | ActSubject.Reminder when declaration.Creates -> reminderNew
-        | ActSubject.Reminder -> reminder
-        | ActSubject.People when declaration.Creates -> peopleNew
-        | ActSubject.People -> people
+    let partyNew =
+        (record Binding.PartyNew: Fields<Binding, _>)
+        |> fixedField "kind" "PARTY"
+        |> field
+            "target"
+            (function
+            | Binding.PartyNew target -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> build
+        |> named "Binding.PARTY.new"
 
-    let private select codec accepts =
-        branch id (fun value -> if accepts value then Some value else None) codec
+    let party =
+        (record (fun target id revision -> Binding.Party(target, id, revision)): Fields<Binding, _>)
+        |> fixedField "kind" "PARTY"
+        |> field
+            "target"
+            (function
+            | Binding.Party(target, _, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "partyId"
+            (function
+            | Binding.Party(_, id, _) -> id
+            | _ -> mismatch ())
+            (identifier PartyId.create PartyId.value)
+        |> field
+            "expectedRevision"
+            (function
+            | Binding.Party(_, _, revision) -> revision
+            | _ -> mismatch ())
+            (version 1L)
+        |> build
+        |> named "Binding.PARTY"
 
-    let forValue =
+    let private forShape =
         function
-        | Binding.CaseNew _ -> caseNew
-        | Binding.Case _ -> caseExisting
-        | Binding.CasePayment _ -> casePayment
-        | Binding.CaseErase _ -> caseErase
-        | Binding.Work _ -> work
-        | Binding.ReminderNew _ -> reminderNew
-        | Binding.Reminder _ -> reminder
-        | Binding.NoteNew _ -> noteNew
-        | Binding.Note _ -> note
-        | Binding.PeopleNew _ -> peopleNew
-        | Binding.People _ -> people
+        | BindingShape.CaseNew -> caseNew
+        | BindingShape.Case -> caseExisting
+        | BindingShape.CasePayment -> casePayment
+        | BindingShape.CaseErase -> caseErase
+        | BindingShape.Work -> work
+        | BindingShape.ReminderNew -> reminderNew
+        | BindingShape.Reminder -> reminder
+        | BindingShape.NoteNew -> noteNew
+        | BindingShape.Note -> note
+        | BindingShape.PartyNew -> partyNew
+        | BindingShape.Party -> party
+        | BindingShape.LinkNew -> linkNew
+        | BindingShape.Link -> link
+        | BindingShape.PeopleNew -> peopleNew
+        | BindingShape.People -> people
+
+    let private select shape =
+        branch
+            id
+            (fun value ->
+                if BindingShape.ofValue value = shape then
+                    Some value
+                else
+                    None)
+            (forShape shape)
+
+    let forDeclaration declaration =
+        match TaskDeclaration.bindingShapes declaration with
+        | [ shape ] -> forShape shape
+        | shapes -> choice "Binding.PEOPLE.recover" (List.map select shapes)
+
+    let forValue = BindingShape.ofValue >> forShape
 
     let matches declaration value =
-        let expected = forDeclaration declaration
-        let actual = forValue value
-
-        if expected.Schema <> actual.Schema then
+        if
+            not (
+                List.contains
+                    (BindingShape.ofValue value)
+                    (TaskDeclaration.bindingShapes declaration)
+            )
+        then
             false
         else
+            let actual = forValue value
+
             try
                 actual.Write value |> actual.Validate "$" |> Result.isOk
             with :? System.ArgumentException ->
                 false
 
-    let binding =
-        choice
-            "Binding"
-            [
-                select caseNew (function
-                    | Binding.CaseNew _ -> true
-                    | _ -> false)
-                select caseExisting (function
-                    | Binding.Case _ -> true
-                    | _ -> false)
-                select casePayment (function
-                    | Binding.CasePayment _ -> true
-                    | _ -> false)
-                select caseErase (function
-                    | Binding.CaseErase _ -> true
-                    | _ -> false)
-                select work (function
-                    | Binding.Work _ -> true
-                    | _ -> false)
-                select reminderNew (function
-                    | Binding.ReminderNew _ -> true
-                    | _ -> false)
-                select reminder (function
-                    | Binding.Reminder _ -> true
-                    | _ -> false)
-                select noteNew (function
-                    | Binding.NoteNew _ -> true
-                    | _ -> false)
-                select note (function
-                    | Binding.Note _ -> true
-                    | _ -> false)
-                select peopleNew (function
-                    | Binding.PeopleNew _ -> true
-                    | _ -> false)
-                select people (function
-                    | Binding.People _ -> true
-                    | _ -> false)
-            ]
+    let binding = choice "Binding" (BindingShape.all |> List.map select)

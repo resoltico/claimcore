@@ -28,6 +28,8 @@ let private request view : ReminderListRequest =
         View = view
         Target = None
         State = None
+        Kind = None
+        DeadlineOutcome = None
         Due = None
         Assignment = None
         Text = None
@@ -142,7 +144,7 @@ let private qualify fixture =
                     ("mix-04")
                     (3L)
                     "case.close"
-                    (Map.empty))))
+                    (CaseTransitionInputs.closed))))
 
         do!
             execute

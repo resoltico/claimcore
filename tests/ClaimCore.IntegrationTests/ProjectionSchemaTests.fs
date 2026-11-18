@@ -27,15 +27,20 @@ let private expected =
             "progress"
             "changed_at"
             "search_text"
-            "notified_on"
+            "received_on"
+            "registered_on"
+            "closed_on"
+            "last_activity_on"
             "work_search_text"
             "responsible_actor"
             "follow_up"
+            "deadline_due"
             "claimed_amount"
             "claimed_currency"
             "payable_amount"
             "payable_currency"
-            "paid_amount"
+            "payment_review"
+            "outcome"
         ]
 
 let private inventories =
@@ -51,8 +56,28 @@ let private inventories =
                 "effect_index"
                 "payment_date"
                 "paid_amount"
+                "currency"
+                "direction"
+                "reference"
+                "payee_id"
                 "removed"
             ]
+        "case_payment_totals", set [ "case_id"; "currency"; "paid"; "returned" ]
+        "case_parties",
+        set
+            [
+                "party_id"
+                "case_id"
+                "revision"
+                "created_sequence"
+                "created_effect_index"
+                "removed"
+                "role"
+                "name"
+                "details"
+            ]
+        "case_links",
+        set [ "link_id"; "source_case_id"; "target_case_id"; "revision"; "removed"; "note" ]
         "case_work",
         set
             [
@@ -77,6 +102,8 @@ let private inventories =
                 "state"
                 "action"
                 "due"
+                "kind"
+                "done_on"
                 "search_text"
                 "changed_at"
                 "recorded_by"

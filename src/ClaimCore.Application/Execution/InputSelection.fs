@@ -14,16 +14,35 @@ module internal InputSelection =
         inputs
         |> Option.bind (fun inputs -> text (TaskInputId.Target input) inputs.Values)
 
-    let principal inputs =
+    let principalFor kind inputs =
         match
-            target InputTarget.PrincipalKind inputs,
+            kind,
             target InputTarget.PrincipalIssuer inputs,
             target InputTarget.PrincipalSubject inputs
         with
         | Some kind, Some issuer, Some subject ->
-            Vocabulary.tryParse PrincipalKind.vocabulary kind
-            |> Option.bind (fun kind -> PrincipalKey.ofKind kind issuer subject |> Result.toOption)
+            PrincipalKey.ofKind kind issuer subject |> Result.toOption
         | _ -> None
+
+    let principal inputs =
+        let kind =
+            target InputTarget.PrincipalKind inputs
+            |> Option.bind (Vocabulary.tryParse PrincipalKind.vocabulary)
+
+        principalFor kind inputs
+
+    let personPrincipal exposure existing inputs =
+        let inferred =
+            existing
+            |> Option.map (PrincipalKey.parts >> fun (kind, _, _) -> kind)
+            |> Option.orElse (
+                if exposure = TaskExposure.Operator then
+                    Some PrincipalKind.Human
+                else
+                    None
+            )
+
+        principal inputs |> Option.orElseWith (fun () -> principalFor inferred inputs)
 
     let private guid create text =
         match Guid.TryParse(text: string) with

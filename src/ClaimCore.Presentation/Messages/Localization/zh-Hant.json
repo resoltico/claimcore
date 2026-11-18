@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "變更登入身分",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "將此帳戶繫結至新的簽發者和主體。帳戶會保留現有角色及工作記錄。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "已變更登入身分。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "恢復安裝擁有者權限",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "恢復某人作為安裝擁有者的存取權限，或註冊新的擁有者。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "此登入身分已為另一個帳戶保留。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "此帳戶已使用該登入身分。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "日後使用目前的身分登入時，將無法開啟此帳戶。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "更新索賠資料",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "不再需要處理時關閉案件。關閉不代表索賠已付款。",
-    "source": "6059fdf3ac25"
+    "text": "記錄結束處理的原因，並在需要時新增結案備註。",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "更正案件資料",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "更正已登記的索賠或賠付決定事實。付款記錄維持不變，應付金額不得低於已付總額。",
-    "source": "c115bf28430f"
+    "text": "更正此案件中選取的登記資訊或決定資訊。",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "記錄賠付決定",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "登記事故、索賠人、保險公司和索賠金額。",
-    "source": "bd4ea9e91f3a"
+    "text": "使用參考編號開立案件，並記錄已知的登記資訊。",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "設置首位所有者",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "以決定幣別記錄實際付款的日期與金額。此操作不會執行或驗證轉帳。",
-    "source": "572c7a975cf2"
+    "text": "使用項目的日期、金額和幣別記錄實際支付或退回的款項。",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "註冊帳戶",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "重新打開案件。資訊和歷史記錄仍會保留。",
-    "source": "9afd35e2c444"
+    "text": "請說明恢復處理此案件的原因。",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "撤銷角色",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "在支付任何款項之前移除付款決定。歷史記錄仍會保留。",
-    "source": "4579673a4146"
+    "text": "撤回決定。保留現有付款項目和決定歷史。",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "案件任務",
@@ -319,9 +351,9 @@
     "text": "下一次跟進",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "報案日期（最早優先）",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "接收日期（最早優先）",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "最近更改",
@@ -367,10 +399,6 @@
     "text": "此案件編號已存在。",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "這些日期的順序不正確。",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "不允許使用控制字符。",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "請使用 ISO 3166-1 正式分配的國家代碼，或 XK、ZZ。支援的代碼請見 help schema。",
-    "source": "b1c9f16ea7e3"
+    "text": "請使用 ISO 3166-1 正式分配的國家代碼或 XK。支援的代碼請參閱說明結構描述。",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "請使用受支援的現行 ISO 4217 貨幣代碼。不接受基金代碼及非國家貨幣代碼。請參閱 help schema。",
@@ -627,10 +655,6 @@
     "text": "案件編號",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "索賠人姓名或名稱",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "索賠金額",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "事故說明",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "報案日期",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "保險公司",
-    "source": "949b10334d29"
+  "field.receivedDate.label": {
+    "text": "接收日期",
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "每頁數量",
@@ -1175,10 +1195,6 @@
     "text": "付款記錄員",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "未知或國際",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "單個案件",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "記錄時間",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "系統營運者",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "記錄人",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "事故發生的日期。",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "首次得知此事故的日期。",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "您的辦事機構收到此索賠的日期。",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "請使用 ISO 3166-1 正式分配的代碼或 XK。{unknownCode} 表示未知或國際。",
-    "source": "0ba1fe273220"
+    "text": "請使用 ISO 3166-1 正式分配的代碼或 XK。",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "事故發生的國家。",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "描述發生了什麼，補充與此次索賠有關的重要情況。",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "提出索賠的個人或公司。",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "負責此索賠的保險公司。",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "小數點前最多 {maximumIntegerDigits} 位，小數點後最多 {maximumFractionDigits} 位。請使用 ASCII 數字和英文句點；不得包含空格、正負號、逗號或多餘的前導零。",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "您為此案件指定的編號，例如 CLM-2026-0001。之後不可更改。",
-    "source": "10559d041918"
+    "text": "您為此案件指定的編號，例如 CLM-2026-0001。",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "決定賠付金額的日期。",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "按編號、最近案件資料更改、通知日期或最早待辦提醒日期排序。資料更改按從新到舊排序；通知和提醒日期按從舊到新排序，缺少日期的排在最後。值相同時按編號排序。",
-    "source": "009775c9c5fe"
+    "text": "依參考編號、案件事實的最新變更、接收日期或最早的待辦提醒日期排序。變更由新到舊排序。接收和提醒日期由早到晚排序，沒有日期的排在最後。如值相同，則按參考編號排序。",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "選擇結果的排列方式。",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "請選擇受支援的國家代碼，例如 LV，或 XK、ZZ。",
-    "source": "d1667b590685"
+    "text": "請選擇受支援的國家代碼，例如 LV 或 XK。",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "請選擇受支援的貨幣代碼，例如 EUR。不接受基金代碼及非國家貨幣代碼。",
@@ -2428,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "此記錄中實際支付的金額。",
-    "source": "d79a30c73c31"
+    "text": "此項目實際支付或退回的金額。",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "請輸入正數金額。小數點前最多 {maximumIntegerDigits} 位，小數點後最多 {maximumFractionDigits} 位。使用 ASCII 數字及點號，不得包含空格、正負號、逗號或多餘的前導零。",
@@ -2437,15 +2449,15 @@
   },
   "field.paidCurrency.label": {
     "text": "付款幣別",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "使用決定幣別。",
-    "source": "6cf93e635901"
+    "text": "請使用此項目的幣別。",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "使用受支援的現行 ISO 4217 貨幣清單中的 {length} 個大寫 ASCII 字母，且須與決定幣別一致；不得使用基金代碼及非國家貨幣代碼。",
-    "source": "1a3ba1179c9c"
+    "text": "從支援的現行 ISO 4217 幣別清單中選擇由 {length} 個大寫 ASCII 字母組成的代碼。",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "付款 ID",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "依幣別統計的已付總額",
-    "source": "b0f6fe6c2d8f"
+    "text": "依幣別統計的淨付款額",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "已付 {paid}，應付 {payable}。",
@@ -2499,21 +2511,9 @@
     "text": "請輸入大於零的付款金額。",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "付款與賠付決定必須使用相同幣別。",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "已付總額不得超過應付金額。",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "請使用受理該已記錄付款的操作 UUID。",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "已有付款記錄的決定不能撤回或清除。僅在記錄有誤時移除付款記錄。",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "此付款記錄已不存在。繼續前請讀取案件的目前狀態。",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "將錯誤登記的付款紀錄替換為正確的日期和金額。此操作不會退款或執行轉帳。先前的歷史紀錄將保留。",
-    "source": "538255858894"
+    "text": "使用正確的日期、方向、金額、參考編號和收款人取代誤錄的付款項目。回執會標明兩個項目。",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "付款紀錄已更正。",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "不限",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "新增當事方",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "記錄與此案件相關的當事方。",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "已新增當事方。",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "更新當事方",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "變更此當事方的角色、姓名或詳細資料。",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "已更新當事方。",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "移除當事方",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "從目前案件移除此當事方。先前的資料仍保留在歷程記錄中。",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "已移除當事方。",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "當事方",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "新增已知的當事方。",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "當事方角色",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "選擇該當事方的參與方式。",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "當事方姓名",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "如已知，請輸入個人或機構名稱。",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "當事方詳細資料",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "如已知，請記錄聯絡方式或地址。",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "請使用 1 至 {maximumScalars} 個 Unicode 字元。允許換行。",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "當事方 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "選擇此案件中的當事方。",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "已檢視的當事方修訂版本",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "使用您檢視過的修訂版本。",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "請使用當事方的 UUID。",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "請選擇當事方角色。",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "請輸入姓名或詳細資料。",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "此案件的當事方數量已達上限。",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "指定的當事方數量超過上限。",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "索賠人",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "保險公司",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "索賠人",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "保險公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "當事方",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "當事方",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "已記錄當事方變更。",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "索賠人",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "提出索賠的當事方。",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "保險公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "提供與索賠相關保險的當事方。",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "代表案件相關人員行事的當事方。",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "以其他角色參與案件的當事方。",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "最多新增 {maximumParties} 個當事方。",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "從清單中選擇一個角色。",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "請使用要變更的當事方識別碼。",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "使用所選當事方的版本號碼。",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "已向收款人支付的款項。",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "收款人退回的款項。",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "超額付款",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "付款需要查核",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "付款方向",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "外部參考編號",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "收款人",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "請選擇已付款或已退回。",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "請輸入銀行交易或函件的參考編號。",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "請輸入此案件目前當事方的 ID。",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "請選擇已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "請使用目前當事方的 ID。",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "淨付款額",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "納入統計的案件數",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "請選擇已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "這筆付款會讓該幣別的合計超出精確範圍。",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "請選擇此案件目前的當事方。",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "已移除的當事方",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "已拒絕",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "已拒絕",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "重複",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "因達成和解而結束處理。",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "索賠已被拒絕。",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "索賠已被撤回。",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "另一個案件涵蓋同一索賠。",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "因其他原因結束處理。",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "結果",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "請選擇結束處理的原因。",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "請從清單中選擇一個結果。",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "結案備註",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "請記錄有關結案的背景。",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "決定依據",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "請記錄決定的證據或理由。",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "重新開案原因",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "結案",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "請從清單中選擇結案結果。",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "變更案件編號",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "替換目前的案件編號。先前的編號仍可用來找到同一案件。",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "案件編號已變更。",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "為此案件選擇一個新編號。",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "新編號",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "請使用案件編號格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "輸入此案件今後使用的編號。",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "變更前的編號",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "恢復處理的原因。",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "新增關聯案件",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "將此案件與另一個您有權檢視的案件建立關聯。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "已關聯案件。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "透過編號或 ID 選擇案件。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "移除案件關聯",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "從此案件中移除所選關聯。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "已移除案件關聯。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "請確認在此處解除案件之間的關聯。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件關聯",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件關聯已變更",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "關聯 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "請使用記錄該關聯的操作 UUID。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "用於識別要移除的關聯。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "關聯案件編號",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "請使用案件編號格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "輸入編號，或使用關聯案件 ID 欄位。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "關聯案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "請使用案件的 UUID。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "如果編號留白，請輸入 ID。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "關聯備註",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "說明這些案件為何相關。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "關聯案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "從此案件發出的關聯",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "指向此案件的關聯",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "無法檢視關聯案件",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "可檢視的傳入關聯",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "請選擇現有案件關聯。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件不能與自身關聯。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "此案件已與所選案件關聯。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "請先移除一個現有關聯，再新增另一個。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "使用 1–{maximumScalars} 個 Unicode 字元，允許換行。",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "跟進",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "跟進",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "需要後續跟進的事項。",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "需要在到期日之前完成的事項。",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "到期日已過，事項仍未完成。",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "如期完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "如期完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "事項已在到期日當天或之前完成。",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "逾期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "逾期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "事項已在到期日之後完成。",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "截止期限已取消。",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "這個未結案件有一項已逾期但仍未完成的事項。",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "不限",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "提醒類型",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "選擇跟進或截止期限。",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "選擇追蹤此事項的方式。",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "完成日期",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "輸入不晚於業務日期的公曆日期，格式為 YYYY-MM-DD。",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "填寫事項完成的日期。留白則使用當天日期。",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "提醒類型",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "依提醒類型篩選清單。",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "期限結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "期限結果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "依期限結果篩選清單。",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "按登記月份對案件分組。",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "登記月份",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "按收到月份對案件分組。",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "收到月份",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "按結案月份對案件分組。",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "結案月份",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "按已記錄的結案原因對案件分組。",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "結案結果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "按負責帳戶對案件分組。",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "負責帳戶",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "按登記日至結案日或今天的天數對案件分組。",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "處理天數",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "收到日期尚未記錄。",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "未記錄",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "案件目前未結案。",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "未結案",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "案件尚未指派負責帳戶。",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "未指派",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0–30 天",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31–90 天",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91–180 天",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181–365 天",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366 天及以上",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "處理時間為 0–30 天的案件。",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "處理時間為 31–90 天的案件。",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "處理時間為 91–180 天的案件。",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "處理時間為 181–365 天的案件。",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "處理時間為 366 天及以上的案件。",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "選擇此摘要中案件的分組方式。",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "登記起始日",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "登記截止日",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "收到起始日",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "收到截止日",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "結案起始日",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "結案截止日",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "自此日期後無活動",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "分組依據",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "登記月份",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "收到月份",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "結案月份",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "結案結果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "負責帳戶",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "處理天數",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "未記錄",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "未結案",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "未指派",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "案件分組",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "幣別",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "有索賠金額的案件",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "有應付金額的案件",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "有付款記錄的案件",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "此摘要反映產生時的案件資料。",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0–30 天",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31–90 天",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91–180 天",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181–365 天",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366 天及以上",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "每日提醒摘要（{count}）",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "在 {url} 開啟您的提醒。",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "已逾期截止事項",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "今天截止的事項",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "即將截止的事項",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "已逾期跟進事項",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "今天到期的跟進事項",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "已傳送",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "傳送失敗",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "無可傳送的提醒",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "摘要電子郵件",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "輸入接收每日提醒摘要的地址。",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "請使用不超過 {maximumCharacters} 個字元的電子郵件地址。",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "請輸入包含一個 @ 符號且網域含點的電子郵件地址。",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "已逾期截止事項 — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "已逾期截止事項",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "今天截止的事項 — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "今天截止的事項",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "即將截止的事項 — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "即將截止的事項",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "已逾期跟進事項 — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "已逾期跟進事項",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "今天到期的跟進事項 — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "今天到期的跟進事項",
+    "source": "e04e8b1f370c"
   }
 }

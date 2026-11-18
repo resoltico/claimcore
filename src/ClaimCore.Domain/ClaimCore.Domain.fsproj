@@ -16,6 +16,7 @@
     <Compile Include="Identifiers.fs" />
     <Compile Include="LedgerPosition.fs" />
     <Compile Include="ActorProfiles.fs" />
+    <Compile Include="Parties.fs" />
     <Compile Include="CaseFields.fs" />
     <Compile Include="Inputs/CorrectionGroupAction.fs" />
     <Compile Include="CaseWork.fs" />
@@ -25,8 +26,11 @@
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Reminders.fs" />
     <Compile Include="Notes.fs" />
+    <Compile Include="RelatedCases.fs" />
     <Compile Include="Grants.fs" />
+    <Compile Include="CaseReporting.fs" />
     <Compile Include="WorklistSemantics.fs" />
+    <Compile Include="ReminderDigest.fs" />
     <Compile Include="CaseStages.fs" />
     <Compile Include="Reads.fs" />
     <Compile Include="Tasks/TaskId.fs" />
@@ -66,9 +70,13 @@
     <Compile Include="Tasks/Task.fs" />
     <Compile Include="Tasks/Declarations.fs" />
     <Compile Include="Inputs/Parsing.fs" />
+    <Compile Include="Inputs/RelatedCaseInput.fs" />
     <Compile Include="Tasks/FamilyRules.fs" />
+    <Compile Include="Tasks/Party/PartyTasks.fs" />
     <Compile Include="Tasks/Note/NoteAdd.fs" />
     <Compile Include="Tasks/Note/NoteRemove.fs" />
+    <Compile Include="Tasks/Link/LinkAdd.fs" />
+    <Compile Include="Tasks/Link/LinkRemove.fs" />
     <Compile Include="Tasks/Work/WorkUpdate.fs" />
     <Compile Include="Tasks/ReminderRules.fs" />
     <Compile Include="Tasks/Reminder/ReminderCreate.fs" />
@@ -87,6 +95,8 @@
     <Compile Include="Tasks/People/PeopleEnable.fs" />
     <Compile Include="Tasks/People/PeopleDisable.fs" />
     <Compile Include="Tasks/People/PeopleSetProfile.fs" />
+    <Compile Include="Tasks/People/PeopleChangeSignInIdentity.fs" />
+    <Compile Include="Tasks/People/PeopleRecoverOwner.fs" />
     <Compile Include="Tasks/People/PeopleEraseProfile.fs" />
     <Compile Include="Tasks/CaseParsing.fs" />
     <Compile Include="Tasks/CaseRules.fs" />
@@ -98,6 +108,7 @@
     <Compile Include="Tasks/Case/CaseErase.fs" />
     <Compile Include="Tasks/Case/CaseWithdrawDecision.fs" />
     <Compile Include="Tasks/Case/CaseAmendRegistration.fs" />
+    <Compile Include="Tasks/Case/CaseChangeReference.fs" />
     <Compile Include="Tasks/Case/CaseDecide.fs" />
     <Compile Include="Tasks/Case/CaseRecordPayment.fs" />
     <Compile Include="Tasks/Case/CaseRemovePayment.fs" />

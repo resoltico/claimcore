@@ -4,6 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Execution
 
 module internal TimelineStorage =
     type PageQuery =
@@ -39,8 +40,9 @@ module internal TimelineStorage =
                              "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.part_kind=$2 AND e.part_id=$1 AND e.revision=1)"
                          + ","
                          + DatabaseSession.dateExpression
-                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence JOIN claimcore.ledger_effects p ON p.part_kind=e.part_kind AND p.part_id=e.part_id AND p.revision=e.revision-1 WHERE e.part_kind=$2 AND e.part_id=$1 AND e.retained->>'status'=$3 AND p.retained->>'status' IS DISTINCT FROM $3 ORDER BY e.operation_sequence DESC LIMIT 1)"
-                         + ",(SELECT natural_key FROM claimcore.ledger_effects WHERE part_kind=$2 AND part_id=$1 AND revision=1)")
+                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence JOIN claimcore.ledger_effects p ON p.part_kind=e.part_kind AND p.part_id=e.part_id AND p.revision=e.revision-1 WHERE e.part_kind=$2 AND e.part_id=$1 AND e.retained#>>'{handling,kind}'=$3 AND p.retained#>>'{handling,kind}' IS DISTINCT FROM $3 ORDER BY e.operation_sequence DESC LIMIT 1)"
+                         + ","
+                         + CaseIdentityReads.referenceAt "$1" "")
                         [|
                             box (CaseId.value parent)
                             box kind
@@ -57,7 +59,7 @@ module internal TimelineStorage =
                     DatabaseSession.value<string> 2 row
                     |> CaseReference.parse
                     |> Result.defaultWith (fun _ ->
-                        raise (RecordCorruptException "Case creation reference is invalid."))
+                        raise (RecordCorruptException "Current case reference is invalid."))
 
                 let snapshot =
                     PartChange.caseSnapshot reference entry.Change
@@ -80,7 +82,7 @@ module internal TimelineStorage =
                                 |> Option.map CalendarDate.ofDate
                             Disposition = PartChange.disposition entry.Change
                             RecordedAt = entry.RecordedAt
-                            RecordedBy = entry.ActorId
+                            RecordedBy = ProjectionRows.familyActor entry.Authority
                         }
             | _ -> return raise (RecordCorruptException "Current case stage is duplicated.")
         }

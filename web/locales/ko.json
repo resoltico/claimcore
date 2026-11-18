@@ -1,4 +1,8 @@
 {
+  "ui.reportingDates": {
+    "text": "보고 날짜",
+    "source": "274bd4f0d808"
+  },
   "ui.about": {
     "text": "정보",
     "source": "4efca0d10c5f"
@@ -702,5 +706,17 @@
   "ui.clearCaseRestriction": {
     "text": "청구 건 제한 해제",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "행 추가",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "행 제거",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "행 {number}",
+    "source": "f8c78edd5258"
   }
 }

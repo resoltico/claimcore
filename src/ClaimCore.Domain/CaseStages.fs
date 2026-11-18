@@ -26,6 +26,8 @@ type CaseStageEntry =
         Completed: bool
         Date: CalendarDate option
         Amount: Money option
+        NetPaid: PaymentTotals option
+        Outcome: ClosureOutcome option
     }
 
 [<RequireQualifiedAccess>]
@@ -53,7 +55,7 @@ module CaseStages =
         | CaseState.Voided fields ->
             let closed = fields.Status = CaseStatus.Closed
             let decided = fields.Decision.IsSome
-            let paid = CaseProgress.ofFinancial fields.Finance = CaseProgress.Paid
+            let paid = CaseProgress.ofFinancial fields.Finance |> CaseProgress.completesPayment
 
             Some
                 {
@@ -74,7 +76,7 @@ module CaseStages =
                         ]
                 }
 
-    let describe state (opened: CalendarDate option) (closed: CalendarDate option) =
+    let describe state (opened: CalendarDate option) (closed: CalendarDate option) latestPayment =
         match state with
         | CaseState.Erased -> Ok CaseStageDisplay.Erased
         | CaseState.Active(fields: CaseFields)
@@ -91,6 +93,8 @@ module CaseStages =
                         Completed = List.contains stage outline.Completed
                         Date = date
                         Amount = amount
+                        NetPaid = None
+                        Outcome = None
                     }
 
                 Ok(
@@ -100,19 +104,20 @@ module CaseStages =
                             step
                                 CaseStageKind.Opened
                                 (Some opened)
-                                (Some(Registration.claimed fields.Registration))
+                                (Registration.claimed fields.Registration)
                             step
                                 CaseStageKind.Decided
                                 (fields.Decision |> Option.map Decision.date)
                                 payable
-                            step
-                                CaseStageKind.Paid
-                                (fields.Finance.PaymentDates |> Option.map _.Latest)
-                                (FinancialPosition.totals fields.Finance |> Option.map _.Paid)
-                            step
-                                CaseStageKind.Closed
-                                (if fields.Status = CaseStatus.Closed then closed else None)
-                                (if fields.Status = CaseStatus.Closed then payable else None)
+                            { step CaseStageKind.Paid latestPayment None with
+                                NetPaid = FinancialPosition.totals fields.Finance
+                            }
+                            { step
+                                  CaseStageKind.Closed
+                                  (if fields.Status = CaseStatus.Closed then closed else None)
+                                  None with
+                                Outcome = Handling.closure fields.Handling |> Option.map _.Outcome
+                            }
                         ]
                     )
                 )

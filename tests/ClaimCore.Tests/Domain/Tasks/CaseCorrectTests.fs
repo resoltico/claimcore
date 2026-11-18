@@ -20,9 +20,7 @@ let tests =
                         "UPDATE"
                         "UPDATE"
                         [
-                            text
-                                (InputTarget.Field BusinessField.IncidentNotificationDate)
-                                "2026-03-01"
+                            text (InputTarget.Field BusinessField.ReceivedDate) "2026-03-01"
                             text (InputTarget.Field BusinessField.PaymentDecisionDate) "2026-03-02"
                         ]
 
@@ -40,7 +38,7 @@ let tests =
 
                 Expect.equal
                     (CalendarDate.format (
-                        Registration.incidentNotificationDate content.Registration
+                        Registration.receivedDate content.Registration |> Option.get
                     ))
                     "2026-03-01"
                     "Registration correction"
@@ -49,49 +47,50 @@ let tests =
                     (content.Finance.Decision |> Option.map (Decision.date >> CalendarDate.format))
                     (Some "2026-03-02")
                     "Decision correction")
-            testCase
-                "no-op missing-group and paid-decision clearing refusals stay distinct"
-                (fun () ->
-                    let state = decided ()
+            testCase "no-op and missing group refuse while paid decisions can be cleared" (fun () ->
+                let state = decided ()
 
-                    Correct.decide
-                        (context 3)
-                        environment
-                        (Some(DecisionFacts.fromReplay state))
-                        (caseBinding state)
-                        (correction "KEEP" "KEEP" [])
-                    |> expectRefusal (Refusal.Case CaseRefusal.CorrectionNoChanges)
+                Correct.decide
+                    (context 3)
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    (caseBinding state)
+                    (correction "KEEP" "KEEP" [])
+                |> expectRefusal (Refusal.Case CaseRefusal.CorrectionNoChanges)
 
-                    let closed = family () |> setCase Lifecycle.Active CaseStatus.Closed
+                let closed = family () |> setCase Lifecycle.Active CaseStatus.Closed
 
-                    Correct.decide
-                        (context 3)
-                        environment
-                        (Some(DecisionFacts.fromReplay closed))
-                        (caseBinding closed)
-                        (correction "KEEP" "CLEAR" [])
-                    |> expectRefusal (Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
+                Correct.decide
+                    (context 3)
+                    environment
+                    (Some(DecisionFacts.fromReplay closed))
+                    (caseBinding closed)
+                    (correction "KEEP" "CLEAR" [])
+                |> expectRefusal (Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
 
-                    let paid = state |> pay 3 "2026-02-02" "10"
+                let paid = state |> pay 3 "2026-02-02" "10"
 
-                    Correct.decide
-                        (context 4)
+                Correct.decide
+                    (context 4)
+                    environment
+                    (Some(DecisionFacts.fromReplay paid))
+                    (caseBinding paid)
+                    (correction "KEEP" "CLEAR" [])
+                |> accepted
+                |> apply paid
+                |> fun cleared ->
+                    Expect.equal cleared.Payments paid.Payments "Clearing keeps all entries"
+
+                let offer =
+                    Correct.availability
                         environment
                         (Some(DecisionFacts.fromReplay paid))
                         (caseBinding paid)
-                        (correction "KEEP" "CLEAR" [])
-                    |> expectRefusal (Refusal.Case CaseRefusal.DecisionHasPayments)
 
-                    let offer =
-                        Correct.availability
-                            environment
-                            (Some(DecisionFacts.fromReplay paid))
-                            (caseBinding paid)
-
-                    Expect.equal
-                        offer.Choices[TaskInputId.Target(InputTarget.Group RecordGroup.Decision)]
-                        [ "KEEP"; "UPDATE" ]
-                        "Core constrains individual choices")
+                Expect.equal
+                    offer.Choices[TaskInputId.Target(InputTarget.Group RecordGroup.Decision)]
+                    [ "KEEP"; "UPDATE"; "CLEAR" ]
+                    "Core offers clearing even with payment entries")
             testCase "only asserted groups require their respective capabilities" (fun () ->
                 let state = decided ()
 
@@ -124,7 +123,7 @@ let tests =
                         (correction
                             "UPDATE"
                             "KEEP"
-                            [ text (InputTarget.Field BusinessField.ClaimantName) "Corrected" ]))
+                            [ text (InputTarget.Field BusinessField.PolicyNumber) "Corrected" ]))
                     "No decision assertion"
 
                 Correct.decide
@@ -183,14 +182,12 @@ let tests =
                             "UPDATE"
                             [
                                 text (InputTarget.Field BusinessField.IncidentDate) "2026-11-20"
+                                text (InputTarget.Field BusinessField.ReceivedDate) "2026-11-21"
                                 text
-                                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                                    "2026-11-21"
-                                text
-                                    (InputTarget.Field BusinessField.ClaimantName)
+                                    (InputTarget.Field BusinessField.PolicyNumber)
                                     (String.replicate 201 "A")
                                 text
-                                    (InputTarget.Field BusinessField.InsurerName)
+                                    (InputTarget.Field BusinessField.InsurerClaimReference)
                                     (String.replicate 201 "B")
                                 text
                                     (InputTarget.Field BusinessField.PaymentDecisionDate)
@@ -210,16 +207,14 @@ let tests =
                         (issues |> List.map _.Input)
                         [
                             TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate)
+                            TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate)
+                            TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber)
                             TaskInputId.Target(
-                                InputTarget.Field BusinessField.IncidentNotificationDate
+                                InputTarget.Field BusinessField.InsurerClaimReference
                             )
-                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)
-                            TaskInputId.Target(InputTarget.Field BusinessField.InsurerName)
-                            TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
-                            TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
                             TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
                         ]
-                        "Current-date and both chronology relations remain distinct")
+                        "Independent current scalar issues")
             testCase "equivalent scalar spelling remains a correction no-op" (fun () ->
                 let state = decided ()
 

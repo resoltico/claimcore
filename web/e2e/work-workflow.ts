@@ -29,7 +29,7 @@ const languageOf = async (page: Page) => {
   return language;
 };
 
-/** Circle opening requests one read-only preview; this helper never confirms or executes it. */
+/** Review the completion draft without confirming or executing it. */
 export const reviewReminderCompletion = async (
   page: Page,
   row: Locator,
@@ -53,6 +53,13 @@ export const reviewReminderCompletion = async (
     });
     const originId = await circle.getAttribute("id");
     await circle.click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", {
+        name: ui(await languageOf(page), "label.reviewTitle"),
+        exact: true,
+      })
+      .click();
     const delivered = await response;
     const input: unknown = delivered.request().postDataJSON();
     const payload: unknown = await delivered.json();

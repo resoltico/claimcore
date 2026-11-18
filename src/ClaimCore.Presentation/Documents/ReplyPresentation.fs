@@ -19,10 +19,13 @@ module Refusals =
         | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
         | CaseRefusal.CorrectionNoChanges
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
-        | CaseRefusal.CorrectionRequiresExistingValue
-        | CaseRefusal.DecisionHasPayments -> RecommendedAction.CorrectInput
+        | CaseRefusal.SelfLink
+        | CaseRefusal.DuplicateLink
+        | CaseRefusal.LinkLimitReached
+        | CaseRefusal.CorrectionRequiresExistingValue -> RecommendedAction.CorrectInput
         | CaseRefusal.FamilyChanged
-        | CaseRefusal.PaymentNotFound -> RecommendedAction.ReviewLatest
+        | CaseRefusal.PaymentNotFound
+        | CaseRefusal.PartyLimit -> RecommendedAction.ReviewLatest
         | CaseRefusal.AssigneeUnavailable
         | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
 
@@ -37,8 +40,9 @@ module Refusals =
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.OperationClockUnavailable _
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
-        | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
-        | Refusal.People(PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable) ->
+        | Refusal.Reminder ReminderRuleRefusal.NoChanges
+        | Refusal.People PeopleRefusal.NoChanges -> RecommendedAction.NoneRequired
+        | Refusal.People(PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable | PeopleRefusal.IdentityReserved) ->
             RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)

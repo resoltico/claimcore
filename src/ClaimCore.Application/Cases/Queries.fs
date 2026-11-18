@@ -70,12 +70,19 @@ module internal Queries =
                 ->
                 let! authors = PeopleReads.actorRefs tx [ facts.RecordedBy ]
 
+                let! paidDates =
+                    PaymentStorage.latestPaidDates
+                        tx.Connection
+                        [ record.CaseId ]
+                        tx.CancellationToken
+
                 return
                     match
                         CaseStages.describe
                             record.Snapshot.State
                             (Some facts.OpenedOn)
-                            facts.ClosedOn,
+                            facts.ClosedOn
+                            (Map.tryFind record.CaseId paidDates),
                         Map.tryFind facts.RecordedBy authors,
                         Ok facts.Disposition
                     with
@@ -172,6 +179,16 @@ module internal Queries =
                                                         Outcome.Failed
                                                             CoreFault.StoreIntegrityError
                                                 | Ok items, Ok notes ->
+                                                    let! relatedCases =
+                                                        CaseLinkReads.read services tx view record
+
+                                                    let! matchedReference =
+                                                        CaseIdentityReads.matchedEarlier
+                                                            tx
+                                                            record.CaseId
+                                                            record.Snapshot.Reference
+                                                            selector
+
                                                     let! currentResult =
                                                         caseResult
                                                             services
@@ -189,6 +206,10 @@ module internal Queries =
                                                             (fun current ->
                                                                 Outcome.Succeeded
                                                                     { current with
+                                                                        MatchedReference =
+                                                                            matchedReference
+                                                                        RelatedCases =
+                                                                            relatedCases
                                                                         Disposition = disposition
                                                                         NextActions = items
                                                                         Notes = notes.Notes
@@ -437,8 +458,18 @@ module internal Queries =
                         })))
 
 
-    let private summary installation principal actor paused (work: CaseWorkView) next record =
-        CaseRecords.current installation record
+    let private summary
+        installation
+        principal
+        actor
+        paused
+        (work: CaseWorkView)
+        next
+        lastPayment
+        parties
+        record
+        =
+        CaseRecords.current installation parties record
         |> Result.map (fun _ ->
             {
                 CaseSummary.CaseId = record.Snapshot.CaseId
@@ -462,24 +493,25 @@ module internal Queries =
                         })
                 Responsible = work.Responsible
                 PendingReminders = work.PendingReminders
-                Paid =
+                NetPaid =
                     CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields ->
-                        FinancialPosition.totals fields.Finance |> Option.map _.Paid)
+                    |> Option.bind (fun fields -> FinancialPosition.totals fields.Finance)
                 PaymentCount =
                     CaseState.fields record.Snapshot.State
                     |> Option.map (fun fields -> fields.Finance.PaymentCount)
                     |> Option.defaultValue 0L
-                LastPaymentDate =
-                    CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields ->
-                        fields.Finance.PaymentDates |> Option.map _.Latest)
+                LastPaymentDate = lastPayment
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->
                             {
                                 CaseSummaryFacts.Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                Parties =
+                                    Vocabulary.all PartyRole.vocabulary
+                                    |> List.map (fun role ->
+                                        role, PartyContent.names role parties)
+                                    |> Map.ofList
                             })
                         record.Snapshot.State
             })
@@ -502,8 +534,20 @@ module internal Queries =
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
 
+            let! parties =
+                PartyStorage.current
+                    tx.Connection
+                    (records |> List.map _.CaseId)
+                    tx.CancellationToken
+
             let! actor =
                 AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
+
+            let! paidDates =
+                PaymentStorage.latestPaidDates
+                    tx.Connection
+                    (records |> List.map _.CaseId)
+                    tx.CancellationToken
 
             return
                 work
@@ -520,61 +564,41 @@ module internal Queries =
                                     paused
                                     (Map.find record.CaseId work)
                                     (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
+                                    (Map.tryFind record.CaseId paidDates)
+                                    (Map.tryFind record.CaseId parties |> Option.defaultValue [])
                                     record
                                 |> Result.map (fun value -> value :: values)))
                         (Ok [])
                     |> Result.map List.rev)
         }
 
-    let private exactReference
-        (services: ServiceContext)
-        (tx: ReadTx)
-        (items: CaseSummary list)
-        text
-        =
+    let private exactReference (services: ServiceContext) (tx: ReadTx) text =
         task {
             match text |> Option.bind (CaseReference.parse >> Result.toOption) with
             | None -> return None
             | Some reference ->
-                let key = CaseReference.format reference |> CaseReference.key
+                let! record = FamilyReads.findCaseByReference tx (CaseReference.format reference)
 
-                match
-                    items
-                    |> List.tryFind (fun item ->
-                        CaseReference.key (CaseReference.format item.Reference) = key)
-                with
-                | Some item ->
-                    // This page item has already passed validation and snapshot disclosure.
+                match record with
+                | None -> return None
+                | Some record ->
+                    let! actor = AccessReads.access tx services.Principal (Some record.CaseId)
+
                     return
-                        Some
-                            {
-                                CaseRef.CaseId = item.CaseId
-                                CaseReference = item.Reference
-                            }
-                | None ->
-                    let! record =
-                        FamilyReads.findCaseByReference tx (CaseReference.format reference)
-
-                    match record with
-                    | None -> return None
-                    | Some record ->
-                        let! actor = AccessReads.access tx (services.Principal) (Some record.CaseId)
-
-                        return
-                            if
-                                CaseRecords.authorize
-                                    services.Principal
-                                    actor
-                                    Capability.ReadCase
-                                    (Some record)
-                            then
-                                Some
-                                    {
-                                        CaseRef.CaseId = record.CaseId
-                                        CaseReference = record.Snapshot.Reference
-                                    }
-                            else
-                                None
+                        if
+                            CaseRecords.authorize
+                                services.Principal
+                                actor
+                                Capability.ReadCase
+                                (Some record)
+                        then
+                            Some
+                                {
+                                    CaseRef.CaseId = record.CaseId
+                                    CaseReference = record.Snapshot.Reference
+                                }
+                        else
+                            None
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
@@ -625,7 +649,6 @@ module internal Queries =
                                                         exactReference
                                                             services
                                                             tx
-                                                            items
                                                             request.Filter.Text
 
                                                     return
@@ -660,7 +683,7 @@ module internal Queries =
                 return readResult result
         }
 
-    let caseSummary (services: ServiceContext) (filter: CaseListFilter<string>) token =
+    let caseSummary (services: ServiceContext) (summary: CaseSummaryRequest) token =
         task {
             let! result =
                 services.Store.Read
@@ -673,7 +696,7 @@ module internal Queries =
                                     let request =
                                         {
                                             CaseListRequest.Page = { Limit = 1; AfterCursor = None }
-                                            Filter = filter
+                                            Filter = summary.Filter
                                         }
 
                                     match
@@ -687,7 +710,10 @@ module internal Queries =
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
                                         let! summary =
-                                            FamilyReads.caseSummary tx selection.Selection
+                                            FamilyReads.caseSummary
+                                                tx
+                                                selection.Selection
+                                                summary.GroupBy
 
                                         return Outcome.Succeeded summary
                                 }

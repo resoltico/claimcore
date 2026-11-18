@@ -46,7 +46,7 @@ const sentDraft = (body: unknown): SentDraft => {
   return JSON.parse(body) as SentDraft;
 };
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("keeps existing references immutable and delegates a reviewed commit", async () => {
+it("keeps the bound case identity outside closure inputs and delegates a reviewed commit", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch
@@ -69,6 +69,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     }),
   ).toBeNull();
   expect(screen.getAllByText(fields.caseReference).length).toBeGreaterThan(0);
+  await user.click(screen.getByRole("radio", { name: /^Other$/u }));
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
@@ -76,5 +77,8 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   expect(draft.binding.target).toEqual({ kind: "ID", caseId: current.subject.caseId });
-  expect({ task: draft.task, inputs: draft.inputs }).toEqual({ task: "case.close", inputs: {} });
+  expect({ task: draft.task, inputs: draft.inputs }).toEqual({
+    task: "case.close",
+    inputs: { "field:outcome": "OTHER" },
+  });
 });

@@ -28,8 +28,8 @@ let private input (fixture: PublishedFixture.Fixture) (field: string) value =
 // Independent wire expectations: do not derive the oracle from the diagnostic codec.
 let private issueParameters =
     function
-    | "DECIMAL_FORMAT" -> [ "maximumIntegerDigits", 18; "maximumFractionalDigits", 4 ]
-    | "TOO_LONG" -> [ "maximumCharacters", 200 ]
+    | _, "DECIMAL_FORMAT" -> [ "maximumIntegerDigits", 18; "maximumFractionalDigits", 4 ]
+    | "policyNumber", "TOO_LONG" -> [ "maximumCharacters", 80 ]
     | _ -> []
 
 let private properties (value: JsonElement) =
@@ -75,7 +75,7 @@ let private assertIssues expected (refusal: JsonElement) =
             JsonValueKind.Null
             "A scalar issue has no collection ordinal"
 
-        let parameters = issueParameters code
+        let parameters = issueParameters (field, code)
         let names = Set.ofList ([ "input"; "row"; "code" ] @ (parameters |> List.map fst))
         Expect.equal (properties issue) names "Only declared parameters accompany each issue"
 
@@ -92,7 +92,7 @@ let private businessRefusals fixture =
             "claimedAmount", "١٢٫٥٠", "DECIMAL_FORMAT"
             "claimedAmount", "00.10", "DECIMAL_FORMAT"
             "claimedCurrency", "ĀBC", "CURRENCY_FORMAT"
-            "claimantName", "", "TEXT_REQUIRED"
+            "policyNumber", "", "TEXT_REQUIRED"
         ] do
         let input = input fixture field value
 
@@ -108,8 +108,8 @@ let private businessRefusals fixture =
 
             assertIssues [ field, diagnostic ] rejection
 
-    for value, diagnostic in [ " ", "TEXT_REQUIRED"; String.replicate 201 "x", "TOO_LONG" ] do
-        let input = input fixture "claimantName" value
+    for value, diagnostic in [ " ", "TEXT_REQUIRED"; String.replicate 81 "x", "TOO_LONG" ] do
+        let input = input fixture "policyNumber" value
 
         for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
@@ -121,7 +121,7 @@ let private businessRefusals fixture =
 
             let rejection = require "REJECTED" reply
 
-            assertIssues [ "claimantName", diagnostic ] rejection
+            assertIssues [ "policyNumber", diagnostic ] rejection
 
 
 let private principalRefusals fixture =

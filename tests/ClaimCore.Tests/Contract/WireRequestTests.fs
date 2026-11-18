@@ -75,10 +75,10 @@ let private scalarAdmission () =
         DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "not-a-date"
-                BusinessField.IncidentNotificationDate, ""
+                BusinessField.ReceivedDate, ""
                 BusinessField.IncidentCountry, "lowercase"
-                BusinessField.ClaimantName, ""
-                BusinessField.InsurerName, ""
+                BusinessField.PolicyNumber, ""
+                BusinessField.InsurerClaimReference, ""
                 BusinessField.ClaimedAmount, "not-money"
                 BusinessField.ClaimedCurrency, "eur"
             ]

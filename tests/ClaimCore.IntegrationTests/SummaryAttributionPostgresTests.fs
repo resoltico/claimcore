@@ -119,7 +119,7 @@ let tests =
 
                         Expect.equal
                             ((read restored).Work.SummaryRecordedBy |> Option.map _.ActorId)
-                            (Some receipt.RecordedBy.ActorId)
+                            (Some (receipt.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
                             "Rebuild restores the original summary author"
                     }))
         ]

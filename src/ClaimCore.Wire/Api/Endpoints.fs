@@ -381,6 +381,7 @@ module Api =
             RequestCodecs.caseSummaryRequest
             "CaseSummaryReply"
             CaseTotalsCodecs.summary
+        |> withCsv CaseSummaryCsv.header (fun _ summary -> CaseSummaryCsv.rows summary)
 
     let caseTimeline =
         actorRead

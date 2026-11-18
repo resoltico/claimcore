@@ -185,6 +185,8 @@ let private reads fixture core =
                         Target = None
                         View = None
                         State = None
+                        Kind = None
+                        DeadlineOutcome = None
                         Due = None
                         Assignment = None
                         Text = None
@@ -203,6 +205,8 @@ let private reads fixture core =
                         Target = None
                         View = None
                         State = None
+                        Kind = None
+                        DeadlineOutcome = None
                         Due = None
                         Assignment = None
                         Text = Some(String('x', 201))
@@ -250,7 +254,12 @@ let internal malformedWrites fixture =
             (principal "new-person")
             None
             "people.register"
-            (Submissions.profile { DisplayName = ""; Contact = None }))
+            (Submissions.profile
+                {
+                    DisplayName = ""
+                    Contact = None
+                    DigestEmail = None
+                }))
             .GetAwaiter()
             .GetResult()
         (ClaimCore.TestSupport.Submissions.createRaw)
@@ -484,7 +493,13 @@ let internal targetPrivacy fixture =
             let! actual =
                 mutationCode
                     core
-                    (((request (fixture) (number) (target) (1L) "case.close" (Map.empty))))
+                    (((request
+                        (fixture)
+                        (number)
+                        (target)
+                        (1L)
+                        "case.close"
+                        (CaseTransitionInputs.closed))))
 
             Expect.equal
                 actual

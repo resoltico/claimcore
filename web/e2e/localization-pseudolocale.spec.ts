@@ -25,7 +25,7 @@ const startPseudo = async (page: Page) => {
   const values = {
     caseReference: `PSEUDO-${randomUUID()}`,
     ...registration({
-      claimantName: "A\u0308 العربية\u200D",
+      policyNumber: "A\u0308 العربية\u200D",
       claimedAmount: "1.0000",
     }),
   };

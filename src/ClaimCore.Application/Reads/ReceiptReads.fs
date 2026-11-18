@@ -89,7 +89,15 @@ module internal ReceiptReads =
     let read basis principal access (tx: ReadTx) (record: RetainedOperation) =
         task {
             let root = record.Root
-            let! author = actor tx root.Header.ActorId
+
+            let! author =
+                task {
+                    match root.Header.Authority with
+                    | Authority.Actor id ->
+                        let! found = actor tx id
+                        return found |> Option.map AuthorityRef.Actor
+                    | Authority.Operator -> return Some AuthorityRef.Operator
+                }
 
             match author, Registry.find root.Structure.Task with
             | Some author, Some selected ->
@@ -221,10 +229,29 @@ module internal ReceiptReads =
                                                                     change
                                                                     tx.CancellationToken
 
+                                                            let! basisReference =
+                                                                match change.Value with
+                                                                | PartValue.Case {
+                                                                                     Reference = Some _
+                                                                                 } when
+                                                                    change.Revision > Revision.first
+                                                                    ->
+                                                                    CaseIdentityReads
+                                                                        .referenceBefore
+                                                                        tx
+                                                                        id
+                                                                        change.Revision
+                                                                | _ ->
+                                                                    System.Threading.Tasks
+                                                                        .Task.FromResult
+                                                                        None
+
                                                             match
                                                                 LiveCase.ofState snapshot.State,
                                                                 CaseDescription.fromChanges
-                                                                    current.Snapshot.Reference
+                                                                    (defaultArg
+                                                                        basisReference
+                                                                        current.Snapshot.Reference)
                                                                     before
                                                                     change
                                                             with
@@ -237,6 +264,10 @@ module internal ReceiptReads =
                                                                                 Disposition =
                                                                                     description
                                                                                         .Disposition
+                                                                                ReopenReason =
+                                                                                    PartChange
+                                                                                        .reopenReason
+                                                                                        change
                                                                                 RecordedFields =
                                                                                     fields
                                                                                         declaration
@@ -453,6 +484,67 @@ module internal ReceiptReads =
                                                                 Act = declaration.Id
                                                                 Snapshot = shown
                                                             })
+                                    | ActSubject.Party ->
+                                        match record.Changes |> List.tryExactlyOne with
+                                        | Some change ->
+                                            match PartyId.create change.PartId, change.Value with
+                                            | Some party, PartValue.Party value ->
+                                                let revision =
+                                                    Map.tryFind
+                                                        (PartKind.Party, change.PartId)
+                                                        current.Revisions
+
+                                                let shown =
+                                                    if erased then
+                                                        Ok PartyDisclosure.Erased
+                                                    elif
+                                                        not (
+                                                            Option.exists
+                                                                (canRead change.Revision)
+                                                                revision
+                                                        )
+                                                    then
+                                                        Ok PartyDisclosure.Withheld
+                                                    else
+                                                        value.Content
+                                                        |> Option.map (
+                                                            PartyDisclosure.Disclosed >> Ok
+                                                        )
+                                                        |> Option.defaultValue fault
+
+                                                return
+                                                    shown
+                                                    |> Result.map (fun snapshot ->
+                                                        ReceiptSubject.Party
+                                                            {
+                                                                CaseId = id
+                                                                Reference =
+                                                                    current.Snapshot.Reference
+                                                                PartyId = party
+                                                                Revision = change.Revision
+                                                                Act = declaration.Id
+                                                                Snapshot = snapshot
+                                                            })
+                                            | _ -> return fault
+                                        | _ -> return fault
+                                    | ActSubject.Link ->
+                                        match record.Changes with
+                                        | [ change ] when change.Kind = PartKind.Link ->
+                                            match LinkId.create change.PartId with
+                                            | Some linkId ->
+                                                return
+                                                    Ok(
+                                                        ReceiptSubject.Link
+                                                            {
+                                                                CaseId = id
+                                                                Reference =
+                                                                    current.Snapshot.Reference
+                                                                LinkId = linkId
+                                                                Act = declaration.Id
+                                                            }
+                                                    )
+                                            | None -> return fault
+                                        | _ -> return fault
                                     | ActSubject.People -> return fault
                             | _ -> return fault
                         | _ -> return fault

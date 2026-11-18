@@ -17,12 +17,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -42,7 +45,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -57,7 +62,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -89,12 +96,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -114,7 +124,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -129,7 +141,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -161,12 +175,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -186,7 +203,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -201,7 +220,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 }
@@ -233,12 +254,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -258,7 +282,9 @@
                       "revision": 4,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "COMPLETED"
+                      "kind": "FOLLOW_UP",
+                      "state": "COMPLETED",
+                      "doneOn": "2026-11-04"
                     }
                   }
                 },
@@ -273,7 +299,9 @@
                       "revision": 1,
                       "action": "Review response",
                       "dueDate": "2026-11-11",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }

@@ -82,12 +82,22 @@ module internal PersonRules =
         |> Result.bind (fun () ->
             if environment.TargetPrincipal |> Option.exists ((<>) principal) then
                 Error unavailable
-            elif state.IsSome || (provision && environment.ActorCount <> 0) then
+            elif
+                state.IsSome
+                || environment.PrincipalOwner.IsSome
+                || (provision && environment.ActorCount <> 0)
+            then
                 Error(Refusal.People PeopleRefusal.ActorAlreadyRegistered)
             elif provision && not (PrincipalKey.isHuman principal) then
                 Error(Refusal.People PeopleRefusal.HumanPrincipalRequired)
             else
                 Ok())
+
+    let signInIdentity (state: Person) principal environment =
+        match environment.PrincipalOwner with
+        | Some owner when owner <> state.Id -> Error(Refusal.People PeopleRefusal.IdentityReserved)
+        | Some _ -> Ok None
+        | None -> Ok(Some(PrincipalKey.naturalKey principal))
 
     let scope (environment: PersonEnvironment) =
         function
@@ -180,3 +190,18 @@ module internal PersonRules =
             Erases = None
             Stamp = context.Stamp
         }
+
+    let changeIdentity context (state: Person) enabled grants principal naturalKey =
+        let change = change context state enabled state.Profile grants
+
+        match change.Value with
+        | PartValue.Person value ->
+            { change with
+                NaturalKey = naturalKey
+                Value =
+                    PartValue.Person
+                        { value with
+                            Principal = Some principal
+                        }
+            }
+        | _ -> invalidOp "Expected a person change."

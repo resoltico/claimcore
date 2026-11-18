@@ -95,13 +95,13 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 id ()
                 "--incident-date"
                 "2026-09-01"
-                "--incident-notification-date"
+                "--received-date"
                 "2026-09-02"
                 "--incident-country"
                 "LV"
-                "--claimant-name"
+                "--policy-number"
                 "CLI work claimant"
-                "--insurer-name"
+                "--insurer-claim-reference"
                 "CLI work insurer"
                 "--claimed-amount"
                 "100"
@@ -163,6 +163,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
             [
                 "case"
                 "close"
+                "--outcome"
+                "other"
                 reference
                 "--operation-id"
                 refusedOperation
@@ -390,7 +392,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
          |> Seq.exists (fun value -> value.GetString() = "NO_NEXT_ACTION"))
         "The refreshed attention comes from the core current view"
 
-    fact "amend-registration" 1 [ "--claimant-name"; "CLI selected fact" ] |> ignore
+    fact "amend-registration" 1 [ "--policy-number"; "CLI selected fact" ] |> ignore
 
     fact
         "decide"
@@ -457,12 +459,12 @@ let qualify (fixture: PublishedFixture.Fixture) =
         "Only the five financial/narrative edits advance fact revision"
 
     Expect.equal
-        (fields.GetProperty("registration").GetProperty("claimantName").GetString())
+        (fields.GetProperty("registration").GetProperty("policyNumber").GetString())
         "CLI selected fact"
         "Selected fact changes"
 
     Expect.equal
-        (fields.GetProperty("registration").GetProperty("insurerName").GetString())
+        (fields.GetProperty("registration").GetProperty("insurerClaimReference").GetString())
         "CLI work insurer"
         "Omitted fact survives"
 
@@ -532,10 +534,10 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "Each machine frame decodes the exact LF value"
 
     reminder "reopen" (expected first 2 @ [ "--due"; "2027-12-31" ]) |> ignore
-    fact "close" 6 [] |> ignore
+    fact "close" 6 [ "--outcome"; "settled" ] |> ignore
     work 1 [ "--handling-summary"; "Closed handling context" ] |> ignore
     reminder "complete" (expected first 3) |> ignore
-    fact "reopen" 7 [] |> ignore
+    fact "reopen" 7 [ "--reason"; "New synthetic evidence" ] |> ignore
     let final = current ()
 
     Expect.equal
@@ -705,7 +707,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "Terminal reminder has no current timing"
 
     assertCurrent true
-    fact "close" 8 [] |> ignore
+    fact "close" 8 [ "--outcome"; "other" ] |> ignore
     assertCurrent false
 
     let activeOnly = verb fixture environment listArguments 0 |> require "SUCCEEDED"

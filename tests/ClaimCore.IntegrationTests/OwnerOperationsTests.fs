@@ -10,6 +10,8 @@ open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
+open ClaimCore.Application.Administration
+open ClaimCore.Wire
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport
@@ -29,7 +31,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 6 "Fresh installations use the consolidated grammar"
+        Expect.equal initial.InstallationFormat 7 "Fresh installations use the consolidated grammar"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -133,7 +135,13 @@ let private actionState (database: PostgresFixture.Database) =
         accepted opening |> ignore
 
         let close =
-            ((request (database.Fixture) (11) ("MAINTENANCE-A") (1L) "case.close" (Map.empty)))
+            ((request
+                (database.Fixture)
+                (11)
+                ("MAINTENANCE-A")
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)))
 
         let! prepared = Service.previewSubmission actor close token
 
@@ -228,12 +236,12 @@ let private actionState (database: PostgresFixture.Database) =
              replayed.Position,
              replayed.Subject,
              replayed.RecordedAt,
-             replayed.RecordedBy.ActorId)
+             replayed.RecordedBy)
             (original.OperationId,
              original.Position,
              original.Subject,
              original.RecordedAt,
-             original.RecordedBy.ActorId)
+             original.RecordedBy)
             "Retained acceptance preserves its identity, facts and original recording metadata"
 
         Expect.isGreaterThanOrEqual
@@ -362,7 +370,13 @@ let private pruning (database: PostgresFixture.Database) =
             (8L, 7L)
             "Independent live and expired population"
 
-        let! report = Housekeeping.prune database.OwnerSource database.Installation 2 token
+        let! report =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                2
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
 
         Expect.equal report.SessionsDeleted 2L "Housekeeping deletes only the bounded locked batch"
         Expect.equal report.AccessRequestsDeleted 0L "No access hints were expired"
@@ -422,7 +436,13 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let writing =
             Service.executeSubmission
                 delayed
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
@@ -476,7 +496,13 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let! paused =
             Service.executeSubmission
                 actor
-                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("synthetic-a")
+                    (2L)
+                    "case.reopen"
+                    (CaseTransitionInputs.reopened))))
                 token
 
         Expect.equal
@@ -506,8 +532,21 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,8) n"
                 [||]
 
-        let first = Housekeeping.prune database.OwnerSource database.Installation 4 token
-        let second = Housekeeping.prune database.OwnerSource database.Installation 4 token
+        let first =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                4
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
+
+        let second =
+            Housekeeping.prune
+                database.OwnerSource
+                database.Installation
+                4
+                (fun instant -> System.DateOnly.FromDateTime instant.UtcDateTime)
+                token
 
         let renewal =
             sessions.Renew(live.Value, SessionResults.principal, [| 2uy |], (fun _ -> true), token)
@@ -531,11 +570,138 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
             "Actual resource counts reconcile without deleting history or keys"
     }
 
+let private recoverPausedOwner (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = bootstrap fixture
+
+        let principal subject =
+            PrincipalKey.human "https://issuer.example/" subject
+            |> Result.defaultWith (fun issue -> failtestf "Synthetic identity: %A" issue)
+
+        let prior = principal "owner-recovery-old"
+        let replacement = principal "owner-recovery-new"
+        let personId = CaseFixtures.actorId (id fixture 401)
+
+        let change principal number taskName values =
+            task {
+                let! submission =
+                    personSubmission
+                        fixture.Store
+                        (id fixture number)
+                        principal
+                        None
+                        taskName
+                        values
+
+                return! Service.executeSubmission owner submission token
+            }
+
+        let! registered =
+            change prior 401 "people.register" (Submissions.profile DomainInputs.actorProfile)
+
+        acceptedPeople registered
+
+        let! granted =
+            grant
+                owner
+                (id fixture 402)
+                prior
+                {
+                    GrantInput.Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople granted
+
+        let! disabled = change prior 403 "people.disable" Map.empty
+        acceptedPeople disabled
+
+        let! paused =
+            changed
+                database
+                (MaintenanceChange.Acquire(0L, Guid.Parse "10000000-0000-4000-8000-000000000097"))
+
+        Expect.isTrue paused.State.Active "Synthetic installation is paused"
+
+        use administration =
+            new Administration(
+                database.Container.GetConnectionString(),
+                BuildIdentity.current.Version
+            )
+
+        let recover principal actor =
+            administration.RecoverOwner(
+                {
+                    Principal = principal
+                    ActorId = actor
+                    Name = None
+                },
+                token
+            )
+
+        let! recovered = recover prior None
+
+        match recovered with
+        | OwnerRecoveryResult.Recovered(id, _) ->
+            Expect.equal id personId "Recovery finds the existing identity"
+        | _ -> failtest "Expected a recorded restoration"
+
+        let! roles = inspectPeople fixture prior token
+
+        match roles with
+        | Ok view ->
+            Expect.equal
+                (Set.ofList view.Installation)
+                (set [ Role.Owner; Role.CaseReader ])
+                "Owner and earlier role both remain"
+
+            Expect.isTrue view.Actor.Value.Enabled "Recovery re-enables the existing account"
+        | other -> failtestf "Recovery state was unreadable: %A" other
+
+        let! rebound = recover replacement (Some personId)
+
+        let recordedOperation =
+            match rebound with
+            | OwnerRecoveryResult.Recovered(id, operation) ->
+                Expect.equal id personId "Explicit actor selection keeps identity and history"
+                operation
+            | _ -> failtest "Expected identity reassignment"
+
+        let! reply =
+            Service.operationGet
+                (core fixture replacement)
+                {
+                    OperationId = OperationId.value recordedOperation
+                }
+                token
+
+        match reply.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, false)) ->
+            Expect.equal
+                receipt.RecordedBy
+                AuthorityRef.Operator
+                "The recovered owner can see operator attribution"
+        | other -> failtestf "Missing recovery receipt: %A" other
+
+        let! before = administration.Head token
+        let! repeated = recover replacement (Some personId)
+        let! after = administration.Head token
+        Expect.equal repeated (OwnerRecoveryResult.Unchanged personId) "Repeating returns unchanged"
+        Expect.equal before after "No operation is appended for unchanged recovery"
+        let! _ = verified database
+        ()
+    }
+
 [<Tests>]
 let tests =
     testList
         "owner operating lifecycle"
         [
+            testCaseAsync
+                "operator recovers an existing disabled person during maintenance and can rebind their sign-in"
+                (run recoverPausedOwner)
             testCaseAsync
                 "maintenance entry waits for a prior accepted transaction"
                 (run entryWaitsForAcceptance)

@@ -135,14 +135,12 @@ let private permissions (environment: FamilyEnvironment) (state: DecisionFacts) 
 let decisionChoices (finance: FinancialPosition) =
     if finance.Decision.IsNone then
         [ CorrectionGroupAction.Keep ]
-    elif finance.PaymentCount = 0L then
+    else
         [
             CorrectionGroupAction.Keep
             CorrectionGroupAction.Update
             CorrectionGroupAction.Clear
         ]
-    else
-        [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
 
 let availability environment state binding =
     let offered =
@@ -219,22 +217,10 @@ let availability environment state binding =
         }
 
 let private apply (before: CaseContent) command =
-    let members =
-        [
-            match command.Registration with
-            | RegistrationChoice.Keep -> ()
-            | RegistrationChoice.Update update -> yield! RegistrationUpdate.values update
-            match command.Decision with
-            | DecisionChoice.Update update -> yield! DecisionUpdate.values update
-            | _ -> ()
-        ]
-
     let registration =
         match command.Registration with
-        | RegistrationChoice.Keep -> Ok before.Registration
-        | RegistrationChoice.Update update ->
-            RegistrationUpdate.apply update before.Registration
-            |> CaseInput.registrationMerge
+        | RegistrationChoice.Keep -> before.Registration
+        | RegistrationChoice.Update update -> RegistrationUpdate.apply update before.Registration
 
     let decision =
         match command.Decision, before.Finance.Decision with
@@ -244,46 +230,19 @@ let private apply (before: CaseContent) command =
         | DecisionChoice.Update update, Some current ->
             Ok(Some(DecisionUpdate.apply update current))
 
-    let notification =
-        match command.Registration with
-        | RegistrationChoice.Keep -> Registration.incidentNotificationDate before.Registration
-        | RegistrationChoice.Update update ->
-            RegistrationUpdate.tryValue BusinessField.IncidentNotificationDate update
-            |> Option.map FieldValue.date
-            |> Option.defaultValue (Registration.incidentNotificationDate before.Registration)
-
-    let rules =
-        decision
-        |> Result.bind (fun decision ->
-            Admission.collect
-                [
-                    CaseAdmission.decisionChange before.Finance decision
-                    CaseAdmission.crossFinancial
-                        (members |> List.map fst |> Set.ofList)
-                        notification
-                        decision
-                        before.Finance
-                ])
-
-    Admission.map2 (fun registration decision -> registration, decision) registration decision
-    |> fun groups -> Admission.map2 (fun groups () -> groups) groups rules
-    |> CaseInput.ordered
+    decision
     |> Parsing.reject
-    |> Result.bind (fun (registration, decision) ->
-        FinancialPosition.withDecision decision before.Finance
-        |> Result.mapError (fun _ ->
-            Rejection.InvalidState RecordViolation.InvalidFinancialPosition)
-        |> Result.bind (fun finance ->
-            let after =
-                {
-                    Registration = registration
-                    Finance = finance
-                }
+    |> Result.bind (fun decision ->
+        let after =
+            {
+                Registration = registration
+                Finance = FinancialPosition.withDecision decision before.Finance
+            }
 
-            if after = before then
-                Error(Rejection.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges))
-            else
-                Ok after))
+        if after = before then
+            Error(Rejection.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges))
+        else
+            Ok after)
 
 let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
@@ -306,15 +265,7 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
 
             let admit = CaseAdmission.fieldAdmission today before
 
-            let clearing = choice RecordGroup.Decision inputs = Ok "CLEAR"
-
-            let! command =
-                Admission.map2
-                    (fun command () -> command)
-                    (parse admit inputs fields)
-                    (CaseParsing.chronology before false clearing fields)
-                |> CaseInput.ordered
-                |> Parsing.reject
+            let! command = parse admit inputs fields |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
             let! after = apply content command

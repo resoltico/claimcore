@@ -2,6 +2,13 @@ namespace ClaimCore.Application.Contracts
 
 open ClaimCore.Domain
 
+type PaymentPayee =
+    {
+        Id: PartyId
+        Name: PartyName option
+        Removed: bool
+    }
+
 type CasePaymentItem =
     {
         Entry: PaymentEntry
@@ -18,5 +25,6 @@ type CasePaymentPage =
         WorkRevision: Revision
         State: CaseState<FinancialPosition>
         Items: CasePaymentItem list
+        Payees: PaymentPayee list
         NextCursor: string option
     }

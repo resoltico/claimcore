@@ -31,7 +31,8 @@ module internal TransactionPages =
 
     let grantPageSql =
         let grantedAt = DatabaseSession.instantExpression "p.recorded_at"
-        ($"SELECT g.role,c.case_reference,g.case_id,l.natural_key,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger_effects l ON l.part_kind='CASE' AND l.part_id=g.case_id AND l.revision=1 WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
+        let reference = CaseIdentityReads.referenceAt "g.case_id" ""
+        ($"SELECT g.role,c.case_reference,g.case_id,{reference},{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
 
     let page limit position rows =
         let visible = List.truncate limit rows
@@ -74,19 +75,19 @@ module internal TransactionPages =
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
                 $"{CaseSelectionSql.suffix 3}"
-            | CaseListOrder.Notified, position ->
+            | CaseListOrder.Received, position ->
                 let reference, date =
                     match position with
                     | None -> None, None
-                    | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
+                    | Some(CaseListPosition.Received(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.notified_on IS NULL AND "
+                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.received_on IS NULL AND "
                 + key
-                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.notified_on > {CaseSelectionSql.suffix 2}::date OR c.notified_on IS NULL OR (c.notified_on={CaseSelectionSql.suffix 2}::date AND "
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.received_on > {CaseSelectionSql.suffix 2}::date OR c.received_on IS NULL OR (c.received_on={CaseSelectionSql.suffix 2}::date AND "
                 + key
                 + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"))))",
-                "c.notified_on ASC NULLS LAST," + key + " ASC",
+                "c.received_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
@@ -137,7 +138,7 @@ module internal TransactionPages =
                     CaseListPosition.create
                         query.Selection.Filter.Order
                         record.Index.ChangedAt
-                        record.Index.NotifiedOn
+                        record.Index.ReceivedOn
                         record.Index.FollowUp
                         (CaseReference.format record.Snapshot.Reference))
             // Load only visible parents' independently owned work; the lookahead remains financial-only.

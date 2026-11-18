@@ -49,16 +49,18 @@ let tests =
                     ids.Length
                     "Duplicate task identities cannot collapse silently"
 
-                let owner = declaration "people.provisionOwner"
+                for token in [ "people.provisionOwner"; "people.recoverOwner" ] do
+                    let operator = declaration token
 
-                Expect.equal
-                    owner.Exposure
-                    TaskExposure.Operator
-                    "Initialization is an operator task"
+                    Expect.equal
+                        operator.Exposure
+                        TaskExposure.Operator
+                        "Owner administration is operator-only"
 
-                Expect.isFalse
-                    (Registry.clientDeclarations |> List.exists (fun task -> task.Id = owner.Id))
-                    "The initializer is not a client operation")
+                    Expect.isFalse
+                        (Registry.clientDeclarations
+                         |> List.exists (fun task -> task.Id = operator.Id))
+                        "Owner administration is unavailable through a client")
             testCase "creation is about the selected target, including child targets" (fun () ->
                 for token in
                     [
@@ -103,7 +105,7 @@ let tests =
 
                     let claimant =
                         declaration "case.open"
-                        |> input (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+                        |> input (TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber))
 
                     Expect.equal
                         claimant.Retention
@@ -241,10 +243,13 @@ let tests =
                                 "people.enable"
                                 "people.disable"
                                 "people.setProfile"
+                                "people.changeSignInIdentity"
                                 "people.eraseProfile"
                                 "work.update"
                                 "note.add"
                                 "note.remove"
+                                "link.add"
+                                "link.remove"
                                 "reminder.create"
                                 "reminder.update"
                                 "reminder.complete"

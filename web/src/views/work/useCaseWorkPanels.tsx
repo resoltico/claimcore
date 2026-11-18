@@ -13,7 +13,7 @@ import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
+import type { Affordance, TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
 
@@ -27,7 +27,7 @@ type ReminderStateFilter = ReminderListRequest["state"];
 type Editor = {
   noteIntent?: NoteIntent;
   action: OperationAffordance;
-  subject: "WORK" | "REMINDER" | "NOTE";
+  subject: "WORK" | "REMINDER" | "NOTE" | "LINK";
   kind: string;
   identity: string;
   prefill: FormValues;
@@ -75,12 +75,12 @@ export const useCaseWorkPanels = ({
     () => ({ ...(state === undefined ? {} : { state }), includeInactive: true }),
     [state],
   );
-  const open = (next: Editor) => {
+  const open = (next: Editor, { anchorToTrigger = true } = {}) => {
     returnFocus.current = editorOrigin(next);
     recorded.clear();
     setEditor({
       ...next,
-      ...(returnFocus.current === null ? {} : { anchor: returnFocus.current }),
+      ...(anchorToTrigger && returnFocus.current !== null ? { anchor: returnFocus.current } : {}),
     });
   };
   const close = () => {
@@ -132,27 +132,35 @@ export const useCaseWorkPanels = ({
           : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
         {...(editor === null && workAction !== undefined
           ? {
-              onAssign: () => {
-                open({
-                  subject: "WORK",
-                  action: workAction,
-                  kind: workAction.task,
-                  identity: "work",
-                  prefill: {
-                    "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
+              onAssign: (origin: string) => {
+                open(
+                  {
+                    subject: "WORK",
+                    action: workAction,
+                    kind: workAction.task,
+                    identity: "work",
+                    origin,
+                    prefill: {
+                      "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
+                    },
                   },
-                });
+                  { anchorToTrigger: false },
+                );
               },
-              onSummary: () => {
-                open({
-                  subject: "WORK",
-                  action: workAction,
-                  kind: workAction.task,
-                  identity: "work",
-                  prefill: {
-                    "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
+              onSummary: (origin: string) => {
+                open(
+                  {
+                    subject: "WORK",
+                    action: workAction,
+                    kind: workAction.task,
+                    identity: "work",
+                    origin,
+                    prefill: {
+                      "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
+                    },
                   },
-                });
+                  { anchorToTrigger: false },
+                );
               },
             }
           : {})}
@@ -277,5 +285,19 @@ export const useCaseWorkPanels = ({
       onDisclosureRefused={onChanged}
     />
   );
-  return { work, nextActions, notes, operation };
+  const onLinkAction = (action: Affordance, originId?: string) => {
+    if (!isOperationAffordance(action) || action.binding?.kind !== "LINK") {
+      return;
+    }
+    open({
+      subject: "LINK",
+      kind: action.task,
+      identity: "linkId" in action.binding ? action.binding.linkId : action.task,
+      action,
+      binding: action.binding,
+      prefill: {},
+      ...(originId === undefined ? {} : { origin: originId }),
+    });
+  };
+  return { work, nextActions, notes, operation, onLinkAction, editing: editor !== null };
 };

@@ -347,7 +347,7 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":6", "\"v\":6.0")
+            baseJson.Replace("\"v\":7", "\"v\":7.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
@@ -602,12 +602,12 @@ let triageCursors =
     testCase "notification cursors retain null dates and people cursors reject zero" (fun () ->
         let selected =
             { CaseListFilter.empty<CaseSearchText> with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
                 Assignment = Some CaseAssignment.Mine
             }
 
         for date in [ None; Some(CaseFixtures.date "2026-08-03") ] do
-            let expected = CaseListPosition.Notified(date, "CASE-2")
+            let expected = CaseListPosition.Received(date, "CASE-2")
 
             Expect.equal
                 (Cursors.decodeCases

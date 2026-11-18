@@ -105,8 +105,10 @@ let private actorIdentity () =
         let accepted =
             { receipt operationId "WEB-001" with
                 RecordedBy =
-                    ClaimCore.TestSupport.DomainInputs.actorReference (
-                        ActorId.create authorId |> Option.get
+                    AuthorityRef.Actor(
+                        ClaimCore.TestSupport.DomainInputs.actorReference (
+                            ActorId.create authorId |> Option.get
+                        )
                     )
             }
 

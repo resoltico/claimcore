@@ -59,6 +59,7 @@ module EndpointDeclarations =
             TaskInputId.Due
             TaskInputId.Order
             target InputTarget.Text
+            yield! CaseDateFilter.all |> List.map TaskInputId.CaseDate
         ]
         |> List.map (fun input ->
             { optional input with
@@ -105,7 +106,7 @@ module EndpointDeclarations =
                     Paging.MaximumPageSize
                     Paging.DefaultPageSize)
                 true
-            query QueryTaskId.CaseSummary worklist None false
+            query QueryTaskId.CaseSummary (worklist @ [ optional TaskInputId.GroupBy ]) None true
             query
                 QueryTaskId.CaseTimeline
                 (caseTarget :: optional TaskInputId.TimelineFilter :: page)
@@ -134,6 +135,8 @@ module EndpointDeclarations =
                     optional (field BusinessField.CaseReference)
                     optional TaskInputId.ReminderState
                     optional TaskInputId.ReminderDue
+                    optional TaskInputId.ReminderKindFilter
+                    optional TaskInputId.DeadlineOutcomeFilter
                     optional TaskInputId.Assignment
                     optional (target InputTarget.Text)
                     optional TaskInputId.IncludeInactive

@@ -16,6 +16,7 @@
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Messages/DigestMessage.fs" />
     <Compile Include="Documents/ActorPresentation.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Documents/TimelineEventPresentation.fs" />

@@ -114,7 +114,7 @@ it("keeps a routed amendment fixed until returning to the case", async () => {
 it("protects an amendment changed to all empty strings on Back", async () => {
   const user = userEvent.setup();
   const close = open();
-  selectFact("claimantName");
+  selectFact("policyNumber");
   for (const input of screen.getAllByRole("textbox")) {
     await user.clear(input);
   }
@@ -170,9 +170,9 @@ it("protects hidden correction replacement edits after returning its mode to KEE
     'fieldset[id="field-group:registration"]',
   )!;
   await chooseOption(user, mode, "UPDATE");
-  selectFact("claimantName");
+  selectFact("policyNumber");
   await user.clear(
-    screen.getByLabelText("Claimant name", {
+    screen.getByLabelText("Policy number", {
       exact: true,
     }),
   );
@@ -201,7 +201,7 @@ it("protects exact authored edits after retaining the review", async () => {
     vi.fn().mockImplementationOnce(() => Promise.resolve(previewReply())),
   );
   const close = open();
-  selectFact("claimantName");
+  selectFact("policyNumber");
   await user.click(
     screen.getByRole("button", {
       name: "Review changes",

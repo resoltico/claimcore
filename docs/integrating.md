@@ -233,13 +233,24 @@ For the business workflow and terminology, see [Case work](case-work.md) and the
 
 ### Current foundation contracts
 
-Use a fresh format 6 installation with matching builds. Case receipts expose `payments`, an ordered
+Use a fresh format 7 installation with matching builds. Case receipts expose `payments`, an ordered
 list of entry differences; there is no singular `payment` member. `case.correctPayment` binds the
 selected `paymentId` and one case revision, then returns both removed and recorded differences in
 one accepted operation. DATA payment-page items expose `actions`, a finite list of independently
 available task IDs, replacing `canRemove`; consumers must not infer correction from removal.
 Presentation attaches exactly those supplied actions to the selected entry. HUMAN controls include their shared `labelId`. Command bindings use a
 closed `COMMAND` branch containing the complete validated operational request rather than seeds.
+
+Use `receivedDate` for the date the office received the claim. Registration facts other than the
+reference are optional. Claimed money is an optional pair. Party rows and edits use the supplied
+collection and binding declarations. Payment entries carry direction, their own money,
+evidence reference and payee ID. Reference queries resolve earlier spellings under current read access.
+
+Case handling is open or closed with a required outcome. Close takes an outcome and optional note.
+Reopen takes a reason. Observation-time case summaries support business date filters, grouping and
+signed net-paid totals with contributing-case counts. Reminder kinds and deadline completion outcomes
+are available through list and export contracts. Use the published shape for stage values and
+operator or actor attribution rather than inferring it from a display name.
 
 Browser response admission is generated from the finite Wire codec schemas. It rejects malformed
 structure before date observation or recovery. Structural admission does not establish every native

@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
+open System.Text.Json
 open Expecto
 open ClaimCore.Server
 open ClaimCore.TestSupport.PrivateTestPaths
@@ -85,14 +86,22 @@ let private catalogue () =
                 "CLAIMCORE_OIDC_CLI_CLIENT_ID"
                 "CLAIMCORE_OIDC_CA_CERT_FILE"
                 "CLAIMCORE_WEB_PROBE_CA_CERT_FILE"
+                "CLAIMCORE_DIGEST_SMTP_HOST"
+                "CLAIMCORE_DIGEST_SMTP_PORT"
+                "CLAIMCORE_DIGEST_SMTP_TLS"
+                "CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE"
+                "CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE"
+                "CLAIMCORE_DIGEST_FROM"
+                "CLAIMCORE_DIGEST_TIME"
+                "CLAIMCORE_DIGEST_LANGUAGE"
             ]
 
     Expect.equal
         (WebSettings.all |> List.map WebSettings.token |> Set.ofList)
         expected
-        "Exactly nineteen names"
+        "Exactly the documented setting names"
 
-    Expect.equal WebSettings.all.Length 19 "No duplicate registry entries"
+    Expect.equal WebSettings.all.Length expected.Count "No duplicate registry entries"
 
 let private limits () =
     configured (fun _ _ ->
@@ -178,15 +187,135 @@ let private keyRing () =
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", null)
         Expect.throws (fun () -> Configuration.load () |> ignore) "Required setting")
 
+let private digestSettings =
+    [
+        "CLAIMCORE_DIGEST_SMTP_HOST", "mail.example.test"
+        "CLAIMCORE_DIGEST_SMTP_PORT", "587"
+        "CLAIMCORE_DIGEST_SMTP_TLS", "STARTTLS"
+        "CLAIMCORE_DIGEST_FROM", "sender@example.test"
+        "CLAIMCORE_DIGEST_TIME", "07:00"
+    ]
+
+let private expectDigestFault code setting =
+    try
+        let configuration = Configuration.load ()
+        use _certificates = Configuration.ownCertificates configuration
+        failtestf "Expected startup to refuse %s." setting
+    with WebStartupException problem ->
+        use failure = JsonDocument.Parse((WebStartupDiagnostics.encode problem).AsMemory())
+
+        Expect.equal (failure.RootElement.GetProperty("code").GetString()) code "Closed fault code"
+
+        Expect.equal
+            (failure.RootElement.GetProperty("setting").GetString())
+            setting
+            "Reports the setting name"
+
+        Expect.equal
+            (failure.RootElement.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
+            (set [ "kind"; "code"; "setting" ])
+            "The fault contains no submitted inputs"
+
+let private digestAvailability () =
+    configured (fun _ connection ->
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+        let withoutSettings = Configuration.load ()
+        use _withoutCertificates = Configuration.ownCertificates withoutSettings
+        Expect.isNone withoutSettings.Digest "Absent settings disable digest"
+
+        for setting, value in digestSettings do
+            Environment.SetEnvironmentVariable(setting, value)
+
+        let configuredDigest = Configuration.load ()
+        use _configuredCertificates = Configuration.ownCertificates configuredDigest
+
+        let digest =
+            Expect.wantSome configuredDigest.Digest "Complete settings enable digest"
+
+        Expect.equal digest.Language "en" "Default language"
+        Expect.equal digest.Time (TimeOnly(7, 0)) "Business time of day"
+        Expect.equal digest.Smtp.Tls DigestSmtpTls.StartTls "Mandatory STARTTLS"
+        Expect.equal digest.Smtp.Port 587 "Configured SMTP port"
+        Expect.isNone digest.Smtp.Credentials "Authentication is optional"
+        Expect.isNone digest.Smtp.TrustRoot "Default platform trust"
+
+        for setting, value in digestSettings do
+            Environment.SetEnvironmentVariable(setting, null)
+            expectDigestFault "SETTING_REQUIRED" setting
+            Environment.SetEnvironmentVariable(setting, value)
+
+        for setting, value in
+            [
+                "CLAIMCORE_DIGEST_SMTP_HOST", "smtp://mail.example.test"
+                "CLAIMCORE_DIGEST_SMTP_PORT", "65536"
+                "CLAIMCORE_DIGEST_SMTP_TLS", "PLAINTEXT"
+                "CLAIMCORE_DIGEST_FROM", "Sender <sender@example.test>"
+                "CLAIMCORE_DIGEST_TIME", "24:00"
+                "CLAIMCORE_DIGEST_TIME", "7:00"
+                "CLAIMCORE_DIGEST_LANGUAGE", "en-XA"
+            ] do
+            let previous = Environment.GetEnvironmentVariable setting
+            Environment.SetEnvironmentVariable(setting, value)
+            expectDigestFault "SETTING_INVALID" setting
+            Environment.SetEnvironmentVariable(setting, previous)
+
+        Environment.SetEnvironmentVariable("CLAIMCORE_DIGEST_LANGUAGE", "lv")
+        Environment.SetEnvironmentVariable("CLAIMCORE_DIGEST_SMTP_TLS", "IMPLICIT")
+        let localized = Configuration.load ()
+        use _localizedCertificates = Configuration.ownCertificates localized
+        let digest = Expect.wantSome localized.Digest "Offered language and implicit TLS"
+        Expect.equal digest.Language "lv" "Configured language"
+        Expect.equal digest.Smtp.Tls DigestSmtpTls.Implicit "Implicit TLS")
+
+let private digestPrivateFiles () =
+    configured (fun directory connection ->
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+
+        for setting, value in digestSettings do
+            Environment.SetEnvironmentVariable(setting, value)
+
+        let setting = "CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE"
+        let credentials = Path.Combine(directory, "credentials")
+        File.WriteAllText(credentials, "synthetic-user\r\n synthetic-password \r\n")
+        Environment.SetEnvironmentVariable(setting, credentials)
+        File.SetUnixFileMode(credentials, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
+        expectDigestFault "SETTING_INVALID" setting
+
+        File.SetUnixFileMode(credentials, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+        let configured = Configuration.load ()
+        use _certificates = Configuration.ownCertificates configured
+
+        let digest = Expect.wantSome configured.Digest "Digest is enabled"
+
+        Expect.equal
+            digest.Smtp.Credentials
+            (Some("synthetic-user", " synthetic-password "))
+            "Reads the two private lines and preserves the password"
+
+        File.AppendAllText(credentials, "unexpected third line")
+        expectDigestFault "SETTING_INVALID" setting
+
+        Environment.SetEnvironmentVariable(setting, null)
+        let setting = "CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE"
+        let ca = Path.Combine(directory, "ca.pem")
+        File.WriteAllText(ca, "not a certificate")
+        File.SetUnixFileMode(ca, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+        Environment.SetEnvironmentVariable(setting, ca)
+        expectDigestFault "SETTING_INVALID" setting)
+
 [<Tests>]
 let tests =
     testList
         "host configuration"
         [
             testCase "key ring requires an existing protected directory" keyRing
-            testCase "the service setting registry has exactly nineteen names" catalogue
+            testCase "the service setting registry matches the configuration contract" catalogue
             testCase "defaults are bounded and out-of-range settings are refused" limits
             testCase "the connection input is owner-private and strict UTF-8" privateConnection
+            testCase
+                "digest settings are optional as a group and validated at startup"
+                digestAvailability
+            testCase "digest credential and trust files use private admission" digestPrivateFiles
             testCase "provider capacity must cover the concurrent workload budgets" poolCapacity
         ]
     |> testSequenced

@@ -16,7 +16,7 @@ export const CaseFactRegions = ({
 }) => (
   <div className="case-fact-regions">
     {view.regions
-      .filter((region) => ["FACTS", "PAYMENTS"].includes(region.role))
+      .filter((region) => ["FACTS", "PAYMENTS", "PARTIES"].includes(region.role))
       .map((region, index) => {
         if (region.role === "PAYMENTS") {
           return (

@@ -39,6 +39,7 @@ let private withCases check =
             (operationId 2)
             {
                 DisplayName = "Reader"
+                DigestEmail = None
                 Contact = None
             }
             []

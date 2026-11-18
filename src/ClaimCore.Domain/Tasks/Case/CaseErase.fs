@@ -52,6 +52,7 @@ let decide context environment (state: DecisionFacts option) binding (_: InputMa
                     { state.Case.Value with
                         Lifecycle = Lifecycle.Erased
                         Content = None
+                        Handling = Handling.clearNote state.Case.Value.Handling
                     }
 
                 Ok

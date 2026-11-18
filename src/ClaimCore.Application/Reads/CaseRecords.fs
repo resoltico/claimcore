@@ -20,16 +20,18 @@ module internal CaseRecords =
         |> Option.exists (fun record ->
             Access.can principal access capability (Scope.Case record.CaseId))
 
-    let current _installation (record: StoredCase) =
+    let current _installation parties (record: StoredCase) =
         CaseFamily.validateSnapshot record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun () ->
-            let index = CaseIndex.create record.Index.ChangedAt record.Snapshot None []
+            let index =
+                CaseIndex.create record.Index.ChangedAt record.Snapshot None None None parties
 
             let expected =
                 { index with
                     Responsible = record.Index.Responsible
                     FollowUp = record.Index.FollowUp
+                    DeadlineDue = record.Index.DeadlineDue
                     WorkSearchText = record.Index.WorkSearchText
                 }
 

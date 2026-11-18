@@ -19,10 +19,10 @@ const Workspace = () => {
           initialAct="case.open"
           prefill={{
             "field:caseReference": "DETOUR-1",
-            "field:incidentNotificationDate": "2026-11-09",
+            "field:receivedDate": "2026-11-09",
             "field:incidentCountry": "LV",
-            "field:claimantName": "Synthetic claimant",
-            "field:insurerName": "Synthetic insurer",
+            "field:policyNumber": "Synthetic claimant",
+            "field:insurerClaimReference": "Synthetic insurer",
             "field:claimedCurrency": "EUR",
           }}
           onClose={vi.fn()}

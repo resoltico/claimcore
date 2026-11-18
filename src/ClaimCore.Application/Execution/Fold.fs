@@ -30,8 +30,9 @@ type internal FoldState =
         Parts: Map<PartKind * Guid, PartChange>
         Origins: Map<PartKind * Guid, SubjectStamp>
         Summaries: Map<CaseId, Attribution>
+        ReportDates: Map<CaseId, CaseReportDates>
         Accepted: Set<OperationId>
-        NaturalKeys: Set<PartKind * string>
+        NaturalKeys: Map<PartKind * string, Guid>
         Nonces: Set<string>
         Missing: Map<CompartmentOwner, EffectPosition list>
         Present: Map<CompartmentOwner, EffectPosition list>
@@ -46,8 +47,9 @@ module internal Fold =
             Parts = Map.empty
             Origins = Map.empty
             Summaries = Map.empty
+            ReportDates = Map.empty
             Accepted = Set.empty
-            NaturalKeys = Set.empty
+            NaturalKeys = Map.empty
             Nonces = Set.empty
             Missing = Map.empty
             Present = Map.empty
@@ -60,10 +62,9 @@ module internal Fold =
             match CaseReference.parse text with
             | Error _ -> None
             | Ok reference ->
-                state.Families
-                |> Map.values
-                |> Seq.tryFind (fun family ->
-                    CaseReference.identity family.Reference = CaseReference.identity reference)
+                Map.tryFind (PartKind.Case, CaseReference.identity reference) state.NaturalKeys
+                |> Option.bind CaseId.create
+                |> Option.bind (fun id -> Map.tryFind id state.Families)
 
     let resolveCase state selector =
         resolveFamily state selector |> Option.map _.Id
@@ -80,6 +81,20 @@ module internal Fold =
             FamilyEnvironment.Requester = requester state principal
             RequesterPrincipal = principal
             Maintenance = maintenance
+            ReferenceOwner =
+                fun reference ->
+                    Map.tryFind (PartKind.Case, CaseReference.identity reference) state.NaturalKeys
+                    |> Option.bind CaseId.create
+            RelatedCase =
+                fun selector ->
+                    resolveFamily state selector
+                    |> Option.filter (fun family ->
+                        Access.can
+                            principal
+                            (requester state principal)
+                            Capability.ReadCase
+                            (Scope.Case family.Id))
+                    |> Option.map (fun family -> family.Id, family.Case.Value.Lifecycle)
             AssigneeEligible =
                 fun id ->
                     Map.tryFind id state.People
@@ -90,7 +105,7 @@ module internal Fold =
                         |> Option.exists (Access.eligibleAssignee person.Actor.Principal access))
         }
 
-    let personEnvironment state principal maintenance targetPrincipal =
+    let personEnvironment state principal maintenance targetPrincipal principalOwner =
         let cases =
             state.Families
             |> Map.values
@@ -123,6 +138,7 @@ module internal Fold =
                 |> Seq.length
             ActorCount = state.People.Count
             TargetPrincipal = targetPrincipal
+            PrincipalOwner = principalOwner
         }
 
     let private family state binding inputs =
@@ -143,10 +159,11 @@ module internal Fold =
                 |> Seq.tryFind (fun person -> person.Actor.Principal = principal))
         | _ -> None
 
-    let private targetPrincipal state binding inputs =
-        person state binding inputs
-        |> Option.map _.Actor.Principal
-        |> Option.orElseWith (fun () -> InputSelection.principal inputs)
+    let private principalOwner state principal =
+        Map.tryFind
+            (PartKind.Person, (PrincipalKey.naturalKey principal).ToUpperInvariant())
+            state.NaturalKeys
+        |> Option.bind ActorId.create
 
     let snapshot state principal maintenance selected binding inputs =
         match selected with
@@ -166,14 +183,21 @@ module internal Fold =
                  |> Seq.toList)
                 state.Origins
         | Task.Person task ->
+            let before = person state binding inputs
+            let current = before |> Option.map _.Actor.Principal
+
+            let proposed =
+                InputSelection.personPrincipal task.Declaration.Exposure current inputs
+
             DecisionSnapshot.person
                 task
                 (personEnvironment
                     state
                     principal
                     maintenance
-                    (targetPrincipal state binding inputs))
-                (person state binding inputs)
+                    (current |> Option.orElse proposed)
+                    (proposed |> Option.bind (principalOwner state)))
+                before
 
     let decide state context selected binding inputs =
         (snapshot
@@ -232,7 +256,7 @@ module internal Fold =
 
                         if
                             natural
-                            |> Option.exists (fun key -> Set.contains key state.NaturalKeys)
+                            |> Option.exists (fun key -> Map.containsKey key state.NaturalKeys)
                         then
                             Error FoldProblem.NaturalKey
                         else
@@ -259,7 +283,8 @@ module internal Fold =
                                             Map.add key change.Stamp state.Origins
                                     NaturalKeys =
                                         natural
-                                        |> Option.map (fun key -> Set.add key state.NaturalKeys)
+                                        |> Option.map (fun naturalKey ->
+                                            Map.add naturalKey change.PartId state.NaturalKeys)
                                         |> Option.defaultValue state.NaturalKeys
                                 })))
             (Ok state)
@@ -269,16 +294,10 @@ module internal Fold =
         let declaration = Task.declaration selected
         let header = record.Root.Header
 
-        if declaration.Exposure = TaskExposure.Operator then
-            if
-                state.People.IsEmpty
-                && header.ActorId = ActorId.ofOperationId header.OperationId
-            then
-                Ok None
-            else
-                Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
-        else
-            match Map.tryFind header.ActorId state.People with
+        match declaration.Exposure, declaration.Aggregate, header.Authority with
+        | TaskExposure.Operator, AggregateKind.Person, Authority.Operator -> Ok None
+        | TaskExposure.Client, _, Authority.Actor actor ->
+            match Map.tryFind actor state.People with
             | None -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
             | Some person ->
                 let principal = person.Actor.Principal
@@ -321,6 +340,7 @@ module internal Fold =
                         Ok(Some principal)
                     else
                         Error FoldProblem.Decision)
+        | _ -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
 
     let private revisions state changes =
         changes
@@ -403,7 +423,11 @@ module internal Fold =
                 |> Result.bind (fun principal ->
                     let principal =
                         principal
-                        |> Option.orElseWith (fun () -> Person.creationPrincipal record.Changes)
+                        |> Option.orElseWith (fun () ->
+                            InputSelection.personPrincipal
+                                TaskExposure.Operator
+                                None
+                                (Some record.Root.Structure.Retained))
 
                     match principal with
                     | None -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
@@ -422,7 +446,7 @@ module internal Fold =
                                 Stamp =
                                     {
                                         OperationId = header.OperationId
-                                        ActorId = header.ActorId
+                                        Authority = header.Authority
                                         RecordedAt = header.RecordedAt
                                         Position =
                                             EffectPosition.create header.Sequence 0 |> Option.get
@@ -542,7 +566,30 @@ module internal Fold =
 
                                     proof
                                     |> Result.map (fun (missing, present) ->
+                                        let dates =
+                                            match record.Changes.Head.Aggregate with
+                                            | AggregateReference.Person _ -> next.ReportDates
+                                            | AggregateReference.Family id ->
+                                                let status =
+                                                    next.Families[id]
+                                                    |> CaseFamily.snapshot
+                                                    |> Option.bind (fun snapshot ->
+                                                        CaseState.fields snapshot.State)
+                                                    |> Option.map _.Status
+
+                                                let date =
+                                                    CalendarDate.ofDate
+                                                        header.BusinessDate.Value
+
+                                                let previous = Map.tryFind id next.ReportDates
+
+                                                Map.add
+                                                    id
+                                                    (CaseReportDates.record date status previous)
+                                                    next.ReportDates
+
                                         { next with
+                                            ReportDates = dates
                                             Head = record.Root.Position
                                             Accepted = Set.add header.OperationId next.Accepted
                                             Nonces = Set.union state.Nonces (Set.ofList nonces)

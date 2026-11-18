@@ -25,6 +25,7 @@ let private actorId =
 let private profile =
     {
         ActorProfileInput.DisplayName = "Editable seed"
+        DigestEmail = None
         Contact = Some "contact@example.test"
     }
 
@@ -98,6 +99,7 @@ let tests =
                             (TaskId.ofLiteral "people.enable")
                             (TaskId.ofLiteral "people.disable")
                             (TaskId.ofLiteral "people.setProfile")
+                            (TaskId.ofLiteral "people.changeSignInIdentity")
                             (TaskId.ofLiteral "people.eraseProfile")
                         ]
                         "Literal existing-account action inventory"
@@ -140,7 +142,7 @@ let tests =
                             Role = Role.CaseReader
                             Scope = GrantScope.Case(parent, ResponseExamples.snapshot.Reference)
                             GrantedAt = DomainInputs.workBasis.ObservedAt
-                            GrantedBy = ResponseExamples.caseRead.RecordedBy
+                            GrantedBy = AuthorityRef.Actor(ResponseExamples.caseRead.RecordedBy)
                         }
 
                     let read offers =

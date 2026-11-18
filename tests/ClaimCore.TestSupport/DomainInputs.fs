@@ -21,6 +21,7 @@ let stageDisplay state =
         state
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        None
     |> Result.defaultWith invalidOp
 
 
@@ -47,6 +48,7 @@ let private groupInput create group overrides =
             [
                 FieldValueKind.CalendarDate, "2026-08-01"
                 FieldValueKind.Country, "LV"
+                FieldValueKind.Identifier, "SYN-1"
                 FieldValueKind.PartyName, "Synthetic Party"
                 FieldValueKind.IncidentDescription, "Synthetic incident description"
                 FieldValueKind.Amount, "1000.00"
@@ -69,7 +71,16 @@ let registration: RegistrationInput =
     groupInput
         RegistrationInput.create
         "registration"
-        (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
+        (Map.ofList
+            [
+                "incidentDate", "2026-08-01"
+                "receivedDate", "2026-08-03"
+                "incidentCountry", "LV"
+                "policyNumber", "Synthetic Policy"
+                "insurerClaimReference", "Synthetic Insurer Reference"
+                "claimedAmount", "1000.00"
+                "claimedCurrency", "EUR"
+            ])
 
 let registrationFrom values =
     RegistrationInput.replace values registration |> accepted
@@ -80,8 +91,8 @@ let registrationWith changes value =
 let exampleRegistration =
     registrationWith
         [
-            BusinessField.ClaimantName, "Example Claimant Ltd"
-            BusinessField.InsurerName, "Example Alleged Insurer"
+            BusinessField.PolicyNumber, "Example Claimant Ltd"
+            BusinessField.InsurerClaimReference, "Example Alleged Insurer"
         ]
         registration
 
@@ -89,7 +100,7 @@ let registrationOn incident notification =
     registrationWith
         [
             BusinessField.IncidentDate, incident
-            BusinessField.IncidentNotificationDate, notification
+            BusinessField.ReceivedDate, notification
         ]
         registration
 
@@ -130,6 +141,7 @@ let decisionUpdate (input: DecisionInput) : DecisionUpdateInput =
 
     {
         Date = Some(value BusinessField.PaymentDecisionDate)
+        Basis = None
         Payable =
             Some
                 {
@@ -188,12 +200,14 @@ let paymentStateFrom values =
 let actorProfile: ActorProfileInput =
     {
         DisplayName = "Synthetic account"
+        DigestEmail = None
         Contact = None
     }
 
 let ownerProfile: ActorProfileInput =
     {
         DisplayName = "Synthetic owner"
+        DigestEmail = None
         Contact = None
     }
 
@@ -202,7 +216,12 @@ let actorReference id =
 
 let namedActorReference id name =
     let profile =
-        ActorProfile.parse { DisplayName = name; Contact = None }
+        ActorProfile.parse
+            {
+                DisplayName = name
+                Contact = None
+                DigestEmail = None
+            }
         |> Result.defaultWith (fun _ -> failtest "Invalid authored fixture name")
 
     ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)

@@ -6,6 +6,7 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
 
 /// Restores authenticated public roots and only the private values needed by this consumer.
 module internal AggregateStorage =
@@ -64,7 +65,8 @@ module internal AggregateStorage =
             Payments: OperationId list
             Reminders: ReminderId list
             Notes: NoteId list
-            ExcludedPayment: OperationId option
+            Parties: PartyId list
+            Links: bool
             Operation: OperationId option
         }
 
@@ -73,18 +75,11 @@ module internal AggregateStorage =
             Payments = []
             Reminders = []
             Notes = []
-            ExcludedPayment = None
+            Parties = []
+            Links = false
             Operation = None
         }
 
-    let private bounds earliest latest =
-        match earliest, latest with
-        | None, None -> None
-        | Some earliest, Some latest ->
-            PaymentDateBounds.create earliest latest
-            |> Option.map Some
-            |> Option.defaultWith (fun () -> corrupt "Projected payment extrema are unordered.")
-        | _ -> corrupt "Projected payment extrema are incomplete."
 
     let private readFamilyRoots (selection: Selection) (tx: ReadTx) id =
         task {
@@ -119,7 +114,7 @@ module internal AggregateStorage =
 
             let! located =
                 rows
-                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,e.part_kind,e.part_id,e.revision,(SELECT max(s.operation_sequence) FROM claimcore.ledger_effects s WHERE s.aggregate_kind=$2 AND s.aggregate_id=$1) FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence LEFT JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 LEFT JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind=$2 AND e.aggregate_id=$1 AND (e.part_kind=ANY($3::text[]) OR (e.part_kind=$7 AND e.part_id=ANY($4::uuid[])) OR (e.part_kind=$8 AND e.part_id=ANY($5::uuid[])) OR (e.part_kind=$9 AND e.part_id=ANY($6::uuid[]))) ORDER BY e.part_kind,e.part_id,e.revision DESC"
+                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,e.part_kind,e.part_id,e.revision,(SELECT max(s.operation_sequence) FROM claimcore.ledger_effects s WHERE s.aggregate_kind=$2 AND s.aggregate_id=$1) FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence LEFT JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 LEFT JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind=$2 AND e.aggregate_id=$1 AND (e.part_kind=ANY($3::text[]) OR (e.part_kind=$7 AND e.part_id=ANY($4::uuid[])) OR (e.part_kind=$8 AND e.part_id=ANY($5::uuid[])) OR (e.part_kind=$9 AND e.part_id=ANY($6::uuid[])) OR (e.part_kind=$11 AND (e.part_id=ANY($10::uuid[]) OR EXISTS(SELECT 1 FROM claimcore.case_parties p WHERE p.case_id=$1 AND p.party_id=e.part_id AND NOT p.removed AND p.role IS NOT NULL))) OR ($13 AND e.part_kind=$12 AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects later WHERE later.part_kind=e.part_kind AND later.part_id=e.part_id AND later.revision>e.revision) AND e.retained->>'removed'='false')) ORDER BY e.part_kind,e.part_id,e.revision DESC"
                     [|
                         box (CaseId.value id)
                         box "FAMILY"
@@ -130,6 +125,10 @@ module internal AggregateStorage =
                         box (PartKind.token PartKind.Payment)
                         box (PartKind.token PartKind.Reminder)
                         box (PartKind.token PartKind.Note)
+                        box (selection.Parties |> List.map PartyId.value |> List.toArray)
+                        box (PartKind.token PartKind.Party)
+                        box (PartKind.token PartKind.Link)
+                        box selection.Links
                     |]
 
             let! projected = FamilyReads.findCase tx id
@@ -187,7 +186,6 @@ module internal AggregateStorage =
 
                 let mutable parts = []
                 let mutable origins = Map.empty
-                let mutable reference = None
 
                 for row in located do
                     let idAt index =
@@ -220,20 +218,8 @@ module internal AggregateStorage =
                         corrupt
                             "Selected accepted part/origin disagrees with its owner and revision."
 
-                    if part.Kind = PartKind.Case then
-                        reference <-
-                            origin.NaturalKey
-                            |> Option.map (fun value ->
-                                CaseReference.parse value
-                                |> Result.defaultWith (fun _ ->
-                                    corrupt "Case creation reference is invalid."))
-
                     parts <- part :: parts
                     origins <- Map.add (part.Kind, part.PartId) origin.Stamp origins
-
-                let reference =
-                    reference
-                    |> Option.defaultWith (fun () -> corrupt "Case creation identity is absent.")
 
                 let sequence =
                     DatabaseSession.value<int64> 7 located.Head
@@ -242,7 +228,7 @@ module internal AggregateStorage =
                 return
                     Some
                         {
-                            Reference = reference
+                            Reference = projected.Snapshot.Reference
                             Sequence = sequence
                             Parts = parts
                             Origins = origins
@@ -274,17 +260,6 @@ module internal AggregateStorage =
                 let origins = roots.Origins
                 let projected = roots.Projected
 
-                let rows sql parameters =
-                    task {
-                        roundTrips <- roundTrips + 1
-
-                        let! values =
-                            DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
-
-                        materialized <- materialized + values.Length
-                        return values
-                    }
-
                 let namedRows sql parameters =
                     task {
                         roundTrips <- roundTrips + 1
@@ -315,31 +290,25 @@ module internal AggregateStorage =
 
                 let! aggregate =
                     namedRows
-                        ("SELECT count(*) AS payment_count,coalesce(sum(paid_amount),0)::text AS paid,"
-                         + DatabaseSession.dateExpression "min(payment_date)"
-                         + " AS first_payment,"
-                         + DatabaseSession.dateExpression "max(payment_date)"
-                         + " AS last_payment,"
-                         + DatabaseSession.dateExpression
-                             "min(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
-                         + " AS remaining_first,"
-                         + DatabaseSession.dateExpression
-                             "max(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
-                         + " AS remaining_last,"
+                        ("SELECT count(*) AS payment_count,"
                          + "(SELECT "
                          + DatabaseSession.dateExpression "min(due)"
-                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL) AS next_due,"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL) AS next_due,"
                          + "(SELECT "
                          + DatabaseSession.dateExpression "min(due)"
-                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($4::uuid[]))) AS remaining_due "
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_due,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND kind=$4) AS next_deadline,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$2 AND kind=$4 AND NOT(reminder_id=ANY($3::uuid[]))) AS remaining_deadline "
                          + "FROM claimcore.case_payments WHERE case_id=$1 AND NOT removed AND payment_date IS NOT NULL")
                         [|
                             box (CaseId.value id)
-                            DatabaseSession.parameter (
-                                selection.ExcludedPayment |> Option.map OperationId.value
-                            )
                             box (ReminderState.token ReminderState.Pending)
                             box (selection.Reminders |> List.map ReminderId.value |> List.toArray)
+                            box (ReminderKind.token ReminderKind.Deadline)
                         |]
 
                 let aggregate =
@@ -351,24 +320,22 @@ module internal AggregateStorage =
                     DatabaseSession.namedOptionalCalendarDate name aggregate
                     |> Option.map CalendarDate.ofDate
 
-                let paid =
-                    DatabaseSession.namedValue<string> "paid" aggregate
-                    |> Amount.parse
-                    |> Result.defaultWith (fun _ ->
-                        corrupt "Projected paid total is outside its canonical range.")
+                let! totals = PaymentStorage.totals tx.Connection (Some id) tx.CancellationToken
+                roundTrips <- roundTrips + 1
+
+                materialized <-
+                    materialized
+                    + (Map.tryFind id totals |> Option.map Map.count |> Option.defaultValue 0)
 
                 let summary =
                     {
                         LiveFamilySummary.PaymentCount =
                             DatabaseSession.namedValue<int64> "payment_count" aggregate
-                        Paid = paid
-                        PaymentDates = bounds (date "first_payment") (date "last_payment")
-                        RemainingPaymentDates =
-                            selection.ExcludedPayment
-                            |> Option.map (fun selected ->
-                                selected, bounds (date "remaining_first") (date "remaining_last"))
+                        PaymentTotals = Map.tryFind id totals |> Option.defaultValue Map.empty
                         NextPendingDue = date "next_due"
                         RemainingPendingDue = date "remaining_due"
+                        NextDeadlineDue = date "next_deadline"
+                        RemainingDeadlineDue = date "remaining_deadline"
                     }
 
                 let facts =
@@ -383,6 +350,7 @@ module internal AggregateStorage =
                             FamilyFactScope.Payments = Set.ofList paymentIds
                             Reminders = Set.ofList reminderIds
                             Notes = Set.ofList noteIds
+                            Parties = Set.ofList selection.Parties
                             Operation = selection.Operation
                         }
                     |> Result.defaultWith (fun _ ->
@@ -434,16 +402,16 @@ module internal AggregateStorage =
                     && work.Snapshot = expectedWork
                     && work.ChangedAt =
                         (facts.Work |> Option.map (fun part -> part.Stamp.RecordedAt))
-                    && work.RecordedBy = (facts.Work |> Option.map (fun part -> part.Stamp.ActorId))
+                    && work.RecordedBy =
+                        (facts.Work
+                         |> Option.map (fun part -> ProjectionRows.familyActor part.Stamp.Authority))
                     ->
                     ()
                 | _ -> corrupt "Consumed work projection disagrees with its accepted root."
 
                 let! paymentRows =
-                    rows
-                        ("SELECT payment_id,accepting_sequence,effect_index,"
-                         + DatabaseSession.dateExpression "payment_date"
-                         + ",paid_amount,removed FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=ANY($2::uuid[])")
+                    namedRows
+                        ($"SELECT {PaymentStorage.columns},accepting_sequence,effect_index,removed FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=ANY($2::uuid[])")
                         [|
                             box (CaseId.value id)
                             box (paymentIds |> List.map OperationId.value |> List.toArray)
@@ -454,7 +422,7 @@ module internal AggregateStorage =
 
                 for row in paymentRows do
                     let payment =
-                        DatabaseSession.value<Guid> 0 row
+                        DatabaseSession.namedValue<Guid> "payment_id" row
                         |> DatabaseSession.admitted OperationId.create
 
                     let part =
@@ -464,19 +432,17 @@ module internal AggregateStorage =
 
                     let origin = Map.find (PartKind.Payment, OperationId.value payment) origins
 
-                    let expectedDate =
-                        part.Value.Entry |> Option.map (PaymentEntry.date >> CalendarDate.value)
-
-                    let expectedAmount =
-                        part.Value.Entry |> Option.map (PaymentEntry.amount >> Amount.value)
+                    let entry =
+                        DatabaseSession.namedOptional<DateOnly> "payment_date" row
+                        |> Option.map (fun _ -> PaymentStorage.row row)
 
                     if
-                        DatabaseSession.value<int64> 1 row
+                        DatabaseSession.namedValue<int64> "accepting_sequence" row
                         <> Sequence.value (EffectPosition.sequence origin.Position)
-                        || DatabaseSession.value<int> 2 row <> EffectPosition.index origin.Position
-                        || DatabaseSession.optionalCalendarDate 3 row <> expectedDate
-                        || DatabaseSession.optional<decimal> 4 row <> expectedAmount
-                        || DatabaseSession.value<bool> 5 row <> part.Value.Removed
+                        || DatabaseSession.namedValue<int> "effect_index" row
+                           <> EffectPosition.index origin.Position
+                        || entry <> part.Value.Entry
+                        || DatabaseSession.namedValue<bool> "removed" row <> part.Value.Removed
                     then
                         corrupt "Selected payment values/origin disagree with their accepted root."
 
@@ -504,7 +470,7 @@ module internal AggregateStorage =
                         stored.Snapshot <> PartChange.reminderSnapshot part
                         || stored.Revision <> part.Revision
                         || stored.RecordedAt <> part.Stamp.RecordedAt
-                        || stored.RecordedBy <> part.Stamp.ActorId
+                        || stored.RecordedBy <> ProjectionRows.familyActor part.Stamp.Authority
                     then
                         corrupt "Selected reminder projection disagrees with its accepted root."
 
@@ -537,7 +503,7 @@ module internal AggregateStorage =
                         Some stored.Note <> PartChange.noteSnapshot part
                         || stored.CreatedPosition <> origin.Position
                         || stored.RecordedAt <> origin.RecordedAt
-                        || stored.RecordedBy <> origin.ActorId
+                        || stored.RecordedBy <> ProjectionRows.familyActor origin.Authority
                     then
                         corrupt "Selected note values/origin disagree with their accepted root."
 
@@ -585,11 +551,13 @@ module internal AggregateStorage =
 
             let reminders = selected PartKind.Reminder
             let notes = selected PartKind.Note
+            let parties = selected PartKind.Party
 
             let selection =
                 { emptySelection with
                     Reminders = reminders |> List.map (DatabaseSession.admitted ReminderId.create)
                     Notes = notes |> List.map (DatabaseSession.admitted NoteId.create)
+                    Parties = parties |> List.map (DatabaseSession.admitted PartyId.create)
                 }
 
             let! loaded = readFamilyRoots selection tx id
@@ -602,7 +570,12 @@ module internal AggregateStorage =
                         |> List.map (fun part -> (part.Kind, part.PartId), part.Revision)
                         |> Map.ofList
 
-                    for kind, ids in [ PartKind.Reminder, reminders; PartKind.Note, notes ] do
+                    for kind, ids in
+                        [
+                            PartKind.Reminder, reminders
+                            PartKind.Note, notes
+                            PartKind.Party, parties
+                        ] do
                         if
                             ids
                             |> List.exists (fun part ->
@@ -633,13 +606,18 @@ module internal AggregateStorage =
             | Binding.CasePayment(_, _, payment) ->
                 { emptySelection with
                     Payments = [ payment ]
-                    ExcludedPayment = Some payment
                 }
             | Binding.Reminder(_, reminder, _) ->
                 { emptySelection with
                     Reminders = [ reminder ]
                 }
             | Binding.Note(_, note) -> { emptySelection with Notes = [ note ] }
+            | Binding.Party(_, party, _) ->
+                { emptySelection with
+                    Parties = [ party ]
+                }
+            | Binding.LinkNew _
+            | Binding.Link _ -> { emptySelection with Links = true }
             | _ -> emptySelection
 
         readFamily { selected with Operation = operation } tx id
@@ -649,7 +627,7 @@ module internal AggregateStorage =
             let! rows =
                 DatabaseSession.rows
                     tx.Connection
-                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key FROM claimcore.actors WHERE actor_id=$1"
+                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key,digest_email FROM claimcore.actors WHERE actor_id=$1"
                     [| box (ActorId.value id) |]
                     tx.CancellationToken
 
@@ -672,20 +650,10 @@ module internal AggregateStorage =
                     corrupt "Person principal key disagrees with its identity."
 
                 let profile =
-                    match
-                        DatabaseSession.optional<string> 4 row,
-                        DatabaseSession.optional<string> 5 row
-                    with
-                    | None, None -> None
-                    | Some displayName, contact ->
-                        ActorProfile.restore
-                            {
-                                DisplayName = displayName
-                                Contact = contact
-                            }
-                        |> Result.map Some
-                        |> Result.defaultWith (fun _ -> corrupt "Person profile is invalid.")
-                    | _ -> corrupt "Person profile is incomplete."
+                    Projections.profileWithDigest
+                        (DatabaseSession.optional<string> 4 row)
+                        (DatabaseSession.optional<string> 5 row)
+                        (DatabaseSession.optional<string> 10 row)
 
                 let actor =
                     {
@@ -760,7 +728,7 @@ module internal AggregateStorage =
                 let! anchors =
                     DatabaseSession.rows
                         tx.Connection
-                        "SELECT l.operation_id,e.effect_index,o.operation_id,f.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind='PERSON' AND e.aggregate_id=$1 AND e.part_id=$1 ORDER BY e.revision DESC LIMIT 1"
+                        "SELECT current_op.operation_id,current_part.effect_index,origin_op.operation_id,origin.effect_index,identity_op.operation_id,identity.effect_index FROM claimcore.ledger_effects current_part JOIN claimcore.ledger current_op ON current_op.sequence=current_part.operation_sequence JOIN claimcore.ledger_effects origin ON origin.part_kind=current_part.part_kind AND origin.part_id=current_part.part_id AND origin.revision=1 JOIN claimcore.ledger origin_op ON origin_op.sequence=origin.operation_sequence JOIN LATERAL (SELECT operation_sequence,effect_index FROM claimcore.ledger_effects WHERE part_kind=current_part.part_kind AND part_id=current_part.part_id AND retained ? 'principal' ORDER BY revision DESC LIMIT 1) identity ON true JOIN claimcore.ledger identity_op ON identity_op.sequence=identity.operation_sequence WHERE current_part.aggregate_kind='PERSON' AND current_part.aggregate_id=$1 AND current_part.part_id=$1 ORDER BY current_part.revision DESC LIMIT 1"
                         [| box (ActorId.value id) |]
                         tx.CancellationToken
 
@@ -776,11 +744,18 @@ module internal AggregateStorage =
                         (DatabaseSession.value<Guid> 0 anchor
                          |> DatabaseSession.admitted OperationId.create)
 
-                let! origin, _ =
+                let! origin, cache =
                     operation
                         tx
                         cache
                         (DatabaseSession.value<Guid> 2 anchor
+                         |> DatabaseSession.admitted OperationId.create)
+
+                let! identity, _ =
+                    operation
+                        tx
+                        cache
+                        (DatabaseSession.value<Guid> 4 anchor
                          |> DatabaseSession.admitted OperationId.create)
 
                 let at (record: RetainedOperation) index =
@@ -789,7 +764,14 @@ module internal AggregateStorage =
                     |> Option.defaultWith (fun () -> corrupt "Person accepting index is absent.")
 
                 let person =
-                    Person.restore (at origin 3) (at latest 1) actor revision grants erasure
+                    Person.restore
+                        (at origin 3)
+                        (at latest 1)
+                        (at identity 5)
+                        actor
+                        revision
+                        grants
+                        erasure
                     |> Result.defaultWith (fun _ ->
                         corrupt "Person projection is inconsistent with its accepted anchors.")
 
@@ -805,6 +787,25 @@ module internal AggregateStorage =
 
                 return Some person
             | _ -> return corrupt "Person identity is duplicated."
+        }
+
+    let principalOwner (tx: ReadTx) principal =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT part_id FROM claimcore.ledger_effects WHERE part_kind='PERSON' AND upper(natural_key COLLATE \"C\")=$1"
+                    [| box ((PrincipalKey.naturalKey principal).ToUpperInvariant()) |]
+                    tx.CancellationToken
+
+            match rows with
+            | [] -> return None
+            | [ row ] ->
+                return
+                    Some(
+                        DatabaseSession.value<Guid> 0 row |> DatabaseSession.admitted ActorId.create
+                    )
+            | _ -> return corrupt "A natural person key has multiple owners."
         }
 
     let principal (tx: ReadTx) principal =
@@ -835,37 +836,4 @@ module internal AggregateStorage =
                         (DatabaseSession.value<Guid> 0 row
                          |> DatabaseSession.admitted ActorId.create)
             | _ -> return corrupt "Principal key is duplicated."
-        }
-
-    let resolveCase (tx: ReadTx) selector =
-        task {
-            let key, identity =
-                match selector with
-                | CaseSelector.Id id -> None, Some id
-                | CaseSelector.Reference raw ->
-                    CaseReference.parse raw |> Result.toOption |> Option.map CaseReference.identity,
-                    None
-
-            if key.IsNone && identity.IsNone then
-                return None
-            else
-                let! rows =
-                    DatabaseSession.rows
-                        tx.Connection
-                        "SELECT DISTINCT aggregate_id FROM claimcore.ledger_effects WHERE aggregate_kind='FAMILY' AND (($1::uuid IS NOT NULL AND aggregate_id=$1) OR ($2::text IS NOT NULL AND upper(natural_key COLLATE \"C\")=$2))"
-                        [|
-                            DatabaseSession.parameter (identity |> Option.map CaseId.value)
-                            DatabaseSession.parameter key
-                        |]
-                        tx.CancellationToken
-
-                match rows with
-                | [] -> return None
-                | [ row ] ->
-                    return
-                        Some(
-                            DatabaseSession.value<Guid> 0 row
-                            |> DatabaseSession.admitted CaseId.create
-                        )
-                | _ -> return corrupt "Family selection is ambiguous."
         }

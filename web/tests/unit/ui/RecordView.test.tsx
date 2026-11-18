@@ -13,7 +13,7 @@ it("renders supplied RTL narrative, absent values and isolated exact money", () 
               entries: [
                 {
                   key: "future-narrative",
-                  labelId: "field.claimantName.label",
+                  labelId: "field.policyNumber.label",
                   prominence: "PRIMARY",
                   value: { kind: "NARRATIVE", value: "العربية\n<script>literal</script>\u202E" },
                 },
@@ -57,7 +57,7 @@ it("gives simultaneously displayed sections distinct accessible heading IDs", ()
     entries: [
       {
         key: "future",
-        labelId: "field.claimantName.label",
+        labelId: "field.policyNumber.label",
         prominence: "PRIMARY" as const,
         value: { kind: "TEXT" as const, value: "Provided" },
       },

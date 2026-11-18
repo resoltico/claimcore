@@ -23,16 +23,18 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    ((record (fun state disposition fields payment ->
+                    ((record (fun state disposition reopenReason fields payment ->
                         {
                             DisclosedCaseReceipt.State = state
                             Disposition = disposition
+                            ReopenReason = reopenReason
                             RecordedFields = fields
                             Payments = payment
                         })
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
                      |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
+                     |> optionalField "reopenReason" _.ReopenReason CaseStateCodecs.reason
                      |> field
                          "recordedFields"
                          _.RecordedFields
@@ -234,6 +236,53 @@ module ReceiptCodecs =
         |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Note)
         |> field "snapshot" _.Snapshot noteDisclosure
 
+    let private partyDisclosure =
+        tagged
+            "PartyDisclosure"
+            [
+                variant
+                    "DISCLOSED"
+                    PartyDisclosure.Disclosed
+                    (function
+                    | PartyDisclosure.Disclosed value -> Some value
+                    | _ -> None)
+                    (record id |> field "content" id partyContent)
+                unitVariant "WITHHELD" PartyDisclosure.Withheld
+                unitVariant "ERASED" PartyDisclosure.Erased
+            ]
+
+    let private partyReceiptFields =
+        (record (fun parent reference id revision act snapshot ->
+            {
+                PartyReceipt.CaseId = parent
+                Reference = reference
+                PartyId = id
+                Revision = revision
+                Act = act
+                Snapshot = snapshot
+            })
+        : Fields<PartyReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "partyId" _.PartyId partyId
+        |> field "revision" _.Revision positiveRevision
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Party)
+        |> field "snapshot" _.Snapshot partyDisclosure
+
+    let private linkReceiptFields =
+        (record (fun parent reference id act ->
+            {
+                LinkReceipt.CaseId = parent
+                Reference = reference
+                LinkId = id
+                Act = act
+            })
+        : Fields<LinkReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "linkId" _.LinkId linkId
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Link)
+
     let private reminderReceiptFields =
         (record (fun parent reference act effects ->
             {
@@ -268,6 +317,20 @@ module ReceiptCodecs =
                     | _ -> None)
                     noteReceiptFields
                 variant
+                    "PARTY"
+                    ReceiptSubject.Party
+                    (function
+                    | ReceiptSubject.Party value -> Some value
+                    | _ -> None)
+                    partyReceiptFields
+                variant
+                    "LINK"
+                    ReceiptSubject.Link
+                    (function
+                    | ReceiptSubject.Link value -> Some value
+                    | _ -> None)
+                    linkReceiptFields
+                variant
                     "REMINDER"
                     ReceiptSubject.Reminder
                     (function
@@ -297,7 +360,7 @@ module ReceiptCodecs =
         |> field "operationId" _.OperationId operationId
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
-        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "recordedBy" _.RecordedBy ActorCodecs.authorityRef
         |> field "subject" _.Subject subjectCodec
         |> field "basis" _.Basis workDateBasis
         |> build
@@ -335,6 +398,12 @@ module ReceiptCodecs =
                     && Note.id note = value.NoteId
                     && ((Note.text note).IsSome = creates)
                 | _ -> true)
+        | ReceiptSubject.Link value ->
+            let declaration =
+                ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get
+
+            not declaration.Creates
+            || value.LinkId = LinkId.ofOperationId receipt.OperationId
         | ReceiptSubject.Reminder value ->
             match value.Effects with
             | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->

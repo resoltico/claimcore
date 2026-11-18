@@ -42,7 +42,7 @@ const correction: OperationSubmission = {
   },
   inputs: {
     "group:registration": "UPDATE",
-    "field:claimantName": "KEEP",
+    "field:policyNumber": "KEEP",
     "field:claimedAmount": "12.3400",
     "field:claimedCurrency": "EUR",
     "group:decision": "KEEP",
@@ -226,7 +226,7 @@ it.each(localized)(
             changes: [
               {
                 key: "claimant",
-                labelId: "field.claimantName.label",
+                labelId: "field.policyNumber.label",
                 before: { kind: "PARTY", value: "Earlier name" },
                 after: { kind: "PARTY", value: "KEEP" },
               },

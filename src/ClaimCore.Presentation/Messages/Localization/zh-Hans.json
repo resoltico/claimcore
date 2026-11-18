@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "更改登录身份",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "将此账户绑定到新的签发方和主体。账户保留现有角色和工作记录。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "已更改登录身份。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "恢复安装所有者权限",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "恢复某人作为安装所有者的访问权限，或注册新的所有者。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "此登录身份已为另一账户保留。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "此账户已使用该登录身份。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "以后使用当前身份登录时，将无法打开此账户。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "更新索赔资料",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "不再需要处理时关闭案件。关闭不代表索赔已付款。",
-    "source": "6059fdf3ac25"
+    "text": "记录结束处理的原因，并在需要时添加结案备注。",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "更正案件资料",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "更正已登记的索赔或赔付决定事实。付款记录保持不变，应付金额不得低于已付总额。",
-    "source": "c115bf28430f"
+    "text": "更正此案件中选定的登记信息或决定信息。",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "记录赔付决定",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "登记事故、索赔人、保险公司和索赔金额。",
-    "source": "bd4ea9e91f3a"
+    "text": "使用参考编号开立案件，并记录已知的登记信息。",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "设置首位所有者",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "以决定币种记录实际付款的日期和金额。此操作不会执行或核验转账。",
-    "source": "572c7a975cf2"
+    "text": "使用条目的日期、金额和币种记录实际支付或退回的款项。",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "注册账户",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "重新打开案件。信息和历史记录仍会保留。",
-    "source": "9afd35e2c444"
+    "text": "请说明恢复处理此案件的原因。",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "撤销角色",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "在支付任何款项之前移除付款决定。历史记录仍会保留。",
-    "source": "4579673a4146"
+    "text": "撤回决定。保留现有付款条目和决定历史。",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "案件任务",
@@ -319,9 +351,9 @@
     "text": "下一次跟进",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "报案日期（最早优先）",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "接收日期（最早优先）",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "最近更改",
@@ -367,10 +399,6 @@
     "text": "此案件编号已存在。",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "这些日期的顺序不正确。",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "不允许使用控制字符。",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "请使用 ISO 3166-1 正式分配的国家代码，或 XK、ZZ。支持的代码见 help schema。",
-    "source": "b1c9f16ea7e3"
+    "text": "请使用 ISO 3166-1 正式分配的国家代码或 XK。有关支持的代码，请查看帮助架构。",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "请使用受支持的现行 ISO 4217 货币代码。不接受基金代码及非国家货币代码。请参阅 help schema。",
@@ -627,10 +655,6 @@
     "text": "案件编号",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "索赔人姓名或名称",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "索赔金额",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "事故说明",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "报案日期",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "保险公司",
-    "source": "949b10334d29"
+  "field.receivedDate.label": {
+    "text": "接收日期",
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "每页数量",
@@ -1175,10 +1195,6 @@
     "text": "付款记录员",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "未知或国际",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "单个案件",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "记录时间",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "系统运营者",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "记录人",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "事故发生的日期。",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "首次得知此事故的日期。",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "您的办事机构收到此索赔的日期。",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "请使用 ISO 3166-1 正式分配的代码或 XK。{unknownCode} 表示未知或国际。",
-    "source": "0ba1fe273220"
+    "text": "请使用 ISO 3166-1 正式分配的代码或 XK。",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "事故发生的国家。",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "描述发生了什么，补充与此次索赔有关的重要情况。",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "提出索赔的个人或公司。",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "负责此索赔的保险公司。",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "小数点前最多 {maximumIntegerDigits} 位，小数点后最多 {maximumFractionDigits} 位。请使用 ASCII 数字和英文句点；不得包含空格、正负号、逗号或多余的前导零。",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "您为此案件指定的编号，例如 CLM-2026-0001。之后不可更改。",
-    "source": "10559d041918"
+    "text": "您为此案件指定的编号，例如 CLM-2026-0001。",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "决定赔付金额的日期。",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "按编号、最近案件资料更改、通知日期或最早待办提醒日期排序。资料更改按从新到旧排序；通知和提醒日期按从旧到新排序，缺少日期的排在最后。值相同时按编号排序。",
-    "source": "009775c9c5fe"
+    "text": "按参考编号、案件事实的最近变更、接收日期或最早的待办提醒日期排序。变更按从新到旧排序。接收和提醒日期按从早到晚排序，无日期的排在最后。如值相同，则按参考编号排序。",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "选择结果的排列方式。",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "请选择受支持的国家代码，例如 LV，或 XK、ZZ。",
-    "source": "d1667b590685"
+    "text": "请选择受支持的国家代码，例如 LV 或 XK。",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "请选择受支持的货币代码，例如 EUR。不接受基金代码及非国家货币代码。",
@@ -2428,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "此记录中实际支付的金额。",
-    "source": "d79a30c73c31"
+    "text": "此条目实际支付或退回的金额。",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "请输入正数金额。小数点前最多 {maximumIntegerDigits} 位，小数点后最多 {maximumFractionDigits} 位。使用 ASCII 数字和点号，不得包含空格、正负号、逗号或多余的前导零。",
@@ -2437,15 +2449,15 @@
   },
   "field.paidCurrency.label": {
     "text": "付款币种",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "使用决定币种。",
-    "source": "6cf93e635901"
+    "text": "请使用此条目的币种。",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "使用受支持的现行 ISO 4217 货币列表中的 {length} 个大写 ASCII 字母，且须与决定币种一致；不得使用基金代码及非国家货币代码。",
-    "source": "1a3ba1179c9c"
+    "text": "从受支持的现行 ISO 4217 币种列表中选择由 {length} 个大写 ASCII 字母组成的代码。",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "付款 ID",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "按币种统计的已付总额",
-    "source": "b0f6fe6c2d8f"
+    "text": "按币种统计的净付款额",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "已付 {paid}，应付 {payable}。",
@@ -2499,21 +2511,9 @@
     "text": "请输入大于零的付款金额。",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "付款与赔付决定必须使用相同币种。",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "已付总额不得超过应付金额。",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "请使用受理该已记录付款的操作 UUID。",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "已有付款记录的决定不能撤回或清除。仅在记录有误时移除付款记录。",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "此付款记录已不存在。继续前请读取案件的当前状态。",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "将错误登记的付款记录替换为正确的日期和金额。此操作不会退款或执行转账。此前的历史记录将保留。",
-    "source": "538255858894"
+    "text": "使用正确的日期、方向、金额、参考编号和收款人替换误录的付款条目。回执会标明两个条目。",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "付款记录已更正。",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "不限",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "添加当事方",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "记录与此案件有关的当事方。",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "已添加当事方。",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "更新当事方",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "更改此当事方的角色、姓名或详细信息。",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "已更新当事方。",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "移除当事方",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "从当前案件移除此当事方。先前的信息仍保留在历史记录中。",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "已移除当事方。",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "当事方",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "添加已知的当事方。",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "当事方角色",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "选择该当事方的参与方式。",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "当事方姓名",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "如已知，请输入个人或机构名称。",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "当事方详细信息",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "如已知，请记录联系方式或地址。",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "请使用 1 至 {maximumScalars} 个 Unicode 字符。允许换行。",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "当事方 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "选择此案件中的当事方。",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "已审阅的当事方修订版本",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "使用您审阅过的修订版本。",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "请使用当事方的 UUID。",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "请选择当事方角色。",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "请输入姓名或详细信息。",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "此案件的当事方数量已达上限。",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "指定的当事方数量超过上限。",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "索赔人",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "保险公司",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "索赔人",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "保险公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "当事方",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "当事方",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "已记录当事方变更。",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "索赔人",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "提出索赔的当事方。",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "保险公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "提供与索赔相关保险的当事方。",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "代表案件相关人员行事的当事方。",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "以其他角色参与案件的当事方。",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "最多添加 {maximumParties} 个当事方。",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "从列表中选择一个角色。",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "请使用要更改的当事方标识符。",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "使用所选当事方的版本号。",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "已退回",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "已向收款人支付的款项。",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "收款人退回的款项。",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "超额付款",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "付款需要核查",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "付款方向",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "外部参考编号",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "收款人",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "请选择已付款还是已退回。",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "请输入银行交易或函件的参考编号。",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "请输入此案件当前当事方的 ID。",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "请选择已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "请使用当前当事方的 ID。",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "净付款额",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "计入的案件数",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "请选择已付款或已退回。",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "此付款将使该币种的合计超出精确范围。",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "请选择此案件当前的当事方。",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "已移除的当事方",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "已和解",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "已拒绝",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "已拒绝",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "已撤回",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "重复",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "重复",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "因达成和解而结束处理。",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "索赔已被拒绝。",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "索赔已被撤回。",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "另一个案件涵盖同一索赔。",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "因其他原因结束处理。",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "结果",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "请选择结束处理的原因。",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "请从列表中选择一个结果。",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "结案备注",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "请记录有关结案的背景。",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "决定依据",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "请记录决定的证据或理由。",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "重新开案原因",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "结案",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "请从列表中选择结案结果。",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "更改案件编号",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "替换当前案件编号。之前的编号仍可用于找到同一案件。",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "案件编号已更改。",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "为此案件选择一个新编号。",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "新编号",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "请使用案件编号格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "输入此案件今后使用的编号。",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "更改前的编号",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "恢复处理的原因。",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "添加关联案件",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "将此案件与另一个您有权查看的案件关联。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "已关联案件。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "通过编号或 ID 选择案件。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "移除案件关联",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "从此案件中移除选中的关联。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "已移除案件关联。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "请确认在此处解除案件之间的关联。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件关联",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件关联已更改",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "关联 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "请使用记录该关联的操作 UUID。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "用于识别要移除的关联。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "关联案件编号",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "请使用案件编号格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "输入编号，或使用关联案件 ID 字段。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "关联案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "请使用案件的 UUID。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "如果编号留空，请输入 ID。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "关联备注",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "说明这些案件为何相关。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "关联案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "从此案件发出的关联",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "指向此案件的关联",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "无法查看关联案件",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "可查看的传入关联",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "请选择现有案件关联。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件不能与自身关联。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "此案件已与所选案件关联。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "请先移除一个现有关联，再添加另一个。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "使用 1–{maximumScalars} 个 Unicode 字符，允许换行。",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "跟进",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "跟进",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "需要后续跟进的事项。",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "截止期限",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "需要在到期日之前完成的事项。",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "到期日已过，事项仍未完成。",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "按时完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "按时完成",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "事项已在到期日当天或之前完成。",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "超期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "超期完成",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "事项已在到期日之后完成。",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "截止期限已取消。",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "已逾期的截止期限",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "这个未结案件有一项已逾期但仍未完成的事项。",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "不限",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "提醒类型",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "选择跟进或截止期限。",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "选择跟踪此事项的方式。",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "完成日期",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "输入不晚于业务日期的公历日期，格式为 YYYY-MM-DD。",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "填写事项完成的日期。留空则使用当天日期。",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "提醒类型",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "按提醒类型筛选列表。",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "期限结果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "期限结果",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "按期限结果筛选列表。",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "按登记月份对案件分组。",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "登记月份",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "按收到月份对案件分组。",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "收到月份",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "按结案月份对案件分组。",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "结案月份",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "按已记录的结案原因对案件分组。",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "结案结果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "按负责账户对案件分组。",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "负责账户",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "按登记日至结案日或今天的天数对案件分组。",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "处理天数",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "收到日期尚未记录。",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "未记录",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "案件当前没有结案记录。",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "未结案",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "案件未指定负责账户。",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "未分配",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0–30 天",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31–90 天",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91–180 天",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181–365 天",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366 天及以上",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "处理时间为 0–30 天的案件。",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "处理时间为 31–90 天的案件。",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "处理时间为 91–180 天的案件。",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "处理时间为 181–365 天的案件。",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "处理时间为 366 天及以上的案件。",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "选择在此汇总中对案件分组的方式。",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "登记起始日",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "登记截止日",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "收到起始日",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "收到截止日",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "结案起始日",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "结案截止日",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "自此日期后无活动",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "分组依据",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "登记月份",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "收到月份",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "结案月份",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "结案结果",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "负责账户",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "处理天数",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "未记录",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "未结案",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "未分配",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "案件分组",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "币种",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "有索赔金额的案件",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "有应付金额的案件",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "有付款记录的案件",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "此汇总反映生成时的案件数据。",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0–30 天",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31–90 天",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91–180 天",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181–365 天",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366 天及以上",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "每日提醒摘要（{count}）",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "在 {url} 打开您的提醒。",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "已逾期截止事项",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "今天截止的事项",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "即将截止的事项",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "已逾期跟进事项",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "今天到期的跟进事项",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "已发送",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "发送失败",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "无可发送的提醒",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "摘要邮箱",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "输入接收每日提醒摘要的地址。",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "请使用不超过 {maximumCharacters} 个字符的电子邮件地址。",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "请输入包含一个 @ 符号且域名含点的电子邮件地址。",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "已逾期截止事项 — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "已逾期截止事项",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "今天截止的事项 — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "今天截止的事项",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "即将截止的事项 — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "即将截止的事项",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "已逾期跟进事项 — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "已逾期跟进事项",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "今天到期的跟进事项 — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "今天到期的跟进事项",
+    "source": "e04e8b1f370c"
   }
 }

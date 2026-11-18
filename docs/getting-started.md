@@ -123,20 +123,20 @@ case work, payment entry and stewardship rights. ClaimCore roles remain separate
 
 ## Record a case and find its row
 
-Choose **Open a case** and enter synthetic values. Use dates no later than the current business date, for example:
+Choose **Open a case** and enter a synthetic reference. Add optional facts and party rows. Use observed dates at or before the current business date, for example:
 
 | Input | Value |
 | --- | --- |
 | Reference | START-0001 |
 | Incident | 1 September 2026 |
-| First notification | 2 September 2026 |
+| Received | 2 September 2026 |
 | Country | LV |
 | Claimant | Synthetic claimant |
 | Insurer | Synthetic insurer |
 | Claimed amount | 100.00 |
 | Currency | EUR |
 
-Open-case optional text fields are directly editable; leaving them blank omits the value.
+Leaving an optional field blank omits it. Use the Claimant and Insurer roles for the party rows.
 Incident description is optional; use it for a short account of what happened. Review the proposed
 facts and choose **Open a case**. Expect **Case opened** and the case workspace. Return to Cases and
 search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.
@@ -152,7 +152,7 @@ planned dates are allowed. Creating a reminder preserves the case's financial fa
 Use the Work panel to record responsibility or an optional Handling summary. Assigning
 responsibility does not grant access. Overdue, Today and Upcoming labels use the installation's business
 date, which appears with the reminder. A past-due reminder remains Pending until someone explicitly
-completes, cancels or reschedules it. ClaimCore does not send reminder notifications.
+completes, cancels or reschedules it. When you complete the reminder, confirm the date the action was done.
 
 [Case work](case-work.md#plan-case-work) explains multiple reminders, complete-and-plan-next, decisions,
 payments and correction. [Integrating](integrating.md#recover-an-uncertain-change) explains recovery from

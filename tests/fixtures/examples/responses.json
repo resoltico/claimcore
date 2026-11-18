@@ -54,12 +54,15 @@
               {
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
                 "recordedBy": {
-                  "actorId": "10000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
+                  "kind": "ACTOR",
+                  "actor": {
+                    "actorId": "10000000-0000-7000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  }
                 },
                 "task": "people.disable",
                 "changes": {
@@ -266,15 +269,14 @@
               "kind": "ACTIVE",
               "fields": {
                 "caseReference": "x",
-                "status": "OPENED",
                 "registration": {
                   "incidentDate": "2026-01-01",
-                  "incidentNotificationDate": "2026-01-01",
+                  "receivedDate": "2026-01-01",
                   "incidentCountry": "LV",
-                  "claimantName": "x",
-                  "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR"
+                  "claimedCurrency": "EUR",
+                  "policyNumber": "x",
+                  "insurerClaimReference": "x"
                 },
                 "finance": {
                   "decision": {
@@ -282,10 +284,11 @@
                     "payableAmount": "0",
                     "payableCurrency": "EUR"
                   },
-                  "paidAmount": "0",
                   "paymentCount": 0,
-                  "firstPaymentDate": null,
-                  "lastPaymentDate": null
+                  "totals": []
+                },
+                "handling": {
+                  "kind": "OPEN"
                 }
               }
             },
@@ -308,6 +311,14 @@
                 },
                 {
                   "act": "case.amendRegistration",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "case.changeReference",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -446,7 +457,9 @@
                   "amount": {
                     "amount": "0",
                     "currency": "EUR"
-                  }
+                  },
+                  "netPaid": null,
+                  "outcome": null
                 },
                 {
                   "stage": "DECIDED",
@@ -455,22 +468,31 @@
                   "amount": {
                     "amount": "0",
                     "currency": "EUR"
-                  }
+                  },
+                  "netPaid": null,
+                  "outcome": null
                 },
                 {
                   "stage": "PAID",
                   "completed": true,
                   "date": "2026-01-01",
-                  "amount": {
-                    "amount": "0",
-                    "currency": "EUR"
-                  }
+                  "amount": null,
+                  "netPaid": {
+                    "payable": {
+                      "amount": "0",
+                      "currency": "EUR"
+                    },
+                    "netPaid": "0"
+                  },
+                  "outcome": null
                 },
                 {
                   "stage": "CLOSED",
                   "completed": false,
                   "date": null,
-                  "amount": null
+                  "amount": null,
+                  "netPaid": null,
+                  "outcome": null
                 }
               ]
             },
@@ -491,7 +513,10 @@
               "canAdd": false
             },
             "latestPayments": [],
-            "familySequence": 1
+            "familySequence": 1,
+            "parties": [],
+            "partyActs": [],
+            "paymentPayees": []
           }
         },
         "representation": "DATA"
@@ -513,12 +538,18 @@
                 "state": {
                   "kind": "ACTIVE",
                   "fields": {
-                    "claimantName": "Synthetic claimant",
-                    "insurerName": "Synthetic insurer",
                     "claimedAmount": "1000",
                     "claimedCurrency": "EUR",
                     "payableAmount": null,
                     "payableCurrency": null
+                  },
+                  "parties": {
+                    "CLAIMANT": [
+                      "Synthetic claimant"
+                    ],
+                    "INSURER": [
+                      "Synthetic insurer"
+                    ]
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -537,11 +568,11 @@
                     "OPENED"
                   ]
                 },
-                "paid": null,
                 "paymentCount": 0,
                 "lastPaymentDate": null,
                 "workRevision": 0,
-                "canAssign": false
+                "canAssign": false,
+                "netPaid": null
               },
               {
                 "caseReference": "CASE-002",
@@ -549,12 +580,18 @@
                 "state": {
                   "kind": "VOIDED",
                   "fields": {
-                    "claimantName": "Synthetic claimant",
-                    "insurerName": "Synthetic insurer",
                     "claimedAmount": "1000",
                     "claimedCurrency": "EUR",
                     "payableAmount": null,
                     "payableCurrency": null
+                  },
+                  "parties": {
+                    "CLAIMANT": [
+                      "Synthetic claimant"
+                    ],
+                    "INSURER": [
+                      "Synthetic insurer"
+                    ]
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -565,11 +602,11 @@
                 "responsible": null,
                 "pendingReminders": 0,
                 "stages": null,
-                "paid": null,
                 "paymentCount": 0,
                 "lastPaymentDate": null,
                 "workRevision": 0,
-                "canAssign": false
+                "canAssign": false,
+                "netPaid": null
               },
               {
                 "caseReference": "CASE-003",
@@ -585,11 +622,11 @@
                 "responsible": null,
                 "pendingReminders": 0,
                 "stages": null,
-                "paid": null,
                 "paymentCount": 0,
                 "lastPaymentDate": null,
                 "workRevision": 0,
-                "canAssign": false
+                "canAssign": false,
+                "netPaid": null
               }
             ],
             "nextCursor": "x",
@@ -716,13 +753,15 @@
             "claimed": [
               {
                 "currency": "EUR",
-                "amount": "1999999999999999999.9998"
+                "amount": "1999999999999999999.9998",
+                "cases": 2
               }
             ],
             "payable": [
               {
                 "currency": "EUR",
-                "amount": "999999999999999999.9999"
+                "amount": "999999999999999999.9999",
+                "cases": 1
               }
             ],
             "basis": {
@@ -730,7 +769,7 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             },
-            "paid": []
+            "netPaid": []
           }
         },
         "representation": "DATA"
@@ -789,6 +828,11 @@
                           "before": null,
                           "after": "2026-01-02"
                         },
+                        "kind": {
+                          "before": null,
+                          "after": "FOLLOW_UP"
+                        },
+                        "doneOn": null,
                         "state": {
                           "before": null,
                           "after": "PENDING"
@@ -839,6 +883,11 @@
                         "reminderId": "30000000-0000-7000-8000-000000000002",
                         "action": null,
                         "due": null,
+                        "kind": null,
+                        "doneOn": {
+                          "before": null,
+                          "after": "2026-01-01"
+                        },
                         "state": {
                           "before": "PENDING",
                           "after": "COMPLETED"
@@ -1007,10 +1056,10 @@
                     {
                       "kind": "CASE_FIELD",
                       "change": {
-                        "field": "claimantName",
+                        "field": "policyNumber",
                         "before": null,
                         "after": {
-                          "kind": "PARTY",
+                          "kind": "TEXT",
                           "value": "Synthetic claimant"
                         }
                       }
@@ -1167,12 +1216,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "CASE",
@@ -1185,15 +1237,14 @@
                   "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
-                    "status": "OPENED",
                     "registration": {
                       "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
+                      "receivedDate": "2026-01-01",
                       "incidentCountry": "LV",
-                      "claimantName": "x",
-                      "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "policyNumber": "x",
+                      "insurerClaimReference": "x"
                     },
                     "finance": {
                       "decision": {
@@ -1201,23 +1252,22 @@
                         "payableAmount": "0",
                         "payableCurrency": "EUR"
                       },
-                      "paidAmount": "0",
                       "paymentCount": 0,
-                      "firstPaymentDate": null,
-                      "lastPaymentDate": null
+                      "totals": []
+                    },
+                    "handling": {
+                      "kind": "OPEN"
                     }
                   }
                 },
                 "disposition": null,
                 "recordedFields": [
                   "incidentDate",
-                  "incidentNotificationDate",
+                  "receivedDate",
                   "incidentCountry",
                   "incidentDescription",
                   "policyNumber",
                   "insurerClaimReference",
-                  "claimantName",
-                  "insurerName",
                   "claimedAmount",
                   "claimedCurrency"
                 ],
@@ -1251,12 +1301,15 @@
               },
               "recordedAt": "2026-01-01T00:00:00.000000Z",
               "recordedBy": {
-                "actorId": "10000000-0000-7000-8000-000000000001",
-                "displayName": {
-                  "kind": "ERASED"
-                },
-                "principalKind": "HUMAN",
-                "availability": "AVAILABLE"
+                "kind": "ACTOR",
+                "actor": {
+                  "actorId": "10000000-0000-7000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                }
               },
               "subject": {
                 "kind": "CASE",
@@ -1269,15 +1322,14 @@
                     "kind": "ACTIVE",
                     "fields": {
                       "caseReference": "x",
-                      "status": "OPENED",
                       "registration": {
                         "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-01",
+                        "receivedDate": "2026-01-01",
                         "incidentCountry": "LV",
-                        "claimantName": "x",
-                        "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
+                        "claimedCurrency": "EUR",
+                        "policyNumber": "x",
+                        "insurerClaimReference": "x"
                       },
                       "finance": {
                         "decision": {
@@ -1285,23 +1337,22 @@
                           "payableAmount": "0",
                           "payableCurrency": "EUR"
                         },
-                        "paidAmount": "0",
                         "paymentCount": 0,
-                        "firstPaymentDate": null,
-                        "lastPaymentDate": null
+                        "totals": []
+                      },
+                      "handling": {
+                        "kind": "OPEN"
                       }
                     }
                   },
                   "disposition": null,
                   "recordedFields": [
                     "incidentDate",
-                    "incidentNotificationDate",
+                    "receivedDate",
                     "incidentCountry",
                     "incidentDescription",
                     "policyNumber",
                     "insurerClaimReference",
-                    "claimantName",
-                    "insurerName",
                     "claimedAmount",
                     "claimedCurrency"
                   ],
@@ -1360,15 +1411,14 @@
                       "values": {
                         "before": {
                           "caseReference": "x",
-                          "status": "OPENED",
                           "registration": {
                             "incidentDate": "2026-01-01",
-                            "incidentNotificationDate": "2026-01-01",
+                            "receivedDate": "2026-01-01",
                             "incidentCountry": "LV",
-                            "claimantName": "x",
-                            "insurerName": "x",
                             "claimedAmount": "0",
-                            "claimedCurrency": "EUR"
+                            "claimedCurrency": "EUR",
+                            "policyNumber": "x",
+                            "insurerClaimReference": "x"
                           },
                           "finance": {
                             "decision": {
@@ -1376,24 +1426,24 @@
                               "payableAmount": "0",
                               "payableCurrency": "EUR"
                             },
-                            "paidAmount": "0",
                             "paymentCount": 0,
-                            "firstPaymentDate": null,
-                            "lastPaymentDate": null
+                            "totals": []
+                          },
+                          "handling": {
+                            "kind": "OPEN"
                           }
                         },
                         "after": {
                           "caseReference": "x",
-                          "status": "OPENED",
                           "registration": {
                             "incidentDate": "2025-12-28",
-                            "incidentNotificationDate": "2025-12-29",
+                            "receivedDate": "2025-12-29",
                             "incidentCountry": "JP",
-                            "claimantName": "After claimant",
-                            "insurerName": "After insurer",
                             "claimedAmount": "1234.5678",
                             "claimedCurrency": "EUR",
-                            "incidentDescription": "Changed narrative"
+                            "incidentDescription": "Changed narrative",
+                            "policyNumber": "After claimant",
+                            "insurerClaimReference": "After insurer"
                           },
                           "finance": {
                             "decision": {
@@ -1401,10 +1451,11 @@
                               "payableAmount": "1",
                               "payableCurrency": "BHD"
                             },
-                            "paidAmount": "0",
                             "paymentCount": 0,
-                            "firstPaymentDate": null,
-                            "lastPaymentDate": null
+                            "totals": []
+                          },
+                          "handling": {
+                            "kind": "OPEN"
                           }
                         }
                       },
@@ -1422,7 +1473,7 @@
                           }
                         },
                         {
-                          "field": "incidentNotificationDate",
+                          "field": "receivedDate",
                           "before": {
                             "kind": "DATE",
                             "value": "2026-01-01"
@@ -1452,24 +1503,24 @@
                           }
                         },
                         {
-                          "field": "claimantName",
+                          "field": "policyNumber",
                           "before": {
-                            "kind": "PARTY",
+                            "kind": "TEXT",
                             "value": "x"
                           },
                           "after": {
-                            "kind": "PARTY",
+                            "kind": "TEXT",
                             "value": "After claimant"
                           }
                         },
                         {
-                          "field": "insurerName",
+                          "field": "insurerClaimReference",
                           "before": {
-                            "kind": "PARTY",
+                            "kind": "TEXT",
                             "value": "x"
                           },
                           "after": {
-                            "kind": "PARTY",
+                            "kind": "TEXT",
                             "value": "After insurer"
                           }
                         },
@@ -1551,7 +1602,9 @@
                 "revision": 3,
                 "action": "Contact insurer",
                 "dueDate": "2026-11-10",
-                "state": "PENDING"
+                "kind": "FOLLOW_UP",
+                "state": "PENDING",
+                "doneOn": null
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1571,8 +1624,10 @@
               ],
               "active": true,
               "timing": "UPCOMING",
-              "claimantName": "Synthetic claimant",
-              "responsible": null
+              "responsible": null,
+              "claimants": [
+                "Synthetic claimant"
+              ]
             }
           }
         },
@@ -1600,7 +1655,9 @@
                   "revision": 3,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "PENDING"
+                  "kind": "FOLLOW_UP",
+                  "state": "PENDING",
+                  "doneOn": null
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1620,8 +1677,10 @@
                 ],
                 "active": true,
                 "timing": "UPCOMING",
-                "claimantName": "Synthetic claimant",
-                "responsible": null
+                "responsible": null,
+                "claimants": [
+                  "Synthetic claimant"
+                ]
               },
               {
                 "reminder": {
@@ -1630,7 +1689,9 @@
                   "revision": 4,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "COMPLETED"
+                  "kind": "FOLLOW_UP",
+                  "state": "COMPLETED",
+                  "doneOn": "2026-11-02"
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1647,8 +1708,10 @@
                 ],
                 "active": false,
                 "timing": null,
-                "claimantName": "Synthetic claimant",
-                "responsible": null
+                "responsible": null,
+                "claimants": [
+                  "Synthetic claimant"
+                ]
               },
               {
                 "reminder": {
@@ -1657,7 +1720,9 @@
                   "revision": 2,
                   "action": "Contact insurer",
                   "dueDate": "2026-11-10",
-                  "state": "CANCELLED"
+                  "kind": "FOLLOW_UP",
+                  "state": "CANCELLED",
+                  "doneOn": null
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
@@ -1674,8 +1739,10 @@
                 ],
                 "active": true,
                 "timing": null,
-                "claimantName": "Synthetic claimant",
-                "responsible": null
+                "responsible": null,
+                "claimants": [
+                  "Synthetic claimant"
+                ]
               }
             ],
             "nextCursor": null
@@ -1826,12 +1893,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "PEOPLE",
@@ -1892,12 +1962,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "WORK",
@@ -1948,12 +2021,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -1973,7 +2049,9 @@
                       "revision": 1,
                       "action": "Contact insurer",
                       "dueDate": "2026-11-10",
-                      "state": "PENDING"
+                      "kind": "FOLLOW_UP",
+                      "state": "PENDING",
+                      "doneOn": null
                     }
                   }
                 }
@@ -2210,7 +2288,8 @@
                         "before": null,
                         "after": {
                           "action": "Contact insurer",
-                          "due": "2026-11-10"
+                          "due": "2026-11-10",
+                          "kind": "FOLLOW_UP"
                         }
                       },
                       "action": {
@@ -2221,6 +2300,11 @@
                         "before": null,
                         "after": "2026-11-10"
                       },
+                      "kind": {
+                        "before": null,
+                        "after": "FOLLOW_UP"
+                      },
+                      "doneOn": null,
                       "state": {
                         "before": null,
                         "after": "PENDING"
@@ -2256,12 +2340,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "PEOPLE",
@@ -2384,7 +2471,7 @@
       "valid": true
     },
     {
-      "name": "owner-provisioning-own-observation",
+      "name": "owner-provisioning-operator-observation",
       "endpoint": "operation.get",
       "valid": true,
       "value": {
@@ -2400,12 +2487,7 @@
               },
               "recordedAt": "2026-01-01T00:00:00.000000Z",
               "recordedBy": {
-                "actorId": "10000000-0000-7000-8000-000000000001",
-                "displayName": {
-                  "kind": "ERASED"
-                },
-                "principalKind": "HUMAN",
-                "availability": "AVAILABLE"
+                "kind": "OPERATOR"
               },
               "subject": {
                 "kind": "PEOPLE",
@@ -2445,7 +2527,7 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "byRequester": true
+            "byRequester": false
           }
         },
         "representation": "DATA"
@@ -2841,15 +2923,14 @@
               "kind": "ACTIVE",
               "finance": {
                 "decision": null,
-                "paidAmount": "0",
                 "paymentCount": 0,
-                "firstPaymentDate": null,
-                "lastPaymentDate": null
+                "totals": []
               }
             },
             "items": [],
             "nextCursor": null,
-            "workRevision": 0
+            "workRevision": 0,
+            "payees": []
           }
         }
       }
@@ -2905,6 +2986,153 @@
           "kind": "OUTCOME_UNKNOWN",
           "count": 2
         }
+      }
+    },
+    {
+      "name": "case.summary-received-month-groups",
+      "endpoint": "case.summary",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "counts": {
+              "total": 2,
+              "lifecycle": [
+                {
+                  "value": "ACTIVE",
+                  "count": 1
+                },
+                {
+                  "value": "VOIDED",
+                  "count": 1
+                },
+                {
+                  "value": "ERASED",
+                  "count": 0
+                }
+              ],
+              "status": [
+                {
+                  "value": "OPENED",
+                  "count": 1
+                },
+                {
+                  "value": "CLOSED",
+                  "count": 1
+                }
+              ],
+              "progress": [
+                {
+                  "value": "UNDECIDED",
+                  "count": 1
+                },
+                {
+                  "value": "DECIDED",
+                  "count": 1
+                },
+                {
+                  "value": "PAID",
+                  "count": 0
+                }
+              ],
+              "assignment": [
+                {
+                  "value": "MINE",
+                  "count": 0
+                },
+                {
+                  "value": "UNASSIGNED",
+                  "count": 2
+                }
+              ],
+              "due": [
+                {
+                  "value": "OVERDUE",
+                  "count": 0
+                },
+                {
+                  "value": "TODAY",
+                  "count": 0
+                },
+                {
+                  "value": "UPCOMING",
+                  "count": 0
+                },
+                {
+                  "value": "UNSCHEDULED",
+                  "count": 1
+                },
+                {
+                  "value": "INACTIVE",
+                  "count": 1
+                }
+              ]
+            },
+            "claimed": [
+              {
+                "currency": "EUR",
+                "amount": "1999999999999999999.9998",
+                "cases": 2
+              }
+            ],
+            "payable": [
+              {
+                "currency": "EUR",
+                "amount": "999999999999999999.9999",
+                "cases": 1
+              }
+            ],
+            "netPaid": [],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "groupBy": "RECEIVED_MONTH",
+            "groups": [
+              {
+                "group": {
+                  "kind": "MONTH",
+                  "value": "2026-01"
+                },
+                "count": 1,
+                "claimed": [
+                  {
+                    "currency": "EUR",
+                    "amount": "999999999999999999.9999",
+                    "cases": 1
+                  }
+                ],
+                "payable": [],
+                "netPaid": []
+              },
+              {
+                "group": {
+                  "kind": "MISSING",
+                  "value": "NOT_RECORDED"
+                },
+                "count": 1,
+                "claimed": [
+                  {
+                    "currency": "EUR",
+                    "amount": "999999999999999999.9999",
+                    "cases": 1
+                  }
+                ],
+                "payable": [
+                  {
+                    "currency": "EUR",
+                    "amount": "999999999999999999.9999",
+                    "cases": 1
+                  }
+                ],
+                "netPaid": []
+              }
+            ]
+          }
+        },
+        "representation": "DATA"
       }
     }
   ]

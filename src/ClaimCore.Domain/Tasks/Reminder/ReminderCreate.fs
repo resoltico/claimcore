@@ -22,7 +22,8 @@ let private capability = List.exactlyOne declaration.Capabilities
 type private Command = { Plan: ReminderPlan }
 
 let private parse inputs =
-    ReminderRules.plan inputs |> Result.map (fun plan -> { Plan = plan })
+    ReminderRules.plan ReminderKind.defaultValue inputs
+    |> Result.map (fun plan -> { Plan = plan })
 
 let check inputs = Parsing.check parse inputs
 
@@ -54,10 +55,7 @@ let decide context environment (state: DecisionFacts option) binding inputs =
                             state
                             id
                             Revision.first
-                            {
-                                State = ReminderState.Pending
-                                Plan = Some plan
-                            }
+                            (ReminderValue.Available(plan, ReminderHandling.Pending))
                     ]))
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
@@ -80,10 +78,7 @@ let decideRetained context environment (state: DecisionFacts option) binding (_:
                             state
                             id
                             Revision.first
-                            {
-                                State = ReminderState.Pending
-                                Plan = None
-                            }
+                            (ReminderValue.Unavailable ReminderState.Pending)
                     ])
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)

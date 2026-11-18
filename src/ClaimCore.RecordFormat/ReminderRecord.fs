@@ -8,15 +8,13 @@ module ReminderRecord =
     open RecordScalars
 
     let private reminder =
-        (record (fun id parent revision action due state ->
-            Reminder.ofAccepted id parent revision action due state
-            |> Result.defaultWith invalidOp)
-        : Fields<Reminder, _>)
+        (record Reminder.decode: Fields<Reminder, _>)
         |> field "reminderId" Reminder.id reminderId
         |> field "caseId" Reminder.caseId caseId
         |> field "revision" Reminder.revision (revision 1L)
         |> field "action" Reminder.action action
         |> field "due" Reminder.due date
+        |> field "kind" Reminder.kind (VocabularyCodec.create ReminderKind.vocabulary)
         |> field
             "state"
             Reminder.state
@@ -26,7 +24,8 @@ module ReminderRecord =
                     ReminderState.Completed, "COMPLETED"
                     ReminderState.Cancelled, "CANCELLED"
                 ])
-        |> build
+        |> optionalField "doneOn" Reminder.doneOn date
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let private snapshotCodec = record id |> field "reminder" id reminder |> build
 

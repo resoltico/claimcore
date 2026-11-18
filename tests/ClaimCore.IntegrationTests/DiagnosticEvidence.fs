@@ -153,7 +153,15 @@ let internal scalarEvidence () =
         results.Add(refused repeated)
 
         let! closed =
-            execute actor (request (fixture) (525) ("REACH-WORK") (1L) "case.close" (Map.empty))
+            execute
+                actor
+                (request
+                    (fixture)
+                    (525)
+                    ("REACH-WORK")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))
 
         accepted closed |> ignore
 
@@ -203,7 +211,7 @@ let internal scalarEvidence () =
 
 let internal stateScenarios () =
     let decided = "case.decide", Submissions.fields (DecisionInput.values decision)
-    let closed = "case.close", Map.empty
+    let closed = "case.close", CaseTransitionInputs.closed
 
     let voided =
         "case.void",
@@ -240,13 +248,13 @@ let internal stateScenarios () =
 
     [
         [], ("case.open", Submissions.fields (RegistrationInput.values StoreFixtures.registration))
-        [], ("case.reopen", Map.empty)
+        [], ("case.reopen", CaseTransitionInputs.reopened)
         [ closed ], closed
         [ closed ], decided
         [ decided ], ("case.amendRegistration", registration)
         [ decided ], correct "UPDATE" "KEEP" registration
         [ closed ], correct "KEEP" "CLEAR" Map.empty
-        [], payment
+        [ closed ], payment
         [],
         ("case.removePayment",
          Map.ofList
@@ -254,28 +262,13 @@ let internal stateScenarios () =
                  Submissions.input InputTarget.PaymentId,
                  SubmissionValue.Text "20000000-0000-7000-8000-000000000003"
              ])
-        [ decided; payment ],
-        ("case.recordPayment",
-         Submissions.fields (
-             PaymentInput.values (
-                 DomainInputs.paymentFrom
-                     [
-                         BusinessField.PaymentDate, "2026-08-20"
-                         BusinessField.PaidAmount, "751"
-                         BusinessField.PaidCurrency, "EUR"
-                     ]
-             )
-         ))
-        [ decided; payment ], ("case.withdrawDecision", Map.empty)
-        [
-            "case.decide",
-            Submissions.fields (
-                DecisionInput.values (
-                    DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
-                )
-            )
-        ],
-        payment
+        [], ("case.withdrawDecision", Map.empty)
+        [],
+        ("case.changeReference",
+         Map.ofList
+             [
+                 Submissions.input InputTarget.NewCaseReference, SubmissionValue.Text "REACH-1"
+             ])
         [ voided ], closed
         [ voided ], voided
         [],
@@ -285,15 +278,7 @@ let internal stateScenarios () =
                  Submissions.input InputTarget.Reason, SubmissionValue.Text "Synthetic reason"
              ])
         [ "case.erase", Map.empty ], closed
-        [ decided; payment ], correct "KEEP" "CLEAR" Map.empty
         [ decided; payment ], correct "KEEP" "UPDATE" (decisionUpdate decision)
-        [ decided; payment ],
-        correct
-            "KEEP"
-            "UPDATE"
-            (decisionUpdate (
-                DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
-            ))
     ]
 
 let internal stateEvidence (setup, final) =
@@ -465,13 +450,15 @@ let internal identityEvidence fixture actor =
                     (Submissions.fields (
                         RegistrationInput.values (
                             DomainInputs.registrationWith
-                                [ BusinessField.ClaimantName, "Different claimant" ]
+                                [ BusinessField.PolicyNumber, "Different claimant" ]
                                 registration
                         )
                     )))
 
         let! revision =
-            execute actor (request (fixture) (11) ("REACH-1") (2L) "case.close" (Map.empty))
+            execute
+                actor
+                (request (fixture) (11) ("REACH-1") (2L) "case.close" (CaseTransitionInputs.closed))
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
@@ -644,11 +631,13 @@ let private profileAndDirectoryEvidence fixture actor =
                     if contact then
                         {
                             ActorProfileInput.DisplayName = "Valid name"
+                            DigestEmail = None
                             Contact = Some raw
                         }
                     else
                         {
                             ActorProfileInput.DisplayName = raw
+                            DigestEmail = None
                             Contact = None
                         }
 
@@ -728,7 +717,7 @@ let internal boundaryEvidence () =
         let! denied =
             execute
                 (core fixture reader)
-                (request (fixture) (37) ("REACH-1") (1L) "case.close" (Map.empty))
+                (request (fixture) (37) ("REACH-1") (1L) "case.close" (CaseTransitionInputs.closed))
 
         let! queries = queryEvidence actor
         let! people = peopleEvidence fixture actor
@@ -740,7 +729,7 @@ let internal boundaryEvidence () =
         let pending =
             ClaimCore.TestSupport.Submissions.withOperationId
                 (expired)
-                (request (fixture) (42) ("REACH-1") (1L) "case.close" (Map.empty))
+                (request (fixture) (42) ("REACH-1") (1L) "case.close" (CaseTransitionInputs.closed))
 
         let! outOfWindow = execute actor pending
         let! confirmed = Service.operationGet actor { OperationId = expired } ct
@@ -764,7 +753,9 @@ let internal boundaryEvidence () =
         Expect.isTrue maintenance.State.Active "The owner explicitly pauses actual register writes"
 
         let! paused =
-            execute actor (request (fixture) (80) ("REACH-1") (1L) "case.close" (Map.empty))
+            execute
+                actor
+                (request (fixture) (80) ("REACH-1") (1L) "case.close" (CaseTransitionInputs.closed))
 
         return
             identity

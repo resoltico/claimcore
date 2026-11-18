@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.TestSupport
 open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -102,7 +103,7 @@ let identities (fixture: Fixture) =
                     None,
                     (None)
                 ))
-                (Map.empty)
+                CaseTransitionInputs.closed
 
         let! closed = Service.executeSubmission actor ((close)) token
         let receipt = accepted closed
@@ -154,6 +155,13 @@ let identities (fixture: Fixture) =
             Expect.equal
                 changes.Items
                 [
+                    TimelineChange.CaseField
+                        {
+                            FieldName = BusinessField.Outcome
+                            Before = None
+                            After =
+                                Some(CaseFieldValue.Business(Admitted.Outcome ClosureOutcome.Other))
+                        }
                     TimelineChange.CaseField
                         {
                             FieldName = BusinessField.Status

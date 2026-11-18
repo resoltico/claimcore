@@ -103,7 +103,16 @@ let private prepared arguments =
     |> Result.defaultWith (fun issues -> failtestf "Request preparation failed: %A" issues)
 
 let private verbPreparation () =
-    let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
+    let args =
+        [
+            "case"
+            "close"
+            "--outcome"
+            "other"
+            "SYNTHETIC"
+            "--expected-revision"
+            "1"
+        ]
 
     let actual =
         Grammar.prepareOffline (args @ [ "--dry-run" ])
@@ -167,7 +176,7 @@ let private verbPreparation () =
 
     for rejected in
         [
-            [ "case"; "close"; "SYNTHETIC" ]
+            [ "case"; "close"; "--outcome"; "other"; "SYNTHETIC" ]
             args @ [ "--expected-revision"; "2" ]
             args @ [ "--unknown"; "x" ]
             args @ [ "extra" ]
@@ -406,6 +415,7 @@ let private peoplePreviewFrame
         ActorProfile.parse
             {
                 DisplayName = if registering then "Authored" else "Synthetic account"
+                DigestEmail = None
                 Contact = None
             }
         |> CaseBuilders.accepted
@@ -416,7 +426,8 @@ let private peoplePreviewFrame
         else
             Some(
                 DomainInputs.namedActorReference
-                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                    (CliReplyFixtures.receipt.RecordedBy |> AuthorityRef.actor |> Option.get)
+                        .ActorId
                     "Synthetic account"
             )
 
@@ -457,6 +468,7 @@ let private peoplePreviewFrame
                         }
                 else
                     None
+            DigestEmail = None
             Contact = None
             Grants =
                 if grantBefore <> grantAfter then
@@ -482,7 +494,8 @@ let private peoplePreviewFrame
 
     let review =
         {
-            OperationReview.Task = input.Task
+            OperationReview.ChangesOwnSignInIdentity = false
+            Task = input.Task
             Binding = (Submissions.command input).Binding
             Target = ReviewTarget.Person target
             References =
@@ -689,7 +702,16 @@ let recoveryCommands =
                 (fun () ->
                     let input =
                         Frames.input
-                            (prepared [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ])
+                            (prepared
+                                [
+                                    "case"
+                                    "close"
+                                    "--outcome"
+                                    "other"
+                                    "SYNTHETIC"
+                                    "--expected-revision"
+                                    "1"
+                                ])
                                 .Invocation
 
                     let fields =

@@ -32,7 +32,11 @@ type TaskInputId =
     | Due
     | ReminderState
     | ReminderDue
+    | ReminderKindFilter
+    | DeadlineOutcomeFilter
     | IncludeInactive
+    | CaseDate of CaseDateFilter
+    | GroupBy
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskInputId =
@@ -43,6 +47,8 @@ module TaskInputId =
         function
         | TaskInputId.Target target -> InputTarget.token target
         | TaskInputId.ReminderState -> "reminderState"
+        | TaskInputId.DeadlineOutcomeFilter -> "deadlineOutcome"
+        | TaskInputId.ReminderKindFilter -> "reminderKind"
         | TaskInputId.ReminderDue -> "reminderDue"
         | TaskInputId.IncludeInactive -> "includeInactive"
         | TaskInputId.Scope -> "scope"
@@ -59,6 +65,8 @@ module TaskInputId =
         | TaskInputId.Order -> "order"
         | TaskInputId.Due -> "due"
         | TaskInputId.Assignment -> "assignment"
+        | TaskInputId.CaseDate date -> CaseDateFilter.token date
+        | TaskInputId.GroupBy -> "groupBy"
 
     /// Opaque semantic tokens distinguish facts and group inputs from similarly named query controls.
     let token input =
@@ -85,7 +93,11 @@ module TaskInputId =
             TaskInputId.Due
             TaskInputId.ReminderState
             TaskInputId.ReminderDue
+            TaskInputId.ReminderKindFilter
+            TaskInputId.DeadlineOutcomeFilter
             TaskInputId.IncludeInactive
+            TaskInputId.GroupBy
+            yield! CaseDateFilter.all |> List.map TaskInputId.CaseDate
         ]
 
     let technical =
@@ -116,22 +128,26 @@ type InputValue =
     | Boolean of bool
     | Null
 
-/// Collection identity is independent of transport members and UI-local row keys.
-[<RequireQualifiedAccess>]
-type TaskCollectionId = | PeopleGrants
-
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskCollectionId =
     let key =
         function
         | TaskCollectionId.PeopleGrants -> "peopleGrants"
+        | TaskCollectionId.Parties -> "parties"
 
     let input =
         function
         | TaskCollectionId.PeopleGrants -> TaskInputId.Target InputTarget.Grants
+        | TaskCollectionId.Parties -> TaskInputId.Target InputTarget.Parties
 
-    let maximumRows =
+    let maximumRows (collection: TaskCollectionId) = collection.MaximumRows
+
+    let ofRowInput =
         function
-        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
+        | InputTarget.PartyRole
+        | InputTarget.PartyName
+        | InputTarget.PartyDetails -> TaskCollectionId.Parties
+        | _ -> TaskCollectionId.PeopleGrants
 
     /// Acquisition defaults are explicit submitted values; they never bypass task admission.
     let defaultValues =
@@ -139,28 +155,7 @@ module TaskCollectionId =
         | TaskCollectionId.PeopleGrants ->
             Map.ofList
                 [ TaskInputId.Scope, InputValue.Text(ScopeKind.token ScopeKind.Installation) ]
-
-/// Submitted ordinals correlate responses with an immutable client-owned row map.
-type TaskRowTarget =
-    private
-        {
-            Collection: TaskCollectionId
-            Ordinal: int
-        }
-
-module TaskRowTarget =
-    let create collection ordinal =
-        if ordinal < 0 || ordinal >= TaskCollectionId.maximumRows collection then
-            None
-        else
-            Some
-                {
-                    Collection = collection
-                    Ordinal = ordinal
-                }
-
-    let collection target = target.Collection
-    let ordinal target = target.Ordinal
+        | TaskCollectionId.Parties -> Map.empty
 
 /// HUMAN issue targets are semantic identities, with an optional submitted collection row.
 type TaskInputIssue =
@@ -168,7 +163,6 @@ type TaskInputIssue =
         Input: TaskInputId
         Row: TaskRowTarget option
         Violation: Violation
-        RelatedDate: RelatedDate option
     }
 
 module TaskInputIssue =
@@ -179,13 +173,8 @@ module TaskInputIssue =
                 | InputTarget.Scope -> TaskInputId.Scope
                 | InputTarget.CaseId -> TaskInputId.CaseId
                 | target -> TaskInputId.Target target
-            Row =
-                issue.GrantRow
-                |> Option.bind (
-                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.PeopleGrants
-                )
+            Row = issue.Row
             Violation = issue.Violation
-            RelatedDate = issue.RelatedDate
         }
 
 /// An input rejection always explains at least one failed rule.

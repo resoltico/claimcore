@@ -33,7 +33,7 @@ let tests =
                     ] do
                     let raw =
                         sprintf
-                            """{"claimantName":"Ann","insurerName":"Ins","claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
+                            """{"claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
                             amount
                             currency
 
@@ -47,7 +47,7 @@ let tests =
                     Expect.equal
                         variants.Length
                         2
-                        "The generated client receives complete-or-absent alternatives"
+                        "Each grouped amount-and-currency pair has complete-or-absent alternatives"
                 | other -> failtestf "Expected presence alternatives, got %A" other)
             testCase "query money selection cannot orphan a currency" (fun () ->
                 for removed in
@@ -68,7 +68,7 @@ let tests =
                 let fields =
                     {
                         CaseFields.CaseReference = DomainInputs.reference "LIST-1"
-                        Status = CaseStatus.Opened
+                        Handling = Handling.Open
                         Registration = DomainInputs.admittedRegistration DomainInputs.registration
                         Finance = FinancialPosition.undecided
                     }
@@ -80,7 +80,7 @@ let tests =
                 let values = CaseSummaryFields.values expanded fields
                 let codec = ListedCaseFieldCodecs.create expanded
                 let wire = codec.Write values
-                let expectedDate = Registration.incidentDate fields.Registration
+                let expectedDate = Registration.incidentDate fields.Registration |> Option.get
 
                 Expect.equal
                     (JsonValue.tryMember "incidentDate" wire)

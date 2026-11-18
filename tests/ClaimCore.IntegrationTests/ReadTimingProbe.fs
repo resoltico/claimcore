@@ -72,7 +72,10 @@ let tests =
 
                 do!
                     measure "case.summary" (fun () ->
-                        Service.caseSummary actor CaseListFilter.empty token)
+                        Service.caseSummary
+                            actor
+                            (CaseSummaryRequest.ungrouped CaseListFilter.empty)
+                            token)
 
                 do!
                     measure "case.timeline" (fun () ->
@@ -96,6 +99,8 @@ let tests =
                                 View = None
                                 Target = None
                                 State = None
+                                Kind = None
+                                DeadlineOutcome = None
                                 Due = None
                                 Assignment = None
                                 Text = None

@@ -17,6 +17,7 @@ let private kinds =
     [
         (TaskId.ofLiteral "case.open")
         (TaskId.ofLiteral "case.amendRegistration")
+        (TaskId.ofLiteral "case.changeReference")
         (TaskId.ofLiteral "case.correct")
         (TaskId.ofLiteral "case.decide")
         (TaskId.ofLiteral "case.withdrawDecision")
@@ -100,7 +101,11 @@ let model =
 
         let current = CaseAdvice.duringMaintenance maintenance advice
         Expect.isEmpty current.Acts "Maintenance offers no new writes"
-        Expect.equal current.Blocked.Length 13 "Every unavailable act still has one reason"
+
+        Expect.equal
+            current.Blocked.Length
+            kinds.Length
+            "Every unavailable act still has one reason"
 
         Expect.equal
             (current.Blocked

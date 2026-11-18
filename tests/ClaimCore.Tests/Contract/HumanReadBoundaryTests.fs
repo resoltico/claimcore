@@ -315,7 +315,7 @@ let tests =
 
                     let bait =
                         RegistrationInput.replace
-                            [ BusinessField.ClaimantName, "Input bait must not display" ]
+                            [ BusinessField.PolicyNumber, "Input bait must not display" ]
                             DomainInputs.registration
                         |> required
 
@@ -425,7 +425,7 @@ let tests =
                             "case.close"
                             (OperationId.value ResponseExamples.receipt.OperationId)
                             (Binding.Case(CaseSelector.Reference "CASE-1", Revision.first))
-                            Map.empty
+                            (Submissions.fields [ BusinessField.Outcome, "OTHER" ])
 
                     let original = Frames.create Api.operationExecute input |> required
 

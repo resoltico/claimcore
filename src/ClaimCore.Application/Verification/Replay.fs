@@ -96,6 +96,7 @@ module internal Replay =
                         parts
                         state.Fold.Origins
                         (Map.tryFind id state.Fold.Summaries)
+                        state.Fold.ReportDates[id]
                     |> Result.mapError (fun _ ->
                         divergence None VerificationFinding.CaseProjection)
                     |> Result.map (fun row -> Map.add id row rows)))
@@ -123,6 +124,7 @@ module internal Replay =
                     Snapshot = row.Snapshot
                     SnapshotBytes = CaseRecord.encodeSnapshot row.Snapshot
                     Index = row.Index
+                    ReportDates = row.ReportDates
                 })
         )
 
@@ -156,17 +158,7 @@ module internal Replay =
                 row.Reminders
                 |> List.map (fun reminder ->
                     let snapshot =
-                        reminder.Value.Plan
-                        |> Option.map (fun plan ->
-                            Reminder.ofAccepted
-                                reminder.Id
-                                caseId
-                                reminder.Revision
-                                plan.Action
-                                plan.Due
-                                reminder.Value.State
-                            |> Result.defaultWith (fun _ ->
-                                invalidOp "Aggregate-derived reminder is invalid."))
+                        Reminder.ofValue reminder.Id caseId reminder.Revision reminder.Value
 
                     reminder.Id,
                     {
@@ -196,7 +188,25 @@ module internal Replay =
                         StoredNote.Note = Note.ofAccepted note.Id caseId note.Value.Text
                         CreatedPosition = note.Origin.Position
                         RecordedAt = note.Origin.RecordedAt
-                        RecordedBy = note.Origin.ActorId
+                        RecordedBy = ProjectionRows.familyActor note.Origin.Authority
+                    }))
+            |> Map.ofList)
+
+    let partyRows state =
+        familyRows state
+        |> Result.map (fun rows ->
+            rows
+            |> Map.toList
+            |> List.collect (fun (caseId, row) ->
+                row.Parties
+                |> List.map (fun party ->
+                    party.Id,
+                    {
+                        StoredParty.PartyId = party.Id
+                        CaseId = caseId
+                        Revision = party.Revision
+                        CreatedPosition = party.Origin.Position
+                        Value = party.Value
                     }))
             |> Map.ofList)
 

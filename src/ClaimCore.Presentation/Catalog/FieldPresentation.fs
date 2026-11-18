@@ -9,13 +9,11 @@ module FieldPresentation =
     let private factOrder =
         [
             BusinessField.IncidentDate
-            BusinessField.IncidentNotificationDate
+            BusinessField.ReceivedDate
             BusinessField.IncidentCountry
             BusinessField.IncidentDescription
             BusinessField.PolicyNumber
             BusinessField.InsurerClaimReference
-            BusinessField.ClaimantName
-            BusinessField.InsurerName
             BusinessField.ClaimedAmount
             BusinessField.ClaimedCurrency
             BusinessField.CaseReference
@@ -40,20 +38,16 @@ module FieldPresentation =
 
     let prominence =
         function
-        | BusinessField.ClaimantName
         | BusinessField.ClaimedAmount
         | BusinessField.ClaimedCurrency
         | BusinessField.CaseReference
         | BusinessField.PayableAmount
         | BusinessField.PayableCurrency -> Prominence.Primary
-        | BusinessField.IncidentNotificationDate
-        | BusinessField.InsurerName -> Prominence.Secondary
+        | BusinessField.ReceivedDate -> Prominence.Secondary
         | _ -> Prominence.Detail
 
     let listed =
         function
-        | BusinessField.ClaimantName
-        | BusinessField.InsurerName
         | BusinessField.ClaimedAmount
         | BusinessField.ClaimedCurrency
         | BusinessField.PayableAmount
@@ -72,7 +66,9 @@ module FieldPresentation =
         | FieldValueKind.PartyName
         | FieldValueKind.Identifier -> "scalar.text.guidance"
         | FieldValueKind.HandlingSummary
+        | FieldValueKind.NoteText
         | FieldValueKind.IncidentDescription -> "scalar.narrative.guidance"
+        | FieldValueKind.Reason -> "scalar.text.guidance"
         | _ -> Vocabulary.messageKey BusinessField.vocabulary field "rule"
 
     let descriptor field =
@@ -87,7 +83,6 @@ module FieldPresentation =
                             Grammar =
                                 Some
                                     "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                            UnknownCode = None
                         }
                     MaximumCharacters = Some 36
                 }
@@ -100,4 +95,16 @@ module FieldPresentation =
         | FieldValueKind.Amount -> ScalarRule.Amount Money.descriptor.Amount
         | FieldValueKind.Currency -> ScalarRule.Currency Money.descriptor.Currency
         | FieldValueKind.Reference -> ScalarRule.Text CaseReference.descriptor
+        | FieldValueKind.NoteText -> ScalarRule.PlainText NoteText.constraints
+        | FieldValueKind.Reason -> ScalarRule.Text PartyName.descriptor
+        | FieldValueKind.ClosureOutcome ->
+            ScalarRule.Text
+                {
+                    Format =
+                        {
+                            MinimumCharacters = 1
+                            Grammar = None
+                        }
+                    MaximumCharacters = None
+                }
         | FieldValueKind.Status -> ScalarRule.CaseStatus { AllowedValues = CaseStatus.all }

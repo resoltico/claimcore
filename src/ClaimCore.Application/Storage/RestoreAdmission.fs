@@ -31,8 +31,8 @@ module internal RestoreAdmission =
                     ServerSupport.require connection.PostgreSqlVersion
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
-                    do! RegisterMaintenanceStore.requireActive handle connection token
                     let! installation, _ = Baseline.require connection token
+                    do! RegisterMaintenanceStore.requireActive handle connection token
 
                     match CheckpointEvidence.installation installation trusted with
                     | Error finding -> return Error finding

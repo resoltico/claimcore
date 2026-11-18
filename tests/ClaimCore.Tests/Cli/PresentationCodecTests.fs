@@ -28,6 +28,27 @@ let tests =
     testList
         "review presentation transport"
         [
+            testCase "presented party roles round-trip with their closed vocabulary" (fun () ->
+                let wire token =
+                    JsonValue.Object
+                        [
+                            "vocabulary", JsonValue.String "partyRole"
+                            "kind", JsonValue.String "CODE"
+                            "token", JsonValue.String token
+                        ]
+
+                let role = PresentedValue.Code("partyRole", "CLAIMANT")
+
+                Expect.equal
+                    (PresentationCodecs.value.Write role)
+                    (wire "CLAIMANT")
+                    "A case party role has an encoded human representation"
+
+                Expect.equal (read (wire "CLAIMANT")) (Ok role) "The same role is admitted"
+
+                Expect.isError
+                    (read (wire "OWNER"))
+                    "Account roles are outside the party vocabulary")
             testCase "provided scale survives admission reencoding and human rendering" (fun () ->
                 let provided = money "1" (JsonValue.Integer 4L)
                 let value = read provided |> CaseBuilders.accepted
@@ -97,8 +118,8 @@ let tests =
                             (JsonValue.Object [ "changes", JsonValue.Array [] ]))
                         "Unchanged identity list is required")
             testCase "server builder retains the authoritative typed case change values" (fun () ->
-                let before = PartyName.parse "Authoritative᠎Before" |> CaseBuilders.accepted
-                let after = PartyName.parse "Authoritative👩‍💻After" |> CaseBuilders.accepted
+                let before = Identifier.parse "Authoritative᠎Before" |> CaseBuilders.accepted
+                let after = Identifier.parse "Authoritative👩‍💻After" |> CaseBuilders.accepted
 
                 let original =
                     Reviews.caseReview
@@ -126,17 +147,17 @@ let tests =
                                             Fields =
                                                 [
                                                     {
-                                                        FieldName = BusinessField.ClaimantName
+                                                        FieldName = BusinessField.PolicyNumber
                                                         Before =
                                                             Some(
                                                                 CaseFieldValue.Business(
-                                                                    Admitted.Name before
+                                                                    Admitted.Identifier before
                                                                 )
                                                             )
                                                         After =
                                                             Some(
                                                                 CaseFieldValue.Business(
-                                                                    Admitted.Name after
+                                                                    Admitted.Identifier after
                                                                 )
                                                             )
                                                     }
@@ -154,18 +175,18 @@ let tests =
                     supplied.Presentation.Changes
                     |> List.find (fun change ->
                         change.Key.EndsWith(
-                            "." + BusinessField.key BusinessField.ClaimantName,
+                            "." + BusinessField.key BusinessField.PolicyNumber,
                             StringComparison.Ordinal
                         ))
 
                 Expect.equal
                     change.Before
-                    (PresentedValue.Party before)
+                    (PresentedValue.Text(Identifier.format before))
                     "Snapshot text does not replace the supplied core change"
 
                 Expect.equal
                     change.After
-                    (PresentedValue.Party after)
+                    (PresentedValue.Text(Identifier.format after))
                     "Each side retains its own exact value"
 
                 Expect.isTrue
@@ -199,6 +220,7 @@ let producerBudgets =
                 ActorProfile.parse
                     {
                         DisplayName = String.replicate PartyName.MaximumCharacters "😀"
+                        DigestEmail = None
                         Contact = Some(String.replicate PartyName.MaximumCharacters "😀")
                     }
                 |> CaseBuilders.accepted
@@ -278,6 +300,7 @@ let producerBudgets =
                                 Before = None
                                 After = profile.Contact
                             }
+                    DigestEmail = None
                     Grants = grantFacts
                 }
 
@@ -318,13 +341,18 @@ let producerBudgets =
                     context
 
             let reminder id revision action state =
-                Reminder.ofAccepted
+                Reminder.decode
                     (ReminderId.create id |> Option.get)
                     CliReplyFixtures.snapshot.CaseId
                     (CaseFixtures.revision revision)
                     (ReminderAction.parse action |> CaseBuilders.accepted)
                     (DomainInputs.date "2026-11-04")
+                    ReminderKind.FollowUp
                     state
+                    (if state = ReminderState.Completed then
+                         Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+                     else
+                         None)
                 |> CaseBuilders.accepted
 
             let old =
@@ -418,6 +446,7 @@ let primaryPeopleChanges =
                         Enabled = None
                         ProfilePresent = None
                         DisplayName = None
+                        DigestEmail = None
                         Contact = None
                         Grants =
                             [

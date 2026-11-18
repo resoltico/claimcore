@@ -16,13 +16,11 @@ it.each([1, 2])(
       {
         input: "field:incidentDate",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
       {
-        input: "field:claimantName",
+        input: "field:policyNumber",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
     ];
@@ -66,7 +64,7 @@ it.each([1, 2])(
     const first = screen.getByRole("group", { name: "Incident date" });
     expect(first).toHaveAttribute("aria-invalid", "true");
     expect(first).toHaveAccessibleDescription(/A non-blank value is required/u);
-    const claimant = screen.getByLabelText("Claimant name", { exact: true });
+    const claimant = screen.getByLabelText("Policy number", { exact: true });
     if (count === 2) {
       expect(claimant).toHaveAttribute("aria-invalid", "true");
       expect(claimant).toHaveAccessibleDescription(/A non-blank value is required/u);

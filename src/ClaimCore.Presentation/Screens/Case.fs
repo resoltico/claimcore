@@ -100,13 +100,7 @@ module CaseScreen =
             let selected =
                 FieldPresentation.declarations
                 |> List.filter (fun field ->
-                    List.contains
-                        field.Field
-                        [
-                            BusinessField.ClaimantName
-                            BusinessField.InsurerName
-                            BusinessField.ClaimedAmount
-                        ])
+                    List.contains field.Field [ BusinessField.ClaimedAmount ])
 
             let values =
                 FieldPresentation.declarations
@@ -116,6 +110,124 @@ module CaseScreen =
             entries (fields selected (fun () -> Some values)) ())
         |> Option.defaultValue []
 
+
+    let private parties (reply: CaseReadModel) =
+        let columns =
+            [
+                column
+                    "role"
+                    "field.partyRole.label"
+                    Prominence.Primary
+                    false
+                    (fun (party: CaseParty) -> code PartyRole.vocabulary party.Content.Role)
+                column "name" "field.partyName.label" Prominence.Primary false (fun party ->
+                    optional PresentedValue.Party party.Content.Name)
+                column "details" "field.partyDetails.label" Prominence.Secondary false (fun party ->
+                    optional
+                        (PartyDetails.format >> PresentedValue.Narrative)
+                        party.Content.Details)
+            ]
+
+        let table =
+            tableWithControls
+                (fun (party: CaseParty) -> PartyId.format party.PartyId)
+                (fun _ -> None)
+                columns
+                (fun party -> None, List.choose TaskAffordances.fromOffer party.Offers)
+                reply.Parties
+
+        { region RegionRole.Parties (Some "field.parties.label") (RegionContent.Table table) with
+            Actions = List.choose TaskAffordances.fromOffer reply.PartyOffers
+        }
+
+    let private relatedCaseRegions (reply: CaseReadModel) =
+        let source = CaseSelector.Id reply.Snapshot.CaseId
+
+        let action task binding =
+            TaskAffordances.offered
+                task
+                (Some binding)
+                Map.empty
+                (TaskAffordances.authored task)
+                Map.empty
+
+        let columns =
+            [
+                column
+                    "reference"
+                    "field.caseReference.label"
+                    Prominence.Primary
+                    false
+                    (fun (row: RelatedCaseRead) ->
+                        match row.Case with
+                        | Some target -> PresentedValue.Reference target.Reference
+                        | None -> PresentedValue.Absent "label.relatedCaseUnavailable")
+                column "lifecycle" "input.lifecycle.label" Prominence.Secondary false (fun row ->
+                    optional (code Lifecycle.vocabulary) (row.Case |> Option.map _.Lifecycle))
+                column "status" "field.status.label" Prominence.Secondary false (fun row ->
+                    optional (code CaseStatus.vocabulary) (row.Case |> Option.bind _.Status))
+                column "note" "field.linkNote.label" Prominence.Secondary false (fun row ->
+                    optional (NoteText.format >> PresentedValue.Narrative) row.Note)
+            ]
+
+        let table rows =
+            tableWithControls
+                (fun (row: RelatedCaseRead) -> LinkId.format row.Id)
+                (fun _ -> None)
+                columns
+                (fun row ->
+                    row.Case
+                    |> Option.map (fun target ->
+                        Link.CaseGet
+                            {
+                                Target = CaseSelector.Id target.CaseId
+                            }),
+                    [
+                        if row.CanRemove then
+                            yield
+                                action
+                                    ClientCompositions.linkRemoval
+                                    (Binding.Link(source, row.Id))
+                    ])
+                rows
+
+        [
+            if reply.RelatedCases.CanAdd || not reply.RelatedCases.Outgoing.IsEmpty then
+                let outgoing =
+                    region
+                        RegionRole.RelatedCases
+                        (Some "section.relatedCases.outgoing")
+                        (RegionContent.Table(table reply.RelatedCases.Outgoing))
+
+                yield
+                    { outgoing with
+                        Actions =
+                            [
+                                if reply.RelatedCases.CanAdd then
+                                    yield
+                                        action ClientCompositions.linkEntry (Binding.LinkNew source)
+                            ]
+                    }
+
+            if not reply.RelatedCases.Incoming.IsEmpty then
+                let incoming = table reply.RelatedCases.Incoming
+
+                let count =
+                    value
+                        "readableLinks"
+                        "label.readableIncomingLinks"
+                        Prominence.Secondary
+                        (PresentedValue.Count reply.RelatedCases.IncomingCount)
+
+                yield
+                    region
+                        RegionRole.RelatedCases
+                        (Some "section.relatedCases.incoming")
+                        (RegionContent.Table
+                            { incoming with
+                                Sections = [ section "section.relatedCases.label" [ count ] ]
+                            })
+        ]
 
     let view (reply: CaseReadModel) =
         let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
@@ -130,6 +242,14 @@ module CaseScreen =
                     "field.caseReference.label"
                     Prominence.Primary
                     (PresentedValue.Reference reply.Snapshot.Reference)
+                match reply.MatchedReference with
+                | Some reference ->
+                    value
+                        "matchedReference"
+                        "label.referenceChangedFrom"
+                        Prominence.Secondary
+                        (PresentedValue.Reference reference)
+                | None -> ()
                 match CaseState.fields reply.Snapshot.State with
                 | Some facts ->
                     if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
@@ -209,13 +329,13 @@ module CaseScreen =
                                                 PaymentsScreen.meter fields.Finance)
                                         else
                                             None
-                                    Amount =
-                                        step.Amount
-                                        |> Option.map (fun money ->
-                                            {
-                                                PresentedMoney.Value = money
-                                                DisplayScale = Money.displayScale money
-                                            })
+                                    StageValue =
+                                        step.Outcome
+                                        |> Option.map (code ClosureOutcome.vocabulary)
+                                        |> Option.orElseWith (fun () ->
+                                            step.NetPaid |> Option.map PaymentsScreen.netPaid)
+                                        |> Option.orElseWith (fun () ->
+                                            step.Amount |> Option.map PresentedValue.money)
                                 })
                     }
 
@@ -329,8 +449,34 @@ module CaseScreen =
                         if group = RecordGroup.Registration then
                             yield entryRegion RegionRole.Facts (Some facts.TitleId) facts.Entries
 
+                    if not reply.Parties.IsEmpty || not reply.PartyOffers.IsEmpty then
+                        yield parties reply
+
                     match CaseState.fields reply.Snapshot.State with
                     | Some fields ->
+                        match Handling.closure fields.Handling with
+                        | Some closure ->
+                            yield
+                                entryRegion
+                                    RegionRole.Facts
+                                    (Some "label.closure")
+                                    [
+                                        value
+                                            "outcome"
+                                            "field.outcome.label"
+                                            Prominence.Primary
+                                            (code ClosureOutcome.vocabulary closure.Outcome)
+                                        value
+                                            "closingNote"
+                                            "field.closingNote.label"
+                                            Prominence.Detail
+                                            (closure.Note
+                                             |> optional (
+                                                 NoteText.format >> PresentedValue.Narrative
+                                             ))
+                                    ]
+                        | None -> ()
+
                         yield
                             region
                                 RegionRole.Payments
@@ -356,23 +502,14 @@ module CaseScreen =
                                                         ClientCompositions.paymentCorrection
                                                         reply.Advice.Acts
                                                 then
-                                                    let currency =
-                                                        fields.Finance.Decision
-                                                        |> Option.map (
-                                                            Decision.payable >> Money.currency
-                                                        )
-                                                        |> Option.defaultWith (fun () ->
-                                                            invalidOp
-                                                                "A payment requires a decision.")
-
                                                     yield
                                                         TaskAffordances.paymentCorrectionEntry
                                                             reply.Snapshot.CaseId
                                                             reply.Snapshot.Revision
-                                                            currency
                                                             entry
                                             ])
                                         fields.Finance
+                                        reply.PaymentPayees
                                         reply.LatestPayments
                                 ))
                     | None -> ()
@@ -392,6 +529,7 @@ module CaseScreen =
                             (RegionContent.Table(
                                 NotesScreen.table reply.Snapshot.CaseId reply.Notes
                             ))
+                yield! relatedCaseRegions reply
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]
 

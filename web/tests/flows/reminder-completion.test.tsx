@@ -211,7 +211,7 @@ const setup = () => {
   );
   return { list, read, preview, execute, lock };
 };
-it("opens a compact completion preview from an explicit row action and writes only after confirmation", async () => {
+it("opens a dated completion draft from a row action and writes only after review and confirmation", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
   const complete = await screen.findByRole("button", { name: "Complete reminder" });
@@ -219,6 +219,9 @@ it("opens a compact completion preview from an explicit row action and writes on
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
   await user.click(complete);
+  expect(await screen.findByText("Done on")).toBeVisible();
+  expect(preview).not.toHaveBeenCalled();
+  await user.click(await screen.findByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   expect(document.querySelector(".ui-completion-popover")).not.toBeNull();
   expect(read).toHaveBeenCalledTimes(1);
@@ -288,6 +291,7 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
     );
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await user.click(await screen.findByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await user.click(await screen.findByRole("button", { name: "Send again" }));

@@ -27,13 +27,18 @@ let private maximum = 9007199254740991L
 let private fields length : CaseFields =
     {
         CaseReference = CaseFixtures.reference reference
-        Status = CaseStatus.Closed
+        Handling =
+            Handling.Closed
+                {
+                    Outcome = ClosureOutcome.Settled
+                    Note = None
+                }
         Registration =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
-                        BusinessField.ClaimantName, (String(char 1, length))
-                        BusinessField.InsurerName, (String(char 1, length))
+                        BusinessField.PolicyNumber, (String(char 1, length))
+                        BusinessField.InsurerClaimReference, (String(char 1, length))
                         BusinessField.ClaimedAmount, ("999999999999999999.9999")
                     ]
                     (DomainInputs.registration)
@@ -68,7 +73,10 @@ let private receipt disclosure : OperationReceipt =
                 BusinessDate = DateOnly.FromDateTime instant.UtcDateTime
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
         Subject =
             ReceiptSubject.Case
                 {
@@ -142,7 +150,10 @@ let private boundedPeople () =
                                     Role = grant.Role
                                     Scope = grant.Scope
                                     GrantedAt = DomainInputs.workBasis.ObservedAt
-                                    GrantedBy = DomainInputs.actorReference actor.ActorId
+                                    GrantedBy =
+                                        AuthorityRef.Actor(
+                                            DomainInputs.actorReference actor.ActorId
+                                        )
                                 }
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
@@ -331,6 +342,8 @@ let private reminderTimelineLimit () =
                             After = Some nextAction
                         }
                 Due = Some { Before = Some due; After = Some due }
+                Kind = None
+                DoneOn = None
                 State = None
             }
 
@@ -340,6 +353,8 @@ let private reminderTimelineLimit () =
                 ReminderId = first
                 Action = None
                 Due = None
+                Kind = None
+                DoneOn = None
                 State =
                     Some
                         {
@@ -359,6 +374,8 @@ let private reminderTimelineLimit () =
                             After = Some nextAction
                         }
                 Due = Some { Before = None; After = Some due }
+                Kind = None
+                DoneOn = None
                 State =
                     Some
                         {

@@ -12,7 +12,7 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": false,
+      "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
       "pairs": null,
@@ -20,10 +20,10 @@
       "listed": false
     },
     {
-      "name": "incidentNotificationDate",
+      "name": "receivedDate",
       "valueKind": "CALENDAR_DATE",
-      "labelId": "field.incidentNotificationDate.label",
-      "hintId": "field.incidentNotificationDate.hint",
+      "labelId": "field.receivedDate.label",
+      "hintId": "field.receivedDate.hint",
       "ruleId": "scalar.calendarDate.guidance",
       "scalar": {
         "kind": "CALENDAR_DATE",
@@ -31,7 +31,7 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": false,
+      "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
       "pairs": null,
@@ -48,12 +48,11 @@
         "kind": "TEXT",
         "format": {
           "minimumCharacters": 1,
-          "grammar": "[A-Z]{2}",
-          "unknownCode": "ZZ"
+          "grammar": "[A-Z]{2}"
         },
         "maximumCharacters": null
       },
-      "allowsAbsence": false,
+      "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
       "pairs": null,
@@ -122,48 +121,6 @@
       "listed": false
     },
     {
-      "name": "claimantName",
-      "valueKind": "PARTY_NAME",
-      "labelId": "field.claimantName.label",
-      "hintId": "field.claimantName.hint",
-      "ruleId": "scalar.text.guidance",
-      "scalar": {
-        "kind": "TEXT",
-        "format": {
-          "minimumCharacters": 1,
-          "grammar": null
-        },
-        "maximumCharacters": 200
-      },
-      "allowsAbsence": false,
-      "group": "registration",
-      "section": "registration",
-      "pairs": null,
-      "prominence": "PRIMARY",
-      "listed": true
-    },
-    {
-      "name": "insurerName",
-      "valueKind": "PARTY_NAME",
-      "labelId": "field.insurerName.label",
-      "hintId": "field.insurerName.hint",
-      "ruleId": "scalar.text.guidance",
-      "scalar": {
-        "kind": "TEXT",
-        "format": {
-          "minimumCharacters": 1,
-          "grammar": null
-        },
-        "maximumCharacters": 200
-      },
-      "allowsAbsence": false,
-      "group": "registration",
-      "section": "registration",
-      "pairs": null,
-      "prominence": "SECONDARY",
-      "listed": true
-    },
-    {
       "name": "claimedAmount",
       "valueKind": "AMOUNT",
       "labelId": "field.claimedAmount.label",
@@ -182,7 +139,7 @@
         "maximumIntegerDigits": 18,
         "maximumFractionalDigits": 4
       },
-      "allowsAbsence": false,
+      "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
       "pairs": "claimedCurrency",
@@ -207,7 +164,7 @@
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
       },
-      "allowsAbsence": false,
+      "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
       "pairs": null,
@@ -434,6 +391,86 @@
       "pairs": null,
       "prominence": "DETAIL",
       "listed": false
+    },
+    {
+      "name": "decisionBasis",
+      "valueKind": "NOTE_TEXT",
+      "labelId": "field.decisionBasis.label",
+      "hintId": "field.decisionBasis.hint",
+      "ruleId": "scalar.narrative.guidance",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 2000,
+        "maximumUtf8Bytes": 8192,
+        "allowsLineFeed": true
+      },
+      "allowsAbsence": true,
+      "group": "decision",
+      "section": "decision",
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "outcome",
+      "valueKind": "CLOSURE_OUTCOME",
+      "labelId": "field.outcome.label",
+      "hintId": "field.outcome.hint",
+      "ruleId": "field.outcome.rule",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": null
+      },
+      "allowsAbsence": false,
+      "group": null,
+      "section": null,
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "closingNote",
+      "valueKind": "NOTE_TEXT",
+      "labelId": "field.closingNote.label",
+      "hintId": "field.closingNote.hint",
+      "ruleId": "scalar.narrative.guidance",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 2000,
+        "maximumUtf8Bytes": 8192,
+        "allowsLineFeed": true
+      },
+      "allowsAbsence": true,
+      "group": null,
+      "section": null,
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "reopenReason",
+      "valueKind": "REASON",
+      "labelId": "field.reopenReason.label",
+      "hintId": "field.reopenReason.hint",
+      "ruleId": "scalar.text.guidance",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      },
+      "allowsAbsence": false,
+      "group": null,
+      "section": null,
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     }
   ],
   "inputFields": [
@@ -522,6 +559,20 @@
       }
     },
     {
+      "name": "profile.digestEmail",
+      "labelId": "field.profile.digestEmail.label",
+      "hintId": "field.profile.digestEmail.hint",
+      "ruleId": "field.profile.digestEmail.rule",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 254
+      }
+    },
+    {
       "name": "directorySearch",
       "labelId": "field.directorySearch.label",
       "hintId": "field.directorySearch.hint",
@@ -592,6 +643,60 @@
       "scalar": null
     },
     {
+      "name": "newReference",
+      "labelId": "field.newReference.label",
+      "hintId": "field.newReference.hint",
+      "ruleId": "field.newReference.rule",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": "[!-~]{1,80}"
+        },
+        "maximumCharacters": null
+      }
+    },
+    {
+      "name": "linkId",
+      "labelId": "field.linkId.label",
+      "hintId": "field.linkId.hint",
+      "ruleId": "field.linkId.rule",
+      "scalar": null
+    },
+    {
+      "name": "relatedCaseReference",
+      "labelId": "field.relatedCaseReference.label",
+      "hintId": "field.relatedCaseReference.hint",
+      "ruleId": "field.relatedCaseReference.rule",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": "[!-~]{1,80}"
+        },
+        "maximumCharacters": null
+      }
+    },
+    {
+      "name": "relatedCaseId",
+      "labelId": "field.relatedCaseId.label",
+      "hintId": "field.relatedCaseId.hint",
+      "ruleId": "field.relatedCaseId.rule",
+      "scalar": null
+    },
+    {
+      "name": "linkNote",
+      "labelId": "field.linkNote.label",
+      "hintId": "field.linkNote.hint",
+      "ruleId": "field.linkNote.rule",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 2000,
+        "maximumUtf8Bytes": 8192,
+        "allowsLineFeed": true
+      }
+    },
+    {
       "name": "noteText",
       "labelId": "field.noteText.label",
       "hintId": "field.noteText.hint",
@@ -604,10 +709,92 @@
       }
     },
     {
+      "name": "parties",
+      "labelId": "field.parties.label",
+      "hintId": "field.parties.hint",
+      "ruleId": "field.parties.rule",
+      "scalar": null
+    },
+    {
+      "name": "partyId",
+      "labelId": "field.partyId.label",
+      "hintId": "field.partyId.hint",
+      "ruleId": "field.partyId.rule",
+      "scalar": null
+    },
+    {
+      "name": "partyRole",
+      "labelId": "field.partyRole.label",
+      "hintId": "field.partyRole.hint",
+      "ruleId": "field.partyRole.rule",
+      "scalar": null
+    },
+    {
+      "name": "partyName",
+      "labelId": "field.partyName.label",
+      "hintId": "field.partyName.hint",
+      "ruleId": "scalar.text.guidance",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    },
+    {
+      "name": "partyDetails",
+      "labelId": "field.partyDetails.label",
+      "hintId": "field.partyDetails.hint",
+      "ruleId": "field.partyDetails.rule",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 1000,
+        "maximumUtf8Bytes": 4096,
+        "allowsLineFeed": true
+      }
+    },
+    {
+      "name": "expectedPartyRevision",
+      "labelId": "field.expectedPartyRevision.label",
+      "hintId": "field.expectedPartyRevision.hint",
+      "ruleId": "field.expectedPartyRevision.rule",
+      "scalar": null
+    },
+    {
       "name": "paymentId",
       "labelId": "field.paymentId.label",
       "hintId": "field.paymentId.hint",
       "ruleId": "field.paymentId.rule",
+      "scalar": null
+    },
+    {
+      "name": "direction",
+      "labelId": "field.direction.label",
+      "hintId": "field.direction.hint",
+      "ruleId": "field.direction.rule",
+      "scalar": null
+    },
+    {
+      "name": "reference",
+      "labelId": "field.reference.label",
+      "hintId": "field.reference.hint",
+      "ruleId": "scalar.text.guidance",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 80
+      }
+    },
+    {
+      "name": "payee",
+      "labelId": "field.payee.label",
+      "hintId": "field.payee.hint",
+      "ruleId": "field.payee.rule",
       "scalar": null
     },
     {
@@ -629,6 +816,25 @@
       "ruleId": "field.reminderDueDate.rule",
       "scalar": {
         "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "kind",
+      "labelId": "field.kind.label",
+      "hintId": "field.kind.hint",
+      "ruleId": "field.kind.rule",
+      "scalar": null
+    },
+    {
+      "name": "doneOn",
+      "labelId": "field.doneOn.label",
+      "hintId": "field.doneOn.hint",
+      "ruleId": "field.doneOn.rule",
+      "scalar": {
+        "kind": "CALENDAR_DATE",
         "exactFormat": "yyyy-MM-dd",
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
@@ -761,11 +967,116 @@
       "scalar": null
     },
     {
+      "name": "reminderKind",
+      "labelId": "input.reminderKind.label",
+      "hintId": null,
+      "ruleId": "input.reminderKind.rule",
+      "scalar": null
+    },
+    {
+      "name": "deadlineOutcome",
+      "labelId": "input.deadlineOutcome.label",
+      "hintId": null,
+      "ruleId": "input.deadlineOutcome.rule",
+      "scalar": null
+    },
+    {
       "name": "includeInactive",
       "labelId": "input.includeInactive.label",
       "hintId": null,
       "ruleId": "input.includeInactive.rule",
       "scalar": null
+    },
+    {
+      "name": "groupBy",
+      "labelId": "input.groupBy.label",
+      "hintId": null,
+      "ruleId": "input.groupBy.rule",
+      "scalar": null
+    },
+    {
+      "name": "registeredFrom",
+      "labelId": "input.registeredFrom.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "registeredThrough",
+      "labelId": "input.registeredThrough.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "receivedFrom",
+      "labelId": "input.receivedFrom.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "receivedThrough",
+      "labelId": "input.receivedThrough.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "closedFrom",
+      "labelId": "input.closedFrom.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "closedThrough",
+      "labelId": "input.closedThrough.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "inactiveSince",
+      "labelId": "input.inactiveSince.label",
+      "hintId": null,
+      "ruleId": "scalar.calendarDate.guidance",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
     }
   ],
   "characterWarnings": {

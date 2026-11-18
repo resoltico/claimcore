@@ -6,19 +6,28 @@ type CaseIndex =
     {
         Responsible: ActorId option
         FollowUp: CalendarDate option
+        DeadlineDue: CalendarDate option
         Status: CaseStatus option
         Progress: CaseProgress option
         ChangedAt: DateTimeOffset
         SearchText: string option
         WorkSearchText: string option
-        NotifiedOn: CalendarDate option
+        ReceivedOn: CalendarDate option
         Claimed: Money option
         Payable: Money option
-        Paid: Money option
+        PaymentReview: bool option
+        Outcome: ClosureOutcome option
     }
 
 module CaseIndex =
-    let create changedAt (snapshot: CaseSnapshot) (work: CaseWorkSnapshot option) pendingDue =
+    let create
+        changedAt
+        (snapshot: CaseSnapshot)
+        (work: CaseWorkSnapshot option)
+        pendingDue
+        deadlineDue
+        parties
+        =
         let fields = CaseState.fields snapshot.State
 
         let work = if snapshot.State = CaseState.Erased then None else work
@@ -30,21 +39,25 @@ module CaseIndex =
                 if snapshot.State = CaseState.Erased then
                     None
                 else
-                    pendingDue |> List.sort |> List.tryHead
+                    pendingDue
+            DeadlineDue =
+                if snapshot.State = CaseState.Erased then
+                    None
+                else
+                    deadlineDue
             Status = fields |> Option.map _.Status
+            Outcome = fields |> Option.bind (_.Handling >> Handling.closure) |> Option.map _.Outcome
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
             ChangedAt = changedAt
-            SearchText = fields |> Option.map CaseSearch.text
+            SearchText = fields |> Option.map (CaseSearch.text parties)
             WorkSearchText = workSearch
-            NotifiedOn =
+            ReceivedOn =
                 fields
-                |> Option.map (fun fields ->
-                    Registration.incidentNotificationDate fields.Registration)
-            Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
-            Paid =
+                |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
+            Claimed = fields |> Option.bind (fun fields -> Registration.claimed fields.Registration)
+            PaymentReview =
                 fields
-                |> Option.bind (fun fields ->
-                    FinancialPosition.totals fields.Finance |> Option.map _.Paid)
+                |> Option.map (fun fields -> FinancialPosition.needsReview fields.Finance)
             Payable =
                 fields
                 |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)

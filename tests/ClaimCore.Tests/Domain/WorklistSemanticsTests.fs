@@ -58,7 +58,10 @@ let private facts state responsible due : CaseWorkFacts =
     {
         State = state
         Responsible = responsible
+        PaymentsNeedReview = false
         NextPendingDue = due
+        NextDeadlineDue = None
+        ReportDates = None
     }
 
 [<Tests>]
@@ -110,6 +113,36 @@ let attention =
                         (facts state (Some(actor, false)) (Some(date "2026-11-05"))))
                     [ CaseAttention.AssigneeUnavailable ]
                     "An unavailable assignee differs from unassigned")
+            testCase "overdue deadline sorts first and is actionable only while open" (fun () ->
+                let openCase =
+                    { facts
+                          (CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided))
+                          None
+                          (Some(date "2026-11-03")) with
+                        NextDeadlineDue = Some(date "2026-11-03")
+                    }
+
+                Expect.equal
+                    (CaseAttention.at today openCase)
+                    [
+                        CaseAttention.DeadlineOverdue
+                        CaseAttention.Overdue
+                        CaseAttention.Unassigned
+                    ]
+                    "Deadline attention precedes other valid reasons"
+
+                Expect.isEmpty
+                    (CaseAttention.at
+                        today
+                        { openCase with
+                            State = CaseState.Active(CaseStatus.Closed, CaseProgress.Undecided)
+                        })
+                    "Closure suppresses a pending deadline"
+
+                Expect.equal
+                    (CaseAttention.at today openCase |> List.tryHead)
+                    (Some CaseAttention.DeadlineOverdue)
+                    "An open case is actionable again")
             testCase "attention is absent for every inactive or closed state" (fun () ->
                 for state in states do
                     match state with
@@ -167,17 +200,19 @@ let views =
         Expect.equal
             (CaseAttention.all |> List.map CaseAttention.token)
             [
+                "DEADLINE_OVERDUE"
                 "OVERDUE"
                 "DUE_TODAY"
                 "NO_NEXT_ACTION"
                 "UNASSIGNED"
                 "ASSIGNEE_UNAVAILABLE"
+                "PAYMENTS_NEED_REVIEW"
                 "READY_TO_CLOSE"
             ]
             "Attention reasons are not views")
 
 let private reminder state due =
-    Reminder.ofAccepted
+    Reminder.decode
         (ReminderId.create (Guid.Parse "bbc83e6f-ecff-4023-8ff5-3d45db933cc1")
          |> Option.get)
         (CaseId.create (Guid.Parse "b32ec722-dfb9-426a-b574-c813be19999e") |> Option.get)
@@ -185,7 +220,12 @@ let private reminder state due =
         (ReminderAction.parse "Contact claimant"
          |> Result.defaultWith (fun _ -> failtest "Valid action"))
         (date due)
+        ReminderKind.FollowUp
         state
+        (if state = ReminderState.Completed then
+             Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+         else
+             None)
     |> Result.defaultWith (fun _ -> failtest "Valid accepted reminder")
 
 [<Tests>]

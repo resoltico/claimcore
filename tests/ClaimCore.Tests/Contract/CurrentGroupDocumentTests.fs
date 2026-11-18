@@ -18,7 +18,6 @@ let private caseRead () =
         FinancialPosition.withDecision
             (Some(DomainInputs.admittedDecision DomainInputs.decision))
             fields.Finance
-        |> Result.defaultWith (fun error -> failtestf "%A" error)
 
     let state = CaseState.Active { fields with Finance = finance }
 
@@ -80,7 +79,7 @@ let tests =
 
                     Expect.isTrue
                         (registration.Entries
-                         |> List.exists (fun entry -> entry.Key = "claimantName"))
+                         |> List.exists (fun entry -> entry.Key = "policyNumber"))
                         "Full registration before presentation is supplied"
 
                     let decision = original.Screen.CurrentGroups[1].Section

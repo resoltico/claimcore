@@ -35,8 +35,8 @@ let position: LedgerPosition =
 let private registration =
     DomainInputs.registrationWith
         [
-            BusinessField.ClaimantName, "Synthetic claimant"
-            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.PolicyNumber, "Synthetic claimant"
+            BusinessField.InsurerClaimReference, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.00"
         ]
         DomainInputs.registration
@@ -65,7 +65,7 @@ let view reference : CaseSnapshot =
             CaseState.Active
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = DomainInputs.admittedRegistration registration
                     Finance = FinancialPosition.undecided
                 }
@@ -98,12 +98,14 @@ let receipt id (reference: string) : OperationReceipt =
                             {
                                 State = LiveCase.ofState (view reference).State |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = DomainInputs.actorReference (CaseFixtures.actorId operationId)
+        RecordedBy =
+            AuthorityRef.Actor(DomainInputs.actorReference (CaseFixtures.actorId operationId))
         Basis =
             {
                 ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -275,7 +277,8 @@ type Stub() =
                 (fun _ reply -> HumanReplies.execute reply)
                 (fun reply ->
                     match reply.Outcome with
-                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | ExecuteResult.Accepted receipt ->
+                        receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
                     | _ -> None)
                 (fun _ -> false)
                 (fun _ input token ->

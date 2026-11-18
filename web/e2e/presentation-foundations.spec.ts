@@ -986,7 +986,8 @@ for (const language of ["en", "ar"] as const) {
                     stage: "OPENED",
                     reached: true,
                     date: "2026-09-01",
-                    amount: {
+                    value: {
+                      kind: "MONEY",
                       amount: "12.34",
                       currency: "EUR",
                       displayScale: 2,
@@ -996,19 +997,19 @@ for (const language of ["en", "ar"] as const) {
                     stage: "DECIDED",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                   {
                     stage: "PAID",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                   {
                     stage: "CLOSED",
                     reached: false,
                     date: null,
-                    amount: null,
+                    value: null,
                   },
                 ],
               },
@@ -1560,7 +1561,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
             {
               ...prefixedInputs("field:", {
                 ...caseFields.registration,
-                claimantName: name,
+                policyNumber: name,
               }),
             },
             registrationInputs,
@@ -1586,8 +1587,8 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                   },
                 },
                 {
-                  key: "claimantName",
-                  labelId: "field.claimantName.label",
+                  key: "policyNumber",
+                  labelId: "field.policyNumber.label",
                   prominence: "PRIMARY",
                   value: {
                     kind: "PARTY",
@@ -1741,7 +1742,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           changes: [
             {
               key: "claimant",
-              labelId: "field.claimantName.label",
+              labelId: "field.policyNumber.label",
               before: {
                 kind: "PARTY",
                 value: "Latest stored name",
@@ -1766,8 +1767,8 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   await page.goto(`${casePath(caseId)}/acts/case.amendRegistration`, {
     waitUntil: "commit",
   });
-  await page.locator('input[data-selects-fields~="claimantName"]').check();
-  const field = page.locator('[name="field:claimantName"]');
+  await page.locator('input[data-selects-fields~="policyNumber"]').check();
+  const field = page.locator('[name="field:policyNumber"]');
   await field.fill("My retained draft");
   await page
     .getByRole("button", {
@@ -1807,7 +1808,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   expect(drafts[1]).toMatchObject({
     task: "case.amendRegistration",
     binding: { expectedRevision: 3 },
-    inputs: { "field:claimantName": "My retained draft" },
+    inputs: { "field:policyNumber": "My retained draft" },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(writes).toEqual([]);

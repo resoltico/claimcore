@@ -11,8 +11,8 @@ let private words () =
             "case get REF", [ "case"; "get"; "REF" ]
             "case\tget\tREF", [ "case"; "get"; "REF" ]
             "case open '😀 العربية'", [ "case"; "open"; "😀 العربية" ]
-            "case open 'MY REF' --claimant-name \"A B\"",
-            [ "case"; "open"; "MY REF"; "--claimant-name"; "A B" ]
+            "case open 'MY REF' --policy-number \"A B\"",
+            [ "case"; "open"; "MY REF"; "--policy-number"; "A B" ]
             "a''b \"\" ''", [ "ab"; ""; "" ]
             "a\\ b 'a\\b'", [ "a b"; "a\\b" ]
             "\"a\\qb\" \"a\\\"b\"", [ "a\\qb"; "a\"b" ]

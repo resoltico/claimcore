@@ -20,6 +20,9 @@ module internal CaseFieldCodecs =
             | FieldValueKind.IncidentDescription ->
                 boundedUtf8Text 1 IncidentDescription.MaximumBytes
             | FieldValueKind.HandlingSummary -> nonempty
+            | FieldValueKind.NoteText -> boundedUtf8Text 1 NoteText.MaximumBytes
+            | FieldValueKind.Reason -> boundedUtf8Text 1 PartyName.MaximumBytes
+            | FieldValueKind.ClosureOutcome -> text
             | FieldValueKind.Amount -> amount
             | FieldValueKind.Currency -> currency
             | FieldValueKind.ActorId
@@ -76,6 +79,9 @@ module internal CaseFieldCodecs =
                 business "TEXT" FieldValueKind.IncidentDescription
                 business "AMOUNT" FieldValueKind.Amount
                 business "CURRENCY" FieldValueKind.Currency
+                business "NOTE" FieldValueKind.NoteText
+                business "REASON" FieldValueKind.Reason
+                business "OUTCOME" FieldValueKind.ClosureOutcome
                 variant
                     "REFERENCE"
                     CaseFieldValue.Reference

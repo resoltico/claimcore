@@ -8,14 +8,15 @@ module CaseDescription =
         |> Option.map (fun content ->
             {
                 CaseFields.CaseReference = reference
-                Status = value.Status
+                Handling = value.Handling
                 Registration = content.Registration
                 Finance = content.Finance
             })
 
     let describe reference (before: CaseValue option) (after: CaseValue) =
+        let nextReference = defaultArg after.Reference reference
         let prior = before |> Option.bind (fields reference)
-        let next = fields reference after
+        let next = fields nextReference after
 
         let moneyFields =
             [
@@ -27,7 +28,9 @@ module CaseDescription =
 
         let value isAfter field =
             if field = BusinessField.CaseReference then
-                if isAfter || before.IsSome then
+                if isAfter then
+                    Some(CaseFieldValue.Reference nextReference)
+                elif before.IsSome then
                     Some(CaseFieldValue.Reference reference)
                 else
                     None
@@ -54,17 +57,26 @@ module CaseDescription =
                             After = difference.After
                         }))
 
+        let changes =
+            changes
+            @ (after.ReopenReason
+               |> Option.map (fun reason ->
+                   {
+                       FieldName = BusinessField.ReopenReason
+                       Before = None
+                       After = Some(CaseFieldValue.Business(Admitted.Reason reason))
+                   })
+               |> Option.toList)
+
         let money select =
             Difference.value (prior |> Option.bind select) (next |> Option.bind select)
 
         let amounts =
             [
                 BusinessField.ClaimedAmount,
-                money (fun fields -> Some(Registration.claimed fields.Registration))
+                money (fun fields -> Registration.claimed fields.Registration)
                 BusinessField.PayableAmount,
                 money (fun fields -> fields.Finance.Decision |> Option.map Decision.payable)
-                BusinessField.PaidAmount,
-                money (fun fields -> FinancialPosition.totals fields.Finance |> Option.map _.Paid)
             ]
             |> List.choose (fun (field, change) ->
                 change

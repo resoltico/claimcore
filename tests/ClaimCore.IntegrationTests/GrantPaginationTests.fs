@@ -87,8 +87,8 @@ let private seedCases fixture (admin: ServiceContext) target =
                     "Grant date is the immutable granting event's date"
 
                 Expect.equal
-                    first.GrantedBy.ActorId
-                    receipt.RecordedBy.ActorId
+                    first.GrantedBy
+                    receipt.RecordedBy
                     "The granting author is resolved from that event"
 
 

@@ -58,7 +58,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     await selected.check();
   }
   const fields = page.locator(".operation-form-card [data-field-name]");
-  await expect(fields).toHaveCount(10);
+  await expect(fields).toHaveCount(8);
   await expect(
     page.getByRole("textbox", {
       name: "Incident description",
@@ -196,10 +196,12 @@ test("accepted receipt fills its content width and keeps dismissal above facts i
     }
     await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
     await expect(receipt.locator('[data-entry="reference"] dd')).toHaveText(reference);
-    await expect(receipt.locator('[data-entry="claimantName"] dd')).toHaveText(
+    await expect(receipt.locator('[data-entry="policyNumber"] dd')).toHaveText(
       "Synthetic claimant",
     );
-    await expect(receipt.locator('[data-entry="insurerName"] dd')).toHaveText("Synthetic insurer");
+    await expect(receipt.locator('[data-entry="insurerClaimReference"] dd')).toHaveText(
+      "Synthetic insurer",
+    );
     await expect(receipt.locator('[data-entry="claimedAmount"] dd')).toHaveText("1,200.50 EUR");
     const close = receipt.getByRole("button", { name: ui(language, "ui.close"), exact: true });
     const geometry = await receipt.evaluate(

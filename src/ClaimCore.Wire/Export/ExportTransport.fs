@@ -9,6 +9,7 @@ open ClaimCore.Json
 [<RequireQualifiedAccess>]
 type ExportSelection =
     | Cases of CaseListFilter<string>
+    | CaseSummary of CaseSummaryRequest
     | Timeline of CaseTimelineRequest
     | Reminders of ReminderListRequest
     | PeopleHistory of PeopleHistoryRequest
@@ -39,6 +40,13 @@ module ExportTransport =
                     ExportSelection.Cases
                     (function
                     | ExportSelection.Cases value -> Some value
+                    | _ -> None)
+                    (record id |> field "selection" id RequestCodecs.caseFilter)
+                variant
+                    "case.summary"
+                    ExportSelection.CaseSummary
+                    (function
+                    | ExportSelection.CaseSummary value -> Some value
                     | _ -> None)
                     (record id |> field "selection" id RequestCodecs.caseSummaryRequest)
                 variant
@@ -113,6 +121,7 @@ module ExportTransport =
         Map.ofList
             [
                 QueryTaskId.key QueryTaskId.CaseList, "claimcore-cases.csv"
+                QueryTaskId.key QueryTaskId.CaseSummary, "claimcore-case-summary.csv"
                 QueryTaskId.key QueryTaskId.CaseTimeline, "claimcore-case-timeline.csv"
                 QueryTaskId.key QueryTaskId.ReminderList, "claimcore-reminders.csv"
                 QueryTaskId.key QueryTaskId.PeopleHistory, "claimcore-people-history.csv"
@@ -124,6 +133,7 @@ module ExportTransport =
         let query =
             match selection with
             | ExportSelection.Cases _ -> QueryTaskId.CaseList
+            | ExportSelection.CaseSummary _ -> QueryTaskId.CaseSummary
             | ExportSelection.Timeline _ -> QueryTaskId.CaseTimeline
             | ExportSelection.Reminders _ -> QueryTaskId.ReminderList
             | ExportSelection.PeopleHistory _ -> QueryTaskId.PeopleHistory

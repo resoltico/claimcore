@@ -39,14 +39,12 @@ let listPresentation =
              |> Set.ofList)
             (Set.ofList
                 [
-                    BusinessField.ClaimantName
-                    BusinessField.InsurerName
                     BusinessField.ClaimedAmount
                     BusinessField.ClaimedCurrency
                     BusinessField.PayableAmount
                     BusinessField.PayableCurrency
                 ])
-            "The adopted list contains parties and both complete money pairs"
+            "Financial facts include both complete money pairs"
 
         for amount, currency in
             [
@@ -61,8 +59,8 @@ let listPresentation =
             Expect.equal currency amount "Width reduction cannot orphan the currency"
 
         Expect.equal
-            (FieldPresentation.prominence BusinessField.InsurerName)
-            Prominence.Secondary
+            (FieldPresentation.prominence BusinessField.InsurerClaimReference)
+            Prominence.Detail
             "Insurer is supplementary list context"
 
         Expect.equal
@@ -84,8 +82,8 @@ let private textAndDateRuleTests =
         "text and date scalar catalog"
         [
             testCase "text rules retain permanent syntax and input bounds" (fun () ->
-                expectText BusinessField.ClaimantName 200
-                expectText BusinessField.InsurerName 200
+                expectText BusinessField.PolicyNumber 80
+                expectText BusinessField.InsurerClaimReference 80
 
                 for name, expected in
                     [
@@ -106,7 +104,7 @@ let private textAndDateRuleTests =
                 for name in
                     [
                         BusinessField.IncidentDate
-                        BusinessField.IncidentNotificationDate
+                        BusinessField.ReceivedDate
                         BusinessField.PaymentDecisionDate
                         BusinessField.PaymentDate
                     ] do
@@ -161,25 +159,6 @@ let private numericAndStatusRuleTests =
                         "No renderer-owned status"
                 | _ -> failtest "status must be a case-status scalar.")
         ]
-
-[<Tests>]
-let countryUnknown =
-    testCase "Domain owns the permanent unknown country code" (fun () ->
-        Expect.equal (CountryCode.format CountryCode.unknown) "ZZ" "Permanent unknown code"
-
-        Expect.equal
-            (CountryCode.parse "ZZ")
-            (Ok CountryCode.unknown)
-            "The declared code satisfies permanent parsing"
-
-        Expect.equal
-            CountryCode.descriptor.Format.UnknownCode
-            (Some "ZZ")
-            "The descriptor publishes the same code"
-
-        Expect.isNone
-            PartyName.descriptor.Format.UnknownCode
-            "Business text has no country meaning")
 
 [<Tests>]
 let permanentBoundaries =
@@ -282,7 +261,7 @@ let supportedCodeVocabularies =
     testCase
         "Core country and currency eligibility uses the adopted supported vocabularies"
         (fun () ->
-            for code in [ "LV"; "ZZ"; "XK"; "US"; "DE"; "TW" ] do
+            for code in [ "LV"; "XK"; "US"; "DE"; "TW" ] do
                 Expect.isOk (CountryCode.parse code) ("Supported country " + code)
 
             for code in [ "QQ"; "SU"; "DD"; "EU"; "XA"; "AA"; "UK"; "AC" ] do

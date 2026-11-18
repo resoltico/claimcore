@@ -89,6 +89,7 @@ module internal TaskArguments =
                 if
                     acquired.IsNone
                     && input.Required
+                    && input.Declaration.DefaultText.IsNone
                     && input.Argument = CommandArgument.Named
                     && not clear
                     && not (incomplete && input.Declaration.Source = InputSource.ExpectedRevision)
@@ -225,44 +226,83 @@ module internal TaskArguments =
                     if roles.Length < collection.MinimumItems then
                         problems.Add(UsageError.MissingOption name)
 
-                    let rows =
-                        roles
-                        |> List.map (fun value ->
-                            let split = value.Split([| '@' |], 2)
+                    let grantRow (value: string) =
+                        let split = value.Split([| '@' |], 2)
 
-                            let role =
-                                Role.all
-                                |> List.tryFind (fun role ->
-                                    split[0] = Role.token role
-                                    || split[0] = CommandGrammar.kebab (Role.token role))
+                        let role =
+                            Role.all
+                            |> List.tryFind (fun role ->
+                                split[0] = Role.token role
+                                || split[0] = CommandGrammar.kebab (Role.token role))
 
-                            let token =
-                                role
-                                |> Option.map Role.token
-                                |> Option.defaultWith (fun () ->
-                                    problems.Add(
-                                        UsageError.InvalidChoice(
-                                            name,
-                                            value,
-                                            Role.all |> List.map Role.token
-                                        )
+                        let token =
+                            role
+                            |> Option.map Role.token
+                            |> Option.defaultWith (fun () ->
+                                problems.Add(
+                                    UsageError.InvalidChoice(
+                                        name,
+                                        value,
+                                        Role.all |> List.map Role.token
                                     )
-
-                                    split[0])
-
-                            [
-                                target InputTarget.Role, SubmissionValue.Text token
-                                TaskInputId.Scope,
-                                SubmissionValue.Text(
-                                    if split.Length = 2 then "CASE" else "INSTALLATION"
                                 )
-                                if split.Length = 2 then
-                                    target (InputTarget.Field BusinessField.CaseReference),
-                                    SubmissionValue.Text split[1]
-                            ]
-                            |> Map.ofList)
 
-                    values |> Map.add collection.Name (SubmissionValue.Rows rows))
+                                split[0])
+
+                        [
+                            target InputTarget.Role, SubmissionValue.Text token
+                            TaskInputId.Scope,
+                            SubmissionValue.Text(
+                                if split.Length = 2 then "CASE" else "INSTALLATION"
+                            )
+                            if split.Length = 2 then
+                                target (InputTarget.Field BusinessField.CaseReference),
+                                SubmissionValue.Text split[1]
+                        ]
+                        |> Map.ofList
+
+                    let partyRow (value: string) =
+                        let fields =
+                            (TaskDeclarations.describe task).Collections
+                            |> List.find (fun item -> item.Collection = collection.Collection)
+                            |> _.Inputs
+                            |> List.map (fun input -> TaskInputId.token input.Input, input.Input)
+                            |> Map.ofList
+
+                        let denied () =
+                            problems.Add(UsageError.InvalidValue(name, "JSON"))
+                            Map.empty
+
+                        match StrictJson.read 8192 (System.Text.Encoding.UTF8.GetBytes value) with
+                        | Ok(JsonValue.Object values) ->
+                            let scalars =
+                                values
+                                |> List.choose (function
+                                    | key, JsonValue.String text ->
+                                        Map.tryFind key fields
+                                        |> Option.map (fun field ->
+                                            field, SubmissionValue.Text text)
+                                    | _ -> None)
+
+                            if scalars.Length = values.Length then
+                                Map.ofList scalars
+                            else
+                                denied ()
+                        | _ -> denied ()
+
+                    let parse =
+                        match collection.Collection with
+                        | TaskCollectionId.PeopleGrants -> grantRow
+                        | TaskCollectionId.Parties -> partyRow
+
+                    if roles.Length > collection.MaximumItems then
+                        problems.Add(UsageError.InvalidValue(name, string roles.Length))
+
+                    if roles.IsEmpty && collection.MinimumItems = 0 then
+                        values
+                    else
+                        values
+                        |> Map.add collection.Name (SubmissionValue.Rows(List.map parse roles)))
                 authored
 
         let operation =
@@ -323,6 +363,13 @@ module internal TaskArguments =
                        |> Option.toList))
             | OperationBinding.Work(target, revision) -> selected target :: version revision
             | OperationBinding.Note(target, note) -> selected target :: id "noteId" note
+            | OperationBinding.Party(target, current) ->
+                selected target
+                :: (current
+                    |> Option.map (fun (party, revision) ->
+                        id "partyId" (Some party) @ version revision)
+                    |> Option.defaultValue [])
+            | OperationBinding.Link(target, link) -> selected target :: id "linkId" link
             | OperationBinding.Reminder(target, current) ->
                 selected target
                 :: (current

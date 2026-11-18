@@ -32,6 +32,8 @@ let stewardSubject = "22222222-2222-4222-8222-222222222222"
 let readerSubject = "33333333-3333-4333-8333-333333333333"
 let editorSubject = "44444444-4444-4444-8444-444444444444"
 
+let replacementSubject = "66666666-6666-4666-8666-666666666666"
+
 let workflowAccounts =
     [
         ownerSubject, "synthetic-owner"
@@ -39,6 +41,7 @@ let workflowAccounts =
         readerSubject, "synthetic-reader"
         editorSubject, "synthetic-editor"
         "55555555-5555-4555-8555-555555555555", "synthetic-outsider"
+        replacementSubject, "synthetic-replacement"
     ]
     |> List.map (fun (subject, username) ->
         {

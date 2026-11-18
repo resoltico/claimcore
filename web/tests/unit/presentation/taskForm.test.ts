@@ -30,7 +30,7 @@ it("preserves authored tokens, omission, null, empty text and exact money", () =
   const value = assembleTask(
     "case.amendRegistration",
     {
-      "field:claimantName": "",
+      "field:policyNumber": "",
       "field:incidentDescription": null,
       "field:claimedAmount": "12.3400",
       "field:claimedCurrency": "EUR",
@@ -39,12 +39,12 @@ it("preserves authored tokens, omission, null, empty text and exact money", () =
     operationId,
   );
   expect(value.command.inputs).toEqual({
-    "field:claimantName": "",
+    "field:policyNumber": "",
     "field:incidentDescription": null,
     "field:claimedAmount": "12.3400",
     "field:claimedCurrency": "EUR",
   });
-  expect(value.command.inputs).not.toHaveProperty("field:policyNumber");
+  expect(value.command.inputs).not.toHaveProperty("field:insurerClaimReference");
 });
 it("retains work omission and explicit clearing without a second intent vocabulary", () => {
   const value = assembleTask(

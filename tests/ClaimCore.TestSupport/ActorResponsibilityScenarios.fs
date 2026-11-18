@@ -85,7 +85,12 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                             (Submissions.principal target
                              |> Map.fold
                                  (fun values key value -> Map.add key value values)
-                                 (Submissions.profile { DisplayName = name; Contact = None })))
+                                 (Submissions.profile
+                                     {
+                                         DisplayName = name
+                                         Contact = None
+                                         DigestEmail = None
+                                     })))
 
                 return target, ActorId.ofOperationId (CaseFixtures.operationId registration)
             }
@@ -150,7 +155,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                     "case.close"
                     (operation ())
                     (Binding.Case(CaseSelector.Reference "RESP-B", Revision.first))
-                    Map.empty)
+                    (Map.ofList
+                        [ Submissions.field BusinessField.Outcome, SubmissionValue.Text "OTHER" ]))
 
         do!
             execute
@@ -254,7 +260,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 references
                 "The core link selection is executable with the identical visibility boundary"
 
-            let! summary = Service.caseSummary services filter token
+            let! summary =
+                Service.caseSummary services (CaseSummaryRequest.ungrouped filter) token
 
             Expect.equal
                 (read summary).Counts.Total
@@ -355,7 +362,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
         Expect.equal
             changed
             (Outcome.Rejected Refusal.InvalidCursor)
-            "Unreleased cursor format 6 binds responsibility"
+            "Cursor format 7 binds responsibility"
 
         let! continued =
             Service.list

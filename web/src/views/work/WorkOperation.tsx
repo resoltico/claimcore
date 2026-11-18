@@ -18,7 +18,7 @@ type Props = {
   affordance?: OperationAffordance;
   current: CurrentCase;
   disclosureAvailable: boolean;
-  subject: "WORK" | "REMINDER" | "NOTE";
+  subject: "WORK" | "REMINDER" | "NOTE" | "LINK";
   kind: string;
   targetIdentity?: string;
   completionAnchor?: string | undefined;

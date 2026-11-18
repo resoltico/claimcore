@@ -64,9 +64,7 @@ let tests =
 
                         Expect.isNone offered.Blocked "Terminal work is available"
 
-                        Expect.isEmpty
-                            offered.Seeds
-                            "Complete and cancel accept no authored values"
+                        Expect.isEmpty offered.Seeds "Complete and cancel do not seed plan fields"
 
                     let plan =
                         Map.ofList
@@ -75,6 +73,8 @@ let tests =
                                 InputValue.Text "Request photographs"
                                 TaskInputId.Target InputTarget.ReminderDueDate,
                                 InputValue.Text "2026-11-16"
+                                TaskInputId.Target InputTarget.ReminderPlanKind,
+                                InputValue.Text "FOLLOW_UP"
                             ]
 
                     for available in
@@ -86,7 +86,7 @@ let tests =
                             (available environment (Some(DecisionFacts.fromReplay state)) binding)
                                 .Seeds
                             plan
-                            "Planning tasks acquire both current plan values"
+                            "Planning tasks acquire the current action, due date and kind"
 
                     let completed =
                         ClaimCore.Domain.Tasks.Reminder.Complete.decide
@@ -150,11 +150,13 @@ let tests =
                         |> accepted
                         |> apply zeroBase
 
-                    let common = [ "case.close"; "case.void"; "case.erase" ]
+                    let common =
+                        [ "case.close"; "case.void"; "case.erase"; "case.changeReference" ]
 
                     let rows =
                         [
-                            family (), [ "case.amendRegistration"; "case.decide" ]
+                            family (),
+                            [ "case.amendRegistration"; "case.decide"; "case.recordPayment" ]
                             decided (),
                             [
                                 "case.correct"
@@ -166,6 +168,7 @@ let tests =
                             [
                                 "case.correct"
                                 "case.decide"
+                                "case.withdrawDecision"
                                 "case.recordPayment"
                                 "case.removePayment"
                                 "case.correctPayment"
@@ -174,10 +177,18 @@ let tests =
                             [
                                 "case.correct"
                                 "case.decide"
+                                "case.withdrawDecision"
+                                "case.recordPayment"
                                 "case.removePayment"
                                 "case.correctPayment"
                             ]
-                            zero, [ "case.correct"; "case.decide"; "case.withdrawDecision" ]
+                            zero,
+                            [
+                                "case.correct"
+                                "case.decide"
+                                "case.withdrawDecision"
+                                "case.recordPayment"
+                            ]
                         ]
 
                     for state, financial in rows do
@@ -191,7 +202,13 @@ let tests =
                         Expect.equal
                             (offered environment closed)
                             (Set.ofList
-                                [ "case.correct"; "case.reopen"; "case.void"; "case.erase" ])
+                                [
+                                    "case.correct"
+                                    "case.reopen"
+                                    "case.void"
+                                    "case.erase"
+                                    "case.changeReference"
+                                ])
                             "Closed-case offers"
 
                         let voided = state |> setCase Lifecycle.Voided state.Case.Value.Status

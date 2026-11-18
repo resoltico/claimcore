@@ -2,7 +2,7 @@ import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { test } from "./redirect-response";
-import { openCase, startAct, reviewDraft } from "./case-workflow";
+import { openCase, startClose, reviewDraft } from "./case-workflow";
 import type { ServiceResponse } from "../src/protocol/types";
 import { openAuthenticated } from "./session-helpers";
 for (const status of [301, 302, 303, 307, 308]) {
@@ -12,7 +12,7 @@ for (const status of [301, 302, 303, 307, 308]) {
   }) => {
     await openAuthenticated(page);
     await openCase(page, `REDIRECT-${randomUUID()}`);
-    await startAct(page, "case.close", "en");
+    await startClose(page);
     await reviewDraft(page);
     await redirectResponse.arm("/api/operation.execute", status);
     await page.getByRole("dialog").locator("button[data-confirm-operation]").click();

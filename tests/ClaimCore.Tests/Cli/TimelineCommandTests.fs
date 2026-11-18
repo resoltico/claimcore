@@ -437,6 +437,13 @@ let tests =
                                                 Before = Some(DomainInputs.date "2026-11-03")
                                                 After = Some(DomainInputs.date "2026-11-04")
                                             }
+                                    Kind = None
+                                    DoneOn =
+                                        Some
+                                            {
+                                                Before = None
+                                                After = Some(DomainInputs.date "2026-11-04")
+                                            }
                                     State =
                                         Some
                                             {

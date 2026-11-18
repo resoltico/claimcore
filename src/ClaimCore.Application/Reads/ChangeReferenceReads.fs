@@ -41,7 +41,7 @@ module internal ChangeReferenceReads =
                 let! rows =
                     DatabaseSession.rows
                         tx.Connection
-                        "SELECT natural_key FROM claimcore.ledger_effects WHERE aggregate_kind='FAMILY' AND aggregate_id=$1 AND natural_key IS NOT NULL"
+                        "SELECT case_reference FROM claimcore.cases WHERE case_id=$1"
                         [| box (CaseId.value id) |]
                         tx.CancellationToken
 

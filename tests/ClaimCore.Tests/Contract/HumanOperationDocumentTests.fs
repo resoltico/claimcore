@@ -61,6 +61,7 @@ let private peopleReview () =
                         After = Some false
                     }
             DisplayName = None
+            DigestEmail = None
             Contact = None
             Grants = []
         }
@@ -95,7 +96,12 @@ let private closedReceipt () =
                 |> LiveCase.toState
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
                 |> LiveCase.ofState
                 |> Option.get
@@ -290,13 +296,15 @@ let tests =
                         )
 
                     let next =
-                        Reminder.ofAccepted
+                        Reminder.decode
                             second
                             parent
                             Revision.first
                             (ReminderAction.parse "Permitted next reminder" |> accepted)
                             (DomainInputs.date "2026-11-10")
+                            ReminderKind.FollowUp
                             ReminderState.Pending
+                            None
                         |> accepted
 
                     let version id snapshot =
@@ -503,14 +511,19 @@ let receiptStatusAndProgress =
         |> FinancialPosition.withDecision (
             Some(DomainInputs.admittedDecision DomainInputs.decision)
         )
-        |> accepted
 
     let payment =
         DomainInputs.paymentWith [ BusinessField.PaidAmount, "100" ] DomainInputs.payment
         |> DomainInputs.admittedPayment
 
     let partlyPaid =
-        decided |> FinancialPosition.record (DateOnly(2026, 8, 20)) payment |> accepted
+        decided
+        |> FinancialPosition.add (
+            PaymentEntry.recorded
+                (CaseFixtures.operationId (System.Guid.Parse "10000000-0000-7000-8000-000000000001"))
+                payment
+        )
+        |> accepted
 
     let render act disclosure =
         let receipt =
@@ -559,6 +572,7 @@ let receiptStatusAndProgress =
             {
                 State = state
                 Disposition = None
+                ReopenReason = None
                 RecordedFields = recorded
                 Payments = []
             }
@@ -616,7 +630,12 @@ let receiptStatusAndProgress =
                         (disclosed
                             (LiveCase.Active
                                 { fields with
-                                    Status = CaseStatus.Closed
+                                    Handling =
+                                        Handling.Closed
+                                            {
+                                                Outcome = ClosureOutcome.Settled
+                                                Note = None
+                                            }
                                     Finance = decided
                                 })
                             [])

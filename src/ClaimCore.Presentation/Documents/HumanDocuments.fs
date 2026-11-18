@@ -63,7 +63,6 @@ type HumanInputIssue =
         Input: TaskInputId
         Row: TaskRowTarget option
         Message: PresentedMessage
-        Related: Entry option
     }
 
 [<RequireQualifiedAccess>]
@@ -307,7 +306,7 @@ module HumanCaseDocument =
             actions
             |> List.filter (fun action ->
                 not (isRecommended action)
-                && supplies BusinessField.ClaimantName TaskInputMode.Update action
+                && supplies BusinessField.ReceivedDate TaskInputMode.Update action
                 && not (
                     declarationInputs action
                     |> List.exists (fun input ->
@@ -439,6 +438,8 @@ module HumanReadDocuments =
                 View = Some view
                 Target = None
                 State = None
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None

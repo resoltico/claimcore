@@ -94,6 +94,39 @@ module ReceiptScreen =
                        Revision = item.Revision
                        State = LiveCase.toState live.State
                    })
+               @ (let fields = CaseState.fields (LiveCase.toState live.State)
+
+                  fields
+                  |> Option.bind (_.Handling >> Handling.closure)
+                  |> Option.map (fun closure ->
+                      section
+                          "label.closure"
+                          [
+                              value
+                                  "outcome"
+                                  "field.outcome.label"
+                                  Prominence.Primary
+                                  (code ClosureOutcome.vocabulary closure.Outcome)
+                              value
+                                  "closingNote"
+                                  "field.closingNote.label"
+                                  Prominence.Detail
+                                  (closure.Note
+                                   |> optional (NoteText.format >> PresentedValue.Narrative))
+                          ])
+                  |> Option.toList)
+               @ (live.ReopenReason
+                  |> Option.map (fun reason ->
+                      section
+                          "field.reopenReason.label"
+                          [
+                              value
+                                  "reopenReason"
+                                  "field.reopenReason.label"
+                                  Prominence.Primary
+                                  (PresentedValue.Narrative(Reason.format reason))
+                          ])
+                  |> Option.toList)
                @ (live.Disposition
                   |> Option.map (fun disposition ->
                       section
@@ -197,6 +230,61 @@ module ReceiptScreen =
             match receipt.Subject with
             | ReceiptSubject.Case item -> caseReceipt item
             | ReceiptSubject.Work item -> workReceipt item
+            | ReceiptSubject.Party item ->
+                let entries =
+                    match item.Snapshot with
+                    | PartyDisclosure.Disclosed content ->
+                        [
+                            value
+                                "role"
+                                "field.partyRole.label"
+                                Prominence.Primary
+                                (code PartyRole.vocabulary content.Role)
+                            value
+                                "name"
+                                "field.partyName.label"
+                                Prominence.Primary
+                                (optional PresentedValue.Party content.Name)
+                            value
+                                "details"
+                                "field.partyDetails.label"
+                                Prominence.Secondary
+                                (optional
+                                    (PartyDetails.format >> PresentedValue.Narrative)
+                                    content.Details)
+                        ]
+                    | PartyDisclosure.Erased ->
+                        [
+                            value
+                                "name"
+                                "field.partyName.label"
+                                Prominence.Primary
+                                (PresentedValue.Absent "label.changesErased")
+                        ]
+                    | PartyDisclosure.Withheld ->
+                        [
+                            value
+                                "name"
+                                "field.partyName.label"
+                                Prominence.Primary
+                                (PresentedValue.Absent "label.changesWithheld")
+                        ]
+
+                [
+                    section
+                        "field.parties.label"
+                        (value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference item.Reference)
+                         :: entries)
+                ],
+                [
+                    partIdentity
+                        ClaimCore.Domain.Changes.PartKind.Party
+                        (PartyId.value item.PartyId)
+                ]
             | ReceiptSubject.Note item ->
                 let entries =
                     match item.Snapshot with
@@ -235,6 +323,25 @@ module ReceiptScreen =
                         Prominence.Detail
                         (PresentedValue.Identifier(NoteId.format item.NoteId))
                 ]
+            | ReceiptSubject.Link item ->
+                [
+                    section
+                        "section.relatedCases.label"
+                        [
+                            value
+                                "caseReference"
+                                "field.caseReference.label"
+                                Prominence.Primary
+                                (PresentedValue.Reference item.Reference)
+                        ]
+                ],
+                [
+                    value
+                        "linkId"
+                        "field.linkId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(LinkId.format item.LinkId))
+                ]
             | ReceiptSubject.Reminder item -> reminderReceipt item
             | ReceiptSubject.People item -> peopleReceipt item
 
@@ -266,7 +373,7 @@ module ReceiptScreen =
                         "recordedBy"
                         "label.recordedBy"
                         Prominence.Primary
-                        (PresentedValue.Actor receipt.RecordedBy)
+                        (ActorPresentation.authorityValue receipt.RecordedBy)
                  ]
                  @ knownTarget)
         ]
@@ -361,6 +468,8 @@ module ReceiptScreen =
             | ReceiptSubject.Case item -> item.Act
             | ReceiptSubject.Work item -> item.Act
             | ReceiptSubject.Note item -> item.Act
+            | ReceiptSubject.Party item -> item.Act
+            | ReceiptSubject.Link item -> item.Act
             | ReceiptSubject.Reminder item -> item.Act
             | ReceiptSubject.People item -> item.Act
 
@@ -369,6 +478,8 @@ module ReceiptScreen =
             | ReceiptSubject.Case item -> Some item.Reference
             | ReceiptSubject.Work item -> Some item.Reference
             | ReceiptSubject.Note item -> Some item.Reference
+            | ReceiptSubject.Party item -> Some item.Reference
+            | ReceiptSubject.Link item -> Some item.Reference
             | ReceiptSubject.Reminder item -> Some item.Reference
             | ReceiptSubject.People _ -> None
 

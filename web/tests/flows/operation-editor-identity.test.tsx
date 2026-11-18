@@ -94,9 +94,8 @@ const validationRefusal: HumanRejection = {
   },
   issues: [
     {
-      input: "field:claimantName",
+      input: "field:policyNumber",
       row: null,
-      related: null,
       message: {
         messageId: "diagnostic.TEXT_REQUIRED",
         arguments: [],
@@ -146,7 +145,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "case.open"));
   fillRegistrationInputs({
-    claimantName: "Synthetic A",
+    policyNumber: "Synthetic A",
   });
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
@@ -154,21 +153,21 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await screen.findByText(
     "This operation ID was already used for a different change. Use a new ID.",
   );
-  selectFact("claimantName");
-  const claimant = screen.getByLabelText("Claimant name", {
+  selectFact("policyNumber");
+  const policy = screen.getByLabelText("Policy number", {
     exact: true,
   });
-  await user.clear(claimant);
-  await user.type(claimant, "Synthetic B");
+  await user.clear(policy);
+  await user.type(policy, "Synthetic B");
   await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Fields to check: 1.");
-  expect(claimant).toHaveAccessibleDescription(
-    "The person or company making the claim. A non-blank value is required.",
+  expect(policy).toHaveAccessibleDescription(
+    "The policy number used by the insurer. A non-blank value is required.",
   );
-  expect(claimant).toHaveAttribute("aria-invalid", "true");
+  expect(policy).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
-  expect(sentDraft(0).inputs["field:claimantName"]).toBe("Synthetic A");
-  expect(sentDraft(2).inputs["field:claimantName"]).toBe("Synthetic B");
+  expect(sentDraft(0).inputs["field:policyNumber"]).toBe("Synthetic A");
+  expect(sentDraft(2).inputs["field:policyNumber"]).toBe("Synthetic B");
 });
 it("re-previews the same authored revision after preview loss despite a changed current observation", async () => {
   const user = userEvent.setup();
@@ -268,12 +267,12 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     throw new Error("Expected a registration correction selector.");
   }
   await chooseOption(user, registration, "UPDATE");
-  selectFact("claimantName");
-  const claimant = screen.getByLabelText("Claimant name", {
+  selectFact("policyNumber");
+  const policy = screen.getByLabelText("Policy number", {
     exact: true,
   });
-  await user.clear(claimant);
-  await user.type(claimant, "Corrected claimant");
+  await user.clear(policy);
+  await user.type(policy, "Corrected policy");
   await user.click(getButton("Review changes"));
   const body = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]?.body;
   if (typeof body !== "string") {
@@ -284,7 +283,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     task: "case.correct",
     inputs: {
       "group:registration": "UPDATE",
-      "field:claimantName": "Corrected claimant",
+      "field:policyNumber": "Corrected policy",
       "group:decision": "KEEP",
     },
   });

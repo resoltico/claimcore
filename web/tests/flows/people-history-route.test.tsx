@@ -31,7 +31,7 @@ const entry = (actorId = first, sequence = 31): HistoryRow => ({
   content: {
     key: `${sequence}:0`,
     when: "2026-09-01T10:30:00.000000Z",
-    who: author,
+    who: { kind: "ACTOR", value: author },
     summary: { messageId: "task.people.disable.label", arguments: [] },
     highlights: [
       {

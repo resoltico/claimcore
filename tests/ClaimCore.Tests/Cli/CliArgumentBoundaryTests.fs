@@ -168,7 +168,11 @@ let tests =
                                         Revision.create 7L |> Option.get
                                     )
                                 ))
-                                Map.empty
+                                (Map.ofList
+                                    [
+                                        TaskInputId.Target(InputTarget.Field BusinessField.Outcome),
+                                        InputValue.Text "OTHER"
+                                    ])
                                 []
                                 Map.empty
 
@@ -218,6 +222,8 @@ let tests =
                             [
                                 "case"
                                 "close"
+                                "--outcome"
+                                "other"
                                 "--expected-revision=7"
                                 "--preview"
                                 "--"
@@ -521,7 +527,15 @@ let tests =
                 (fun () ->
                     let arguments =
                         explicitOperation
-                            [ "case"; "close"; "--expected-revision=7"; "--"; "--dry-run" ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "--expected-revision=7"
+                                "--"
+                                "--dry-run"
+                            ]
 
                     Expect.isNone
                         (Grammar.prepareOffline arguments |> required)

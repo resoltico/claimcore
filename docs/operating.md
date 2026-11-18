@@ -71,7 +71,7 @@ runtime connection, and the owner connection is mounted only by the administrati
 Use matching service, browser and CLI builds. Before 1.0, each installation-format change requires
 a fresh installation. Initialize an empty database with the current [SQL baseline](../db/baseline.sql).
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-Use installation format 6 and CLI recovery journal format 4 with matching builds. Initialization
+Use installation format 7 and CLI recovery journal format 4 with matching builds. Initialization
 requires an empty database; the runtime refuses unsupported baseline identities and formats without
 converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
 and recovery records rather than attempting to initialize or convert them in place.
@@ -103,6 +103,22 @@ uncertain result. Remote database connections require verified TLS.
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
 | `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Rebuild projections during explicit maintenance. |
 | `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
+
+## Recover owner access
+
+Use the database owner connection and run:
+
+```sh
+claimcore-server recover-owner --owner-issuer URL --owner-subject SUBJECT --owner-name "OWNER NAME"
+```
+
+Supply a name when creating a new person. Use `--actor-id ID` to recover a specific person
+and bind the supplied sign-in identity if it changed. Recovery enables the person and grants
+installation Owner while keeping their other grants. The same command can be repeated safely.
+When the target already has the requested identity and an enabled Owner grant, the result is
+unchanged and the ledger does not advance. The installation must already have a person. Recovery
+works during maintenance. Initialization and recovery are recorded as by the
+installation operator.
 
 Help/version are offline. Owner failures use a separate bounded envelope,
 `{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
@@ -228,6 +244,37 @@ Access requests contain unverified hints, grant no rights and expire after 30 da
 at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
 can create another request. Names become profiles only after an owner enters and confirms them.
 
+## Daily reminder digest
+
+An Owner opts a person in by setting their digest address. Once per business day after the
+configured local time, the host can send one count-only email to each opted-in, enabled person.
+The Reminders link opens the Mine view. Counts use the person's current case access and
+responsibility. The digest is a daily prompt. Consult Reminders for current deadline status.
+
+Set the following required environment variables together. Leave the group unset to disable delivery.
+Startup reports missing required settings.
+
+| Setting | Value |
+| --- | --- |
+| `CLAIMCORE_DIGEST_SMTP_HOST` | SMTP relay hostname or IP address. |
+| `CLAIMCORE_DIGEST_SMTP_PORT` | SMTP port, from 1 to 65535. |
+| `CLAIMCORE_DIGEST_SMTP_TLS` | `IMPLICIT` for a TLS connection or `STARTTLS` for a required upgrade. |
+| `CLAIMCORE_DIGEST_FROM` | Sender mailbox address accepted by the relay. |
+| `CLAIMCORE_DIGEST_TIME` | Local time in `HH:MM` format in the installation business zone. |
+
+`CLAIMCORE_DIGEST_LANGUAGE` is an offered message language and defaults to `en`. For an authenticated
+relay, set `CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE` to a private UTF-8 file with the username on the first
+line and password on the second. Set `CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE` to a private PEM file
+when the relay uses a private trust root. The relay hostname is verified in both TLS modes.
+See [Private configuration](#private-configuration) for file admission. A digest worker consumes
+one additional connection pool slot.
+
+Hosts coordinate claims through the installation database. A claim allows one attempt across all
+hosts. An empty queue skips delivery. Relay failures and missed days are recorded or skipped with
+no resend. Monitor the digest outcomes in host logs and the `claimcore_digest_total` counter.
+Logs identify the account and the outcome. The counter is grouped by outcome. Housekeeping prunes
+claims older than 30 days.
+
 ## Database clock
 
 Operation IDs have a ten-minute first-execution lifetime with two minutes of future allowance.
@@ -343,11 +390,13 @@ identifiers and private failure files as sensitive when preparing support report
 
 ## Erasure limits
 
-ERASE atomically removes related case, work, reminder and note payloads/nonces, snapshots, narratives, search,
+ERASE atomically removes related case, payment, work, reminder, note, party and source-link payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
-dates and amounts; removal markers remain and rebuild restores them from public payment effects.
+dates, amounts, directions, currencies, references and payees. Removal markers remain and
+rebuild restores them from retained payment effects. Closure outcomes and operation attribution
+remain ledger metadata. Closing notes, reopening reasons and decision bases are erasable.
 Verification compares available payment facts with accepted history and checks the cleared shape
 after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 

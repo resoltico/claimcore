@@ -18,7 +18,7 @@ let private entry index task changes =
         Position = EffectPosition.create Sequence.first index |> Option.get
         OperationHash = EntryHash.zero
         RecordedAt = DomainInputs.workBasis.ObservedAt
-        RecordedBy = ResponseExamples.caseRead.RecordedBy
+        RecordedBy = AuthorityRef.Actor ResponseExamples.caseRead.RecordedBy
         Target = ResponseExamples.caseRead.RecordedBy
         Task = TaskId.ofLiteral task
         Changes = changes
@@ -59,6 +59,7 @@ let tests =
                                     Enabled = None
                                     ProfilePresent = None
                                     DisplayName = None
+                                    DigestEmail = None
                                     Contact = None
                                     Grants =
                                         [
@@ -88,6 +89,7 @@ let tests =
                                             }
                                     ProfilePresent = None
                                     DisplayName = None
+                                    DigestEmail = None
                                     Contact = None
                                     Grants = []
                                 }

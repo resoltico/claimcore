@@ -10,6 +10,7 @@ type DisclosedCaseReceipt =
     {
         State: LiveCase
         Disposition: CaseDisposition option
+        ReopenReason: Reason option
         RecordedFields: BusinessField list
         Payments: PaymentDifference list
     }
@@ -115,6 +116,30 @@ type NoteReceipt =
         Snapshot: NoteDisclosure
     }
 
+type LinkReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        LinkId: LinkId
+        Act: TaskId
+    }
+
+[<RequireQualifiedAccess>]
+type PartyDisclosure =
+    | Disclosed of PartyContent
+    | Withheld
+    | Erased
+
+type PartyReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        PartyId: PartyId
+        Revision: Revision
+        Act: TaskId
+        Snapshot: PartyDisclosure
+    }
+
 [<RequireQualifiedAccess>]
 type ReceiptSubject =
     | Case of CaseReceipt
@@ -122,6 +147,8 @@ type ReceiptSubject =
     | Work of WorkReceipt
     | Reminder of ReminderReceipt
     | Note of NoteReceipt
+    | Party of PartyReceipt
+    | Link of LinkReceipt
 
 type OperationReceipt =
     {
@@ -129,6 +156,6 @@ type OperationReceipt =
         Position: LedgerPosition
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorRef
+        RecordedBy: AuthorityRef
         Basis: WorkDateBasis
     }

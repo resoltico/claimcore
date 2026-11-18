@@ -66,17 +66,77 @@ module internal Advice =
                     record.CaseId
                     (latestPayments |> List.map PaymentEntry.id)
 
-            match current, CaseRecords.current services.InstallationId record with
-            | Some { Facts = state }, Ok snapshot when
+            let parties =
+                current
+                |> Option.map (fun value -> DecisionFacts.currentParties value.Facts)
+                |> Option.defaultValue []
+
+            match current, CaseRecords.current services.InstallationId parties record with
+            | Some { Facts = state; Origins = origins }, Ok snapshot when
                 DecisionFacts.snapshot state = Some snapshot && state.Sequence = familySequence
                 ->
+                let! payees =
+                    PaymentStorage.payees
+                        tx.Connection
+                        record.CaseId
+                        latestPayments
+                        tx.CancellationToken
+
                 let environment =
                     {
                         FamilyEnvironment.Requester = actor
                         RequesterPrincipal = services.Principal
                         Maintenance = maintenance.Active
+                        RelatedCase = fun _ -> None
+                        ReferenceOwner = fun _ -> None
                         AssigneeEligible = fun _ -> false
                     }
+
+                let partyTasks creates binding =
+                    Registry.all
+                    |> List.choose (function
+                        | Task.Family task when
+                            task.Declaration.Target = ActSubject.Party
+                            && task.Declaration.Creates = creates
+                            ->
+                            let offered = task.Availability environment (Some state) binding
+
+                            if offered.Blocked.IsNone then
+                                Some(TaskOffer.Available(task.Declaration.Id, binding, offered))
+                            else
+                                None
+                        | _ -> None)
+
+                let partyOffers = partyTasks true (Binding.PartyNew(CaseSelector.Id state.Id))
+
+                let parties =
+                    state.Parties
+                    |> Map.toList
+                    |> List.choose (fun (id, party) ->
+                        if party.Value.Removed then
+                            None
+                        else
+                            party.Value.Content
+                            |> Option.map (fun content ->
+                                (Map.find
+                                    (ClaimCore.Domain.Changes.PartKind.Party, PartyId.value id)
+                                    origins)
+                                    .Position,
+                                {
+                                    PartyId = id
+                                    Revision = party.Revision
+                                    Content = content
+                                    Offers =
+                                        partyTasks
+                                            false
+                                            (Binding.Party(
+                                                CaseSelector.Id state.Id,
+                                                id,
+                                                party.Revision
+                                            ))
+                                }))
+                    |> List.sortBy fst
+                    |> List.map snd
 
                 let offers =
                     Registry.all
@@ -167,9 +227,12 @@ module internal Advice =
                                                 maintenance.Active
                                                 snapshot
                                     }
+                                MatchedReference = None
+                                RelatedCases = RelatedCaseLinks.empty
                                 FamilySequence = familySequence
                                 Snapshot = snapshot
                                 LatestPayments = latestPayments
+                                PaymentPayees = payees
                                 Stages = stages
                                 Disposition = None
                                 NextActions = []
@@ -179,6 +242,8 @@ module internal Advice =
                                         Count = 0L
                                         CanAdd = false
                                     }
+                                Parties = parties
+                                PartyOffers = partyOffers
                                 ChangedAt = changedAt
                                 RecordedBy = recordedBy
                                 Headline =

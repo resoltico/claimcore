@@ -32,9 +32,10 @@ let tests =
                             {
                                 Reference = None
                                 Lifecycle = original.Case.Value.Lifecycle
-                                Status = original.Case.Value.Status
+                                Handling = original.Case.Value.Handling
                                 Content = original.Case.Value.Content
                                 Disposition = None
+                                ReopenReason = None
                             }
                 }
 
@@ -56,7 +57,7 @@ let tests =
                         environment
                         (Some(DecisionFacts.fromReplay state))
                         binding
-                        InputMap.empty
+                        (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
                 with
                 | Error rejected -> Engine.rejection binding rejected
                 | Ok _ -> failtest "A terminal case must not produce a successor"

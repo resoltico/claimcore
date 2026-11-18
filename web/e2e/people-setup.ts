@@ -6,10 +6,11 @@ type Principals = Readonly<{
   issuer: string;
   ownerSubject: string;
   stewardSubject: string;
+  replacementSubject: string;
   serviceClientId: string;
 }>;
 const validPrincipals = (value: Record<string, unknown>): value is Principals => {
-  const { issuer, ownerSubject, stewardSubject, serviceClientId } = value;
+  const { issuer, ownerSubject, stewardSubject, replacementSubject, serviceClientId } = value;
   return (
     typeof issuer === "string" &&
     issuer.startsWith("https://") &&
@@ -17,6 +18,8 @@ const validPrincipals = (value: Record<string, unknown>): value is Principals =>
     ownerSubject.length > 0 &&
     typeof stewardSubject === "string" &&
     stewardSubject.length > 0 &&
+    typeof replacementSubject === "string" &&
+    replacementSubject.length > 0 &&
     typeof serviceClientId === "string" &&
     serviceClientId.length > 0 &&
     ownerSubject !== stewardSubject

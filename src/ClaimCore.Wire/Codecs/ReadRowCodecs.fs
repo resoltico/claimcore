@@ -82,8 +82,20 @@ module internal ReadRowCodecs =
         |> build
         |> named "CaseWorkView"
 
+    let private partySummary =
+        Vocabulary.all PartyRole.vocabulary
+        |> List.map (fun role ->
+            role, PartyRole.token role, true, list PartyContent.MaximumCurrent partyName)
+        |> fieldMapWithPresence
+
     let private facts =
-        (record (fun fields -> { CaseSummaryFacts.Fields = fields }): Fields<CaseSummaryFacts, _>)
+        (record (fun parties fields ->
+            {
+                CaseSummaryFacts.Fields = fields
+                Parties = parties
+            })
+        : Fields<CaseSummaryFacts, _>)
+        |> field "parties" _.Parties partySummary
         |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseSummaryFields.declarations)
 
     let private caseNextAction =
@@ -138,7 +150,7 @@ module internal ReadRowCodecs =
                     Responsible = responsible
                     PendingReminders = pending
                     Stages = stages
-                    Paid = paid
+                    NetPaid = paid
                     PaymentCount = paymentCount
                     LastPaymentDate = lastPaymentDate
                 })
@@ -159,7 +171,7 @@ module internal ReadRowCodecs =
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
-        |> field "paid" _.Paid (nullable money)
+        |> field "netPaid" _.NetPaid (nullable PaymentCodecs.totals)
         |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
         |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
         |> build

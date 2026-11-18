@@ -62,33 +62,11 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
 
             let admit = CaseAdmission.fieldAdmission today before
 
-            let! command =
-                Admission.map2
-                    (fun command () -> command)
-                    (parse admit fields)
-                    (CaseParsing.chronology before false false fields)
-                |> CaseInput.ordered
-                |> Parsing.reject
+            let! command = parse admit fields |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
 
-            do!
-                Admission.collect
-                    [
-                        CaseAdmission.decisionChange content.Finance (Some command.Decision)
-                        CaseAdmission.crossFinancial
-                            (Decision.values command.Decision |> List.map fst |> Set.ofList)
-                            (Registration.incidentNotificationDate content.Registration)
-                            (Some command.Decision)
-                            content.Finance
-                    ]
-                |> CaseInput.ordered
-                |> Parsing.reject
-
-            let! finance =
-                FinancialPosition.withDecision (Some command.Decision) content.Finance
-                |> Result.mapError (fun _ ->
-                    Rejection.InvalidState RecordViolation.InvalidFinancialPosition)
+            let finance = FinancialPosition.withDecision (Some command.Decision) content.Finance
 
             return
                 [

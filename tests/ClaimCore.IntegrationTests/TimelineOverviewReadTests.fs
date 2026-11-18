@@ -32,7 +32,15 @@ let private actor ids number name =
         Actor.ActorId = CaseFixtures.actorId (id ids number)
         Principal = PrincipalKey.human "https://timeline-reads.example/" name |> required
         Enabled = true
-        Profile = ActorProfile.parse { DisplayName = name; Contact = None } |> required |> Some
+        Profile =
+            ActorProfile.parse
+                {
+                    DisplayName = name
+                    Contact = None
+                    DigestEmail = None
+                }
+            |> required
+            |> Some
     }
 
 let private calendar =
@@ -147,6 +155,7 @@ let private fixture () =
                 (id ids 2)
                 {
                     DisplayName = "Timeline owner"
+                    DigestEmail = None
                     Contact = None
                 }
                 []
@@ -172,7 +181,11 @@ let private fixture () =
                     (person)
                     "people.register"
                     (ClaimCore.TestSupport.Submissions.profile (
-                        { DisplayName = name; Contact = None }
+                        {
+                            DisplayName = name
+                            Contact = None
+                            DigestEmail = None
+                        }
                     )))
             |> ignore
 
@@ -793,6 +806,7 @@ let tests =
                             (ClaimCore.TestSupport.Submissions.profile (
                                 {
                                     DisplayName = "Current renamed assignee"
+                                    DigestEmail = None
                                     Contact = None
                                 }
                             )))

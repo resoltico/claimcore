@@ -232,8 +232,8 @@ const current = {
                 },
               },
               {
-                key: "claimantName",
-                labelId: "field.claimantName.label",
+                key: "policyNumber",
+                labelId: "field.policyNumber.label",
                 prominence: "PRIMARY",
                 value: {
                   kind: "PARTY",
@@ -263,7 +263,8 @@ const current = {
                 stage: "OPENED",
                 reached: true,
                 date: "2026-09-02",
-                amount: {
+                value: {
+                  kind: "MONEY",
                   amount: "25000",
                   currency: "AED",
                   displayScale: 2,
@@ -273,7 +274,8 @@ const current = {
                 stage: "DECIDED",
                 reached: true,
                 date: "2026-10-10",
-                amount: {
+                value: {
+                  kind: "MONEY",
                   amount: "20000",
                   currency: "AED",
                   displayScale: 2,
@@ -283,13 +285,13 @@ const current = {
                 stage: "PAID",
                 reached: true,
                 date: "2026-10-12",
-                amount: null,
+                value: null,
               },
               {
                 stage: "CLOSED",
                 reached: false,
                 date: null,
-                amount: null,
+                value: null,
               },
             ],
           },
@@ -674,6 +676,9 @@ for (const { language, accent, mode, mobile } of contexts) {
     );
     await trigger.click();
     const dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
+      .click();
     const confirm = dialog.locator("[data-confirm-operation]");
     await expect(confirm).toBeEnabled();
     await expect(page.locator(".ui-completion-popover")).toBeVisible();

@@ -430,5 +430,13 @@
   "cli.family.browserSessions": {
     "text": "ClaimCore 瀏覽器工作階段",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "案件當事方",
+    "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "關聯案件",
+    "source": "99bba925fcb4"
   }
 }

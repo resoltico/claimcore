@@ -16,7 +16,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private values amount claimant =
     DomainInputs.registrationWith
-        [ BusinessField.ClaimedAmount, amount; BusinessField.ClaimantName, claimant ]
+        [ BusinessField.ClaimedAmount, amount; BusinessField.PolicyNumber, claimant ]
         registration
 
 let private opening fixture number reference amount claimant =
@@ -284,7 +284,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
                 inputs
 
         let first =
-            raw "\"field:policyNumber\":\"PN-1\",\"field:claimantName\":\"Changed\""
+            raw "\"field:policyNumber\":\"PN-1\",\"field:insurerClaimReference\":\"Changed\""
             |> decode
 
         let! result = Service.executeSubmission actor first token
@@ -292,7 +292,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
         let! before = verified database
 
         let reordered =
-            raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-1\""
+            raw "\"field:insurerClaimReference\":\"Changed\",\"field:policyNumber\":\"PN-1\""
             |> decode
 
         let! replay = Service.executeSubmission actor reordered token
@@ -305,7 +305,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
         let! conflict =
             Service.executeSubmission
                 actor
-                (raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-2\""
+                (raw "\"field:insurerClaimReference\":\"Changed\",\"field:policyNumber\":\"PN-2\""
                  |> decode)
                 token
 

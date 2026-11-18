@@ -20,17 +20,22 @@ module ReminderListScreen =
                 PresentedValue.Date(Reminder.due item.Reminder))
             column "state" "input.reminderState.label" Prominence.Secondary false (fun item ->
                 code ReminderState.vocabulary (Reminder.state item.Reminder))
+            column "kind" "field.kind.label" Prominence.Secondary false (fun item ->
+                code ReminderKind.vocabulary (Reminder.kind item.Reminder))
+            column "doneOn" "field.doneOn.label" Prominence.Secondary false (fun item ->
+                optional PresentedValue.Date (Reminder.doneOn item.Reminder))
+            column "deadlineOutcome" "label.deadlineOutcome" Prominence.Secondary false (fun item ->
+                optional (code DeadlineOutcome.vocabulary) item.DeadlineOutcome)
             column "timing" "input.reminderDue.label" Prominence.Primary false (fun item ->
                 if not item.Active then
                     code CaseDue.vocabulary CaseDue.Inactive
                 else
                     optional (code ReminderDue.vocabulary) item.Timing)
-            column
-                "claimant"
-                (FieldPresentation.labelId BusinessField.ClaimantName)
-                Prominence.Secondary
-                false
-                (fun item -> PresentedValue.Party item.ClaimantName)
+            column "claimants" "label.claimants" Prominence.Secondary false (fun item ->
+                match item.Claimants with
+                | [] -> optional PresentedValue.Text None
+                | names ->
+                    PresentedValue.Text(names |> List.map PartyName.format |> String.concat "; "))
             column
                 "responsible"
                 "field.responsibleActor.label"

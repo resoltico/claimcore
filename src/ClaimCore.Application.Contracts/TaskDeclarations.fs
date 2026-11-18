@@ -5,6 +5,7 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type TaskChoiceId =
     | Role
+    | PartyRole
     | PrincipalKind
     | Scope
     | Lifecycle
@@ -19,8 +20,14 @@ type TaskChoiceId =
     | Due
     | ReminderState
     | ReminderDue
+    | PaymentDirection
+    | ClosureOutcome
+    | ReminderKind
+    | ReminderKindFilter
+    | DeadlineOutcomeFilter
     | RegistrationCorrection
     | DecisionCorrection
+    | GroupBy
 
 module TaskChoiceId =
     let vocabulary =
@@ -35,6 +42,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> vocabularyTokens Role.vocabulary
+        | TaskChoiceId.PartyRole -> vocabularyTokens PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> vocabularyTokens PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> vocabularyTokens ScopeKind.vocabulary
         | TaskChoiceId.Lifecycle -> vocabularyTokens Lifecycle.vocabulary
@@ -46,8 +54,14 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> vocabularyTokens CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> vocabularyTokens CaseAssignment.vocabulary
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
+        | TaskChoiceId.GroupBy -> vocabularyTokens CaseGrouping.vocabulary
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
+        | TaskChoiceId.ReminderKind -> vocabularyTokens ReminderKind.vocabulary
+        | TaskChoiceId.DeadlineOutcomeFilter -> vocabularyTokens DeadlineOutcome.vocabulary
+        | TaskChoiceId.ReminderKindFilter -> vocabularyTokens ReminderKindSelection.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
+        | TaskChoiceId.PaymentDirection -> vocabularyTokens PaymentDirection.vocabulary
+        | TaskChoiceId.ClosureOutcome -> vocabularyTokens ClosureOutcome.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
             CorrectionGroupAction.actions RecordGroup.Registration
             |> List.map CorrectionGroupAction.token
@@ -59,6 +73,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> Vocabulary.name Role.vocabulary
+        | TaskChoiceId.PartyRole -> Vocabulary.name PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> Vocabulary.name PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> Vocabulary.name ScopeKind.vocabulary
         | TaskChoiceId.Lifecycle -> Vocabulary.name Lifecycle.vocabulary
@@ -70,14 +85,22 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> Vocabulary.name CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> Vocabulary.name CaseAssignment.vocabulary
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
+        | TaskChoiceId.GroupBy -> Vocabulary.name CaseGrouping.vocabulary
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
+        | TaskChoiceId.ReminderKind -> Vocabulary.name ReminderKind.vocabulary
+        | TaskChoiceId.DeadlineOutcomeFilter -> Vocabulary.name DeadlineOutcome.vocabulary
+        | TaskChoiceId.ReminderKindFilter -> Vocabulary.name ReminderKindSelection.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
+        | TaskChoiceId.PaymentDirection -> Vocabulary.name PaymentDirection.vocabulary
+        | TaskChoiceId.ClosureOutcome -> Vocabulary.name ClosureOutcome.vocabulary
         | TaskChoiceId.RegistrationCorrection
         | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary
 
     let ofInput =
         function
+        | TaskInputId.Target InputTarget.PaymentDirection -> Some TaskChoiceId.PaymentDirection
         | TaskInputId.Target InputTarget.Role -> Some TaskChoiceId.Role
+        | TaskInputId.Target InputTarget.PartyRole -> Some TaskChoiceId.PartyRole
         | TaskInputId.Target InputTarget.PrincipalKind -> Some TaskChoiceId.PrincipalKind
         | TaskInputId.Scope
         | TaskInputId.Target InputTarget.Scope -> Some TaskChoiceId.Scope
@@ -91,18 +114,25 @@ module TaskChoiceId =
         | TaskInputId.Order -> Some TaskChoiceId.Order
         | TaskInputId.Assignment -> Some TaskChoiceId.Assignment
         | TaskInputId.Due -> Some TaskChoiceId.Due
+        | TaskInputId.GroupBy -> Some TaskChoiceId.GroupBy
         | TaskInputId.ReminderState -> Some TaskChoiceId.ReminderState
+        | TaskInputId.Target InputTarget.ReminderPlanKind -> Some TaskChoiceId.ReminderKind
+        | TaskInputId.DeadlineOutcomeFilter -> Some TaskChoiceId.DeadlineOutcomeFilter
+        | TaskInputId.ReminderKindFilter -> Some TaskChoiceId.ReminderKindFilter
         | TaskInputId.ReminderDue -> Some TaskChoiceId.ReminderDue
         | TaskInputId.Target(InputTarget.Group RecordGroup.Registration) ->
             Some TaskChoiceId.RegistrationCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Decision) ->
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
+        | TaskInputId.Target(InputTarget.Field BusinessField.Outcome) ->
+            Some TaskChoiceId.ClosureOutcome
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.ProfileDigestEmail | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter
+        | TaskInputId.CaseDate _
         | TaskInputId.IncludeInactive -> None
 
 [<RequireQualifiedAccess>]

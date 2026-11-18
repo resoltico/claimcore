@@ -60,6 +60,7 @@ let internal lookup fixture =
             let profile =
                 {
                     ActorProfileInput.DisplayName = name
+                    DigestEmail = None
                     Contact = Some "contact-only-needle"
                 }
 
@@ -199,6 +200,7 @@ let internal lookup fixture =
                         (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Renamed person"
+                                DigestEmail = None
                                 Contact = None
                             }
                         ))
@@ -248,6 +250,7 @@ let internal contactAndRole fixture =
                                 (ClaimCore.TestSupport.Submissions.profile (
                                     {
                                         DisplayName = display
+                                        DigestEmail = None
                                         Contact = contact
                                     }
                                 ))
@@ -388,6 +391,7 @@ let internal contactAndRole fixture =
                         (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Replacement person"
+                                DigestEmail = None
                                 Contact = Some "NEW@EXAMPLE.INVALID"
                             }
                         ))

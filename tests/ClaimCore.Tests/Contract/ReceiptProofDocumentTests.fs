@@ -164,7 +164,7 @@ let tests =
                                 }
                             Task = TaskId.ofLiteral "case.close"
                             RecordedAt = receipt.RecordedAt
-                            RecordedBy = receipt.RecordedBy
+                            RecordedBy = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                             Changes = TimelineChanges.Withheld
                         }
 
@@ -192,7 +192,7 @@ let tests =
                             OperationHash = hash
                             RecordedAt = receipt.RecordedAt
                             RecordedBy = receipt.RecordedBy
-                            Target = receipt.RecordedBy
+                            Target = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                             Task = TaskId.ofLiteral "people.enable"
                             Changes =
                                 {
@@ -207,6 +207,7 @@ let tests =
                                             }
                                     ProfilePresent = None
                                     DisplayName = None
+                                    DigestEmail = None
                                     Contact = None
                                     Grants = []
                                 }

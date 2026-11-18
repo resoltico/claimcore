@@ -1,4 +1,8 @@
 {
+  "ui.reportingDates": {
+    "text": "Berichtszeitraum",
+    "source": "274bd4f0d808"
+  },
   "ui.about": {
     "text": "Über ClaimCore",
     "source": "4efca0d10c5f"
@@ -702,5 +706,17 @@
   "ui.clearCaseRestriction": {
     "text": "Fallfilter aufheben",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "Zeile hinzufügen",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "Zeile entfernen",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "Zeile {number}",
+    "source": "f8c78edd5258"
   }
 }

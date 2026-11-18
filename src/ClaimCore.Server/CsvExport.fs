@@ -139,6 +139,16 @@ module internal CsvExport =
                                     result
                         }
             }
+        | ExportSelection.CaseSummary selection ->
+            {
+                Header = CaseSummaryCsv.header
+                Read =
+                    fun _ token ->
+                        task {
+                            let! result = Service.caseSummary services selection token
+                            return page CaseSummaryCsv.chunks (fun _ -> 1) (fun _ -> None) result
+                        }
+            }
         | ExportSelection.Timeline selection ->
             {
                 Header = TimelineCsv.csvHeader

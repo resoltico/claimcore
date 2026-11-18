@@ -10,6 +10,7 @@ open System
 open System.Security.Cryptography
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -123,17 +124,21 @@ module internal WorkQueries =
                                                                             Reference =
                                                                                 parent.Snapshot
                                                                                     .Reference
-                                                                            ClaimantName =
-                                                                                CaseState.fields
-                                                                                    parent.Snapshot
-                                                                                        .State
-                                                                                |> Option.map
-                                                                                    (fun fields ->
-                                                                                        Registration
-                                                                                            .claimant
-                                                                                            fields
-                                                                                                .Registration)
-                                                                                |> Option.get
+                                                                            Claimants =
+                                                                                Map.tryFind
+                                                                                    parent.CaseId
+                                                                                    currentFamilies
+                                                                                |> Option.map (
+                                                                                    DecisionFacts
+                                                                                        .currentParties
+                                                                                    >> PartyContent
+                                                                                        .names
+                                                                                        PartyRole
+                                                                                            .Claimant
+                                                                                )
+                                                                                |> Option
+                                                                                    .defaultValue
+                                                                                    []
                                                                             Responsible =
                                                                                 work.Responsible
                                                                             RecordedAt =
@@ -249,12 +254,17 @@ module internal WorkQueries =
 
                                                 let effective =
                                                     ReminderSelection.resolve
-                                                        request.View.IsSome
+                                                        (request.View.IsSome
+                                                         || request.DeadlineOutcome.IsSome)
                                                         request.State
                                                         request.IncludeInactive
 
                                                 let state =
                                                     ReminderStateSelection.state effective.State
+
+                                                let kind =
+                                                    request.Kind
+                                                    |> Option.bind ReminderKindSelection.kind
 
                                                 let includeInactive = effective.IncludeInactive
 
@@ -273,8 +283,14 @@ module internal WorkQueries =
                                                             state
                                                             |> Option.map ReminderState.token
                                                             |> Option.defaultValue ""
+                                                            kind
+                                                            |> Option.map ReminderKind.token
+                                                            |> Option.defaultValue ""
                                                             request.View
                                                             |> Option.map ReminderView.token
+                                                            |> Option.defaultValue ""
+                                                            request.DeadlineOutcome
+                                                            |> Option.map DeadlineOutcome.token
                                                             |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token
@@ -307,6 +323,9 @@ module internal WorkQueries =
                                                                 Selection = selection
                                                                 TargetCaseId = parentId
                                                                 State = state
+                                                                Kind = kind
+                                                                DeadlineOutcome =
+                                                                    request.DeadlineOutcome
                                                                 View = request.View
                                                                 Due = request.Due
                                                                 Text = text
@@ -389,8 +408,20 @@ module internal WorkQueries =
                                                                         ReminderReadModel.Reminder =
                                                                             reminder
                                                                         Reference = row.Reference
-                                                                        ClaimantName =
-                                                                            row.ClaimantName
+                                                                        Claimants =
+                                                                            Map.tryFind
+                                                                                row.Stored.CaseId
+                                                                                currentFamilies
+                                                                            |> Option.map (
+                                                                                DecisionFacts
+                                                                                    .currentParties
+                                                                                >> PartyContent
+                                                                                    .names
+                                                                                    PartyRole
+                                                                                        .Claimant
+                                                                            )
+                                                                            |> Option.defaultValue
+                                                                                []
                                                                         Responsible =
                                                                             row.Responsible
                                                                             |> Option.bind

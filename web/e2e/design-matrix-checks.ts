@@ -69,11 +69,11 @@ const ready = async (page: Page, route: MatrixRoute) => {
   const alerts = page.getByRole("main").getByRole("alert");
   await expect(alerts, JSON.stringify(await alerts.allTextContents())).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
-    await expect(page.locator(".entries-view [data-entry='claimantName']").first()).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='policyNumber']").first()).toBeVisible();
   }
   if (route.id === "case-erased") {
     await expect(page.locator('.region-notice[data-tone="FINAL"]')).toBeVisible();
-    await expect(page.locator(".entries-view [data-entry='claimantName']")).toHaveCount(0);
+    await expect(page.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
   }
   if (route.id.startsWith("cases-")) {
     await expect(page.locator(".summary-band")).toBeVisible();
@@ -89,7 +89,7 @@ const ready = async (page: Page, route: MatrixRoute) => {
     ).toHaveCount(route.id === "case-undecided" ? 1 : 0);
   }
   if (route.id === "operation-result") {
-    await expect(page.locator(".entries-view [data-entry='claimantName']")).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='policyNumber']")).toBeVisible();
   }
   if (route.id === "people-list") {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
@@ -256,7 +256,7 @@ const settleCaseList = async (page: Page, dimension: Dimension) => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await expect(list).toBeVisible();
     await expect(list).toHaveAttribute("aria-busy", "false");
-    await expect(list.getByRole("status")).toHaveCount(0);
+    await expect(list.locator('[role="status"]:not(.region-notice)')).toHaveCount(0);
     if (!(await pressure.first().isVisible())) {
       return;
     }
@@ -311,7 +311,9 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await ready(page, route);
   if (route.id === "editor-work") {
     await page.locator("#case-work-summary").click();
-    await expect(page.getByRole("dialog").locator(".operation-form-card")).toBeVisible();
+    const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
+    await summary.scrollIntoViewIfNeeded();
+    await expect(summary).toBeInViewport({ ratio: 1 });
   }
   if (route.summaryExpanded === true) {
     await expect(page.locator(".summary-band")).toBeVisible();

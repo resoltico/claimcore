@@ -21,7 +21,9 @@ let private baseWords verb = [ "people"; verb; actor.ToString("D") ]
 let private command (submission: OperationSubmission) = submission
 
 let private targetActor =
-    { CliReplyFixtures.receipt.RecordedBy with
+    let actor = CliReplyFixtures.receipt.RecordedBy |> AuthorityRef.actor |> Option.get
+
+    { actor with
         DisplayName = DisplayName.Named(DomainInputs.name "Current person")
     }
 
@@ -29,6 +31,7 @@ let private profile =
     ActorProfile.parse
         {
             DisplayName = "Current person"
+            DigestEmail = None
             Contact = None
         }
     |> CaseBuilders.accepted
@@ -119,6 +122,7 @@ let private run words (answer: string option) =
                                                     Some
                                                         {
                                                             DisplayName = "Current person"
+                                                            DigestEmail = None
                                                             Contact = None
                                                         }
                                                 Items = []
@@ -145,6 +149,7 @@ let private run words (answer: string option) =
                                         ActorProfile.parse
                                             {
                                                 DisplayName = text InputTarget.ProfileDisplayName
+                                                DigestEmail = None
                                                 Contact = None
                                             }
                                         |> CaseBuilders.accepted
@@ -178,13 +183,15 @@ let private run words (answer: string option) =
                                         change
                                             (Some profile.DisplayName)
                                             (afterProfile |> Option.map _.DisplayName)
+                                    DigestEmail = None
                                     Contact = None
                                     Grants = []
                                 }
 
                             let review =
                                 {
-                                    OperationReview.Task = people.Task
+                                    OperationReview.ChangesOwnSignInIdentity = false
+                                    Task = people.Task
                                     Binding = (Submissions.command people).Binding
                                     Target = ReviewTarget.Person(Some targetActor)
                                     References = { Actors = [ targetActor ]; Cases = [] }
@@ -398,7 +405,7 @@ let tests =
             testCase "malformed case work reminder and people drafts make zero exchanges" (fun () ->
                 let invalid =
                     [
-                        [ "case"; "amend-registration"; "R-1"; "--claimant-name"; "" ]
+                        [ "case"; "amend-registration"; "R-1"; "--policy-number"; "" ]
                         [ "work"; "update"; "R-1"; "--handling-summary"; "" ]
                         [ "reminder"; "create"; "R-1"; "--action"; ""; "--due"; "2026-11-04" ]
                         baseWords "set-profile" @ [ "--name"; "" ]
@@ -427,7 +434,12 @@ let tests =
                                     None,
                                     None
                                 )
-                            Inputs = Map.empty
+                            Inputs =
+                                Map.ofList
+                                    [
+                                        Submissions.field BusinessField.Outcome,
+                                        SubmissionValue.Text "OTHER"
+                                    ]
                         }
 
                     Expect.equal

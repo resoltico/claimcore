@@ -469,6 +469,7 @@ type Fixture() =
                         issuer = identity.Issuer
                         ownerSubject = IdentityRealm.ownerSubject
                         stewardSubject = IdentityRealm.stewardSubject
+                        replacementSubject = IdentityRealm.replacementSubject
                         serviceClientId = "service"
                     |})
             |> ignore

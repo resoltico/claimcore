@@ -25,7 +25,7 @@ test("successful summary continuation removes previously loaded full history aft
         },
         expectedRevision: revision,
       },
-      inputs: { "field:claimantName": `PRIVATE_HISTORY_${revision}` },
+      inputs: { "field:policyNumber": `PRIVATE_HISTORY_${revision}` },
     });
   }
   const principals = await syntheticPrincipals();

@@ -60,6 +60,7 @@ let private peopleRevisions (database: PostgresFixture.Database) =
         let profile name =
             {
                 ActorProfileInput.DisplayName = name
+                DigestEmail = None
                 Contact = None
             }
 

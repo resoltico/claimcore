@@ -42,6 +42,15 @@ type CaseListRequest =
         Filter: CaseListFilter<string>
     }
 
+type CaseSummaryRequest =
+    {
+        Filter: CaseListFilter<string>
+        GroupBy: CaseGrouping option
+    }
+
+module CaseSummaryRequest =
+    let ungrouped filter = { Filter = filter; GroupBy = None }
+
 type AssigneeRequest =
     {
         Target: CaseSelector
@@ -62,6 +71,8 @@ type ReminderListRequest =
         View: ReminderView option
         Target: CaseSelector option
         State: ReminderStateSelection option
+        Kind: ReminderKindSelection option
+        DeadlineOutcome: DeadlineOutcome option
         Due: ReminderDue option
         Assignment: CaseAssignment option
         Text: string option

@@ -12,7 +12,7 @@ import { preferenceKey } from "../../../../src/presentation/preferences";
 const owner: RegionTimelineEntry = {
   key: "31:0",
   when: "2026-01-01T22:30:00.000000Z",
-  who: context.self,
+  who: { kind: "ACTOR", value: context.self },
   summary: { messageId: "task.people.provisionOwner.label", arguments: [] },
   highlights: [
     {

@@ -2,31 +2,43 @@ namespace ClaimCore.Domain
 
 open System
 
-type RelatedDate =
-    {
-        Field: BusinessField
-        Value: CalendarDate
-    }
+/// Collection identity and bounded ordinals stay independent of transport and UI-local row keys.
+[<RequireQualifiedAccess>]
+type TaskCollectionId =
+    | PeopleGrants
+    | Parties
 
-/// Ordinal in the submitted people grant collection, independent of client row identity.
-[<Struct>]
-type GrantOrdinal = private GrantOrdinal of int
+    member this.MaximumRows =
+        match this with
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
+        | TaskCollectionId.Parties -> PartyContent.MaximumCurrent
 
-module GrantOrdinal =
-    let create value =
-        if value < 0 || value >= PeopleAdmission.MaximumGrants then
+type TaskRowTarget =
+    private
+        {
+            Collection: TaskCollectionId
+            Ordinal: int
+        }
+
+module TaskRowTarget =
+    let create (collection: TaskCollectionId) ordinal =
+        if ordinal < 0 || ordinal >= collection.MaximumRows then
             None
         else
-            Some(GrantOrdinal value)
+            Some
+                {
+                    Collection = collection
+                    Ordinal = ordinal
+                }
 
-    let value (GrantOrdinal value) = value
+    let collection target = target.Collection
+    let ordinal target = target.Ordinal
 
 type InputIssue =
     {
         Target: InputTarget
         Violation: Violation
-        RelatedDate: RelatedDate option
-        GrantRow: GrantOrdinal option
+        Row: TaskRowTarget option
     }
 
 type InputIssues = private InputIssues of InputIssue * InputIssue list
@@ -36,8 +48,7 @@ module InputIssues =
         InputIssues(
             {
                 Target = target
-                GrantRow = None
-                RelatedDate = None
+                Row = None
                 Violation = violation
             },
             []
@@ -53,9 +64,9 @@ module InputIssues =
 
     let append (InputIssues(first, rest)) last = InputIssues(first, rest @ toList last)
 
-    let atGrantRow ordinal issues =
+    let atRow row issues =
         toList issues
-        |> List.map (fun issue -> { issue with GrantRow = Some ordinal })
+        |> List.map (fun issue -> { issue with Row = Some row })
         |> ofList
         |> Option.get
 
@@ -68,8 +79,11 @@ type CaseRefusal =
     | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
-    | DecisionHasPayments
     | PaymentNotFound
+    | PartyLimit
+    | SelfLink
+    | DuplicateLink
+    | LinkLimitReached
 
 [<RequireQualifiedAccess>]
 type PeopleRefusal =
@@ -79,6 +93,8 @@ type PeopleRefusal =
     | ActorChanged
     | HumanPrincipalRequired
     | RoleScopeNotApplicable
+    | IdentityReserved
+    | NoChanges
 
 [<RequireQualifiedAccess>]
 type AccessRefusal =

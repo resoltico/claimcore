@@ -179,7 +179,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(
-        view.container.querySelector('[data-region="FACTS"] [data-entry="claimantName"]'),
+        view.container.querySelector('[data-region="FACTS"] [data-entry="policyNumber"]'),
       ).toBeNull();
     } else {
       expect(
@@ -190,10 +190,10 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   if (missing) {
     expect(
       view.container.querySelector(
-        '[data-region="FACTS"] [data-entry="claimantName"], .case-timeline-panel .table-view tbody > tr',
+        '[data-region="FACTS"] [data-entry="policyNumber"], .case-timeline-panel .table-view tbody > tr',
       ),
     ).toBeNull();
-    expect(view.container).not.toHaveTextContent(fields.registration.claimantName);
+    expect(view.container).not.toHaveTextContent(fields.registration.policyNumber!);
     expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
     assertSafe(view.container.querySelector("[data-region=IDENTITY]")!, value, points);

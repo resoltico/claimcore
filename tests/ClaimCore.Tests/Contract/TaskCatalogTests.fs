@@ -89,7 +89,13 @@ let tests =
                         (Set.ofList expected)
                         "Every actor-exposed ledger declaration"
 
-                    Expect.equal acts.Length 30 "Provisioning is operator-only"
+                    Expect.isFalse
+                        (List.contains (TaskId.ofLiteral "people.provisionOwner") acts)
+                        "Provisioning is operator-only"
+
+                    Expect.isFalse
+                        (List.contains (TaskId.ofLiteral "people.recoverOwner") acts)
+                        "Owner recovery is operator-only"
 
                     Expect.equal
                         acts.Length

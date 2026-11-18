@@ -22,10 +22,13 @@ const document = (
               key: caption,
               when: "2026-11-09T12:00:00.000000Z",
               who: {
-                actorId: "00000000-0000-4000-8000-000000000001",
-                displayName: { kind: "NAMED", value: caption },
-                principalKind: "HUMAN",
-                availability: "AVAILABLE",
+                kind: "ACTOR",
+                value: {
+                  actorId: "00000000-0000-4000-8000-000000000001",
+                  displayName: { kind: "NAMED", value: caption },
+                  principalKind: "HUMAN",
+                  availability: "AVAILABLE",
+                },
               },
               summary: { messageId: "change.CASE.recorded", arguments: [] },
               highlights: [],

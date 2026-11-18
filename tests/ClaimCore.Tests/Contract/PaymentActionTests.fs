@@ -23,8 +23,11 @@ let private position = EffectPosition.create Sequence.first 0 |> Option.get
 let private entry =
     PaymentEntry.create
         payment
+        PaymentDirection.Paid
+        (DomainInputs.money "25" "EUR")
         (DomainInputs.date "2026-08-20")
-        (Amount.parse "25" |> CaseBuilders.accepted)
+        None
+        None
     |> CaseBuilders.accepted
 
 let private item actions =
@@ -65,6 +68,7 @@ let tests =
                                             [ entry ]
                                     )
                                 Items = [ item tasks ]
+                                Payees = []
                                 NextCursor = None
                             }
 

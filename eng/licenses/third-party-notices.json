@@ -46,6 +46,16 @@
       "file": "Wcwidth-MIT.txt",
       "sha256": "29f03aba55e0761c5cb75a266839cd5cd25f013514fbe034bfb5a9b7529e8cce",
       "source": "https://github.com/spectreconsole/wcwidth/blob/64a3f523d5dc27124e04ff9079137ac2c5c72143/LICENSE.md"
+    },
+    {
+      "file": "MailKit-MIT.txt",
+      "sha256": "35b9fc9bfb7a201a6e0b9e3ce71b639a830a2347d4aea55a2b1affbc487a1fb3",
+      "source": "https://raw.githubusercontent.com/jstedfast/MailKit/003eca6349aad5bdca54904d8cba764eb4f37c42/LICENSE"
+    },
+    {
+      "file": "MimeKit-MIT.txt",
+      "sha256": "c613af70a219d1cafd732f2cefd4fca9f1462ac5696f8461108a7d643513f3bf",
+      "source": "https://raw.githubusercontent.com/jstedfast/MimeKit/d3884a84ef98fa203d7ffd29f0c90ce16ec7e713/LICENSE"
     }
   ],
   "packages": [
@@ -262,6 +272,32 @@
       ],
       "packageRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143",
       "licenseRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143"
+    },
+    {
+      "id": "MailKit",
+      "version": "5.0.0",
+      "repository": "https://github.com/jstedfast/MailKit",
+      "texts": [
+        "MailKit-MIT.txt"
+      ],
+      "assets": [
+        "runtime:MailKit.dll"
+      ],
+      "packageRevision": "003eca6349aad5bdca54904d8cba764eb4f37c42",
+      "licenseRevision": "003eca6349aad5bdca54904d8cba764eb4f37c42"
+    },
+    {
+      "id": "MimeKit.Core",
+      "version": "5.0.0",
+      "repository": "https://github.com/jstedfast/MimeKit",
+      "texts": [
+        "MimeKit-MIT.txt"
+      ],
+      "assets": [
+        "runtime:MimeKit.Core.dll"
+      ],
+      "packageRevision": "d3884a84ef98fa203d7ffd29f0c90ce16ec7e713",
+      "licenseRevision": "d3884a84ef98fa203d7ffd29f0c90ce16ec7e713"
     }
   ],
   "host": {

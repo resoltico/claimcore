@@ -32,7 +32,7 @@ let private codecs () =
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
-    let expected = [ "caseReference"; "status"; "registration"; "finance" ]
+    let expected = [ "caseReference"; "handling"; "registration"; "finance" ]
 
     Expect.equal actual expected "The public view has complete groups"
 
@@ -49,13 +49,7 @@ let private codecs () =
 
     Expect.equal
         (members ResponseCodecs.caseFields.Definitions properties["finance"])
-        [
-            "decision"
-            "paidAmount"
-            "paymentCount"
-            "firstPaymentDate"
-            "lastPaymentDate"
-        ]
+        [ "decision"; "totals"; "paymentCount" ]
         "A bounded financial position owns aggregates; payment pages and derived progress are separate"
 
     let renamed =

@@ -49,19 +49,7 @@ module ScalarGuidance =
                     "scalar.currency.guidance"
                     [ "length", GuidanceArgument.Count Money.descriptor.Currency.ExactCharacters ]
             )
-        | FieldValueKind.Country ->
-            Some(
-                message
-                    "scalar.country.guidance"
-                    [
-                        "unknownCode",
-                        GuidanceArgument.Code(
-                            CountryCode.descriptor.Format.UnknownCode
-                            |> Option.defaultWith (fun () ->
-                                invalidOp "Country guidance requires the Domain unknown code.")
-                        )
-                    ]
-            )
+        | FieldValueKind.Country -> Some(message "scalar.country.guidance" [])
         // The reference descriptor publishes its retained grammar; the owning scalar module supplies its bound.
         | FieldValueKind.Reference ->
             Some(
@@ -93,6 +81,19 @@ module ScalarGuidance =
                     "scalar.text.guidance"
                     [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
             )
+        | FieldValueKind.NoteText ->
+            Some(
+                message
+                    "scalar.narrative.guidance"
+                    [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
+            )
+        | FieldValueKind.Reason ->
+            Some(
+                message
+                    "scalar.text.guidance"
+                    [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
+            )
+        | FieldValueKind.ClosureOutcome
         | FieldValueKind.Status -> None
 
     let forField field =
@@ -106,7 +107,7 @@ module ScalarGuidance =
     let forReason =
         message
             (TaskInputPresentation.messageKey (TaskInputId.Target InputTarget.Reason) "rule")
-            [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
+            [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
 
     let forSearchText =
         message
@@ -139,9 +140,24 @@ module ScalarGuidance =
                     "maximumCharacters",
                     GuidanceArgument.Count DirectorySearchText.MaximumCharacters
                 ]
-        | TaskInputId.Target InputTarget.ProfileDisplayName -> forProfileName
+        | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.PartyName) ->
+            forProfileName
         | TaskInputId.Target InputTarget.ProfileContact -> forProfileContact
-        | TaskInputId.Target InputTarget.NoteText ->
+        | TaskInputId.Target InputTarget.ProfileDigestEmail ->
+            message
+                key
+                [ "maximumCharacters", GuidanceArgument.Count EmailAddress.MaximumCharacters ]
+        | TaskInputId.Target InputTarget.Parties ->
+            message key [ "maximumParties", GuidanceArgument.Count PartyContent.MaximumCurrent ]
+        | TaskInputId.Target InputTarget.PartyDetails ->
+            message
+                key
+                [
+                    "maximumScalars", GuidanceArgument.Count PartyDetails.constraints.MaximumScalars
+                ]
+        | TaskInputId.Target InputTarget.PaymentReference ->
+            message key [ "maximumCharacters", GuidanceArgument.Count Identifier.MaximumCharacters ]
+        | TaskInputId.Target(InputTarget.NoteText | InputTarget.LinkNote) ->
             message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | TaskInputId.Target InputTarget.ReminderAction ->
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]

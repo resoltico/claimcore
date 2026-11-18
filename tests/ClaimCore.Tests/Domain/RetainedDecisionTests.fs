@@ -68,7 +68,10 @@ let tests =
                                 5
                                 (DecisionFacts.fromReplay before)
                                 (caseBinding before)
-                                InputMap.empty
+                                (if token = "case.close" then
+                                     closingInputs "SETTLED"
+                                 else
+                                     InputMap.empty)
 
                         let change = List.exactlyOne changes
                         Expect.equal change.Kind PartKind.Case token

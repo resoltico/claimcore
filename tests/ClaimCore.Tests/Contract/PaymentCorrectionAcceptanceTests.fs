@@ -48,9 +48,10 @@ let private saturated caseRevision paymentRevision (state: CaseFamily) =
                 {
                     Reference = None
                     Lifecycle = Lifecycle.Active
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Content = state.Case.Value.Content
                     Disposition = None
+                    ReopenReason = None
                 })
             (CaseId.value state.Id)
             caseRevision
@@ -99,6 +100,7 @@ let private fixture () =
                                 {
                                     State = LiveCase.ofState snapshot.State |> Option.get
                                     Disposition = None
+                                    ReopenReason = None
                                     RecordedFields = BusinessField.ofGroup RecordGroup.Payment
                                     Payments = differences
                                 }
@@ -125,7 +127,8 @@ let private fixture () =
 
     let review =
         {
-            OperationReview.Task = TaskId.ofLiteral "case.correctPayment"
+            OperationReview.ChangesOwnSignInIdentity = false
+            Task = TaskId.ofLiteral "case.correctPayment"
             Target = ReviewTarget.Case(before.Id, before.Reference)
             References = { Actors = []; Cases = [] }
             Binding = binding
@@ -177,8 +180,8 @@ let tests =
                         correct 5 3 "2026-02-04" "250" "EUR" before |> accepted |> apply before
 
                     Expect.equal
-                        (finance after).PaidAmount
-                        (finance before).PaidAmount
+                        (finance after).CurrencyTotals
+                        (finance before).CurrencyTotals
                         "Exact equal amount remains correctable"
 
                     Expect.equal
@@ -199,50 +202,25 @@ let tests =
                         (PaymentEntry.id after.Payments[operation 5].Value.Entry.Value)
                         (operation 5)
                         "Replacement identity equals correction operation")
-            testCase "tied earliest and latest dates retain remaining extrema" (fun () ->
-                let before =
-                    decided ()
-                    |> pay 3 "2026-02-02" "10"
-                    |> pay 4 "2026-02-02" "20"
-                    |> pay 5 "2026-02-05" "30"
-                    |> pay 6 "2026-02-05" "40"
+            testCase "replacement cannot exceed today or assert nonpositive money" (fun () ->
+                let before = decided () |> pay 3 "2026-02-02" "25"
 
-                let after = correct 7 3 "2026-02-04" "15" "EUR" before |> accepted |> apply before
-                let after = correct 8 5 "2026-02-03" "25" "EUR" after |> accepted |> apply after
-                let bounds = (finance after).PaymentDates |> Option.get
+                for date, amount, currency, violation in
+                    [
+                        "2026-11-16", "20", "EUR", Violation.FutureDate
+                        "2026-02-03", "0", "EUR", Violation.PaymentAmountPositive
+                    ] do
+                    let result = correct 4 3 date amount currency before
+                    let issues = result |> expectInputs
 
-                Expect.equal
-                    (CalendarDate.format bounds.Earliest, CalendarDate.format bounds.Latest)
-                    ("2026-02-02", "2026-02-05")
-                    "Other entries keep both tied extrema"
+                    Expect.isTrue
+                        (issues |> List.exists (fun issue -> issue.Violation = violation))
+                        "The independent intended rule refuses before changes exist"
 
-                Expect.equal
-                    (Amount.value (finance after).PaidAmount)
-                    100M
-                    "Exact replacements reconcile the remaining set")
-            testCase
-                "replacement cannot change currency precede decision exceed today or assert nonpositive money"
-                (fun () ->
-                    let before = decided () |> pay 3 "2026-02-02" "25"
-
-                    for date, amount, currency, violation in
-                        [
-                            "2026-02-03", "20", "USD", Violation.PaymentCurrencyMismatch
-                            "2026-01-31", "20", "EUR", Violation.ChronologicalOrder
-                            "2026-11-16", "20", "EUR", Violation.FutureDate
-                            "2026-02-03", "0", "EUR", Violation.PaymentAmountPositive
-                        ] do
-                        let result = correct 4 3 date amount currency before
-                        let issues = result |> expectInputs
-
-                        Expect.isTrue
-                            (issues |> List.exists (fun issue -> issue.Violation = violation))
-                            "The independent intended rule refuses before changes exist"
-
-                        Expect.equal
-                            (Amount.value (finance before).PaidAmount)
-                            25M
-                            "Original immutable input remains intact")
+                    Expect.equal
+                        (CaseFixtures.netPaid "EUR" (finance before))
+                        "25"
+                        "Original immutable input remains intact")
             testCase "closed voided and erased cases require eligible current state" (fun () ->
                 let paid = decided () |> pay 3 "2026-02-02" "25"
 
@@ -327,7 +305,6 @@ let tests =
                             "Payment entry removed."
                             "Payment recorded."
                             "40.00 EUR"
-                            "960.00 EUR"
                             String.replicate 32 "ab"
                         ] do
                         Expect.stringContains
@@ -456,7 +433,8 @@ let tests =
                                         }
                                     Task = review.Task
                                     RecordedAt = receipt.RecordedAt
-                                    RecordedBy = receipt.RecordedBy
+                                    RecordedBy =
+                                        receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                                     Changes =
                                         TimelineChanges.Disclosed(
                                             PartDescriptions.timeline Map.empty description
@@ -502,7 +480,7 @@ let tests =
                         Array.append TimelineCsv.csvHeader (TimelineCsv.csvRows page) |> csvRows
 
                     let field id =
-                        "payment." + OperationId.format (operation id) + ".paidAmount"
+                        "payment." + OperationId.format (operation id) + ".amount"
 
                     let removed = rows |> List.find (fun row -> row["field"] = field 3)
                     let recorded = rows |> List.find (fun row -> row["field"] = field 4)

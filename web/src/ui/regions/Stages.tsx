@@ -40,9 +40,9 @@ const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => 
           <time dateTime={step.date}>{p.date(step.date)}</time>
         )}
       </span>
-      {step.meter !== undefined || step.amount === null ? null : (
+      {step.meter !== undefined || step.value === null ? null : (
         <span className="stage-amount">
-          <PresentedValue value={{ kind: "MONEY", ...step.amount }} timeZone={timeZone} />
+          <PresentedValue value={step.value} timeZone={timeZone} />
         </span>
       )}
     </>

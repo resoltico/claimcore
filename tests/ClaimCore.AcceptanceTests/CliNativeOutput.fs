@@ -56,7 +56,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
-    values["field:claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
+    values["field:policyNumber"] <- JsonValue.Create "Rīga مطالبة 😀"
     Encoding.UTF8.GetBytes(request.ToJsonString()), operation, reference
 
 let private head (fixture: PublishedFixture.Fixture) =

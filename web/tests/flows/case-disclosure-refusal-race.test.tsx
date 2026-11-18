@@ -38,9 +38,9 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
                 entries: [
                   {
                     key: "claimant",
-                    labelId: "field.claimantName.label",
+                    labelId: "field.policyNumber.label",
                     prominence: "PRIMARY",
-                    value: { kind: "PARTY", value: fields.registration.claimantName },
+                    value: { kind: "PARTY", value: fields.registration.policyNumber! },
                   },
                 ],
               },
@@ -109,7 +109,7 @@ it("keeps a history-triggered current read obsolete after a later cache invalida
     expect(get).toHaveBeenCalledTimes(2);
   });
   expect(screen.queryByRole("tab")).toBeNull();
-  expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+  expect(screen.queryByText(fields.registration.policyNumber!)).toBeNull();
   act(() => {
     invalidate!();
   });
@@ -120,11 +120,11 @@ it("keeps a history-triggered current read obsolete after a later cache invalida
     earlier.release(current);
     await earlier.promise;
   });
-  expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+  expect(screen.queryByText(fields.registration.policyNumber!)).toBeNull();
   await act(async () => {
     latest.release(current);
     await latest.promise;
   });
-  expect((await screen.findAllByText(fields.registration.claimantName))[0]).toBeVisible();
+  expect((await screen.findAllByText(fields.registration.policyNumber!))[0]).toBeVisible();
   expect(get).toHaveBeenCalledTimes(3);
 });

@@ -109,11 +109,11 @@ module internal VerificationRows =
                                             VerificationFinding.CaseSearchProjection
                                             (fun () -> Projections.caseSearchText row)
 
-                                    let! notifiedOn =
+                                    let! receivedOn =
                                         capture
                                             None
-                                            VerificationFinding.CaseNotifiedOnProjection
-                                            (fun () -> Projections.caseNotifiedOn row)
+                                            VerificationFinding.CaseReceivedOnProjection
+                                            (fun () -> Projections.caseReceivedOn row)
 
                                     let! claimedAmount =
                                         capture
@@ -133,11 +133,20 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableAmountProjection
                                             (fun () -> Projections.casePayableAmount row)
 
-                                    let! paidAmount =
+                                    let! outcome =
                                         capture
                                             None
-                                            VerificationFinding.CasePaidAmountProjection
-                                            (fun () -> Projections.casePaidAmount row)
+                                            VerificationFinding.CaseOutcomeProjection
+                                            (fun () -> Projections.caseOutcome row)
+
+                                    let! paymentReview =
+                                        capture
+                                            None
+                                            VerificationFinding.CasePaymentReviewProjection
+                                            (fun () ->
+                                                DatabaseSession.namedOptional<bool>
+                                                    "payment_review"
+                                                    row)
 
                                     let! payableCurrency =
                                         capture
@@ -157,6 +166,12 @@ module internal VerificationRows =
                                             VerificationFinding.CaseWorkProjection
                                             (fun () -> Projections.caseFollowUp row)
 
+                                    let! deadlineDue =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () -> Projections.caseDeadlineDue row)
+
                                     let! workSearchText =
                                         capture
                                             None
@@ -170,18 +185,19 @@ module internal VerificationRows =
                                         {
                                             Responsible = responsible
                                             FollowUp = followUp
+                                            DeadlineDue = deadlineDue
                                             Status = status
                                             Progress = progress
                                             ChangedAt = changedAt
                                             SearchText = searchText
                                             WorkSearchText = workSearchText
-                                            NotifiedOn = notifiedOn
+                                            ReceivedOn = receivedOn
                                             Claimed =
                                                 Projections.indexedMoney
                                                     claimedAmount
                                                     claimedCurrency
-                                            Paid =
-                                                Projections.indexedMoney paidAmount payableCurrency
+                                            PaymentReview = paymentReview
+                                            Outcome = outcome
                                             Payable =
                                                 Projections.indexedMoney
                                                     payableAmount
@@ -208,6 +224,8 @@ module internal VerificationRows =
                                     let column finding get =
                                         ProjectionVerification.column finding get expectedRow record
 
+                                    do! column VerificationFinding.CaseProjection _.ReportDates
+
                                     do!
                                         column VerificationFinding.CaseStatusProjection (fun row ->
                                             row.Index.Status)
@@ -228,8 +246,8 @@ module internal VerificationRows =
 
                                     do!
                                         column
-                                            VerificationFinding.CaseNotifiedOnProjection
-                                            (fun row -> row.Index.NotifiedOn)
+                                            VerificationFinding.CaseReceivedOnProjection
+                                            (fun row -> row.Index.ReceivedOn)
 
                                     do!
                                         column
@@ -255,8 +273,12 @@ module internal VerificationRows =
 
                                     do!
                                         column
-                                            VerificationFinding.CasePaidAmountProjection
-                                            (fun row -> row.Index.Paid |> Option.map Money.value)
+                                            VerificationFinding.CasePaymentReviewProjection
+                                            (fun row -> row.Index.PaymentReview)
+
+                                    do!
+                                        column VerificationFinding.CaseOutcomeProjection (fun row ->
+                                            row.Index.Outcome)
 
                                     let! bases = bases
 
@@ -273,6 +295,7 @@ module internal VerificationRows =
                                         (record.CaseId,
                                          record.Index.Responsible,
                                          record.Index.FollowUp,
+                                         record.Index.DeadlineDue,
                                          record.Index.WorkSearchText)
                                         :: workIndexes
 
@@ -395,9 +418,9 @@ module internal VerificationRows =
                                 VerificationFinding.PeopleProfileProjection
                                 (fun (id, _, _, _, _) -> id)
                                 profiles
-                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision FROM claimcore.actors ORDER BY actor_id"
+                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,digest_email FROM claimcore.actors ORDER BY actor_id"
                                 (fun row ->
-                                    let actor = Projections.actorRow row
+                                    let actor = Projections.actorRowWithDigest 10 row
 
                                     actor.ActorId,
                                     actor.Profile,
@@ -424,12 +447,21 @@ module internal VerificationRows =
                     [||]
                     token
 
+            let! parties =
+                DatabaseSession.namedRows
+                    connection
+                    ("SELECT " + PartyStorage.columns + " FROM claimcore.case_parties")
+                    [||]
+                    token
+
             let! notes =
                 DatabaseSession.namedRows
                     connection
                     ("SELECT " + NoteStorage.columns + NoteStorage.source)
                     [||]
                     token
+
+            let! links = CaseLinkStorage.projections connection token
 
             return
                 result {
@@ -448,6 +480,18 @@ module internal VerificationRows =
                     let! expectedWork = Replay.workRows state
                     let! expectedReminders = Replay.reminderRows state
                     let! expectedNotes = Replay.noteRows state
+                    let! expectedParties = Replay.partyRows state
+
+                    let! parties =
+                        capture None VerificationFinding.CasePartiesProjection (fun () ->
+                            parties |> List.map PartyStorage.row)
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CasePartiesProjection
+                            (fun (row: StoredParty) -> row.PartyId)
+                            expectedParties
+                            parties
 
                     do!
                         ProjectionVerification.rows
@@ -472,15 +516,37 @@ module internal VerificationRows =
 
                     let! expectedCases = Replay.familyRows state
 
+                    let expectedLinks =
+                        expectedCases
+                        |> Map.values
+                        |> Seq.collect _.Links
+                        |> Seq.map (fun link -> link.Id, link)
+                        |> Map.ofSeq
+
+                    let! links =
+                        capture None VerificationFinding.CaseWorkProjection (fun () ->
+                            links |> List.map CaseLinkStorage.projection)
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseWorkProjection
+                            (fun (row: LinkProjection) -> row.Id)
+                            expectedLinks
+                            links
+
                     let expectedIndexes =
                         expectedCases
                         |> Map.map (fun id row ->
-                            id, row.Index.Responsible, row.Index.FollowUp, row.Index.WorkSearchText)
+                            id,
+                            row.Index.Responsible,
+                            row.Index.FollowUp,
+                            row.Index.DeadlineDue,
+                            row.Index.WorkSearchText)
 
                     return!
                         ProjectionVerification.rows
                             VerificationFinding.CaseWorkProjection
-                            (fun (id, _, _, _) -> id)
+                            (fun (id, _, _, _, _) -> id)
                             expectedIndexes
                             workIndexes
                 }

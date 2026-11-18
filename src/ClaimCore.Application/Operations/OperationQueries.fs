@@ -30,7 +30,7 @@ module internal OperationQueries =
             else
                 match entry, caller.Actor with
                 | Some entry, Some requester when entry.Root.Header.OperationId = operation ->
-                    let own = entry.Root.Header.ActorId = requester.ActorId
+                    let own = entry.Root.Header.Authority = Authority.Actor requester.ActorId
 
                     if
                         not own

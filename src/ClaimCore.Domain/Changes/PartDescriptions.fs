@@ -28,6 +28,21 @@ module PartDescriptions =
             Description = description
         }
 
+    let private partyDescription (before: PartyValue option) (after: PartyValue) =
+        let content (value: PartyValue) =
+            if value.Removed then None else value.Content
+
+        PartDescription.Party
+            {
+                Content =
+                    {
+                        Before = before |> Option.bind content
+                        After = content after
+                    }
+                Removed = Difference.value (before |> Option.map _.Removed) (Some after.Removed)
+            }
+        |> Ok
+
     let family
         (before: DecisionFacts option)
         (notes: Map<NoteId, NoteValue>)
@@ -75,7 +90,8 @@ module PartDescriptions =
                                     {
                                         CaseValue.Reference = Some reference
                                         Lifecycle = state.Case.Value.Lifecycle
-                                        Status = state.Case.Value.Status
+                                        Handling = state.Case.Value.Handling
+                                        ReopenReason = None
                                         Content = state.Case.Value.Content
                                         Disposition = None
                                     })
@@ -114,6 +130,20 @@ module PartDescriptions =
                             |> Option.map (fun part -> part.Value)
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe before value))
+                    | PartValue.Link value ->
+                        let before =
+                            LinkId.create change.PartId
+                            |> Option.bind (fun id ->
+                                prior |> Option.bind (fun state -> Map.tryFind id state.Links))
+                            |> Option.bind _.Value.Content
+
+                        Ok(
+                            PartDescription.Link
+                                {
+                                    Before = before
+                                    After = value.Content
+                                }
+                        )
                     | PartValue.Note value ->
                         match NoteId.create change.PartId with
                         | None -> Error RecordViolation.InvalidSubjectState
@@ -128,6 +158,14 @@ module PartDescriptions =
                                 Error RecordViolation.InvalidSubjectState
                             else
                                 Ok(PartDescription.Note(NoteDescription.describe before value))
+                    | PartValue.Party value ->
+                        let prior =
+                            PartyId.create change.PartId
+                            |> Option.bind (fun id ->
+                                prior |> Option.bind (fun state -> Map.tryFind id state.Parties))
+                            |> Option.map _.Value
+
+                        partyDescription prior value
                     | PartValue.Person _ -> Error RecordViolation.InvalidSubjectState
 
                 description |> Result.map (described change))
@@ -258,6 +296,21 @@ module PartDescriptions =
                                 | _ -> None)
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe prior value))
+                    | PartValue.Link value ->
+                        let prior =
+                            before
+                            |> Option.bind (fun change ->
+                                match change.Value with
+                                | PartValue.Link value -> value.Content
+                                | _ -> None)
+
+                        Ok(
+                            PartDescription.Link
+                                {
+                                    Before = prior
+                                    After = value.Content
+                                }
+                        )
                     | PartValue.Note value ->
                         let prior =
                             before
@@ -267,6 +320,15 @@ module PartDescriptions =
                                 | _ -> None)
 
                         Ok(PartDescription.Note(NoteDescription.describe prior value))
+                    | PartValue.Party value ->
+                        let prior =
+                            before
+                            |> Option.bind (fun change ->
+                                match change.Value with
+                                | PartValue.Party value -> Some value
+                                | _ -> None)
+
+                        partyDescription prior value
                     | PartValue.Person _ -> Error RecordViolation.InvalidSubjectState
 
                 description |> Result.map (described change))
@@ -307,7 +369,7 @@ module PartDescriptions =
             | Some(Some(ReminderState.Completed | ReminderState.Cancelled),
                    Some ReminderState.Pending),
               Some plan -> TimelineEvent.ReminderReopened(plan.Action, plan.Due)
-            | None, Some plan when value.Action.IsSome || value.Due.IsSome ->
+            | None, Some plan when value.Action.IsSome || value.Due.IsSome || value.Kind.IsSome ->
                 TimelineEvent.ReminderChanged plan.Action
             | _ -> generic
         | PartDescription.Note value ->
@@ -401,6 +463,8 @@ module PartDescriptions =
                                     ReminderId = id
                                     Action = value.Action
                                     Due = value.Due
+                                    Kind = value.Kind
+                                    DoneOn = value.DoneOn
                                     State = value.State
                                 }
                         ])
@@ -424,6 +488,15 @@ module PartDescriptions =
                     |> Option.defaultValue missing
 
                 PartKind.Note, items
+            | PartDescription.Party value ->
+                let items =
+                    PartyId.create part.PartId
+                    |> Option.map (fun id -> [ TimelineChange.Party(id, value.Content) ])
+                    |> Option.map Ok
+                    |> Option.defaultValue missing
+
+                PartKind.Party, items
+            | PartDescription.Link _ -> PartKind.Link, Ok []
             | PartDescription.Person _ -> PartKind.Person, missing
 
         items
@@ -465,6 +538,12 @@ module PartDescriptions =
 
                                 if value.State.IsSome && not stateInEvent then
                                     TimelineFacet.State
+
+                                if value.Kind.IsSome then
+                                    TimelineFacet.Kind
+
+                                if value.DoneOn.IsSome then
+                                    TimelineFacet.DoneOn
                             ]
 
                         if facets.IsEmpty then

@@ -65,7 +65,11 @@ module internal ReviewDocumentParts =
             | Binding.CaseNew _
             | Binding.PeopleNew _
             | Binding.ReminderNew _
+            | Binding.PartyNew _
+            | Binding.Party _
             | Binding.NoteNew _
+            | Binding.LinkNew _
+            | Binding.Link _
             | Binding.Note _ -> []
 
         let sections =
@@ -122,6 +126,18 @@ module internal ReviewDocumentParts =
                                     else
                                         NoticeTone.Warning
                             })
+                ]
+                @ [
+                    if review.ChangesOwnSignInIdentity then
+                        ScreenEntries.region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice
+                                {
+                                    MessageId = "notice.changesOwnSignInIdentity"
+                                    Reason = None
+                                    Tone = NoticeTone.Warning
+                                })
                 ]
                 @ ScreenEntries.factRegions facts
                 @ (if details.IsEmpty then

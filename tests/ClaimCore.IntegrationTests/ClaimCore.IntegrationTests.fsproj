@@ -4,6 +4,7 @@
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="CaseTransitionInputs.fs" />
     <Compile Include="CsvExportHostTests.fs" />
     <Compile Include="LedgerStructureTests.fs" />
     <Compile Include="SubmissionServiceTests.fs" />
@@ -43,6 +44,7 @@
     <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="CaseReportingTests.fs" />
     <Compile Include="LiveAcquisitionTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />
     <Compile Include="RootVerificationTests.fs" />
@@ -54,6 +56,7 @@
     <Compile Include="ReminderPostgresTests.fs" />
     <Compile Include="StewardshipReasonConsumerTests.fs" />
     <Compile Include="NotesPostgresTests.fs" />
+    <Compile Include="PartiesPostgresTests.fs" />
     <Compile Include="HandoverPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
@@ -109,6 +112,7 @@
     <Compile Include="SubmissionStorage.fs" />
     <Compile Include="ReadTimingProbe.fs" />
     <Compile Include="CaseProjectionTests.fs" />
+    <Compile Include="CaseLinkPostgresTests.fs" />
     <Compile Include="SummaryDisclosureTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="BaselineRefusalTests.fs" />
@@ -129,6 +133,7 @@
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="InitializationPostgresTests.fs" />
     <Compile Include="HousekeepingPostgresTests.fs" />
+    <Compile Include="DigestPostgresTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="RuntimeInstallationTests.fs" />
     <Compile Include="ReviewedMutationTests.fs" />

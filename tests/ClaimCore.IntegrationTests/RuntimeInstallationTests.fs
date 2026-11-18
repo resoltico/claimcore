@@ -258,7 +258,19 @@ let private retarget () =
                         |]
                         token
 
-                do! refused (fun () -> task { let! _ = runtime.Housekeep token in return () })
+                do!
+                    refused (fun () ->
+                        task {
+                            let! _ =
+                                runtime.Housekeep(
+                                    (fun instant ->
+                                        System.DateOnly.FromDateTime instant.UtcDateTime),
+                                    token
+                                ) in
+
+                            return ()
+                        })
+
                 let! retained = correct.Retrieve(session.Value, token)
 
                 Expect.equal

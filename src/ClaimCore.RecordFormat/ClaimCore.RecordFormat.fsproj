@@ -9,6 +9,7 @@
     <Compile Include="VocabularyCodec.fs" />
     <Compile Include="RecordScalars.fs" />
     <Compile Include="FinancialCodecs.fs" />
+    <Compile Include="HandlingCodecs.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="PartCodecs.fs" />
     <Compile Include="Compartment.fs" />

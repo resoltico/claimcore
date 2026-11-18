@@ -54,7 +54,7 @@ const current: CurrentCase = {
       "case.close",
       { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
       {},
-      [],
+      ["field:outcome", "field:closingNote"],
       {},
     ),
   ],
@@ -261,6 +261,7 @@ const fixture = (lost = false, putFails = false, panel = false) => {
 it("connects the actual form, Core review and journal-before-send to one exact prepared command", async () => {
   const f = fixture();
   expect(f.getModel().values).toEqual({});
+  await userEvent.click(screen.getByRole("radio", { name: /^Other$/u }));
   await userEvent.click(
     f.view.container.querySelector<HTMLButtonElement>('button[type="submit"]')!,
   );
@@ -285,13 +286,14 @@ it("connects the actual form, Core review and journal-before-send to one exact p
       },
       expectedRevision: 7,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
 });
 it("retries an uncertain attempt with its original bytes and identity", async () => {
   const f = fixture(true);
+  await userEvent.click(screen.getByRole("radio", { name: /^Other$/u }));
   await act(() => f.getModel().preview());
   await waitFor(() => {
     expect(f.getModel().phase).toBe("REVIEWING");
@@ -314,6 +316,7 @@ it("retries an uncertain attempt with its original bytes and identity", async ()
 });
 it("never dispatches execution when the original owner's journal write fails", async () => {
   const f = fixture(false, true);
+  await userEvent.click(screen.getByRole("radio", { name: /^Other$/u }));
   await act(() => f.getModel().preview());
   await waitFor(() => {
     expect(f.getModel().phase).toBe("REVIEWING");
@@ -335,6 +338,7 @@ it("connects the actual dialog with supplied target content, Core review and fin
   const f = fixture(false, false, true);
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(2);
+  await userEvent.click(within(dialog).getByRole("radio", { name: /^Other$/u }));
   await userEvent.click(
     within(dialog).getByRole("button", {
       name: "Review changes",

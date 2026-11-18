@@ -90,7 +90,7 @@ let tests =
                     |> MessageRegisters.validateCopy
 
                     source
-                    |> replace "field.claimantName.hint" "Read the selected scope."
+                    |> replace "field.policyNumber.hint" "Read the selected scope."
                     |> fun entries ->
                         rejects "Scope outside role" (fun () ->
                             MessageRegisters.validateCopy entries))

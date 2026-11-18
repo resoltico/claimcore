@@ -16,14 +16,16 @@ let declaration =
         Consequence.Routine
         [ Capability.ManageCaseWork ]
         (operation :: caseTarget :: ReminderRules.identityInputs
-         @ ReminderRules.planInputs)
+         @ ReminderRules.planInputs
+         @ [ ReminderRules.doneOnInput ])
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command = { Plan: ReminderPlan }
-
 let private parse inputs =
-    ReminderRules.plan inputs |> Result.map (fun plan -> { Plan = plan })
+    Admission.map2
+        (fun plan doneOn -> plan, doneOn)
+        (ReminderRules.plan ReminderKind.defaultValue inputs)
+        (ReminderRules.doneOn inputs)
 
 let check inputs = Parsing.check parse inputs
 
@@ -40,9 +42,12 @@ let decide context environment (state: DecisionFacts option) binding inputs =
         |> Result.bind (fun () -> current state binding)
         |> Result.bind (fun (id, before) ->
             parse inputs
-            |> Result.bind (fun command ->
-                ReminderRules.admitPlan context command.Plan
-                |> Result.bind (fun plan ->
+            |> Result.bind (fun (plan, doneOn) ->
+                Admission.map2
+                    (fun plan doneOn -> plan, doneOn)
+                    (ReminderRules.admitPlan context plan)
+                    (ReminderRules.admitDoneOn context doneOn)
+                |> Result.bind (fun (plan, doneOn) ->
                     let next = ReminderId.ofOperationId context.Stamp.OperationId
 
                     if Map.containsKey next state.Reminders then
@@ -55,18 +60,21 @@ let decide context environment (state: DecisionFacts option) binding inputs =
                                     state
                                     id
                                     (Revision.successor before.Revision)
-                                    { before.Value with
-                                        State = ReminderState.Completed
-                                    }
+                                    (before.Value.Plan
+                                     |> Option.map (fun previous ->
+                                         ReminderValue.Available(
+                                             previous,
+                                             ReminderHandling.Completed doneOn
+                                         ))
+                                     |> Option.defaultValue (
+                                         ReminderValue.Unavailable ReminderState.Completed
+                                     ))
                                 ReminderRules.change
                                     context
                                     state
                                     next
                                     Revision.first
-                                    {
-                                        State = ReminderState.Pending
-                                        Plan = Some plan
-                                    }
+                                    (ReminderValue.Available(plan, ReminderHandling.Pending))
                             ])))
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
@@ -90,19 +98,13 @@ let decideRetained context environment (state: DecisionFacts option) binding (_:
                             state
                             id
                             (Revision.successor before.Revision)
-                            {
-                                State = ReminderState.Completed
-                                Plan = None
-                            }
+                            (ReminderValue.Unavailable ReminderState.Completed)
                         ReminderRules.change
                             context
                             state
                             next
                             Revision.first
-                            {
-                                State = ReminderState.Pending
-                                Plan = None
-                            }
+                            (ReminderValue.Unavailable ReminderState.Pending)
                     ])
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)

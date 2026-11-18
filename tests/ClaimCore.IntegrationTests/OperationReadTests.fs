@@ -335,6 +335,7 @@ let private profileReplayBeforeAdmission () =
         let input: ActorProfileInput =
             {
                 DisplayName = " retained name "
+                DigestEmail = None
                 Contact = Some " retained contact "
             }
 
@@ -363,7 +364,7 @@ let private profileReplayBeforeAdmission () =
                                         Sequence = Sequence.successor tx.Head.Sequence
                                         PreviousHash = tx.Head.EntryHash
                                         OperationId = identity
-                                        ActorId = target
+                                        Authority = Authority.Actor target
                                         RecordedAt = tx.ObservedAt
                                         BusinessDate = None
                                     }
@@ -390,7 +391,7 @@ let private profileReplayBeforeAdmission () =
                                                     |> Option.get
                                                 OperationId = identity
                                                 RecordedAt = tx.ObservedAt
-                                                ActorId = target
+                                                Authority = Authority.Actor target
                                             }
                                     }
 

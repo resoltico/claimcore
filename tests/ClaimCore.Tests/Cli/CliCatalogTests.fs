@@ -89,8 +89,8 @@ let private operationId = "10000000-0000-7000-8000-000000000001"
 let private registration =
     ClaimCore.TestSupport.DomainInputs.registrationWith
         [
-            BusinessField.ClaimantName, "Synthetic claimant"
-            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.PolicyNumber, "Synthetic claimant"
+            BusinessField.InsurerClaimReference, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.0000"
         ]
         ClaimCore.TestSupport.DomainInputs.registration
@@ -133,7 +133,7 @@ let private replacement () =
         "Authored amount spelling is preserved"
 
     Expect.equal
-        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)]
+        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber)]
         (InputValue.Text "Synthetic claimant")
         "Selected replacement fields"
 

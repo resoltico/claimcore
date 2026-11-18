@@ -54,7 +54,10 @@ module OperationRoot =
                 OperationFrames.i64 (Sequence.value header.Sequence)
                 EntryHash.toBytes header.PreviousHash
                 OperationFrames.uuid (OperationId.value header.OperationId)
-                OperationFrames.uuid (ActorId.value header.ActorId)
+                (match header.Authority with
+                 | Authority.Actor actor ->
+                     Array.append [| 1uy |] (OperationFrames.uuid (ActorId.value actor))
+                 | Authority.Operator -> [| 2uy |])
                 OperationFrames.i64 header.RecordedAt.UtcTicks
                 (match header.BusinessDate with
                  | None -> [| 0uy |]

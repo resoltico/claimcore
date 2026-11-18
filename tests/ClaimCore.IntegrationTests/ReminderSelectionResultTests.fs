@@ -143,7 +143,7 @@ let private run action =
                     301
                     "case.close"
                     (Binding.Case(CaseSelector.Reference "STATE-CLOSED", Revision.first))
-                    Map.empty
+                    CaseTransitionInputs.closed
                 |> Async.AwaitTask
 
             do!
@@ -271,6 +271,7 @@ let private pagingAndRights (database: PostgresFixture.Database) service =
                 (Submissions.profile
                     {
                         DisplayName = "Scoped reader"
+                        DigestEmail = None
                         Contact = None
                     })
 

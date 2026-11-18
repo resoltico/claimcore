@@ -7,6 +7,8 @@ type ActSubject =
     | Work
     | Reminder
     | Note
+    | Party
+    | Link
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActSubject =

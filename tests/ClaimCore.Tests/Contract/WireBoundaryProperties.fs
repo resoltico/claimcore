@@ -46,7 +46,7 @@ let private authoredIntent =
                     Inputs =
                         Map.ofList
                             [
-                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                                TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 SubmissionValue.Text name
                                 TaskInputId.Target(
                                     InputTarget.Field BusinessField.IncidentDescription

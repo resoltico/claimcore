@@ -1,15 +1,18 @@
-import {
-  showCaseRecordDetails,
-  openRecovery,
-  goToView,
-  showOperationLookup,
-} from "./workspace-navigation";
+import { showCaseRecordDetails, goToView, showOperationLookup } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { completeAct, openCase, lookupCase, caseActionButton } from "./case-workflow";
+import {
+  completeAct,
+  openCase,
+  lookupCase,
+  caseActionButton,
+  startClose,
+  reviewDraft,
+  recordReviewed,
+} from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
@@ -37,7 +40,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await openAuthenticated(page);
   const opened = await openCase(page, caseReference);
   await completeAct(page, "case.amendRegistration", {
-    "Claimant name": "Synthetic amended claimant",
+    "Policy number": "Synthetic amended claimant",
   });
   await decide(page);
   await completeAct(page, "case.withdrawDecision");
@@ -52,7 +55,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   await expectAccessible(page);
 
-  await openRecovery(page);
+  await goToView(page, "recovery");
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await page.locator('.receipt details[data-region="DETAILS"] > summary').click();
@@ -77,6 +80,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   const payment = await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "300.25",
+    "Payment currency": "EUR",
   });
   await page
     .locator('.case-detail [data-region="PAYMENTS"]')
@@ -85,9 +89,11 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectCaseReadsSettled(page);
-  await completeAct(page, "case.close");
+  await startClose(page);
+  await reviewDraft(page);
+  await recordReviewed(page);
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
-  await completeAct(page, "case.reopen");
+  await completeAct(page, "case.reopen", { Reason: "Review additional evidence" });
   await expectRevision(page, "6");
   const entries = page.locator(".case-timeline-panel .region-timeline > li");
   await expect(entries).toHaveCount(8);

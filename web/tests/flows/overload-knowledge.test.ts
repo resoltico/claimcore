@@ -29,7 +29,7 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
       target: { kind: "REFERENCE", caseReference: "SYNTHETIC" },
       expectedRevision: 1,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   } as const;
   fetch.mockResolvedValueOnce(overloaded("NOT_STARTED"));
   const refused = await service.execute(

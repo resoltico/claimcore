@@ -4,6 +4,12 @@ Use **People and access** to add accounts, update names and contact details, and
 make these changes. An auditor can review people and access without changing them. See the
 [operating guide](operating.md#access-review-and-sessions) for identity-provider and session controls.
 
+## Digest address
+
+An Owner can use the profile edit action to set or clear a person's daily reminder digest address.
+The address controls delivery of the daily counts and is cleared by profile erasure. See
+[Daily reminder digest](operating.md#daily-reminder-digest) for the service settings.
+
 ## Add a person
 
 Choose **Add person**, enter their sign-in identity, and give them a name. Contact details are optional.
@@ -74,6 +80,17 @@ Use the returned actor ID with `people grants ACTOR-ID` and the person-change ve
 set-profile, enable, disable and erase-profile); do not guess IDs or use a sign-in subject as
 an actor ID.
 
+## Change a sign-in identity
+
+An owner can use **Change sign-in identity** to enter a person's new issuer and subject. Keep the
+same account type. The person keeps their actor ID, roles, case responsibilities and recorded work.
+Earlier sign-in identities remain reserved to the same person. Signing in with an old identity
+after the change gives no case access. Review a self-change before confirming, since the current
+identity can lose access as soon as the change takes effect.
+
+If you need to restore owner access through the database owner connection, see
+[Recover owner access](operating.md#recover-owner-access).
+
 ## Change a profile or roles
 
 Open the person and choose **Update profile**, **Grant role**, **Revoke role**, **Enable account** or
@@ -87,7 +104,7 @@ reaffirmation, advances the account version once. Exact accepted retries do not 
 A disabled account cannot perform protected work. Existing case assignments and recorded changes stay
 recorded; cases may need another responsible person. Keep at least one enabled human owner.
 
-**Erase profile** permanently removes the saved name and contact details, including earlier saved profile
+**Erase profile** permanently removes the saved name, contact details and digest address, including earlier saved profile
 contents. The account identity, roles and accepted changes remain. Recorded changes then show an
 anonymous account name. A later authored profile can give the account a name again, without restoring
 the erased profile contents. Confirm this irreversible action by typing the requested change identifier.

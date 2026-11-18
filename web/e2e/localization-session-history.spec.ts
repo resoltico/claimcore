@@ -173,7 +173,7 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
       "field:claimedAmount": "9876.5432",
       "field:claimedCurrency": "EUR",
       "field:incidentDate": "2026-09-07",
-      "field:incidentNotificationDate": "2026-09-08",
+      "field:receivedDate": "2026-09-08",
       "field:incidentDescription": "Distinctive browser history\nSecond exact paragraph",
     },
   });

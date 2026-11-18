@@ -44,6 +44,8 @@ and commands. **Actor** and **ActorId** remain the technical registered-identity
 and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the task
 identity in submissions, advice, receipts, history and CLI declarations.
 
+The new party, closure, deadline, digest and authority wording is AI-assisted and awaits fluent review.
+
 ## Account and sign-in identity
 
 A person uses a human account; automation uses a service account. In wire types, a principal is the exact
@@ -53,19 +55,19 @@ A display name or email address is not a sign-in identity and grants no access.
 
 ## Case identity and reference
 
-A CaseId is the UUID of its accepted `case.open` change. Its original reference is immutable,
-ASCII-case-insensitively unique, retained after erasure and never reused. Tagged ID/reference selectors
-make UUID-shaped references unambiguous. See [Integrating](integrating.md#authenticate).
+A CaseId is the UUID of its accepted `case.open` change. References remain reserved to that case
+under ASCII-case-insensitive comparison even after a correction or erasure. Tagged ID and reference
+selectors make UUID-shaped references unambiguous. Earlier references resolve to the current case.
 
 ## Facts, decision and payment
 
-A payment decision records its date, payable amount and currency. Payment records a date against that
-decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are positive entries,
-identified by their accepting operation UUID. Their sum cannot exceed payable, and all use the decision
-currency. Zero payable with no entries is Paid. Recording or removing an entry does not transfer or refund money.
+A payment decision records its date, payable amount, currency and optional basis. A payment entry
+records a Paid or Returned direction, date, positive amount and currency, with optional evidence
+and payee. Its ID is the UUID of the accepting operation. Progress uses the net payment totals
+in the decision currency and can be Undecided, Decided, Partly paid, Paid or Overpaid.
 
-A correction updates selected existing registration or decision facts. Amount and currency are asserted
-together. Retained entries constrain decision changes; clearing a decision requires no entries.
+A correction updates selected registration or decision facts. Amount and currency are asserted
+together. Decision changes preserve payment entries.
 
 ## Lifecycle and status
 
@@ -76,11 +78,29 @@ removes the live case's erasable contents while retaining its reference and chan
 
 ## Case family
 
-A case family includes the case facts, payment entries, case work, reminders and notes. Each owned
+A case family includes the case facts, payment entries, case work, reminders, notes, parties and source links. Each owned
 record has its own revision; each task declares the preconditions reviewed for its change. The family
 sequence advances for every accepted family change.
 Erasing the family clears its live erasable contents together. A person has a separate lifetime and
 combines identity, profile, enablement and role assignments.
+
+## Party and related case
+
+A party belongs to one case and has a role with an optional name and contact details. Current
+party summaries use creation order. A case link has a source and target. Readers can see incoming
+links only from cases they can read.
+
+## Closure and net paid
+
+Closure is the current outcome of an accepted close. The operator chooses Settled, Declined,
+Withdrawn, Duplicate or Other. Net paid is recorded Paid money minus Returned money within one
+currency. Every reporting total carries the number of cases that contributed.
+
+## Deadline, daily digest and installation operator
+
+A deadline is a reminder kind. The completion date determines whether the deadline was met.
+The daily digest is an optional email prompt with counts and a queue link. The installation
+operator is the authority used for database-owner administration of initialization and recovery.
 
 ## Case work and responsibility
 

@@ -18,7 +18,7 @@ module AccessHistoryScreen =
             column "act" "label.action" Prominence.Primary false (fun item ->
                 PresentedValue.Message("task." + TaskId.token item.Task + ".label"))
             column "recordedBy" "label.recordedBy" Prominence.Primary false (fun item ->
-                PresentedValue.Actor item.RecordedBy)
+                ActorPresentation.authorityValue item.RecordedBy)
             column "target" "label.targetAccount" Prominence.Primary false (fun item ->
                 PresentedValue.Actor item.Target)
             column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
@@ -89,7 +89,7 @@ module AccessHistoryScreen =
                         |> Option.map (fun item -> Link.caseById item.CaseId)
                     Actions = []
                     When = item.RecordedAt
-                    Who = item.RecordedBy
+                    Who = ActorPresentation.authorityValue item.RecordedBy
                     Summary =
                         {
                             MessageId = "task." + TaskId.token item.Task + ".label"

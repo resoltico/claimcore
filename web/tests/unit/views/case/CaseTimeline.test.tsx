@@ -112,7 +112,7 @@ it("uses the supplied event timeline and appends pages in core order", async () 
     summary: { messageId: "task.case.amendRegistration.done", arguments: [] },
     highlights: [
       {
-        titleId: "field.claimantName.label",
+        titleId: "field.policyNumber.label",
         entries: [
           {
             key: "before",

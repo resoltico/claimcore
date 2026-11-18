@@ -32,6 +32,15 @@ module ScreenEntries =
             PresentedValue.Text(Identifier.format value)
         | CaseFieldValue.Business(Admitted.Description value) ->
             PresentedValue.Narrative(IncidentDescription.format value)
+        | CaseFieldValue.Business(Admitted.Note value) ->
+            PresentedValue.Narrative(NoteText.format value)
+        | CaseFieldValue.Business(Admitted.Reason value) ->
+            PresentedValue.Narrative(Reason.format value)
+        | CaseFieldValue.Business(Admitted.Outcome value) ->
+            PresentedValue.Code(
+                Vocabulary.name ClosureOutcome.vocabulary,
+                ClosureOutcome.token value
+            )
         | CaseFieldValue.Business(Admitted.Amount value) -> PresentedValue.Text(Amount.format value)
         | CaseFieldValue.Business(Admitted.Currency value) ->
             PresentedValue.Code("currency", Currency.format value)
@@ -89,6 +98,8 @@ module ScreenEntries =
             | PartKind.Payment -> "field.paymentId.label"
             | PartKind.Reminder -> "field.reminderId.label"
             | PartKind.Note -> "field.noteId.label"
+            | PartKind.Party -> "field.partyId.label"
+            | PartKind.Link -> "field.linkId.label"
 
         value
             (id.ToString("D") + ".id")
@@ -172,6 +183,17 @@ module ScreenEntries =
                 "field.reminderDueDate.label"
                 Prominence.Primary
                 (PresentedValue.Date(Reminder.due reminder))
+            value
+                (id + ".kind")
+                "field.kind.label"
+                Prominence.Secondary
+                (code ReminderKind.vocabulary (Reminder.kind reminder))
+            if Reminder.doneOn reminder |> Option.isSome then
+                value
+                    (id + ".doneOn")
+                    "field.doneOn.label"
+                    Prominence.Secondary
+                    (optional PresentedValue.Date (Reminder.doneOn reminder))
             value
                 (id + ".state")
                 "input.reminderState.label"

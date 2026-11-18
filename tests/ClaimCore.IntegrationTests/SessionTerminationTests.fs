@@ -80,6 +80,7 @@ let private register fixture owner number key =
                 (Submissions.profile
                     {
                         DisplayName = "Synthetic person"
+                        DigestEmail = None
                         Contact = None
                     })
 

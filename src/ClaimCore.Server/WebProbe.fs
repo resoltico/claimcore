@@ -44,7 +44,7 @@ module internal WebProbe =
                 if rootPath = "" then
                     None
                 elif HttpsOrigins.isLocal target.Origin then
-                    Some(OidcTrustRoot.load rootPath)
+                    Some(PrivateTrustRoot.load WebStartupProblem.OidcConfigurationInvalid rootPath)
                 else
                     WebStartupDiagnostics.refuse (
                         WebStartupProblem.InvalidSetting WebSetting.ProbeCaCertFile

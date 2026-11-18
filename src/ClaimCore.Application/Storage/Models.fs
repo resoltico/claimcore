@@ -27,6 +27,7 @@ type internal StoredCase =
         Snapshot: CaseSnapshot
         SnapshotBytes: byte array
         Index: CaseIndex
+        ReportDates: CaseReportDates
     }
 
 /// A logical part version is inseparable from its complete, decoded accepted root.
@@ -50,7 +51,7 @@ type internal StoredEffect =
     member this.Sequence = this.OperationValue.Root.Header.Sequence
     member this.EntryHash = EntryHash.toBytes this.OperationValue.Root.Hash
     member this.OperationId = this.OperationValue.Root.Header.OperationId
-    member this.ActorId = this.OperationValue.Root.Header.ActorId
+    member this.Authority = this.OperationValue.Root.Header.Authority
     member this.RecordedAt = this.OperationValue.Root.Header.RecordedAt
     member this.Task = this.OperationValue.Root.Structure.Task
 
@@ -147,7 +148,7 @@ type internal GrantRow =
     {
         Grant: ScopedGrant
         GrantedAt: DateTimeOffset
-        GrantedBy: ActorId
+        GrantedBy: Authority
     }
 
 
@@ -167,11 +168,19 @@ type internal ReminderPosition =
 
 
 
+type internal StoredParty =
+    {
+        PartyId: PartyId
+        CaseId: CaseId
+        Revision: Revision
+        CreatedPosition: EffectPosition
+        Value: ClaimCore.Domain.Changes.PartyValue
+    }
+
 type internal ReminderRow =
     {
         Stored: StoredReminder
         Reference: CaseReference
-        ClaimantName: PartyName
         Responsible: ActorId option
         Lifecycle: Lifecycle
         Status: CaseStatus option

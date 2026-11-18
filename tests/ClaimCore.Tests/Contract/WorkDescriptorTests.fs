@@ -187,7 +187,7 @@ let tests =
                 let facts: CaseFields =
                     {
                         CaseReference = reference
-                        Status = CaseStatus.Opened
+                        Handling = Handling.Open
                         Registration = DomainInputs.admittedRegistration DomainInputs.registration
                         Finance = FinancialPosition.undecided
                     }
@@ -231,6 +231,10 @@ let tests =
 
                 let reply: CaseReadModel =
                     {
+                        MatchedReference = None
+                        Parties = []
+                        PartyOffers = []
+                        RelatedCases = RelatedCaseLinks.empty
                         FamilySequence = Sequence.create 1L |> Option.get
                         Snapshot =
                             {
@@ -248,6 +252,7 @@ let tests =
                             }
                         Advice = Inputs.caseAdvice state
                         LatestPayments = []
+                        PaymentPayees = []
                         Mine = false
                         Headline = CaseHeadline.Erased
                         Attention = []
@@ -291,7 +296,7 @@ let tests =
                 let due = DomainInputs.date "2026-11-05"
 
                 let reminder =
-                    Reminder.ofAccepted
+                    Reminder.decode
                         (ReminderId.ofOperationId (
                             CaseFixtures.operationId (
                                 Guid.Parse "80000000-0000-7000-8000-000000000004"
@@ -302,16 +307,20 @@ let tests =
                         (ReminderAction.parse "Telephone claimant"
                          |> Result.defaultWith (fun error -> failtestf "%A" error))
                         due
+                        ReminderKind.FollowUp
                         ReminderState.Pending
+                        None
                     |> Result.defaultWith failtest
 
                 let reply: ReminderReadModel =
                     {
                         Reminder = reminder
                         Reference = DomainInputs.reference "REM-1"
-                        ClaimantName =
-                            PartyName.parse "Synthetic claimant"
-                            |> Result.defaultWith (string >> failtest)
+                        Claimants =
+                            [
+                                (PartyName.parse "Synthetic claimant"
+                                 |> Result.defaultWith (string >> failtest))
+                            ]
                         Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor

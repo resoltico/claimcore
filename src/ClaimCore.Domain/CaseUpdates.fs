@@ -8,14 +8,15 @@ type RegistrationUpdate<'value> = private RegistrationUpdate of Map<BusinessFiel
 type RegistrationUpdateInput = RegistrationUpdate<string>
 type ValidRegistrationUpdate = RegistrationUpdate<Admitted>
 
-type DecisionUpdate<'date, 'money> =
+type DecisionUpdate<'date, 'money, 'note> =
     {
         Date: 'date option
         Payable: 'money option
+        Basis: 'note option option
     }
 
-type DecisionUpdateInput = DecisionUpdate<string, MoneyInput>
-type ValidDecisionUpdate = DecisionUpdate<CalendarDate, Money>
+type DecisionUpdateInput = DecisionUpdate<string, MoneyInput, string>
+type ValidDecisionUpdate = DecisionUpdate<CalendarDate, Money, NoteText>
 
 module private UpdateParsing =
     let errors field =
@@ -76,7 +77,10 @@ module private UpdateFields =
             |> Seq.exists (fun field ->
                 (BusinessField.describe field).Pairs
                 |> Option.exists (fun currency ->
-                    Set.contains field supplied <> Set.contains currency supplied))
+                    let assignments = Map.ofList members
+
+                    Option.map Option.isSome (Map.tryFind field assignments)
+                    <> Option.map Option.isSome (Map.tryFind currency assignments)))
         then
             Error "A money update requires both amount and currency."
         else
@@ -130,46 +134,16 @@ module RegistrationUpdate =
         fields |> Map.map (fun _ -> Option.map FieldValue.format) |> RegistrationUpdate
 
     let apply update current =
-        let date field previous =
-            tryValue field update
-            |> Option.map FieldValue.date
-            |> Option.defaultValue previous
-
-        let incident = date BusinessField.IncidentDate (Registration.incidentDate current)
-
-        let notification =
-            date
-                BusinessField.IncidentNotificationDate
-                (Registration.incidentNotificationDate current)
-
-        if incident > notification then
-            let target =
-                if
-                    (tryValue BusinessField.IncidentDate update).IsSome
-                    && (tryValue BusinessField.IncidentNotificationDate update).IsNone
-                then
-                    BusinessField.IncidentDate
-                else
-                    BusinessField.IncidentNotificationDate
-
-            let counterpart, date =
-                if target = BusinessField.IncidentDate then
-                    BusinessField.IncidentNotificationDate, notification
-                else
-                    BusinessField.IncidentDate, incident
-
-            Error(target, counterpart, date)
-        else
-            changes update
-            |> List.fold
-                (fun values (field, value) ->
-                    match value with
-                    | None -> Map.remove field values
-                    | Some value -> Map.add field value values)
-                (Registration.values current |> Map.ofList)
-            |> Map.toList
-            |> Registration.create
-            |> Result.mapError (fun _ -> invalidOp "A validated registration merge must succeed.")
+        changes update
+        |> List.fold
+            (fun values (field, value) ->
+                match value with
+                | None -> Map.remove field values
+                | Some value -> Map.add field value values)
+            (Registration.values current |> Map.ofList)
+        |> Map.toList
+        |> Registration.create
+        |> Result.defaultWith invalidOp
 
 module RegistrationUpdateInput =
     let create members =
@@ -194,7 +168,16 @@ module RegistrationUpdateInput =
 
     let internal parsePreparedWith admit prepared =
         UpdateFields.admitPrepared BusinessField.IncidentDate admit prepared
-        |> Result.map RegistrationUpdate
+        |> Result.bind (fun fields ->
+            match
+                Map.tryFind BusinessField.ClaimedAmount fields,
+                Map.tryFind BusinessField.ClaimedCurrency fields
+            with
+            | Some(Some _), Some None ->
+                Error [ BusinessField.ClaimedCurrency, Violation.TextRequired ]
+            | Some None, Some(Some _) ->
+                Error [ BusinessField.ClaimedAmount, Violation.TextRequired ]
+            | _ -> Ok(RegistrationUpdate fields))
 
     let internal parseWith admit input =
         prepare input |> parsePreparedWith admit
@@ -202,10 +185,11 @@ module RegistrationUpdateInput =
     let parse input = parseWith (fun _ -> Ok) input
 
 module DecisionUpdate =
-    let map date money (input: DecisionUpdate<_, _>) =
+    let map date money note (input: DecisionUpdate<_, _, _>) =
         {
             Date = Option.map date input.Date
             Payable = Option.map money input.Payable
+            Basis = input.Basis |> Option.map (Option.map note)
         }
 
     let values (update: ValidDecisionUpdate) =
@@ -214,6 +198,9 @@ module DecisionUpdate =
                 update.Date
                 |> Option.map (fun v -> BusinessField.PaymentDecisionDate, Admitted.Date v)
                 |> Option.toList
+            match update.Basis |> Option.flatten with
+            | Some note -> yield BusinessField.DecisionBasis, Admitted.Note note
+            | None -> ()
             match update.Payable with
             | None -> ()
             | Some money ->
@@ -222,10 +209,16 @@ module DecisionUpdate =
         ]
 
     let authored update : DecisionUpdateInput =
-        map CalendarDate.format MoneyInput.ofMoney update
+        map CalendarDate.format MoneyInput.ofMoney NoteText.format update
 
     let apply update current =
-        Decision.replace (values update) current
+        let original =
+            if update.Basis = Some None then
+                Decision.clearBasis current
+            else
+                current
+
+        Decision.replace (values update) original
         |> Result.defaultWith (fun _ -> invalidOp "A typed decision merge must succeed.")
 
 module DecisionUpdateInput =
@@ -235,6 +228,9 @@ module DecisionUpdateInput =
                 input.Date
                 |> Option.map (fun value -> BusinessField.PaymentDecisionDate, Some value)
                 |> Option.toList
+            match input.Basis with
+            | Some note -> yield BusinessField.DecisionBasis, note
+            | None -> ()
             match input.Payable with
             | None -> ()
             | Some value ->
@@ -250,6 +246,7 @@ module DecisionUpdateInput =
 
             {
                 DecisionUpdateInput.Date = value BusinessField.PaymentDecisionDate
+                Basis = Map.tryFind BusinessField.DecisionBasis fields
                 Payable =
                     match
                         value BusinessField.PayableAmount, value BusinessField.PayableCurrency
@@ -273,6 +270,9 @@ module DecisionUpdateInput =
                 Map.tryFind field fields |> Option.flatten
 
             {
+                Basis =
+                    Map.tryFind BusinessField.DecisionBasis fields
+                    |> Option.map (Option.map FieldValue.note)
                 ValidDecisionUpdate.Date =
                     value BusinessField.PaymentDecisionDate |> Option.map FieldValue.date
                 Payable =

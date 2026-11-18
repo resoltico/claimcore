@@ -123,7 +123,7 @@ let private snapshot (result: Result<CaseReadFacts, StoreFailure>) name hasHandl
             "People belongs to this snapshot"
 
         Expect.equal
-            (PartyName.format (Registration.claimant (fields.Registration)))
+            (Identifier.format (Registration.policyNumber (fields.Registration) |> Option.get))
             name
             "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
@@ -385,7 +385,7 @@ let tests =
                                     Sequence = CaseFixtures.sequence 2L
                                     PreviousHash = EntryHash.zero
                                     OperationId = identity
-                                    ActorId = target
+                                    Authority = Authority.Actor target
                                     RecordedAt =
                                         DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
                                     BusinessDate = None
@@ -416,7 +416,7 @@ let tests =
                                                         0
                                                     |> Option.get
                                                 OperationId = identity
-                                                ActorId = target
+                                                Authority = Authority.Actor target
                                                 RecordedAt =
                                                     DateTimeOffset(
                                                         2026,
@@ -527,7 +527,7 @@ let tests =
                         let! _ =
                             DatabaseSession.execute
                                 holder
-                                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), 'Synthetic Party', 'Changed synthetic'),'UTF8'); DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
+                                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), 'Synthetic Policy', 'Changed synthetic'),'UTF8'); DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
                                 [||]
                                 token
 
@@ -536,7 +536,8 @@ let tests =
 
                         snapshot
                             result
-                            (RegistrationInput.value BusinessField.ClaimantName (registration))
+                            (RegistrationInput.tryValue BusinessField.PolicyNumber (registration)
+                             |> Option.get)
                             true
 
                         let! after =

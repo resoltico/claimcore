@@ -31,8 +31,8 @@ module internal ProjectionRebuild =
                     ServerSupport.require connection.PostgreSqlVersion
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
-                    do! RegisterMaintenanceStore.requireActive handle connection token
                     let! installation, _ = Baseline.require connection token
+                    do! RegisterMaintenanceStore.requireActive handle connection token
 
                     let! scanned =
                         match CheckpointEvidence.installation installation expected with
@@ -83,9 +83,12 @@ module internal ProjectionRebuild =
                             [
                                 "grants"
                                 "notes"
+                                "case_parties"
+                                "case_links"
                                 "reminders"
                                 "case_work"
                                 "case_payments"
+                                "case_payment_totals"
                                 "cases"
                                 "actors"
                             ] do

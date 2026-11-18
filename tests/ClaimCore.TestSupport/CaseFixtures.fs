@@ -18,18 +18,13 @@ let payment = DomainInputs.admittedPayment
 
 /// Construct validated fixture inputs; behavior expectations stay with their owner tests.
 let finance (decision: Decision option) (payments: PaymentEntry list) =
-    let paid = payments |> List.sumBy (PaymentEntry.amount >> Amount.value)
+    FinancialPosition.rebuild payments
+    |> accepted
+    |> FinancialPosition.withDecision decision
 
-    let paid =
-        Amount.parse (paid.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))
-        |> accepted
-
-    let dates =
-        match payments |> List.map PaymentEntry.date with
-        | [] -> None
-        | dates -> PaymentDateBounds.create (List.min dates) (List.max dates)
-
-    FinancialPosition.create decision paid (int64 payments.Length) dates |> accepted
+let netPaid currency position =
+    let currency = Currency.parse currency |> accepted
+    FinancialPosition.netIn currency position |> DecimalTotal.format
 
 let private identifier create value =
     create value

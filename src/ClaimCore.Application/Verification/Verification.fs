@@ -151,6 +151,32 @@ module internal Verification =
                 return Error(divergence None VerificationFinding.CasePaymentsProjection)
         }
 
+    let private paymentTotals connection state token =
+        task {
+            let expected =
+                Replay.familyRows state
+                |> Result.map (fun rows ->
+                    rows
+                    |> Map.toList
+                    |> List.choose (fun (id, row) ->
+                        CaseState.fields row.Snapshot.State
+                        |> Option.map (fun fields -> fields.Finance.CurrencyTotals)
+                        |> Option.filter (Map.isEmpty >> not)
+                        |> Option.map (fun totals -> id, totals))
+                    |> Map.ofList)
+
+            try
+                let! actual = PaymentStorage.totals connection None token
+
+                return
+                    require
+                        None
+                        VerificationFinding.CasePaymentTotalsProjection
+                        (expected = Ok actual)
+            with :? RecordCorruptException ->
+                return Error(divergence None VerificationFinding.CasePaymentTotalsProjection)
+        }
+
     let projections connection installationId (state: Replay.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state token
@@ -167,7 +193,12 @@ module internal Verification =
 
                     match work with
                     | Error finding -> return Error finding
-                    | Ok() -> return! payments connection state token
+                    | Ok() ->
+                        let! payments = payments connection state token
+
+                        match payments with
+                        | Error finding -> return Error finding
+                        | Ok() -> return! paymentTotals connection state token
         }
 
     let private finish

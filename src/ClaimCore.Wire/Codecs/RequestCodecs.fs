@@ -181,13 +181,46 @@ module RequestCodecs =
                     Some value.Order)
             (VocabularyCodec.create CaseListOrder.vocabulary)
 
+    let private dateFilter field =
+        optionalField (CaseDateFilter.token field) (Map.tryFind field) CalendarDateCodecs.value
+
+    let private dateFilters =
+        record
+            (fun
+                registeredFrom
+                registeredThrough
+                receivedFrom
+                receivedThrough
+                closedFrom
+                closedThrough
+                inactiveSince ->
+                [
+                    CaseDateFilter.RegisteredFrom, registeredFrom
+                    CaseDateFilter.RegisteredThrough, registeredThrough
+                    CaseDateFilter.ReceivedFrom, receivedFrom
+                    CaseDateFilter.ReceivedThrough, receivedThrough
+                    CaseDateFilter.ClosedFrom, closedFrom
+                    CaseDateFilter.ClosedThrough, closedThrough
+                    CaseDateFilter.InactiveSince, inactiveSince
+                ]
+                |> List.choose (fun (key, value) -> value |> Option.map (fun value -> key, value))
+                |> Map.ofList)
+        |> dateFilter CaseDateFilter.RegisteredFrom
+        |> dateFilter CaseDateFilter.RegisteredThrough
+        |> dateFilter CaseDateFilter.ReceivedFrom
+        |> dateFilter CaseDateFilter.ReceivedThrough
+        |> dateFilter CaseDateFilter.ClosedFrom
+        |> dateFilter CaseDateFilter.ClosedThrough
+        |> dateFilter CaseDateFilter.InactiveSince
+
     let private filterFields =
-        (record (fun (filter: CaseListFilter<string>) assignment due view responsibleActor ->
+        (record (fun (filter: CaseListFilter<string>) assignment due view responsibleActor dates ->
             { filter with
                 Assignment = assignment
                 Due = due
                 View = view
                 ResponsibleActor = responsibleActor
+                Dates = dates
             })
         : Fields<CaseListFilter<string>, _>)
         |> flatten id baseFilterFields
@@ -201,6 +234,7 @@ module RequestCodecs =
             "responsibleActor"
             _.ResponsibleActor
             (uuid |> map (ActorId.create >> Option.get) ActorId.value)
+        |> flatten _.Dates dateFilters
 
     let caseListRequest =
         let paging =
@@ -224,8 +258,18 @@ module RequestCodecs =
 
         fields |> finishRead RequestSchemas.CaseListRequest
 
+    let caseFilter = filterFields |> finishRead "CaseListSelection"
+
     let caseSummaryRequest =
-        filterFields |> finishRead RequestSchemas.CaseSummaryRequest
+        (record (fun filter groupBy ->
+            {
+                CaseSummaryRequest.Filter = filter
+                GroupBy = groupBy
+            })
+        : Fields<CaseSummaryRequest, _>)
+        |> flatten _.Filter filterFields
+        |> optionalField "groupBy" _.GroupBy (VocabularyCodec.create CaseGrouping.vocabulary)
+        |> finishRead RequestSchemas.CaseSummaryRequest
 
     /// Shared selection fields omit traversal state; export and page requests consume this owner.
     let timelineSelectionFields =
@@ -304,11 +348,13 @@ module RequestCodecs =
         |> finishRead RequestSchemas.PeopleHistoryRequest
 
     let reminderSelectionFields =
-        (record (fun target state view due assignment search inactive ->
+        (record (fun target state kind deadlineOutcome view due assignment search inactive ->
             {
                 ReminderListRequest.Target = target
                 View = view
                 State = state
+                Kind = kind
+                DeadlineOutcome = deadlineOutcome
                 Due = due
                 Assignment = assignment
                 Text = search
@@ -319,6 +365,11 @@ module RequestCodecs =
         : Fields<ReminderListRequest, _>)
         |> optionalField "target" _.Target caseSelector
         |> optionalField "state" _.State (VocabularyCodec.create ReminderStateSelection.vocabulary)
+        |> optionalField "kind" _.Kind (VocabularyCodec.create ReminderKindSelection.vocabulary)
+        |> optionalField
+            "deadlineOutcome"
+            _.DeadlineOutcome
+            (VocabularyCodec.create DeadlineOutcome.vocabulary)
         |> optionalField "view" _.View (VocabularyCodec.create ReminderView.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
         |> optionalField

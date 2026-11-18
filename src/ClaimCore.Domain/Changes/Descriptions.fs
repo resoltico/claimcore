@@ -31,12 +31,20 @@ type ReminderPartDescription =
         Plans: ValueChange<ReminderPlan>
         Action: ValueChange<ReminderAction> option
         Due: ValueChange<CalendarDate> option
+        Kind: ValueChange<ReminderKind> option
+        DoneOn: ValueChange<CalendarDate> option
         State: ValueChange<ReminderState> option
     }
 
 type NotePartDescription =
     {
         Text: ValueChange<NoteText> option
+        Removed: ValueChange<bool> option
+    }
+
+type PartyPartDescription =
+    {
+        Content: ValueChange<PartyContent>
         Removed: ValueChange<bool> option
     }
 
@@ -55,6 +63,7 @@ type PersonPartDescription =
         ProfilePresent: ValueChange<bool> option
         DisplayName: ValueChange<PartyName> option
         Contact: ValueChange<ContactText> option
+        DigestEmail: ValueChange<EmailAddress> option
         Grants: GrantAssignmentChange list
     }
 
@@ -65,6 +74,8 @@ type PartDescription =
     | Work of WorkPartDescription
     | Reminder of ReminderPartDescription
     | Note of NotePartDescription
+    | Party of PartyPartDescription
+    | Link of ValueChange<RelatedCaseContent>
     | Person of PersonPartDescription
 
 module PartDescription =
@@ -75,6 +86,8 @@ module PartDescription =
         | PartDescription.Work _ -> PartKind.Work
         | PartDescription.Reminder _ -> PartKind.Reminder
         | PartDescription.Note _ -> PartKind.Note
+        | PartDescription.Party _ -> PartKind.Party
+        | PartDescription.Link _ -> PartKind.Link
         | PartDescription.Person _ -> PartKind.Person
 
 type DescribedPart =

@@ -10,6 +10,16 @@ module internal PersonInputs =
         | Some(InputValue.Text value) -> Ok value
         | _ -> Error(Refusal.invalidInput (target, Violation.TextRequired))
 
+    let private signInIdentity inputs =
+        Admission.map2
+            (fun issuer subject -> issuer, subject)
+            (Parsing.text InputTarget.PrincipalIssuer inputs)
+            (Parsing.text InputTarget.PrincipalSubject inputs)
+
+    let identity kind inputs =
+        signInIdentity inputs
+        |> Result.bind (fun (issuer, subject) -> PrincipalKey.ofKind kind issuer subject)
+
     let principal inputs =
         let kind =
             Parsing.text InputTarget.PrincipalKind inputs
@@ -25,35 +35,37 @@ module internal PersonInputs =
         Admission.map2
             (fun kind (issuer, subject) -> kind, issuer, subject)
             kind
-            (Admission.map2
-                (fun issuer subject -> issuer, subject)
-                (Parsing.text InputTarget.PrincipalIssuer inputs)
-                (Parsing.text InputTarget.PrincipalSubject inputs))
+            (signInIdentity inputs)
         |> Result.bind (fun (kind, issuer, subject) -> PrincipalKey.ofKind kind issuer subject)
+
+    let private profileTarget =
+        function
+        | ActorProfileField.DisplayName -> InputTarget.ProfileDisplayName
+        | ActorProfileField.Contact -> InputTarget.ProfileContact
+        | ActorProfileField.DigestEmail -> InputTarget.ProfileDigestEmail
 
     let profile inputs =
         Admission.map2
-            (fun name contact ->
+            (fun (name, contact) email ->
                 {
                     ActorProfileInput.DisplayName = name
                     Contact = contact
+                    DigestEmail = email
                 })
-            (Parsing.text InputTarget.ProfileDisplayName inputs)
-            (Parsing.optionalText InputTarget.ProfileContact inputs)
+            (Admission.map2
+                (fun name contact -> name, contact)
+                (Parsing.text InputTarget.ProfileDisplayName inputs)
+                (Parsing.optionalText InputTarget.ProfileContact inputs))
+            (Parsing.optionalText InputTarget.ProfileDigestEmail inputs)
         |> Result.bind (fun input ->
             ActorProfile.restore input
             |> Result.mapError (fun issues ->
                 issues
                 |> List.map (fun (field, violation) ->
                     {
-                        InputIssue.Target =
-                            if field = ActorProfileField.DisplayName then
-                                InputTarget.ProfileDisplayName
-                            else
-                                InputTarget.ProfileContact
+                        InputIssue.Target = profileTarget field
                         Violation = violation
-                        GrantRow = None
-                        RelatedDate = None
+                        Row = None
                     })
                 |> InputIssues.ofList
                 |> Option.get
@@ -68,14 +80,9 @@ module internal PersonInputs =
                 issues
                 |> List.map (fun (field, violation) ->
                     {
-                        InputIssue.Target =
-                            if field = ActorProfileField.DisplayName then
-                                InputTarget.ProfileDisplayName
-                            else
-                                InputTarget.ProfileContact
+                        InputIssue.Target = profileTarget field
                         Violation = violation
-                        GrantRow = None
-                        RelatedDate = None
+                        Row = None
                     })
                 |> InputIssues.ofList
                 |> Option.get
@@ -157,10 +164,6 @@ module internal PersonInputs =
                 grant input
                 |> Result.mapError (function
                     | Refusal.InvalidInput issues ->
-                        Refusal.InvalidInput(
-                            InputIssues.atGrantRow
-                                (GrantOrdinal.create row.Ordinal |> Option.get)
-                                issues
-                        )
+                        Refusal.InvalidInput(InputIssues.atRow row.Target issues)
                     | refusal -> refusal))
             |> Parsing.collect

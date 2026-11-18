@@ -30,7 +30,12 @@ let private reviewed frame =
                 current.State
                 |> CaseState.map (fun fields ->
                     { fields with
-                        Status = CaseStatus.Closed
+                        Handling =
+                            Handling.Closed
+                                {
+                                    Outcome = ClosureOutcome.Settled
+                                    Note = None
+                                }
                     })
         }
 
@@ -67,7 +72,7 @@ let private idleConfirmation () =
         let clock = Clock()
         use provider = new Provider(clock)
         use credentials = session provider
-        use terminal = new Terminal([ ShellLine.Text "case close x" ])
+        use terminal = new Terminal([ ShellLine.Text "case close --outcome other x" ])
 
         let invoke frame dispatched cancelled =
             task {
@@ -84,8 +89,13 @@ let private idleConfirmation () =
                                 HumanCaseDocument.ofCore
                                 (Outcome.Succeeded
                                     {
+                                        MatchedReference = None
+                                        Parties = []
+                                        PartyOffers = []
+                                        RelatedCases = RelatedCaseLinks.empty
                                         FamilySequence = Sequence.create 1L |> Option.get
                                         LatestPayments = []
+                                        PaymentPayees = []
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
                                         Disposition = None

@@ -61,13 +61,11 @@ module internal Declarations =
     let family token target creates family consequence capabilities inputs =
         create token AggregateKind.Family target creates family consequence capabilities inputs []
 
-    let principal =
-        [
-            InputTarget.PrincipalKind
-            InputTarget.PrincipalIssuer
-            InputTarget.PrincipalSubject
-        ]
+    let signInIdentity =
+        [ InputTarget.PrincipalIssuer; InputTarget.PrincipalSubject ]
         |> List.map (target >> required)
+
+    let principal = required (target InputTarget.PrincipalKind) :: signInIdentity
 
     let profile =
         [

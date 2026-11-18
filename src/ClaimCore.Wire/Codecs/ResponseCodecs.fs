@@ -67,19 +67,16 @@ module ResponseCodecs =
     let financialPosition = ClaimCore.RecordFormat.FinancialCodecs.position decision
 
     let caseFields =
-        (record (fun reference status registration finance ->
+        (record (fun reference handling registration finance ->
             {
                 CaseFields.CaseReference = reference
-                Status = status
+                Handling = handling
                 Registration = registration
                 Finance = finance
             })
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
-        |> field
-            (BusinessField.key BusinessField.Status)
-            _.Status
-            (VocabularyCodec.create CaseStatus.vocabulary)
+        |> field "handling" _.Handling ClaimCore.RecordFormat.HandlingCodecs.value
         |> field "registration" _.Registration registration
         |> field "finance" _.Finance financialPosition
         |> build
@@ -132,14 +129,16 @@ module ResponseCodecs =
     let private maximumInstallationOffers = 1 + TaskVocabulary.count ActSubject.People
 
     let private profileInput =
-        (record (fun name contact ->
+        (record (fun name contact email ->
             {
                 ActorProfileInput.DisplayName = name
                 Contact = contact
+                DigestEmail = email
             })
         : Fields<ActorProfileInput, _>)
         |> field "displayName" _.DisplayName text
         |> field "contact" _.Contact (nullable text)
+        |> optionalField "digestEmail" _.DigestEmail text
         |> build
         |> named "ActorProfileInput"
 
@@ -260,11 +259,18 @@ module ResponseCodecs =
                 disposition
                 nextActions
                 notes
+                parties
+                partyOffers
                 latestPayments
+                paymentPayees
                 changedAt
                 recordedBy
-                family ->
+                family
+                matchedReference
+                relatedCases ->
                 {
+                    MatchedReference = matchedReference
+                    RelatedCases = defaultArg relatedCases RelatedCaseLinks.empty
                     FamilySequence = family
                     Snapshot =
                         {
@@ -282,7 +288,10 @@ module ResponseCodecs =
                     Disposition = disposition
                     NextActions = nextActions
                     Notes = notes
+                    Parties = parties
+                    PartyOffers = partyOffers |> List.map TaskOffer.Declared
                     LatestPayments = latestPayments
+                    PaymentPayees = paymentPayees
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                 })
@@ -303,13 +312,31 @@ module ResponseCodecs =
         |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
+        |> field "parties" _.Parties (list PartyContent.MaximumCurrent WorkCodecs.party)
+        |> field
+            "partyActs"
+            (fun value -> value.PartyOffers |> List.map TaskOffer.id)
+            (list 1 (TaskVocabulary.forSubject ActSubject.Party))
         |> field
             "latestPayments"
             _.LatestPayments
             (list PaymentPaging.PreviewLimit PaymentCodecs.entry)
+        |> field
+            "paymentPayees"
+            _.PaymentPayees
+            (list PaymentPaging.PreviewLimit PaymentCodecs.payee)
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence
+        |> optionalField "matchedReference" _.MatchedReference caseReference
+        |> optionalField
+            "relatedCases"
+            (fun reply ->
+                if reply.RelatedCases = RelatedCaseLinks.empty then
+                    None
+                else
+                    Some reply.RelatedCases)
+            WorkCodecs.relatedCases
         |> build
         |> named "CaseView"
 
@@ -633,7 +660,7 @@ module ResponseCodecs =
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope grantScope
         |> field "grantedAt" _.GrantedAt instant
-        |> field "grantedBy" _.GrantedBy ActorCodecs.actorRef
+        |> field "grantedBy" _.GrantedBy ActorCodecs.authorityRef
         |> build
         |> named "GrantReadModel"
 

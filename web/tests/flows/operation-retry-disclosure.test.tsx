@@ -68,7 +68,7 @@ const disclosedCurrent = caseDocumentInput({
         target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
         expectedRevision: 1,
       },
-      { ...prefixedInputs("field:", { ...fields.registration, claimantName: currentCanary }) },
+      { ...prefixedInputs("field:", { ...fields.registration, policyNumber: currentCanary }) },
       [...registrationInputs],
       {},
     ),
@@ -110,8 +110,8 @@ const preview = () => {
         presentation: {
           changes: [
             {
-              key: "claimantName",
-              labelId: "field.claimantName.label",
+              key: "policyNumber",
+              labelId: "field.policyNumber.label",
               before: { kind: "PARTY", value: currentCanary },
               after: { kind: "PARTY", value: reviewCanary },
             },
@@ -155,8 +155,8 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
       initialAct: "case.amendRegistration",
     }),
   );
-  selectFact("claimantName");
-  const claimant = screen.getByLabelText("Claimant name", {
+  selectFact("policyNumber");
+  const claimant = screen.getByLabelText("Policy number", {
     exact: true,
   });
   expect(claimant).toHaveValue(currentCanary);

@@ -24,6 +24,7 @@ module internal WebMetrics =
     let private duration =
         meter.CreateHistogram<double>("claimcore.request.duration", "s")
 
+    let private digests = meter.CreateCounter<int64>("claimcore_digest_total")
     let private starts = meter.CreateCounter<int64>("claimcore.sessions.started")
     let private ends = meter.CreateCounter<int64>("claimcore.sessions.ended")
 
@@ -32,6 +33,13 @@ module internal WebMetrics =
             record ()
         with _ ->
             ()
+
+    let digest outcome =
+        safe (fun () ->
+            digests.Add(
+                1L,
+                KeyValuePair<string, obj>("outcome", ClaimCore.Domain.DigestOutcome.token outcome)
+            ))
 
     let result =
         function

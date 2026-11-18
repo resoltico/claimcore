@@ -46,6 +46,7 @@ type TaskInputDeclaration =
         Atom: TaskAtom
         Multiple: bool
         Retention: InputRetention
+        DefaultText: string option
         ChoicesFrom: string option
         ChoicesWhen: TaskInputChoicesWhen list
     }
@@ -62,7 +63,7 @@ module TaskInputDeclaration =
         let source =
             match input with
             | TaskInputId.Target InputTarget.OperationId -> InputSource.OperationIdentity
-            | TaskInputId.Target(InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision) ->
+            | TaskInputId.Target(InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.ExpectedPartyRevision) ->
                 InputSource.ExpectedRevision
             | _ -> InputSource.Authored
 
@@ -80,6 +81,7 @@ module TaskInputDeclaration =
                   TaskInputId.Target(InputTarget.PrincipalKind | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.Role | InputTarget.Scope)
                 | _, TaskInputId.Scope -> InputRetention.Retained
                 | _ -> InputRetention.Erasable
+            DefaultText = None
             ChoicesFrom =
                 if input = TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor) then
                     Some "case.assignees"

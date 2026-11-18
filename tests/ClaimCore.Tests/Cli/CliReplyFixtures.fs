@@ -29,13 +29,13 @@ let snapshot =
     let fields: CaseFields =
         {
             CaseReference = CaseFixtures.reference "x"
-            Status = CaseStatus.Opened
+            Handling = Handling.Open
             Registration =
                 CaseFixtures.registration (
                     ClaimCore.TestSupport.DomainInputs.registrationWith
                         [
-                            BusinessField.ClaimantName, ("x")
-                            BusinessField.InsurerName, ("x")
+                            BusinessField.PolicyNumber, ("x")
+                            BusinessField.InsurerClaimReference, ("x")
                             BusinessField.ClaimedAmount, ("0")
                         ]
                         ((DomainInputs.registrationOn "2026-01-01" "2026-01-01"))
@@ -78,5 +78,8 @@ let receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
     }

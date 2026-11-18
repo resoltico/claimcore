@@ -13,7 +13,7 @@ open ClaimCore.TestSupport
 
 let private peopleReview () =
     let operation = Guid.Parse "10000000-0000-7000-8000-000000000001"
-    let actor = CliReplyFixtures.receipt.RecordedBy
+    let actor = CliReplyFixtures.receipt.RecordedBy |> AuthorityRef.actor |> Option.get
     let binding = Binding.People(actor.ActorId, Revision.first)
 
     let description =
@@ -28,6 +28,7 @@ let private peopleReview () =
                     }
             ProfilePresent = None
             DisplayName = None
+            DigestEmail = None
             Contact = None
             Grants =
                 [
@@ -200,8 +201,9 @@ let tests =
                                                             GrantedAt =
                                                                 DomainInputs.workBasis.ObservedAt
                                                             GrantedBy =
-                                                                ResponseExamples.caseRead
-                                                                    .RecordedBy
+                                                                AuthorityRef.Actor
+                                                                    ResponseExamples.caseRead
+                                                                        .RecordedBy
                                                         }
                                                     ]
                                                 NextCursor = None
@@ -345,6 +347,7 @@ let assigneePresentation =
                         ActorProfile.parse
                             {
                                 DisplayName = "Anna Ozola"
+                                DigestEmail = None
                                 Contact = None
                             }
                         |> CaseBuilders.accepted
@@ -458,6 +461,7 @@ let fullDirectoryAndAuditDetails =
                 ActorProfile.parse
                     {
                         DisplayName = "Earlier profile"
+                        DigestEmail = None
                         Contact = Some "historical-only@example.test"
                     }
                 |> CaseBuilders.accepted
@@ -473,6 +477,7 @@ let fullDirectoryAndAuditDetails =
                     Enabled = None
                     ProfilePresent = None
                     DisplayName = None
+                    DigestEmail = None
                     Contact = None
                     Grants = []
                 }
@@ -528,7 +533,7 @@ let fullDirectoryAndAuditDetails =
                             |> Option.get
                         OperationHash = EntryHash.zero
                         RecordedAt = DomainInputs.workBasis.ObservedAt
-                        RecordedBy = account.Actor
+                        RecordedBy = AuthorityRef.Actor(account.Actor)
                         Target = account.Actor
                         Task = TaskId.ofLiteral task
                         Changes = changes
@@ -585,6 +590,7 @@ let fullDirectoryAndAuditDetails =
                                     { item.Changes with
                                         Profiles = { Before = None; After = None }
                                         DisplayName = None
+                                        DigestEmail = None
                                         Contact = None
                                     }
                             })

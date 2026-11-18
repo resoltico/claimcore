@@ -143,7 +143,7 @@ let statusSets =
         [ CaseStatus.Opened; CaseStatus.Closed ]
     ]
 
-let progressSets =
+let private originalProgressSets =
     [
         []
         [ CaseProgress.Undecided ]
@@ -167,6 +167,11 @@ let progressSets =
             CaseProgress.Paid
         ]
     ]
+
+let progressSets =
+    originalProgressSets
+    @ (originalProgressSets
+       |> List.map (fun values -> values @ [ CaseProgress.Overpaid ]))
 
 let orders = Vocabulary.all CaseListOrder.vocabulary
 
@@ -210,8 +215,8 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
         let registration =
             DomainInputs.registrationWith
                 [
-                    BusinessField.ClaimantName, expected.Claimant
-                    BusinessField.InsurerName, expected.Insurer
+                    BusinessField.PolicyNumber, expected.Claimant
+                    BusinessField.InsurerClaimReference, expected.Insurer
                 ]
                 DomainInputs.registration
 
@@ -240,7 +245,7 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
                     ))
 
         if expected.Status = Some CaseStatus.Closed then
-            do! apply "case.close" (Map.empty)
+            do! apply "case.close" (CaseTransitionInputs.closed)
 
         if expected.Lifecycle = Lifecycle.Voided then
             do!
@@ -292,12 +297,24 @@ let prepare () =
             do!
                 execute
                     fixture
-                    (request (database.Fixture) (2001) ("mix-04") (1L) "case.close" (Map.empty))
+                    (request
+                        (database.Fixture)
+                        (2001)
+                        ("mix-04")
+                        (1L)
+                        "case.close"
+                        (CaseTransitionInputs.closed))
 
             do!
                 execute
                     fixture
-                    (request (database.Fixture) (2002) ("mix-04") (2L) "case.reopen" (Map.empty))
+                    (request
+                        (database.Fixture)
+                        (2002)
+                        ("mix-04")
+                        (2L)
+                        "case.reopen"
+                        (CaseTransitionInputs.reopened))
 
             return fixture
         with error ->
@@ -330,7 +347,7 @@ let expected (filter: CaseListFilter<string>) =
             |> List.sortWith (fun a b ->
                 StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
         | CaseListOrder.Recent -> recent
-        | CaseListOrder.Notified ->
+        | CaseListOrder.Received ->
             cases
             |> List.sortWith (fun a b ->
                 let erased =

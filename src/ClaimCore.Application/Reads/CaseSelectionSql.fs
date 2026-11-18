@@ -96,13 +96,33 @@ module internal CaseSelectionSql =
             | WorkPredicate.Status value -> equal "c.status" ("status:" + CaseStatus.token value)
             | WorkPredicate.Progress value ->
                 equal "c.progress" ("progress:" + CaseProgress.token value)
+            | WorkPredicate.CaseDate(filter, _) ->
+                let date, bound = CaseDateFilter.bound filter
+
+                let column =
+                    match date with
+                    | CaseReportDate.Registered -> "c.registered_on"
+                    | CaseReportDate.Received -> "c.received_on"
+                    | CaseReportDate.Closed -> "c.closed_on"
+                    | CaseReportDate.LastActivity -> "c.last_activity_on"
+
+                let operator =
+                    match bound with
+                    | CaseDateBound.From -> ">="
+                    | CaseDateBound.Through -> "<="
+
+                let index = 1 + List.findIndex ((=) filter) CaseDateFilter.all
+                let parameter = $"($10::text[])[{index}]::date"
+                $"({parameter} IS NULL OR {column}{operator}{parameter})"
             | WorkPredicate.Mine -> "COALESCE(c.responsible_actor=$2,FALSE)"
             | WorkPredicate.Responsible value -> responsible value
             | WorkPredicate.Unassigned -> "c.responsible_actor IS NULL"
             | WorkPredicate.AssigneeUnavailable ->
                 $"c.responsible_actor IS NOT NULL AND NOT ({available})"
+            | WorkPredicate.PaymentsNeedReview -> "COALESCE(c.payment_review,FALSE)"
             | WorkPredicate.NoNextDue -> "c.follow_up IS NULL"
             | WorkPredicate.NextDue value -> datePredicate "c.follow_up" value
+            | WorkPredicate.NextDeadlineDue value -> datePredicate "c.deadline_due" value
             | WorkPredicate.ReminderState value ->
                 equal "r.state" ("reminder:" + ReminderState.token value)
             | WorkPredicate.ReminderDue value -> datePredicate "r.due" value
@@ -150,7 +170,7 @@ module internal CaseSelectionSql =
         $"{basePredicate} AND ({filters})"
 
     /// Suffix parameters follow the complete shared selection prefix.
-    let suffix index = "$" + string (9 + index)
+    let suffix index = "$" + string (10 + index)
 
     let parameters (selection: CaseSelection) =
         let filter = selection.Filter
@@ -173,4 +193,13 @@ module internal CaseSelectionSql =
             DatabaseSession.parameter (filter.ResponsibleActor |> Option.map ActorId.value)
             box (selectionTokens |> List.map snd |> List.toArray)
             AssigneeSelectionSql.parameters Access.assigneeSelection
+            box (
+                CaseDateFilter.all
+                |> List.map (fun date ->
+                    filter.Dates
+                    |> Map.tryFind date
+                    |> Option.map CalendarDate.format
+                    |> Option.toObj)
+                |> List.toArray
+            )
         |]

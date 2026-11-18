@@ -16,9 +16,14 @@ type Violation =
     | ActorIdRequired
     | ReminderIdRequired
     | NoteIdRequired
+    | PartyIdRequired
+    | PartyRoleRequired
+    | PartyContentRequired
+    | PartyCountRange
+    | LinkIdRequired
+    | EmailAddressInvalid
     | UpdateRequired
     | CalendarDateRequired
-    | ChronologicalOrder
     | FutureDate
     | DecimalFormat of integerDigits: int * fractionDigits: int
     | CurrencyFormat
@@ -29,6 +34,8 @@ type Violation =
     | DuplicateGrant
     | PaymentCountLimit
     | PaymentAmountPositive
-    | PaymentCurrencyMismatch
-    | PaymentExceedsPayable
+    | PaymentDirectionFormat
+    | PaymentTotalRange
+    | PayeeUnavailable
+    | ClosureOutcomeFormat
     | PaymentIdRequired

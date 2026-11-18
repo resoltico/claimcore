@@ -39,10 +39,10 @@ type SeedStep = Readonly<{
 }>;
 const setupRegistration = {
   incidentDate: "2026-09-01",
-  incidentNotificationDate: "2026-09-02",
+  receivedDate: "2026-09-02",
   incidentCountry: "LV",
-  claimantName: "Synthetic claimant",
-  insurerName: "Synthetic insurer",
+  policyNumber: "Synthetic claimant",
+  insurerClaimReference: "Synthetic insurer",
   claimedAmount: "1200.50",
   claimedCurrency: "EUR",
 };
@@ -54,17 +54,15 @@ const setupDecision = {
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
     caseReference: reference,
-    status: "OPENED",
+    handling: { kind: "OPEN" },
     registration: {
       ...setupRegistration,
       claimedAmount: "1200.5",
     },
     finance: {
       decision: null,
-      paidAmount: "0",
+      totals: [],
       paymentCount: 0,
-      firstPaymentDate: null,
-      lastPaymentDate: null,
     },
   };
   const decided: CaseFields = {
@@ -79,10 +77,8 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     ...decided,
     finance: {
       ...decided.finance,
-      paidAmount: "300.25",
+      totals: [{ currency: "EUR", paid: "300.25", returned: "0" }],
       paymentCount: 1,
-      firstPaymentDate: "2026-09-05",
-      lastPaymentDate: "2026-09-05",
     },
   };
   const steps: SeedStep[] = [
@@ -110,10 +106,10 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   if (status === "CLOSED") {
     steps.push({
       task: "case.close",
-      inputs: {},
+      inputs: { "field:outcome": "OTHER" },
       fields: {
         ...paid,
-        status: "CLOSED",
+        handling: { kind: "CLOSED", outcome: "OTHER" },
       },
     });
   }
@@ -174,13 +170,11 @@ const acceptSetup = async (
       case "case.open":
         return [
           "incidentDate",
-          "incidentNotificationDate",
+          "receivedDate",
           "incidentCountry",
           "incidentDescription",
           "policyNumber",
           "insurerClaimReference",
-          "claimantName",
-          "insurerName",
           "claimedAmount",
           "claimedCurrency",
         ];
@@ -210,7 +204,10 @@ const acceptSetup = async (
               entry: {
                 paymentId: request.operationId,
                 paymentDate: "2026-09-05",
-                paidAmount: "300.25",
+                direction: "PAID",
+                money: { amount: "300.25", currency: "EUR" },
+                reference: null,
+                payee: null,
               },
             },
           ]
@@ -245,11 +242,14 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       step.fields,
     );
     const { recordedBy: acceptedActor } = receipt;
+    if (acceptedActor.kind !== "ACTOR") {
+      throw new Error("Expected an account recorder for a case operation.");
+    }
     const acceptedRevision = receipt.subject.revision;
     if (recordedBy !== undefined) {
-      expect(acceptedActor.actorId).toBe(recordedBy);
+      expect(acceptedActor.actor.actorId).toBe(recordedBy);
     }
-    recordedBy = acceptedActor.actorId;
+    recordedBy = acceptedActor.actor.actorId;
     revision = acceptedRevision;
   }
   await (await showExactLookup(page)).fill(reference);
@@ -275,7 +275,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "l
   }
   const replacements = {
     registration: {
-      claimantName: "A\u0308 العربية\u200D <tag>",
+      policyNumber: "A\u0308 العربية\u200D <tag>",
       claimedAmount: "1.0000",
     },
     decision: {
@@ -359,7 +359,7 @@ export const expectResultFields = (
     KEEP: before.fields.finance.decision,
     UPDATE: {
       paymentDecisionDate: "2026-09-04",
-      payableAmount: "400.25",
+      payableAmount: modes.payable === "200.2500" ? "200.25" : "400.25",
       payableCurrency: "EUR",
     },
     CLEAR: null,
@@ -373,7 +373,7 @@ export const expectResultFields = (
         modes.registration === "UPDATE"
           ? {
               ...before.fields.registration,
-              claimantName: "A\u0308 العربية\u200D <tag>",
+              policyNumber: "A\u0308 العربية\u200D <tag>",
               claimedAmount: "1",
             }
           : before.fields.registration,

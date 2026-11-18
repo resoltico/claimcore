@@ -17,20 +17,22 @@ let private item =
     let parent = ResponseExamples.caseRead.Snapshot.CaseId
 
     let reminder =
-        Reminder.ofAccepted
+        Reminder.decode
             id
             parent
             Revision.first
             (ReminderAction.parse "Editable action seed"
              |> Result.defaultWith (string >> failtest))
             (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
+            ReminderKind.FollowUp
             ReminderState.Pending
+            None
         |> Result.defaultWith failtest
 
     {
         ReminderReadModel.Reminder = reminder
         Reference = ResponseExamples.caseRead.Snapshot.Reference
-        ClaimantName = DomainInputs.name "Read-only claimant"
+        Claimants = [ (DomainInputs.name "Read-only claimant") ]
         Responsible = None
         RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy

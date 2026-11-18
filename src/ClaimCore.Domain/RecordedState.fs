@@ -14,12 +14,33 @@ type RecordViolation =
     | RevisionOutOfRange
     | ReferenceMismatch
 
+[<RequireQualifiedAccess>]
+type Authority =
+    | Actor of ActorId
+    | Operator
+
+module Authority =
+    let actorId =
+        function
+        | Authority.Actor actor -> Some actor
+        | Authority.Operator -> None
+
+    let reference find =
+        function
+        | Authority.Actor actor -> find actor |> Option.map AuthorityRef.Actor
+        | Authority.Operator -> Some AuthorityRef.Operator
+
+    let ofActorId =
+        function
+        | Some actor -> Authority.Actor actor
+        | None -> Authority.Operator
+
 /// Accepted position and attribution belong to an effect, independently of its private content.
 type SubjectStamp =
     {
         Position: EffectPosition
         OperationId: OperationId
-        ActorId: ActorId
+        Authority: Authority
         RecordedAt: DateTimeOffset
     }
 

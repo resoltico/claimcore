@@ -21,6 +21,8 @@ type OperationBinding<'revision> =
         expectedFamilySequence: int64 option
     | Work of target: CaseSelector * expectedRevision: 'revision
     | Note of target: CaseSelector * noteId: Guid option
+    | Party of target: CaseSelector * current: (Guid * 'revision) option
+    | Link of target: CaseSelector * linkId: Guid option
     | Reminder of target: CaseSelector * current: (Guid * 'revision) option
     | People of actorId: Guid option * expectedRevision: 'revision
 
@@ -71,8 +73,13 @@ module OperationSubmission =
         | Binding.ReminderNew target -> OperationBinding.Reminder(target, None)
         | Binding.Reminder(target, id, revision) ->
             OperationBinding.Reminder(target, Some(ReminderId.value id, Revision.value revision))
+        | Binding.PartyNew target -> OperationBinding.Party(target, None)
+        | Binding.Party(target, id, revision) ->
+            OperationBinding.Party(target, Some(PartyId.value id, Revision.value revision))
         | Binding.NoteNew target -> OperationBinding.Note(target, None)
         | Binding.Note(target, id) -> OperationBinding.Note(target, Some(NoteId.value id))
+        | Binding.LinkNew target -> OperationBinding.Link(target, None)
+        | Binding.Link(target, id) -> OperationBinding.Link(target, Some(LinkId.value id))
         | Binding.PeopleNew revision -> OperationBinding.People(None, Revision.value revision)
         | Binding.People(id, revision) ->
             OperationBinding.People(Some(ActorId.value id), Revision.value revision)
@@ -112,14 +119,14 @@ module OperationSubmission =
     let private map2 create left right =
         left |> bind (fun left -> right |> Result.map (create left))
 
-    let private rowProblem ordinal =
+    let private rowProblem collection ordinal =
         function
         | SubmissionProblem.Rejected(Refusal.InvalidInput issues) ->
             let annotated =
                 InputIssues.toList issues
                 |> List.map (fun issue ->
                     { issue with
-                        GrantRow = GrantOrdinal.create ordinal
+                        Row = TaskRowTarget.create collection ordinal
                     })
 
             SubmissionProblem.Rejected(
@@ -197,13 +204,18 @@ module OperationSubmission =
                             Error(
                                 issue
                                     input
-                                    (Violation.GrantCountRange PeopleAdmission.MaximumGrants)
+                                    (match collection.Collection with
+                                     | TaskCollectionId.PeopleGrants ->
+                                         Violation.GrantCountRange PeopleAdmission.MaximumGrants
+                                     | TaskCollectionId.Parties -> Violation.PartyCountRange)
                             )
                         else
                             rows
                             |> List.mapi (fun ordinal row ->
-                                validateRow collection row |> Result.mapError (rowProblem ordinal))
+                                validateRow collection row
+                                |> Result.mapError (rowProblem collection.Collection ordinal))
                             |> collect
+                    | None when collection.MinimumRows = 0 -> Ok()
                     | _ -> Error(issue input Violation.TextRequired))
 
             collect (scalars @ rows)
@@ -333,6 +345,23 @@ module OperationSubmission =
         | ActSubject.Note, OperationBinding.Note(selection, Some id) when not declaration.Creates ->
             identity NoteId.create InputTarget.NoteId Violation.NoteIdRequired id
             |> Result.map (fun id -> Binding.Note(selection, id))
+        | ActSubject.Party, OperationBinding.Party(selection, None) when declaration.Creates ->
+            Ok(Binding.PartyNew selection)
+        | ActSubject.Party, OperationBinding.Party(selection, Some(id, expected)) when
+            not declaration.Creates
+            ->
+            map2
+                (fun id expected -> Binding.Party(selection, id, expected))
+                (identity PartyId.create InputTarget.PartyId Violation.PartyIdRequired id)
+                (version
+                    SubmissionDeclarations.existingRevision
+                    InputTarget.ExpectedPartyRevision
+                    expected)
+        | ActSubject.Link, OperationBinding.Link(selection, None) when declaration.Creates ->
+            Ok(Binding.LinkNew selection)
+        | ActSubject.Link, OperationBinding.Link(selection, Some id) when not declaration.Creates ->
+            identity LinkId.create InputTarget.LinkId Violation.LinkIdRequired id
+            |> Result.map (fun id -> Binding.Link(selection, id))
         | ActSubject.Reminder, OperationBinding.Reminder(selection, None) when declaration.Creates ->
             Ok(Binding.ReminderNew selection)
         | ActSubject.Reminder, OperationBinding.Reminder(selection, Some(id, expected)) when
@@ -364,10 +393,20 @@ module OperationSubmission =
         | Some value -> Ok value
         | None -> Error SubmissionProblem.Shape)
 
+    let private withDeclaredDefaults (declaration: TaskDeclaration) values =
+        (values, declaration.Inputs)
+        ||> List.fold (fun values input ->
+            match input.DefaultText with
+            | Some text when not (Map.containsKey input.Input values) ->
+                Map.add input.Input (SubmissionValue.Text text) values
+            | _ -> values)
+
     let assemble (submission: SubmissionEnvelope<int64, Guid>) =
         declared submission.Task
         |> bind (fun declaration ->
-            validate declaration.Inputs declaration.Collections submission.Inputs
+            let values = withDeclaredDefaults declaration submission.Inputs
+
+            validate declaration.Inputs declaration.Collections values
             |> bind (fun () ->
                 map2
                     (fun binding inputs ->
@@ -376,7 +415,7 @@ module OperationSubmission =
                             Inputs = inputs
                         })
                     (admitBinding declaration submission.Binding)
-                    (mapInputs declaration.Collections submission.Inputs)))
+                    (mapInputs declaration.Collections values)))
 
     let admit envelope =
         match assemble envelope with
@@ -406,8 +445,7 @@ module OperationSubmission =
             {
                 InputIssue.Target = input
                 Violation = issue.Violation
-                RelatedDate = issue.RelatedDate
-                GrantRow = issue.Row |> Option.bind (TaskRowTarget.ordinal >> GrantOrdinal.create)
+                Row = issue.Row
             }
 
         issues |> List.map convert |> InputIssues.ofList
@@ -475,8 +513,20 @@ module OperationSubmission =
                 SubmissionDeclarations.creationRevision
                 InputTarget.ExpectedWorkRevision
                 expected
+        | BindingShape.PartyNew, OperationBinding.Party(_, None)
         | BindingShape.ReminderNew, OperationBinding.Reminder(_, None)
-        | BindingShape.NoteNew, OperationBinding.Note(_, None) -> Ok()
+        | BindingShape.NoteNew, OperationBinding.Note(_, None)
+        | BindingShape.LinkNew, OperationBinding.Link(_, None) -> Ok()
+        | BindingShape.Party, OperationBinding.Party(_, Some(id, expected)) ->
+            collect
+                [
+                    identity PartyId.create InputTarget.PartyId Violation.PartyIdRequired id
+                    |> Result.map ignore
+                    revision
+                        SubmissionDeclarations.existingRevision
+                        InputTarget.ExpectedPartyRevision
+                        expected
+                ]
         | BindingShape.Reminder, OperationBinding.Reminder(_, Some(id, expected)) ->
             collect
                 [
@@ -493,6 +543,8 @@ module OperationSubmission =
                 ]
         | BindingShape.Note, OperationBinding.Note(_, note) ->
             identifier NoteId.create InputTarget.NoteId Violation.NoteIdRequired note
+        | BindingShape.Link, OperationBinding.Link(_, link) ->
+            identifier LinkId.create InputTarget.LinkId Violation.LinkIdRequired link
         | BindingShape.PeopleNew, OperationBinding.People(None, expected) ->
             optional creationVersion expected
         | BindingShape.People, OperationBinding.People(Some id, expected) ->
@@ -535,8 +587,10 @@ module OperationSubmission =
         declared draft.Task
         |> bind (fun declaration ->
             let authored =
-                validate declaration.Inputs declaration.Collections draft.Inputs
-                |> bind (fun () -> mapInputs declaration.Collections draft.Inputs)
+                let values = withDeclaredDefaults declaration draft.Inputs
+
+                validate declaration.Inputs declaration.Collections values
+                |> bind (fun () -> mapInputs declaration.Collections values)
                 |> bind (checkInputs declaration)
 
             collect
@@ -556,6 +610,10 @@ module OperationSubmission =
             | OperationBinding.Work(target, Some revision) ->
                 Some(OperationBinding.Work(target, revision))
             | OperationBinding.Note(target, note) -> Some(OperationBinding.Note(target, note))
+            | OperationBinding.Party(target, None) -> Some(OperationBinding.Party(target, None))
+            | OperationBinding.Party(target, Some(id, Some revision)) ->
+                Some(OperationBinding.Party(target, Some(id, revision)))
+            | OperationBinding.Link(target, link) -> Some(OperationBinding.Link(target, link))
             | OperationBinding.Reminder(target, None) ->
                 Some(OperationBinding.Reminder(target, None))
             | OperationBinding.Reminder(target, Some(id, Some revision)) ->
@@ -639,8 +697,11 @@ module SubmissionAssembly =
     let defaults (declaration: TaskDeclaration) =
         declaration.Inputs
         |> List.choose (fun input ->
-            match input.Input with
-            | TaskInputId.Target(InputTarget.Group _) when input.Source = InputSource.Authored ->
+            match input.DefaultText, input.Input with
+            | Some text, _ -> Some(input.Input, SubmissionValue.Text text)
+            | None, TaskInputId.Target(InputTarget.Group _) when
+                input.Source = InputSource.Authored
+                ->
                 Some(
                     input.Input,
                     SubmissionValue.Text(CorrectionGroupAction.token CorrectionGroupAction.Keep)
@@ -714,6 +775,14 @@ module SubmissionAssembly =
         | BindingShape.Work -> OperationBinding.Work(selection, expected)
         | BindingShape.NoteNew -> OperationBinding.Note(selection, None)
         | BindingShape.Note -> OperationBinding.Note(selection, selectedIdentity)
+        | BindingShape.PartyNew -> OperationBinding.Party(selection, None)
+        | BindingShape.Party ->
+            OperationBinding.Party(
+                selection,
+                selectedIdentity |> Option.map (fun id -> id, expected)
+            )
+        | BindingShape.LinkNew -> OperationBinding.Link(selection, None)
+        | BindingShape.Link -> OperationBinding.Link(selection, selectedIdentity)
         | BindingShape.ReminderNew -> OperationBinding.Reminder(selection, None)
         | BindingShape.Reminder ->
             OperationBinding.Reminder(
@@ -744,6 +813,10 @@ module SubmissionAssembly =
         | BindingShape.Work -> Binding.Work(selected (), expected ())
         | BindingShape.NoteNew -> Binding.NoteNew(selected ())
         | BindingShape.Note -> Binding.Note(selected (), identified NoteId.create)
+        | BindingShape.PartyNew -> Binding.PartyNew(selected ())
+        | BindingShape.Party -> Binding.Party(selected (), identified PartyId.create, expected ())
+        | BindingShape.LinkNew -> Binding.LinkNew(selected ())
+        | BindingShape.Link -> Binding.Link(selected (), identified LinkId.create)
         | BindingShape.ReminderNew -> Binding.ReminderNew(selected ())
         | BindingShape.Reminder ->
             Binding.Reminder(selected (), identified ReminderId.create, expected ())
@@ -770,8 +843,15 @@ module SubmissionAssembly =
         | OperationBinding.Reminder(target, Some(id, expected)),
           OperationBinding.Reminder(_, Some(_, revision)) ->
             OperationBinding.Reminder(target, Some(id, Option.defaultValue revision expected))
+        | OperationBinding.Party(target, Some(id, expected)),
+          OperationBinding.Party(_, Some(_, revision)) ->
+            OperationBinding.Party(target, Some(id, Option.defaultValue revision expected))
+        | OperationBinding.Party(target, None), OperationBinding.Party(_, None) ->
+            OperationBinding.Party(target, None)
         | OperationBinding.Note(target, id), OperationBinding.Note _ ->
             OperationBinding.Note(target, id)
+        | OperationBinding.Link(target, id), OperationBinding.Link _ ->
+            OperationBinding.Link(target, id)
         | OperationBinding.Reminder(target, None), OperationBinding.Reminder(_, None) ->
             OperationBinding.Reminder(target, None)
         | _ -> invalidArg "offered" "A draft requires the matching offered binding."

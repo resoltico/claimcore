@@ -60,16 +60,13 @@ let tests =
                         "Replacement is active"
 
                     let finance = after.Case.Value.Content |> Option.get |> _.Finance
-                    Expect.equal (Amount.value finance.PaidAmount) 750M "Final money"
-                    Expect.equal finance.PaymentCount 1L "Final active count"
 
                     Expect.equal
-                        (finance.PaymentDates
-                         |> Option.map (fun bounds ->
-                             CalendarDate.format bounds.Earliest,
-                             CalendarDate.format bounds.Latest))
-                        (Some("2026-02-03", "2026-02-03"))
-                        "Replacement extrema"
+                        (ClaimCore.TestSupport.CaseFixtures.netPaid "EUR" finance)
+                        "750"
+                        "Final money"
+
+                    Expect.equal finance.PaymentCount 1L "Final active count"
 
                     Expect.equal
                         (changes
@@ -79,30 +76,18 @@ let tests =
                              | PaymentDifference.Recorded _ -> "RECORDED"))
                         [ "REMOVED"; "RECORDED" ]
                         "Ordered receipt directions")
-            testCase "the remaining entries constrain replacement totals and extrema" (fun () ->
+            testCase "replacement can overpay after removing the original assertion" (fun () ->
                 let state = decided () |> pay 3 "2026-02-02" "250" |> pay 4 "2026-02-03" "100"
-                let after = correct 5 3 "2026-02-04" "900" state |> accepted |> apply state
-                let finance = after.Case.Value.Content |> Option.get |> _.Finance
+                let after = correct 5 3 "2026-02-04" "901" state |> accepted |> apply state
+                let finance = after.Case.Value.Content.Value.Finance
 
                 Expect.equal
-                    (Amount.value finance.PaidAmount)
-                    1000M
-                    "Replacement is validated after removing the erroneous amount"
+                    (ClaimCore.TestSupport.CaseFixtures.netPaid "EUR" finance)
+                    "1001"
+                    "Exact net"
 
-                Expect.equal finance.PaymentCount 2L "Unrelated payment stays active"
-
-                Expect.equal
-                    (finance.PaymentDates
-                     |> Option.map (fun bounds ->
-                         CalendarDate.format bounds.Earliest, CalendarDate.format bounds.Latest))
-                    (Some("2026-02-03", "2026-02-04"))
-                    "Both bounds update"
-
-                correct 5 3 "2026-02-04" "901" state
-                |> expectInputs
-                |> List.exists (fun issue -> issue.Violation = Violation.PaymentExceedsPayable)
-                |> fun found ->
-                    Expect.isTrue found "Overpayment refuses before any accepted change")
+                Expect.equal (CaseProgress.ofFinancial finance) CaseProgress.Overpaid "Overpaid"
+                Expect.equal finance.PaymentCount 2L "Unrelated entry stays current")
             testCase "a removed or absent target cannot be corrected" (fun () ->
                 let state = decided () |> pay 3 "2026-02-02" "10"
 

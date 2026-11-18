@@ -107,8 +107,13 @@ let internal queryCodecs () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        MatchedReference = None
+                        Parties = []
+                        PartyOffers = []
+                        RelatedCases = RelatedCaseLinks.empty
                         FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
+                        PaymentPayees = []
                         Mine = false
                         Work = Inputs.workView view.State
                         Disposition = None
@@ -171,7 +176,7 @@ let internal queryCodecs () =
         (RepresentationReply.Data
             {
                 OperationReply.OperationId = id
-                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, true))
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, false))
             })
 
     |> ignore

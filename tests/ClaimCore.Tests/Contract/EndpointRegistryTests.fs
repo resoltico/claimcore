@@ -91,7 +91,10 @@ let private receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 10, 22)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
         Subject =
             ReceiptSubject.People
                 {
@@ -130,6 +133,7 @@ let private peopleReview =
                     }
             ProfilePresent = None
             DisplayName = None
+            DigestEmail = None
             Contact = None
             Grants = []
         }

@@ -259,7 +259,7 @@ let reviews =
 
                     let receipt =
                         { CliReplyFixtures.receipt with
-                            RecordedBy = account
+                            RecordedBy = AuthorityRef.Actor(account)
                             Subject =
                                 ReceiptSubject.People
                                     {

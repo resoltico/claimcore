@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "تغيير هوية تسجيل الدخول",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "اربط هذا الحساب بجهة إصدار ومعرّف مستخدم جديدين. يحتفظ الحساب بأدواره وأعماله المسجّلة.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "تم تغيير هوية تسجيل الدخول.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "استعادة وصول مالك التثبيت",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "استعد صلاحيات مالك التثبيت لشخص أو سجّل مالكًا جديدًا.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "هوية تسجيل الدخول هذه محجوزة لحساب آخر.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "يستخدم هذا الحساب هوية تسجيل الدخول هذه بالفعل.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "لن تتمكّن من فتح هذا الحساب بتسجيل الدخول باستخدام هويتك الحالية.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "تحديث بيانات المطالبة",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "إغلاق الملف عندما لا تبقى أعمال مطلوبة. لا يعني الإغلاق أن المطالبة دُفعت.",
-    "source": "6059fdf3ac25"
+    "text": "سجّل سبب انتهاء المعالجة وأضف ملاحظة إغلاق عند الحاجة.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "تصحيح وقائع الملف",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "تصحيح بيانات المطالبة أو القرار المسجلة. تبقى الدفعات دون تغيير، ولا يجوز أن يقل المبلغ المستحق عن إجمالي المدفوع.",
-    "source": "c115bf28430f"
+    "text": "صحّح بيانات التسجيل أو القرار المحددة في هذا الملف.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "تسجيل قرار الدفع",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
-    "source": "bd4ea9e91f3a"
+    "text": "افتح ملفًا باستخدام مرجع. سجّل ما تعرفه من بيانات التسجيل.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "إعداد المالك الأول",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "تسجيل تاريخ دفعة تمت فعليًا ومبلغها بعملة القرار. لا يؤدي ذلك إلى تنفيذ تحويل أو التحقق منه.",
-    "source": "572c7a975cf2"
+    "text": "سجّل المبلغ المدفوع أو المُعاد فعليًا مع تاريخ القيد ومبلغه وعملته.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "تسجيل حساب",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "إعادة فتح الملف. تبقى تفاصيله وسجله محفوظين.",
-    "source": "9afd35e2c444"
+    "text": "اذكر سبب استئناف العمل على هذا الملف.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "سحب دور",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "إزالة قرار الدفع قبل دفع أي مبلغ. يبقى سجله محفوظًا.",
-    "source": "4579673a4146"
+    "text": "اسحب القرار. تبقى قيود الدفع وسجل القرار محفوظة.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "مهام الملف",
@@ -319,9 +351,9 @@
     "text": "المتابعة التالية",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "تاريخ الإبلاغ (الأقدم أولًا)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "تاريخ الاستلام (الأقدم أولًا)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "المعدلة مؤخرًا",
@@ -367,10 +399,6 @@
     "text": "مرجع الملف موجود بالفعل.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "ترتيب هذه التواريخ غير صحيح.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "أحرف التحكم غير مسموحة.",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "استخدم رمز بلد مُعيّنًا رسميًا وفق ISO 3166-1، أو XK أو ZZ. راجع help schema للرموز المدعومة.",
-    "source": "b1c9f16ea7e3"
+    "text": "استخدم رمز بلد معيّنًا رسميًا وفق ISO 3166-1 أو XK. راجع مخطط المساعدة للرموز المدعومة.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "استخدم رمز عملة نشطًا ومدعومًا وفق ISO 4217. لا تُقبل رموز الصناديق أو الرموز غير الوطنية. راجع help schema.",
@@ -627,10 +655,6 @@
     "text": "مرجع الملف",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "اسم المطالب",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "المبلغ المطالب به",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "وصف الحادث",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "تاريخ الإبلاغ",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "شركة التأمين",
-    "source": "949b10334d29"
+  "field.receivedDate.label": {
+    "text": "تاريخ الاستلام",
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "حجم الصفحة",
@@ -1175,10 +1195,6 @@
     "text": "مسجل المدفوعات",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "غير معروف أو دولي",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "ملف واحد",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "وقت التسجيل",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "مشغّل التثبيت",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "سجّله",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "متى وقعت الواقعة.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "متى أُبلغت بالواقعة لأول مرة.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "تاريخ استلام مكتبك لهذه المطالبة.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "استخدم رمزًا مُعيّنًا رسميًا وفق ISO 3166-1 أو XK. يعني {unknownCode} أن البلد غير معروف أو دولي.",
-    "source": "0ba1fe273220"
+    "text": "استخدم رمزًا معيّنًا رسميًا وفق ISO 3166-1 أو XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "أين وقعت الواقعة.",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "ما الذي حدث. أضف التفاصيل المهمة لهذه المطالبة.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "الشخص أو الشركة التي تقدم المطالبة.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "شركة التأمين المسؤولة عن المطالبة.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
-    "source": "10559d041918"
+    "text": "مرجعك الخاص لهذا الملف، مثل CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "متى تقرر المبلغ الواجب دفعه.",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "رتّب حسب المرجع، أو آخر تغيير في وقائع الملف، أو تاريخ الإخطار، أو أقرب تاريخ لتذكير معلّق. تُرتّب تغييرات الوقائع من الأحدث أولًا، وتواريخ الإخطار والتذكير من الأقدم أولًا، وتوضع التواريخ غير المسجّلة أخيرًا. يفصل المرجع بين القيم المتساوية.",
-    "source": "009775c9c5fe"
+    "text": "رتّب حسب المرجع أو آخر تعديل لبيانات الملف أو تاريخ الاستلام أو أقرب تاريخ لتذكير معلّق. تظهر التعديلات الأحدث أولًا. تظهر تواريخ الاستلام والتذكير الأقدم أولًا، وتظهر التواريخ غير المسجّلة في النهاية. يُستخدم المرجع للترتيب عند التساوي.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "اختر ترتيب النتائج.",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "اختر رمز بلد مدعومًا، مثل LV، أو XK أو ZZ.",
-    "source": "d1667b590685"
+    "text": "اختر رمز بلد مدعومًا مثل LV أو XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "اختر رمز عملة مدعومًا، مثل EUR. لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
@@ -2428,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "المبلغ المدفوع فعليًا في هذه الدفعة.",
-    "source": "d79a30c73c31"
+    "text": "المبلغ المدفوع أو المُعاد في هذا القيد.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "أدخل مبلغًا موجبًا بما لا يزيد عن {maximumIntegerDigits} رقمًا قبل النقطة و{maximumFractionDigits} بعدها. استخدم أرقام ASCII ونقطة.",
@@ -2437,15 +2449,15 @@
   },
   "field.paidCurrency.label": {
     "text": "عملة الدفع",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "استخدم عملة القرار.",
-    "source": "6cf93e635901"
+    "text": "استخدم عملة هذا القيد.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة المدعومة، مطابقة لعملة القرار؛ لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
-    "source": "1a3ba1179c9c"
+    "text": "أدخل {length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة والمدعومة.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "معرّف الدفعة",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "إجمالي المدفوع حسب العملة",
-    "source": "b0f6fe6c2d8f"
+    "text": "صافي المدفوع حسب العملة",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "دُفع {paid} من {payable}.",
@@ -2499,21 +2511,9 @@
     "text": "أدخل مبلغ دفعة أكبر من الصفر.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "يجب أن تكون عملة الدفعات مطابقة لعملة القرار.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "استخدم معرّف UUID للعملية التي قُبلت بها الدفعة المسجلة.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "لا يمكن سحب قرار له قيود دفع أو إزالته. لا تُزل القيود إلا إذا سُجّلت بالخطأ.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "استبدل قيد دفعة سُجّل بالخطأ بالتاريخ والمبلغ الصحيحين. لا يؤدي ذلك إلى رد أموال أو تنفيذ تحويل. يبقى السجل السابق محفوظًا.",
-    "source": "538255858894"
+    "text": "استبدل قيد الدفع المسجّل بالخطأ بالتاريخ والاتجاه والمبلغ والمرجع والمستفيد الصحيحين. يحدّد الإيصال القيدين.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "تم تصحيح قيد الدفعة.",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "الكل",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "إضافة طرف",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "تسجيل طرف مرتبط بهذا الملف.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "تمت إضافة الطرف.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "تحديث بيانات الطرف",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "تغيير دور هذا الطرف أو اسمه أو تفاصيله.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "تم تحديث بيانات الطرف.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "إزالة الطرف",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "إزالة هذا الطرف من الحالة الحالية للملف. تبقى التفاصيل السابقة في السجل.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "تمت إزالة الطرف.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "الأطراف",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "أضف الأطراف المعروفة.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "دور الطرف",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "اختر دور الطرف في الملف.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "اسم الطرف",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "أدخل اسم الشخص أو المؤسسة إذا كان معروفًا.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "تفاصيل الطرف",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "سجّل تفاصيل الاتصال أو العنوان إذا كانت معروفة.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "استخدم من 1 إلى {maximumScalars} محرف يونيكود. فواصل الأسطر مسموحة.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "معرّف الطرف",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "اختر طرفًا من هذا الملف.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "نسخة الطرف التي تمت مراجعتها",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "استخدم النسخة التي راجعتها.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "استخدم معرّف UUID للطرف.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "اختر دور الطرف.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "أدخل اسمًا أو تفاصيل.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "بلغ هذا الملف الحد الأقصى للأطراف.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "يتجاوز عدد الأطراف المطلوب الحد المسموح.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "المطالبون",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "شركات التأمين",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "المطالب",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "شركة التأمين",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "الممثل",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "طرف آخر",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "طرف",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "طرف",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "تم تسجيل تغيير في بيانات الطرف.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "المطالب",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "طرف يقدّم المطالبة.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "شركة التأمين",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "طرف يقدّم التأمين المرتبط بالمطالبة.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "الممثل",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "طرف يتصرف نيابةً عن شخص مشارك في الملف.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "طرف آخر",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "طرف مشارك في الملف بدور آخر.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "أضف ما يصل إلى {maximumParties} طرفًا.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "اختر دورًا واحدًا من القائمة.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "استخدم معرّف الطرف الذي تريد تغيير بياناته.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "استخدم رقم نسخة الطرف المحدد.",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "مُعاد",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "مُعاد",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "المبلغ المدفوع للمستفيد.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "المبلغ الذي أعاده المستفيد.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "مدفوع زائد",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "دفعات تستلزم المراجعة",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "اتجاه الدفع",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "مرجع خارجي",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "المستفيد",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "اختر ما إذا كان المبلغ قد دُفع أم أُعيد.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "أدخل مرجع العملية المصرفية أو الخطاب.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "أدخل معرّف طرف حالي في هذا الملف.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "اختر مدفوع أو مُعاد.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "استخدم معرّف طرف حالي.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "صافي المدفوع",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "الملفات المحتسبة",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "اختر مدفوع أو مُعاد.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "ستجعل هذه الدفعة إجمالي العملة يتجاوز نطاقه الدقيق.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "اختر طرفًا حاليًا في هذا الملف.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "طرف محذوف",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "تمت التسوية",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "تمت التسوية",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "مرفوض",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "مرفوض",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "مسحوب",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "مسحوب",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "مكرر",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "مكرر",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "أخرى",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "أخرى",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "انتهت المعالجة بتسوية.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "رُفضت المطالبة.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "سُحبت المطالبة.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "يغطي ملف آخر المطالبة نفسها.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "انتهت المعالجة لسبب آخر.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "النتيجة",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "اختر سبب انتهاء المعالجة.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "اختر نتيجة من القائمة.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "ملاحظة الإغلاق",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "سجّل السياق المهم للإغلاق.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "أساس القرار",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "سجّل الأدلة أو الأسباب التي استند إليها القرار.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "سبب إعادة الفتح",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "الإغلاق",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "اختر نتيجة إغلاق من القائمة.",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "تغيير مرجع الملف",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "استبدل مرجع الملف الحالي. تبقى المراجع السابقة صالحة للعثور على الملف نفسه.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "تم تغيير مرجع الملف.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "اختر مرجعًا جديدًا لهذا الملف.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "المرجع الجديد",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "استخدم تنسيق مرجع الملف.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "أدخل المرجع الذي سيُستخدم لهذا الملف.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "المرجع السابق",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "سبب استئناف المعالجة.",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "إضافة ملف مرتبط",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "اربط هذا الملف بملف آخر يمكنك الاطلاع عليه.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "تم ربط الملف.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "اختر ملفًا باستخدام مرجعه أو معرّفه.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "إزالة ارتباط بملف",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "أزل الارتباط المحدد من هذا الملف.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "تمت إزالة الارتباط بالملف.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "أكّد إنهاء الارتباط بين الملفين هنا.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "ارتباط بملف",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "تغيّرت ارتباطات الملفات",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "معرّف الارتباط",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "استخدم UUID لعملية تسجيل الارتباط.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "يحدد الارتباط المراد إزالته.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "مرجع الملف المرتبط",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "استخدم تنسيق مرجع الملف.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "أدخل مرجعًا أو استخدم حقل معرّف الملف المرتبط.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "معرّف الملف المرتبط",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "استخدم UUID الخاص بالملف.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "أدخل معرّفًا إذا تركت حقل المرجع فارغًا.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "ملاحظة الارتباط",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "اشرح سبب ارتباط هذين الملفين.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "الملفات المرتبطة",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "الارتباطات من هذا الملف",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "الارتباطات إلى هذا الملف",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "الملف المرتبط غير متاح",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "الارتباطات الواردة المتاحة",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "حدّد ارتباطًا بملف موجودًا بالفعل.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "لا يمكن ربط الملف بنفسه.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "هذا الملف مرتبط بالفعل بالملف المحدد.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "أزل ارتباطًا موجودًا قبل إضافة ارتباط آخر.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "استخدم من 1 إلى {maximumScalars} محرف Unicode. يُسمح بفواصل الأسطر.",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "متابعة",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "متابعة",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "إجراء يستلزم المتابعة.",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "مهلة",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "مهلة",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "إجراء يجب إكماله بحلول تاريخ الاستحقاق.",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "متأخر",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "متأخر",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "انقضى تاريخ الاستحقاق وما زال الإجراء معلقًا.",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "مستوفى",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "مستوفى",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "اكتمل الإجراء بحلول تاريخ الاستحقاق.",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "فائت",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "فائت",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "اكتمل الإجراء بعد تاريخ الاستحقاق.",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "ملغى",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "ملغى",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "أُلغيت المهلة.",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "مهلة متأخرة",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "مهلة متأخرة",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "تتضمن هذه الحالة المفتوحة مهلة انقضت وما زال الإجراء المرتبط بها معلقًا.",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "أي نوع",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "نوع التذكير",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "اختر متابعة أو مهلة.",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "اختر طريقة تتبع هذا الإجراء.",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "تاريخ الإكمال",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "استخدم تاريخًا ميلاديًا بالتنسيق YYYY-MM-DD لا يتجاوز تاريخ العمل.",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "أدخل تاريخ إنجاز العمل. اترك الحقل فارغًا لاستخدام تاريخ اليوم.",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "نوع التذكير",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "صفِّ القائمة حسب نوع التذكير.",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "نتيجة المهلة",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "نتيجة المهلة",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "صفِّ القائمة حسب نتيجة المهلة.",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "تُجمع الحالات حسب شهر التسجيل.",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "شهر التسجيل",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "تُجمع الحالات حسب شهر الاستلام.",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "شهر الاستلام",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "تُجمع الحالات حسب شهر الإغلاق.",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "شهر الإغلاق",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "تُجمع الحالات حسب سبب الإغلاق المسجل.",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "نتيجة الإغلاق",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "تُجمع الحالات حسب الحساب المسؤول.",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "الحساب المسؤول",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "تُجمع الحالات حسب عدد الأيام من التسجيل إلى الإغلاق أو اليوم.",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "أيام فتح الحالة",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "لم يُسجّل تاريخ الاستلام.",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "غير مسجل",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "الحالة ليست مغلقة حاليًا.",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "غير مغلق",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "لم يُسند إلى الحالة حساب مسؤول.",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "غير مسند",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "٠–٣٠ يومًا",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "٣١–٩٠ يومًا",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "٩١–١٨٠ يومًا",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "١٨١–٣٦٥ يومًا",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "٣٦٦ يومًا فأكثر",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "حالات ظلت مفتوحة لمدة ٠–٣٠ يومًا.",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "حالات ظلت مفتوحة لمدة ٣١–٩٠ يومًا.",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "حالات ظلت مفتوحة لمدة ٩١–١٨٠ يومًا.",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "حالات ظلت مفتوحة لمدة ١٨١–٣٦٥ يومًا.",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "حالات ظلت مفتوحة لمدة ٣٦٦ يومًا فأكثر.",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "اختر طريقة تجميع الحالات في هذا الملخص.",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "تاريخ التسجيل من",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "تاريخ التسجيل حتى",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "تاريخ الاستلام من",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "تاريخ الاستلام حتى",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "تاريخ الإغلاق من",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "تاريخ الإغلاق حتى",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "لا نشاط منذ",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "التجميع حسب",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "شهر التسجيل",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "شهر الاستلام",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "شهر الإغلاق",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "نتيجة الإغلاق",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "الحساب المسؤول",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "أيام فتح الحالة",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "غير مسجل",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "غير مغلق",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "غير مسند",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "مجموعات الحالات",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "العملة",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "الحالات التي سُجّل لها مبلغ مطالبة",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "الحالات التي سُجّل لها مبلغ مستحق",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "الحالات التي سُجّلت لها مدفوعات",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "يعكس هذا الملخص بيانات الحالات وقت إعداده.",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "٠–٣٠ يومًا",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "٣١–٩٠ يومًا",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "٩١–١٨٠ يومًا",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "١٨١–٣٦٥ يومًا",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "٣٦٦ يومًا فأكثر",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "ملخص التذكيرات اليومي ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "افتح تذكيراتك على {url}.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "المواعيد النهائية المتأخرة",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "المواعيد النهائية المستحقة اليوم",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "المواعيد النهائية القادمة",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "المتابعات المتأخرة",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "المتابعات المستحقة اليوم",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "تم الإرسال",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "تعذّر الإرسال",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "لا توجد تذكيرات للإرسال",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "بريد الملخص",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "أدخل عنوان البريد الإلكتروني لملخص التذكيرات اليومي.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "استخدم عنوان بريد إلكتروني لا يتجاوز {maximumCharacters} محرفًا.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "أدخل عنوان بريد إلكتروني بعلامة @ واحدة ونقطة في النطاق.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "المواعيد النهائية المتأخرة — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "المواعيد النهائية المتأخرة",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "المواعيد النهائية المستحقة اليوم — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "المواعيد النهائية المستحقة اليوم",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "المواعيد النهائية القادمة — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "المواعيد النهائية القادمة",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "المتابعات المتأخرة — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "المتابعات المتأخرة",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "المتابعات المستحقة اليوم — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "المتابعات المستحقة اليوم",
+    "source": "e04e8b1f370c"
   }
 }

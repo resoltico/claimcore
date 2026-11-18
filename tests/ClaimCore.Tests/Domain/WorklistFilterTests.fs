@@ -42,8 +42,8 @@ let tests =
                     let registration =
                         DomainInputs.registrationWith
                             [
-                                BusinessField.ClaimantName, "ＲĪＧＡ%"
-                                BusinessField.InsurerName, "A_B\\C"
+                                BusinessField.PolicyNumber, "ＲĪＧＡ%"
+                                BusinessField.InsurerClaimReference, "A_B\\C"
                             ]
                             DomainInputs.registration
                         |> DomainInputs.admittedRegistration
@@ -51,23 +51,23 @@ let tests =
                     let fields =
                         {
                             CaseFields.CaseReference = DomainInputs.reference "CASE-1"
-                            Status = CaseStatus.Opened
+                            Handling = Handling.Open
                             Registration = registration
                             Finance = FinancialPosition.undecided
                         }
 
                     Expect.equal
-                        (CaseSearch.text fields)
+                        (CaseSearch.text [] fields)
                         "rīga%\u001fa_b\\c\u001fcase-1"
                         "Only declared searchable values are joined by U+001F"
 
                     Expect.equal
-                        (CaseFields.value BusinessField.ClaimantName fields)
+                        (CaseFields.value BusinessField.PolicyNumber fields)
                         (Some "ＲĪＧＡ%")
                         "Field lookup preserves authored claimant spelling"
 
                     Expect.equal
-                        (CaseFields.value BusinessField.InsurerName fields)
+                        (CaseFields.value BusinessField.InsurerClaimReference fields)
                         (Some "A_B\\C")
                         "Field lookup preserves authored insurer spelling"
 
@@ -96,7 +96,7 @@ let tests =
                             "Field lookup preserves complete authored description text"
 
                         Expect.equal
-                            (CaseSearch.text described)
+                            (CaseSearch.text [] described)
                             expected
                             "Search keeps descriptor order and exact NFKC text with paragraphs"
 

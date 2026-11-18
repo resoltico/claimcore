@@ -60,7 +60,7 @@ const expandedFilters = async (run: Run) => {
     await trigger.click();
   }
   const summaries = run.page.locator(".worklist-filters details > summary");
-  await expect(summaries).toHaveCount(3);
+  await expect(summaries).toHaveCount(4);
   for (const summary of await summaries.all()) {
     await summary.click();
   }
@@ -110,6 +110,7 @@ const recordPaymentReview = async (run: Run) => {
       minimumFractionDigits: 2,
     }).format(100),
   );
+  await fillBusinessField(run.page, "paidCurrency", "EUR");
   await run.page.getByRole("dialog").locator('button[type="submit"]').click();
   await expect(
     run.page.getByRole("dialog").locator("button[data-confirm-operation]"),

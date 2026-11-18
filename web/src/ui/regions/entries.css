@@ -15,6 +15,7 @@
   margin-block-end: var(--space-1);
   color: var(--text-secondary);
   font-size: var(--text-xs);
+  overflow-wrap: anywhere;
 }
 .entries-view dd {
   margin: 0;

@@ -135,9 +135,11 @@ let tests =
                             After =
                                 Some
                                     {
-                                        Paid = CaseFixtures.money "100" "EUR"
+                                        NetPaid =
+                                            DecimalTotal.parse "100"
+                                            |> Result.toOption
+                                            |> Option.get
                                         Payable = CaseFixtures.money "300" "EUR"
-                                        Remaining = CaseFixtures.money "200" "EUR"
                                     }
                         }
 
@@ -158,7 +160,7 @@ let tests =
                         Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
                         OperationHash = receipt.Position.EntryHash
                         RecordedAt = receipt.RecordedAt
-                        RecordedBy = receipt.RecordedBy
+                        RecordedBy = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                         Subject =
                             {
                                 PartKind = PartKind.Payment
@@ -188,7 +190,7 @@ let tests =
                                     EffectPosition.create receipt.Position.Sequence 0 |> Option.get
                                 OperationHash = receipt.Position.EntryHash
                                 RecordedAt = receipt.RecordedAt
-                                RecordedBy = receipt.RecordedBy
+                                RecordedBy = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                                 Subject =
                                     {
                                         PartKind = PartKind.Case
@@ -263,13 +265,7 @@ let tests =
 
                         Expect.equal
                             (entries |> List.map _.Key)
-                            [
-                                "paymentCount"
-                                "paymentDecisionDate"
-                                "payable"
-                                "paid"
-                                "remaining"
-                            ]
+                            [ "paymentCount"; "paymentDecisionDate"; "payable"; "decisionBasis" ]
                             "Authored summary order"
 
                         Expect.equal
@@ -277,7 +273,7 @@ let tests =
                             (PresentedValue.Count 0L)
                             "Known zero count"
                     | _ -> failtest "Financial summary table required")
-            matches "case totals" [ RegionRole.Totals ] (fun () ->
+            matches "case totals" [ RegionRole.Notice; RegionRole.Totals ] (fun () ->
                 data Api.caseSummary |> CaseTotalsScreen.view)
             matches
                 "reminder"

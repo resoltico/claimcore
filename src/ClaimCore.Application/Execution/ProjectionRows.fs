@@ -42,14 +42,33 @@ type internal NoteProjection =
         Value: NoteValue
     }
 
+type internal PartyProjection =
+    {
+        Id: PartyId
+        Revision: Revision
+        Origin: SubjectStamp
+        Value: PartyValue
+    }
+
+type internal LinkProjection =
+    {
+        Id: LinkId
+        Source: CaseId
+        Revision: Revision
+        Value: LinkValue
+    }
+
 type internal FamilyProjectionDelta =
     {
         Snapshot: CaseSnapshot
         Index: CaseIndex
+        ReportDates: CaseReportDates
         Work: WorkProjection
         Payments: PaymentProjection list
         Reminders: ReminderProjection list
         Notes: NoteProjection list
+        Parties: PartyProjection list
+        Links: LinkProjection list
     }
 
 type internal PersonProjection =
@@ -64,10 +83,15 @@ type internal PersonProjection =
 
 /// The same row construction serves a live accepted change and the verified history fold.
 module internal ProjectionRows =
+    let familyActor =
+        function
+        | Authority.Actor actor -> actor
+        | Authority.Operator -> invalidOp "A family effect has operator authority."
+
     let attribution (stamp: SubjectStamp) =
         {
             RecordedAt = stamp.RecordedAt
-            RecordedBy = stamp.ActorId
+            RecordedBy = familyActor stamp.Authority
         }
 
     let summaries
@@ -105,6 +129,7 @@ module internal ProjectionRows =
     let private familyDelta
         (snapshot: CaseSnapshot)
         (index: CaseIndex)
+        reportDates
         id
         (currentWork: AcceptedPart<CaseWork option> option)
         (parts: PartChange list)
@@ -115,6 +140,8 @@ module internal ProjectionRows =
         let payments = ResizeArray<PaymentProjection>()
         let reminders = ResizeArray<ReminderProjection>()
         let notes = ResizeArray<NoteProjection>()
+        let parties = ResizeArray<PartyProjection>()
+        let links = ResizeArray<LinkProjection>()
 
         for change in parts do
             let value =
@@ -139,10 +166,26 @@ module internal ProjectionRows =
                         Value = value
                         Changed = attribution change.Stamp
                     }
+            | PartValue.Link value ->
+                links.Add
+                    {
+                        Id = LinkId.create change.PartId |> Option.get
+                        Source = snapshot.CaseId
+                        Revision = change.Revision
+                        Value = value
+                    }
             | PartValue.Note value ->
                 notes.Add
                     {
                         Id = NoteId.create change.PartId |> Option.get
+                        Origin = Map.find (change.Kind, change.PartId) origins
+                        Value = value
+                    }
+            | PartValue.Party value ->
+                parties.Add
+                    {
+                        Id = PartyId.create change.PartId |> Option.get
+                        Revision = change.Revision
                         Origin = Map.find (change.Kind, change.PartId) origins
                         Value = value
                     }
@@ -194,25 +237,31 @@ module internal ProjectionRows =
                 {
                     Snapshot = snapshot
                     Index = index
+                    ReportDates = reportDates
                     Work = work
                     Payments = List.ofSeq payments
                     Reminders = List.ofSeq reminders
                     Notes = List.ofSeq notes
+                    Parties = List.ofSeq parties
+                    Links = List.ofSeq links
                 }
 
-    let family (state: CaseFamily) parts origins summary =
+    let family (state: CaseFamily) parts origins summary reportDates =
         CaseFamily.rows state parts
         |> Result.bind (fun (_, index) ->
             match CaseFamily.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
+            | Some snapshot ->
+                familyDelta snapshot index reportDates state.Id state.Work parts origins summary)
 
-    let decision (state: DecisionFacts) parts origins summary =
+    let decision (state: DecisionFacts) parts origins summary date previous =
         DecisionFacts.rows state parts
         |> Result.bind (fun (_, index) ->
             match DecisionFacts.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
+            | Some snapshot ->
+                let dates = CaseReportDates.record date index.Status previous
+                familyDelta snapshot index dates state.Id state.Work parts origins summary)
 
     let person state =
         Person.rows state

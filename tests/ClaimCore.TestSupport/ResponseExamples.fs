@@ -26,7 +26,7 @@ let snapshot: CaseSnapshot =
             CaseState.Active
                 {
                     CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = DomainInputs.admittedRegistration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
@@ -37,7 +37,7 @@ let receipt: OperationReceipt =
         OperationId = CaseFixtures.operationId id
         Position = position
         RecordedAt = basis.ObservedAt
-        RecordedBy = actor
+        RecordedBy = AuthorityRef.Actor actor
         Basis = basis
         Subject =
             ReceiptSubject.Case
@@ -51,6 +51,7 @@ let receipt: OperationReceipt =
                             {
                                 State = LiveCase.ofState snapshot.State |> Option.get
                                 Disposition = None
+                                ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
                             }
@@ -59,6 +60,7 @@ let receipt: OperationReceipt =
 
 let peopleReceipt =
     { receipt with
+        RecordedBy = AuthorityRef.Operator
         Subject =
             ReceiptSubject.People
                 {
@@ -77,9 +79,14 @@ let peopleReceipt =
 
 let caseRead: CaseReadModel =
     {
+        MatchedReference = None
+        RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
+        Parties = []
+        PartyOffers = []
         LatestPayments = []
+        PaymentPayees = []
         Advice = Inputs.caseAdvice snapshot.State
         Mine = false
         Work = Inputs.workView snapshot.State
@@ -135,7 +142,8 @@ let preview: PreviewReply =
             Outcome.Succeeded(
                 Previewed.Reviewed
                     {
-                        OperationReview.Task = TaskId.ofLiteral "case.void"
+                        OperationReview.ChangesOwnSignInIdentity = false
+                        Task = TaskId.ofLiteral "case.void"
                         Target = ReviewTarget.Case(snapshot.CaseId, reference)
                         References = { Actors = []; Cases = [] }
                         Binding = Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first)
@@ -177,14 +185,16 @@ let preview: PreviewReply =
     }
 
 let private reminder =
-    Reminder.ofAccepted
+    Reminder.decode
         (ReminderId.ofOperationId receipt.OperationId)
         snapshot.CaseId
         Revision.first
         (ReminderAction.parse "Contact claimant"
          |> Result.defaultWith (string >> invalidOp))
         (CalendarDate.ofDate basis.BusinessDate)
+        ReminderKind.FollowUp
         ReminderState.Pending
+        None
     |> Result.defaultWith invalidOp
 
 let private hostRead (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =
@@ -282,6 +292,7 @@ let internal replies () : IEndpointOutput list =
                                 (fun (fields: CaseFields) -> fields.Finance)
                                 snapshot.State
                         Items = []
+                        Payees = []
                         NextCursor = None
                     })
         yield!
@@ -322,7 +333,9 @@ let internal replies () : IEndpointOutput list =
                         Basis = basis
                         Claimed = []
                         Payable = []
-                        Paid = []
+                        NetPaid = []
+                        GroupBy = None
+                        Groups = []
                         Counts =
                             {
                                 Total = 0L
@@ -391,11 +404,7 @@ let internal replies () : IEndpointOutput list =
                             {
                                 Reminder = reminder
                                 Reference = reference
-                                ClaimantName =
-                                    CaseState.fields snapshot.State
-                                    |> Option.map (fun fields ->
-                                        Registration.claimant fields.Registration)
-                                    |> Option.get
+                                Claimants = []
                                 Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor

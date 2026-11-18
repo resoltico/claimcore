@@ -33,16 +33,15 @@ let tests =
 
                     let due = CalendarDate.parse "2026-11-17" |> accepted
 
-                    let before =
+                    let plan =
                         {
-                            ReminderValue.Plan = Some { Action = action; Due = due }
-                            State = ReminderState.Pending
+                            ReminderPlan.Action = action
+                            Due = due
+                            Kind = ReminderKind.FollowUp
                         }
 
-                    let completed =
-                        { before with
-                            State = ReminderState.Completed
-                        }
+                    let before = ReminderValue.Available(plan, ReminderHandling.Pending)
+                    let completed = ReminderValue.Available(plan, ReminderHandling.Completed due)
 
                     let described description =
                         {
@@ -69,9 +68,10 @@ let tests =
                     let nextDue = CalendarDate.parse "2026-11-18" |> accepted
 
                     let reopened =
-                        { before with
-                            Plan = Some { Action = action; Due = nextDue }
-                        }
+                        ReminderValue.Available(
+                            { plan with Due = nextDue },
+                            ReminderHandling.Pending
+                        )
 
                     let reopenedView =
                         PartDescriptions.timeline
@@ -115,72 +115,67 @@ let tests =
                         assigned.Overview.Event
                         (TimelineEvent.ResponsibilityAssigned reference)
                         "An erased current reference remains exact")
-            testCase
-                "case creation and a status-only change share field and money differences"
-                (fun () ->
-                    let task = ClaimCore.Domain.Tasks.Case.Open.task |> familyTask
+            testCase "case creation and closure describe only the changed facts" (fun () ->
+                let task = ClaimCore.Domain.Tasks.Case.Open.task |> familyTask
 
-                    let description =
-                        task.Describe None Map.empty [ initialChange ]
-                        |> accepted
-                        |> List.exactlyOne
+                let description =
+                    task.Describe None Map.empty [ initialChange ] |> accepted |> List.exactlyOne
 
-                    match description.Description with
-                    | PartDescription.Case change ->
-                        Expect.equal
-                            change.Lifecycle
-                            (Some
-                                {
-                                    Before = None
-                                    After = Some Lifecycle.Active
-                                })
-                            "Creation lifecycle"
+                match description.Description with
+                | PartDescription.Case change ->
+                    Expect.equal
+                        change.Lifecycle
+                        (Some
+                            {
+                                Before = None
+                                After = Some Lifecycle.Active
+                            })
+                        "Creation lifecycle"
 
-                        Expect.isTrue
-                            (change.Fields
-                             |> List.exists (fun field ->
-                                 field.FieldName = BusinessField.CaseReference
-                                 && field.Before.IsNone
-                                 && field.After = Some(CaseFieldValue.Reference reference)))
-                            "Retained identity"
+                    Expect.isTrue
+                        (change.Fields
+                         |> List.exists (fun field ->
+                             field.FieldName = BusinessField.CaseReference
+                             && field.Before.IsNone
+                             && field.After = Some(CaseFieldValue.Reference reference)))
+                        "Retained identity"
 
-                        let claimed =
-                            change.Money
-                            |> List.find (fun change ->
-                                change.FieldName = BusinessField.ClaimedAmount)
+                    let claimed =
+                        change.Money
+                        |> List.find (fun change -> change.FieldName = BusinessField.ClaimedAmount)
 
-                        Expect.equal
-                            (claimed.Change.After |> Option.map Money.value)
-                            (Some 1000M)
-                            "Typed complete money"
-                    | _ -> failtest "Expected case description"
+                    Expect.equal
+                        (claimed.Change.After |> Option.map Money.value)
+                        (Some 1000M)
+                        "Typed complete money"
+                | _ -> failtest "Expected case description"
 
-                    let state = family ()
-                    let task = ClaimCore.Domain.Tasks.Case.Close.task |> familyTask
+                let state = family ()
+                let task = ClaimCore.Domain.Tasks.Case.Close.task |> familyTask
 
-                    let changes =
-                        task.Decide
-                            (context 2)
-                            environment
-                            (Some(DecisionFacts.fromReplay state))
-                            (caseBinding state)
-                            InputMap.empty
-                        |> accepted
+                let changes =
+                    task.Decide
+                        (context 2)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        (caseBinding state)
+                        (closingInputs "SETTLED")
+                    |> accepted
 
-                    match
-                        (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
-                         |> accepted
-                         |> List.exactlyOne)
-                            .Description
-                    with
-                    | PartDescription.Case change ->
-                        Expect.equal
-                            (change.Fields |> List.map _.FieldName)
-                            [ BusinessField.Status ]
-                            "Only the status changed"
+                match
+                    (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
+                     |> accepted
+                     |> List.exactlyOne)
+                        .Description
+                with
+                | PartDescription.Case change ->
+                    Expect.equal
+                        (change.Fields |> List.map _.FieldName)
+                        [ BusinessField.Outcome; BusinessField.Status ]
+                        "Outcome and status changed"
 
-                        Expect.isEmpty change.Money "No repeated financial narrative"
-                    | _ -> failtest "Expected case description")
+                    Expect.isEmpty change.Money "No repeated financial narrative"
+                | _ -> failtest "Expected case description")
             testCase
                 "payment descriptions retain entry details and the case's financial delta"
                 (fun () ->
@@ -212,15 +207,19 @@ let tests =
                             (Some { Before = None; After = Some false })
                             "New live entry"
 
-                        let paid =
-                            finance.Money
-                            |> List.find (fun field -> field.FieldName = BusinessField.PaidAmount)
+                        let net totals =
+                            totals
+                            |> Option.map (fun (total: PaymentTotals) ->
+                                DecimalTotal.format total.NetPaid)
 
                         Expect.equal
-                            (paid.Change.Before |> Option.map Money.value,
-                             paid.Change.After |> Option.map Money.value)
-                            (Some 0M, Some 25.50M)
-                            "Before and after financial context"
+                            (net entry.Totals.Before, net entry.Totals.After)
+                            (Some "0", Some "25.5")
+                            "Before and after net in the decision currency"
+
+                        Expect.isEmpty
+                            finance.Money
+                            "Payment changes carry their own financial context"
                     | _ -> failtest "Expected the entry and financial part descriptions")
             testCase "work describes independent assignment and summary changes" (fun () ->
                 let state = family ()
@@ -493,7 +492,7 @@ let tests =
                             environment
                             (Some(DecisionFacts.fromReplay historical))
                             (caseBinding historical)
-                            InputMap.empty
+                            (closingInputs "SETTLED")
                         |> accepted
 
                     match changes.Head.Value with
@@ -523,7 +522,7 @@ let tests =
                     let _, index = CaseFamily.rows erased erasure |> accepted
 
                     Expect.isNone
-                        index.Paid
+                        index.PaymentReview
                         "Erasure yields unavailable money, not a fabricated zero"
 
                     Expect.isNone index.Claimed "No private claim is reconstructed")

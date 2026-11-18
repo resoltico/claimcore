@@ -1,14 +1,14 @@
-case open R-1 --incident-date 2026-01-01 --incident-notification-date 2026-01-02 --incident-country LV --claimant-name Ann --insurer-name Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case amend-registration R-1 --expected-revision 1 --incident-date 2026-01-01 --incident-notification-date 2026-01-02 --incident-country LV --claimant-name Ann --insurer-name Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case open R-1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --party {"input:partyRole":"CLAIMANT","input:partyName":"Ann"} --party {"input:partyRole":"INSURER","input:partyName":"Ins"} --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case amend-registration R-1 --expected-revision 1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case correct R-1 --expected-revision 4 --registration keep --decision update --payment-decision-date 2026-02-01 --payable-amount 5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case correct R-1 --expected-revision 4 --registration update --incident-date 2026-01-01 --incident-notification-date 2026-01-02 --incident-country LV --claimant-name Ann --insurer-name Ins --claimed-amount 1 --claimed-currency EUR --decision keep --operation-id 11111111-2222-7333-8444-555555555555
+case correct R-1 --expected-revision 4 --registration update --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 1 --claimed-currency EUR --decision keep --operation-id 11111111-2222-7333-8444-555555555555
 case decide R-1 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case decide R-1 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --preview --operation-id 11111111-2222-7333-8444-555555555555
 case withdraw-decision R-1 --expected-revision 2 --operation-id 11111111-2222-7333-8444-555555555555
 case record-payment R-1 --expected-revision 2 --payment-date 2026-03-01 --paid-amount 1 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case remove-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
-case close R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-case reopen R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+case close R-1 --outcome other --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+case reopen R-1 --reason Additional --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
 case void R-1 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
 case reinstate R-1 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
 case erase R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --expected-family-sequence 1
@@ -26,8 +26,9 @@ people grants 11111111-2222-7333-8444-555555555555
 context
 people history --limit 1
 case summary
+case summary --group-by RECEIVED_MONTH --registered-from 2026-11-01 --registered-through 2026-11-30
 operation get 11111111-2222-7333-8444-555555555555
-case amend-registration R-1 --expected-revision 4 --claimant-name Selected --operation-id 11111111-2222-7333-8444-555555555555
+case amend-registration R-1 --expected-revision 4 --policy-number Selected --operation-id 11111111-2222-7333-8444-555555555555
 case correct R-1 --expected-revision 4 --registration keep --decision update --payable-amount 650 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 work update R-1 --expected-work-revision 4 --handling-summary Current --operation-id 11111111-2222-7333-8444-555555555555
 work update R-1 --expected-work-revision 4 --responsible-actor 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
@@ -50,6 +51,7 @@ case timeline R-1
 case timeline R-1 --filter facts --limit 5 --all
 case timeline R-1 --filter work --cursor abc --limit 1
 people set-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored --expected-revision 1
+people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --issuer https://id.example/ --subject new-sub --expected-revision 1
 people erase-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --limit 1
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all
@@ -61,6 +63,14 @@ note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-55555555555
 note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
 case notes R-1 --limit 1
 case payments CASE-001 --limit 20
-case correct-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --payment-date 2026-03-01 --paid-amount 2 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case correct-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --direction returned --payment-date 2026-03-01 --paid-amount 2 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 session terminate-own
 people terminate-sessions 10000000-0000-4000-8000-000000000001
+case change-reference R-1 --expected-revision 1 --new-reference R-2 --operation-id 11111111-2222-7333-8444-555555555555
+link add R-1 --related-case-reference R-2 --link-note Related --operation-id 11111111-2222-7333-8444-555555555555
+link remove R-1 --link-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+party add R-1 --party-role claimant --party-name Ann --operation-id 11111111-2222-7333-8444-555555555555
+party update R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --party-details Office --operation-id 11111111-2222-7333-8444-555555555555
+party remove R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --operation-id 11111111-2222-7333-8444-555555555555
+people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --expected-revision 1 --issuer https://new.example/ --subject new-sub --operation-id 11111111-2222-7333-8444-555555555555
+case summary --group-by received-month --format csv

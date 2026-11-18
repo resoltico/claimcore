@@ -57,6 +57,8 @@ let environment =
         FamilyEnvironment.Requester = access
         RequesterPrincipal = principal
         Maintenance = false
+        RelatedCase = fun _ -> None
+        ReferenceOwner = fun _ -> None
         AssigneeEligible = fun _ -> true
     }
 
@@ -71,7 +73,7 @@ let context number =
                     EffectPosition.create (Sequence.create (int64 number) |> Option.get) 0
                     |> Option.get
                 OperationId = id
-                ActorId = actorId
+                Authority = Authority.Actor actorId
                 RecordedAt = observedAt
             }
         Decision =
@@ -91,10 +93,10 @@ let registration =
     RegistrationInput.create
         [
             BusinessField.IncidentDate, "2026-01-01"
-            BusinessField.IncidentNotificationDate, "2026-01-02"
+            BusinessField.ReceivedDate, "2026-01-02"
             BusinessField.IncidentCountry, "LV"
-            BusinessField.ClaimantName, "Claimant"
-            BusinessField.InsurerName, "Insurer"
+            BusinessField.PolicyNumber, "Claimant"
+            BusinessField.InsurerClaimReference, "Insurer"
             BusinessField.ClaimedAmount, "1000.00"
             BusinessField.ClaimedCurrency, "EUR"
         ]
@@ -112,9 +114,10 @@ let initialChange =
             PartValue.Case
                 {
                     Disposition = None
+                    ReopenReason = None
                     Reference = Some reference
                     Lifecycle = Lifecycle.Active
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Content =
                         Some
                             {
@@ -145,6 +148,12 @@ let apply state changes =
     |> List.fold (fun state change -> Some(CaseFamily.apply state change |> accepted)) (Some state)
     |> Option.get
 
+let closingInputs outcome =
+    inputs [ text (InputTarget.Field BusinessField.Outcome) outcome ]
+
+let reopeningInputs reason =
+    inputs [ text InputTarget.Reason reason ]
+
 let setCase lifecycle status (state: CaseFamily) =
     let change =
         { initialChange with
@@ -156,13 +165,22 @@ let setCase lifecycle status (state: CaseFamily) =
                     {
                         CaseValue.Reference = None
                         Lifecycle = lifecycle
-                        Status = status
+                        Handling =
+                            if status = CaseStatus.Opened then
+                                Handling.Open
+                            else
+                                Handling.Closed
+                                    {
+                                        Outcome = ClosureOutcome.Settled
+                                        Note = None
+                                    }
                         Content =
                             if lifecycle = Lifecycle.Erased then
                                 None
                             else
                                 state.Case.Value.Content
                         Disposition = None
+                        ReopenReason = None
                     }
             Erases =
                 if lifecycle = Lifecycle.Erased then
@@ -212,6 +230,7 @@ let peopleEnvironment target =
         EnabledHumanOwners = 2
         ActorCount = 1
         TargetPrincipal = Some target
+        PrincipalOwner = None
     }
 
 let principalInputs principal =

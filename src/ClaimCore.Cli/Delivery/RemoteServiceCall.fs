@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open ClaimCore.CommandLine
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
@@ -152,16 +153,18 @@ module RemoteServiceCall =
                 match reply.Frame.Result with
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
-                    | Some(RepresentationReply.Data(ClaimCore.Application.Contracts.Outcome.Succeeded {
-                                                                                                          Requester = ClaimCore.Application.Contracts.RequesterState.Active context
-                                                                                                      })) ->
-                        return Ok context
-                    | Some(RepresentationReply.Data(ClaimCore.Application.Contracts.Outcome.Succeeded _)) ->
-                        return
-                            Error
-                                { reply with
-                                    ExitCode = ExitCode.value ExitCode.Rejected
-                                }
+                    | Some(RepresentationReply.Data(result: Outcome<ContextReply>)) ->
+                        match result with
+                        | Outcome.Succeeded {
+                                                Requester = RequesterState.Active context
+                                            } -> return Ok context
+                        | Outcome.Succeeded _ ->
+                            return
+                                Error
+                                    { reply with
+                                        ExitCode = ExitCode.value ExitCode.Rejected
+                                    }
+                        | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
                     | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
                 | _ -> return Error reply
             with

@@ -24,6 +24,7 @@ test("corrects selected payment atomically with both identities in receipt timel
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-04",
     "Paid amount": "100",
+    "Payment currency": "EUR",
   });
   const target = { kind: "REFERENCE" as const, caseReference: reference };
   const before = await workRequest(page, "case.get", { target });
@@ -47,6 +48,7 @@ test("corrects selected payment atomically with both identities in receipt timel
     .getByRole("button", { name: "Correct payment entry", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
   await expect(dialog.getByRole("textbox", { name: "Payment ID", exact: true })).toHaveCount(0);
   await fillNamedField(page, "Payment date", "2026-09-05");
   await fillNamedField(page, "Paid amount", "75");
@@ -106,8 +108,8 @@ test("corrects selected payment atomically with both identities in receipt timel
   expect(after.outcome.data.latestPayments.map((value) => value.paymentId)).toEqual([
     frozen.operationId,
   ]);
-  await expect(payments.locator('[data-entry="paid"]')).toContainText("75.00 EUR");
-  await expect(payments.locator('[data-entry="remaining"]')).toContainText("25.00 EUR");
+  await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("75.00 EUR");
+  await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   const history = await workRequest(page, "case.timeline", { target, filter: "FACTS", limit: 50 });
   if (history.outcome.kind !== "SUCCEEDED") {
     throw new Error("Current timeline required");
@@ -127,8 +129,8 @@ test("corrects selected payment atomically with both identities in receipt timel
       throw new Error("Complete timeline CSV required");
     }
     const text = (await readFile(path)).toString("utf8");
-    expect(text).toContain(`payment.${old.paymentId}.paidAmount`);
-    expect(text).toContain(`payment.${frozen.operationId}.paidAmount`);
+    expect(text).toContain(`payment.${old.paymentId}.amount`);
+    expect(text).toContain(`payment.${frozen.operationId}.amount`);
     expect(text).toContain("case.correctPayment");
   } finally {
     await download.delete();

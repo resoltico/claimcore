@@ -6,7 +6,7 @@ open System
 /// Country source: RIPE NCC's maintained ISO 3166-1 table (retrieved 2026-11-13).
 /// https://www.ripe.net/community/internet-governance/internet-technical-community/the-rir-system/list-of-country-codes-and-rirs/
 /// Official assignment scope: https://www.iso.org/iso-3166-country-codes.html
-/// XK and ZZ are explicit ClaimCore extensions; no other reserved/user-assigned codes.
+/// XK is an explicit ClaimCore extension; no other reserved/user-assigned codes.
 /// Currency source: SIX ISO 4217 List One, published 2026-09-17, retrieved 2026-11-13.
 /// https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
 /// XML SHA256 33139b438657d1cee116ba737807ea71d19d6de4b90f799a09c56f0cc6a1b0ff.
@@ -38,7 +38,7 @@ module CodeVocabularies =
          SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS
          ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO
          TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI
-         VN VU WF WS XK YE YT ZA ZM ZW ZZ"
+         VN VU WF WS XK YE YT ZA ZM ZW"
             .Split([| ' '; '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
         |> Array.toList
 

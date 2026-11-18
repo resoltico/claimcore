@@ -52,7 +52,7 @@ let tests =
                 Position = position
                 OperationHash = hash
                 RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
-                RecordedBy = actor
+                RecordedBy = AuthorityRef.Actor(actor)
                 Target = actor
                 Task = TaskId.ofLiteral "people.enable"
                 Changes =
@@ -67,6 +67,7 @@ let tests =
                                 }
                         ProfilePresent = None
                         DisplayName = None
+                        DigestEmail = None
                         Contact = None
                         Grants = []
                     }
@@ -195,13 +196,13 @@ let completeByteGoldens =
                     TimeZoneId = "Etc/UTC"
                 }
 
-            let claimantName = "=CSV, α \"quoted\""
+            let policyNumber = "=CSV, α \"quoted\""
 
             let registration =
                 DomainInputs.registrationFrom
                     [
-                        BusinessField.ClaimantName, claimantName
-                        BusinessField.InsurerName, "Insurer"
+                        BusinessField.PolicyNumber, policyNumber
+                        BusinessField.InsurerClaimReference, "Insurer"
                         BusinessField.ClaimedAmount, "1.2345"
                         BusinessField.ClaimedCurrency, "EUR"
                     ]
@@ -210,7 +211,7 @@ let completeByteGoldens =
             let fields =
                 {
                     CaseFields.CaseReference = reference
-                    Status = CaseStatus.Opened
+                    Handling = Handling.Open
                     Registration = registration
                     Finance = FinancialPosition.undecided
                 }
@@ -228,6 +229,20 @@ let completeByteGoldens =
                             {
                                 Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                Parties =
+                                    Map.ofList
+                                        [
+                                            PartyRole.Claimant,
+                                            [
+                                                PartyName.parse "=CSV, α \"quoted\""
+                                                |> Result.defaultWith (string >> failtest)
+                                            ]
+                                            PartyRole.Insurer,
+                                            [
+                                                PartyName.parse "Insurer"
+                                                |> Result.defaultWith (string >> failtest)
+                                            ]
+                                        ]
                             }
                     Headline = CaseHeadline.Undecided
                     Attention = [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
@@ -235,7 +250,7 @@ let completeByteGoldens =
                     NextAction = None
                     Responsible = None
                     PendingReminders = 0L
-                    Paid = None
+                    NetPaid = None
                     PaymentCount = 0L
                     LastPaymentDate = None
                 }
@@ -248,7 +263,7 @@ let completeByteGoldens =
             Expect.equal
                 caseBytes
                 (expected
-                    "caseReference,revision,workRevision,state.kind,headline,attention,state.fields.claimantName,state.fields.insurerName,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,paidAmount,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
+                    "caseReference,revision,workRevision,state.kind,headline,attention,claimants,insurers,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,netPaid,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
                     [
                         "CSV-GOLDEN"
                         "7"
@@ -284,29 +299,33 @@ let completeByteGoldens =
                 CalendarDate.parse "2026-11-20" |> Result.defaultWith (fun _ -> failtest "Date")
 
             let reminder =
-                Reminder.ofAccepted
+                Reminder.decode
                     (ReminderId.create reminderRaw |> Option.get)
                     (CaseFixtures.caseId raw)
                     (CaseFixtures.revision 3L)
                     (ReminderAction.parse "+CSV, α \"quoted\""
                      |> Result.defaultWith (fun _ -> failtest "Action"))
                     due
-                    ReminderState.Pending
+                    ReminderKind.Deadline
+                    ReminderState.Completed
+                    (Some(CaseFixtures.date "2026-11-08"))
                 |> Result.defaultWith failtest
 
             let row: ReminderReadModel =
                 {
                     Reminder = reminder
                     Reference = reference
-                    ClaimantName =
-                        (PartyName.parse claimantName
-                         |> Result.defaultWith (fun _ -> failtest "Claimant"))
+                    Claimants =
+                        [
+                            PartyName.parse policyNumber
+                            |> Result.defaultWith (fun _ -> failtest "Claimant")
+                        ]
                     Responsible = None
                     RecordedAt = changed
                     RecordedBy = actor
                     Offers = []
                     Active = true
-                    Timing = Some ReminderDue.Upcoming
+                    Timing = None
                 }
 
             let render = MessageCatalogs.render LocalizationPolicy.defaultLanguage
@@ -317,7 +336,7 @@ let completeByteGoldens =
             Expect.equal
                 reminderBytes
                 (expected
-                    "caseId,caseReference,reminderId,revision,action,dueDate,state,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
+                    "caseId,caseReference,reminderId,revision,action,dueDate,state,kind,doneOn,deadlineOutcome,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
                     [
                         "019aa6a0-0000-7000-8000-000000000001"
                         "CSV-GOLDEN"
@@ -325,7 +344,10 @@ let completeByteGoldens =
                         "3"
                         "\"'+CSV, α \"\"quoted\"\"\""
                         "2026-11-20"
-                        "PENDING"
+                        "COMPLETED"
+                        "DEADLINE"
+                        "2026-11-08"
+                        "MET"
                         "2026-11-09T12:00:00.000000Z"
                         "019aa6a0-0000-7000-8000-000000000003"
                         "\"'+Recorder, α\""
@@ -342,7 +364,7 @@ let completeByteGoldens =
                     Position = position
                     OperationHash = hash
                     RecordedAt = changed
-                    RecordedBy = actor
+                    RecordedBy = AuthorityRef.Actor(actor)
                     Target = target
                     Task = TaskId.ofLiteral "people.enable"
                     Changes =
@@ -357,6 +379,7 @@ let completeByteGoldens =
                                     }
                             ProfilePresent = None
                             DisplayName = None
+                            DigestEmail = None
                             Contact = None
                             Grants = []
                         }

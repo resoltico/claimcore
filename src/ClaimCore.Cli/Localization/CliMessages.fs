@@ -30,6 +30,7 @@ type CliMessage =
     | [<MessageKey("cli.help.dryRunUsage")>] DryRunUsage of usage: string
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.note")>] NoteCommands
+    | [<MessageKey("cli.family.link")>] LinkCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.family.browserSessions")>] BrowserSessions
@@ -127,6 +128,7 @@ type CliMessage =
     | [<MessageKey("cli.text.uncertain")>] UncertainDelivery
     | [<MessageKey("cli.family.version")>] VersionFamily
     | [<MessageKey("cli.family.case")>] CaseFamily
+    | [<MessageKey("cli.family.party")>] PartyCommands
     | [<MessageKey("cli.family.people")>] PeopleFamily
     | [<MessageKey("cli.family.operation")>] OperationFamily
     | [<MessageKey("cli.family.context")>] ContextFamily

@@ -31,24 +31,24 @@ SELECT pg_temp.expect('erasure requires an accepted ERASE',
     format('SELECT claimcore.clear_owner(''FAMILY'',%L)', :'case1'), 'CC002');
 
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000002', 'SYNTHETIC-A', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23505');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000002', 'SYNTHETIC-A', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23505');
 SELECT pg_temp.expect('reference with a space refused',
-    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
-    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
-SELECT pg_temp.expect('live notification required',
-    $s$UPDATE claimcore.cases SET notified_on=NULL$s$, '23514');
-SELECT pg_temp.expect('infinite notification refused',
-    $s$UPDATE claimcore.cases SET notified_on='infinity'$s$, '23514');
-SELECT pg_temp.expect('BCE notification refused',
-    $s$UPDATE claimcore.cases SET notified_on=DATE '0001-01-01 BC'$s$, '23514');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23514');
+SELECT pg_temp.expect('received date is optional on a live case',
+    $s$UPDATE claimcore.cases SET received_on=NULL$s$, '00000');
+SELECT pg_temp.expect('infinite received date refused',
+    $s$UPDATE claimcore.cases SET received_on='infinity'$s$, '23514');
+SELECT pg_temp.expect('BCE received date refused',
+    $s$UPDATE claimcore.cases SET received_on=DATE '0001-01-01 BC'$s$, '23514');
 SELECT pg_temp.expect('unknown responsible actor refused',
     $s$UPDATE claimcore.cases SET responsible_actor='c0000000-0000-4000-8000-000000000099'$s$, '23503');
 SELECT pg_temp.expect('infinite follow-up refused',
     $s$UPDATE claimcore.cases SET follow_up='infinity'$s$, '23514');
 UPDATE claimcore.cases SET follow_up=DATE '2027-12-31';
 SELECT pg_temp.expect('erasure must clear follow-up',
-    $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL$s$, '23514');
+    $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payment_review=NULL,outcome=NULL,payable_amount=NULL,payable_currency=NULL,responsible_actor=NULL,work_search_text=NULL$s$, '23514');
 SELECT pg_temp.expect('profile columns cannot be cleared without current accepted erasure',
     format($s$UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=%L$s$, :'owner'), 'CC003');
 SELECT pg_temp.expect('durable revision exceeds exact JSON integer envelope',
@@ -78,8 +78,8 @@ SELECT pg_temp.expect('oversized snapshot refused',
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
 SELECT pg_temp.expect('projection clearing requires accepted matching erasure evidence',
-    $s$UPDATE claimcore.cases SET follow_up=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL$s$, 'CC003');
-SELECT snapshot IS NOT NULL AND notified_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference='synthetic-a' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
+    $s$UPDATE claimcore.cases SET follow_up=NULL,deadline_due=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,payment_review=NULL,outcome=NULL,work_search_text=NULL$s$, 'CC003');
+SELECT snapshot IS NOT NULL AND received_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference='synthetic-a' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
 \if :retained_projection
 \echo PASS unmatched erasure leaves private projections intact
 \else

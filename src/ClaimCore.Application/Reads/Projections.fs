@@ -22,27 +22,35 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let profile (name: string option) (contact: string option) =
-        match name, contact with
-        | None, None -> None
-        | Some name, contact ->
+    let profileWithDigest (name: string option) (contact: string option) (email: string option) =
+        match name, contact, email with
+        | None, None, None -> None
+        | Some name, contact, email ->
             ActorProfile.restore
                 {
                     DisplayName = name
                     Contact = contact
+                    DigestEmail = email
                 }
             |> parsed
             |> Some
-        | None, Some _ -> raise (RecordCorruptException "Contact without an actor display name.")
+        | None, _, _ -> raise (RecordCorruptException "Profile data without an actor display name.")
+
+    let profile name contact = profileWithDigest name contact None
 
     let caseColumns =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
-        + DatabaseSession.dateExpression "notified_on"
-        + " AS notified_on,responsible_actor,"
+        + DatabaseSession.dateExpression "received_on"
+        + " AS received_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
+        + " AS follow_up,"
+        + DatabaseSession.dateExpression "deadline_due"
+        + " AS deadline_due,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
+        + CaseIdentityReads.referenceAt "c.case_id" ""
+        + " AS reserved_reference,"
+        + PartProjections.reportDateColumns
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -64,13 +72,17 @@ module internal Projections =
     let caseSearchText row =
         DatabaseSession.namedOptional<string> "search_text" row
 
-    let caseNotifiedOn row =
-        DatabaseSession.namedOptionalCalendarDate "notified_on" row
+    let caseReceivedOn row =
+        DatabaseSession.namedOptionalCalendarDate "received_on" row
         |> Option.map CalendarDate.ofDate
 
     let caseResponsibleActor row =
         DatabaseSession.namedOptional<Guid> "responsible_actor" row
         |> Option.map (DatabaseSession.admitted ActorId.create)
+
+    let caseDeadlineDue row =
+        DatabaseSession.namedOptionalCalendarDate "deadline_due" row
+        |> Option.map CalendarDate.ofDate
 
     let caseFollowUp row =
         DatabaseSession.namedOptionalCalendarDate "follow_up" row
@@ -87,7 +99,6 @@ module internal Projections =
     let caseClaimedAmount row = amount "claimed_amount" row
     let caseClaimedCurrency row = currency "claimed_currency" row
     let casePayableAmount row = amount "payable_amount" row
-    let casePaidAmount row = amount "paid_amount" row
     let casePayableCurrency row = currency "payable_currency" row
 
     let indexedMoney amount currency =
@@ -96,19 +107,28 @@ module internal Projections =
         | Some amount, Some currency -> Some(Money.create amount currency)
         | _ -> raise (RecordCorruptException "Incomplete indexed amount and currency.")
 
+    let caseOutcome row =
+        DatabaseSession.namedOptional<string> "outcome" row
+        |> Option.map (fun value ->
+            Vocabulary.tryParse ClosureOutcome.vocabulary value
+            |> Option.defaultWith (fun () ->
+                raise (RecordCorruptException "Invalid indexed closure outcome.")))
+
     let caseIndex row : CaseIndex =
         {
             Responsible = caseResponsibleActor row
             FollowUp = caseFollowUp row
+            DeadlineDue = caseDeadlineDue row
             Status = caseStatus row
             Progress = caseProgress row
             ChangedAt = caseChangedAt row
             SearchText = caseSearchText row
             WorkSearchText = DatabaseSession.namedOptional<string> "work_search_text" row
-            NotifiedOn = caseNotifiedOn row
+            ReceivedOn = caseReceivedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
-            Paid = indexedMoney (casePaidAmount row) (casePayableCurrency row)
+            PaymentReview = DatabaseSession.namedOptional<bool> "payment_review" row
+            Outcome = caseOutcome row
         }
 
 
@@ -162,6 +182,7 @@ module internal Projections =
             Snapshot = snapshot
             SnapshotBytes = bytes |> Option.defaultValue Array.empty
             Index = index
+            ReportDates = PartProjections.reportDates row
         }
 
     let caseRow installationId row =
@@ -180,21 +201,6 @@ module internal Projections =
             | [] -> return None
             | [ row ] -> return Some(caseRow installationId row)
             | _ -> return raise (RecordCorruptException "Duplicate case projection.")
-        }
-
-    let caseByReference connection installationId reference token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    ($"SELECT {caseColumns} FROM claimcore.cases c WHERE upper(case_reference COLLATE \"C\")=$1")
-                    [| box (CaseReference.key reference) |]
-                    token
-
-            match rows with
-            | [] -> return None
-            | [ row ] -> return Some(caseRow installationId row)
-            | _ -> return raise (RecordCorruptException "Duplicate reference projection.")
         }
 
     let private role row =
@@ -384,6 +390,15 @@ module internal Projections =
             Profile = profile (optional<string> 5 row) (optional<string> 6 row)
         }
 
+    let actorRowWithDigest index row =
+        { actorRow row with
+            Profile =
+                profileWithDigest
+                    (optional<string> 5 row)
+                    (optional<string> 6 row)
+                    (optional<string> index row)
+        }
+
     let grantRow row : GrantRow * GrantPosition =
         let role = role row
 
@@ -406,7 +421,10 @@ module internal Projections =
         {
             GrantRow.Grant = { Role = role; Scope = scope }
             GrantedAt = DatabaseSession.recordedInstant 4 row
-            GrantedBy = DatabaseSession.value<Guid> 5 row |> DatabaseSession.admitted ActorId.create
+            GrantedBy =
+                DatabaseSession.optional<Guid> 5 row
+                |> Option.map (DatabaseSession.admitted ActorId.create)
+                |> Authority.ofActorId
         },
         { Role = role; CaseId = caseId }
 

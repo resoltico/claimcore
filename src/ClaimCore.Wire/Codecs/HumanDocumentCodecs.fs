@@ -196,25 +196,29 @@ module HumanDocumentCodecs =
         |> named "HumanReview"
 
     let private row =
-        integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
-        |> map
-            (int >> TaskRowTarget.create TaskCollectionId.PeopleGrants >> Option.get)
-            (TaskRowTarget.ordinal >> int64)
+        integer 0L (int64 (max PeopleAdmission.MaximumGrants PartyContent.MaximumCurrent - 1))
+        |> map int int64
         |> named "TaskRowOrdinal"
 
     let private issue =
-        (record (fun input row message related ->
+        (record (fun input row message ->
             {
                 HumanInputIssue.Input = input
-                Row = row
+                Row =
+                    row
+                    |> Option.bind (fun ordinal ->
+                        let collection =
+                            match input with
+                            | TaskInputId.Target target -> TaskCollectionId.ofRowInput target
+                            | _ -> TaskCollectionId.PeopleGrants
+
+                        TaskRowTarget.create collection ordinal)
                 Message = message
-                Related = related
             })
         : Fields<HumanInputIssue, _>)
         |> field "input" _.Input input
-        |> field "row" _.Row (nullable row)
+        |> field "row" (fun value -> value.Row |> Option.map TaskRowTarget.ordinal) (nullable row)
         |> field "message" _.Message PresentationCodecs.message
-        |> field "related" _.Related (nullable PresentationCodecs.entry)
         |> build
         |> named "HumanInputIssue"
 

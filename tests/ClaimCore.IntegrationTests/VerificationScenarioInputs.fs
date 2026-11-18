@@ -34,9 +34,7 @@ let private authored (inputs: InputMap) =
     inputs.Collections
     |> Map.fold
         (fun values collection rows ->
-            let key =
-                match collection with
-                | TaskCollectionId.PeopleGrants -> Submissions.input InputTarget.Grants
+            let key = TaskCollectionId.input collection
 
             Map.add
                 key
@@ -97,10 +95,10 @@ let internal updateCase
                                 Reference =
                                     before.Reference |> Option.map (fun _ -> snapshot.Reference)
                                 Lifecycle = CaseState.lifecycle snapshot.State
-                                Status =
+                                Handling =
                                     CaseState.fields snapshot.State
-                                    |> Option.map _.Status
-                                    |> Option.defaultValue before.Status
+                                    |> Option.map _.Handling
+                                    |> Option.defaultValue before.Handling
                                 Content = content
                             }
                 }
@@ -167,7 +165,9 @@ let internal updatePeople taskName values mutate (value: RetainedOperation) =
 
 let internal executor id (value: RetainedOperation) =
     rehashed
-        { value.Root.Header with ActorId = id }
+        { value.Root.Header with
+            Authority = Authority.Actor id
+        }
         value.Root.Structure.Task
         value.Root.Structure.Binding
         value.Root.Structure.Retained

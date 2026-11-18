@@ -22,7 +22,7 @@ let header (context: TaskContext) aggregate =
         Sequence = EffectPosition.sequence context.Stamp.Position
         PreviousHash = EntryHash.zero
         OperationId = context.Stamp.OperationId
-        ActorId = context.Stamp.ActorId
+        Authority = context.Stamp.Authority
         RecordedAt = context.Stamp.RecordedAt
         BusinessDate =
             if aggregate = AggregateKind.Family then
@@ -245,7 +245,7 @@ let publicRecord () =
             Sequence = sequence
             PreviousHash = EntryHash.ofBytes (Array.create 32 2uy) |> Option.get
             OperationId = operation 3
-            ActorId = actor 1
+            Authority = Authority.Actor(actor 1)
             RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
             BusinessDate = None
         }
@@ -268,7 +268,7 @@ let publicRecord () =
             Stamp =
                 {
                     OperationId = header.OperationId
-                    ActorId = header.ActorId
+                    Authority = header.Authority
                     RecordedAt = header.RecordedAt
                     Position = EffectPosition.create sequence 0 |> Option.get
                 }

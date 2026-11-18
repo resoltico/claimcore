@@ -59,7 +59,7 @@ import type { Notice } from "../../protocol/notices";
 type Options = {
   affordance?: OperationAffordance | undefined;
   affordances?: ReadonlyArray<OperationAffordance>;
-  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
+  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "LINK";
   prefill?: FormValues | undefined;
   binding?: OperationBinding | undefined;
   targetIdentity?: string | undefined;

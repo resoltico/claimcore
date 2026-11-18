@@ -223,7 +223,7 @@ type ReminderReadModel =
     {
         Reminder: Reminder
         Reference: CaseReference
-        ClaimantName: PartyName
+        Claimants: PartyName list
         Responsible: ActorRef option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
@@ -233,6 +233,9 @@ type ReminderReadModel =
     }
 
     member this.Acts = this.Offers |> List.map TaskOffer.id
+
+    member this.DeadlineOutcome =
+        DeadlineOutcome.ofTiming (this.Timing = Some ReminderDue.Overdue) this.Reminder
 
 type NoteReadModel =
     {
@@ -259,11 +262,55 @@ type CaseNotesPage =
         NextCursor: string option
     }
 
+type CaseParty =
+    {
+        PartyId: PartyId
+        Revision: Revision
+        Content: PartyContent
+        Offers: TaskOffer list
+    }
+
+type RelatedCaseTarget =
+    {
+        CaseId: CaseId
+        Reference: CaseReference
+        Lifecycle: Lifecycle
+        Status: CaseStatus option
+    }
+
+type RelatedCaseRead =
+    {
+        Id: LinkId
+        Case: RelatedCaseTarget option
+        Note: NoteText option
+        CanRemove: bool
+    }
+
+type RelatedCaseLinks =
+    {
+        Outgoing: RelatedCaseRead list
+        Incoming: RelatedCaseRead list
+        IncomingCount: int64
+        CanAdd: bool
+    }
+
+module RelatedCaseLinks =
+    let empty =
+        {
+            Outgoing = []
+            Incoming = []
+            IncomingCount = 0L
+            CanAdd = false
+        }
+
 type CaseReadModel =
     {
+        MatchedReference: CaseReference option
+        RelatedCases: RelatedCaseLinks
         FamilySequence: Sequence
         Snapshot: CaseSnapshot
         LatestPayments: PaymentEntry list
+        PaymentPayees: PaymentPayee list
         Advice: CaseAdvice
         Mine: bool
         Work: CaseWorkView
@@ -273,6 +320,8 @@ type CaseReadModel =
         Disposition: CaseDisposition option
         NextActions: ReminderReadModel list
         Notes: CaseNotes
+        Parties: CaseParty list
+        PartyOffers: TaskOffer list
         ChangedAt: DateTimeOffset
         RecordedBy: ActorRef
     }

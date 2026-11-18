@@ -107,9 +107,14 @@ module Terms =
             rendered PresentedBoolean.vocabulary
             rendered View.vocabulary
             rendered CaseStatus.vocabulary
+            rendered CaseGrouping.vocabulary
+            rendered DaysOpenBand.vocabulary
+            rendered MissingCaseGroup.vocabulary
+            rendered ClosureOutcome.vocabulary
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary
             rendered Role.vocabulary
+            rendered PartyRole.vocabulary
             rendered PrincipalKind.vocabulary
             rendered ActorAvailability.vocabulary
             rendered AccountState.vocabulary
@@ -125,11 +130,29 @@ module Terms =
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered ReminderState.vocabulary
+            rendered DigestCountKind.vocabulary
+            rendered DigestOutcome.vocabulary
             reminderStateSelection
             rendered ReminderDue.vocabulary
+            rendered ReminderKind.vocabulary
+            rendered DeadlineOutcome.vocabulary
+            {
+                Name = Vocabulary.name ReminderKindSelection.vocabulary
+                Labels =
+                    Vocabulary.entries ReminderKindSelection.vocabulary
+                    |> List.map (fun (selection, token) ->
+                        token,
+                        match ReminderKindSelection.kind selection with
+                        | Some kind ->
+                            PresentationKeys.code
+                                (Vocabulary.name ReminderKind.vocabulary)
+                                (ReminderKind.token kind)
+                        | None -> "reminderKindSelection.ANY.label")
+            }
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
+            rendered PaymentDirection.vocabulary
             rendered CaseStageKind.vocabulary
             rendered CaseHeadline.vocabulary
             rendered CaseAttention.vocabulary
@@ -142,6 +165,7 @@ module Terms =
                         "WORK", "timelineKind.WORK.label"
                         "REMINDER", "timelineKind.REMINDER.label"
                         "NOTE", "timelineKind.NOTE.label"
+                        "PARTY", "timelineKind.PARTY.label"
                     ]
             }
             rendered ActSubject.vocabulary

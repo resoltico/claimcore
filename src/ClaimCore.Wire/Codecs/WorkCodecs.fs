@@ -28,17 +28,36 @@ module WorkCodecs =
         |> named "CaseWorkReadModel"
 
     let reminder =
-        (record (fun id parent revision action due state ->
-            Reminder.ofAccepted id parent revision action due state)
-        : Fields<Reminder, _>)
+        (record Reminder.decode: Fields<Reminder, _>)
         |> field "reminderId" Reminder.id reminderId
         |> field "caseId" Reminder.caseId caseId
         |> field "revision" Reminder.revision positiveRevision
         |> field "action" Reminder.action reminderAction
         |> field "dueDate" Reminder.due calendarDate
+        |> field "kind" Reminder.kind (VocabularyCodec.create ReminderKind.vocabulary)
         |> field "state" Reminder.state (VocabularyCodec.create ReminderState.vocabulary)
+        |> field "doneOn" Reminder.doneOn (nullable calendarDate)
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Reminder"
+
+    let party =
+        (record (fun id revision content offers ->
+            {
+                CaseParty.PartyId = id
+                Revision = revision
+                Content = content
+                Offers = offers |> List.map TaskOffer.Declared
+            })
+        : Fields<CaseParty, _>)
+        |> field "partyId" _.PartyId partyId
+        |> field "revision" _.Revision positiveRevision
+        |> field "content" _.Content partyContent
+        |> field
+            "acts"
+            (fun party -> party.Offers |> List.map TaskOffer.id)
+            (list 2 (TaskVocabulary.forSubject ActSubject.Party))
+        |> build
+        |> named "CaseParty"
 
     let reminderRead =
         (record
@@ -46,7 +65,7 @@ module WorkCodecs =
                 {
                     ReminderReadModel.Reminder = reminder
                     Reference = reference
-                    ClaimantName = claimant
+                    Claimants = claimant
                     Responsible = responsible
                     RecordedAt = recordedAt
                     RecordedBy = recordedBy
@@ -57,7 +76,7 @@ module WorkCodecs =
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
-        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
+        |> field "claimants" _.Claimants (list PartyContent.MaximumCurrent partyName)
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
@@ -71,6 +90,54 @@ module WorkCodecs =
         |> field "timing" _.Timing (nullable (VocabularyCodec.create ReminderDue.vocabulary))
         |> build
         |> named "ReminderReadModel"
+
+    let relatedCaseTarget =
+        (record (fun id reference lifecycle status ->
+            {
+                RelatedCaseTarget.CaseId = id
+                Reference = reference
+                Lifecycle = lifecycle
+                Status = status
+            })
+        : Fields<RelatedCaseTarget, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "lifecycle" _.Lifecycle (VocabularyCodec.create Lifecycle.vocabulary)
+        |> field "status" _.Status (nullable (VocabularyCodec.create CaseStatus.vocabulary))
+        |> build
+        |> named "RelatedCaseTarget"
+
+    let relatedCase =
+        (record (fun id target note canRemove ->
+            {
+                RelatedCaseRead.Id = id
+                Case = target
+                Note = note
+                CanRemove = canRemove
+            })
+        : Fields<RelatedCaseRead, _>)
+        |> field "linkId" _.Id linkId
+        |> field "case" _.Case (nullable relatedCaseTarget)
+        |> field "note" _.Note (nullable noteText)
+        |> field "canRemove" _.CanRemove boolean
+        |> build
+        |> named "RelatedCaseRead"
+
+    let relatedCases =
+        (record (fun outgoing incoming incomingCount canAdd ->
+            {
+                RelatedCaseLinks.Outgoing = outgoing
+                Incoming = incoming
+                IncomingCount = incomingCount
+                CanAdd = canAdd
+            })
+        : Fields<RelatedCaseLinks, _>)
+        |> field "outgoing" _.Outgoing (list RelatedCase.MaximumCurrent relatedCase)
+        |> field "incoming" _.Incoming (list RelatedCase.MaximumIncomingShown relatedCase)
+        |> field "incomingCount" _.IncomingCount (integer 0L JsonValue.MaximumInteger)
+        |> field "canAdd" _.CanAdd boolean
+        |> build
+        |> named "RelatedCaseLinks"
 
     let note =
         (record Note.ofAccepted: Fields<Note, _>)

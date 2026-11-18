@@ -41,6 +41,8 @@ let private queue actor cursor =
         {
             Target = Some target
             State = None
+            Kind = None
+            DeadlineOutcome = None
             Due = None
             Assignment = None
             Text = None
@@ -50,6 +52,157 @@ let private queue actor cursor =
             IncludeInactive = None
         }
         token
+
+let private deadlineKinds database =
+    task {
+        let! actor = populated database
+
+        let create operation kind =
+            let plan = Submissions.reminderPlan "Review synthetic evidence" "2026-11-16"
+
+            let fields =
+                kind
+                |> Option.map (fun kind ->
+                    Map.add
+                        (Submissions.input InputTarget.ReminderPlanKind)
+                        (SubmissionValue.Text kind)
+                        plan)
+                |> Option.defaultValue plan
+
+            Service.executeSubmission
+                actor
+                (reminder database.Fixture operation "reminder.create" None fields)
+                token
+
+        let! followUp = create 701 None
+        accepted followUp |> ignore
+        let! deadline = create 702 (Some "DEADLINE")
+        accepted deadline |> ignore
+
+        let! completed =
+            Service.executeSubmission
+                actor
+                (reminder
+                    database.Fixture
+                    703
+                    "reminder.complete"
+                    (Some(id database.Fixture 702, 1L))
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.ReminderDoneOn,
+                            SubmissionValue.Text "2026-11-15"
+                        ]))
+                token
+
+        accepted completed |> ignore
+
+        let queue kind deadlineOutcome =
+            Service.reminders
+                actor
+                {
+                    Target = Some target
+                    State = Some ReminderStateSelection.Any
+                    Kind = kind
+                    DeadlineOutcome = deadlineOutcome
+                    Due = None
+                    Assignment = None
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                    View = None
+                    IncludeInactive = None
+                }
+                token
+
+        let ids (result: Outcome<ReminderPage>) =
+            (read result).Items
+            |> List.map (fun row -> Reminder.id row.Reminder |> ReminderId.value)
+            |> List.sort
+
+        for filter, expected in
+            [
+                ReminderKindSelection.Any, [ 701; 702 ]
+                ReminderKindSelection.Kind ReminderKind.FollowUp, [ 701 ]
+                ReminderKindSelection.Kind ReminderKind.Deadline, [ 702 ]
+            ] do
+            let! result = queue (Some filter) None
+
+            Expect.equal
+                (ids result)
+                (expected |> List.map (id database.Fixture) |> List.sort)
+                "The PostgreSQL query maps the kind selector to its stored type"
+
+        let! met = queue None (Some DeadlineOutcome.Met)
+
+        Expect.equal
+            (ids met)
+            [ id database.Fixture 702 ]
+            "Deadline outcomes reach the same filter plan"
+
+        let! missed = queue None (Some DeadlineOutcome.Missed)
+        Expect.isEmpty (ids missed) "The completion date is not evaluated as the recording date"
+
+        let! steward =
+            grant
+                actor
+                (id database.Fixture 920000)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople steward
+
+        let! voided =
+            Service.executeSubmission
+                actor
+                (request
+                    database.Fixture
+                    704
+                    "synthetic-a"
+                    1L
+                    "case.void"
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.Reason,
+                            SubmissionValue.Text "Synthetic record"
+                        ]))
+                token
+
+        accepted voided |> ignore
+
+        let! erased =
+            Service.executeSubmission
+                actor
+                (request database.Fixture 705 "synthetic-a" 2L "case.erase" Map.empty)
+                token
+
+        accepted erased |> ignore
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! shape =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*),count(*) FILTER (WHERE kind IS NOT NULL OR done_on IS NOT NULL) FROM claimcore.reminders WHERE case_id=$1"
+                [| box (id database.Fixture 10) |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 shape.Head)
+            2L
+            "Erasure kept both reminder identities"
+
+        Expect.equal
+            (DatabaseSession.value<int64> 1 shape.Head)
+            0L
+            "Erasure cleared the private columns in PostgreSQL"
+
+        let! _ = verified database
+        return ()
+    }
 
 let private dates database =
     task {
@@ -118,6 +271,8 @@ let private dates database =
                     {
                         Target = Some target
                         State = None
+                        Kind = None
+                        DeadlineOutcome = None
                         Due = Some filter
                         Assignment = None
                         Text = None
@@ -238,7 +393,7 @@ let private dates database =
             DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, "0001-01-01"
-                    BusinessField.IncidentNotificationDate, "0001-01-01"
+                    BusinessField.ReceivedDate, "0001-01-01"
                 ]
                 registration
 
@@ -313,7 +468,7 @@ let private dates database =
 
         let notified =
             { CaseListFilter.empty with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
             }
 
         let! oldest =
@@ -343,7 +498,7 @@ let private dates database =
         let firstDate =
             (read oldestDetail).Snapshot.State
             |> CaseState.fields
-            |> Option.map (fun fields -> Registration.incidentNotificationDate fields.Registration)
+            |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
             |> Option.map CalendarDate.format
 
         Expect.equal
@@ -524,19 +679,14 @@ let private causalEffect database =
 
                 let changed =
                     match change.Value with
-                    | PartValue.Reminder value ->
-                        let plan = value.Plan |> Option.get
+                    | PartValue.Reminder(ReminderValue.Available(plan, handling)) ->
+                        let forged =
+                            { plan with
+                                Due = DomainInputs.date "2027-01-02"
+                            }
 
                         { change with
-                            Value =
-                                PartValue.Reminder
-                                    { value with
-                                        Plan =
-                                            Some
-                                                { plan with
-                                                    Due = DomainInputs.date "2027-01-02"
-                                                }
-                                    }
+                            Value = PartValue.Reminder(ReminderValue.Available(forged, handling))
                         }
                     | _ -> failtest "A single completion part is required"
 
@@ -1087,6 +1237,7 @@ let tests =
             testCaseAsync
                 "scoped current lookup includes terminal records without historical disclosure"
                 (run currentLookup)
+            testCaseAsync "kind filters reach the private PostgreSQL projection" (run deadlineKinds)
             testCaseAsync
                 "Gregorian extremes survive current rows and both queue and case continuations"
                 (run dates)

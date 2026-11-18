@@ -36,7 +36,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 (Submissions.fields (
                     RegistrationInput.values (
                         DomainInputs.registrationWith
-                            [ BusinessField.ClaimantName, claimant ]
+                            [ BusinessField.PolicyNumber, claimant ]
                             registration
                     )
                 ))
@@ -60,7 +60,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                         Sequence = Sequence.successor tx.Head.Sequence
                                         PreviousHash = tx.Head.EntryHash
                                         OperationId = operation
-                                        ActorId = actor
+                                        Authority = Authority.Actor actor
                                         RecordedAt = tx.ObservedAt
                                         BusinessDate = Some(fixture.Calendar.DateAt tx.ObservedAt)
                                     }
@@ -81,7 +81,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                     EffectPosition.create header.Sequence 0
                                                     |> Option.get
                                                 OperationId = operation
-                                                ActorId = actor
+                                                Authority = Authority.Actor actor
                                                 RecordedAt = tx.ObservedAt
                                             }
                                         Value =
@@ -89,8 +89,9 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                 {
                                                     Reference = Some reference
                                                     Lifecycle = Lifecycle.Active
-                                                    Status = CaseStatus.Opened
+                                                    Handling = Handling.Open
                                                     Disposition = None
+                                                    ReopenReason = None
                                                     Content =
                                                         Some
                                                             {
@@ -101,7 +102,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                                                 .registrationWith
                                                                                 [
                                                                                     BusinessField
-                                                                                        .ClaimantName,
+                                                                                        .PolicyNumber,
                                                                                     claimant
                                                                                 ]
                                                                                 registration
@@ -131,8 +132,14 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                 let origins =
                                     Map.ofList [ (change.Kind, change.PartId), change.Stamp ]
 
+                                let reportDates =
+                                    CaseReportDates.record
+                                        (CalendarDate.ofDate header.BusinessDate.Value)
+                                        (Some CaseStatus.Opened)
+                                        None
+
                                 let rows =
-                                    ProjectionRows.family family [ change ] origins None
+                                    ProjectionRows.family family [ change ] origins None reportDates
                                     |> Result.defaultWith (fun error ->
                                         failtestf "Historical projection: %A" error)
 
@@ -152,7 +159,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 let private acceptedBoundary (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 200 "A"
+        let name = String.replicate 80 "A"
         do! seed database name
 
         let! current =
@@ -170,7 +177,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format (Registration.claimant (fields.Registration)))
+                (Identifier.format (Registration.policyNumber (fields.Registration) |> Option.get))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
@@ -178,8 +185,8 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
         let values =
             (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
-                    BusinessField.ClaimantName, (name)
-                    BusinessField.InsurerName, ("Corrected Insurer")
+                    BusinessField.PolicyNumber, (name)
+                    BusinessField.InsurerClaimReference, ("Corrected Insurer")
                 ]
                 (registration))
 
@@ -212,7 +219,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                         RegistrationUpdateInput.values (
                             (DomainInputs.registrationUpdate (
                                 ClaimCore.TestSupport.DomainInputs.registrationWith
-                                    [ BusinessField.ClaimantName, (name + "B") ]
+                                    [ BusinessField.PolicyNumber, (name + "B") ]
                                     (values)
                             ))
                         )
@@ -223,8 +230,8 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
             changed.Outcome
             (ExecuteResult.Rejected(
                 (Refusal.invalidInput (
-                    (InputTarget.Field BusinessField.ClaimantName),
-                    (Violation.TooLong 200)
+                    (InputTarget.Field BusinessField.PolicyNumber),
+                    (Violation.TooLong 80)
                 ))
             ))
             "Changed assertion follows current policy"
@@ -236,12 +243,16 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
 let private appendTransitions fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
-            let taskName = if revision % 2L = 1L then "case.close" else "case.reopen"
+            let taskName, inputs =
+                if revision % 2L = 1L then
+                    "case.close", CaseTransitionInputs.closed
+                else
+                    "case.reopen", CaseTransitionInputs.reopened
 
             let! result =
                 Service.executeSubmission
                     actor
-                    (request fixture (100 + int revision) "HISTORICAL-1" revision taskName Map.empty)
+                    (request fixture (100 + int revision) "HISTORICAL-1" revision taskName inputs)
                     token
 
             accepted result |> ignore
@@ -256,7 +267,7 @@ let private timelinePage =
 let private retainedPages (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 200 "<"
+        let name = String.replicate 80 "<"
         do! seed database name
         do! appendTransitions database.Fixture actor
 
@@ -310,11 +321,11 @@ let private retainedPages (database: PostgresFixture.Database) =
                 (changes.Items
                  |> List.exists (function
                      | TimelineChange.CaseField difference ->
-                         difference.FieldName = BusinessField.ClaimantName
+                         difference.FieldName = BusinessField.PolicyNumber
                          && difference.Before.IsNone
                          && (match difference.After with
-                             | Some(CaseFieldValue.Business(Admitted.Name value)) ->
-                                 PartyName.format value = name
+                             | Some(CaseFieldValue.Business(Admitted.Identifier value)) ->
+                                 Identifier.format value = name
                              | _ -> false)
                      | _ -> false))
                 "Accepted text is compared without current authoring admission or truncation"

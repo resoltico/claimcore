@@ -37,9 +37,13 @@ let private completeVocabulary () =
 
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
         let! entries = DiagnosticEntryEvidence.entriesEvidence () |> Async.AwaitTask
+        let! associations = DiagnosticEntryEvidence.associationEvidence () |> Async.AwaitTask
+
+        let! authored =
+            DiagnosticEntryEvidence.authoredIdentityAndClosureEvidence () |> Async.AwaitTask
 
         let evidence =
-            scalar @ List.ofSeq states @ boundaries @ entries
+            scalar @ List.ofSeq states @ boundaries @ entries @ associations @ authored
             |> List.collect (fun items -> items)
             |> fun observed -> observed @ DiagnosticEntryEvidence.technicalCountEvidence ()
 
@@ -140,6 +144,7 @@ let private missingCasePrivacy () =
             [
                 "case.amendRegistration"
                 "case.correct"
+                "case.changeReference"
                 "case.decide"
                 "case.withdrawDecision"
                 "case.recordPayment"

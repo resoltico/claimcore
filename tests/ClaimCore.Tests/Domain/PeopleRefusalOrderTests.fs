@@ -69,6 +69,7 @@ let private state principal (view: AccessView) =
             ActorProfile.parse
                 {
                     DisplayName = "Synthetic target"
+                    DigestEmail = None
                     Contact = None
                 }
             |> required
@@ -564,6 +565,7 @@ let private ordering () =
                 EnabledHumanOwners = scenario.EnabledOwners
                 ActorCount = scenario.Actors
                 TargetPrincipal = Some targetPrincipal
+                PrincipalOwner = None
             }
 
         let original = T.context 605
@@ -579,7 +581,7 @@ let private ordering () =
                 Stamp =
                     if task.Declaration.Exposure = TaskExposure.Operator then
                         { original.Stamp with
-                            ActorId = ActorId.ofOperationId original.Stamp.OperationId
+                            Authority = Authority.Operator
                         }
                     else
                         original.Stamp

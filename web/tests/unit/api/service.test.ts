@@ -107,7 +107,7 @@ const prepared = () =>
       },
       expectedRevision: 1,
     },
-    inputs: {},
+    inputs: { "field:outcome": "OTHER" },
   });
 const reply = (value: unknown) =>
   new Response(JSON.stringify(value), {

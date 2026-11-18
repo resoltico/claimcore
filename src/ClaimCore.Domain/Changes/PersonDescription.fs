@@ -35,6 +35,10 @@ module PersonDescription =
                 Difference.value
                     (priorProfile |> Option.bind _.Contact)
                     (ProfileValue.value after.Profile |> Option.bind _.Contact)
+            DigestEmail =
+                Difference.value
+                    (priorProfile |> Option.bind _.DigestEmail)
+                    (ProfileValue.value after.Profile |> Option.bind _.DigestEmail)
             Grants =
                 after.Grants
                 |> List.map (fun assignment ->
@@ -52,3 +56,7 @@ module PersonDescription =
             ->
             Ok(describe before value)
         | _ -> Error RecordViolation.InvalidSubjectState
+
+    let changesSignInIdentity (description: PersonPartDescription) =
+        description.Principal
+        |> Option.exists (fun change -> change.Before.IsSome && change.After.IsSome)

@@ -15,27 +15,23 @@ let tests =
     testList
         "semantic catalog guidance"
         [
-            testCase "payment limits explain entries and retained decision currency" (fun () ->
-                Expect.stringContains
-                    (text "en" "diagnostic.PAYMENT_EXCEEDS_PAYABLE")
-                    "cannot exceed"
-                    "The amount limit is explicit"
-
-                Expect.stringContains
-                    (text "en" "diagnostic.DECISION_HAS_PAYMENTS")
-                    "cannot be withdrawn or cleared"
-                    "Retained payments prevent withdrawal and clearing"
-
-                for key in [ "diagnostic.DECISION_HAS_PAYMENTS" ] do
-                    Expect.stringContains
-                        (text "en" key)
-                        "only if"
-                        "Removal is conditional error correction"
+            testCase
+                "payment guidance describes entry currency and the exact total limit"
+                (fun () ->
+                    Expect.equal
+                        (text "en" "field.paidCurrency.hint")
+                        "Use the currency of this entry."
+                        "Payment entries carry their own currency"
 
                     Expect.stringContains
-                        (text "en" key)
-                        "recorded in error"
-                        "Accurate payments must not be discarded")
+                        (text "en" "diagnostic.PAYMENT_TOTAL_RANGE")
+                        "outside the exact range"
+                        "The mathematical range is an explicit input refusal"
+
+                    Expect.stringContains
+                        (text "en" "task.case.withdrawDecision.meaning")
+                        "Existing payment entries"
+                        "Withdrawal preserves accepted entries")
             testCase
                 "payment count saturation is technical rather than a business capacity rule"
                 (fun () ->
@@ -71,7 +67,7 @@ let tests =
                     for witness in
                         [
                             "Fact changes sort newest first"
-                            "notification and reminder dates sort oldest first"
+                            "Received and reminder dates sort oldest first"
                             "missing dates last"
                             "Reference breaks ties"
                         ] do

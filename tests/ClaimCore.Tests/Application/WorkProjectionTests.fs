@@ -56,13 +56,15 @@ let private reminderId =
     |> Option.get
 
 let private reminder =
-    Reminder.ofAccepted
+    Reminder.decode
         reminderId
         parent
         Revision.first
         (ReminderAction.parse "Inspect evidence" |> required)
         (CalendarDate.parse "2026-11-10" |> required)
+        ReminderKind.FollowUp
         ReminderState.Pending
+        None
     |> required
 
 let private reminderRow: StoredReminder =
@@ -125,6 +127,8 @@ let private reminderColumns =
         "state", box "PENDING"
         "action", box "Inspect evidence"
         "due", box "2026-11-10 AD"
+        "kind", box "FOLLOW_UP"
+        "done_on", box System.DBNull.Value
         "search_text", box "inspect evidence"
         "changed_at", box "2026-11-02T12:00:00.000000Z AD"
         "recorded_by", box (ActorId.value actor)
@@ -199,6 +203,8 @@ let tests =
                         "state", box "COMPLETED"
                         "action", box "Changed"
                         "due", box "2026-11-11 AD"
+                        "kind", box "DEADLINE"
+                        "done_on", box "2026-11-02 AD"
                         "search_text", box "changed"
                     ] do
                     Expect.throwsT<RecordCorruptException>

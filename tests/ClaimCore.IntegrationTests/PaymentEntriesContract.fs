@@ -173,7 +173,7 @@ let internal lifecycle fixture =
         let euro = page.Items.Head
 
         Expect.equal
-            (euro.Paid |> Option.map Money.format)
+            (euro.NetPaid |> Option.map (fun totals -> DecimalTotal.format totals.NetPaid))
             (Some "60.25")
             "List data carries the exact independent paid sum"
 
@@ -188,47 +188,15 @@ let internal lifecycle fixture =
             (List.contains CaseAttention.ReadyToClose euro.Attention)
             "Partial payment is not ready to close"
 
-        let! totals = Service.caseSummary owner selected token
+        let! totals = Service.caseSummary owner (CaseSummaryRequest.ungrouped selected) token
         let totals = read totals
 
         Expect.equal
-            (totals.Paid
+            (totals.NetPaid
              |> List.map (fun total ->
                  Currency.format total.Currency, DecimalTotal.format total.Amount))
             [ "EUR", "60.25"; "USD", "5" ]
             "SQL totals keep currencies separate"
-
-        let! mismatch =
-            execute
-                fixture
-                owner
-                16
-                "PAY-EUR"
-                4L
-                "case.recordPayment"
-                (payment "2026-08-22" "1" "USD")
-
-        Expect.isTrue
-            (match mismatch.Outcome with
-             | ExecuteResult.Rejected _ -> true
-             | _ -> false)
-            "A wrong currency cannot be persisted"
-
-        let! excessive =
-            execute
-                fixture
-                owner
-                17
-                "PAY-EUR"
-                4L
-                "case.recordPayment"
-                (payment "2026-08-22" "40" "EUR")
-
-        Expect.isTrue
-            (match excessive.Outcome with
-             | ExecuteResult.Rejected _ -> true
-             | _ -> false)
-            "A sum over payable cannot be persisted"
 
         let! removed =
             execute
@@ -292,10 +260,14 @@ let internal lifecycle fixture =
             CaseState.Erased
             "Erasure removes payment facts"
 
-        let! after = Service.caseSummary owner CaseListFilter.empty<string> token
+        let! after =
+            Service.caseSummary
+                owner
+                (CaseSummaryRequest.ungrouped CaseListFilter.empty<string>)
+                token
 
         Expect.equal
-            ((read after).Paid
+            ((read after).NetPaid
              |> List.map (fun total ->
                  Currency.format total.Currency, DecimalTotal.format total.Amount))
             [ "USD", "5" ]

@@ -10,7 +10,7 @@ type Witness = { Task: string; Inputs: InputMap }
 type Model =
     {
         Snapshot: CaseSnapshot
-        Payment: OperationId option
+        Payments: OperationId list
         Sequence: Sequence
     }
 
@@ -26,10 +26,10 @@ let private inputs values =
 let private registrationValues name =
     [
         BusinessField.IncidentDate, "2026-08-01"
-        BusinessField.IncidentNotificationDate, "2026-08-03"
+        BusinessField.ReceivedDate, "2026-08-03"
         BusinessField.IncidentCountry, "LV"
-        BusinessField.ClaimantName, name
-        BusinessField.InsurerName, "Example Alleged Insurer"
+        BusinessField.PolicyNumber, name
+        BusinessField.InsurerClaimReference, "Example Alleged Insurer"
         BusinessField.ClaimedAmount, "1000"
         BusinessField.ClaimedCurrency, "EUR"
     ]
@@ -122,8 +122,11 @@ let samples =
         { payment with
             Task = "case.correctPayment"
         }
-        bare "case.close"
-        bare "case.reopen"
+        {
+            Task = "case.close"
+            Inputs = business [ BusinessField.Outcome, "SETTLED" ]
+        }
+        reason "case.reopen"
         reason "case.void"
         reason "case.reinstate"
         bare "case.erase"
@@ -140,12 +143,12 @@ let initial =
                     CaseState.Active
                         {
                             CaseReference = reference
-                            Status = CaseStatus.Opened
+                            Handling = Handling.Open
                             Registration = registration "Example Claimant Ltd"
                             Finance = FinancialPosition.undecided
                         }
             }
-        Payment = None
+        Payments = []
         Sequence = Sequence.first
     }
 
@@ -158,17 +161,9 @@ let private activeEligible (fields: CaseFields) witness =
     match witness.Task with
     | "case.close" -> true
     | "case.amendRegistration" -> fields.Decision.IsNone
-    | "case.decide" ->
-        Amount.value fields.Finance.PaidAmount
-        <= (if text BusinessField.PayableAmount witness = "0" then
-                0M
-            else
-                750M)
-    | "case.withdrawDecision" -> fields.Decision.IsSome && fields.Finance.PaymentCount = 0L
-    | "case.recordPayment" ->
-        fields.Decision.IsSome
-        && fields.Finance.PaymentCount = 0L
-        && (fields.Decision |> Option.map (Decision.payable >> Money.value)) = Some 750M
+    | "case.decide"
+    | "case.recordPayment" -> true
+    | "case.withdrawDecision" -> fields.Decision.IsSome
     | "case.removePayment"
     | "case.correctPayment" -> fields.Finance.PaymentCount > 0L
     | _ -> false
@@ -191,13 +186,32 @@ let allows state witness =
     | CaseState.Voided _, _ -> false
 
 let offered state =
-    samples
-    |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
-    |> Set.ofList
+    let existing =
+        samples
+        |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
+        |> Set.ofList
 
-let private finance decision paid count dates =
-    FinancialPosition.create decision (Amount.parse paid |> required) count dates
-    |> required
+    match state with
+    | CaseState.Active _ -> Set.add "case.changeReference" existing
+    | _ -> existing
+
+let private finance decision paid count =
+    let currency = Currency.parse "EUR" |> required
+
+    let totals =
+        if count = 0L then
+            Map.empty
+        else
+            Map.ofList
+                [
+                    currency,
+                    {
+                        CurrencyPaymentTotals.Paid = DecimalTotal.parse paid |> required
+                        Returned = DecimalTotal.zero
+                    }
+                ]
+
+    FinancialPosition.create decision totals count |> required
 
 let private changed (fields: CaseFields) witness =
     match witness.Task with
@@ -219,37 +233,35 @@ let private changed (fields: CaseFields) witness =
             |> required
 
         { fields with
-            Finance =
-                FinancialPosition.create
-                    (Some value)
-                    fields.Finance.PaidAmount
-                    fields.Finance.PaymentCount
-                    fields.Finance.PaymentDates
-                |> required
+            Finance = FinancialPosition.withDecision (Some value) fields.Finance
         }
     | "case.withdrawDecision" ->
         { fields with
-            Finance = FinancialPosition.undecided
+            Finance = FinancialPosition.withDecision None fields.Finance
         }
-    | "case.recordPayment"
-    | "case.correctPayment" ->
-        let date = CalendarDate.parse "2026-08-20" |> required
+    | "case.recordPayment" ->
+        let count = fields.Finance.PaymentCount + 1L
 
         { fields with
-            Finance = finance fields.Decision "750" 1L (PaymentDateBounds.create date date)
+            Finance = finance fields.Decision (string (750L * count)) count
         }
+    | "case.correctPayment" -> fields
     | "case.removePayment" ->
+        let count = fields.Finance.PaymentCount - 1L
+
         { fields with
-            Finance = finance fields.Decision "0" 0L None
+            Finance = finance fields.Decision (string (750L * count)) count
         }
     | "case.close" ->
         { fields with
-            Status = CaseStatus.Closed
+            Handling =
+                Handling.Closed
+                    {
+                        Outcome = ClosureOutcome.Settled
+                        Note = None
+                    }
         }
-    | "case.reopen" ->
-        { fields with
-            Status = CaseStatus.Opened
-        }
+    | "case.reopen" -> { fields with Handling = Handling.Open }
     | _ -> fields
 
 let advance (before: Model) stale witness operation sequence =
@@ -276,13 +288,13 @@ let advance (before: Model) stale witness operation sequence =
                                 |> Option.get
                             State = state
                         }
-                    Payment =
+                    Payments =
                         match witness.Task with
-                        | "case.recordPayment"
-                        | "case.correctPayment" -> Some operation
-                        | "case.removePayment"
-                        | "case.erase" -> None
-                        | _ -> before.Payment
+                        | "case.recordPayment" -> operation :: before.Payments
+                        | "case.correctPayment" -> operation :: List.tail before.Payments
+                        | "case.removePayment" -> List.tail before.Payments
+                        | "case.erase" -> []
+                        | _ -> before.Payments
                     Sequence = sequence
                 }
 

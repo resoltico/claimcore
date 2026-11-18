@@ -83,7 +83,8 @@ let private binding (model: Oracle.Model) stale witness =
         Binding.CasePayment(
             target,
             expected,
-            model.Payment
+            model.Payments
+            |> List.tryHead
             |> Option.defaultValue (ClaimCore.Tests.TaskBuilders.operation 999)
         )
     | BindingShape.CaseErase -> Binding.CaseErase(target, expected, model.Sequence)
@@ -229,9 +230,7 @@ let private negativeControls () =
     let withoutPayments (snapshot: CaseSnapshot) =
         let fields = snapshot.State |> CaseState.fields |> Option.get
 
-        let finance =
-            FinancialPosition.create fields.Decision (Amount.parse "0" |> required) 0L None
-            |> required
+        let finance = FinancialPosition.create fields.Decision Map.empty 0L |> required
 
         { snapshot with
             State = CaseState.Active { fields with Finance = finance }

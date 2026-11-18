@@ -17,7 +17,7 @@ let checks _installation instant =
     let snapshot =
         ClaimCore.Domain.Aggregates.CaseFamily.snapshot (decided ()) |> Option.get
 
-    let index = CaseIndex.create instant snapshot None []
+    let index = CaseIndex.create instant snapshot None None None []
 
     let record =
         {
@@ -25,6 +25,7 @@ let checks _installation instant =
             Snapshot = snapshot
             SnapshotBytes = CaseRecord.encodeSnapshot snapshot
             Index = index
+            ReportDates = CaseReportDates.record (CalendarDate.ofDate DateOnly.MinValue) None None
         }
 
     let check finding get mutate =
@@ -77,11 +78,11 @@ let checks _installation instant =
                     WorkSearchText = Some "tampered"
                 })
         check
-            VerificationFinding.CaseNotifiedOnProjection
-            (fun row -> row.Index.NotifiedOn)
+            VerificationFinding.CaseReceivedOnProjection
+            (fun row -> row.Index.ReceivedOn)
             (fun index ->
                 { index with
-                    NotifiedOn = Some(DomainInputs.date "2026-08-04")
+                    ReceivedOn = Some(DomainInputs.date "2026-08-04")
                 })
         check
             VerificationFinding.CaseClaimedAmountProjection

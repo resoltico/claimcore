@@ -8,6 +8,15 @@
         "resolved": "11.0.101",
         "contentHash": "XL1wfb0gujXAtnJfO7rYfxKgwufCiT8aOKqGoqKB83oxRAZ9+yiNWXinHO4x9StYuunTl/AH8eERc0hv7UXJVQ=="
       },
+      "MailKit": {
+        "type": "Direct",
+        "requested": "[5.0.0, )",
+        "resolved": "5.0.0",
+        "contentHash": "PG6hnsklTzd/iK9A6j03OxDOas9mh8zOBkbPzcsLmFOODE8Hw3HTy7HAKiJvVHXNpKc3/KMVG/4QvOAKCBbGhA==",
+        "dependencies": {
+          "MimeKit.Core": "5.0.0"
+        }
+      },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "Direct",
         "requested": "[11.0.0, )",
@@ -25,6 +34,11 @@
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.19.2"
         }
+      },
+      "MimeKit.Core": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "0RLaVyex/BjUGqiw9xtGwzyCMaBcsu33Rth61bDCeVeQaaQK7tjcy4TA+nHKTqwUdp4OGd+gnhuq2fuR+c20qA=="
       },
       "claimcore.application": {
         "type": "Project",

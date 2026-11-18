@@ -187,7 +187,7 @@ let private qualify fixture =
                     ("mix-04")
                     (3L)
                     "case.close"
-                    (Map.empty))))
+                    (CaseTransitionInputs.closed))))
 
         do!
             execute

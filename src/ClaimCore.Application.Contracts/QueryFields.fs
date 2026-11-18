@@ -6,8 +6,6 @@ open ClaimCore.Domain
 module CaseSummaryFields =
     let declarations =
         [
-            BusinessField.ClaimantName
-            BusinessField.InsurerName
             BusinessField.ClaimedAmount
             BusinessField.ClaimedCurrency
             BusinessField.PayableAmount

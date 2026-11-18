@@ -56,8 +56,8 @@ let private assertTarget target identity violation code parameters =
 let private requiredNames () =
     for field, identity in
         [
-            BusinessField.ClaimantName, "field.claimantName.label"
-            BusinessField.InsurerName, "field.insurerName.label"
+            BusinessField.PolicyNumber, "field.policyNumber.label"
+            BusinessField.InsurerClaimReference, "field.insurerClaimReference.label"
         ] do
         assertTarget (InputTarget.Field field) identity Violation.TextRequired "TEXT_REQUIRED" []
 
@@ -65,7 +65,7 @@ let private dates () =
     for field, identity in
         [
             BusinessField.IncidentDate, "field.incidentDate.label"
-            BusinessField.IncidentNotificationDate, "field.incidentNotificationDate.label"
+            BusinessField.ReceivedDate, "field.receivedDate.label"
         ] do
         assertTarget
             (InputTarget.Field field)
@@ -115,8 +115,8 @@ let private remainingTargets () =
         [ "maximumPageSize", "50" ]
 
     assertTarget
-        (InputTarget.Field BusinessField.ClaimantName)
-        "field.claimantName.label"
+        (InputTarget.Field BusinessField.PolicyNumber)
+        "field.policyNumber.label"
         (Violation.TooLong 200)
         "TOO_LONG"
         [ "maximumCharacters", "200" ]
@@ -177,15 +177,13 @@ let accumulated =
         let values =
             [
                 {
-                    Target = InputTarget.Field BusinessField.ClaimantName
-                    GrantRow = None
-                    RelatedDate = None
+                    Target = InputTarget.Field BusinessField.PolicyNumber
+                    Row = None
                     Violation = Violation.TextRequired
                 }
                 {
-                    Target = InputTarget.Field BusinessField.InsurerName
-                    GrantRow = None
-                    RelatedDate = None
+                    Target = InputTarget.Field BusinessField.InsurerClaimReference
+                    Row = None
                     Violation = Violation.TextRequired
                 }
             ]
@@ -201,7 +199,8 @@ let accumulated =
             let message = MessageCatalogs.render language "diagnostic.TEXT_REQUIRED" Map.empty
 
             for index, field in
-                [ BusinessField.ClaimantName; BusinessField.InsurerName ] |> List.indexed do
+                [ BusinessField.PolicyNumber; BusinessField.InsurerClaimReference ]
+                |> List.indexed do
                 let label =
                     MessageCatalogs.render language (FieldPresentation.labelId field) Map.empty
 
@@ -281,7 +280,12 @@ let nextAndConflicts =
                                     RecordedAt =
                                         ClaimCore.TestSupport.DomainInputs.workBasis.ObservedAt
                                     RecordedBy =
-                                        { CliReplyFixtures.receipt.RecordedBy with
+                                        let actor =
+                                            CliReplyFixtures.receipt.RecordedBy
+                                            |> AuthorityRef.actor
+                                            |> Option.get
+
+                                        { actor with
                                             DisplayName =
                                                 DisplayName.Named(
                                                     ClaimCore.TestSupport.DomainInputs.name (

@@ -16,7 +16,7 @@ describe("core act metadata", () => {
         expectedRevision: 0,
       }),
     );
-    expect(values["field:claimantName"]).toBeUndefined();
+    expect(values["field:policyNumber"]).toBeUndefined();
     const close = initialOperationValues(
       operationAffordance("case.close", {
         kind: "CASE",
@@ -24,10 +24,11 @@ describe("core act metadata", () => {
         expectedRevision: 0,
       }),
     );
+    expect(close).not.toHaveProperty("field:outcome");
     expect(
       assembleOperation(
         operationEntry({ subject: "CASE", kind: "case.close" }),
-        close,
+        { ...close, "field:outcome": "OTHER" },
         {
           kind: "CASE",
           target: { kind: "REFERENCE", caseReference: fields.caseReference },
@@ -43,7 +44,7 @@ describe("core act metadata", () => {
         target: { kind: "REFERENCE", caseReference: fields.caseReference },
         expectedRevision: 1,
       },
-      inputs: {},
+      inputs: { "field:outcome": "OTHER" },
     });
   });
 });

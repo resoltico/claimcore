@@ -25,7 +25,8 @@ let tests =
                 (fun () ->
                     for arguments, revisionPath in
                         [
-                            [ "case"; "close"; "OFFLINE"; "--dry-run" ], "expectedRevision"
+                            [ "case"; "close"; "--outcome"; "other"; "OFFLINE"; "--dry-run" ],
+                            "expectedRevision"
                             [
                                 "work"
                                 "update"
@@ -80,7 +81,7 @@ let tests =
                 match
                     Grammar.prepare
                         (fun () -> "10000000-0000-7000-8000-000000000072")
-                        [ "case"; "close"; "OFFLINE" ]
+                        [ "case"; "close"; "--outcome"; "other"; "OFFLINE" ]
                 with
                 | Error issues ->
                     Expect.contains
@@ -110,7 +111,15 @@ let tests =
                                 "--due"
                                 "2026-11-10"
                             ]
-                            [ "case"; "close"; "OFFLINE"; "--expected-revision"; "7" ]
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "OFFLINE"
+                                "--expected-revision"
+                                "7"
+                            ]
                             [
                                 "work"
                                 "update"
@@ -142,6 +151,8 @@ let tests =
                         [
                             "case"
                             "close"
+                            "--outcome"
+                            "other"
                             "OFFLINE"
                             "--expected-revision"
                             "7"

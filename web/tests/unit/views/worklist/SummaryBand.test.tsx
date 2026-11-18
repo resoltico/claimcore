@@ -57,14 +57,14 @@ it("renders independent maximum totals without rounding or single-amount bounds"
     "fetch",
     vi.fn<typeof globalThis.fetch>().mockResolvedValue(response("case.summary", summary)),
   );
-  render(<SummaryBand filter={{ assignment: "MINE", order: "NOTIFIED", text: "needle" }} />);
+  render(<SummaryBand filter={{ assignment: "MINE", order: "RECEIVED", text: "needle" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
   expect(screen.getByText("1.200 KWD")).toBeVisible();
   expect(screen.getByText("2", { exact: true })).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
     expect.objectContaining({
-      body: JSON.stringify({ assignment: "MINE", order: "NOTIFIED", text: "needle" }),
+      body: JSON.stringify({ assignment: "MINE", order: "RECEIVED", text: "needle" }),
     }),
   );
 });
@@ -152,4 +152,32 @@ it("offers an explicit retry for read pressure without changing its query", asyn
     expect(path).toBe("/api/case.summary");
     expect(request?.body).toBe(JSON.stringify({ view: "ALL", text: "same query" }));
   }
+});
+
+it("submits the selected grouping with the existing dates and offers its CSV", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(response("case.summary", summary));
+  vi.stubGlobal("fetch", fetch);
+  render(
+    <SummaryBand filter={{ registeredFrom: "2026-11-01", registeredThrough: "2026-11-30" }} />,
+  );
+  await screen.findByText("2", { exact: true });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenLastCalledWith(
+      "/api/case.summary",
+      expect.objectContaining({
+        body: JSON.stringify({
+          registeredFrom: "2026-11-01",
+          registeredThrough: "2026-11-30",
+          groupBy: "RECEIVED_MONTH",
+        }),
+      }),
+    );
+  });
+  expect(await screen.findByRole("button", { name: "Download CSV" })).toBeVisible();
 });

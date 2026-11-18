@@ -113,7 +113,7 @@ module ReplyCodecs =
             ]
 
     let review =
-        (record (fun task target references binding changes context ->
+        (record (fun task target references binding changes context changesOwnSignInIdentity ->
             {
                 OperationReview.Task = task
                 Target = target
@@ -121,6 +121,7 @@ module ReplyCodecs =
                 Binding = binding
                 Changes = changes
                 Context = context
+                ChangesOwnSignInIdentity = defaultArg changesOwnSignInIdentity false
             })
         : Fields<OperationReview, _>)
         |> field "task" _.Task TaskVocabulary.codec
@@ -129,6 +130,10 @@ module ReplyCodecs =
         |> field "binding" _.Binding ClaimCore.RecordFormat.BindingCodecs.binding
         |> field "changes" _.Changes (boundedList 1 50 PartDescriptionCodecs.part)
         |> field "context" _.Context ResponseCodecs.runtimeContext
+        |> optionalField
+            "changesOwnSignInIdentity"
+            (fun review -> if review.ChangesOwnSignInIdentity then Some true else None)
+            boolean
         |> build
         |> named "OperationReview"
 

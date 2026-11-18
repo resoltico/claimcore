@@ -30,19 +30,19 @@ module internal CaseStateCodecs =
                 unitVariant "ERASED" CaseState.Erased
             ]
 
-    let disposition =
-        let reason =
-            text
-            |> interpret
-                (fun path raw ->
-                    Reason.parse raw
-                    |> Result.mapError (fun _ ->
-                        {
-                            Path = path
-                            Reason = "Invalid disposition reason."
-                        }))
-                Reason.format
+    let reason =
+        text
+        |> interpret
+            (fun path raw ->
+                Reason.parse raw
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid case reason."
+                    }))
+            Reason.format
 
+    let disposition =
         tagged
             "CaseDisposition"
             [

@@ -117,7 +117,6 @@ module ReviewScreen =
             removals @ lifecycle @ reason, unchanged
         | PartDescription.Payment value ->
             let removed = value.Removed |> Option.bind _.After = Some true
-            let totals = if removed then value.Totals.Before else value.Totals.After
 
             let entry =
                 value.Entry
@@ -129,48 +128,51 @@ module ReviewScreen =
                         else
                             { Before = None; After = Some item }
 
-                    let amount =
-                        totals
-                        |> Option.map (fun totals ->
-                            Money.create
-                                (PaymentEntry.amount entry)
-                                (Money.currencyValue totals.Payable))
-
                     [
                         changed
                             (prefix + "date")
                             "field.paymentDate.label"
                             PresentedValue.Date
                             (pair (PaymentEntry.date entry))
-                        match amount with
-                        | Some amount ->
+                        changed
+                            (prefix + "amount")
+                            "field.paidAmount.label"
+                            PresentedValue.money
+                            (pair (PaymentEntry.money entry))
+                        changed
+                            (prefix + "direction")
+                            "field.direction.label"
+                            (code PaymentDirection.vocabulary)
+                            (pair (PaymentEntry.direction entry))
+                        match PaymentEntry.reference entry with
+                        | Some reference ->
                             changed
-                                (prefix + "amount")
-                                "field.paidAmount.label"
-                                PresentedValue.money
-                                (pair amount)
+                                (prefix + "reference")
+                                "field.reference.label"
+                                (Identifier.format >> PresentedValue.Identifier)
+                                (pair reference)
+                        | None -> ()
+                        match PaymentEntry.payee entry with
+                        | Some payee ->
+                            changed
+                                (prefix + "payee")
+                                "field.payee.label"
+                                (PartyId.format >> PresentedValue.Identifier)
+                                (pair payee)
                         | None -> ()
                     ])
 
             let balances =
-                [
-                    "paid", "label.paid", (fun (totals: PaymentTotals) -> totals.Paid)
-                    "remaining", "label.remaining", (fun totals -> totals.Remaining)
-                ]
-                |> List.choose (fun (key, label, select) ->
-                    let before = value.Totals.Before |> Option.map select
-                    let after = value.Totals.After |> Option.map select
-
-                    if before = after then
-                        None
-                    else
-                        Some(
-                            changed
-                                (prefix + key)
-                                label
-                                PresentedValue.money
-                                { Before = before; After = after }
-                        ))
+                if value.Totals.Before = value.Totals.After then
+                    []
+                else
+                    [
+                        changed
+                            (prefix + "netPaid")
+                            "label.netPaid"
+                            PaymentsScreen.netPaid
+                            value.Totals
+                    ]
 
             entry @ balances, []
         | PartDescription.Work value ->
@@ -230,6 +232,14 @@ module ReviewScreen =
                     |> Option.map (
                         changed (prefix + "due") "field.reminderDueDate.label" PresentedValue.Date
                     )
+                    value.Kind
+                    |> Option.map (
+                        changed (prefix + "kind") "field.kind.label" (code ReminderKind.vocabulary)
+                    )
+                    value.DoneOn
+                    |> Option.map (
+                        changed (prefix + "doneOn") "field.doneOn.label" PresentedValue.Date
+                    )
                     value.State
                     |> Option.map (
                         changed
@@ -263,6 +273,49 @@ module ReviewScreen =
                 ]
 
             differences, unchanged
+        | PartDescription.Party part ->
+            let difference key label format select =
+                changed
+                    (prefix + key)
+                    label
+                    format
+                    {
+                        Before = part.Content.Before |> Option.bind select
+                        After = part.Content.After |> Option.bind select
+                    }
+
+            [
+                difference "role" "field.partyRole.label" (code PartyRole.vocabulary) (fun party ->
+                    Some party.Role)
+                difference "name" "field.partyName.label" PresentedValue.Party _.Name
+                difference
+                    "details"
+                    "field.partyDetails.label"
+                    (PartyDetails.format >> PresentedValue.Narrative)
+                    _.Details
+            ],
+            []
+        | PartDescription.Link link ->
+            [
+                changed
+                    (prefix + "target")
+                    "field.relatedCaseId.label"
+                    (fun id -> PresentedValue.Identifier(CaseId.format id))
+                    {
+                        Before = link.Before |> Option.map _.Target
+                        After = link.After |> Option.map _.Target
+                    }
+                if (link.Before |> Option.bind _.Note) <> (link.After |> Option.bind _.Note) then
+                    changed
+                        (prefix + "note")
+                        "field.linkNote.label"
+                        (NoteText.format >> PresentedValue.Narrative)
+                        {
+                            Before = link.Before |> Option.bind _.Note
+                            After = link.After |> Option.bind _.Note
+                        }
+            ],
+            []
         | PartDescription.Note value ->
             [
                 value.Text
@@ -297,6 +350,13 @@ module ReviewScreen =
                             (prefix + "contact")
                             "field.profile.contact.label"
                             (ContactText.format >> PresentedValue.Text)
+                    )
+                    value.DigestEmail
+                    |> Option.map (
+                        changed
+                            (prefix + "digestEmail")
+                            "field.profile.digestEmail.label"
+                            (EmailAddress.format >> PresentedValue.Text)
                     )
                 ]
                 |> List.choose id

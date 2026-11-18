@@ -82,8 +82,8 @@ let identifiers =
 
             Expect.equal (CaseReference.key "i-Demo") "I-DEMO" "ASCII identity folding"
 
-            for country in [ "LV"; "ZZ"; "XK" ] do
+            for country in [ "LV"; "XK" ] do
                 Expect.isOk (CountryCode.parse country) "Supported country"
 
-            for country in [ "QQ"; "SU"; "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
+            for country in [ "ZZ"; "QQ"; "SU"; "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 Expect.isError (CountryCode.parse country) "Invalid or unsupported country")

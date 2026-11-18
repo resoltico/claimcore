@@ -24,6 +24,9 @@ module internal CaseWorkReads =
                 |> Option.map (fun assigned ->
                     assigned.ActorId, assigned.Availability = ActorAvailability.Available)
             NextPendingDue = work.FollowUp
+            PaymentsNeedReview = record.Index.PaymentReview = Some true
+            NextDeadlineDue = record.Index.DeadlineDue
+            ReportDates = Some(record.ReportDates, record.Index.ReceivedOn)
         }
 
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =
@@ -32,6 +35,7 @@ module internal CaseWorkReads =
             erased
             && record.Index.Responsible.IsNone
             && record.Index.FollowUp.IsNone
+            && record.Index.DeadlineDue.IsNone
             && record.Index.WorkSearchText.IsNone
         | Some summary ->
             let payload = summary.Work.Snapshot
@@ -224,6 +228,8 @@ module internal CaseWorkReads =
                     FamilyEnvironment.Requester = actor
                     RequesterPrincipal = principal
                     Maintenance = maintenance
+                    RelatedCase = fun _ -> None
+                    ReferenceOwner = fun _ -> None
                     AssigneeEligible = fun _ -> false
                 }
 
@@ -288,6 +294,8 @@ module internal CaseWorkReads =
                                 }
                             TargetCaseId = Some record.CaseId
                             State = Some ReminderState.Pending
+                            Kind = None
+                            DeadlineOutcome = None
                             View = None
                             Due = None
                             Text = None
@@ -329,7 +337,13 @@ module internal CaseWorkReads =
                                 {
                                     ReminderReadModel.Reminder = reminder
                                     Reference = row.Reference
-                                    ClaimantName = row.ClaimantName
+                                    Claimants =
+                                        Map.tryFind row.Stored.CaseId currentFamilies
+                                        |> Option.map (
+                                            DecisionFacts.currentParties
+                                            >> PartyContent.names PartyRole.Claimant
+                                        )
+                                        |> Option.defaultValue []
                                     Responsible = work.Responsible
                                     RecordedAt = row.Stored.RecordedAt
                                     RecordedBy = author

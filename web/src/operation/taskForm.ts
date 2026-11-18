@@ -11,9 +11,11 @@ import { grantFields } from "./grantTargetDraft";
 import { operationTask } from "../protocol/taskCatalog";
 import { isFormCollection, type FormValues } from "../protocol/forms";
 
+type CollectionId = OperationTaskDefinition["collections"][number]["id"];
+
 export type TaskSubmission = {
   readonly command: OperationSubmission;
-  readonly submittedRows: Readonly<Partial<Record<"peopleGrants", ReadonlyArray<string>>>>;
+  readonly submittedRows: Readonly<Partial<Record<CollectionId, ReadonlyArray<string>>>>;
 };
 
 const authoredScalars = (declaration: OperationTaskDefinition, values: FormValues) => {
@@ -30,7 +32,7 @@ const authoredScalars = (declaration: OperationTaskDefinition, values: FormValue
 };
 const authoredCollections = (declaration: OperationTaskDefinition, values: FormValues) => {
   const inputs: Record<string, unknown> = {};
-  const submittedRows: Partial<Record<"peopleGrants", ReadonlyArray<string>>> = {};
+  const submittedRows: Partial<Record<CollectionId, ReadonlyArray<string>>> = {};
   for (const collection of declaration.collections) {
     const value = values[collection.id];
     if (isFormCollection(value)) {

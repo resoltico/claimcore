@@ -35,10 +35,10 @@ const context = caseDocumentInput(
           kind: "ENTRIES",
           entries: [
             {
-              key: "claimantName",
-              labelId: "field.claimantName.label",
+              key: "policyNumber",
+              labelId: "field.policyNumber.label",
               prominence: "PRIMARY",
-              value: { kind: "PARTY", value: fields.registration.claimantName },
+              value: { kind: "PARTY", value: fields.registration.policyNumber! },
             },
           ],
         },
@@ -136,12 +136,12 @@ for (const retainCurrent of [false, true]) {
           onAct={vi.fn()}
         />,
       );
-      await screen.findAllByText(fields.registration.claimantName);
+      await screen.findAllByText(fields.registration.policyNumber!);
       await user.click(screen.getByRole("tab", { name: "Case facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
         expect(
-          document.querySelectorAll('[data-region="FACTS"] [data-entry="claimantName"]'),
+          document.querySelectorAll('[data-region="FACTS"] [data-entry="policyNumber"]'),
         ).toHaveLength(retainCurrent ? 1 : 0);
         expect(
           screen.queryByRole("option", {
@@ -162,7 +162,7 @@ for (const retainCurrent of [false, true]) {
           "false",
         );
       } else {
-        expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+        expect(screen.queryByText(fields.registration.policyNumber!)).toBeNull();
       }
     },
   );

@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "로그인 ID 변경",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "이 계정을 새 발급자와 주체에 연결합니다. 계정의 역할과 기록된 작업은 유지됩니다.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "로그인 ID를 변경했습니다.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "설치 소유자 액세스 복구",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "설치 소유자로서의 액세스 권한을 복구하거나 새 소유자를 등록합니다.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "이 로그인 ID는 다른 계정에 예약되어 있습니다.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "이 계정에 이미 이 로그인 ID가 연결되어 있습니다.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "현재 ID로 로그인하면 더 이상 이 계정을 열 수 없습니다.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "청구 내역 수정",
     "source": "5ae6604c4520"
@@ -12,16 +44,16 @@
     "source": "5cad104f0e26"
   },
   "task.case.close.meaning": {
-    "text": "더 이상 필요한 업무가 없으면 청구 건을 종료합니다. 종료가 보험금 지급을 의미하지는 않습니다.",
-    "source": "6059fdf3ac25"
+    "text": "처리가 끝난 이유를 기록하고 필요하면 종결 메모를 추가하세요.",
+    "source": "55533de5afb6"
   },
   "task.case.correct.label": {
     "text": "청구 건 정보 정정",
     "source": "e3eeb9561f2e"
   },
   "task.case.correct.meaning": {
-    "text": "등록된 청구 또는 지급 결정 사실을 정정합니다. 지급 내역은 변경되지 않으며 지급 결정액은 지급 합계보다 적을 수 없습니다.",
-    "source": "c115bf28430f"
+    "text": "이 청구 건에서 선택한 등록 정보 또는 결정 정보를 정정합니다.",
+    "source": "b0e150983674"
   },
   "task.case.decide.label": {
     "text": "지급 결정 기록",
@@ -76,8 +108,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "사고, 청구인, 보험사 및 청구 금액을 등록합니다.",
-    "source": "bd4ea9e91f3a"
+    "text": "참조 번호로 사건을 여세요. 알고 있는 등록 정보를 기록하세요.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "첫 소유자 설정",
@@ -88,8 +120,8 @@
     "source": "0d13e856322a"
   },
   "task.case.recordPayment.meaning": {
-    "text": "실제로 지급한 날짜와 금액을 결정 통화로 기록합니다. 이 작업은 송금을 실행하거나 확인하지 않습니다.",
-    "source": "572c7a975cf2"
+    "text": "실제로 지급하거나 반환한 금액을 해당 항목의 날짜, 금액 및 통화로 기록합니다.",
+    "source": "2d46eea4d339"
   },
   "task.people.register.label": {
     "text": "계정 등록",
@@ -160,8 +192,8 @@
     "source": "e1469dc1ace7"
   },
   "task.case.reopen.meaning": {
-    "text": "청구 건을 다시 엽니다. 정보와 이력은 유지됩니다.",
-    "source": "9afd35e2c444"
+    "text": "이 청구 건의 처리를 재개하는 이유를 입력하세요.",
+    "source": "86773e93a4e6"
   },
   "task.people.revoke.label": {
     "text": "역할 회수",
@@ -200,8 +232,8 @@
     "source": "5094d2f8f699"
   },
   "task.case.withdrawDecision.meaning": {
-    "text": "지급 전에 지급 결정을 제거합니다. 이력은 유지됩니다.",
-    "source": "4579673a4146"
+    "text": "결정을 철회합니다. 기존 지급 항목과 결정 이력은 유지됩니다.",
+    "source": "8600af714946"
   },
   "actFamily.BUSINESS.label": {
     "text": "청구 건 작업",
@@ -319,9 +351,9 @@
     "text": "다음 후속 조치",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
+  "caseOrder.RECEIVED.label": {
     "text": "접수일(오래된 순)",
-    "source": "41b4f3e7d713"
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "최근 변경",
@@ -367,10 +399,6 @@
     "text": "이미 존재하는 청구 건 참조번호입니다.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "날짜 순서가 올바르지 않습니다.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "제어 문자는 사용할 수 없습니다.",
     "source": "27b9975ce3fa"
@@ -384,8 +412,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "ISO 3166-1에 공식 할당된 국가 코드 또는 XK, ZZ를 사용하세요. 지원 코드는 help schema에서 확인하세요.",
-    "source": "b1c9f16ea7e3"
+    "text": "공식 할당된 ISO 3166-1 국가 코드 또는 XK를 사용하세요. 지원 코드는 도움말 스키마를 참조하세요.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "지원되는 활성 ISO 4217 통화 코드를 사용하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다. help schema를 확인하세요.",
@@ -627,10 +655,6 @@
     "text": "청구 건 참조번호",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "청구인 이름",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "청구 금액",
     "source": "36ea8f5c9f5f"
@@ -671,13 +695,9 @@
     "text": "사고 설명",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
+  "field.receivedDate.label": {
     "text": "접수일",
-    "source": "3f82631653e9"
-  },
-  "field.insurerName.label": {
-    "text": "보험사",
-    "source": "949b10334d29"
+    "source": "49f19beeecf4"
   },
   "field.limit.label": {
     "text": "페이지 크기",
@@ -1175,10 +1195,6 @@
     "text": "지급 기록 담당자",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "알 수 없음 또는 국제",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "단일 청구 건",
     "source": "bb4ad0b2b38b"
@@ -1443,6 +1459,10 @@
     "text": "기록 시각",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "설치 운영자",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "기록자",
     "source": "cebc8d0d5452"
@@ -1479,13 +1499,13 @@
     "text": "사고가 발생한 날짜입니다.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "이 사고를 처음 알게 된 날짜입니다.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "귀 기관이 이 청구를 접수한 날짜입니다.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "ISO 3166-1에 공식 할당된 코드 또는 XK를 사용하세요. {unknownCode}는 알 수 없음 또는 국제를 뜻합니다.",
-    "source": "0ba1fe273220"
+    "text": "공식 할당된 ISO 3166-1 코드 또는 XK를 사용하세요.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "사고가 발생한 국가입니다.",
@@ -1494,14 +1514,6 @@
   "field.incidentDescription.hint": {
     "text": "발생한 일을 설명하세요. 이 청구에 필요한 상세 정보를 추가하세요.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "청구하는 사람 또는 회사입니다.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "이 청구를 담당하는 보험사입니다.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 마침표를 사용하세요. 공백, 부호, 쉼표 또는 불필요한 앞자리 0은 사용할 수 없습니다.",
@@ -1524,8 +1536,8 @@
     "source": "b43a33360aed"
   },
   "field.caseReference.hint": {
-    "text": "이 청구 건에 사용할 자체 참조번호입니다. 예: CLM-2026-0001. 나중에 변경할 수 없습니다.",
-    "source": "10559d041918"
+    "text": "이 청구 건에 사용하는 자체 참조입니다. 예: CLM-2026-0001.",
+    "source": "adde9fba1cc3"
   },
   "field.paymentDecisionDate.hint": {
     "text": "지급 금액을 결정한 날짜입니다.",
@@ -1760,8 +1772,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "참조번호, 최근 청구 건 정보 변경, 통지일 또는 가장 빠른 미완료 후속 조치 날짜로 정렬합니다. 정보 변경은 최신순, 통지일과 후속 조치 날짜는 오래된 순이며 날짜가 없으면 마지막에 표시합니다. 값이 같으면 참조번호순으로 정렬합니다.",
-    "source": "009775c9c5fe"
+    "text": "참조 번호, 최근 사건 정보 변경, 접수일 또는 가장 빠른 미완료 알림 날짜로 정렬하세요. 변경은 최신순입니다. 접수일과 알림 날짜는 오래된 순이며 누락된 날짜는 마지막입니다. 값이 같으면 참조 번호로 정렬합니다.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "결과 정렬 방법을 선택하세요.",
@@ -1816,8 +1828,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "LV와 같은 지원 국가 코드 또는 XK, ZZ를 선택하세요.",
-    "source": "d1667b590685"
+    "text": "LV 또는 XK와 같이 지원되는 국가 코드를 선택하세요.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "EUR와 같은 지원 통화 코드를 선택하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
@@ -2428,8 +2440,8 @@
     "source": "8ceb7388d942"
   },
   "field.paidAmount.hint": {
-    "text": "이 내역에서 실제로 지급한 금액입니다.",
-    "source": "d79a30c73c31"
+    "text": "이 항목에서 지급하거나 반환한 금액입니다.",
+    "source": "e34e07142d65"
   },
   "field.paidAmount.rule": {
     "text": "양수를 입력하세요. 소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 점을 사용하고 공백, 부호, 쉼표, 불필요한 앞자리 0은 넣지 마세요.",
@@ -2437,15 +2449,15 @@
   },
   "field.paidCurrency.label": {
     "text": "지급 통화",
-    "source": "ae69c7acaee6"
+    "source": "c29297adba4a"
   },
   "field.paidCurrency.hint": {
-    "text": "결정 통화를 사용하세요.",
-    "source": "6cf93e635901"
+    "text": "이 항목의 통화를 사용하세요.",
+    "source": "505516de0d59"
   },
   "field.paidCurrency.rule": {
-    "text": "지원되는 활성 ISO 4217 통화 목록의 ASCII 대문자 {length}자를 사용하며 결정 통화와 일치해야 합니다. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
-    "source": "1a3ba1179c9c"
+    "text": "지원되는 활성 ISO 4217 통화 코드 목록의 ASCII 대문자 {length}자를 입력하세요.",
+    "source": "77f925050f81"
   },
   "field.paymentId.label": {
     "text": "지급 ID",
@@ -2480,8 +2492,8 @@
     "source": "f3e4352a5df6"
   },
   "label.paidTotals": {
-    "text": "통화별 지급 합계",
-    "source": "b0f6fe6c2d8f"
+    "text": "통화별 순지급액",
+    "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
     "text": "{payable} 중 {paid} 지급됨.",
@@ -2499,21 +2511,9 @@
     "text": "0보다 큰 지급액을 입력하세요.",
     "source": "dc72fea18ef9"
   },
-  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
-    "text": "지급과 지급 결정에는 같은 통화를 사용해야 합니다.",
-    "source": "2262e6b8225c"
-  },
-  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
-    "text": "지급 합계는 지급 결정액을 초과할 수 없습니다.",
-    "source": "2c7d50d243f1"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "기록된 지급 내역을 수락한 작업의 UUID를 사용하세요.",
     "source": "c9b9c991dc30"
-  },
-  "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "지급 내역이 있는 결정은 철회하거나 지울 수 없습니다. 잘못 기록한 내역만 제거하세요.",
-    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "이 지급 내역은 더 이상 존재하지 않습니다. 계속하기 전에 현재 청구 건을 조회하세요.",
@@ -2800,8 +2800,8 @@
     "source": "22b058e234e0"
   },
   "task.case.correctPayment.meaning": {
-    "text": "잘못 기록한 지급 항목을 올바른 날짜와 금액으로 대체합니다. 환불이나 송금을 실행하지 않습니다. 이전 이력은 유지됩니다.",
-    "source": "538255858894"
+    "text": "잘못 기록한 지급 항목을 올바른 날짜, 방향, 금액, 참조 및 수취인으로 교체합니다. 확인서에는 두 항목이 표시됩니다.",
+    "source": "a892687bc3b6"
   },
   "task.case.correctPayment.done": {
     "text": "지급 기록이 정정되었습니다.",
@@ -2870,5 +2870,1001 @@
   "reminderStateSelection.ANY.label": {
     "text": "전체",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "당사자 추가",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "이 청구 건과 관련된 당사자를 기록합니다.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "당사자를 추가했습니다.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "당사자 수정",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "이 당사자의 역할, 이름 또는 세부 정보를 변경합니다.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "당사자 정보를 수정했습니다.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "당사자 제거",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "현재 청구 건에서 이 당사자를 제거합니다. 이전 정보는 이력에 남습니다.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "당사자를 제거했습니다.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "당사자",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "알고 있는 당사자를 추가하세요.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "당사자 역할",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "당사자가 관여하는 방식을 선택하세요.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "당사자 이름",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "알고 있다면 사람이나 기관의 이름을 입력하세요.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "당사자 세부 정보",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "알고 있다면 연락처나 주소를 기록하세요.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "유니코드 문자 1~{maximumScalars}자를 사용하세요. 줄바꿈을 쓸 수 있습니다.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "당사자 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "이 청구 건의 당사자를 선택하세요.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "검토한 당사자 버전",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "검토한 버전을 사용하세요.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "당사자의 UUID를 사용하세요.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "당사자 역할을 선택하세요.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "이름이나 세부 정보를 입력하세요.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "이 청구 건의 당사자 수가 한도에 도달했습니다.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "입력한 당사자 수가 한도를 초과했습니다.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "청구인",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "보험사",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "청구인",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "보험사",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "대리인",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "당사자",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "당사자",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "당사자 변경 사항을 기록했습니다.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "청구인",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "청구를 제기하는 당사자입니다.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "보험사",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "청구와 관련된 보험을 제공하는 당사자입니다.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "대리인",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "청구 건의 관련자를 대신해 행동하는 당사자입니다.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "다른 역할로 청구 건에 관여하는 당사자입니다.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "당사자를 최대 {maximumParties}명까지 추가하세요.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "목록에서 역할을 하나 선택하세요.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "변경할 당사자의 식별자를 사용하세요.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "선택한 당사자의 버전 번호를 사용하세요.",
+    "source": "f6e00e1e4aa8"
+  },
+  "paymentDirection.PAID.label": {
+    "text": "지급",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.PAID.shortLabel": {
+    "text": "지급",
+    "source": "fb81b961af45"
+  },
+  "paymentDirection.RETURNED.label": {
+    "text": "반환",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.RETURNED.shortLabel": {
+    "text": "반환",
+    "source": "3610231fdcab"
+  },
+  "paymentDirection.PAID.meaning": {
+    "text": "수취인에게 지급된 금액입니다.",
+    "source": "adc1cd9ae074"
+  },
+  "paymentDirection.RETURNED.meaning": {
+    "text": "수취인이 반환한 금액입니다.",
+    "source": "60aaebb58664"
+  },
+  "progress.OVERPAID.label": {
+    "text": "초과 지급",
+    "source": "c93dce4211a4"
+  },
+  "attention.PAYMENTS_NEED_REVIEW.label": {
+    "text": "지급 내역 검토 필요",
+    "source": "089412a8dedd"
+  },
+  "field.direction.label": {
+    "text": "지급 방향",
+    "source": "9c8a9579abe5"
+  },
+  "field.reference.label": {
+    "text": "외부 참조",
+    "source": "5c54252e696c"
+  },
+  "field.payee.label": {
+    "text": "수취인",
+    "source": "59d75d3487df"
+  },
+  "field.direction.hint": {
+    "text": "금액이 지급되었는지 반환되었는지 선택하세요.",
+    "source": "0c315e3c0f14"
+  },
+  "field.reference.hint": {
+    "text": "은행 거래 또는 서신의 참조를 입력하세요.",
+    "source": "01f724213899"
+  },
+  "field.payee.hint": {
+    "text": "이 청구 건의 현재 당사자 ID를 입력하세요.",
+    "source": "d84ebe3bf0f8"
+  },
+  "field.direction.rule": {
+    "text": "지급 또는 반환을 선택하세요.",
+    "source": "af1d79824fdf"
+  },
+  "field.payee.rule": {
+    "text": "현재 당사자의 ID를 사용하세요.",
+    "source": "c30e1b905b82"
+  },
+  "label.netPaid": {
+    "text": "순지급액",
+    "source": "9ba8e25ce3ed"
+  },
+  "label.contributingCases": {
+    "text": "집계에 포함된 청구 건",
+    "source": "5fc912b90f67"
+  },
+  "diagnostic.PAYMENT_DIRECTION_FORMAT": {
+    "text": "지급 또는 반환을 선택하세요.",
+    "source": "af1d79824fdf"
+  },
+  "diagnostic.PAYMENT_TOTAL_RANGE": {
+    "text": "이 지급으로 통화별 총액이 정확하게 처리할 수 있는 범위를 벗어납니다.",
+    "source": "9a5d02904c32"
+  },
+  "diagnostic.PAYEE_UNAVAILABLE": {
+    "text": "이 청구 건의 현재 당사자를 선택하세요.",
+    "source": "cdfdf1e344d9"
+  },
+  "label.removedPayee": {
+    "text": "제거된 당사자",
+    "source": "551b332ea085"
+  },
+  "closureOutcome.SETTLED.label": {
+    "text": "합의 완료",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.SETTLED.shortLabel": {
+    "text": "합의 완료",
+    "source": "cc9bec8d2f50"
+  },
+  "closureOutcome.DECLINED.label": {
+    "text": "거절",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.DECLINED.shortLabel": {
+    "text": "거절",
+    "source": "dce083a2c47f"
+  },
+  "closureOutcome.WITHDRAWN.label": {
+    "text": "철회",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.WITHDRAWN.shortLabel": {
+    "text": "철회",
+    "source": "00c0b03fcfa2"
+  },
+  "closureOutcome.DUPLICATE.label": {
+    "text": "중복",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.DUPLICATE.shortLabel": {
+    "text": "중복",
+    "source": "02cdaabfca80"
+  },
+  "closureOutcome.OTHER.label": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.OTHER.shortLabel": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "closureOutcome.SETTLED.meaning": {
+    "text": "합의로 처리가 끝났습니다.",
+    "source": "17e7474789bc"
+  },
+  "closureOutcome.DECLINED.meaning": {
+    "text": "청구가 거절되었습니다.",
+    "source": "90d1328f879e"
+  },
+  "closureOutcome.WITHDRAWN.meaning": {
+    "text": "청구가 철회되었습니다.",
+    "source": "c5bf180354f0"
+  },
+  "closureOutcome.DUPLICATE.meaning": {
+    "text": "다른 청구 건에서 동일한 청구를 다룹니다.",
+    "source": "1de6fbb9df56"
+  },
+  "closureOutcome.OTHER.meaning": {
+    "text": "다른 사유로 처리가 끝났습니다.",
+    "source": "4531c3292721"
+  },
+  "field.outcome.label": {
+    "text": "결과",
+    "source": "4e80abb5b146"
+  },
+  "field.outcome.hint": {
+    "text": "처리가 끝난 이유를 선택하세요.",
+    "source": "90a5174e36c7"
+  },
+  "field.outcome.rule": {
+    "text": "목록에서 결과를 선택하세요.",
+    "source": "5e26dbf770b1"
+  },
+  "field.closingNote.label": {
+    "text": "종결 메모",
+    "source": "965d7aa086a4"
+  },
+  "field.closingNote.hint": {
+    "text": "종결에 관련된 내용을 기록하세요.",
+    "source": "799feb796687"
+  },
+  "field.decisionBasis.label": {
+    "text": "결정 근거",
+    "source": "388fb0ebbd5e"
+  },
+  "field.decisionBasis.hint": {
+    "text": "결정에 사용한 증거나 이유를 기록하세요.",
+    "source": "09d2b6d9d916"
+  },
+  "field.reopenReason.label": {
+    "text": "다시 여는 이유",
+    "source": "64c5bfff1bbe"
+  },
+  "label.closure": {
+    "text": "종결",
+    "source": "e90d617d2b55"
+  },
+  "diagnostic.CLOSURE_OUTCOME_FORMAT": {
+    "text": "목록에서 종결 결과를 선택하세요.",
+    "source": "ed45fada7999"
+  },
+  "task.case.changeReference.label": {
+    "text": "청구 건 참조 변경",
+    "source": "c48c7e896bb5"
+  },
+  "task.case.changeReference.meaning": {
+    "text": "현재 참조를 변경합니다. 이전 참조로도 같은 청구 건을 찾을 수 있습니다.",
+    "source": "1065858202dd"
+  },
+  "task.case.changeReference.done": {
+    "text": "청구 건 참조가 변경되었습니다.",
+    "source": "58241a331134"
+  },
+  "task.case.changeReference.consequence": {
+    "text": "이 청구 건의 새 참조를 선택하세요.",
+    "source": "73700635d1ab"
+  },
+  "field.newReference.label": {
+    "text": "새 참조",
+    "source": "42906b7cf062"
+  },
+  "field.newReference.rule": {
+    "text": "청구 건 참조 형식을 사용하세요.",
+    "source": "b905bbf44b8b"
+  },
+  "field.newReference.hint": {
+    "text": "이 청구 건에 사용할 참조를 입력하세요.",
+    "source": "d66b4efc4776"
+  },
+  "label.referenceChangedFrom": {
+    "text": "이전 참조",
+    "source": "0f0590159e51"
+  },
+  "field.reopenReason.hint": {
+    "text": "처리를 재개한 이유입니다.",
+    "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "관련 청구 건 추가",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "이 청구 건을 조회할 수 있는 다른 청구 건에 연결합니다.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "관련 청구 건을 연결했습니다.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "참조 또는 ID로 청구 건을 선택하세요.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "청구 건 연결 제거",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "이 청구 건에서 선택한 연결을 제거합니다.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "관련 청구 건의 연결을 제거했습니다.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "여기서 두 청구 건의 연결을 해제할지 확인하세요.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "청구 건 연결",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "청구 건 연결이 변경되었습니다",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "연결 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "연결을 기록한 작업의 UUID를 사용하세요.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "제거할 연결을 식별합니다.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "관련 청구 건 참조",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "청구 건 참조 형식을 사용하세요.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "참조를 입력하거나 관련 청구 건 ID 필드를 사용하세요.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "관련 청구 건 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "청구 건의 UUID를 사용하세요.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "참조를 비워 둘 경우 ID를 입력하세요.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "연결 메모",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "두 청구 건이 관련된 이유를 설명하세요.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "관련 청구 건",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "이 청구 건에서 연결한 항목",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "이 청구 건으로 연결된 항목",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "관련 청구 건을 조회할 수 없음",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "조회 가능한 수신 연결",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "기존 청구 건 연결을 선택하세요.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "청구 건을 자기 자신에 연결할 수 없습니다.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "이미 선택한 청구 건과 연결되어 있습니다.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "새 연결을 추가하기 전에 기존 연결 하나를 제거하세요.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "유니코드 문자 1–{maximumScalars}자를 사용하세요. 줄바꿈을 사용할 수 있습니다.",
+    "source": "97b31e9df4ef"
+  },
+  "reminderKind.FOLLOW_UP.label": {
+    "text": "후속 조치",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.shortLabel": {
+    "text": "후속 조치",
+    "source": "09b2d9cd1123"
+  },
+  "reminderKind.FOLLOW_UP.description": {
+    "text": "후속 확인이 필요한 작업입니다.",
+    "source": "ddb9f60245d3"
+  },
+  "reminderKind.DEADLINE.label": {
+    "text": "기한",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.shortLabel": {
+    "text": "기한",
+    "source": "6fcb38ddc858"
+  },
+  "reminderKind.DEADLINE.description": {
+    "text": "정해진 날짜까지 완료해야 하는 작업입니다.",
+    "source": "82557632989b"
+  },
+  "deadlineOutcome.OVERDUE.label": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.shortLabel": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "deadlineOutcome.OVERDUE.description": {
+    "text": "기한이 지났으며 작업이 아직 완료되지 않았습니다.",
+    "source": "509bdc8331e5"
+  },
+  "deadlineOutcome.MET.label": {
+    "text": "기한 준수",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.shortLabel": {
+    "text": "기한 준수",
+    "source": "36a60559bb01"
+  },
+  "deadlineOutcome.MET.description": {
+    "text": "기한 내에 작업을 완료했습니다.",
+    "source": "c5115786a9dc"
+  },
+  "deadlineOutcome.MISSED.label": {
+    "text": "기한 미준수",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.shortLabel": {
+    "text": "기한 미준수",
+    "source": "3d86eb082e36"
+  },
+  "deadlineOutcome.MISSED.description": {
+    "text": "기한이 지난 후 작업을 완료했습니다.",
+    "source": "1ba0556d862c"
+  },
+  "deadlineOutcome.CANCELLED.label": {
+    "text": "취소됨",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.shortLabel": {
+    "text": "취소됨",
+    "source": "d353a99eb455"
+  },
+  "deadlineOutcome.CANCELLED.description": {
+    "text": "기한이 취소되었습니다.",
+    "source": "67cf25ba0e66"
+  },
+  "attention.DEADLINE_OVERDUE.label": {
+    "text": "초과된 기한",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.shortLabel": {
+    "text": "초과된 기한",
+    "source": "a3992441536e"
+  },
+  "attention.DEADLINE_OVERDUE.description": {
+    "text": "이 열린 건에 기한이 지난 미완료 작업이 있습니다.",
+    "source": "7e1744821734"
+  },
+  "reminderKindSelection.ANY.label": {
+    "text": "전체",
+    "source": "2b505597daa7"
+  },
+  "field.kind.label": {
+    "text": "알림 유형",
+    "source": "f2d012a6ceef"
+  },
+  "field.kind.rule": {
+    "text": "후속 조치 또는 기한을 선택하세요.",
+    "source": "a147b3933a7e"
+  },
+  "field.kind.hint": {
+    "text": "이 작업의 추적 방법을 선택하세요.",
+    "source": "234f11e6ccab"
+  },
+  "field.doneOn.label": {
+    "text": "완료일",
+    "source": "e578db73a3df"
+  },
+  "field.doneOn.rule": {
+    "text": "업무일보다 늦지 않은 그레고리력 날짜를 YYYY-MM-DD 형식으로 입력하세요.",
+    "source": "c566e9bce00d"
+  },
+  "field.doneOn.hint": {
+    "text": "작업을 마친 날짜입니다. 비워 두면 오늘 날짜가 사용됩니다.",
+    "source": "910c65e2fb8c"
+  },
+  "input.reminderKind.label": {
+    "text": "알림 유형",
+    "source": "f2d012a6ceef"
+  },
+  "input.reminderKind.rule": {
+    "text": "알림 유형별로 목록을 필터링합니다.",
+    "source": "8eda92c2b237"
+  },
+  "label.deadlineOutcome": {
+    "text": "기한 결과",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.label": {
+    "text": "기한 결과",
+    "source": "4e26095b423c"
+  },
+  "input.deadlineOutcome.rule": {
+    "text": "기한 결과별로 목록을 필터링합니다.",
+    "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "사건을 등록된 월별로 그룹화합니다.",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "등록 월",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "사건을 접수된 월별로 그룹화합니다.",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "접수 월",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "사건을 종결된 월별로 그룹화합니다.",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "종결 월",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "사건을 기록된 종결 사유별로 그룹화합니다.",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "종결 결과",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "사건을 담당 계정별로 그룹화합니다.",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "담당 계정",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "등록일부터 종결일 또는 오늘까지 경과한 일수별로 그룹화합니다.",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "처리 일수",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "접수 날짜가 기록되지 않았습니다.",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "기록 없음",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "사건에 현재 유효한 종결 기록이 없습니다.",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "종결되지 않음",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "사건에 담당 계정이 지정되지 않았습니다.",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "미배정",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0~30일",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31~90일",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91~180일",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181~365일",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366일 이상",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "0~30일 동안 열린 사건입니다.",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "31~90일 동안 열린 사건입니다.",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "91~180일 동안 열린 사건입니다.",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "181~365일 동안 열린 사건입니다.",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "366일 이상 동안 열린 사건입니다.",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "이 요약에서 사건을 그룹화할 기준을 선택하세요.",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "등록 시작일",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "등록 종료일",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "접수 시작일",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "접수 종료일",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "종결 시작일",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "종결 종료일",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "이후 활동 없음",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "그룹 기준",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "등록 월",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "접수 월",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "종결 월",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "종결 결과",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "담당 계정",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "처리 일수",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "기록 없음",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "종결되지 않음",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "미배정",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "사건 그룹",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "통화",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "청구 금액이 있는 사건",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "지급 예정 금액이 있는 사건",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "지급 내역이 있는 사건",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "이 요약은 작성 시점의 사건 기록을 반영합니다.",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0~30일",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31~90일",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91~180일",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181~365일",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366일 이상",
+    "source": "1741020c66e0"
+  },
+  "digest.subject": {
+    "text": "일일 알림 요약 ({count})",
+    "source": "04909ee7d167"
+  },
+  "digest.link": {
+    "text": "{url}에서 내 알림을 여세요.",
+    "source": "92b8ddfac58b"
+  },
+  "digestCount.OVERDUE_DEADLINES.label": {
+    "text": "기한이 지난 마감",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.label": {
+    "text": "오늘 마감",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.label": {
+    "text": "다가오는 마감",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.label": {
+    "text": "기한이 지난 후속 조치",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.label": {
+    "text": "오늘 예정된 후속 조치",
+    "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.label": {
+    "text": "발송됨",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.label": {
+    "text": "발송 실패",
+    "source": "031a8f0f659d"
+  },
+  "digestOutcome.SKIPPED_EMPTY.label": {
+    "text": "보낼 알림 없음",
+    "source": "4a763133b808"
+  },
+  "field.profile.digestEmail.label": {
+    "text": "요약 이메일",
+    "source": "81eb0536cde2"
+  },
+  "field.profile.digestEmail.hint": {
+    "text": "일일 알림 요약을 받을 주소를 입력하세요.",
+    "source": "a87bcf123cbf"
+  },
+  "field.profile.digestEmail.rule": {
+    "text": "{maximumCharacters}자 이하의 이메일 주소를 사용하세요.",
+    "source": "838b9cde3f52"
+  },
+  "diagnostic.EMAIL_ADDRESS_INVALID": {
+    "text": "@ 기호가 하나 있고 도메인에 점이 있는 이메일 주소를 입력하세요.",
+    "source": "a768ac9fcda4"
+  },
+  "digestCount.OVERDUE_DEADLINES.line": {
+    "text": "기한이 지난 마감 — {count}",
+    "source": "d13694d7d878"
+  },
+  "digestCount.OVERDUE_DEADLINES.short": {
+    "text": "기한이 지난 마감",
+    "source": "ecedff6e347d"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.line": {
+    "text": "오늘 마감 — {count}",
+    "source": "be73c5df67c2"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.short": {
+    "text": "오늘 마감",
+    "source": "9992a6012371"
+  },
+  "digestCount.UPCOMING_DEADLINES.line": {
+    "text": "다가오는 마감 — {count}",
+    "source": "64006b90e7f4"
+  },
+  "digestCount.UPCOMING_DEADLINES.short": {
+    "text": "다가오는 마감",
+    "source": "883496a223d0"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.line": {
+    "text": "기한이 지난 후속 조치 — {count}",
+    "source": "893563e7b52f"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.short": {
+    "text": "기한이 지난 후속 조치",
+    "source": "dafff08429a6"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.line": {
+    "text": "오늘 예정된 후속 조치 — {count}",
+    "source": "a54fcf895ccf"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
+    "text": "오늘 예정된 후속 조치",
+    "source": "e04e8b1f370c"
   }
 }

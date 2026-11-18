@@ -273,8 +273,8 @@ it("keeps the requested case route while an actual read refusal removes every cu
             kind: "ENTRIES",
             entries: [
               {
-                key: "claimantName",
-                labelId: "field.claimantName.label",
+                key: "policyNumber",
+                labelId: "field.policyNumber.label",
                 prominence: "PRIMARY",
                 value: { kind: "PARTY", value: "CURRENT_FACT_CANARY" },
               },
@@ -326,7 +326,7 @@ it("keeps the requested case route while an actual read refusal removes every cu
     }),
   ).toBeVisible();
   expect(document.body).not.toHaveTextContent("CURRENT_FACT_CANARY");
-  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="policyNumber"]')).toBeNull();
 });
 
 it.each(["NO_ROLES", "DISABLED"] as const)(

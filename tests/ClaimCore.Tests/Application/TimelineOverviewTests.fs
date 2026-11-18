@@ -116,40 +116,24 @@ let tests =
             testCase
                 "reminder due and state facets are independent of action differences"
                 (fun () ->
-                    let before: ReminderValue =
+                    let plan =
                         {
-                            Plan =
-                                Some
-                                    {
-                                        Action = action "Retained\u202eaction"
-                                        Due = date "2026-11-01"
-                                    }
-                            State = ReminderState.Pending
+                            ReminderPlan.Action = action "Retained\u202eaction"
+                            Due = date "2026-11-01"
+                            Kind = ReminderKind.FollowUp
                         }
+
+                    let before = ReminderValue.Available(plan, ReminderHandling.Pending)
+                    let rescheduled = { plan with Due = date "2026-11-03" }
+                    let complete = ReminderHandling.Completed(date "2026-11-02")
 
                     for after, facets in
                         [
-                            { before with
-                                State = ReminderState.Completed
-                            },
-                            []
-                            { before with
-                                Plan =
-                                    Some
-                                        { before.Plan.Value with
-                                            Due = date "2026-11-03"
-                                        }
-                            },
+                            ReminderValue.Available(plan, complete), [ TimelineFacet.DoneOn ]
+                            ReminderValue.Available(rescheduled, ReminderHandling.Pending),
                             [ TimelineFacet.Due ]
-                            { before with
-                                State = ReminderState.Completed
-                                Plan =
-                                    Some
-                                        { before.Plan.Value with
-                                            Due = date "2026-11-03"
-                                        }
-                            },
-                            [ TimelineFacet.Due ]
+                            ReminderValue.Available(rescheduled, complete),
+                            [ TimelineFacet.Due; TimelineFacet.DoneOn ]
                         ] do
                         let description = ReminderDescription.describe (Some before) after
 
@@ -327,6 +311,8 @@ let tests =
                                             After = Some(action "New")
                                         }
                                 Due = None
+                                Kind = None
+                                DoneOn = None
                                 State =
                                     Some
                                         {

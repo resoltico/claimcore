@@ -26,7 +26,9 @@ module internal DiagnosticText =
                     | SubmissionValue.Text reference -> Some(CaseSelector.Reference reference)
                     | _ -> None)
             | OperationBinding.Case(target, _, _, _)
+            | OperationBinding.Party(target, _)
             | OperationBinding.Note(target, _)
+            | OperationBinding.Link(target, _)
             | OperationBinding.Work(target, _)
             | OperationBinding.Reminder(target, _) -> Some target
             | OperationBinding.People _ -> None
@@ -151,15 +153,7 @@ module internal DiagnosticText =
 
                     label rendering (diagnosticTargetIdentity issue.Target)
                     + ": "
-                    + render code parameters
-                    + (match issue.RelatedDate with
-                       | None -> ""
-                       | Some related ->
-                           " ("
-                           + label rendering (FieldPresentation.labelId related.Field)
-                           + ": "
-                           + CalendarDate.format related.Value
-                           + ")"))
+                    + render code parameters)
             | Refusal.Access(AccessRefusal.NotAuthorized required) ->
                 let names = requiredRoles rendering required
 

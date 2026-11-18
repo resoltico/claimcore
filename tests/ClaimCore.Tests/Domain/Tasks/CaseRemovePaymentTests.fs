@@ -12,50 +12,45 @@ let tests =
     testList
         "task case.removePayment"
         [
-            testCase
-                "removal retains entry identity and recalculates total and date bounds"
-                (fun () ->
-                    let state = decided () |> pay 3 "2026-02-02" "25.50" |> pay 4 "2026-02-03" "10"
+            testCase "removal retains entry identity and recalculates exact totals" (fun () ->
+                let state = decided () |> pay 3 "2026-02-02" "25.50" |> pay 4 "2026-02-03" "10"
 
-                    let binding =
-                        Binding.CasePayment(target state, state.Case.Revision, operation 3)
+                let binding = Binding.CasePayment(target state, state.Case.Revision, operation 3)
 
-                    let after =
-                        Remove.decide
-                            (context 5)
-                            environment
-                            (Some(DecisionFacts.fromReplay state))
-                            binding
-                            InputMap.empty
-                        |> accepted
-                        |> apply state
-
-                    Expect.isTrue
-                        after.Payments[operation 3].Value.Removed
-                        "The entry is a reserved tombstone"
-
-                    Expect.isSome
-                        after.Payments[operation 3].Value.Entry
-                        "Accepted entry values remain available until family erasure"
-
-                    let finance = after.Case.Value.Content |> Option.get |> _.Finance
-                    Expect.equal (Amount.value finance.PaidAmount) 10M "Exact subtraction"
-                    Expect.equal finance.PaymentCount 1L "One active entry remains"
-
-                    Expect.equal
-                        (finance.PaymentDates
-                         |> Option.map (fun dates ->
-                             CalendarDate.format dates.Earliest, CalendarDate.format dates.Latest))
-                        (Some("2026-02-03", "2026-02-03"))
-                        "Removed minimum no longer participates"
-
+                let after =
                     Remove.decide
-                        (context 6)
+                        (context 5)
                         environment
-                        (Some(DecisionFacts.fromReplay after))
-                        (Binding.CasePayment(target after, after.Case.Revision, operation 3))
+                        (Some(DecisionFacts.fromReplay state))
+                        binding
                         InputMap.empty
-                    |> expectRefusal (Refusal.Case CaseRefusal.PaymentNotFound))
+                    |> accepted
+                    |> apply state
+
+                Expect.isTrue
+                    after.Payments[operation 3].Value.Removed
+                    "The entry is a reserved tombstone"
+
+                Expect.isSome
+                    after.Payments[operation 3].Value.Entry
+                    "Accepted entry values remain available until family erasure"
+
+                let finance = after.Case.Value.Content |> Option.get |> _.Finance
+
+                Expect.equal
+                    (ClaimCore.TestSupport.CaseFixtures.netPaid "EUR" finance)
+                    "10"
+                    "Exact subtraction"
+
+                Expect.equal finance.PaymentCount 1L "One active entry remains"
+
+                Remove.decide
+                    (context 6)
+                    environment
+                    (Some(DecisionFacts.fromReplay after))
+                    (Binding.CasePayment(target after, after.Case.Revision, operation 3))
+                    InputMap.empty
+                |> expectRefusal (Refusal.Case CaseRefusal.PaymentNotFound))
             testCase
                 "removing the last payment leaves the decision and empty financial position"
                 (fun () ->
@@ -73,8 +68,13 @@ let tests =
 
                     let finance = after.Case.Value.Content |> Option.get |> _.Finance
                     Expect.equal finance.PaymentCount 0L "No active payments"
-                    Expect.equal (Amount.value finance.PaidAmount) 0M "Zero paid"
-                    Expect.isNone finance.PaymentDates "No fabricated date bounds"
+
+                    Expect.equal
+                        (ClaimCore.TestSupport.CaseFixtures.netPaid "EUR" finance)
+                        "0"
+                        "Zero paid"
+
+                    Expect.isTrue finance.CurrencyTotals.IsEmpty "No fabricated currency bucket"
                     Expect.isSome finance.Decision "The decision is independent of payment removal")
             testCase
                 "an empty payment collection refuses removal at its actual financial state"

@@ -98,13 +98,19 @@ let internal assignmentAndDisclosure fixture =
                 ("WORK-A")
                 (0L)
                 "case.open"
-                (ClaimCore.TestSupport.Submissions.fields (
-                    RegistrationInput.values (
-                        (DomainInputs.registrationWith
-                            [ BusinessField.ClaimantName, "Reminder parent claimant" ]
-                            registration)
-                    )
-                ))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values registration)
+                 |> Map.add
+                     (TaskCollectionId.input TaskCollectionId.Parties)
+                     (SubmissionValue.Rows
+                         [
+                             Map.ofList
+                                 [
+                                     TaskInputId.Target InputTarget.PartyRole,
+                                     SubmissionValue.Text "CLAIMANT"
+                                     TaskInputId.Target InputTarget.PartyName,
+                                     SubmissionValue.Text "Reminder parent claimant"
+                                 ]
+                         ]))
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
@@ -303,6 +309,8 @@ let internal assignmentAndDisclosure fixture =
             {
                 Target = Some(CaseSelector.Id caseId)
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None
@@ -320,8 +328,8 @@ let internal assignmentAndDisclosure fixture =
             Expect.equal queue.Items.Length 1 "Scoped-only current reminder visibility"
 
             Expect.equal
-                (PartyName.format queue.Items.Head.ClaimantName)
-                "Reminder parent claimant"
+                (queue.Items.Head.Claimants |> List.map PartyName.format)
+                [ "Reminder parent claimant" ]
                 "Queue context comes from the current parent case"
 
             Expect.equal
@@ -660,6 +668,8 @@ let internal dueFiltersAndOrder fixture =
             {
                 Target = None
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = Some ReminderDue.Today
                 Assignment = None
                 Text = None
@@ -697,7 +707,10 @@ let internal dueFiltersAndOrder fixture =
             "Stable tie identities"
 
         Expect.isNone second.NextCursor "Exactly two individual today actions"
-        let! summary = Service.caseSummary owner CaseListFilter.empty token
+
+        let! summary =
+            Service.caseSummary owner (CaseSummaryRequest.ungrouped CaseListFilter.empty) token
+
         let summary = read summary
         Expect.equal summary.Counts.Total 4L "Reminder fanout cannot duplicate cases"
 
@@ -856,6 +869,8 @@ let internal reminderTiming fixture =
             {
                 Target = Some target
                 State = None
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None
@@ -955,6 +970,8 @@ let internal reminderTiming fixture =
             checkPage
                 { request with
                     State = Some(ReminderStateSelection.State ReminderState.Pending)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Today
                     Limit = 1
                 }
@@ -1004,6 +1021,8 @@ let internal reminderTiming fixture =
             checkPage
                 { request with
                     State = Some(ReminderStateSelection.State ReminderState.Pending)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Today
                 }
                 [ 703, Some ReminderDue.Today ]
@@ -1016,7 +1035,14 @@ let internal reminderTiming fixture =
             "Read-time reclassification writes neither reminder state nor ledger activity"
 
         let! closed =
-            execute (fixture) (owner) (708) (reference) (1L) "case.close" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (708)
+                (reference)
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         accepted closed |> ignore
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
@@ -1043,6 +1069,8 @@ let internal reminderTiming fixture =
                 { request with
                     IncludeInactive = Some true
                     State = Some(ReminderStateSelection.State ReminderState.Completed)
+                    Kind = None
+                    DeadlineOutcome = None
                     Due = Some ReminderDue.Overdue
                 }
                 [ 704, None ]
@@ -1052,7 +1080,14 @@ let internal reminderTiming fixture =
         Expect.isNone closedItem.Timing "Closed pending work has no actionable timing"
 
         let! reopened =
-            execute (fixture) (owner) (709) (reference) (2L) "case.reopen" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (709)
+                (reference)
+                (2L)
+                "case.reopen"
+                (CaseTransitionInputs.reopened)
 
         accepted reopened |> ignore
         let! reopenedItem = single 702
@@ -1210,7 +1245,14 @@ let internal lifecycleAndErasure fixture =
             accepted reply |> ignore
 
         let! closed =
-            execute (fixture) (owner) (27) ("WORK-LIFECYCLE") (1L) "case.close" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (27)
+                ("WORK-LIFECYCLE")
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         accepted closed |> ignore
 
@@ -1247,7 +1289,14 @@ let internal lifecycleAndErasure fixture =
             "Closing did not complete pending work"
 
         let! reopened =
-            execute (fixture) (owner) (30) ("WORK-LIFECYCLE") (2L) "case.reopen" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (30)
+                ("WORK-LIFECYCLE")
+                (2L)
+                "case.reopen"
+                (CaseTransitionInputs.reopened)
 
         accepted reopened |> ignore
         let! active = get owner caseId
@@ -1438,7 +1487,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
 
         let partial: RegistrationUpdateInput =
             (RegistrationUpdateInput.create
-                [ BusinessField.ClaimantName, Some "Only selected claimant" ]
+                [ BusinessField.PolicyNumber, Some "Only selected claimant" ]
              |> Result.defaultWith failtest)
 
         let! edited =
@@ -1456,7 +1505,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
         let fields = disclosedFields (accepted edited)
 
         Expect.equal
-            (PartyName.format (Registration.claimant fields.Registration))
+            (Identifier.format (Registration.policyNumber fields.Registration |> Option.get))
             "Only selected claimant"
             "One asserted fact"
 
@@ -1471,7 +1520,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 (ClaimCore.TestSupport.Submissions.updates (
                     RegistrationUpdateInput.values (
                         (RegistrationUpdateInput.replace
-                            [ BusinessField.ClaimantName, Some "Stale edit" ]
+                            [ BusinessField.PolicyNumber, Some "Stale edit" ]
                             (partial)
                          |> Result.defaultWith failtest)
                     )
@@ -1573,7 +1622,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
         let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L "case.correct" correction
         accepted updated |> ignore
 
-        let! chronology =
+        let! futureDecision =
             execute
                 fixture
                 owner
@@ -1588,19 +1637,25 @@ let internal partialUpdatesAndPaymentPeople fixture =
                         Submissions.input (InputTarget.Group RecordGroup.Decision),
                         SubmissionValue.Text "UPDATE"
                         Submissions.field BusinessField.PaymentDecisionDate,
-                        SubmissionValue.Text "2026-08-21"
+                        SubmissionValue.Text "9999-12-31"
                     ])
 
-        match chronology.Outcome with
-        | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
-        | other -> failtestf "Expected chronology refusal: %A" other
+        match futureDecision.Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            let issue = InputIssues.head issues
+
+            Expect.equal
+                (issue.Target, issue.Violation)
+                (InputTarget.Field BusinessField.PaymentDecisionDate, Violation.FutureDate)
+                "The recorded business date still bounds a corrected decision date"
+        | other -> failtestf "Expected future date refusal: %A" other
 
         let! retained = get owner caseId
 
         Expect.equal
             (read retained).Snapshot.Revision
             (CaseFixtures.revision 5L)
-            "Chronology refusal cannot create a revision or silently rebase"
+            "A refused future date cannot create a revision or silently rebase"
     }
 
 let internal finiteDateRange fixture =
@@ -1651,6 +1706,8 @@ let internal finiteDateRange fixture =
             {
                 Target = Some(CaseSelector.Reference "DATE-MIN")
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
+                Kind = None
+                DeadlineOutcome = None
                 Due = None
                 Assignment = None
                 Text = None
@@ -1765,7 +1822,7 @@ let internal pairedPage fixture =
 
             accepted created |> ignore
 
-        for order in [ CaseListOrder.Reference; CaseListOrder.Notified ] do
+        for order in [ CaseListOrder.Reference; CaseListOrder.Received ] do
             let request =
                 {
                     CaseListRequest.Page = { AfterCursor = None; Limit = 2 }

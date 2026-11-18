@@ -13,7 +13,7 @@ export const exactInteger = (value: string, locale: DisplayLocale): string => {
 const currencyMinorUnits = new Map(
   productMetadata.catalog.moneyMinorUnits.map(({ currency, minorUnits }) => [currency, minorUnits]),
 );
-const canonicalTotal = /^(0|[1-9][0-9]{0,39})(\.[0-9]{1,4})?$/u;
+const canonicalTotal = /^-?(0|[1-9][0-9]{0,39})(\.[0-9]{1,4})?$/u;
 const fractionDigits = (currency: string | undefined, own: number): number =>
   Math.max(own, currency === undefined ? 0 : (currencyMinorUnits.get(currency) ?? 0));
 
@@ -26,7 +26,7 @@ const decimalText = (
   const [whole = "", own = ""] = value.split(".");
   const fraction = own.padEnd(minimumFractionDigits, "0");
   const numbers = localeNumbers(locale);
-  const integer = numbers.integer.format(BigInt(whole));
+  const integer = numbers.integer.format(whole === "-0" ? -0 : BigInt(whole));
   if (fraction === "") {
     return integer;
   }

@@ -30,15 +30,15 @@ import {
 const widgetHints = {
   en: {
     incidentDate: "When the incident happened.",
-    claimantName: "The person or company making the claim.",
+    policyNumber: "The policy number used by the insurer.",
   },
   lv: {
     incidentDate: "Kad notika negadījums.",
-    claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
+    policyNumber: "Apdrošinātāja izmantotais polises numurs.",
   },
   ar: {
     incidentDate: "متى وقعت الواقعة.",
-    claimantName: "الشخص أو الشركة التي تقدم المطالبة.",
+    policyNumber: "رقم وثيقة التأمين الذي تستخدمه شركة التأمين.",
   },
 } as const;
 const calendarRules = {
@@ -149,7 +149,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
   await page.keyboard.press("Escape");
   await expect(date.locator(".field-help")).not.toHaveAttribute("open");
   await expect(date.locator('input[type="hidden"]')).toHaveValue("");
-  await expect(page.locator('input[data-field-name="claimantName"]')).toHaveValue(
+  await expect(page.locator('input[data-field-name="policyNumber"]')).toHaveValue(
     "A\u0308 / العربية",
   );
   expect(requests).toEqual(["POST /api/operation.preview"]);
@@ -157,8 +157,8 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
   await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
-  const name = page.locator('input[data-field-name="claimantName"]');
-  const authored = `A\u0308 / العربية${"x".repeat(201)}`;
+  const name = page.locator('input[data-field-name="policyNumber"]');
+  const authored = `A\u0308 / العربية${"x".repeat(81)}`;
   await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
   const pending = await pauseJsonReply(page, "operation.preview");
@@ -178,7 +178,7 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
       expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
       expect(outcome.rejection.issues).toHaveLength(1);
       expect(outcome.rejection.issues[0]).toMatchObject({
-        input: "field:claimantName",
+        input: "field:policyNumber",
         row: null,
         message: {
           messageId: "diagnostic.TOO_LONG",
@@ -187,7 +187,7 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
               key: "maximumCharacters",
               value: {
                 kind: "COUNT",
-                value: 200,
+                value: 80,
               },
             },
           ],
@@ -200,12 +200,12 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     await expect(name).toBeFocused();
     await expect(name).toHaveAttribute("aria-invalid", "true");
     const policyText = {
-      lv: "Izmantojiet ne vairāk kā 200 rakstzīmes.",
-      ar: "استخدم \u2068200\u2069 حرفًا كحد أقصى.",
-      en: "Use at most 200 characters.",
+      lv: "Izmantojiet ne vairāk kā 80 rakstzīmes.",
+      ar: "استخدم \u206880\u2069 حرفًا كحد أقصى.",
+      en: "Use at most 80 characters.",
     };
     await expectInputRefusal(page, name, language, {
-      meaning: widgetHints[language].claimantName,
+      meaning: widgetHints[language].policyNumber,
       issue: policyText[language],
     });
     await expect(name).toHaveAttribute("aria-invalid", "true");
@@ -224,7 +224,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     await startOpen(page, reference, ui(language, "task.case.open.label"));
     await malformedCalendarBoundary(page, reference);
-    const name = page.locator('input[data-field-name="claimantName"]');
+    const name = page.locator('input[data-field-name="policyNumber"]');
     await name.fill("A\u0308 / العربية");
     await fillBusinessField(page, "incidentDate", "");
     await name.evaluate((element: HTMLInputElement) => {

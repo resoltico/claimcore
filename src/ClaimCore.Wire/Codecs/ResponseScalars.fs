@@ -14,6 +14,34 @@ open System.Globalization
 module ResponseScalars =
     open Codec
 
+    let decimalTotal signed =
+        let grammar, parse, name, extra =
+            if signed then
+                DecimalTotal.signedGrammar, DecimalTotal.parseSigned, "DecimalTotal", 1
+            else
+                DecimalTotal.Grammar, DecimalTotal.parse, "NonnegativeDecimalTotal", 0
+
+        patternedText
+            1
+            (DecimalTotal.MaximumIntegerDigits
+             + DecimalTotal.MaximumFractionalDigits
+             + 1
+             + extra)
+            ("^(?:" + grammar + ")(?![\\s\\S])")
+            None
+        |> interpret
+            (fun path raw ->
+                match parse raw with
+                | Ok value when DecimalTotal.format value = raw -> Ok value
+                | _ ->
+                    Error
+                        {
+                            Path = path
+                            Reason = "Expected a canonical exact decimal total."
+                        })
+            DecimalTotal.format
+        |> named name
+
     let revision =
         RequestCodecs.revision |> map (Revision.create >> Option.get) Revision.value
 
@@ -49,14 +77,13 @@ module ResponseScalars =
 
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
     let noteId = uuid |> map (NoteId.create >> Option.get) NoteId.value
+    let linkId = uuid |> map (LinkId.create >> Option.get) LinkId.value
     let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
 
     let private amountMaximumCharacters =
         Money.MaximumIntegerDigits + 1 + Money.MaximumFractionalDigits
-
-    let private dateCharacters = CalendarDate.ExactFormat.Length
 
     let private grammar minimum maximum pattern format =
         let anchored = "^(?:" + pattern + ")(?![\\s\\S])"
@@ -80,27 +107,7 @@ module ResponseScalars =
 
     let digest = grammar 64 (Some 64) "[0-9a-f]{64}" None
 
-    let date =
-        grammar dateCharacters (Some dateCharacters) CalendarDate.Grammar (Some "date")
-        |> restrict
-            (Schema.String(
-                Some("^" + CalendarDate.Grammar + "(?![\\s\\S])"),
-                Some "date",
-                Some dateCharacters,
-                Some dateCharacters,
-                None
-            ))
-            (fun path value ->
-                text.Read path value
-                |> Result.bind (fun raw ->
-                    if CalendarDate.parse raw |> Result.isOk then
-                        Ok()
-                    else
-                        Error
-                            {
-                                Path = path
-                                Reason = "Expected a Gregorian date."
-                            }))
+    let date = CalendarDateCodecs.text
 
     let private parsed parse format codec =
         codec
@@ -117,12 +124,34 @@ module ResponseScalars =
     let noteText =
         parsed NoteText.parse NoteText.format (boundedUtf8Text 1 NoteText.MaximumBytes)
 
-    let calendarDate = parsed CalendarDate.parse CalendarDate.format date
+    let calendarDate = CalendarDateCodecs.value
     let caseReference = parsed CaseReference.parse CaseReference.format reference
     let countryCode = parsed CountryCode.parse CountryCode.format country
 
     let partyName =
         parsed PartyName.parse PartyName.format (boundedUtf8Text 1 PartyName.MaximumBytes)
+
+    let partyId = uuid |> map (PartyId.create >> Option.get) PartyId.value
+
+    let partyContent =
+        (record PartyContent.create: Fields<PartyContent, _>)
+        |> field "role" _.Role (VocabularyCodec.create PartyRole.vocabulary)
+        |> field "name" _.Name (nullable partyName)
+        |> field
+            "details"
+            _.Details
+            (nullable (
+                parsed
+                    PartyDetails.parse
+                    PartyDetails.format
+                    (boundedUtf8Text 1 PartyDetails.constraints.MaximumUtf8Bytes)
+            ))
+        |> buildResult (fun path _ ->
+            {
+                Path = path
+                Reason = "At least one party name or detail must be present."
+            })
+        |> named "PartyContent"
 
     let handlingSummary =
         parsed

@@ -1,6 +1,4 @@
 import { ScreenView } from "../ui/ScreenView";
-import { PresentedValue } from "../components/PresentedValue";
-import { renderCatalogKey } from "./messages";
 import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { IdentifierValue } from "../components/IdentifierValue";
 import { CopyValue } from "../components/CopyValue";
@@ -30,13 +28,6 @@ export const NoticeView = ({ value }: { value: Notice }) => {
         {value.issues.map((issue) => (
           <span key={JSON.stringify(issue)} className="input-issue">
             <SuppliedMessage message={issue.message} timeZone="UTC" inputIssue />
-            {issue.related === null ? null : (
-              <span>
-                {" "}
-                {renderCatalogKey(p, issue.related.labelId)}:{" "}
-                <PresentedValue value={issue.related.value} timeZone="UTC" />
-              </span>
-            )}
           </span>
         ))}
       </>

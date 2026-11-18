@@ -244,8 +244,12 @@ let private checkDiscriminators (root: JsonElement) =
 
     for name, property, expected in
         [
-            "ReceiptSubject", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
-            "PartDescription", "kind", [ "CASE"; "PERSON"; "WORK"; "REMINDER"; "NOTE"; "PAYMENT" ]
+            "ReceiptSubject",
+            "kind",
+            [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE"; "PARTY"; "LINK" ]
+            "PartDescription",
+            "kind",
+            [ "CASE"; "PERSON"; "WORK"; "REMINDER"; "NOTE"; "PARTY"; "PAYMENT"; "LINK" ]
             "OperationSubmission",
             "task",
             (ClaimCore.Domain.Tasks.Registry.clientDeclarations

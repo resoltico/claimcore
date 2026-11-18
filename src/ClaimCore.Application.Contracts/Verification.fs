@@ -28,12 +28,15 @@ type VerificationFinding =
     | CaseChangedAtProjection
     | CaseSearchProjection
     | CaseNotesProjection
+    | CasePartiesProjection
     | CaseWorkProjection
-    | CaseNotifiedOnProjection
+    | CaseReceivedOnProjection
     | CaseClaimedAmountProjection
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection
-    | CasePaidAmountProjection
+    | CasePaymentReviewProjection
+    | CaseOutcomeProjection
+    | CasePaymentTotalsProjection
     | CasePayableCurrencyProjection
     | PeopleProjection
     | PeopleProfileProjection

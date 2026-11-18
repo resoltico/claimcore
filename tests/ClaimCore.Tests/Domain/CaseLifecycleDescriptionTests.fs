@@ -8,7 +8,7 @@ open ClaimCore.TestSupport
 let private fields: CaseFields =
     {
         CaseReference = CaseFixtures.reference "CORE-HISTORY"
-        Status = CaseStatus.Opened
+        Handling = Handling.Open
         Registration = DomainInputs.admittedRegistration DomainInputs.registration
         Finance = FinancialPosition.undecided
     }
@@ -18,8 +18,10 @@ let private live name =
         Registration.values fields.Registration
         |> List.map (fun (key, value) ->
             key,
-            if key = BusinessField.ClaimantName then
-                Admitted.Name(CaseFixtures.name name)
+            if key = BusinessField.PolicyNumber then
+                Admitted.Identifier(
+                    Identifier.parse name |> Result.defaultWith (string >> failwith)
+                )
             else
                 value)
         |> Registration.create
@@ -28,7 +30,7 @@ let private live name =
     {
         CaseValue.Reference = None
         Lifecycle = Lifecycle.Active
-        Status = CaseStatus.Opened
+        Handling = Handling.Open
         Content =
             Some
                 {
@@ -36,6 +38,7 @@ let private live name =
                     Finance = fields.Finance
                 }
         Disposition = None
+        ReopenReason = None
     }
 
 let private lifecycle before after =

@@ -50,24 +50,8 @@ let private opening overrides =
 
 let private chronologyTests =
     testList
-        "chronology"
+        "observed dates"
         [
-            testCase "decision before notification is rejected" (fun () ->
-                Expect.isTrue
-                    (opened ()
-                     |> apply
-                         "case.decide"
-                         (ClaimCore.Tests.TaskBuilders.decisionInputs "2026-08-02" "750" "EUR")
-                     |> isInvalid)
-                    "Chronology")
-            testCase "payment before decision is rejected" (fun () ->
-                Expect.isTrue
-                    (decided ()
-                     |> apply
-                         "case.recordPayment"
-                         (ClaimCore.Tests.TaskBuilders.paymentInputs "2026-08-14" "750" "EUR")
-                     |> isInvalid)
-                    "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
@@ -107,7 +91,9 @@ let private precisionAndRoundTripTests =
                 let claim = opening [ BusinessField.ClaimedAmount, maximum ] |> accepted
 
                 Expect.equal
-                    (Registration.claimed ((viewFields claim).Registration) |> Money.format)
+                    (Registration.claimed ((viewFields claim).Registration)
+                     |> Option.get
+                     |> Money.format)
                     maximum
                     "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
@@ -116,7 +102,11 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply "case.close" InputMap.empty |> accepted
+                        opened ()
+                        |> apply
+                            "case.close"
+                            (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
+                        |> accepted
                     ] do
                     let view = snapshot state
 
@@ -179,10 +169,12 @@ let private currencyGrammarTests =
 
 let private authoredUnicodeRoundTrip () =
     for value in [ "نام‌خانوادگی"; "اسم‍"; "é"; "A️" ] do
-        let snapshot = opening [ BusinessField.ClaimantName, value ] |> accepted
+        let snapshot = opening [ BusinessField.PolicyNumber, value ] |> accepted
 
         Expect.equal
-            (Registration.claimant ((viewFields snapshot).Registration) |> PartyName.format)
+            (Registration.policyNumber ((viewFields snapshot).Registration)
+             |> Option.get
+             |> Identifier.format)
             value
             "Authored scalar content remains exact."
 

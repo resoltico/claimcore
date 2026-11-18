@@ -116,11 +116,7 @@ module internal ViewText =
                         let amount =
                             match step.Meter with
                             | Some meter -> [ message rendering meter.Description ]
-                            | None ->
-                                step.Amount
-                                |> Option.map PresentedValue.Money
-                                |> Option.map text
-                                |> Option.toList
+                            | None -> step.StageValue |> Option.map text |> Option.toList
 
                         (if step.Reached then "[x] " else "[ ] ")
                         + title
@@ -142,9 +138,7 @@ module internal ViewText =
                     |> List.collect (fun entry ->
                         [
                             message rendering entry.Summary
-                            text (PresentedValue.Actor entry.Who)
-                            + " · "
-                            + text (PresentedValue.Instant entry.When)
+                            text entry.Who + " · " + text (PresentedValue.Instant entry.When)
                         ]
                         @ sections entry.Highlights
                         @ (if includeDetails then sections entry.Details else []))

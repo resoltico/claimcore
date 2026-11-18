@@ -17,6 +17,8 @@ module EndpointInputs =
         | TaskInputId.TimelineFilter -> "filter"
         | TaskInputId.ReminderState -> "state"
         | TaskInputId.ReminderDue -> "due"
+        | TaskInputId.ReminderKindFilter -> "kind"
+        | TaskInputId.DeadlineOutcomeFilter -> "deadlineOutcome"
         | input -> TaskInputId.key input
 
     let memberName (declaration: EndpointDeclaration) input =

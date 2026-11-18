@@ -151,8 +151,8 @@ it.each(["case.amendRegistration", "case.correct"] as const)(
       const mode = document.querySelector<HTMLElement>('fieldset[id="field-group:registration"]')!;
       await chooseOption(user, mode, "UPDATE");
     }
-    selectFact("claimantName");
-    const claimant = screen.getByRole("textbox", { name: "Claimant name" });
+    selectFact("policyNumber");
+    const claimant = screen.getByRole("textbox", { name: "Policy number" });
     await user.clear(claimant);
     await user.type(claimant, "Edited claimant");
     await user.click(

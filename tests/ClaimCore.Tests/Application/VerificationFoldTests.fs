@@ -241,7 +241,12 @@ let tests =
                                     Value =
                                         PartValue.Case
                                             { value with
-                                                Status = CaseStatus.Closed
+                                                Handling =
+                                                    Handling.Closed
+                                                        {
+                                                            Outcome = ClosureOutcome.Settled
+                                                            Note = None
+                                                        }
                                             }
                                 }
                             | _ -> failtest "Expected the case part")

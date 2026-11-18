@@ -2,26 +2,13 @@ import { codeVocabularies } from "@contracts/codes";
 export type CodeSuggestion = { code: string; name: string };
 
 /** Eligibility is Core-owned; Intl supplies display names only. */
-export const codeSuggestions = (
-  locale: string,
-  currency: boolean,
-  unknown: string,
-): CodeSuggestion[] => {
+export const codeSuggestions = (locale: string, currency: boolean): CodeSuggestion[] => {
   const names = new Intl.DisplayNames(locale, {
     type: currency ? "currency" : "region",
     fallback: "none",
   });
   const codes = currency ? codeVocabularies.currency.codes : codeVocabularies.country.codes;
-  const values = codes.map((code) => ({
-    code,
-    name: code === "ZZ" ? unknown : (names.of(code) ?? code),
-  }));
-  return currency
-    ? values
-    : [
-        ...values.filter((item) => item.code === "ZZ"),
-        ...values.filter((item) => item.code !== "ZZ"),
-      ];
+  return codes.map((code) => ({ code, name: names.of(code) ?? code }));
 };
 
 export const rankCodeSuggestions = (

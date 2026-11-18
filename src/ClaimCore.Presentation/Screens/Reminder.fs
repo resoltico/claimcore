@@ -57,6 +57,30 @@ module ReminderScreen =
                                     Vocabulary.name ReminderState.vocabulary,
                                     ReminderState.token (Reminder.state current)
                                 ))
+                        yield
+                            value
+                                "kind"
+                                "field.kind.label"
+                                Prominence.Secondary
+                                (code ReminderKind.vocabulary (Reminder.kind current))
+                        match Reminder.doneOn current with
+                        | Some date ->
+                            yield
+                                value
+                                    "doneOn"
+                                    "field.doneOn.label"
+                                    Prominence.Secondary
+                                    (PresentedValue.Date date)
+                        | None -> ()
+                        match reply.DeadlineOutcome with
+                        | Some outcome ->
+                            yield
+                                value
+                                    "deadlineOutcome"
+                                    "label.deadlineOutcome"
+                                    Prominence.Secondary
+                                    (code DeadlineOutcome.vocabulary outcome)
+                        | None -> ()
                         match reply.Timing with
                         | Some timing ->
                             yield

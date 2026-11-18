@@ -111,8 +111,8 @@ const editor = () =>
   );
 const name = async () => {
   const user = userEvent.setup();
-  await user.click(screen.getByRole("checkbox", { name: "Change Claimant name" }));
-  changeField("Claimant name", "Only selected claimant");
+  await user.click(screen.getByRole("checkbox", { name: "Change Policy number" }));
+  changeField("Policy number", "Only selected claimant");
 };
 const prepared = async (spy: ReturnType<typeof preview>) => {
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
@@ -130,7 +130,7 @@ it("sends only a selected registration fact and does not serialize retained cont
   expect(frame.input).toMatchObject({ binding: { kind: "CASE", expectedRevision: 4 } });
   expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
     task: "case.amendRegistration",
-    inputs: { "field:claimantName": "Only selected claimant" },
+    inputs: { "field:policyNumber": "Only selected claimant" },
   });
 });
 
@@ -153,7 +153,7 @@ it("selects and removes a complete money pair as one authoring event", async () 
   const frame = await prepared(spy);
   expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
     task: "case.amendRegistration",
-    inputs: { "field:claimantName": "Only selected claimant" },
+    inputs: { "field:policyNumber": "Only selected claimant" },
   });
 });
 

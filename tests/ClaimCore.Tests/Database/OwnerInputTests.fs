@@ -71,6 +71,7 @@ let tests =
                             owner.Profile
                             {
                                 DisplayName = "Authored owner"
+                                DigestEmail = None
                                 Contact = Some "owner@example.test"
                             }
                             "Authored profile"

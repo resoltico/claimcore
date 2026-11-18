@@ -13,21 +13,28 @@ let private required result =
 let private identity = Guid.Parse "98000000-0000-4000-8000-000000000001"
 
 let private reminder state =
-    Reminder.ofAccepted
+    Reminder.decode
         (ReminderId.create identity |> Option.get)
         (CaseId.create identity |> Option.get)
         Revision.first
         (ReminderAction.parse "Request photographs" |> required)
         (CalendarDate.parse "2026-11-01" |> required)
+        ReminderKind.FollowUp
         state
+        (if state = ReminderState.Completed then
+             Some(CalendarDate.ofDate (System.DateOnly(2026, 11, 18)))
+         else
+             None)
     |> required
 
 let private item active state timing : ReminderReadModel =
     {
         Reminder = reminder state
         Reference = CaseReference.parse "CLI-TIMING" |> required
-        ClaimantName =
-            PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest)
+        Claimants =
+            [
+                (PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest))
+            ]
         Responsible = None
         RecordedAt = DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)
         RecordedBy =

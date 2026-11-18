@@ -62,6 +62,7 @@ let tests =
                                 CoreQueueLimit = 0
                                 LoginPermitLimit = 1
                             }
+                        Digest = None
                         Oidc =
                             Some
                                 {
@@ -139,7 +140,7 @@ let tests =
 
                 let body =
                     Encoding.UTF8.GetBytes
-                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.close","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1},"inputs":{}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.close","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1},"inputs":{"field:outcome":"OTHER"}}"""
 
                 let withActor principal work =
                     task {

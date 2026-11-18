@@ -8,11 +8,11 @@ open ClaimCore.Domain.Changes
 type LiveFamilySummary =
     {
         PaymentCount: int64
-        Paid: Amount
-        PaymentDates: PaymentDateBounds option
-        RemainingPaymentDates: (OperationId * PaymentDateBounds option) option
+        PaymentTotals: Map<Currency, CurrencyPaymentTotals>
         NextPendingDue: CalendarDate option
         RemainingPendingDue: CalendarDate option
+        NextDeadlineDue: CalendarDate option
+        RemainingDeadlineDue: CalendarDate option
     }
 
 /// Requested point reads distinguish a known-absent child from a child never acquired.
@@ -21,6 +21,7 @@ type FamilyFactScope =
         Payments: Set<OperationId>
         Reminders: Set<ReminderId>
         Notes: Set<NoteId>
+        Parties: Set<PartyId>
         Operation: OperationId option
     }
 
@@ -46,48 +47,40 @@ type DecisionFacts =
     member this.Work = this.Parts.Work
     member this.Reminders = this.Parts.Reminders
     member this.Notes = this.Parts.Notes
+    member this.Parties = this.Parts.Parties
+    member this.Links = this.Parts.Links
     member this.Sequence = this.Parts.Sequence
     member this.ChangedAt = this.Parts.ChangedAt
     member this.NextPendingDue = this.Summary.NextPendingDue
 
 module DecisionFacts =
-    let private paymentBounds entries =
-        match entries |> Seq.map PaymentEntry.date |> Seq.sort |> Seq.toList with
-        | [] -> None
-        | first :: rest ->
-            PaymentDateBounds.create first (List.tryLast rest |> Option.defaultValue first)
-
     let private minimum values = values |> Seq.sort |> Seq.tryHead
 
-    let private due (parts: FamilyParts) =
+    let private due (parts: FamilyParts) kind =
         parts.Reminders
         |> Map.values
-        |> Seq.choose (fun part ->
-            if part.Value.State = ReminderState.Pending then
-                (part.Value.Plan |> Option.map _.Due)
-            else
-                None)
+        |> Seq.choose (fun part -> ReminderValue.pendingPlan part.Value)
+        |> Seq.filter (fun plan -> kind |> Option.forall ((=) plan.Kind))
+        |> Seq.map _.Due
 
-    let private nextDue (parts: FamilyParts) summary =
+    let private nextDue (parts: FamilyParts) kind remaining =
         if parts.Case.Value.Lifecycle = Lifecycle.Erased then
             None
         else
-            Seq.append (summary.RemainingPendingDue |> Option.toList) (due parts) |> minimum
+            Seq.append (remaining |> Option.toList) (due parts kind) |> minimum
+
+    let private nextDeadline parts remaining =
+        nextDue parts (Some ReminderKind.Deadline) remaining
 
     let private validate (parts: FamilyParts) summary changes =
         let erased = parts.Case.Value.Lifecycle = Lifecycle.Erased
 
         let financial =
             match parts.Case.Value.Content with
-            | None ->
-                erased
-                && summary.PaymentCount = 0L
-                && Amount.value summary.Paid = 0M
-                && summary.PaymentDates.IsNone
+            | None -> erased && summary.PaymentCount = 0L && summary.PaymentTotals.IsEmpty
             | Some content ->
                 content.Finance.PaymentCount = summary.PaymentCount
-                && content.Finance.PaidAmount = summary.Paid
-                && content.Finance.PaymentDates = summary.PaymentDates
+                && content.Finance.CurrencyTotals = summary.PaymentTotals
 
         let selectedPrivate =
             (if erased then
@@ -102,12 +95,15 @@ module DecisionFacts =
                       |> List.forall (fun change ->
                           match change.Value with
                           | PartValue.Note value -> value.Removed || value.Text.IsSome
+                          | PartValue.Party value -> value.Content.IsSome
+                          | PartValue.Link value -> value.Removed <> value.Content.IsSome
                           | _ -> true))))
 
         if
             not financial
             || not selectedPrivate
-            || nextDue parts summary <> summary.NextPendingDue
+            || nextDue parts None summary.RemainingPendingDue <> summary.NextPendingDue
+            || nextDeadline parts summary.RemainingDeadlineDue <> summary.NextDeadlineDue
         then
             Error RecordViolation.InvalidSubjectState
         else
@@ -130,14 +126,12 @@ module DecisionFacts =
                         NoteId.create part.PartId
                         |> Option.exists (fun id -> Set.contains id scope.Notes)
                     | PartKind.Case
-                    | PartKind.Work -> true
+                    | PartKind.Work
+                    | PartKind.Party
+                    | PartKind.Link -> true
                     | PartKind.Person -> false)
 
-            let correlated =
-                summary.RemainingPaymentDates
-                |> Option.forall (fun (id, _) -> Set.contains id scope.Payments)
-
-            if not scoped || not correlated then
+            if not scoped then
                 Error RecordViolation.InvalidSubjectState
             else
                 validate current summary parts
@@ -161,30 +155,14 @@ module DecisionFacts =
             Summary =
                 {
                     PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
-                    Paid =
-                        finance
-                        |> Option.map _.PaidAmount
-                        |> Option.defaultWith (fun () ->
-                            Amount.parse "0" |> Result.toOption |> Option.get)
-                    PaymentDates = finance |> Option.bind _.PaymentDates
-                    RemainingPaymentDates = None
-                    NextPendingDue = due parts |> minimum
+                    PaymentTotals =
+                        finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
+                    NextPendingDue = due parts None |> minimum
                     RemainingPendingDue = None
+                    NextDeadlineDue = nextDeadline parts None
+                    RemainingDeadlineDue = None
                 }
         }
-
-    let remainingPaymentDates selected (facts: DecisionFacts) =
-        match facts.Summary.RemainingPaymentDates, facts.Coverage with
-        | Some(id, dates), _ when id = selected -> Ok dates
-        | _, Replay complete ->
-            complete.Payments
-            |> Map.remove selected
-            |> Map.values
-            |> Seq.filter (fun part -> not part.Value.Removed)
-            |> Seq.choose _.Value.Entry
-            |> paymentBounds
-            |> Ok
-        | _ -> Error RecordViolation.InvalidPaymentState
 
     let requireSelection binding (facts: DecisionFacts) =
         let covered =
@@ -195,6 +173,10 @@ module DecisionFacts =
                 | Binding.CasePayment(_, _, id) -> Set.contains id scope.Payments
                 | Binding.Reminder(_, id, _) -> Set.contains id scope.Reminders
                 | Binding.Note(_, id) -> Set.contains id scope.Notes
+                | Binding.Party(_, id, _) ->
+                    Set.contains id scope.Parties
+                    || (Map.tryFind id facts.Parts.Parties
+                        |> Option.exists (fun party -> not party.Value.Removed))
                 | _ -> true
 
         if not covered then
@@ -207,6 +189,8 @@ module DecisionFacts =
         | Selected _ ->
             invalidArg "operation" "Decision facts must be acquired for the authoring operation."
 
+    let currentParties (facts: DecisionFacts) = FamilyParts.currentParties facts.Parts
+
     let snapshot (facts: DecisionFacts) = FamilyParts.snapshot facts.Parts
 
     let private updatedSummary (parts: FamilyParts) (summary: LiveFamilySummary) =
@@ -214,21 +198,13 @@ module DecisionFacts =
 
         { summary with
             PaymentCount = finance |> Option.map _.PaymentCount |> Option.defaultValue 0L
-            Paid =
-                finance
-                |> Option.map _.PaidAmount
-                |> Option.defaultWith (fun () -> Amount.parse "0" |> Result.toOption |> Option.get)
-            PaymentDates = finance |> Option.bind _.PaymentDates
-            NextPendingDue = nextDue parts summary
+            PaymentTotals = finance |> Option.map _.CurrencyTotals |> Option.defaultValue Map.empty
+            NextPendingDue = nextDue parts None summary.RemainingPendingDue
+            NextDeadlineDue = nextDeadline parts summary.RemainingDeadlineDue
         }
 
     /// Apply only the acquired parts; complete replay independently reconciles the full family.
     let apply (before: DecisionFacts option) changes =
-        let check _ (value: CaseValue) =
-            value.Content
-            |> Option.map FamilyParts.validateContent
-            |> Option.defaultValue (Ok())
-
         let initial = before |> Option.map _.Parts
 
         changes
@@ -236,7 +212,7 @@ module DecisionFacts =
             (fun result change ->
                 result
                 |> Result.bind (fun parts ->
-                    FamilyParts.applyWith check parts change |> Result.map Some))
+                    FamilyParts.applyWith (fun _ _ -> Ok()) parts change |> Result.map Some))
             (Ok initial)
         |> Result.bind (function
             | None -> Error RecordViolation.InvalidSubjectState
@@ -247,35 +223,40 @@ module DecisionFacts =
                     | None ->
                         {
                             PaymentCount = 0L
-                            Paid = Amount.parse "0" |> Result.toOption |> Option.get
-                            PaymentDates = None
-                            RemainingPaymentDates = None
+                            PaymentTotals = Map.empty
                             NextPendingDue = None
                             RemainingPendingDue = None
+                            NextDeadlineDue = None
+                            RemainingDeadlineDue = None
                         }
 
                 let after = updatedSummary parts summary
                 let paymentDelta = changes |> List.choose PartChange.paymentDifference
 
-                let countDelta =
-                    paymentDelta
-                    |> List.sumBy (function
-                        | PaymentDifference.Recorded _ -> 1L
-                        | PaymentDifference.Removed _ -> -1L)
+                let expected =
+                    let initial =
+                        before
+                        |> Option.bind (fun facts -> facts.Case.Value.Content)
+                        |> Option.map _.Finance
+                        |> Option.defaultValue FinancialPosition.undecided
 
-                let paidDelta =
-                    paymentDelta
-                    |> List.sumBy (function
-                        | PaymentDifference.Recorded entry ->
-                            Amount.value (PaymentEntry.amount entry)
-                        | PaymentDifference.Removed entry ->
-                            -(Amount.value (PaymentEntry.amount entry)))
+                    (Ok initial, paymentDelta)
+                    ||> List.fold (fun previous change ->
+                        previous
+                        |> Result.bind (
+                            match change with
+                            | PaymentDifference.Recorded entry -> FinancialPosition.add entry
+                            | PaymentDifference.Removed entry -> FinancialPosition.remove entry
+                        ))
 
-                if
-                    parts.Case.Value.Lifecycle <> Lifecycle.Erased
-                    && (after.PaymentCount <> summary.PaymentCount + countDelta
-                        || Amount.value after.Paid <> Amount.value summary.Paid + paidDelta)
-                then
+                let matches =
+                    match expected with
+                    | Ok expected ->
+                        after.PaymentCount = expected.PaymentCount
+                        && after.PaymentTotals = expected.CurrencyTotals
+                    | Error _ -> false
+
+                if parts.Case.Value.Lifecycle <> Lifecycle.Erased && not matches then
                     Error RecordViolation.InvalidPaymentState
                 else
                     validate parts after changes
@@ -292,6 +273,7 @@ module DecisionFacts =
                                             Payments = parts.Payments |> Map.keys |> Set.ofSeq
                                             Reminders = parts.Reminders |> Map.keys |> Set.ofSeq
                                             Notes = parts.Notes |> Map.keys |> Set.ofSeq
+                                            Parties = parts.Parties |> Map.keys |> Set.ofSeq
                                             Operation = None
                                         }
                         }))
@@ -313,5 +295,11 @@ module DecisionFacts =
                                 Work = value
                             }))
 
-                let due = facts.NextPendingDue |> Option.toList
-                changes, CaseIndex.create facts.ChangedAt snapshot work due)
+                changes,
+                CaseIndex.create
+                    facts.ChangedAt
+                    snapshot
+                    work
+                    facts.NextPendingDue
+                    facts.Summary.NextDeadlineDue
+                    (FamilyParts.currentParties facts.Parts))

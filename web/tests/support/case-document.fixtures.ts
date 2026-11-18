@@ -18,14 +18,14 @@ export const caseIdentityScreen: Screen = {
             value: { kind: "REFERENCE", value: "CASE-1" },
           },
           {
-            key: "claimantName",
-            labelId: "field.claimantName.label",
+            key: "policyNumber",
+            labelId: "field.policyNumber.label",
             prominence: "PRIMARY",
             value: { kind: "PARTY", value: "Synthetic claimant" },
           },
           {
-            key: "insurerName",
-            labelId: "field.insurerName.label",
+            key: "insurerClaimReference",
+            labelId: "field.insurerClaimReference.label",
             prominence: "PRIMARY",
             value: { kind: "PARTY", value: "Synthetic insurer" },
           },

@@ -48,8 +48,18 @@ module TaskDeclaration =
         | ActSubject.Reminder, false -> BindingShape.Reminder
         | ActSubject.Note, true -> BindingShape.NoteNew
         | ActSubject.Note, false -> BindingShape.Note
+        | ActSubject.Party, true -> BindingShape.PartyNew
+        | ActSubject.Party, false -> BindingShape.Party
+        | ActSubject.Link, true -> BindingShape.LinkNew
+        | ActSubject.Link, false -> BindingShape.Link
         | ActSubject.People, true -> BindingShape.PeopleNew
         | ActSubject.People, false -> BindingShape.People
+
+    let bindingShapes declaration =
+        match bindingShape declaration, declaration.Exposure with
+        | BindingShape.People, TaskExposure.Operator ->
+            [ BindingShape.People; BindingShape.PeopleNew ]
+        | shape, _ -> [ shape ]
 
 namespace ClaimCore.Domain
 

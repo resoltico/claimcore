@@ -137,7 +137,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! closed =
             (Service.executeSubmission
                 actor
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (token))
 
         accepted closed |> ignore
@@ -145,10 +151,24 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! reopened =
             (Service.executeSubmission
                 actor
-                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("synthetic-a")
+                    (2L)
+                    "case.reopen"
+                    (CaseTransitionInputs.reopened))))
                 (token))
 
         accepted reopened |> ignore
+        // The digest claim references the creation operation, so this isolated corruption
+        // witness removes that dependent key before dropping the ledger uniqueness constraint.
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.digest_runs DROP CONSTRAINT digest_runs_actor_id_fkey"
+                [||]
+
         do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
