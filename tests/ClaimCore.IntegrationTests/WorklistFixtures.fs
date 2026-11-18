@@ -240,7 +240,7 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
                     ))
 
         if expected.Status = Some CaseStatus.Closed then
-            do! apply "case.close" (Map.empty)
+            do! apply "case.close" (CaseTransitionInputs.closed)
 
         if expected.Lifecycle = Lifecycle.Voided then
             do!
@@ -292,12 +292,24 @@ let prepare () =
             do!
                 execute
                     fixture
-                    (request (database.Fixture) (2001) ("mix-04") (1L) "case.close" (Map.empty))
+                    (request
+                        (database.Fixture)
+                        (2001)
+                        ("mix-04")
+                        (1L)
+                        "case.close"
+                        (CaseTransitionInputs.closed))
 
             do!
                 execute
                     fixture
-                    (request (database.Fixture) (2002) ("mix-04") (2L) "case.reopen" (Map.empty))
+                    (request
+                        (database.Fixture)
+                        (2002)
+                        ("mix-04")
+                        (2L)
+                        "case.reopen"
+                        (CaseTransitionInputs.reopened))
 
             return fixture
         with error ->

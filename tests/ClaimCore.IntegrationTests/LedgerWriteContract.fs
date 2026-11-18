@@ -109,7 +109,13 @@ let internal replayAndRefusal fixture =
         let! stale =
             (Service.executeSubmission
                 actor
-                (((request (fixture) (11) ("CONTRACT-001") (2L) "case.close" (Map.empty))))
+                (((request
+                    (fixture)
+                    (11)
+                    ("CONTRACT-001")
+                    (2L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (CancellationToken.None))
 
         match stale.Outcome with
@@ -345,7 +351,13 @@ let internal caseUpdate fixture =
         let! closed =
             (Service.executeSubmission
                 actor
-                (((request (fixture) (11) ("CONTRACT-001") (1L) "case.close" (Map.empty))))
+                (((request
+                    (fixture)
+                    (11)
+                    ("CONTRACT-001")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (CancellationToken.None))
 
         let receipt = accepted closed

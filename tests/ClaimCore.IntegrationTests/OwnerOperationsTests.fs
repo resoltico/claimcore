@@ -135,7 +135,13 @@ let private actionState (database: PostgresFixture.Database) =
         accepted opening |> ignore
 
         let close =
-            ((request (database.Fixture) (11) ("MAINTENANCE-A") (1L) "case.close" (Map.empty)))
+            ((request
+                (database.Fixture)
+                (11)
+                ("MAINTENANCE-A")
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)))
 
         let! prepared = Service.previewSubmission actor close token
 
@@ -430,7 +436,13 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let writing =
             Service.executeSubmission
                 delayed
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
@@ -484,7 +496,13 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let! paused =
             Service.executeSubmission
                 actor
-                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("synthetic-a")
+                    (2L)
+                    "case.reopen"
+                    (CaseTransitionInputs.reopened))))
                 token
 
         Expect.equal

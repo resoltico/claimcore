@@ -36,11 +36,11 @@ SELECT pg_temp.expect('reference with a space refused',
     $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
     $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23514');
-SELECT pg_temp.expect('live notification required',
-    $s$UPDATE claimcore.cases SET received_on=NULL$s$, '23514');
-SELECT pg_temp.expect('infinite notification refused',
+SELECT pg_temp.expect('received date is optional on a live case',
+    $s$UPDATE claimcore.cases SET received_on=NULL$s$, '00000');
+SELECT pg_temp.expect('infinite received date refused',
     $s$UPDATE claimcore.cases SET received_on='infinity'$s$, '23514');
-SELECT pg_temp.expect('BCE notification refused',
+SELECT pg_temp.expect('BCE received date refused',
     $s$UPDATE claimcore.cases SET received_on=DATE '0001-01-01 BC'$s$, '23514');
 SELECT pg_temp.expect('unknown responsible actor refused',
     $s$UPDATE claimcore.cases SET responsible_actor='c0000000-0000-4000-8000-000000000099'$s$, '23503');
@@ -48,7 +48,7 @@ SELECT pg_temp.expect('infinite follow-up refused',
     $s$UPDATE claimcore.cases SET follow_up='infinity'$s$, '23514');
 UPDATE claimcore.cases SET follow_up=DATE '2027-12-31';
 SELECT pg_temp.expect('erasure must clear follow-up',
-    $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL$s$, '23514');
+    $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payment_review=NULL,outcome=NULL,payable_amount=NULL,payable_currency=NULL,responsible_actor=NULL,work_search_text=NULL$s$, '23514');
 SELECT pg_temp.expect('profile columns cannot be cleared without current accepted erasure',
     format($s$UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=%L$s$, :'owner'), 'CC003');
 SELECT pg_temp.expect('durable revision exceeds exact JSON integer envelope',

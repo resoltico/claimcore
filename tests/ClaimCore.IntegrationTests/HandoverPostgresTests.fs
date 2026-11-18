@@ -136,7 +136,13 @@ let private handover (database: PostgresFixture.Database) =
         let! closed =
             Service.executeSubmission
                 owner
-                (((request (fixture) (114) ("synthetic-closed") (1L) "case.close" (Map.empty))))
+                (((request
+                    (fixture)
+                    (114)
+                    ("synthetic-closed")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         accepted closed |> ignore

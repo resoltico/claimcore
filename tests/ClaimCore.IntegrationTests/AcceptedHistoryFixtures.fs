@@ -243,12 +243,16 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
 let private appendTransitions fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
-            let taskName = if revision % 2L = 1L then "case.close" else "case.reopen"
+            let taskName, inputs =
+                if revision % 2L = 1L then
+                    "case.close", CaseTransitionInputs.closed
+                else
+                    "case.reopen", CaseTransitionInputs.reopened
 
             let! result =
                 Service.executeSubmission
                     actor
-                    (request fixture (100 + int revision) "HISTORICAL-1" revision taskName Map.empty)
+                    (request fixture (100 + int revision) "HISTORICAL-1" revision taskName inputs)
                     token
 
             accepted result |> ignore

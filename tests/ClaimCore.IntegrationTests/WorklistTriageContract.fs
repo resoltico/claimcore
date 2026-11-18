@@ -158,7 +158,15 @@ let private setup fixture =
                 "case.decide"
                 (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision)))
 
-        do! execute (fixture) (owner) (25) ("TRIAGE-A") (2L) "case.close" (Map.empty)
+        do!
+            execute
+                (fixture)
+                (owner)
+                (25)
+                ("TRIAGE-A")
+                (2L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         do!
             execute

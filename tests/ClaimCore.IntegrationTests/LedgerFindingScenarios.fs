@@ -79,7 +79,13 @@ let private close (database: PostgresFixture.Database) actor =
         let! reply =
             Service.executeSubmission
                 actor
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         return accepted reply

@@ -140,6 +140,7 @@ let private missingCasePrivacy () =
             [
                 "case.amendRegistration"
                 "case.correct"
+                "case.changeReference"
                 "case.decide"
                 "case.withdrawDecision"
                 "case.recordPayment"

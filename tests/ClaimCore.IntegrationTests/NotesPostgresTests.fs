@@ -356,7 +356,10 @@ let private lifecycle database =
                 token
 
         Expect.isFalse mode.State.Active "Maintenance is off"
-        let! closed = executeCase (database) (owner) (130) (1L) "case.close" (Map.empty)
+
+        let! closed =
+            executeCase (database) (owner) (130) (1L) "case.close" (CaseTransitionInputs.closed)
+
         accepted closed |> ignore
 
         let! closedNote =
@@ -555,7 +558,10 @@ let private targetedLoading database =
 
         let reminderPayload = DatabaseSession.value<byte array> 0 reminderRows.Head
         do! guardedSql database replace [| box (id database.Fixture 184); box [| 0uy |] |]
-        let! closed = executeCase database owner 190 1L "case.close" Map.empty
+
+        let! closed =
+            executeCase database owner 190 1L "case.close" CaseTransitionInputs.closed
+
         accepted closed |> ignore
 
         let removal =

@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.TestSupport
 open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -102,7 +103,7 @@ let identities (fixture: Fixture) =
                     None,
                     (None)
                 ))
-                (Map.empty)
+                CaseTransitionInputs.closed
 
         let! closed = Service.executeSubmission actor ((close)) token
         let receipt = accepted closed

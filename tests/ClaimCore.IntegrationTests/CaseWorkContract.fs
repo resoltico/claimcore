@@ -1035,7 +1035,14 @@ let internal reminderTiming fixture =
             "Read-time reclassification writes neither reminder state nor ledger activity"
 
         let! closed =
-            execute (fixture) (owner) (708) (reference) (1L) "case.close" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (708)
+                (reference)
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         accepted closed |> ignore
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
@@ -1073,7 +1080,14 @@ let internal reminderTiming fixture =
         Expect.isNone closedItem.Timing "Closed pending work has no actionable timing"
 
         let! reopened =
-            execute (fixture) (owner) (709) (reference) (2L) "case.reopen" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (709)
+                (reference)
+                (2L)
+                "case.reopen"
+                (CaseTransitionInputs.reopened)
 
         accepted reopened |> ignore
         let! reopenedItem = single 702
@@ -1231,7 +1245,14 @@ let internal lifecycleAndErasure fixture =
             accepted reply |> ignore
 
         let! closed =
-            execute (fixture) (owner) (27) ("WORK-LIFECYCLE") (1L) "case.close" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (27)
+                ("WORK-LIFECYCLE")
+                (1L)
+                "case.close"
+                (CaseTransitionInputs.closed)
 
         accepted closed |> ignore
 
@@ -1268,7 +1289,14 @@ let internal lifecycleAndErasure fixture =
             "Closing did not complete pending work"
 
         let! reopened =
-            execute (fixture) (owner) (30) ("WORK-LIFECYCLE") (2L) "case.reopen" (Map.empty)
+            execute
+                (fixture)
+                (owner)
+                (30)
+                ("WORK-LIFECYCLE")
+                (2L)
+                "case.reopen"
+                (CaseTransitionInputs.reopened)
 
         accepted reopened |> ignore
         let! active = get owner caseId

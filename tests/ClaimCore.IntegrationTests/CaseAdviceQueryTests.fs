@@ -200,7 +200,9 @@ let tests =
                     ))
                     "Execution enforces the same permission first"
 
-                let! closed = write (13) (owner) (1L) "case.close" (Map.empty) |> Async.AwaitTask
+                let! closed =
+                    write (13) (owner) (1L) "case.close" (CaseTransitionInputs.closed)
+                    |> Async.AwaitTask
 
                 match closed.Outcome with
                 | ExecuteResult.Accepted _ -> ()

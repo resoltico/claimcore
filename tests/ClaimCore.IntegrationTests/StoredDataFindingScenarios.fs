@@ -137,7 +137,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! closed =
             (Service.executeSubmission
                 actor
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 (token))
 
         accepted closed |> ignore
@@ -145,7 +151,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! reopened =
             (Service.executeSubmission
                 actor
-                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("synthetic-a")
+                    (2L)
+                    "case.reopen"
+                    (CaseTransitionInputs.reopened))))
                 (token))
 
         accepted reopened |> ignore

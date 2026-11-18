@@ -193,7 +193,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 "case.close"
                 (id fixture 30)
                 (Binding.Case(CaseSelector.Id parent, Revision.first))
-                Map.empty
+                CaseTransitionInputs.closed
 
         let! closed = Service.executeSubmission services close token
         accepted closed |> ignore
@@ -203,7 +203,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 "case.close"
                 (id fixture 31)
                 (Binding.Case(CaseSelector.Id parent, Revision.first))
-                Map.empty
+                CaseTransitionInputs.closed
 
         let! stale = Service.executeSubmission services staleClose token
 

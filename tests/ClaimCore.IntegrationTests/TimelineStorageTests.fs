@@ -35,8 +35,8 @@ let tests =
                         0L,
                         "case.open",
                         Submissions.fields (RegistrationInput.values registration)
-                        99101, 1L, "case.close", Map.empty
-                        99102, 2L, "case.reopen", Map.empty
+                        99101, 1L, "case.close", CaseTransitionInputs.closed
+                        99102, 2L, "case.reopen", CaseTransitionInputs.reopened
                     ] do
                     let! reply =
                         Service.executeSubmission

@@ -294,7 +294,14 @@ let internal closeAndCompound fixture =
         let! replies =
             Task.WhenAll(
                 [|
-                    caseAct fixture actor 102 "REMINDER-CLOSE-RACE" 1L "case.close" Map.empty
+                    caseAct
+                        fixture
+                        actor
+                        102
+                        "REMINDER-CLOSE-RACE"
+                        1L
+                        "case.close"
+                        CaseTransitionInputs.closed
                     reminder
                         (fixture)
                         (actor)
@@ -642,7 +649,8 @@ let internal notOffered fixture =
             (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Cancelled))
             unavailable
 
-        let! closed = caseAct fixture actor 108 "REMINDER-STATE" 1L "case.close" Map.empty
+        let! closed =
+            caseAct fixture actor 108 "REMINDER-STATE" 1L "case.close" CaseTransitionInputs.closed
 
         accepted closed |> ignore
 

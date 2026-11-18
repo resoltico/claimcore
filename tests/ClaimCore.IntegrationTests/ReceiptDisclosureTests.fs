@@ -319,7 +319,7 @@ let foreignScope =
                         "case.close"
                         originalB.OperationId
                         (Binding.Case(CaseSelector.Id caseA, Revision.first))
-                        Map.empty
+                        CaseTransitionInputs.closed
 
                 let! visible = Service.executeSubmission scoped reused token |> Async.AwaitTask
 

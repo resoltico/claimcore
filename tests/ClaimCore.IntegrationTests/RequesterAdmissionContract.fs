@@ -493,7 +493,13 @@ let internal targetPrivacy fixture =
             let! actual =
                 mutationCode
                     core
-                    (((request (fixture) (number) (target) (1L) "case.close" (Map.empty))))
+                    (((request
+                        (fixture)
+                        (number)
+                        (target)
+                        (1L)
+                        "case.close"
+                        (CaseTransitionInputs.closed))))
 
             Expect.equal
                 actual

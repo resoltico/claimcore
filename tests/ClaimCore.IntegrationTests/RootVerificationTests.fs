@@ -31,7 +31,13 @@ let private rehashedCase (database: PostgresFixture.Database) =
         let! closed =
             Service.executeSubmission
                 actor
-                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.close"
+                    (CaseTransitionInputs.closed))))
                 token
 
         accepted closed |> ignore
