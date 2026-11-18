@@ -226,7 +226,7 @@ limit returns an explanation before an incomplete export can be accepted.
 An owner can add a digest email address to a person's profile. When the installation has SMTP
 configured, ClaimCore sends one daily prompt with counts for the person's readable assigned work.
 The message links to the Reminders queue. The in-app queue supplies the current dates and attention.
-See [Digest configuration](operating.md#daily-digest-configuration).
+See [Digest configuration](operating.md#daily-reminder-digest).
 
 ### Case reminder queue
 

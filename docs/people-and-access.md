@@ -91,11 +91,6 @@ identity can lose access as soon as the change takes effect.
 If you need to restore owner access through the database owner connection, see
 [Recover owner access](operating.md#recover-owner-access).
 
-## Configure a person's digest address
-
-Use **Update profile** to add or clear the daily digest address. The person must be enabled and
-have access to the assigned work counted by the digest. See [Daily reminder digest](case-work.md#daily-reminder-digest).
-
 ## Change a profile or roles
 
 Open the person and choose **Update profile**, **Grant role**, **Revoke role**, **Enable account** or

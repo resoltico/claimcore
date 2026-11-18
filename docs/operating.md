@@ -252,6 +252,7 @@ The Reminders link opens the Mine view. Counts use the person's current case acc
 responsibility. The digest is a daily prompt. Consult Reminders for current deadline status.
 
 Set the following required environment variables together. Leave the group unset to disable delivery.
+Startup reports missing required settings.
 
 | Setting | Value |
 | --- | --- |
@@ -271,7 +272,8 @@ one additional connection pool slot.
 Hosts coordinate claims through the installation database. A claim allows one attempt across all
 hosts. An empty queue skips delivery. Relay failures and missed days are recorded or skipped with
 no resend. Monitor the digest outcomes in host logs and the `claimcore_digest_total` counter.
-Logs identify the account and the outcome. The counter is grouped by outcome.
+Logs identify the account and the outcome. The counter is grouped by outcome. Housekeeping prunes
+claims older than 30 days.
 
 ## Database clock
 
@@ -386,35 +388,15 @@ Framework exception logging retains exception types and method names instead of 
 Request records retain endpoint, outcome, status, duration and account/operation identifiers. Treat
 identifiers and private failure files as sensitive when preparing support reports.
 
-## Daily digest configuration
-
-Leave all required digest settings unset to disable delivery. Set the SMTP host, port, TLS mode,
-sender and local delivery time together. Startup reports missing required settings.
-
-| Variable | Value |
-| --- | --- |
-| `CLAIMCORE_DIGEST_SMTP_HOST` | SMTP host name |
-| `CLAIMCORE_DIGEST_SMTP_PORT` | SMTP port |
-| `CLAIMCORE_DIGEST_SMTP_TLS` | `IMPLICIT` or `STARTTLS` |
-| `CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE` | Optional private file with user and password on separate lines |
-| `CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE` | Optional trust root file for SMTP |
-| `CLAIMCORE_DIGEST_FROM` | Sender email address |
-| `CLAIMCORE_DIGEST_TIME` | Earliest local delivery time, in `HH:MM` |
-| `CLAIMCORE_DIGEST_LANGUAGE` | Offered language tag, default `en` |
-
-The service claims one attempt per eligible person and business date across all hosts. One message
-contains counts and a link to Reminders. Failed sends and skipped empty messages are recorded as
-outcomes. Delivery has no retry or backfill. The in-app queue is the source for current work
-and due dates. Use the digest as a daily prompt. Logs carry actor identifiers and outcomes.
-The `claimcore_digest_total` metric counts outcomes. Housekeeping prunes claims older than 30 days.
-
 ## Erasure limits
 
 ERASE atomically removes related case, payment, work, reminder, note, party and source-link payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
-dates and amounts; removal markers remain and rebuild restores them from public payment effects.
+dates, amounts, directions, currencies, references and payees. Removal markers remain and
+rebuild restores them from retained payment effects. Closure outcomes and operation attribution
+remain ledger metadata. Closing notes, reopening reasons and decision bases are erasable.
 Verification compares available payment facts with accepted history and checks the cleared shape
 after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 
