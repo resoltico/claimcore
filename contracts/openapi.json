@@ -23564,6 +23564,9 @@
             "$ref": "#/components/schemas/PresentedCode.paymentDirection"
           },
           {
+            "$ref": "#/components/schemas/PresentedCode.partyRole"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCode.assignment"
           },
           {
@@ -23628,6 +23631,7 @@
             "missingCaseGroup": "#/components/schemas/PresentedCode.missingCaseGroup",
             "progress": "#/components/schemas/PresentedCode.progress",
             "paymentDirection": "#/components/schemas/PresentedCode.paymentDirection",
+            "partyRole": "#/components/schemas/PresentedCode.partyRole",
             "assignment": "#/components/schemas/PresentedCode.assignment",
             "role": "#/components/schemas/PresentedCode.role",
             "scope": "#/components/schemas/PresentedCode.scope",
@@ -23971,6 +23975,31 @@
               "NOT_RECORDED",
               "NOT_CLOSED",
               "UNASSIGNED"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.partyRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "partyRole"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "CLAIMANT",
+              "INSURER",
+              "REPRESENTATIVE",
+              "OTHER"
             ]
           }
         },
@@ -24330,6 +24359,9 @@
             "$ref": "#/components/schemas/PresentedCodes.paymentDirection"
           },
           {
+            "$ref": "#/components/schemas/PresentedCodes.partyRole"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCodes.assignment"
           },
           {
@@ -24394,6 +24426,7 @@
             "missingCaseGroup": "#/components/schemas/PresentedCodes.missingCaseGroup",
             "progress": "#/components/schemas/PresentedCodes.progress",
             "paymentDirection": "#/components/schemas/PresentedCodes.paymentDirection",
+            "partyRole": "#/components/schemas/PresentedCodes.partyRole",
             "assignment": "#/components/schemas/PresentedCodes.assignment",
             "role": "#/components/schemas/PresentedCodes.role",
             "scope": "#/components/schemas/PresentedCodes.scope",
@@ -24799,6 +24832,36 @@
                 "NOT_RECORDED",
                 "NOT_CLOSED",
                 "UNASSIGNED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 39
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.partyRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "partyRole"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CLAIMANT",
+                "INSURER",
+                "REPRESENTATIVE",
+                "OTHER"
               ]
             },
             "minItems": 0,
