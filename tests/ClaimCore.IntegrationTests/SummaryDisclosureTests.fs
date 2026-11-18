@@ -23,19 +23,25 @@ let private summaries () =
             let fixture = database.Fixture
             let! owner = caseWorker fixture |> Async.AwaitTask
 
+            let parties =
+                [ "Claimant Example", "CLAIMANT"; "Insurer Example", "INSURER" ]
+                |> List.map (fun (name, role) ->
+                    Map.ofList
+                        [
+                            Submissions.input InputTarget.PartyName, SubmissionValue.Text name
+                            Submissions.input InputTarget.PartyRole, SubmissionValue.Text role
+                        ])
+                |> SubmissionValue.Rows
+
             for number, reference in [ 100, "VISIBLE"; 101, "PRIVATE" ] do
+                let fields =
+                    Submissions.fields (RegistrationInput.values DomainInputs.registration)
+                    |> Map.add (TaskCollectionId.input TaskCollectionId.Parties) parties
+
                 let! result =
                     Service.executeSubmission
                         owner
-                        (((request
-                            (database.Fixture)
-                            (number)
-                            (reference)
-                            (0L)
-                            "case.open"
-                            (ClaimCore.TestSupport.Submissions.fields (
-                                RegistrationInput.values (DomainInputs.registration)
-                            )))))
+                        (request fixture number reference 0L "case.open" fields)
                         token
                     |> Async.AwaitTask
 
@@ -136,27 +142,25 @@ let private summaries () =
 
                 let value field = Map.find field summary.Fields
 
-                Expect.equal
-                    (value BusinessField.PolicyNumber)
-                    (Some(
-                        CaseFieldValue.Business(
-                            Admitted.Identifier(
-                                Registration.policyNumber fields.Registration |> Option.get
-                            )
-                        )
-                    ))
-                    "Claimant is already disclosed"
+                for role, name in
+                    [ PartyRole.Claimant, "Claimant Example"; PartyRole.Insurer, "Insurer Example" ] do
+                    let show = List.map PartyName.format
+                    let names = Map.find role summary.Parties
 
-                Expect.equal
-                    (value BusinessField.InsurerClaimReference)
-                    (Some(
-                        CaseFieldValue.Business(
-                            Admitted.Identifier(
-                                Registration.insurerClaimReference fields.Registration |> Option.get
-                            )
-                        )
-                    ))
-                    "Insurer is already disclosed"
+                    let disclosed =
+                        current.Parties
+                        |> List.choose (fun party ->
+                            if party.Content.Role = role then
+                                party.Content.Name
+                            else
+                                None)
+
+                    Expect.equal (show names) [ name ] "The summary shows the recorded role name"
+
+                    Expect.equal
+                        names
+                        disclosed
+                        "Summary and case reads disclose the same current names"
 
                 let claimed = Registration.claimed fields.Registration |> Option.get
 

@@ -280,7 +280,11 @@ let private projectionBindings () =
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
                 "payable_currency", box "USD"
-                "paid_amount", box "987.6543"
+                "payment_review", box false
+                "outcome", box "SETTLED"
+                "registered_on", box "0001-01-01 AD"
+                "closed_on", box DBNull.Value
+                "last_activity_on", box "0001-01-01 AD"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)
@@ -299,6 +303,8 @@ let private projectionBindings () =
             "snapshot", box [| 0uy |]
             "status", box "UNKNOWN"
             "progress", box "UNKNOWN"
+            "payment_review", box "TRUE"
+            "outcome", box "UNKNOWN"
             "changed_at", box "invalid"
             "search_text", box 44
             "work_search_text", box 44
