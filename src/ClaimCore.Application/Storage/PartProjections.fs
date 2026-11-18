@@ -283,6 +283,27 @@ module internal PartProjections =
 
                 exactlyOne changed
 
+            for link in row.Links do
+                let! changed =
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.case_links(link_id,source_case_id,target_case_id,revision,removed,note) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(link_id) DO UPDATE SET target_case_id=EXCLUDED.target_case_id,revision=EXCLUDED.revision,removed=EXCLUDED.removed,note=EXCLUDED.note WHERE claimcore.case_links.source_case_id=EXCLUDED.source_case_id"
+                        [|
+                            box (LinkId.value link.Id)
+                            box (CaseId.value link.Source)
+                            optional (link.Value.Content |> Option.map (_.Target >> CaseId.value))
+                            box (Revision.value link.Revision)
+                            box link.Value.Removed
+                            optional (
+                                link.Value.Content
+                                |> Option.bind _.Note
+                                |> Option.map NoteText.format
+                            )
+                        |]
+                        token
+
+                exactlyOne changed
+
             if row.Snapshot.State = CaseState.Erased then
                 // Erasure clears existing child projections without opening their private roots.
                 for sql in
@@ -291,6 +312,7 @@ module internal PartProjections =
                         "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.notes SET text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.case_parties SET role=NULL,name=NULL,details=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.case_links SET target_case_id=NULL,note=NULL WHERE source_case_id=$1"
                     ] do
                     let! _ =
                         DatabaseSession.execute connection sql [| box (CaseId.value id) |] token

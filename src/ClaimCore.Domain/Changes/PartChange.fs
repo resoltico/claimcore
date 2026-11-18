@@ -53,6 +53,12 @@ type PartyValue =
         Content: PartyContent option
     }
 
+type LinkValue =
+    {
+        Removed: bool
+        Content: RelatedCaseContent option
+    }
+
 /// Assignments are accepted values, not instructions to re-run a grant business rule.
 /// A new accepting position is the enclosing part change's position.
 type GrantAssignment = { Grant: ActorGrant; Active: bool }
@@ -90,6 +96,7 @@ type PartValue =
     | Reminder of ReminderValue
     | Note of NoteValue
     | Party of PartyValue
+    | Link of LinkValue
     | Person of PersonValue
 
 module PartValue =
@@ -101,6 +108,7 @@ module PartValue =
         | PartValue.Reminder _ -> PartKind.Reminder
         | PartValue.Note _ -> PartKind.Note
         | PartValue.Party _ -> PartKind.Party
+        | PartValue.Link _ -> PartKind.Link
         | PartValue.Person _ -> PartKind.Person
 
     let clear =
@@ -118,6 +126,7 @@ module PartValue =
         | PartValue.Reminder value -> PartValue.Reminder { value with Plan = None }
         | PartValue.Note value -> PartValue.Note { value with Text = None }
         | PartValue.Party value -> PartValue.Party { value with Content = None }
+        | PartValue.Link value -> PartValue.Link { value with Content = None }
         | PartValue.Person value ->
             PartValue.Person
                 { value with

@@ -130,6 +130,20 @@ module PartDescriptions =
                             |> Option.map (fun part -> part.Value)
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe before value))
+                    | PartValue.Link value ->
+                        let before =
+                            LinkId.create change.PartId
+                            |> Option.bind (fun id ->
+                                prior |> Option.bind (fun state -> Map.tryFind id state.Links))
+                            |> Option.bind _.Value.Content
+
+                        Ok(
+                            PartDescription.Link
+                                {
+                                    Before = before
+                                    After = value.Content
+                                }
+                        )
                     | PartValue.Note value ->
                         match NoteId.create change.PartId with
                         | None -> Error RecordViolation.InvalidSubjectState
@@ -282,6 +296,21 @@ module PartDescriptions =
                                 | _ -> None)
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe prior value))
+                    | PartValue.Link value ->
+                        let prior =
+                            before
+                            |> Option.bind (fun change ->
+                                match change.Value with
+                                | PartValue.Link value -> value.Content
+                                | _ -> None)
+
+                        Ok(
+                            PartDescription.Link
+                                {
+                                    Before = prior
+                                    After = value.Content
+                                }
+                        )
                     | PartValue.Note value ->
                         let prior =
                             before
@@ -465,6 +494,7 @@ module PartDescriptions =
                     |> Option.defaultValue missing
 
                 PartKind.Party, items
+            | PartDescription.Link _ -> PartKind.Link, Ok []
             | PartDescription.Person _ -> PartKind.Person, missing
 
         items

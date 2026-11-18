@@ -153,7 +153,7 @@ module ScalarGuidance =
                 ]
         | TaskInputId.Target InputTarget.PaymentReference ->
             message key [ "maximumCharacters", GuidanceArgument.Count Identifier.MaximumCharacters ]
-        | TaskInputId.Target InputTarget.NoteText ->
+        | TaskInputId.Target(InputTarget.NoteText | InputTarget.LinkNote) ->
             message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | TaskInputId.Target InputTarget.ReminderAction ->
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]

@@ -67,6 +67,10 @@ type InputTarget =
     | ReminderId
     | NoteId
     | NewCaseReference
+    | LinkId
+    | LinkTargetReference
+    | LinkTargetId
+    | LinkNote
     | NoteText
     | Parties
     | PartyId

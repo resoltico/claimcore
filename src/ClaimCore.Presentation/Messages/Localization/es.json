@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "Por qué se reanudó la tramitación.",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "Añadir expediente relacionado",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "Vincule este expediente con otro que pueda consultar.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "Se vinculó el expediente relacionado.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "Elija un expediente por su referencia o ID.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "Quitar vínculo con expediente",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "Quite de este expediente el vínculo seleccionado.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "Se quitó el vínculo con el expediente.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "Confirme que estos expedientes ya no deben estar vinculados aquí.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "Vínculo con expediente",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "Se cambiaron los vínculos con expedientes",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "ID del vínculo",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "Use el UUID de la operación que registró el vínculo.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "Identifica el vínculo que va a quitar.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "Referencia del expediente relacionado",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "Use el formato de referencia del expediente.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "Introduzca una referencia o use el campo ID del expediente relacionado.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "ID del expediente relacionado",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "Use el UUID del expediente.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "Introduzca un ID si deja en blanco la referencia.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "Nota del vínculo",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "Explique por qué se relacionan estos expedientes.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "Expedientes relacionados",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "Vínculos desde este expediente",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "Vínculos a este expediente",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "Expediente relacionado no disponible",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "Vínculos entrantes visibles",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "Seleccione un vínculo existente con un expediente.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "Un expediente no puede vincularse consigo mismo.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "Este expediente ya está vinculado con el seleccionado.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "Quite un vínculo existente antes de añadir otro.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "Use entre 1 y {maximumScalars} caracteres Unicode. Se permiten saltos de línea.",
+    "source": "97b31e9df4ef"
   }
 }

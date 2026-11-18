@@ -37,6 +37,7 @@ type internal FamilyParts =
         NotesValue: Map<NoteId, AcceptedPart<NoteState>>
         PartiesValue: Map<PartyId, AcceptedPart<PartyValue>>
         PartyOrigins: Map<PartyId, EffectPosition>
+        LinksValue: Map<LinkId, AcceptedPart<LinkValue>>
         SequenceValue: Sequence
     }
 
@@ -48,6 +49,7 @@ type internal FamilyParts =
     member this.Reminders = this.RemindersValue
     member this.Notes = this.NotesValue
     member this.Parties = this.PartiesValue
+    member this.Links = this.LinksValue
     member this.Sequence = this.SequenceValue
     member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
 
@@ -65,6 +67,7 @@ type CaseFamily =
     member this.Reminders = this.Value.Reminders
     member this.Notes = this.Value.Notes
     member this.Parties = this.Value.Parties
+    member this.Links = this.Value.Links
     member this.Sequence = this.Value.Sequence
     member this.ChangedAt = this.Value.ChangedAt
 
@@ -163,6 +166,12 @@ module internal FamilyParts =
                     { part with
                         Value = { part.Value with Content = None }
                     })
+            LinksValue =
+                state.Links
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Content = None }
+                    })
             WorkValue = state.Work |> Option.map (fun part -> { part with Value = None })
             RemindersValue =
                 state.Reminders
@@ -210,6 +219,7 @@ module internal FamilyParts =
                             NotesValue = Map.empty
                             PartiesValue = Map.empty
                             PartyOrigins = Map.empty
+                            LinksValue = Map.empty
                             SequenceValue = EffectPosition.sequence change.Stamp.Position
                         })
                 | None, _ -> Error RecordViolation.InvalidHistoryStart
@@ -352,6 +362,26 @@ module internal FamilyParts =
                                     PartiesValue =
                                         Map.add party (accepted change value) before.Parties
                                     PartyOrigins = origins
+                                }
+                        else
+                            invalid
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
+                | Some before, PartValue.Link value ->
+                    match LinkId.create change.PartId with
+                    | Some link when version (Map.tryFind link before.Links) change ->
+                        let valid =
+                            match Map.tryFind link before.Links with
+                            | None ->
+                                not value.Removed
+                                && link = LinkId.ofOperationId change.Stamp.OperationId
+                            | Some existing ->
+                                not existing.Value.Removed && value.Removed && value.Content.IsNone
+
+                        if valid then
+                            Ok
+                                { before with
+                                    LinksValue = Map.add link (accepted change value) before.Links
                                 }
                         else
                             invalid
@@ -529,7 +559,8 @@ module internal FamilyParts =
                         | PartKind.Work -> change.PartId = CaseId.value id
                         | PartKind.Payment
                         | PartKind.Reminder
-                        | PartKind.Note -> change.PartId = OperationId.value origin.OperationId
+                        | PartKind.Note
+                        | PartKind.Link -> change.PartId = OperationId.value origin.OperationId
                         | PartKind.Party ->
                             let caseOrigin = Map.tryFind (PartKind.Case, CaseId.value id) origins
 
@@ -602,6 +633,14 @@ module internal FamilyParts =
                         | _ -> None)
                     |> Map.ofList
 
+                let links =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, LinkId.create change.PartId with
+                        | PartValue.Link value, Some link -> Some(link, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
                 let state =
                     {
                         Identity = id
@@ -616,6 +655,7 @@ module internal FamilyParts =
                             parties
                             |> Map.map (fun party _ ->
                                 (Map.find (PartKind.Party, PartyId.value party) origins).Position)
+                        LinksValue = links
                         SequenceValue = sequence
                     }
 

@@ -140,6 +140,95 @@ module CaseScreen =
             Actions = List.choose TaskAffordances.fromOffer reply.PartyOffers
         }
 
+    let private relatedCaseRegions (reply: CaseReadModel) =
+        let source = CaseSelector.Id reply.Snapshot.CaseId
+
+        let action task binding =
+            TaskAffordances.offered
+                task
+                (Some binding)
+                Map.empty
+                (TaskAffordances.authored task)
+                Map.empty
+
+        let columns =
+            [
+                column
+                    "reference"
+                    "field.caseReference.label"
+                    Prominence.Primary
+                    false
+                    (fun (row: RelatedCaseRead) ->
+                        match row.Case with
+                        | Some target -> PresentedValue.Reference target.Reference
+                        | None -> PresentedValue.Absent "label.relatedCaseUnavailable")
+                column "lifecycle" "input.lifecycle.label" Prominence.Secondary false (fun row ->
+                    optional (code Lifecycle.vocabulary) (row.Case |> Option.map _.Lifecycle))
+                column "status" "field.status.label" Prominence.Secondary false (fun row ->
+                    optional (code CaseStatus.vocabulary) (row.Case |> Option.bind _.Status))
+                column "note" "field.linkNote.label" Prominence.Secondary false (fun row ->
+                    optional (NoteText.format >> PresentedValue.Narrative) row.Note)
+            ]
+
+        let table rows =
+            tableWithControls
+                (fun (row: RelatedCaseRead) -> LinkId.format row.Id)
+                (fun _ -> None)
+                columns
+                (fun row ->
+                    row.Case
+                    |> Option.map (fun target ->
+                        Link.CaseGet
+                            {
+                                Target = CaseSelector.Id target.CaseId
+                            }),
+                    [
+                        if row.CanRemove then
+                            yield
+                                action
+                                    ClientCompositions.linkRemoval
+                                    (Binding.Link(source, row.Id))
+                    ])
+                rows
+
+        [
+            if reply.RelatedCases.CanAdd || not reply.RelatedCases.Outgoing.IsEmpty then
+                let outgoing =
+                    region
+                        RegionRole.RelatedCases
+                        (Some "section.relatedCases.outgoing")
+                        (RegionContent.Table(table reply.RelatedCases.Outgoing))
+
+                yield
+                    { outgoing with
+                        Actions =
+                            [
+                                if reply.RelatedCases.CanAdd then
+                                    yield
+                                        action ClientCompositions.linkEntry (Binding.LinkNew source)
+                            ]
+                    }
+
+            if not reply.RelatedCases.Incoming.IsEmpty then
+                let incoming = table reply.RelatedCases.Incoming
+
+                let count =
+                    value
+                        "readableLinks"
+                        "label.readableIncomingLinks"
+                        Prominence.Secondary
+                        (PresentedValue.Count reply.RelatedCases.IncomingCount)
+
+                yield
+                    region
+                        RegionRole.RelatedCases
+                        (Some "section.relatedCases.incoming")
+                        (RegionContent.Table
+                            { incoming with
+                                Sections = [ section "section.relatedCases.label" [ count ] ]
+                            })
+        ]
+
     let view (reply: CaseReadModel) =
         let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
         let groups = caseFacts reply.Snapshot
@@ -440,6 +529,7 @@ module CaseScreen =
                             (RegionContent.Table(
                                 NotesScreen.table reply.Snapshot.CaseId reply.Notes
                             ))
+                yield! relatedCaseRegions reply
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]
 

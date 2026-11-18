@@ -18,7 +18,7 @@ module TimelineFilter =
     let parts =
         function
         | TimelineFilter.Facts -> [ PartKind.Case; PartKind.Payment ]
-        | TimelineFilter.Work -> [ PartKind.Work; PartKind.Reminder ]
+        | TimelineFilter.Work -> [ PartKind.Work; PartKind.Reminder; PartKind.Link ]
         | TimelineFilter.Notes -> [ PartKind.Note ]
 
     let token = Vocabulary.token vocabulary

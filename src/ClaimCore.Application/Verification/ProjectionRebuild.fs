@@ -84,6 +84,7 @@ module internal ProjectionRebuild =
                                 "grants"
                                 "notes"
                                 "case_parties"
+                                "case_links"
                                 "reminders"
                                 "case_work"
                                 "case_payments"

@@ -267,6 +267,20 @@ module ReceiptCodecs =
         |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Party)
         |> field "snapshot" _.Snapshot partyDisclosure
 
+    let private linkReceiptFields =
+        (record (fun parent reference id act ->
+            {
+                LinkReceipt.CaseId = parent
+                Reference = reference
+                LinkId = id
+                Act = act
+            })
+        : Fields<LinkReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "linkId" _.LinkId linkId
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Link)
+
     let private reminderReceiptFields =
         (record (fun parent reference act effects ->
             {
@@ -307,6 +321,13 @@ module ReceiptCodecs =
                     | ReceiptSubject.Party value -> Some value
                     | _ -> None)
                     partyReceiptFields
+                variant
+                    "LINK"
+                    ReceiptSubject.Link
+                    (function
+                    | ReceiptSubject.Link value -> Some value
+                    | _ -> None)
+                    linkReceiptFields
                 variant
                     "REMINDER"
                     ReceiptSubject.Reminder
@@ -375,6 +396,12 @@ module ReceiptCodecs =
                     && Note.id note = value.NoteId
                     && ((Note.text note).IsSome = creates)
                 | _ -> true)
+        | ReceiptSubject.Link value ->
+            let declaration =
+                ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get
+
+            not declaration.Creates
+            || value.LinkId = LinkId.ofOperationId receipt.OperationId
         | ReceiptSubject.Reminder value ->
             match value.Effects with
             | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->

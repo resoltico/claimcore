@@ -232,6 +232,7 @@ type RegionRole =
     | NextActions
     | Notes
     | Parties
+    | RelatedCases
     | Activity
     | Results
     | Totals

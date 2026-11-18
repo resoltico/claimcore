@@ -34,6 +34,8 @@ module OperationIntent =
         | Binding.PartyNew selector -> Binding.PartyNew(target resolve selector)
         | Binding.Party(selector, id, revision) ->
             Binding.Party(target resolve selector, id, revision)
+        | Binding.LinkNew selector -> Binding.LinkNew(target resolve selector)
+        | Binding.Link(selector, id) -> Binding.Link(target resolve selector, id)
         | Binding.ReminderNew selector -> Binding.ReminderNew(target resolve selector)
         | Binding.Reminder(selector, id, revision) ->
             Binding.Reminder(target resolve selector, id, revision)

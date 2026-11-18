@@ -87,6 +87,7 @@ module internal Advice =
                         FamilyEnvironment.Requester = actor
                         RequesterPrincipal = services.Principal
                         Maintenance = maintenance.Active
+                        RelatedCase = fun _ -> None
                         ReferenceOwner = fun _ -> None
                         AssigneeEligible = fun _ -> false
                     }
@@ -227,6 +228,7 @@ module internal Advice =
                                                 snapshot
                                     }
                                 MatchedReference = None
+                                RelatedCases = RelatedCaseLinks.empty
                                 FamilySequence = familySequence
                                 Snapshot = snapshot
                                 LatestPayments = latestPayments

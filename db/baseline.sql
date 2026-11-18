@@ -512,6 +512,19 @@ ALTER TABLE claimcore.case_payments ADD CONSTRAINT payment_payee_ownership
     DEFERRABLE INITIALLY DEFERRED;
 
 
+CREATE TABLE claimcore.case_links (
+    link_id uuid PRIMARY KEY CHECK (link_id <> '00000000-0000-0000-0000-000000000000'),
+    source_case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    target_case_id uuid REFERENCES claimcore.cases(case_id) DEFERRABLE INITIALLY DEFERRED,
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
+    removed boolean NOT NULL,
+    note text CHECK (note IS NULL OR (octet_length(note) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(note))),
+    CHECK (target_case_id IS NOT NULL OR note IS NULL),
+    CHECK (NOT removed OR target_case_id IS NULL)
+);
+CREATE INDEX case_links_source ON claimcore.case_links(source_case_id);
+CREATE INDEX case_links_target ON claimcore.case_links(target_case_id);
+
 CREATE TABLE claimcore.grants (
     granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
     granted_effect_index integer NOT NULL CHECK (granted_effect_index BETWEEN 0 AND 49),
@@ -550,7 +563,13 @@ CREATE FUNCTION claimcore.projection_erasure_integrity()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 DECLARE family_id uuid; root claimcore.cases%ROWTYPE; erased boolean;
 BEGIN
-    IF TG_TABLE_NAME='ledger_effects' THEN family_id:=NEW.erases_id; ELSE family_id:=NEW.case_id; END IF;
+    IF TG_TABLE_NAME='ledger_effects' THEN
+        family_id:=NEW.erases_id;
+    ELSIF TG_TABLE_NAME='case_links' THEN
+        family_id:=NEW.source_case_id;
+    ELSE
+        family_id:=NEW.case_id;
+    END IF;
     IF TG_TABLE_NAME='ledger_effects' AND EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind='FAMILY' AND c.owner_id=family_id AND c.payload IS NOT NULL) THEN
         RAISE EXCEPTION 'accepted family erasure must clear retained private values atomically' USING ERRCODE='CC003';
     END IF;
@@ -566,6 +585,7 @@ BEGIN
             OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.notes WHERE case_id=family_id AND text IS NOT NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND (target_case_id IS NOT NULL OR note IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND ledger_compartments.owner_id=family_id AND payload IS NOT NULL) THEN
             RAISE EXCEPTION 'accepted family erasure must clear every owned private value' USING ERRCODE='CC003';
         END IF;
@@ -575,6 +595,7 @@ BEGIN
             OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND snapshot IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND revision>0 AND snapshot IS NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND NOT removed AND target_case_id IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.notes n WHERE n.case_id=family_id AND n.text IS NULL AND NOT EXISTS(
                 SELECT 1 FROM claimcore.ledger_effects e WHERE e.part_kind='NOTE' AND e.part_id=n.note_id
                   AND e.aggregate_kind='FAMILY' AND e.aggregate_id=family_id AND e.retained->>'removed'='true'
@@ -592,6 +613,7 @@ CREATE CONSTRAINT TRIGGER work_erasure_integrity AFTER INSERT OR UPDATE ON claim
 CREATE CONSTRAINT TRIGGER reminders_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.reminders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER parties_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_parties DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER notes_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.notes DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER case_links_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_links DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
 CREATE CONSTRAINT TRIGGER accepted_family_erasure_integrity AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.erases_kind='FAMILY') EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
@@ -663,7 +685,7 @@ GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.l
 GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb) TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
-GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.actors TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;

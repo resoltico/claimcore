@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "Warum die Bearbeitung wieder aufgenommen wurde.",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "Verknüpften Fall hinzufügen",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "Verknüpfen Sie diesen Fall mit einem anderen Fall, den Sie einsehen können.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "Fallverknüpfung hinzugefügt.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "Wählen Sie einen Fall anhand der Referenz oder ID.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "Fallverknüpfung entfernen",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "Entfernen Sie die ausgewählte Verknüpfung aus diesem Fall.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "Fallverknüpfung entfernt.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "Bestätigen Sie, dass die Fälle hier nicht mehr verknüpft sein sollen.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "Fallverknüpfung",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "Fallverknüpfungen geändert",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "Verknüpfungs-ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "Verwenden Sie die UUID der Operation, die die Verknüpfung erfasst hat.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "Kennzeichnet die zu entfernende Verknüpfung.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "Referenz des verknüpften Falls",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "Verwenden Sie das Format für Fallreferenzen.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "Geben Sie eine Referenz ein oder verwenden Sie das Feld für die Fall-ID.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "ID des verknüpften Falls",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "Verwenden Sie die UUID des Falls.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "Geben Sie eine ID ein, wenn Sie das Referenzfeld leer lassen.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "Notiz zur Verknüpfung",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "Beschreiben Sie, in welchem Zusammenhang die Fälle stehen.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "Verknüpfte Fälle",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "Verknüpfungen von diesem Fall",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "Verknüpfungen zu diesem Fall",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "Verknüpfter Fall nicht verfügbar",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "Sichtbare eingehende Verknüpfungen",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "Wählen Sie eine vorhandene Fallverknüpfung.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "Ein Fall kann nicht mit sich selbst verknüpft werden.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "Dieser Fall ist bereits mit dem ausgewählten Fall verknüpft.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "Entfernen Sie eine vorhandene Verknüpfung, bevor Sie eine neue hinzufügen.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "Verwenden Sie 1–{maximumScalars} Unicode-Zeichen. Zeilenumbrüche sind erlaubt.",
+    "source": "97b31e9df4ef"
   }
 }

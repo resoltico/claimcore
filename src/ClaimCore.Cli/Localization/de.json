@@ -434,5 +434,9 @@
   "cli.family.party": {
     "text": "Parteien eines Falls",
     "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "Fallverknüpfungen",
+    "source": "99bba925fcb4"
   }
 }

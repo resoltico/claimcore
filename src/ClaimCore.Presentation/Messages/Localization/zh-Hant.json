@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "恢復處理的原因。",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "新增關聯案件",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "將此案件與另一個您有權檢視的案件建立關聯。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "已關聯案件。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "透過編號或 ID 選擇案件。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "移除案件關聯",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "從此案件中移除所選關聯。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "已移除案件關聯。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "請確認在此處解除案件之間的關聯。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件關聯",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件關聯已變更",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "關聯 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "請使用記錄該關聯的操作 UUID。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "用於識別要移除的關聯。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "關聯案件編號",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "請使用案件編號格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "輸入編號，或使用關聯案件 ID 欄位。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "關聯案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "請使用案件的 UUID。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "如果編號留白，請輸入 ID。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "關聯備註",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "說明這些案件為何相關。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "關聯案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "從此案件發出的關聯",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "指向此案件的關聯",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "無法檢視關聯案件",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "可檢視的傳入關聯",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "請選擇現有案件關聯。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件不能與自身關聯。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "此案件已與所選案件關聯。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "請先移除一個現有關聯，再新增另一個。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "使用 1–{maximumScalars} 個 Unicode 字元，允許換行。",
+    "source": "97b31e9df4ef"
   }
 }

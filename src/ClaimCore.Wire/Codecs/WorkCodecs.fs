@@ -91,6 +91,54 @@ module WorkCodecs =
         |> build
         |> named "ReminderReadModel"
 
+    let relatedCaseTarget =
+        (record (fun id reference lifecycle status ->
+            {
+                RelatedCaseTarget.CaseId = id
+                Reference = reference
+                Lifecycle = lifecycle
+                Status = status
+            })
+        : Fields<RelatedCaseTarget, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "lifecycle" _.Lifecycle (VocabularyCodec.create Lifecycle.vocabulary)
+        |> field "status" _.Status (nullable (VocabularyCodec.create CaseStatus.vocabulary))
+        |> build
+        |> named "RelatedCaseTarget"
+
+    let relatedCase =
+        (record (fun id target note canRemove ->
+            {
+                RelatedCaseRead.Id = id
+                Case = target
+                Note = note
+                CanRemove = canRemove
+            })
+        : Fields<RelatedCaseRead, _>)
+        |> field "linkId" _.Id linkId
+        |> field "case" _.Case (nullable relatedCaseTarget)
+        |> field "note" _.Note (nullable noteText)
+        |> field "canRemove" _.CanRemove boolean
+        |> build
+        |> named "RelatedCaseRead"
+
+    let relatedCases =
+        (record (fun outgoing incoming incomingCount canAdd ->
+            {
+                RelatedCaseLinks.Outgoing = outgoing
+                Incoming = incoming
+                IncomingCount = incomingCount
+                CanAdd = canAdd
+            })
+        : Fields<RelatedCaseLinks, _>)
+        |> field "outgoing" _.Outgoing (list RelatedCase.MaximumCurrent relatedCase)
+        |> field "incoming" _.Incoming (list RelatedCase.MaximumIncomingShown relatedCase)
+        |> field "incomingCount" _.IncomingCount (integer 0L JsonValue.MaximumInteger)
+        |> field "canAdd" _.CanAdd boolean
+        |> build
+        |> named "RelatedCaseLinks"
+
     let note =
         (record Note.ofAccepted: Fields<Note, _>)
         |> field "noteId" Note.id noteId

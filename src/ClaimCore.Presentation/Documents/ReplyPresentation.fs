@@ -19,6 +19,9 @@ module Refusals =
         | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
         | CaseRefusal.CorrectionNoChanges
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
+        | CaseRefusal.SelfLink
+        | CaseRefusal.DuplicateLink
+        | CaseRefusal.LinkLimitReached
         | CaseRefusal.CorrectionRequiresExistingValue
         | CaseRefusal.FamilyChanged
         | CaseRefusal.PaymentNotFound

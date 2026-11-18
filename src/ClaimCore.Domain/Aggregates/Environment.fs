@@ -10,6 +10,7 @@ type FamilyEnvironment =
         Maintenance: bool
         AssigneeEligible: ActorId -> bool
         ReferenceOwner: CaseReference -> CaseId option
+        RelatedCase: CaseSelector -> (CaseId * Lifecycle) option
     }
 
 type PersonEnvironment =

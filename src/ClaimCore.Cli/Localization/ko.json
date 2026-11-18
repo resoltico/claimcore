@@ -434,5 +434,9 @@
   "cli.family.party": {
     "text": "청구 건 당사자",
     "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "관련 청구 건 연결",
+    "source": "99bba925fcb4"
   }
 }

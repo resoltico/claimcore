@@ -225,6 +225,7 @@ module internal CaseWorkReads =
                     FamilyEnvironment.Requester = actor
                     RequesterPrincipal = principal
                     Maintenance = maintenance
+                    RelatedCase = fun _ -> None
                     ReferenceOwner = fun _ -> None
                     AssigneeEligible = fun _ -> false
                 }

@@ -10,6 +10,7 @@ type PartKind =
     | Reminder
     | Note
     | Party
+    | Link
     | Person
 
 module PartKind =

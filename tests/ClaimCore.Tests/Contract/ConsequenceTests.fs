@@ -12,6 +12,7 @@ let private acts =
     [
         (TaskId.ofLiteral "case.open"), Consequence.Routine
         (TaskId.ofLiteral "case.amendRegistration"), Consequence.Routine
+        (TaskId.ofLiteral "case.changeReference"), Consequence.Routine
         (TaskId.ofLiteral "case.correct"), Consequence.Routine
         (TaskId.ofLiteral "case.decide"), Consequence.Routine
         (TaskId.ofLiteral "case.withdrawDecision"), Consequence.Routine
@@ -34,6 +35,8 @@ let private acts =
         (TaskId.ofLiteral "people.eraseProfile"), Consequence.Irreversible
         (TaskId.ofLiteral "note.add"), Consequence.Routine
         (TaskId.ofLiteral "note.remove"), Consequence.Routine
+        (TaskId.ofLiteral "link.add"), Consequence.Routine
+        (TaskId.ofLiteral "link.remove"), Consequence.Routine
         (TaskId.ofLiteral "work.update"), Consequence.Routine
         (TaskId.ofLiteral "reminder.create"), Consequence.Routine
         (TaskId.ofLiteral "reminder.update"), Consequence.Routine

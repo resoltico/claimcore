@@ -71,6 +71,7 @@ module HumanReceiptDocument =
                     | PartyDisclosure.Erased -> HumanDisclosure.Erased
 
                 Some value.CaseId, disclosure, false
+            | ReceiptSubject.Link value -> Some value.CaseId, HumanDisclosure.Current, false
             | ReceiptSubject.Note value ->
                 let disclosure =
                     match value.Snapshot with

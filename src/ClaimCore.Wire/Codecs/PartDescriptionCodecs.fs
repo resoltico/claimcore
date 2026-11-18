@@ -238,6 +238,18 @@ module PartDescriptionCodecs =
         |> build
         |> named "ReminderPartDescription"
 
+    let relatedCaseContent =
+        (record (fun target note ->
+            {
+                RelatedCaseContent.Target = target
+                Note = note
+            })
+        : Fields<RelatedCaseContent, _>)
+        |> field "target" _.Target caseId
+        |> field "note" _.Note (nullable noteText)
+        |> build
+        |> named "RelatedCaseContent"
+
     let note =
         (record (fun v0 v1 ->
             {
@@ -314,6 +326,17 @@ module PartDescriptionCodecs =
                     | PartDescription.Party value -> Some value
                     | _ -> None)
                     (record id |> field "changes" id party)
+                variant
+                    "LINK"
+                    PartDescription.Link
+                    (function
+                    | PartDescription.Link value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field
+                         "changes"
+                         id
+                         (ValueChangeCodecs.change "RelatedCaseChange" relatedCaseContent))
                 variant
                     "PERSON"
                     PartDescription.Person

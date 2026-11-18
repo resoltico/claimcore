@@ -30,6 +30,7 @@ type CliMessage =
     | [<MessageKey("cli.help.dryRunUsage")>] DryRunUsage of usage: string
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.note")>] NoteCommands
+    | [<MessageKey("cli.family.link")>] LinkCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.family.browserSessions")>] BrowserSessions

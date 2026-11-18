@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "처리를 재개한 이유입니다.",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "관련 청구 건 추가",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "이 청구 건을 조회할 수 있는 다른 청구 건에 연결합니다.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "관련 청구 건을 연결했습니다.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "참조 또는 ID로 청구 건을 선택하세요.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "청구 건 연결 제거",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "이 청구 건에서 선택한 연결을 제거합니다.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "관련 청구 건의 연결을 제거했습니다.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "여기서 두 청구 건의 연결을 해제할지 확인하세요.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "청구 건 연결",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "청구 건 연결이 변경되었습니다",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "연결 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "연결을 기록한 작업의 UUID를 사용하세요.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "제거할 연결을 식별합니다.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "관련 청구 건 참조",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "청구 건 참조 형식을 사용하세요.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "참조를 입력하거나 관련 청구 건 ID 필드를 사용하세요.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "관련 청구 건 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "청구 건의 UUID를 사용하세요.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "참조를 비워 둘 경우 ID를 입력하세요.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "연결 메모",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "두 청구 건이 관련된 이유를 설명하세요.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "관련 청구 건",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "이 청구 건에서 연결한 항목",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "이 청구 건으로 연결된 항목",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "관련 청구 건을 조회할 수 없음",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "조회 가능한 수신 연결",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "기존 청구 건 연결을 선택하세요.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "청구 건을 자기 자신에 연결할 수 없습니다.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "이미 선택한 청구 건과 연결되어 있습니다.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "새 연결을 추가하기 전에 기존 연결 하나를 제거하세요.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "유니코드 문자 1–{maximumScalars}자를 사용하세요. 줄바꿈을 사용할 수 있습니다.",
+    "source": "97b31e9df4ef"
   }
 }

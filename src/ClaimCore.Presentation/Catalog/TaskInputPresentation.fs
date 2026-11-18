@@ -61,8 +61,9 @@ module TaskInputPresentation =
     let scalar =
         function
         | TaskInputId.Target(InputTarget.Field field) -> Some(FieldPresentation.descriptor field)
-        | TaskInputId.Target InputTarget.NewCaseReference ->
+        | TaskInputId.Target(InputTarget.NewCaseReference | InputTarget.LinkTargetReference) ->
             Some(FieldPresentation.descriptor BusinessField.CaseReference)
+        | TaskInputId.Target InputTarget.LinkNote -> Some(ScalarRule.PlainText NoteText.constraints)
         | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.Reason) ->
             Some(ScalarRule.Text PartyName.descriptor)
         | TaskInputId.Target InputTarget.ProfileContact ->

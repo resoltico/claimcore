@@ -110,6 +110,7 @@
     <Compile Include="SubmissionStorage.fs" />
     <Compile Include="ReadTimingProbe.fs" />
     <Compile Include="CaseProjectionTests.fs" />
+    <Compile Include="CaseLinkPostgresTests.fs" />
     <Compile Include="SummaryDisclosureTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="BaselineRefusalTests.fs" />

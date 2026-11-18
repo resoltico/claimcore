@@ -108,12 +108,14 @@ module SubmissionDeclarations =
                 revision InputTarget.ExpectedWorkRevision creationRevision None, None, None
             | BindingShape.NoteNew
             | BindingShape.PartyNew
+            | BindingShape.LinkNew
             | BindingShape.ReminderNew -> None, None, None
             | BindingShape.Note -> None, Some(TaskInputId.Target InputTarget.NoteId), None
             | BindingShape.Party ->
                 revision InputTarget.ExpectedPartyRevision existingRevision None,
                 Some(TaskInputId.Target InputTarget.PartyId),
                 None
+            | BindingShape.Link -> None, Some(TaskInputId.Target InputTarget.LinkId), None
             | BindingShape.Reminder ->
                 revision InputTarget.ExpectedReminderRevision existingRevision None,
                 Some(TaskInputId.Target InputTarget.ReminderId),

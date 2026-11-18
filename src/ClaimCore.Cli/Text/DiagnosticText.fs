@@ -28,6 +28,7 @@ module internal DiagnosticText =
             | OperationBinding.Case(target, _, _, _)
             | OperationBinding.Party(target, _)
             | OperationBinding.Note(target, _)
+            | OperationBinding.Link(target, _)
             | OperationBinding.Work(target, _)
             | OperationBinding.Reminder(target, _) -> Some target
             | OperationBinding.People _ -> None

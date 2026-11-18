@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "恢复处理的原因。",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "添加关联案件",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "将此案件与另一个您有权查看的案件关联。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "已关联案件。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "通过编号或 ID 选择案件。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "移除案件关联",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "从此案件中移除选中的关联。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "已移除案件关联。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "请确认在此处解除案件之间的关联。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件关联",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件关联已更改",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "关联 ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "请使用记录该关联的操作 UUID。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "用于识别要移除的关联。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "关联案件编号",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "请使用案件编号格式。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "输入编号，或使用关联案件 ID 字段。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "关联案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "请使用案件的 UUID。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "如果编号留空，请输入 ID。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "关联备注",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "说明这些案件为何相关。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "关联案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "从此案件发出的关联",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "指向此案件的关联",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "无法查看关联案件",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "可查看的传入关联",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "请选择现有案件关联。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件不能与自身关联。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "此案件已与所选案件关联。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "请先移除一个现有关联，再添加另一个。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "使用 1–{maximumScalars} 个 Unicode 字符，允许换行。",
+    "source": "97b31e9df4ef"
   }
 }

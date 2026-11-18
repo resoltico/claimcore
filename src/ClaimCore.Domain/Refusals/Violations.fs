@@ -20,6 +20,7 @@ type Violation =
     | PartyRoleRequired
     | PartyContentRequired
     | PartyCountRange
+    | LinkIdRequired
     | UpdateRequired
     | CalendarDateRequired
     | FutureDate

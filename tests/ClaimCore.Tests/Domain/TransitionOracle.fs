@@ -183,9 +183,14 @@ let allows state witness =
     | CaseState.Voided _, _ -> false
 
 let offered state =
-    samples
-    |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
-    |> Set.ofList
+    let lifecycleCommands =
+        samples
+        |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
+        |> Set.ofList
+
+    match state with
+    | CaseState.Active _ -> Set.add "case.changeReference" lifecycleCommands
+    | _ -> lifecycleCommands
 
 let private finance decision paid count =
     let currency = Currency.parse "EUR" |> required

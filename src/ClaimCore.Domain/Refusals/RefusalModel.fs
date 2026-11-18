@@ -81,6 +81,9 @@ type CaseRefusal =
     | CorrectionRequiresExistingValue
     | PaymentNotFound
     | PartyLimit
+    | SelfLink
+    | DuplicateLink
+    | LinkLimitReached
 
 [<RequireQualifiedAccess>]
 type PeopleRefusal =

@@ -83,6 +83,16 @@ module internal Fold =
                 fun reference ->
                     Map.tryFind (PartKind.Case, CaseReference.identity reference) state.NaturalKeys
                     |> Option.bind CaseId.create
+            RelatedCase =
+                fun selector ->
+                    resolveFamily state selector
+                    |> Option.filter (fun family ->
+                        Access.can
+                            principal
+                            (requester state principal)
+                            Capability.ReadCase
+                            (Scope.Case family.Id))
+                    |> Option.map (fun family -> family.Id, family.Case.Value.Lifecycle)
             AssigneeEligible =
                 fun id ->
                     Map.tryFind id state.People

@@ -369,6 +369,7 @@ module internal TaskArguments =
                     |> Option.map (fun (party, revision) ->
                         id "partyId" (Some party) @ version revision)
                     |> Option.defaultValue [])
+            | OperationBinding.Link(target, link) -> selected target :: id "linkId" link
             | OperationBinding.Reminder(target, current) ->
                 selected target
                 :: (current

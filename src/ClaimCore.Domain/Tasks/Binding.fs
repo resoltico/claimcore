@@ -20,6 +20,8 @@ type Binding =
     | Note of CaseSelector * NoteId
     | PartyNew of CaseSelector
     | Party of CaseSelector * PartyId * Revision
+    | LinkNew of CaseSelector
+    | Link of CaseSelector * LinkId
     | PeopleNew of Revision
     | People of ActorId * Revision
 
@@ -35,7 +37,9 @@ module Binding =
         | Binding.NoteNew target
         | Binding.Note(target, _)
         | Binding.PartyNew target
-        | Binding.Party(target, _, _) -> Some target
+        | Binding.Party(target, _, _)
+        | Binding.LinkNew target
+        | Binding.Link(target, _) -> Some target
         | _ -> None
 
 [<RequireQualifiedAccess>]
@@ -51,6 +55,8 @@ type BindingShape =
     | Note
     | PartyNew
     | Party
+    | LinkNew
+    | Link
     | PeopleNew
     | People
 
@@ -68,5 +74,7 @@ module BindingShape =
         | Binding.Note _ -> BindingShape.Note
         | Binding.PartyNew _ -> BindingShape.PartyNew
         | Binding.Party _ -> BindingShape.Party
+        | Binding.LinkNew _ -> BindingShape.LinkNew
+        | Binding.Link _ -> BindingShape.Link
         | Binding.PeopleNew _ -> BindingShape.PeopleNew
         | Binding.People _ -> BindingShape.People

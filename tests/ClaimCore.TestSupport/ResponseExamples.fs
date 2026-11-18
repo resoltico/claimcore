@@ -79,6 +79,7 @@ let peopleReceipt =
 let caseRead: CaseReadModel =
     {
         MatchedReference = None
+        RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
         Parties = []

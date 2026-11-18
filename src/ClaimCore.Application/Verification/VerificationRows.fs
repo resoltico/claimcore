@@ -451,6 +451,8 @@ module internal VerificationRows =
                     [||]
                     token
 
+            let! links = CaseLinkStorage.projections connection token
+
             return
                 result {
                     let! work =
@@ -503,6 +505,24 @@ module internal VerificationRows =
                             reminders
 
                     let! expectedCases = Replay.familyRows state
+
+                    let expectedLinks =
+                        expectedCases
+                        |> Map.values
+                        |> Seq.collect _.Links
+                        |> Seq.map (fun link -> link.Id, link)
+                        |> Map.ofSeq
+
+                    let! links =
+                        capture None VerificationFinding.CaseWorkProjection (fun () ->
+                            links |> List.map CaseLinkStorage.projection)
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseWorkProjection
+                            (fun (row: LinkProjection) -> row.Id)
+                            expectedLinks
+                            links
 
                     let expectedIndexes =
                         expectedCases

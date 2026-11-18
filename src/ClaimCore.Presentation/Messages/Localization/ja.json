@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "対応を再開した理由です。",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "関連案件を追加",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "この案件を閲覧できる別の案件に関連付けます。",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "案件を関連付けました。",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "参照番号または ID で案件を選択してください。",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "案件の関連付けを解除",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "この案件から選択した関連付けを削除します。",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "案件の関連付けを解除しました。",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "ここで案件間の関連付けを解除することを確認してください。",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "案件の関連付け",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "案件の関連付けが変更されました",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "関連付け ID",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "関連付けを記録した操作の UUID を使用してください。",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "解除する関連付けを識別します。",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "関連案件の参照番号",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "案件参照番号の形式を使用してください。",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "参照番号を入力するか、関連案件 ID 欄を使用します。",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "関連案件 ID",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "案件の UUID を使用してください。",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "参照番号を入力しない場合は ID を入力します。",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "関連付けメモ",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "これらの案件が関連する理由を説明してください。",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "関連案件",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "この案件からの関連付け",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "この案件への関連付け",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "関連案件は表示できません",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "閲覧可能な関連付けの件数",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "既存の案件の関連付けを選択してください。",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "案件を同じ案件に関連付けることはできません。",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "この案件は選択した案件にすでに関連付けられています。",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "別の関連付けを追加する前に、既存の関連付けを解除してください。",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "1～{maximumScalars}文字のUnicode文字を使用してください。改行を使用できます。",
+    "source": "97b31e9df4ef"
   }
 }

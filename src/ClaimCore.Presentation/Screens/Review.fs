@@ -287,6 +287,27 @@ module ReviewScreen =
                     _.Details
             ],
             []
+        | PartDescription.Link link ->
+            [
+                changed
+                    (prefix + "target")
+                    "field.relatedCaseId.label"
+                    (fun id -> PresentedValue.Identifier(CaseId.format id))
+                    {
+                        Before = link.Before |> Option.map _.Target
+                        After = link.After |> Option.map _.Target
+                    }
+                if (link.Before |> Option.bind _.Note) <> (link.After |> Option.bind _.Note) then
+                    changed
+                        (prefix + "note")
+                        "field.linkNote.label"
+                        (NoteText.format >> PresentedValue.Narrative)
+                        {
+                            Before = link.Before |> Option.bind _.Note
+                            After = link.After |> Option.bind _.Note
+                        }
+            ],
+            []
         | PartDescription.Note value ->
             [
                 value.Text

@@ -50,6 +50,14 @@ type internal PartyProjection =
         Value: PartyValue
     }
 
+type internal LinkProjection =
+    {
+        Id: LinkId
+        Source: CaseId
+        Revision: Revision
+        Value: LinkValue
+    }
+
 type internal FamilyProjectionDelta =
     {
         Snapshot: CaseSnapshot
@@ -59,6 +67,7 @@ type internal FamilyProjectionDelta =
         Reminders: ReminderProjection list
         Notes: NoteProjection list
         Parties: PartyProjection list
+        Links: LinkProjection list
     }
 
 type internal PersonProjection =
@@ -130,6 +139,7 @@ module internal ProjectionRows =
         let reminders = ResizeArray<ReminderProjection>()
         let notes = ResizeArray<NoteProjection>()
         let parties = ResizeArray<PartyProjection>()
+        let links = ResizeArray<LinkProjection>()
 
         for change in parts do
             let value =
@@ -153,6 +163,14 @@ module internal ProjectionRows =
                         Revision = change.Revision
                         Value = value
                         Changed = attribution change.Stamp
+                    }
+            | PartValue.Link value ->
+                links.Add
+                    {
+                        Id = LinkId.create change.PartId |> Option.get
+                        Source = snapshot.CaseId
+                        Revision = change.Revision
+                        Value = value
                     }
             | PartValue.Note value ->
                 notes.Add
@@ -222,6 +240,7 @@ module internal ProjectionRows =
                     Reminders = List.ofSeq reminders
                     Notes = List.ofSeq notes
                     Parties = List.ofSeq parties
+                    Links = List.ofSeq links
                 }
 
     let family (state: CaseFamily) parts origins summary =

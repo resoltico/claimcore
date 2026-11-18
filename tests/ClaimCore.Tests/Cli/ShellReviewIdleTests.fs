@@ -92,6 +92,7 @@ let private idleConfirmation () =
                                         MatchedReference = None
                                         Parties = []
                                         PartyOffers = []
+                                        RelatedCases = RelatedCaseLinks.empty
                                         FamilySequence = Sequence.create 1L |> Option.get
                                         LatestPayments = []
                                         PaymentPayees = []

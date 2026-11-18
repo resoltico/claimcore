@@ -45,7 +45,8 @@ module internal Engine =
             | Binding.Work(_, revision)
             | Binding.Party(_, _, revision)
             | Binding.Reminder(_, _, revision) -> Revision.value revision = Revision.Maximum
-            | Binding.Note _ -> true // Removal reviews the selected note's current accepted version.
+            | Binding.Note _
+            | Binding.Link _ -> true // Removal reviews the selected child's current accepted version.
             | _ -> false
 
         match OperationSubmission.refusal rejected with

@@ -46,6 +46,7 @@ type DecisionFacts =
     member this.Reminders = this.Parts.Reminders
     member this.Notes = this.Parts.Notes
     member this.Parties = this.Parts.Parties
+    member this.Links = this.Parts.Links
     member this.Sequence = this.Parts.Sequence
     member this.ChangedAt = this.Parts.ChangedAt
     member this.NextPendingDue = this.Summary.NextPendingDue
@@ -92,6 +93,7 @@ module DecisionFacts =
                           match change.Value with
                           | PartValue.Note value -> value.Removed || value.Text.IsSome
                           | PartValue.Party value -> value.Content.IsSome
+                          | PartValue.Link value -> value.Removed <> value.Content.IsSome
                           | _ -> true))))
 
         if
@@ -121,7 +123,8 @@ module DecisionFacts =
                         |> Option.exists (fun id -> Set.contains id scope.Notes)
                     | PartKind.Case
                     | PartKind.Work
-                    | PartKind.Party -> true
+                    | PartKind.Party
+                    | PartKind.Link -> true
                     | PartKind.Person -> false)
 
             if not scoped then

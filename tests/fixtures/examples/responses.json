@@ -318,6 +318,14 @@
                   }
                 },
                 {
+                  "act": "case.changeReference",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
                   "act": "case.correct",
                   "reason": {
                     "code": "NOT_AUTHORIZED",

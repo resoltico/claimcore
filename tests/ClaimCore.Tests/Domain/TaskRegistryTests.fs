@@ -245,6 +245,8 @@ let tests =
                                 "work.update"
                                 "note.add"
                                 "note.remove"
+                                "link.add"
+                                "link.remove"
                                 "reminder.create"
                                 "reminder.update"
                                 "reminder.complete"

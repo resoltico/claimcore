@@ -72,6 +72,7 @@ type PartDescription =
     | Reminder of ReminderPartDescription
     | Note of NotePartDescription
     | Party of PartyPartDescription
+    | Link of ValueChange<RelatedCaseContent>
     | Person of PersonPartDescription
 
 module PartDescription =
@@ -83,6 +84,7 @@ module PartDescription =
         | PartDescription.Reminder _ -> PartKind.Reminder
         | PartDescription.Note _ -> PartKind.Note
         | PartDescription.Party _ -> PartKind.Party
+        | PartDescription.Link _ -> PartKind.Link
         | PartDescription.Person _ -> PartKind.Person
 
 type DescribedPart =

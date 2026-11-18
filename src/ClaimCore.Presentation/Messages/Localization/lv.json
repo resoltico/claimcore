@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "Kāpēc izskatīšana atsākās.",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "Pievienot saistītu lietu",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "Sasaistiet šo lietu ar citu lietu, ko drīkstat skatīt.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "Saistītā lieta pievienota.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "Izvēlieties lietu pēc atsauces vai identifikatora.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "Noņemt saistīto lietu",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "Noņemiet atlasīto saiti no šīs lietas.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "Saite uz saistīto lietu noņemta.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "Apstipriniet, ka šīs lietas vairs nav jāsasaista šeit.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "Saite uz saistītu lietu",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "Lietu saites mainītas",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "Saites identifikators",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "Izmantojiet saites pieņemšanas darbības UUID.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "Norāda noņemamo saiti.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "Saistītās lietas atsauce",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "Izmantojiet lietas atsauces formātu.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "Ievadiet atsauci vai izmantojiet saistītās lietas identifikatora lauku.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "Saistītās lietas identifikators",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "Izmantojiet lietas UUID.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "Ievadiet identifikatoru, ja atsauces lauks ir tukšs.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "Piezīme par saiti",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "Paskaidrojiet, kā šīs lietas ir saistītas.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "Saistītās lietas",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "Saites no šīs lietas",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "Saites uz šo lietu",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "Saistītā lieta nav pieejama",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "Skatāmās saites uz lietu",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "Atlasiet esošu saiti uz saistītu lietu.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "Lietu nevar sasaistīt ar to pašu lietu.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "Šī lieta jau ir sasaistīta ar atlasīto lietu.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "Pirms jaunas saites pievienošanas noņemiet esošu saiti.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "Izmantojiet 1–{maximumScalars} Unicode rakstzīmes. Atļauti rindu pārtraukumi.",
+    "source": "97b31e9df4ef"
   }
 }

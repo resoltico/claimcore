@@ -3254,5 +3254,129 @@
   "field.reopenReason.hint": {
     "text": "سبب استئناف المعالجة.",
     "source": "52db5e07d84d"
+  },
+  "task.link.add.label": {
+    "text": "إضافة ملف مرتبط",
+    "source": "eb3cd3601534"
+  },
+  "task.link.add.meaning": {
+    "text": "اربط هذا الملف بملف آخر يمكنك الاطلاع عليه.",
+    "source": "d28cd72a8956"
+  },
+  "task.link.add.done": {
+    "text": "تم ربط الملف.",
+    "source": "aeec9d496c72"
+  },
+  "task.link.add.consequence": {
+    "text": "اختر ملفًا باستخدام مرجعه أو معرّفه.",
+    "source": "dcf4ee138912"
+  },
+  "task.link.remove.label": {
+    "text": "إزالة ارتباط بملف",
+    "source": "f448df08a6a2"
+  },
+  "task.link.remove.meaning": {
+    "text": "أزل الارتباط المحدد من هذا الملف.",
+    "source": "b6a1194f2cbd"
+  },
+  "task.link.remove.done": {
+    "text": "تمت إزالة الارتباط بالملف.",
+    "source": "1f4e65eb51e2"
+  },
+  "task.link.remove.consequence": {
+    "text": "أكّد إنهاء الارتباط بين الملفين هنا.",
+    "source": "750a818622cc"
+  },
+  "subject.LINK.label": {
+    "text": "ارتباط بملف",
+    "source": "6b9cb1614d67"
+  },
+  "change.LINK.recorded": {
+    "text": "تغيّرت ارتباطات الملفات",
+    "source": "b6f71c022a4f"
+  },
+  "field.linkId.label": {
+    "text": "معرّف الارتباط",
+    "source": "0897474545c6"
+  },
+  "field.linkId.rule": {
+    "text": "استخدم UUID لعملية تسجيل الارتباط.",
+    "source": "17a2e4b2f7f3"
+  },
+  "field.linkId.hint": {
+    "text": "يحدد الارتباط المراد إزالته.",
+    "source": "374c20224541"
+  },
+  "field.relatedCaseReference.label": {
+    "text": "مرجع الملف المرتبط",
+    "source": "7b16a01cff1f"
+  },
+  "field.relatedCaseReference.rule": {
+    "text": "استخدم تنسيق مرجع الملف.",
+    "source": "b905bbf44b8b"
+  },
+  "field.relatedCaseReference.hint": {
+    "text": "أدخل مرجعًا أو استخدم حقل معرّف الملف المرتبط.",
+    "source": "9e42d91ab4f9"
+  },
+  "field.relatedCaseId.label": {
+    "text": "معرّف الملف المرتبط",
+    "source": "494844c9b812"
+  },
+  "field.relatedCaseId.rule": {
+    "text": "استخدم UUID الخاص بالملف.",
+    "source": "822311b5e0f7"
+  },
+  "field.relatedCaseId.hint": {
+    "text": "أدخل معرّفًا إذا تركت حقل المرجع فارغًا.",
+    "source": "3ecae06ac15d"
+  },
+  "field.linkNote.label": {
+    "text": "ملاحظة الارتباط",
+    "source": "97479a4da46e"
+  },
+  "field.linkNote.hint": {
+    "text": "اشرح سبب ارتباط هذين الملفين.",
+    "source": "ace79592f8ef"
+  },
+  "section.relatedCases.label": {
+    "text": "الملفات المرتبطة",
+    "source": "8b457da8f1af"
+  },
+  "section.relatedCases.outgoing": {
+    "text": "الارتباطات من هذا الملف",
+    "source": "4672620085ac"
+  },
+  "section.relatedCases.incoming": {
+    "text": "الارتباطات إلى هذا الملف",
+    "source": "b79c9a3247e6"
+  },
+  "label.relatedCaseUnavailable": {
+    "text": "الملف المرتبط غير متاح",
+    "source": "8d3e0b9b4838"
+  },
+  "label.readableIncomingLinks": {
+    "text": "الارتباطات الواردة المتاحة",
+    "source": "0b19bbdf75d7"
+  },
+  "diagnostic.LINK_ID_REQUIRED": {
+    "text": "حدّد ارتباطًا بملف موجودًا بالفعل.",
+    "source": "e9d1ed956838"
+  },
+  "diagnostic.SELF_LINK": {
+    "text": "لا يمكن ربط الملف بنفسه.",
+    "source": "91412b1d0d98"
+  },
+  "diagnostic.DUPLICATE_LINK": {
+    "text": "هذا الملف مرتبط بالفعل بالملف المحدد.",
+    "source": "2ac00239aa1d"
+  },
+  "diagnostic.LINK_LIMIT_REACHED": {
+    "text": "أزل ارتباطًا موجودًا قبل إضافة ارتباط آخر.",
+    "source": "c4cb78743077"
+  },
+  "field.linkNote.rule": {
+    "text": "استخدم من 1 إلى {maximumScalars} محرف Unicode. يُسمح بفواصل الأسطر.",
+    "source": "97b31e9df4ef"
   }
 }

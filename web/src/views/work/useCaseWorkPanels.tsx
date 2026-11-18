@@ -13,7 +13,7 @@ import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
+import type { Affordance, TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
 
@@ -27,7 +27,7 @@ type ReminderStateFilter = ReminderListRequest["state"];
 type Editor = {
   noteIntent?: NoteIntent;
   action: OperationAffordance;
-  subject: "WORK" | "REMINDER" | "NOTE";
+  subject: "WORK" | "REMINDER" | "NOTE" | "LINK";
   kind: string;
   identity: string;
   prefill: FormValues;
@@ -277,5 +277,19 @@ export const useCaseWorkPanels = ({
       onDisclosureRefused={onChanged}
     />
   );
-  return { work, nextActions, notes, operation };
+  const onLinkAction = (action: Affordance, originId?: string) => {
+    if (!isOperationAffordance(action) || action.binding?.kind !== "LINK") {
+      return;
+    }
+    open({
+      subject: "LINK",
+      kind: action.task,
+      identity: "linkId" in action.binding ? action.binding.linkId : action.task,
+      action,
+      binding: action.binding,
+      prefill: {},
+      ...(originId === undefined ? {} : { origin: originId }),
+    });
+  };
+  return { work, nextActions, notes, operation, onLinkAction, editing: editor !== null };
 };

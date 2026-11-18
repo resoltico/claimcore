@@ -264,9 +264,11 @@ module ResponseCodecs =
                 changedAt
                 recordedBy
                 family
-                matchedReference ->
+                matchedReference
+                relatedCases ->
                 {
                     MatchedReference = matchedReference
+                    RelatedCases = defaultArg relatedCases RelatedCaseLinks.empty
                     FamilySequence = family
                     Snapshot =
                         {
@@ -325,6 +327,14 @@ module ResponseCodecs =
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence
         |> optionalField "matchedReference" _.MatchedReference caseReference
+        |> optionalField
+            "relatedCases"
+            (fun reply ->
+                if reply.RelatedCases = RelatedCaseLinks.empty then
+                    None
+                else
+                    Some reply.RelatedCases)
+            WorkCodecs.relatedCases
         |> build
         |> named "CaseView"
 

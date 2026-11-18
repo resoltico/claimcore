@@ -99,6 +99,7 @@ module ScreenEntries =
             | PartKind.Reminder -> "field.reminderId.label"
             | PartKind.Note -> "field.noteId.label"
             | PartKind.Party -> "field.partyId.label"
+            | PartKind.Link -> "field.linkId.label"
 
         value
             (id.ToString("D") + ".id")

@@ -434,5 +434,9 @@
   "cli.family.party": {
     "text": "Lietas dalībnieki",
     "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "Saites uz saistītām lietām",
+    "source": "99bba925fcb4"
   }
 }

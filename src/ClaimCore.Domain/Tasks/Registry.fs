@@ -35,6 +35,8 @@ module Registry =
             ClaimCore.Domain.Tasks.Party.PartyTasks.remove
             ClaimCore.Domain.Tasks.Note.Add.task
             ClaimCore.Domain.Tasks.Note.Remove.task
+            ClaimCore.Domain.Tasks.Link.Add.task
+            ClaimCore.Domain.Tasks.Link.Remove.task
             ClaimCore.Domain.Tasks.Reminder.Create.task
             ClaimCore.Domain.Tasks.Reminder.Update.task
             ClaimCore.Domain.Tasks.Reminder.Complete.task

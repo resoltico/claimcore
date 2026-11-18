@@ -290,6 +290,25 @@ module ReceiptScreen =
                         Prominence.Detail
                         (PresentedValue.Identifier(NoteId.format item.NoteId))
                 ]
+            | ReceiptSubject.Link item ->
+                [
+                    section
+                        "section.relatedCases.label"
+                        [
+                            value
+                                "caseReference"
+                                "field.caseReference.label"
+                                Prominence.Primary
+                                (PresentedValue.Reference item.Reference)
+                        ]
+                ],
+                [
+                    value
+                        "linkId"
+                        "field.linkId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(LinkId.format item.LinkId))
+                ]
             | ReceiptSubject.Reminder item -> reminderReceipt item
             | ReceiptSubject.People item -> peopleReceipt item
 
@@ -417,6 +436,7 @@ module ReceiptScreen =
             | ReceiptSubject.Work item -> item.Act
             | ReceiptSubject.Note item -> item.Act
             | ReceiptSubject.Party item -> item.Act
+            | ReceiptSubject.Link item -> item.Act
             | ReceiptSubject.Reminder item -> item.Act
             | ReceiptSubject.People item -> item.Act
 
@@ -426,6 +446,7 @@ module ReceiptScreen =
             | ReceiptSubject.Work item -> Some item.Reference
             | ReceiptSubject.Note item -> Some item.Reference
             | ReceiptSubject.Party item -> Some item.Reference
+            | ReceiptSubject.Link item -> Some item.Reference
             | ReceiptSubject.Reminder item -> Some item.Reference
             | ReceiptSubject.People _ -> None
 

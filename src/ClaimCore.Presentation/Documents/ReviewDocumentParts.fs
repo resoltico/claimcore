@@ -68,6 +68,8 @@ module internal ReviewDocumentParts =
             | Binding.PartyNew _
             | Binding.Party _
             | Binding.NoteNew _
+            | Binding.LinkNew _
+            | Binding.Link _
             | Binding.Note _ -> []
 
         let sections =

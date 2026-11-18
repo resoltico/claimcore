@@ -434,5 +434,9 @@
   "cli.family.party": {
     "text": "案件の関係者",
     "source": "8eb8f1a7c97c"
+  },
+  "cli.family.link": {
+    "text": "案件の関連付け",
+    "source": "99bba925fcb4"
   }
 }

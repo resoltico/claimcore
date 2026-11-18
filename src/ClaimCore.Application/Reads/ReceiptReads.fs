@@ -523,6 +523,24 @@ module internal ReceiptReads =
                                                             })
                                             | _ -> return fault
                                         | _ -> return fault
+                                    | ActSubject.Link ->
+                                        match record.Changes with
+                                        | [ change ] when change.Kind = PartKind.Link ->
+                                            match LinkId.create change.PartId with
+                                            | Some linkId ->
+                                                return
+                                                    Ok(
+                                                        ReceiptSubject.Link
+                                                            {
+                                                                CaseId = id
+                                                                Reference =
+                                                                    current.Snapshot.Reference
+                                                                LinkId = linkId
+                                                                Act = declaration.Id
+                                                            }
+                                                    )
+                                            | None -> return fault
+                                        | _ -> return fault
                                     | ActSubject.People -> return fault
                             | _ -> return fault
                         | _ -> return fault

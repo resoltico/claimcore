@@ -111,6 +111,7 @@ module internal PaymentQueries =
                                                                         services.Principal
                                                                     Maintenance =
                                                                         view.Maintenance.Active
+                                                                    RelatedCase = fun _ -> None
                                                                     ReferenceOwner = fun _ -> None
                                                                     AssigneeEligible =
                                                                         fun _ -> false

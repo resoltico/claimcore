@@ -124,6 +124,16 @@ module OperationSubmissionCodecs =
         | OperationBinding.Note(_, note) -> selected "Note selection required." note
         | _ -> invalidOp "Note binding required."
 
+    let private linkTarget =
+        function
+        | OperationBinding.Link(target, _) -> target
+        | _ -> invalidOp "Link binding required."
+
+    let private linkId =
+        function
+        | OperationBinding.Link(_, link) -> selected "Link selection required." link
+        | _ -> invalidOp "Link binding required."
+
     let private reminderTarget =
         function
         | OperationBinding.Reminder(target, _) -> target
@@ -247,6 +257,17 @@ module OperationSubmissionCodecs =
                     | _ -> invalidOp "Party binding required.")
                     version
                 |> build
+            | ActSubject.Link when declaration.Creates ->
+                record (fun target -> OperationBinding.Link(target, None))
+                |> fixedField "kind" "LINK"
+                |> field "target" linkTarget RequestCodecs.caseSelector
+                |> build
+            | ActSubject.Link ->
+                record (fun target link -> OperationBinding.Link(target, Some link))
+                |> fixedField "kind" "LINK"
+                |> field "target" linkTarget RequestCodecs.caseSelector
+                |> field "linkId" linkId uuid
+                |> build
             | ActSubject.Reminder when declaration.Creates ->
                 record (fun target -> OperationBinding.Reminder(target, None))
                 |> fixedField "kind" "REMINDER"
@@ -295,6 +316,8 @@ module OperationSubmissionCodecs =
             | BindingShape.Note -> "NOTE"
             | BindingShape.PartyNew -> "PARTY.new"
             | BindingShape.Party -> "PARTY"
+            | BindingShape.LinkNew -> "LINK.new"
+            | BindingShape.Link -> "LINK"
             | BindingShape.PeopleNew -> "PEOPLE.new"
             | BindingShape.People -> "PEOPLE"
 

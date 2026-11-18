@@ -115,6 +115,14 @@ type NoteReceipt =
         Snapshot: NoteDisclosure
     }
 
+type LinkReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        LinkId: LinkId
+        Act: TaskId
+    }
+
 [<RequireQualifiedAccess>]
 type PartyDisclosure =
     | Disclosed of PartyContent
@@ -139,6 +147,7 @@ type ReceiptSubject =
     | Reminder of ReminderReceipt
     | Note of NoteReceipt
     | Party of PartyReceipt
+    | Link of LinkReceipt
 
 type OperationReceipt =
     {

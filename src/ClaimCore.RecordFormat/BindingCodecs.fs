@@ -206,6 +206,38 @@ module BindingCodecs =
         |> build
         |> named "Binding.NOTE"
 
+    let linkNew =
+        (record Binding.LinkNew: Fields<Binding, _>)
+        |> fixedField "kind" "LINK"
+        |> field
+            "target"
+            (function
+            | Binding.LinkNew target -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> build
+        |> named "Binding.LINK.new"
+
+    let link =
+        let identity = identifier LinkId.create LinkId.value
+
+        (record (fun target id -> Binding.Link(target, id)): Fields<Binding, _>)
+        |> fixedField "kind" "LINK"
+        |> field
+            "target"
+            (function
+            | Binding.Link(target, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "linkId"
+            (function
+            | Binding.Link(_, id) -> id
+            | _ -> mismatch ())
+            identity
+        |> build
+        |> named "Binding.LINK"
+
     let peopleNew =
         (record Binding.PeopleNew: Fields<Binding, _>)
         |> fixedField "kind" "PEOPLE"
@@ -289,6 +321,8 @@ module BindingCodecs =
         | ActSubject.Note -> note
         | ActSubject.Party when declaration.Creates -> partyNew
         | ActSubject.Party -> party
+        | ActSubject.Link when declaration.Creates -> linkNew
+        | ActSubject.Link -> link
         | ActSubject.Reminder when declaration.Creates -> reminderNew
         | ActSubject.Reminder -> reminder
         | ActSubject.People when declaration.Creates -> peopleNew
@@ -310,6 +344,8 @@ module BindingCodecs =
         | Binding.Note _ -> note
         | Binding.PartyNew _ -> partyNew
         | Binding.Party _ -> party
+        | Binding.LinkNew _ -> linkNew
+        | Binding.Link _ -> link
         | Binding.PeopleNew _ -> peopleNew
         | Binding.People _ -> people
 
@@ -361,6 +397,12 @@ module BindingCodecs =
                     | _ -> false)
                 select party (function
                     | Binding.Party _ -> true
+                    | _ -> false)
+                select linkNew (function
+                    | Binding.LinkNew _ -> true
+                    | _ -> false)
+                select link (function
+                    | Binding.Link _ -> true
                     | _ -> false)
                 select peopleNew (function
                     | Binding.PeopleNew _ -> true

@@ -97,6 +97,36 @@ module internal ExecutionEnvironment =
                             (CaseSelector.Reference(CaseReference.format reference))
                     | None -> System.Threading.Tasks.Task.FromResult None
 
+                let relatedSelector =
+                    match binding, family with
+                    | Binding.LinkNew _, _ ->
+                        inputs |> Option.bind ClaimCore.Domain.Tasks.Link.Add.selector
+                    | Binding.Link(_, id), Some acquired ->
+                        Map.tryFind id acquired.Facts.Links
+                        |> Option.bind _.Value.Content
+                        |> Option.map (_.Target >> CaseSelector.Id)
+                    | _ -> None
+
+                let! related =
+                    task {
+                        match relatedSelector with
+                        | None -> return None
+                        | Some selector ->
+                            let! matched = CaseIdentityReads.resolve tx selector
+
+                            match matched with
+                            | Some id when
+                                Access.can principal access Capability.ReadCase (Scope.Case id)
+                                ->
+                                let! target = FamilyReads.findCase tx id
+
+                                return
+                                    target
+                                    |> Option.map (fun record ->
+                                        id, CaseState.lifecycle record.Snapshot.State)
+                            | _ -> return None
+                    }
+
                 let environment =
                     {
                         FamilyEnvironment.Requester = access
@@ -108,6 +138,9 @@ module internal ExecutionEnvironment =
                                     referenceOwner
                                 else
                                     None
+                        RelatedCase =
+                            fun selector ->
+                                if relatedSelector = Some selector then related else None
                         AssigneeEligible =
                             fun id ->
                                 match family, responsible with

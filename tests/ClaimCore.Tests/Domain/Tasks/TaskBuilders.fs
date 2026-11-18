@@ -57,6 +57,7 @@ let environment =
         FamilyEnvironment.Requester = access
         RequesterPrincipal = principal
         Maintenance = false
+        RelatedCase = fun _ -> None
         ReferenceOwner = fun _ -> None
         AssigneeEligible = fun _ -> true
     }

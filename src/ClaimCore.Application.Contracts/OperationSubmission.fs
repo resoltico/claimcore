@@ -22,6 +22,7 @@ type OperationBinding<'revision> =
     | Work of target: CaseSelector * expectedRevision: 'revision
     | Note of target: CaseSelector * noteId: Guid option
     | Party of target: CaseSelector * current: (Guid * 'revision) option
+    | Link of target: CaseSelector * linkId: Guid option
     | Reminder of target: CaseSelector * current: (Guid * 'revision) option
     | People of actorId: Guid option * expectedRevision: 'revision
 
@@ -77,6 +78,8 @@ module OperationSubmission =
             OperationBinding.Party(target, Some(PartyId.value id, Revision.value revision))
         | Binding.NoteNew target -> OperationBinding.Note(target, None)
         | Binding.Note(target, id) -> OperationBinding.Note(target, Some(NoteId.value id))
+        | Binding.LinkNew target -> OperationBinding.Link(target, None)
+        | Binding.Link(target, id) -> OperationBinding.Link(target, Some(LinkId.value id))
         | Binding.PeopleNew revision -> OperationBinding.People(None, Revision.value revision)
         | Binding.People(id, revision) ->
             OperationBinding.People(Some(ActorId.value id), Revision.value revision)
@@ -354,6 +357,11 @@ module OperationSubmission =
                     SubmissionDeclarations.existingRevision
                     InputTarget.ExpectedPartyRevision
                     expected)
+        | ActSubject.Link, OperationBinding.Link(selection, None) when declaration.Creates ->
+            Ok(Binding.LinkNew selection)
+        | ActSubject.Link, OperationBinding.Link(selection, Some id) when not declaration.Creates ->
+            identity LinkId.create InputTarget.LinkId Violation.LinkIdRequired id
+            |> Result.map (fun id -> Binding.Link(selection, id))
         | ActSubject.Reminder, OperationBinding.Reminder(selection, None) when declaration.Creates ->
             Ok(Binding.ReminderNew selection)
         | ActSubject.Reminder, OperationBinding.Reminder(selection, Some(id, expected)) when
@@ -507,7 +515,8 @@ module OperationSubmission =
                 expected
         | BindingShape.PartyNew, OperationBinding.Party(_, None)
         | BindingShape.ReminderNew, OperationBinding.Reminder(_, None)
-        | BindingShape.NoteNew, OperationBinding.Note(_, None) -> Ok()
+        | BindingShape.NoteNew, OperationBinding.Note(_, None)
+        | BindingShape.LinkNew, OperationBinding.Link(_, None) -> Ok()
         | BindingShape.Party, OperationBinding.Party(_, Some(id, expected)) ->
             collect
                 [
@@ -534,6 +543,8 @@ module OperationSubmission =
                 ]
         | BindingShape.Note, OperationBinding.Note(_, note) ->
             identifier NoteId.create InputTarget.NoteId Violation.NoteIdRequired note
+        | BindingShape.Link, OperationBinding.Link(_, link) ->
+            identifier LinkId.create InputTarget.LinkId Violation.LinkIdRequired link
         | BindingShape.PeopleNew, OperationBinding.People(None, expected) ->
             optional creationVersion expected
         | BindingShape.People, OperationBinding.People(Some id, expected) ->
@@ -602,6 +613,7 @@ module OperationSubmission =
             | OperationBinding.Party(target, None) -> Some(OperationBinding.Party(target, None))
             | OperationBinding.Party(target, Some(id, Some revision)) ->
                 Some(OperationBinding.Party(target, Some(id, revision)))
+            | OperationBinding.Link(target, link) -> Some(OperationBinding.Link(target, link))
             | OperationBinding.Reminder(target, None) ->
                 Some(OperationBinding.Reminder(target, None))
             | OperationBinding.Reminder(target, Some(id, Some revision)) ->
@@ -769,6 +781,8 @@ module SubmissionAssembly =
                 selection,
                 selectedIdentity |> Option.map (fun id -> id, expected)
             )
+        | BindingShape.LinkNew -> OperationBinding.Link(selection, None)
+        | BindingShape.Link -> OperationBinding.Link(selection, selectedIdentity)
         | BindingShape.ReminderNew -> OperationBinding.Reminder(selection, None)
         | BindingShape.Reminder ->
             OperationBinding.Reminder(
@@ -801,6 +815,8 @@ module SubmissionAssembly =
         | BindingShape.Note -> Binding.Note(selected (), identified NoteId.create)
         | BindingShape.PartyNew -> Binding.PartyNew(selected ())
         | BindingShape.Party -> Binding.Party(selected (), identified PartyId.create, expected ())
+        | BindingShape.LinkNew -> Binding.LinkNew(selected ())
+        | BindingShape.Link -> Binding.Link(selected (), identified LinkId.create)
         | BindingShape.ReminderNew -> Binding.ReminderNew(selected ())
         | BindingShape.Reminder ->
             Binding.Reminder(selected (), identified ReminderId.create, expected ())
@@ -834,6 +850,8 @@ module SubmissionAssembly =
             OperationBinding.Party(target, None)
         | OperationBinding.Note(target, id), OperationBinding.Note _ ->
             OperationBinding.Note(target, id)
+        | OperationBinding.Link(target, id), OperationBinding.Link _ ->
+            OperationBinding.Link(target, id)
         | OperationBinding.Reminder(target, None), OperationBinding.Reminder(_, None) ->
             OperationBinding.Reminder(target, None)
         | _ -> invalidArg "offered" "A draft requires the matching offered binding."

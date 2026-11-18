@@ -28,6 +28,11 @@ module PartCodecs =
         | PartValue.Reminder value -> get value
         | _ -> wrong ()
 
+    let private link get =
+        function
+        | PartValue.Link value -> get value
+        | _ -> wrong ()
+
     let private note get =
         function
         | PartValue.Note value -> get value
@@ -204,6 +209,13 @@ module PartCodecs =
         |> build
         |> named "PartRetained.PARTY"
 
+    let private linkRetained =
+        (record (fun removed -> PartValue.Link { Removed = removed; Content = None })
+        : Fields<PartValue, _>)
+        |> field "removed" (link _.Removed) boolean
+        |> build
+        |> named "PartRetained.LINK"
+
     let private personRetained =
         (record (fun principal enabled grants ->
             PartValue.Person
@@ -228,6 +240,7 @@ module PartCodecs =
         | PartKind.Reminder -> reminderRetained
         | PartKind.Note -> noteRetained
         | PartKind.Party -> partyRetained
+        | PartKind.Link -> linkRetained
         | PartKind.Person -> personRetained
 
     let withCompartment present =
@@ -251,6 +264,7 @@ module PartCodecs =
         | PartValue.Reminder _
         | PartValue.Party _ -> true
         | PartValue.Note value -> not value.Removed
+        | PartValue.Link value -> not value.Removed
         | PartValue.Person value -> value.Profile <> ProfileValue.Absent
 
     let private available =
@@ -261,6 +275,7 @@ module PartCodecs =
         | PartValue.Reminder value -> value.Plan.IsSome
         | PartValue.Note value -> value.Removed || value.Text.IsSome
         | PartValue.Party value -> value.Content.IsSome
+        | PartValue.Link value -> value.Removed || value.Content.IsSome
         | PartValue.Person value ->
             match value.Profile with
             | ProfileValue.Present None -> false
@@ -391,6 +406,18 @@ module PartCodecs =
             |> map
                 (fun content -> PartValue.Party { retained with Content = Some content })
                 (party (fun value -> value.Content |> Option.defaultWith wrong))
+        | PartValue.Link retained ->
+            let content = link (fun value -> value.Content |> Option.defaultWith wrong)
+
+            (record (fun target note ->
+                PartValue.Link
+                    { retained with
+                        Content = Some { Target = target; Note = note }
+                    })
+            : Fields<PartValue, _>)
+            |> field "target" (content >> _.Target) caseId
+            |> optionalField "note" (content >> _.Note) (scalar NoteText.parse NoteText.format)
+            |> build
         | PartValue.Person retained ->
             profile
             |> map
@@ -415,6 +442,7 @@ module PartCodecs =
                 value.Entry
                 |> Option.forall (fun entry -> OperationId.value (PaymentEntry.id entry) = partId)
             | PartValue.Note value -> not value.Removed || value.Text.IsNone
+            | PartValue.Link value -> not value.Removed || value.Content.IsNone
             | _ -> true
 
         if not valid then

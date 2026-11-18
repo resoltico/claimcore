@@ -179,6 +179,9 @@ module internal Queries =
                                                         Outcome.Failed
                                                             CoreFault.StoreIntegrityError
                                                 | Ok items, Ok notes ->
+                                                    let! relatedCases =
+                                                        CaseLinkReads.read services tx view record
+
                                                     let! matchedReference =
                                                         CaseIdentityReads.matchedEarlier
                                                             tx
@@ -205,6 +208,8 @@ module internal Queries =
                                                                     { current with
                                                                         MatchedReference =
                                                                             matchedReference
+                                                                        RelatedCases =
+                                                                            relatedCases
                                                                         Disposition = disposition
                                                                         NextActions = items
                                                                         Notes = notes.Notes

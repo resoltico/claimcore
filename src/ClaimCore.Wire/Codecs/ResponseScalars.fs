@@ -77,6 +77,7 @@ module ResponseScalars =
 
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
     let noteId = uuid |> map (NoteId.create >> Option.get) NoteId.value
+    let linkId = uuid |> map (LinkId.create >> Option.get) LinkId.value
     let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
