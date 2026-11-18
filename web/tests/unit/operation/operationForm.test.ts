@@ -24,7 +24,7 @@ const correction = (registrationChoice: string, decisionChoice: string) => {
       }),
     ),
     "group:registration": registrationChoice,
-    "field:policyNumber": authored.registration.policyNumber!,
+    "field:policyNumber": authored.registration.policyNumber,
     "field:claimedAmount": authored.registration.claimedAmount,
     "field:claimedCurrency": authored.registration.claimedCurrency,
     "group:decision": decisionChoice,

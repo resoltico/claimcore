@@ -81,7 +81,7 @@ export const reviewSeeds = (
   inputs: OperationSubmission["inputs"],
 ): Readonly<Record<string, InputAtom>> => {
   const values: Record<string, InputAtom> = {};
-  for (const [key, value] of Object.entries(inputs)) {
+  for (const [key, value] of Object.entries<unknown>(inputs)) {
     if (
       value === null ||
       typeof value === "string" ||
