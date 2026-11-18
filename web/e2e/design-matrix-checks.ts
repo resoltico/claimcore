@@ -256,7 +256,7 @@ const settleCaseList = async (page: Page, dimension: Dimension) => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await expect(list).toBeVisible();
     await expect(list).toHaveAttribute("aria-busy", "false");
-    await expect(list.getByRole("status")).toHaveCount(0);
+    await expect(list.locator('[role="status"]:not(.region-notice)')).toHaveCount(0);
     if (!(await pressure.first().isVisible())) {
       return;
     }

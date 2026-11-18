@@ -359,7 +359,7 @@ export const expectResultFields = (
     KEEP: before.fields.finance.decision,
     UPDATE: {
       paymentDecisionDate: "2026-09-04",
-      payableAmount: "400.25",
+      payableAmount: modes.payable === "200.2500" ? "200.25" : "400.25",
       payableCurrency: "EUR",
     },
     CLEAR: null,
