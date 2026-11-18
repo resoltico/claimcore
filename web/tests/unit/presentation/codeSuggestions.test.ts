@@ -11,8 +11,7 @@ it("ranks exact LV above name matches and US code prefix above a name substring"
   expect(rankCodeSuggestions(countries, "lv", "en")[0]?.code).toBe("LV");
   for (const option of presentationLanguageOptions) {
     expect(
-      rankCodeSuggestions(codeSuggestions(option.value, false, "Unknown"), "LV", option.value)[0]
-        ?.code,
+      rankCodeSuggestions(codeSuggestions(option.value, false), "LV", option.value)[0]?.code,
     ).toBe("LV");
   }
   expect(
@@ -27,10 +26,11 @@ it("ranks exact LV above name matches and US code prefix above a name substring"
   ).toBe("USD");
 });
 it("puts German DE first and offers neither retired nor pseudo codes", () => {
-  const countries = codeSuggestions("de", false, "Unbekannt oder international");
+  const countries = codeSuggestions("de", false);
   expect(rankCodeSuggestions(countries, "DE", "de")[0]?.code).toBe("DE");
   expect(countries.map((item) => item.code)).not.toContain("DD");
+  expect(countries.map((item) => item.code)).not.toContain("ZZ");
   expect(countries.map((item) => item.code)).not.toContain("XA");
   expect(countries.map((item) => item.code)).toContain("XK");
-  expect(codeSuggestions("en", true, "Unknown").map((item) => item.code)).not.toContain("XXX");
+  expect(codeSuggestions("en", true).map((item) => item.code)).not.toContain("XXX");
 });

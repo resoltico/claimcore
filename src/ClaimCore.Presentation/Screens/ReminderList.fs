@@ -30,7 +30,7 @@ module ReminderListScreen =
                 (FieldPresentation.labelId BusinessField.ClaimantName)
                 Prominence.Secondary
                 false
-                (fun item -> PresentedValue.Party item.ClaimantName)
+                (fun item -> optional PresentedValue.Party item.ClaimantName)
             column
                 "responsible"
                 "field.responsibleActor.label"

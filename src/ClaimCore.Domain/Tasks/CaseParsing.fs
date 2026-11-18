@@ -4,7 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Inputs
 
 module internal CaseParsing =
-    /// Keep independently parsed scalars through current admission and chronology checks.
+    /// Keep independently parsed scalars through current admission.
     let values (inputs: InputMap) =
         inputs.Values
         |> Map.toList
@@ -88,23 +88,3 @@ module internal CaseParsing =
         updates RecordGroup.Decision values
         |> DecisionUpdateInput.parsePreparedWith admit
         |> Parsing.group
-
-    let chronology
-        before
-        opening
-        clearing
-        (values: Map<BusinessField, Result<Admitted option, Violation>>)
-        =
-        let dates =
-            values
-            |> Map.toList
-            |> List.choose (fun (field, parsed) ->
-                if (BusinessField.describe field).Kind = FieldValueKind.CalendarDate then
-                    Some(
-                        field,
-                        parsed |> Result.toOption |> Option.flatten |> Option.map FieldValue.date
-                    )
-                else
-                    None)
-
-        CaseAdmission.preparedChronology before opening clearing dates

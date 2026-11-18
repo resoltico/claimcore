@@ -16,7 +16,6 @@ type TextFormatConstraints =
     {
         MinimumCharacters: int
         Grammar: string option
-        UnknownCode: string option
     }
 
 type ScalarTextConstraints =
@@ -168,7 +167,6 @@ module internal ScalarText =
                 {
                     MinimumCharacters = 1
                     Grammar = grammar
-                    UnknownCode = None
                 }
             MaximumCharacters = maximum
         }
@@ -223,18 +221,9 @@ module CountryCode =
     let Characters = 2
 
     let Grammar = "[A-Z]{" + Characters.ToString(CultureInfo.InvariantCulture) + "}"
-    let unknown = CountryCode "ZZ"
     let format (CountryCode value) = value
 
-    let descriptor =
-        let value = ScalarText.descriptor (Some Grammar) None
-
-        { value with
-            Format =
-                { value.Format with
-                    UnknownCode = Some(format unknown)
-                }
-        }
+    let descriptor = ScalarText.descriptor (Some Grammar) None
 
     let parse value =
         ScalarText.token Grammar Violation.CountryFormat value

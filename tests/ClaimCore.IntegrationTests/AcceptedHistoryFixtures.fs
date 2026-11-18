@@ -170,7 +170,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format (Registration.claimant (fields.Registration)))
+                (PartyName.format (Registration.claimant (fields.Registration) |> Option.get))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"

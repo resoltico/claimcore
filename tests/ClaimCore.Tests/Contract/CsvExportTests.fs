@@ -299,8 +299,9 @@ let completeByteGoldens =
                     Reminder = reminder
                     Reference = reference
                     ClaimantName =
-                        (PartyName.parse claimantName
-                         |> Result.defaultWith (fun _ -> failtest "Claimant"))
+                        ((PartyName.parse claimantName
+                          |> Result.defaultWith (fun _ -> failtest "Claimant")))
+                        |> Some
                     Responsible = None
                     RecordedAt = changed
                     RecordedBy = actor

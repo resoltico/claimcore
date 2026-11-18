@@ -12,15 +12,6 @@ const issue: HumanInputIssue = {
     messageId: "label.before",
     arguments: [],
   },
-  related: {
-    key: "limit-date",
-    labelId: "field.paymentDate.label",
-    prominence: "PRIMARY",
-    value: {
-      kind: "DATE",
-      value: "2026-11-09",
-    },
-  },
 };
 const rejection = (issues: ReadonlyArray<HumanInputIssue>): HumanRejection => ({
   kind: "INPUT",
@@ -41,11 +32,11 @@ const rejection = (issues: ReadonlyArray<HumanInputIssue>): HumanRejection => ({
     },
   },
 });
-it("keeps an unbound semantic issue visible with its supplied related value", () => {
+it("keeps an unbound semantic issue visible", () => {
   const value = rejection([issue]);
   const projection = projectTaskIssues([issue], operationTask("people.admit"), {});
   expect(projection.unbound).toEqual([issue]);
-  const view = render(
+  render(
     <OperationErrors
       model={{
         notice: {
@@ -58,7 +49,6 @@ it("keeps an unbound semantic issue visible with its supplied related value", ()
     />,
   );
   expect(screen.getByText("Before")).toBeVisible();
-  expect(view.container.querySelector('time[datetime="2026-11-09"]')).toBeVisible();
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
 });
 it("focuses the submitted row key even when its displayed order differs", async () => {
@@ -66,7 +56,6 @@ it("focuses the submitted row key even when its displayed order differs", async 
     ...issue,
     input: "input:role",
     row: 1,
-    related: null,
   };
   const value = rejection([row]);
   const projection = projectTaskIssues([row], operationTask("people.admit"), {

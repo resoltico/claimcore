@@ -9,7 +9,7 @@ module FieldPresentation =
     let private factOrder =
         [
             BusinessField.IncidentDate
-            BusinessField.IncidentNotificationDate
+            BusinessField.ReceivedDate
             BusinessField.IncidentCountry
             BusinessField.IncidentDescription
             BusinessField.PolicyNumber
@@ -46,7 +46,7 @@ module FieldPresentation =
         | BusinessField.CaseReference
         | BusinessField.PayableAmount
         | BusinessField.PayableCurrency -> Prominence.Primary
-        | BusinessField.IncidentNotificationDate
+        | BusinessField.ReceivedDate
         | BusinessField.InsurerName -> Prominence.Secondary
         | _ -> Prominence.Detail
 
@@ -87,7 +87,6 @@ module FieldPresentation =
                             Grammar =
                                 Some
                                     "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                            UnknownCode = None
                         }
                     MaximumCharacters = Some 36
                 }

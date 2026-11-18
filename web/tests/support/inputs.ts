@@ -57,7 +57,7 @@ export const registration = (
   changes: Partial<CaseFields["registration"]> = {},
 ): CaseFields["registration"] => ({
   incidentDate: "2026-09-01",
-  incidentNotificationDate: "2026-09-02",
+  receivedDate: "2026-09-02",
   incidentCountry: "LV",
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",

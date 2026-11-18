@@ -203,18 +203,16 @@ module HumanDocumentCodecs =
         |> named "TaskRowOrdinal"
 
     let private issue =
-        (record (fun input row message related ->
+        (record (fun input row message ->
             {
                 HumanInputIssue.Input = input
                 Row = row
                 Message = message
-                Related = related
             })
         : Fields<HumanInputIssue, _>)
         |> field "input" _.Input input
         |> field "row" _.Row (nullable row)
         |> field "message" _.Message PresentationCodecs.message
-        |> field "related" _.Related (nullable PresentationCodecs.entry)
         |> build
         |> named "HumanInputIssue"
 

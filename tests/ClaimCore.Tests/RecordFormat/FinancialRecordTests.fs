@@ -12,7 +12,7 @@ let private accepted value =
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 
 let private snapshot =
-    """{"caseId":"019aa6a0-0000-7000-8000-000000000001","revision":3,"state":{"kind":"ACTIVE","fields":{"caseReference":"FIN-1","status":"OPENED","registration":{"incidentDate":"2026-01-01","incidentNotificationDate":"2026-01-02","incidentCountry":"LV","claimantName":"Claimant","insurerName":"Insurer","claimedAmount":"100","claimedCurrency":"EUR"},"finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"paidAmount":"0","paymentCount":0,"firstPaymentDate":null,"lastPaymentDate":null}}}}"""
+    """{"caseId":"019aa6a0-0000-7000-8000-000000000001","revision":3,"state":{"kind":"ACTIVE","fields":{"caseReference":"FIN-1","status":"OPENED","registration":{"incidentDate":"2026-01-01","receivedDate":"2026-01-02","incidentCountry":"LV","claimantName":"Claimant","insurerName":"Insurer","claimedAmount":"100","claimedCurrency":"EUR"},"finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"paidAmount":"0","paymentCount":0,"firstPaymentDate":null,"lastPaymentDate":null}}}}"""
 
 [<Tests>]
 let tests =

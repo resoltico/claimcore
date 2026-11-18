@@ -96,13 +96,13 @@ let tests =
                         (Some(bounds "2026-01-11" "2026-01-11")))
                     "No overpayment"
 
-                Expect.isError
+                Expect.isOk
                     (FinancialPosition.create
                         (Some(decision "10" "EUR"))
                         (amount "1")
                         1L
                         (Some(bounds "2026-01-09" "2026-01-09")))
-                    "No payment before its decision")
+                    "A payment date may precede the decision")
             testCase
                 "progress and same-currency totals are derived including zero payable"
                 (fun () ->

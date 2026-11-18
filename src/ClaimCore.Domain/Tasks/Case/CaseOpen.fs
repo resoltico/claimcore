@@ -18,7 +18,7 @@ let declaration =
         (operation
          :: (required (field BusinessField.CaseReference) |> retained)
          :: revision
-         :: group TaskInputMode.Required RecordGroup.Registration)
+         :: group TaskInputMode.Optional RecordGroup.Registration)
 
 let private capability = List.exactlyOne declaration.Capabilities
 
@@ -106,14 +106,7 @@ let decide
                 Ok()
             else
                 Error(Refusal.revisionConflict Revision.zero))
-        |> Result.bind (fun () ->
-            let parsed = parse (CaseAdmission.fieldAdmission today None) reference fields
-
-            Admission.map2
-                (fun command () -> command)
-                parsed
-                (CaseParsing.chronology None true false fields)
-            |> CaseInput.ordered)
+        |> Result.bind (fun () -> parse (CaseAdmission.fieldAdmission today None) reference fields)
         |> Result.map (fun command ->
             let id = CaseId.ofOperationId context.Stamp.OperationId
 

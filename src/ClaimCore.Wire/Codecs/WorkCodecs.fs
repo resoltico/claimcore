@@ -57,7 +57,7 @@ module WorkCodecs =
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
-        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
+        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName (nullable partyName)
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef

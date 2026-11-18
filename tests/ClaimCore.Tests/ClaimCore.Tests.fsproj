@@ -131,7 +131,7 @@
     <Compile Include="RecordFormat/FinancialRecordTests.fs" />
     <Compile Include="RecordFormat/PaymentCursorTests.fs" />
     <Compile Include="RecordFormat/RecordBuilders.fs" />
-    <Compile Include="RecordFormat/CaseSnapshotChronologyTests.fs" />
+    <Compile Include="RecordFormat/CaseSnapshotRegistrationTests.fs" />
     <Compile Include="RecordFormat/CompartmentTests.fs" />
     <Compile Include="RecordFormat/OperationStructureTests.fs" />
     <Compile Include="RecordFormat/OperationRootTests.fs" />

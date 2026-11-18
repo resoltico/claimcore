@@ -95,7 +95,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 id ()
                 "--incident-date"
                 "2026-09-01"
-                "--incident-notification-date"
+                "--received-date"
                 "2026-09-02"
                 "--incident-country"
                 "LV"

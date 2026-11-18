@@ -50,24 +50,8 @@ let private opening overrides =
 
 let private chronologyTests =
     testList
-        "chronology"
+        "observed dates"
         [
-            testCase "decision before notification is rejected" (fun () ->
-                Expect.isTrue
-                    (opened ()
-                     |> apply
-                         "case.decide"
-                         (ClaimCore.Tests.TaskBuilders.decisionInputs "2026-08-02" "750" "EUR")
-                     |> isInvalid)
-                    "Chronology")
-            testCase "payment before decision is rejected" (fun () ->
-                Expect.isTrue
-                    (decided ()
-                     |> apply
-                         "case.recordPayment"
-                         (ClaimCore.Tests.TaskBuilders.paymentInputs "2026-08-14" "750" "EUR")
-                     |> isInvalid)
-                    "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
@@ -107,7 +91,9 @@ let private precisionAndRoundTripTests =
                 let claim = opening [ BusinessField.ClaimedAmount, maximum ] |> accepted
 
                 Expect.equal
-                    (Registration.claimed ((viewFields claim).Registration) |> Money.format)
+                    (Registration.claimed ((viewFields claim).Registration)
+                     |> Option.get
+                     |> Money.format)
                     maximum
                     "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
@@ -182,7 +168,9 @@ let private authoredUnicodeRoundTrip () =
         let snapshot = opening [ BusinessField.ClaimantName, value ] |> accepted
 
         Expect.equal
-            (Registration.claimant ((viewFields snapshot).Registration) |> PartyName.format)
+            (Registration.claimant ((viewFields snapshot).Registration)
+             |> Option.get
+             |> PartyName.format)
             value
             "Authored scalar content remains exact."
 

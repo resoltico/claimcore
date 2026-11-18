@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Reģistrēt notikumu, prasītāju, apdrošinātāju un pieprasīto summu.",
-    "source": "bd4ea9e91f3a"
+    "text": "Atveriet lietu ar atsauci. Ierakstiet zināmos reģistrācijas faktus.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "Izveidot pirmo īpašnieku",
@@ -319,9 +319,9 @@
     "text": "Nākamā darbība",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "Paziņošanas datums (vecākie vispirms)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "Saņemts (senākais vispirms)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "Nesen mainītas",
@@ -367,10 +367,6 @@
     "text": "Lietas numurs jau pastāv.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "Šie datumi ir nepareizā secībā.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "Vadības rakstzīmes nav atļautas.",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "Izmantojiet oficiāli piešķirtu ISO 3166-1 valsts kodu, XK vai ZZ. Atbalstītos kodus skatiet help schema.",
-    "source": "b1c9f16ea7e3"
+    "text": "Izmantojiet oficiāli piešķirtu ISO 3166-1 valsts kodu vai XK. Atbalstītie kodi ir norādīti palīdzības shēmā.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "Izmantojiet atbalstītu aktīvu ISO 4217 valūtas kodu. Fondu un citi ar valstu valūtām nesaistīti kodi netiek pieņemti. Skatiet help schema.",
@@ -671,9 +667,9 @@
     "text": "Negadījuma apraksts",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "Paziņošanas datums",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "Saņemts",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "Apdrošinātājs",
@@ -1175,10 +1171,6 @@
     "text": "Maksājumu reģistrētājs",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "Nezināms vai starptautisks",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "Viena lieta",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "Kad notika negadījums.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "Kad pirmoreiz saņēmāt ziņu par šo negadījumu.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "Kad jūsu birojs saņēma šo atlīdzības pieteikumu.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "Izmantojiet oficiāli piešķirtu ISO 3166-1 kodu vai XK. {unknownCode} nozīmē, ka valsts nav zināma vai ir starptautiska.",
-    "source": "0ba1fe273220"
+    "text": "Izmantojiet oficiāli piešķirtu ISO 3166-1 kodu vai XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "Kur notika negadījums.",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "Kārtot pēc atsauces, jaunākajām lietas faktu izmaiņām, paziņošanas datuma vai agrākā gaidošā atgādinājuma datuma. Faktu izmaiņas kārto no jaunākajām; paziņošanas un atgādinājumu datumus — no senākajiem, nenorādītus datumus atstājot beigās. Vienādas vērtības atšķir atsauce.",
-    "source": "009775c9c5fe"
+    "text": "Kārtojiet pēc atsauces, pēdējās lietas faktu izmaiņas, saņemšanas datuma vai agrākā neizpildītā atgādinājuma datuma. Faktu izmaiņas kārto no jaunākajām. Saņemšanas un atgādinājumu datumus kārto no senākajiem, un trūkstošie datumi ir beigās. Vienādus ierakstus kārto pēc atsauces.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "Izvēlieties rezultātu kārtošanas veidu.",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "Izvēlieties atbalstītu valsts kodu, piemēram, LV, vai XK vai ZZ.",
-    "source": "d1667b590685"
+    "text": "Izvēlieties atbalstītu valsts kodu, piemēram, LV vai XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "Izvēlieties atbalstītu valūtas kodu, piemēram, EUR. Fondu un citi ar valstu valūtām nesaistīti kodi netiek pieņemti.",

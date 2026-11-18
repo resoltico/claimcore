@@ -136,7 +136,7 @@
         "inputs": {
           "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
           "field:claimantName": "x",
           "field:insurerName": "x",
@@ -169,7 +169,7 @@
         "inputs": {
           "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
           "field:claimantName": "x",
           "field:insurerName": "x",
@@ -301,7 +301,7 @@
         "inputs": {
           "group:registration": "UPDATE",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
           "field:claimantName": "x",
           "field:insurerName": "x",
@@ -425,7 +425,7 @@
         "inputs": {
           "group:registration": "UPDATE",
           "field:incidentDate": "2026-01-01",
-          "field:incidentNotificationDate": "2026-01-01",
+          "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
           "field:claimantName": "x",
           "field:insurerName": "x",

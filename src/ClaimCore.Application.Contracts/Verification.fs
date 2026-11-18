@@ -29,7 +29,7 @@ type VerificationFinding =
     | CaseSearchProjection
     | CaseNotesProjection
     | CaseWorkProjection
-    | CaseNotifiedOnProjection
+    | CaseReceivedOnProjection
     | CaseClaimedAmountProjection
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection

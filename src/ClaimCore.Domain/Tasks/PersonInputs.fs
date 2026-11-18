@@ -53,7 +53,6 @@ module internal PersonInputs =
                                 InputTarget.ProfileContact
                         Violation = violation
                         GrantRow = None
-                        RelatedDate = None
                     })
                 |> InputIssues.ofList
                 |> Option.get
@@ -75,7 +74,6 @@ module internal PersonInputs =
                                 InputTarget.ProfileContact
                         Violation = violation
                         GrantRow = None
-                        RelatedDate = None
                     })
                 |> InputIssues.ofList
                 |> Option.get

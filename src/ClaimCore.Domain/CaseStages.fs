@@ -100,7 +100,7 @@ module CaseStages =
                             step
                                 CaseStageKind.Opened
                                 (Some opened)
-                                (Some(Registration.claimed fields.Registration))
+                                (Registration.claimed fields.Registration)
                             step
                                 CaseStageKind.Decided
                                 (fields.Decision |> Option.map Decision.date)

@@ -51,7 +51,7 @@ let private openFrame operationId reference =
         ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "2026-09-01"
-                BusinessField.IncidentNotificationDate, "2026-09-02"
+                BusinessField.ReceivedDate, "2026-09-02"
                 BusinessField.IncidentCountry, "LV"
                 BusinessField.ClaimantName, "Restore claimant"
                 BusinessField.InsurerName, "Restore insurer"

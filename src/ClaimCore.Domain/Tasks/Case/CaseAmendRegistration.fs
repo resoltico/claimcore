@@ -67,20 +67,11 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
 
             let admit = CaseAdmission.fieldAdmission today before
 
-            let! command =
-                Admission.map2
-                    (fun command () -> command)
-                    (parse admit fields)
-                    (CaseParsing.chronology before false false fields)
-                |> CaseInput.ordered
-                |> Parsing.reject
+            let! command = parse admit fields |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
 
-            let! registration =
-                RegistrationUpdate.apply command.Update content.Registration
-                |> CaseInput.registrationMerge
-                |> Parsing.reject
+            let registration = RegistrationUpdate.apply command.Update content.Registration
 
             return
                 [

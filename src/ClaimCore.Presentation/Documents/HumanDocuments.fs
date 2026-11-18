@@ -63,7 +63,6 @@ type HumanInputIssue =
         Input: TaskInputId
         Row: TaskRowTarget option
         Message: PresentedMessage
-        Related: Entry option
     }
 
 [<RequireQualifiedAccess>]

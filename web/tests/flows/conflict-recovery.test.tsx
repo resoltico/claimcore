@@ -725,7 +725,6 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
                 {
                   input: "field:claimantName",
                   row: null,
-                  related: null,
                   message: {
                     messageId: "diagnostic.TEXT_REQUIRED",
                     arguments: [],

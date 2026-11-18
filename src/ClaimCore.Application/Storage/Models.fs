@@ -171,7 +171,7 @@ type internal ReminderRow =
     {
         Stored: StoredReminder
         Reference: CaseReference
-        ClaimantName: PartyName
+        ClaimantName: PartyName option
         Responsible: ActorId option
         Lifecycle: Lifecycle
         Status: CaseStatus option

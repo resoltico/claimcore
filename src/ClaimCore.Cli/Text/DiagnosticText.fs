@@ -151,15 +151,7 @@ module internal DiagnosticText =
 
                     label rendering (diagnosticTargetIdentity issue.Target)
                     + ": "
-                    + render code parameters
-                    + (match issue.RelatedDate with
-                       | None -> ""
-                       | Some related ->
-                           " ("
-                           + label rendering (FieldPresentation.labelId related.Field)
-                           + ": "
-                           + CalendarDate.format related.Value
-                           + ")"))
+                    + render code parameters)
             | Refusal.Access(AccessRefusal.NotAuthorized required) ->
                 let names = requiredRoles rendering required
 

@@ -49,19 +49,7 @@ module ScalarGuidance =
                     "scalar.currency.guidance"
                     [ "length", GuidanceArgument.Count Money.descriptor.Currency.ExactCharacters ]
             )
-        | FieldValueKind.Country ->
-            Some(
-                message
-                    "scalar.country.guidance"
-                    [
-                        "unknownCode",
-                        GuidanceArgument.Code(
-                            CountryCode.descriptor.Format.UnknownCode
-                            |> Option.defaultWith (fun () ->
-                                invalidOp "Country guidance requires the Domain unknown code.")
-                        )
-                    ]
-            )
+        | FieldValueKind.Country -> Some(message "scalar.country.guidance" [])
         // The reference descriptor publishes its retained grammar; the owning scalar module supplies its bound.
         | FieldValueKind.Reference ->
             Some(

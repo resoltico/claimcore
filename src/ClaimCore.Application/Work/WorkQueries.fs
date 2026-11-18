@@ -127,13 +127,12 @@ module internal WorkQueries =
                                                                                 CaseState.fields
                                                                                     parent.Snapshot
                                                                                         .State
-                                                                                |> Option.map
+                                                                                |> Option.bind
                                                                                     (fun fields ->
                                                                                         Registration
                                                                                             .claimant
                                                                                             fields
                                                                                                 .Registration)
-                                                                                |> Option.get
                                                                             Responsible =
                                                                                 work.Responsible
                                                                             RecordedAt =

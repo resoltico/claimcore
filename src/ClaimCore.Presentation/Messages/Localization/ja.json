@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "事故、請求者、保険会社、請求額を登録します。",
-    "source": "bd4ea9e91f3a"
+    "text": "参照番号を指定して案件を開きます。分かっている登録情報を記録してください。",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "最初の所有者を設定",
@@ -319,9 +319,9 @@
     "text": "次の対応",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "通知日（古い順）",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "受付日（古い順）",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "最近の変更",
@@ -367,10 +367,6 @@
     "text": "この案件番号は既に存在します。",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "日付の順序が正しくありません。",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "制御文字は使用できません。",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "ISO 3166-1で正式に割り当てられた国コード、XK、またはZZを使用してください。対応コードはhelp schemaで確認できます。",
-    "source": "b1c9f16ea7e3"
+    "text": "ISO 3166-1で正式に割り当てられた国コード、またはXKを使用してください。対応コードはヘルプのスキーマを参照してください。",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "対応する有効なISO 4217通貨コードを使用してください。ファンドや非国家通貨のコードは使用できません。help schemaを参照してください。",
@@ -671,9 +667,9 @@
     "text": "事故の説明",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "通知日",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "受付日",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "保険会社",
@@ -1175,10 +1171,6 @@
     "text": "支払記録担当者",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "不明または国際",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "1つの案件",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "事故が発生した日。",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "この事故を最初に知った日。",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "貴所でこの請求を受け付けた日です。",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "ISO 3166-1で正式に割り当てられたコード、またはXKを使用してください。{unknownCode}は不明または国際を表します。",
-    "source": "0ba1fe273220"
+    "text": "ISO 3166-1で正式に割り当てられたコード、またはXKを使用してください。",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "事故が発生した国。",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "案件番号、案件情報の最終変更、通知日、最も早い未完了リマインダーの日付で並べ替えます。情報の変更は新しい順、通知日とリマインダーの日付は古い順とし、日付がないものは最後に置きます。同じ値の場合は案件番号順です。",
-    "source": "009775c9c5fe"
+    "text": "参照番号、案件情報の最終変更、受付日、または未完了の最も早いリマインダー日で並べ替えます。変更は新しい順、受付日とリマインダー日は古い順で、日付がないものは最後です。同順位は参照番号順です。",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "結果の並び順を選択してください。",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "LVなどの対応国コード、またはXK、ZZを選択してください。",
-    "source": "d1667b590685"
+    "text": "LVやXKなど、対応する国コードを選択してください。",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "EURなどの対応通貨コードを選択してください。ファンドや非国家通貨のコードは使用できません。",

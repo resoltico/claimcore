@@ -71,7 +71,7 @@ let tests =
                     for witness in
                         [
                             "Fact changes sort newest first"
-                            "notification and reminder dates sort oldest first"
+                            "Received and reminder dates sort oldest first"
                             "missing dates last"
                             "Reference breaks ties"
                         ] do

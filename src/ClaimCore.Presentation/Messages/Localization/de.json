@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Den Vorfall, den Anspruchsteller, den Versicherer und den geforderten Betrag registrieren.",
-    "source": "bd4ea9e91f3a"
+    "text": "Eröffnen Sie einen Fall mit einem Aktenzeichen. Erfassen Sie die bekannten Angaben.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "Ersten Inhaber einrichten",
@@ -319,9 +319,9 @@
     "text": "Nächste Wiedervorlage",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "Meldedatum (älteste zuerst)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "Eingegangen (älteste zuerst)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "Zuletzt geändert",
@@ -367,10 +367,6 @@
     "text": "Das Aktenzeichen ist bereits vorhanden.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "Diese Datumsangaben stehen in der falschen Reihenfolge.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "Steuerzeichen sind nicht erlaubt.",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Ländercode, XK oder ZZ. Unterstützte Codes finden Sie unter help schema.",
-    "source": "b1c9f16ea7e3"
+    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Ländercode oder XK. Die unterstützten Codes finden Sie im Hilfeschema.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "Verwenden Sie einen unterstützten aktiven ISO-4217-Währungscode. Fonds- und nicht nationale Codes werden nicht angenommen. Siehe help schema.",
@@ -671,9 +667,9 @@
     "text": "Vorfallsbeschreibung",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "Meldedatum",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "Eingegangen",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "Versicherer",
@@ -1175,10 +1171,6 @@
     "text": "Zahlungserfassung",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "Unbekannt oder international",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "Ein Fall",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "Wann der Vorfall geschah.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "Wann Sie erstmals von diesem Vorfall erfahren haben.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "Wann Ihre Stelle diesen Anspruch erhalten hat.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Code oder XK. {unknownCode} bedeutet unbekannt oder international.",
-    "source": "0ba1fe273220"
+    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Code oder XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "Wo der Vorfall geschah.",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "Nach Aktenzeichen, letzter Falldatenänderung, Meldedatum oder frühestem Datum ausstehender Wiedervorlagen sortieren. Datenänderungen stehen mit den neuesten zuerst, Melde- und Wiedervorlagesdaten mit den ältesten zuerst; fehlende Daten stehen zuletzt. Bei Gleichstand entscheidet das Aktenzeichen.",
-    "source": "009775c9c5fe"
+    "text": "Sortieren Sie nach Aktenzeichen, letzter Änderung der Falldaten, Eingangsdatum oder frühestem offenen Erinnerungstermin. Änderungen erscheinen absteigend. Eingangs- und Erinnerungstermine erscheinen aufsteigend, fehlende Daten zuletzt. Bei Gleichstand entscheidet das Aktenzeichen.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "Wählen Sie die Sortierung der Ergebnisse.",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "Wählen Sie einen unterstützten Ländercode, etwa LV, oder XK oder ZZ.",
-    "source": "d1667b590685"
+    "text": "Wählen Sie einen unterstützten Ländercode, etwa LV oder XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "Wählen Sie einen unterstützten Währungscode, etwa EUR. Fonds- und nicht nationale Codes werden nicht angenommen.",

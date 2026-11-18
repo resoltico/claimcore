@@ -68,32 +68,25 @@ let tests =
                          |> List.exists (fun issue ->
                              issue.Violation = Violation.PaymentExceedsPayable))
                         "Payable cannot fall below paid")
-            testCase "independent malformed money and chronology controls accumulate" (fun () ->
+            testCase "a decision can predate receipt" (fun () ->
                 let state = family ()
 
-                let issues =
+                let updated =
                     Decide.decide
                         (context 2)
                         environment
                         (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
-                        (decisionInputs "2026-01-01" "not-money" "EUR")
-                    |> expectInputs
+                        (decisionInputs "2026-01-01" "20" "EUR")
+                    |> accepted
+                    |> apply state
 
-                Expect.isTrue
-                    (issues
-                     |> List.exists (fun issue ->
-                         issue.Input =
-                             TaskInputId.Target(InputTarget.Field BusinessField.PayableAmount)))
-                    "Money issue"
-
-                Expect.isTrue
-                    (issues
-                     |> List.exists (fun issue ->
-                         issue.RelatedDate
-                         |> Option.exists (fun related ->
-                             related.Field = BusinessField.IncidentNotificationDate)))
-                    "Chronology survives incomplete money")
+                Expect.equal
+                    (updated.Case.Value.Content
+                     |> Option.bind (fun content -> content.Finance.Decision)
+                     |> Option.map (Decision.date >> CalendarDate.format))
+                    (Some "2026-01-01")
+                    "The authored decision date survives admission")
             testCase "malformed syntax keeps complete input advice ahead of stale state" (fun () ->
                 let state = decided ()
 
@@ -139,7 +132,7 @@ let tests =
                     let content = after.Case.Value.Content |> Option.get
 
                     Expect.equal
-                        (Money.currency (Registration.claimed content.Registration))
+                        (Money.currency (Registration.claimed content.Registration |> Option.get))
                         "EUR"
                         "The original claim is unchanged"
 

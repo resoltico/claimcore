@@ -36,7 +36,6 @@ module internal Parsing =
                     InputIssue.Target = InputTarget.Field field
                     Violation = violation
                     GrantRow = None
-                    RelatedDate = None
                 })
             |> InputIssues.ofList
             |> Option.get

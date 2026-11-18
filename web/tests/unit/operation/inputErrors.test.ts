@@ -18,13 +18,11 @@ it("maps supplied HUMAN input identities in their original order without reconst
       {
         input: "field:incidentDate",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
       {
         input: "field:claimantName",
         row: null,
-        related: null,
         message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
     ],

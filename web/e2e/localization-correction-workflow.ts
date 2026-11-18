@@ -39,7 +39,7 @@ type SeedStep = Readonly<{
 }>;
 const setupRegistration = {
   incidentDate: "2026-09-01",
-  incidentNotificationDate: "2026-09-02",
+  receivedDate: "2026-09-02",
   incidentCountry: "LV",
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
@@ -174,7 +174,7 @@ const acceptSetup = async (
       case "case.open":
         return [
           "incidentDate",
-          "incidentNotificationDate",
+          "receivedDate",
           "incidentCountry",
           "incidentDescription",
           "policyNumber",

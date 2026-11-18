@@ -201,7 +201,6 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
             {
               input: "field:claimantName",
               row: null,
-              related: null,
               message: {
                 messageId: "diagnostic.TEXT_REQUIRED",
                 arguments: [],

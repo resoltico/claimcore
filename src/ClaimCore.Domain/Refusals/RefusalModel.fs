@@ -2,12 +2,6 @@ namespace ClaimCore.Domain
 
 open System
 
-type RelatedDate =
-    {
-        Field: BusinessField
-        Value: CalendarDate
-    }
-
 /// Ordinal in the submitted people grant collection, independent of client row identity.
 [<Struct>]
 type GrantOrdinal = private GrantOrdinal of int
@@ -25,7 +19,6 @@ type InputIssue =
     {
         Target: InputTarget
         Violation: Violation
-        RelatedDate: RelatedDate option
         GrantRow: GrantOrdinal option
     }
 
@@ -37,7 +30,6 @@ module InputIssues =
             {
                 Target = target
                 GrantRow = None
-                RelatedDate = None
                 Violation = violation
             },
             []

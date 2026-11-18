@@ -272,7 +272,7 @@
                 "status": "OPENED",
                 "registration": {
                   "incidentDate": "2026-01-01",
-                  "incidentNotificationDate": "2026-01-01",
+                  "receivedDate": "2026-01-01",
                   "incidentCountry": "LV",
                   "claimantName": "x",
                   "insurerName": "x",
@@ -1194,7 +1194,7 @@
                     "status": "OPENED",
                     "registration": {
                       "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
+                      "receivedDate": "2026-01-01",
                       "incidentCountry": "LV",
                       "claimantName": "x",
                       "insurerName": "x",
@@ -1217,7 +1217,7 @@
                 "disposition": null,
                 "recordedFields": [
                   "incidentDate",
-                  "incidentNotificationDate",
+                  "receivedDate",
                   "incidentCountry",
                   "incidentDescription",
                   "policyNumber",
@@ -1281,7 +1281,7 @@
                       "status": "OPENED",
                       "registration": {
                         "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-01",
+                        "receivedDate": "2026-01-01",
                         "incidentCountry": "LV",
                         "claimantName": "x",
                         "insurerName": "x",
@@ -1304,7 +1304,7 @@
                   "disposition": null,
                   "recordedFields": [
                     "incidentDate",
-                    "incidentNotificationDate",
+                    "receivedDate",
                     "incidentCountry",
                     "incidentDescription",
                     "policyNumber",
@@ -1372,7 +1372,7 @@
                           "status": "OPENED",
                           "registration": {
                             "incidentDate": "2026-01-01",
-                            "incidentNotificationDate": "2026-01-01",
+                            "receivedDate": "2026-01-01",
                             "incidentCountry": "LV",
                             "claimantName": "x",
                             "insurerName": "x",
@@ -1396,7 +1396,7 @@
                           "status": "OPENED",
                           "registration": {
                             "incidentDate": "2025-12-28",
-                            "incidentNotificationDate": "2025-12-29",
+                            "receivedDate": "2025-12-29",
                             "incidentCountry": "JP",
                             "claimantName": "After claimant",
                             "insurerName": "After insurer",
@@ -1431,7 +1431,7 @@
                           }
                         },
                         {
-                          "field": "incidentNotificationDate",
+                          "field": "receivedDate",
                           "before": {
                             "kind": "DATE",
                             "value": "2026-01-01"

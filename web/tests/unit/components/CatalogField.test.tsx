@@ -24,12 +24,12 @@ it.each([
   expect(screen.getByRole("combobox")).toHaveValue("LV");
   expect(screen.getByText(new RegExp(name, "u"))).toBeVisible();
 });
-it("warns for an unassigned code without blocking it and explains ZZ", () => {
+it("warns for an unassigned code without blocking it", () => {
   const view = render(<CatalogField field={country} value="QQ" onChange={vi.fn()} />);
   expect(screen.getByText("QQ is not a known country code. Check it.")).toBeVisible();
   expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-invalid", "true");
   view.rerender(<CatalogField field={country} value="ZZ" onChange={vi.fn()} />);
-  expect(screen.getByText("ZZ: Unknown or international")).toBeVisible();
+  expect(screen.getByText("ZZ: Not an assigned country code")).toBeVisible();
 });
 
 it("uses LF textarea and scalar guidance without UTF16 maxlength or truncation", () => {

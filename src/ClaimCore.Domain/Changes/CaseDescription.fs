@@ -60,7 +60,7 @@ module CaseDescription =
         let amounts =
             [
                 BusinessField.ClaimedAmount,
-                money (fun fields -> Some(Registration.claimed fields.Registration))
+                money (fun fields -> Registration.claimed fields.Registration)
                 BusinessField.PayableAmount,
                 money (fun fields -> fields.Finance.Decision |> Option.map Decision.payable)
                 BusinessField.PaidAmount,

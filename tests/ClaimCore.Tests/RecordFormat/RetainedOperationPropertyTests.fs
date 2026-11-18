@@ -62,8 +62,9 @@ let private variedCase =
             restored = record
             && (match restored.Changes.Head.Value with
                 | PartValue.Case { Content = Some content } ->
-                    PartyName.format (Registration.claimant content.Registration) = name
-                    && (Registration.claimed content.Registration |> Money.format) =
+                    PartyName.format (Registration.claimant content.Registration |> Option.get) =
+                        name
+                    && (Registration.claimed content.Registration |> Option.get |> Money.format) =
                         (Amount.parse amount |> required |> Amount.format)
                 | _ -> false)
     }

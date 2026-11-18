@@ -142,7 +142,7 @@ const completeRegistration = async (user: ReturnType<typeof userEvent.setup>) =>
     if (control === null) {
       throw new Error("An actual catalog field is required.");
     }
-    if (name === "incidentDate" || name === "incidentNotificationDate") {
+    if (name === "incidentDate" || name === "receivedDate") {
       const [year, month, day] = value.split("-");
       for (const [part, text] of [
         ["year", year!],

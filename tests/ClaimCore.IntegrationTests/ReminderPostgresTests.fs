@@ -238,7 +238,7 @@ let private dates database =
             DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, "0001-01-01"
-                    BusinessField.IncidentNotificationDate, "0001-01-01"
+                    BusinessField.ReceivedDate, "0001-01-01"
                 ]
                 registration
 
@@ -313,7 +313,7 @@ let private dates database =
 
         let notified =
             { CaseListFilter.empty with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
             }
 
         let! oldest =
@@ -343,7 +343,7 @@ let private dates database =
         let firstDate =
             (read oldestDetail).Snapshot.State
             |> CaseState.fields
-            |> Option.map (fun fields -> Registration.incidentNotificationDate fields.Registration)
+            |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
             |> Option.map CalendarDate.format
 
         Expect.equal

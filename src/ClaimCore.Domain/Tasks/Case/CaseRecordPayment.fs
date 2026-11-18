@@ -99,17 +99,10 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
                 CaseRules.admitInputs syntax context environment state binding capability
                 |> Parsing.reject
 
-            let before = state.Case.Value.Content
 
             let admit = CaseAdmission.fieldAdmission today None
 
-            let! command =
-                Admission.map2
-                    (fun command () -> command)
-                    (parse admit fields)
-                    (CaseParsing.chronology before false false fields)
-                |> CaseInput.ordered
-                |> Parsing.reject
+            let! command = parse admit fields |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
 

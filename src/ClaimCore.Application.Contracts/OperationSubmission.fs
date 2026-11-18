@@ -406,7 +406,6 @@ module OperationSubmission =
             {
                 InputIssue.Target = input
                 Violation = issue.Violation
-                RelatedDate = issue.RelatedDate
                 GrantRow = issue.Row |> Option.bind (TaskRowTarget.ordinal >> GrantOrdinal.create)
             }
 

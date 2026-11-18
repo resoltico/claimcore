@@ -611,7 +611,7 @@ it("keeps date entry ownership through unrelated edits and clears only omitted o
             },
           ],
         },
-        "field:incidentNotificationDate": {
+        "field:receivedDate": {
           canonical: "",
           parts: [
             {
@@ -635,7 +635,7 @@ it("keeps date entry ownership through unrelated edits and clears only omitted o
     omitted: ["field:incidentDate"],
   });
   expect(omitted.draft.dateEntries).toEqual({
-    "field:incidentNotificationDate": {
+    "field:receivedDate": {
       canonical: "",
       parts: [
         {
@@ -736,7 +736,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         inputs: {
           "field:caseReference": "OWN-REF",
           "field:incidentDate": "2026-09-01",
-          "field:incidentNotificationDate": "2026-09-02",
+          "field:receivedDate": "2026-09-02",
           "field:incidentCountry": "LV",
           "field:claimantName": "Synthetic claimant",
           "field:insurerName": "Synthetic insurer",

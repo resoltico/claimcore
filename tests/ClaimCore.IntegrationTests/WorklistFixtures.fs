@@ -330,7 +330,7 @@ let expected (filter: CaseListFilter<string>) =
             |> List.sortWith (fun a b ->
                 StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
         | CaseListOrder.Recent -> recent
-        | CaseListOrder.Notified ->
+        | CaseListOrder.Received ->
             cases
             |> List.sortWith (fun a b ->
                 let erased =

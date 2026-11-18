@@ -62,7 +62,7 @@ let private read () =
         {
             ReminderReadModel.Reminder = reminder
             Reference = snapshot.Reference
-            ClaimantName = DomainInputs.name "Core claimant"
+            ClaimantName = (DomainInputs.name "Core claimant") |> Some
             Responsible = None
             RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = ResponseExamples.caseRead.RecordedBy

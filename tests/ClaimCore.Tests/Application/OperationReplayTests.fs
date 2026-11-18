@@ -448,9 +448,7 @@ let tests =
                                  (TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate))
                                  (InputValue.Text day)
                              |> Map.add
-                                 (TaskInputId.Target(
-                                     InputTarget.Field BusinessField.IncidentNotificationDate
-                                 ))
+                                 (TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate))
                                  (InputValue.Text day))
                             Map.empty
                         |> Option.get

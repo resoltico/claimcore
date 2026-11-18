@@ -63,8 +63,7 @@ type CaseFamily =
     member this.ChangedAt = this.Value.ChangedAt
 
 module internal FamilyParts =
-    let validateContent (content: CaseContent) =
-        CaseAdmission.financial content.Registration content.Finance
+    let validateContent (content: CaseContent) = CaseAdmission.financial content.Finance
 
     let validateSnapshot (snapshot: CaseSnapshot) =
         if snapshot.Revision < Revision.first then

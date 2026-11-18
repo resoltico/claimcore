@@ -863,7 +863,7 @@ let reminderReviewDetails =
                                                 Reminder = before
                                                 Reference = current.Reference
                                                 ClaimantName =
-                                                    DomainInputs.name "Reminder claimant"
+                                                    (DomainInputs.name "Reminder claimant") |> Some
                                                 Responsible = None
                                                 RecordedAt = DomainInputs.workBasis.ObservedAt
                                                 RecordedBy =

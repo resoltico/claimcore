@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
-    "source": "bd4ea9e91f3a"
+    "text": "افتح ملفًا باستخدام مرجع. سجّل ما تعرفه من بيانات التسجيل.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "إعداد المالك الأول",
@@ -319,9 +319,9 @@
     "text": "المتابعة التالية",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "تاريخ الإبلاغ (الأقدم أولًا)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "تاريخ الاستلام (الأقدم أولًا)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "المعدلة مؤخرًا",
@@ -367,10 +367,6 @@
     "text": "مرجع الملف موجود بالفعل.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "ترتيب هذه التواريخ غير صحيح.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "أحرف التحكم غير مسموحة.",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "استخدم رمز بلد مُعيّنًا رسميًا وفق ISO 3166-1، أو XK أو ZZ. راجع help schema للرموز المدعومة.",
-    "source": "b1c9f16ea7e3"
+    "text": "استخدم رمز بلد معيّنًا رسميًا وفق ISO 3166-1 أو XK. راجع مخطط المساعدة للرموز المدعومة.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "استخدم رمز عملة نشطًا ومدعومًا وفق ISO 4217. لا تُقبل رموز الصناديق أو الرموز غير الوطنية. راجع help schema.",
@@ -671,9 +667,9 @@
     "text": "وصف الحادث",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "تاريخ الإبلاغ",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "تاريخ الاستلام",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "شركة التأمين",
@@ -1175,10 +1171,6 @@
     "text": "مسجل المدفوعات",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "غير معروف أو دولي",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "ملف واحد",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "متى وقعت الواقعة.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "متى أُبلغت بالواقعة لأول مرة.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "تاريخ استلام مكتبك لهذه المطالبة.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "استخدم رمزًا مُعيّنًا رسميًا وفق ISO 3166-1 أو XK. يعني {unknownCode} أن البلد غير معروف أو دولي.",
-    "source": "0ba1fe273220"
+    "text": "استخدم رمزًا معيّنًا رسميًا وفق ISO 3166-1 أو XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "أين وقعت الواقعة.",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "رتّب حسب المرجع، أو آخر تغيير في وقائع الملف، أو تاريخ الإخطار، أو أقرب تاريخ لتذكير معلّق. تُرتّب تغييرات الوقائع من الأحدث أولًا، وتواريخ الإخطار والتذكير من الأقدم أولًا، وتوضع التواريخ غير المسجّلة أخيرًا. يفصل المرجع بين القيم المتساوية.",
-    "source": "009775c9c5fe"
+    "text": "رتّب حسب المرجع أو آخر تعديل لبيانات الملف أو تاريخ الاستلام أو أقرب تاريخ لتذكير معلّق. تظهر التعديلات الأحدث أولًا. تظهر تواريخ الاستلام والتذكير الأقدم أولًا، وتظهر التواريخ غير المسجّلة في النهاية. يُستخدم المرجع للترتيب عند التساوي.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "اختر ترتيب النتائج.",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "اختر رمز بلد مدعومًا، مثل LV، أو XK أو ZZ.",
-    "source": "d1667b590685"
+    "text": "اختر رمز بلد مدعومًا مثل LV أو XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "اختر رمز عملة مدعومًا، مثل EUR. لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",

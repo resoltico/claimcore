@@ -27,17 +27,7 @@ module internal HumanText =
             TaskInputPresentation.messageKey value.Input "label"
             |> ReplyTextFormat.label rendering
 
-        let related =
-            value.Related
-            |> Option.map (fun entry ->
-                " ("
-                + ReplyTextFormat.label rendering entry.LabelId
-                + ": "
-                + TextDescriptorValue.render rendering entry.Value
-                + ")")
-            |> Option.defaultValue ""
-
-        label + ": " + message rendering value.Message + related
+        label + ": " + message rendering value.Message
 
     let rejection details (rendering: RenderingContext) =
         function

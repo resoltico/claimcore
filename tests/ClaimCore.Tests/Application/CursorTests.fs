@@ -602,12 +602,12 @@ let triageCursors =
     testCase "notification cursors retain null dates and people cursors reject zero" (fun () ->
         let selected =
             { CaseListFilter.empty<CaseSearchText> with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
                 Assignment = Some CaseAssignment.Mine
             }
 
         for date in [ None; Some(CaseFixtures.date "2026-08-03") ] do
-            let expected = CaseListPosition.Notified(date, "CASE-2")
+            let expected = CaseListPosition.Received(date, "CASE-2")
 
             Expect.equal
                 (Cursors.decodeCases

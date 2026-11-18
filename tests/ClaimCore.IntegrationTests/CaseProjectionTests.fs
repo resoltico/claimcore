@@ -267,7 +267,7 @@ let private projectionBindings () =
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
                 "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
                 "work_search_text", box DBNull.Value
-                "notified_on", box "2026-08-03 AD"
+                "received_on", box "2026-08-03 AD"
                 "responsible_actor", box DBNull.Value
                 "follow_up", box DBNull.Value
                 "claimed_amount", box "1234.5678"

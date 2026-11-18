@@ -76,7 +76,10 @@ module private UpdateFields =
             |> Seq.exists (fun field ->
                 (BusinessField.describe field).Pairs
                 |> Option.exists (fun currency ->
-                    Set.contains field supplied <> Set.contains currency supplied))
+                    let assignments = Map.ofList members
+
+                    Option.map Option.isSome (Map.tryFind field assignments)
+                    <> Option.map Option.isSome (Map.tryFind currency assignments)))
         then
             Error "A money update requires both amount and currency."
         else
@@ -130,46 +133,16 @@ module RegistrationUpdate =
         fields |> Map.map (fun _ -> Option.map FieldValue.format) |> RegistrationUpdate
 
     let apply update current =
-        let date field previous =
-            tryValue field update
-            |> Option.map FieldValue.date
-            |> Option.defaultValue previous
-
-        let incident = date BusinessField.IncidentDate (Registration.incidentDate current)
-
-        let notification =
-            date
-                BusinessField.IncidentNotificationDate
-                (Registration.incidentNotificationDate current)
-
-        if incident > notification then
-            let target =
-                if
-                    (tryValue BusinessField.IncidentDate update).IsSome
-                    && (tryValue BusinessField.IncidentNotificationDate update).IsNone
-                then
-                    BusinessField.IncidentDate
-                else
-                    BusinessField.IncidentNotificationDate
-
-            let counterpart, date =
-                if target = BusinessField.IncidentDate then
-                    BusinessField.IncidentNotificationDate, notification
-                else
-                    BusinessField.IncidentDate, incident
-
-            Error(target, counterpart, date)
-        else
-            changes update
-            |> List.fold
-                (fun values (field, value) ->
-                    match value with
-                    | None -> Map.remove field values
-                    | Some value -> Map.add field value values)
-                (Registration.values current |> Map.ofList)
-            |> Map.toList
-            |> Registration.create
-            |> Result.mapError (fun _ -> invalidOp "A validated registration merge must succeed.")
+        changes update
+        |> List.fold
+            (fun values (field, value) ->
+                match value with
+                | None -> Map.remove field values
+                | Some value -> Map.add field value values)
+            (Registration.values current |> Map.ofList)
+        |> Map.toList
+        |> Registration.create
+        |> Result.defaultWith invalidOp
 
 module RegistrationUpdateInput =
     let create members =
@@ -194,7 +167,16 @@ module RegistrationUpdateInput =
 
     let internal parsePreparedWith admit prepared =
         UpdateFields.admitPrepared BusinessField.IncidentDate admit prepared
-        |> Result.map RegistrationUpdate
+        |> Result.bind (fun fields ->
+            match
+                Map.tryFind BusinessField.ClaimedAmount fields,
+                Map.tryFind BusinessField.ClaimedCurrency fields
+            with
+            | Some(Some _), Some None ->
+                Error [ BusinessField.ClaimedCurrency, Violation.TextRequired ]
+            | Some None, Some(Some _) ->
+                Error [ BusinessField.ClaimedAmount, Violation.TextRequired ]
+            | _ -> Ok(RegistrationUpdate fields))
 
     let internal parseWith admit input =
         prepare input |> parsePreparedWith admit

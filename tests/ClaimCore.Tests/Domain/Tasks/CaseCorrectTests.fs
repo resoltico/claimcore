@@ -20,9 +20,7 @@ let tests =
                         "UPDATE"
                         "UPDATE"
                         [
-                            text
-                                (InputTarget.Field BusinessField.IncidentNotificationDate)
-                                "2026-03-01"
+                            text (InputTarget.Field BusinessField.ReceivedDate) "2026-03-01"
                             text (InputTarget.Field BusinessField.PaymentDecisionDate) "2026-03-02"
                         ]
 
@@ -40,7 +38,7 @@ let tests =
 
                 Expect.equal
                     (CalendarDate.format (
-                        Registration.incidentNotificationDate content.Registration
+                        Registration.receivedDate content.Registration |> Option.get
                     ))
                     "2026-03-01"
                     "Registration correction"
@@ -183,9 +181,7 @@ let tests =
                             "UPDATE"
                             [
                                 text (InputTarget.Field BusinessField.IncidentDate) "2026-11-20"
-                                text
-                                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                                    "2026-11-21"
+                                text (InputTarget.Field BusinessField.ReceivedDate) "2026-11-21"
                                 text
                                     (InputTarget.Field BusinessField.ClaimantName)
                                     (String.replicate 201 "A")
@@ -210,16 +206,12 @@ let tests =
                         (issues |> List.map _.Input)
                         [
                             TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate)
-                            TaskInputId.Target(
-                                InputTarget.Field BusinessField.IncidentNotificationDate
-                            )
+                            TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate)
                             TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)
                             TaskInputId.Target(InputTarget.Field BusinessField.InsurerName)
                             TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
-                            TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
-                            TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
                         ]
-                        "Current-date and both chronology relations remain distinct")
+                        "Independent current scalar issues")
             testCase "equivalent scalar spelling remains a correction no-op" (fun () ->
                 let state = decided ()
 

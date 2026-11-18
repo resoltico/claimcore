@@ -39,8 +39,8 @@ module internal Projections =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
-        + DatabaseSession.dateExpression "notified_on"
-        + " AS notified_on,responsible_actor,"
+        + DatabaseSession.dateExpression "received_on"
+        + " AS received_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
         + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
 
@@ -64,8 +64,8 @@ module internal Projections =
     let caseSearchText row =
         DatabaseSession.namedOptional<string> "search_text" row
 
-    let caseNotifiedOn row =
-        DatabaseSession.namedOptionalCalendarDate "notified_on" row
+    let caseReceivedOn row =
+        DatabaseSession.namedOptionalCalendarDate "received_on" row
         |> Option.map CalendarDate.ofDate
 
     let caseResponsibleActor row =
@@ -105,7 +105,7 @@ module internal Projections =
             ChangedAt = caseChangedAt row
             SearchText = caseSearchText row
             WorkSearchText = DatabaseSession.namedOptional<string> "work_search_text" row
-            NotifiedOn = caseNotifiedOn row
+            ReceivedOn = caseReceivedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
             Paid = indexedMoney (casePaidAmount row) (casePayableCurrency row)

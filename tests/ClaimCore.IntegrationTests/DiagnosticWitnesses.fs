@@ -188,19 +188,14 @@ let internal registrationRequests fixture () =
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.IncidentNotificationDate, ("not-a-date") ]
-                (registration))
-        opening
-            fixture
-            (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.IncidentDate, ("2026-08-05") ]
+                [ BusinessField.ReceivedDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, ("2027-01-01")
-                    BusinessField.IncidentNotificationDate, ("2027-01-02")
+                    BusinessField.ReceivedDate, ("2027-01-02")
                 ]
                 (registration))
         opening

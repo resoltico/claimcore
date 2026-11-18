@@ -346,7 +346,7 @@ CREATE TABLE claimcore.cases (
                        AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
     ),
     search_text text CHECK (search_text IS NULL OR octet_length(search_text) BETWEEN 1 AND 1048576),
-    notified_on date CHECK (notified_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    received_on date CHECK (received_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     claimed_amount numeric(22,4),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4),
@@ -360,9 +360,9 @@ CREATE TABLE claimcore.cases (
     -- The format bounds encoded storage; Domain owns reference and financial admission.
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]+$' AND octet_length(case_reference)<=32768),
     CONSTRAINT private_shape CHECK ((snapshot IS NULL)=(status IS NULL) AND (snapshot IS NULL)=(progress IS NULL)
-        AND (snapshot IS NULL)=(search_text IS NULL) AND (snapshot IS NULL)=(notified_on IS NULL)
-        AND (snapshot IS NULL)=(claimed_amount IS NULL) AND (snapshot IS NULL)=(claimed_currency IS NULL)
-        AND (snapshot IS NOT NULL OR (paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+        AND (snapshot IS NULL)=(search_text IS NULL)
+        AND (snapshot IS NOT NULL OR (received_on IS NULL AND claimed_amount IS NULL AND paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))),
+    CONSTRAINT claimed_shape CHECK ((claimed_amount IS NULL) = (claimed_currency IS NULL)),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT paid_shape CHECK ((paid_amount IS NULL) = (payable_amount IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
@@ -376,7 +376,7 @@ CREATE INDEX cases_work_search ON claimcore.cases USING gin (work_search_text pu
 
 CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
-CREATE INDEX cases_notified ON claimcore.cases (notified_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
+CREATE INDEX cases_received ON claimcore.cases (received_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
 
 -- Payment IDs and removal markers remain reserved. Parent erasure clears private amounts and dates.
 CREATE TABLE claimcore.case_payments (

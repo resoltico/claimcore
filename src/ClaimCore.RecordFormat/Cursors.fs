@@ -10,7 +10,7 @@ open ClaimCore.Domain
 type CaseListPosition =
     | Reference of string
     | Recent of changedAt: DateTimeOffset * reference: string
-    | Notified of notifiedOn: CalendarDate option * reference: string
+    | Received of receivedOn: CalendarDate option * reference: string
     | FollowUp of followUp: CalendarDate option * reference: string
 
 module CaseListPosition =
@@ -18,15 +18,15 @@ module CaseListPosition =
         function
         | CaseListPosition.Reference reference
         | CaseListPosition.Recent(_, reference)
-        | CaseListPosition.Notified(_, reference)
+        | CaseListPosition.Received(_, reference)
         | CaseListPosition.FollowUp(_, reference) -> reference
 
-    let create order changedAt notifiedOn followUp reference =
+    let create order changedAt receivedOn followUp reference =
         match order with
         | CaseListOrder.Reference -> CaseListPosition.Reference(CaseReference.key reference)
         | CaseListOrder.Recent -> CaseListPosition.Recent(changedAt, CaseReference.key reference)
-        | CaseListOrder.Notified ->
-            CaseListPosition.Notified(notifiedOn, CaseReference.key reference)
+        | CaseListOrder.Received ->
+            CaseListPosition.Received(receivedOn, CaseReference.key reference)
         | CaseListOrder.FollowUp -> CaseListPosition.FollowUp(followUp, CaseReference.key reference)
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
@@ -189,10 +189,10 @@ module Cursors =
                             changedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
                         )
                     ]
-            | CaseListOrder.Notified, CaseListPosition.Notified(date, reference) ->
+            | CaseListOrder.Received, CaseListPosition.Received(date, reference) ->
                 JsonValue.Object
                     [
-                        "notifiedOn",
+                        "receivedOn",
                         date
                         |> Option.map (CalendarDate.format >> JsonValue.String)
                         |> Option.defaultValue JsonValue.Null
@@ -230,15 +230,15 @@ module Cursors =
             ->
             instant changedAt
             |> Option.map (fun time -> CaseListPosition.Recent(time, after))
-        | JsonValue.Object [ "notifiedOn", date; "reference", JsonValue.String after ] when
-            order = CaseListOrder.Notified && reference after
+        | JsonValue.Object [ "receivedOn", date; "reference", JsonValue.String after ] when
+            order = CaseListOrder.Received && reference after
             ->
             match date with
-            | JsonValue.Null -> Some(CaseListPosition.Notified(None, after))
+            | JsonValue.Null -> Some(CaseListPosition.Received(None, after))
             | JsonValue.String raw ->
                 CalendarDate.parse raw
                 |> Result.toOption
-                |> Option.map (fun date -> CaseListPosition.Notified(Some date, after))
+                |> Option.map (fun date -> CaseListPosition.Received(Some date, after))
             | _ -> None
         | JsonValue.Object [ "followUpDate", date; "reference", JsonValue.String after ] when
             order = CaseListOrder.FollowUp && reference after

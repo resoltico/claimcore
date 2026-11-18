@@ -310,8 +310,9 @@ let tests =
                         Reminder = reminder
                         Reference = DomainInputs.reference "REM-1"
                         ClaimantName =
-                            PartyName.parse "Synthetic claimant"
-                            |> Result.defaultWith (string >> failtest)
+                            (PartyName.parse "Synthetic claimant"
+                             |> Result.defaultWith (string >> failtest))
+                            |> Some
                         Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor

@@ -77,11 +77,11 @@ let checks _installation instant =
                     WorkSearchText = Some "tampered"
                 })
         check
-            VerificationFinding.CaseNotifiedOnProjection
-            (fun row -> row.Index.NotifiedOn)
+            VerificationFinding.CaseReceivedOnProjection
+            (fun row -> row.Index.ReceivedOn)
             (fun index ->
                 { index with
-                    NotifiedOn = Some(DomainInputs.date "2026-08-04")
+                    ReceivedOn = Some(DomainInputs.date "2026-08-04")
                 })
         check
             VerificationFinding.CaseClaimedAmountProjection

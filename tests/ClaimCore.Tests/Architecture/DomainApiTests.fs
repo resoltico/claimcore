@@ -45,7 +45,7 @@ let tests =
                     compile
                         owned.FullName
                         "valid"
-                        "let date (record: Registration) = Registration.incidentDate record\nlet money (record: Registration) = Registration.claimed record |> Money.amount |> Amount.value"
+                        "let date (record: Registration) = Registration.incidentDate record\nlet money (record: Registration) = Registration.claimed record |> Option.map (Money.amount >> Amount.value)"
 
                 Expect.equal code 0 ("Valid typed positive control: " + errors)
 

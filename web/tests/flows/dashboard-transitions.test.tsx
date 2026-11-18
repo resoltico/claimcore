@@ -387,7 +387,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   };
   fill("Case reference", "CASE-1");
   fill("Incident date", "2026-09-01");
-  fill("Notification date", "2026-09-02");
+  fill("Received", "2026-09-02");
   fill("Country", "LV");
   fill("Claimant name", "Synthetic claimant");
   fill("Insurer", "Synthetic insurer");

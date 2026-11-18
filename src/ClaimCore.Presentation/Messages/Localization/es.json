@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
-    "source": "bd4ea9e91f3a"
+    "text": "Abra un caso con una referencia. Registre los datos que conozca.",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "Configurar el primer propietario",
@@ -319,9 +319,9 @@
     "text": "Próximo seguimiento",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "Fecha de notificación (más antigua primero)",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "Recibido (más antiguo primero)",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "Modificados recientemente",
@@ -367,10 +367,6 @@
     "text": "La referencia del expediente ya existe.",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "Estas fechas están en un orden incorrecto.",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "No se permiten caracteres de control.",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "Use un código de país asignado oficialmente según ISO 3166-1, XK o ZZ. Consulte los códigos admitidos con help schema.",
-    "source": "b1c9f16ea7e3"
+    "text": "Use un código de país asignado oficialmente según ISO 3166-1 o XK. Consulte el esquema de ayuda para ver los códigos admitidos.",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "Use un código de moneda ISO 4217 activo y admitido. No se aceptan códigos de fondos ni códigos no nacionales. Consulte help schema.",
@@ -671,9 +667,9 @@
     "text": "Descripción del incidente",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "Fecha de notificación",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "Recibido",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "Aseguradora",
@@ -1175,10 +1171,6 @@
     "text": "Registrador de pagos",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "Desconocido o internacional",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "Un expediente",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "Cuándo ocurrió el incidente.",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "Cuándo tuviste conocimiento de este incidente por primera vez.",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "Cuándo recibió su oficina esta reclamación.",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "Use un código asignado oficialmente según ISO 3166-1 o XK. {unknownCode} significa desconocido o internacional.",
-    "source": "0ba1fe273220"
+    "text": "Use un código asignado oficialmente según ISO 3166-1 o XK.",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "Dónde ocurrió el incidente.",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "Ordenar por referencia, último cambio de datos del expediente, fecha de notificación o fecha más próxima de recordatorio pendiente. Los cambios de datos van del más reciente al más antiguo; las fechas de notificación y de recordatorios, de la más antigua a la más reciente, con las fechas ausentes al final. La referencia resuelve los empates.",
-    "source": "009775c9c5fe"
+    "text": "Ordene por referencia, último cambio de datos del caso, fecha de recepción o primera fecha de recordatorio pendiente. Los cambios más recientes aparecen primero. Las fechas de recepción y de recordatorio más antiguas aparecen primero y las que faltan, al final. La referencia resuelve los empates.",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "Elige cómo ordenar los resultados.",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "Elija un código de país admitido, como LV, o XK o ZZ.",
-    "source": "d1667b590685"
+    "text": "Elija un código de país admitido, por ejemplo LV o XK.",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "Elija un código de moneda admitido, como EUR. No se aceptan códigos de fondos ni códigos no nacionales.",

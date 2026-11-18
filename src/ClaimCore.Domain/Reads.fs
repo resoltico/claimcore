@@ -33,7 +33,7 @@ module HistoryDisclosure =
 type CaseListOrder =
     | Reference
     | Recent
-    | Notified
+    | Received
     | FollowUp
 
 [<RequireQualifiedAccess>]

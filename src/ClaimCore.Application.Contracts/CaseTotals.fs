@@ -96,7 +96,6 @@ module CaseWorklistSummary =
             | Lifecycle.Voided ->
                 group.Status.IsSome
                 && group.Progress.IsSome
-                && group.Claimed.IsSome
                 && ((group.Progress = Some CaseProgress.Undecided) = group.Payable.IsNone)
                 && (group.Paid.IsNone = group.Payable.IsNone)
                 && (match group.Payable, group.Paid with

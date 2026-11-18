@@ -68,7 +68,7 @@ let private documents () =
         {
             Reminder = reminder
             Reference = case.Reference
-            ClaimantName = DomainInputs.name "Core claimant"
+            ClaimantName = (DomainInputs.name "Core claimant") |> Some
             Responsible = None
             RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = actor

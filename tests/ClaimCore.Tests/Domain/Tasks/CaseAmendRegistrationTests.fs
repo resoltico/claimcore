@@ -125,14 +125,14 @@ let tests =
                     let registration = after.Case.Value.Content |> Option.get |> _.Registration
 
                     Expect.equal
-                        (PartyName.format (Registration.claimant registration))
+                        (PartyName.format (Registration.claimant registration |> Option.get))
                         "Changed claimant"
                         "Omitted value is kept"
 
                     Expect.isNone (Registration.policyNumber registration) "Explicit clearing"
 
                     Expect.equal
-                        (Money.value (Registration.claimed registration))
+                        (Money.value (Registration.claimed registration |> Option.get))
                         1000M
                         "Money was not re-authored")
             testCase "closed and decided cases do not offer ordinary amendment" (fun () ->
@@ -150,47 +150,40 @@ let tests =
                         (inputs [ text (InputTarget.Field BusinessField.ClaimantName) "Changed" ])
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
             testCase
-                "reviewed conflicts and independent merged chronology failures are preserved"
+                "reviewed amendment clears received without changing the earlier revision"
                 (fun () ->
                     let state = family ()
+                    let field = TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate)
+
+                    let clear =
+                        InputMap.create (Map.ofList [ field, InputValue.Null ]) Map.empty
+                        |> Option.get
 
                     Amend.decide
                         (context 2)
                         environment
                         (Some(DecisionFacts.fromReplay state))
                         (Binding.Case(target state, Revision.zero))
-                        (inputs [ text (InputTarget.Field BusinessField.ClaimantName) "Changed" ])
+                        clear
                     |> expectRefusal (Refusal.revisionConflict Revision.first)
 
-                    let issues =
+                    let after =
                         Amend.decide
                             (context 2)
                             environment
                             (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
-                            (inputs
-                                [
-                                    text
-                                        (InputTarget.Field BusinessField.IncidentDate)
-                                        "2026-01-03"
-                                    text (InputTarget.Field BusinessField.ClaimantName) ""
-                                ])
-                        |> expectInputs
+                            clear
+                        |> accepted
+                        |> apply state
 
-                    Expect.isTrue
-                        (issues
-                         |> List.exists (fun issue ->
-                             issue.Input =
-                                 TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate)
-                             && issue.RelatedDate.IsSome))
-                        "Chronology uses the unmodified notification"
+                    let received (family: CaseFamily) =
+                        family.Case.Value.Content
+                        |> Option.bind (fun content ->
+                            Registration.receivedDate content.Registration)
 
-                    Expect.isTrue
-                        (issues
-                         |> List.exists (fun issue ->
-                             issue.Input =
-                                 TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)))
-                        "Sibling scalar issue remains")
+                    Expect.isSome (received state) "The earlier revision retains the date"
+                    Expect.isNone (received after) "The current fact is absent")
             testCase
                 "retained dates survive clock rollback while new date assertions use the action date"
                 (fun () ->
@@ -226,7 +219,9 @@ let tests =
                     Expect.equal
                         (after.Case.Value.Content
                          |> Option.map (fun content ->
-                             CalendarDate.format (Registration.incidentDate content.Registration)))
+                             CalendarDate.format (
+                                 Registration.incidentDate content.Registration |> Option.get
+                             )))
                         (Some "2026-01-01")
                         "An unchanged accepted value is not re-admitted"
 
@@ -239,7 +234,7 @@ let tests =
                             (inputs
                                 [
                                     text
-                                        (InputTarget.Field BusinessField.IncidentNotificationDate)
+                                        (InputTarget.Field BusinessField.ReceivedDate)
                                         "2026-01-03"
                                 ])
                         |> expectInputs
@@ -330,7 +325,7 @@ let tests =
                     Expect.isNone (Registration.description registration) "Narrative clearing"
 
                     Expect.equal
-                        (Registration.claimed registration |> Money.value)
+                        (Registration.claimed registration |> Option.get |> Money.value)
                         1000M
                         "Unrelated money stays exact")
         ]

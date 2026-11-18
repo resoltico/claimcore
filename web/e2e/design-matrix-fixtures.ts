@@ -190,14 +190,14 @@ const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] =>
     },
   },
   {
-    id: "cases-notified",
-    path: "/cases?view=ALL&order=NOTIFIED",
+    id: "cases-received",
+    path: "/cases?view=ALL&order=RECEIVED",
     ready: "#case-list-title",
     endpoint: "case.list",
     expectedInput: {
       limit: 50,
       view: "ALL",
-      order: "NOTIFIED",
+      order: "RECEIVED",
     },
   },
   {
@@ -513,7 +513,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
   ) as Record<CaseState, string>;
   const registration = registrationInput({
     incidentDate: date,
-    incidentNotificationDate: date,
+    receivedDate: date,
     incidentCountry: "LV",
     claimantName: `${marker} Rīga العربية`,
     insurerName: "Matrix insurer Apdrošinātājs شركة التأمين",

@@ -27,7 +27,7 @@ let private expected =
             "progress"
             "changed_at"
             "search_text"
-            "notified_on"
+            "received_on"
             "work_search_text"
             "responsible_actor"
             "follow_up"

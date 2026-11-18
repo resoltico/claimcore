@@ -74,19 +74,19 @@ module internal TransactionPages =
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
                 $"{CaseSelectionSql.suffix 3}"
-            | CaseListOrder.Notified, position ->
+            | CaseListOrder.Received, position ->
                 let reference, date =
                     match position with
                     | None -> None, None
-                    | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
+                    | Some(CaseListPosition.Received(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.notified_on IS NULL AND "
+                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.received_on IS NULL AND "
                 + key
-                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.notified_on > {CaseSelectionSql.suffix 2}::date OR c.notified_on IS NULL OR (c.notified_on={CaseSelectionSql.suffix 2}::date AND "
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.received_on > {CaseSelectionSql.suffix 2}::date OR c.received_on IS NULL OR (c.received_on={CaseSelectionSql.suffix 2}::date AND "
                 + key
                 + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"))))",
-                "c.notified_on ASC NULLS LAST," + key + " ASC",
+                "c.received_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
@@ -137,7 +137,7 @@ module internal TransactionPages =
                     CaseListPosition.create
                         query.Selection.Filter.Order
                         record.Index.ChangedAt
-                        record.Index.NotifiedOn
+                        record.Index.ReceivedOn
                         record.Index.FollowUp
                         (CaseReference.format record.Snapshot.Reference))
             // Load only visible parents' independently owned work; the lookahead remains financial-only.

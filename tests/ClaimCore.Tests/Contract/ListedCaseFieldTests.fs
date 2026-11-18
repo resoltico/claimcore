@@ -80,7 +80,7 @@ let tests =
                 let values = CaseSummaryFields.values expanded fields
                 let codec = ListedCaseFieldCodecs.create expanded
                 let wire = codec.Write values
-                let expectedDate = Registration.incidentDate fields.Registration
+                let expectedDate = Registration.incidentDate fields.Registration |> Option.get
 
                 Expect.equal
                     (JsonValue.tryMember "incidentDate" wire)

@@ -65,7 +65,7 @@ let private dates () =
     for field, identity in
         [
             BusinessField.IncidentDate, "field.incidentDate.label"
-            BusinessField.IncidentNotificationDate, "field.incidentNotificationDate.label"
+            BusinessField.ReceivedDate, "field.receivedDate.label"
         ] do
         assertTarget
             (InputTarget.Field field)
@@ -179,13 +179,11 @@ let accumulated =
                 {
                     Target = InputTarget.Field BusinessField.ClaimantName
                     GrantRow = None
-                    RelatedDate = None
                     Violation = Violation.TextRequired
                 }
                 {
                     Target = InputTarget.Field BusinessField.InsurerName
                     GrantRow = None
-                    RelatedDate = None
                     Violation = Violation.TextRequired
                 }
             ]

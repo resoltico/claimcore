@@ -48,11 +48,7 @@ export const CatalogCode = (props: TypedFieldProps) => {
   const p = usePresentation();
   const currency = field.scalar.kind === "CURRENCY";
   const locale = p.language === "en-XA" ? "en" : p.language;
-  const unknown = p.text("scalar.country.unknown");
-  const items = useMemo(
-    () => codeSuggestions(locale, currency, unknown),
-    [locale, currency, unknown],
-  );
+  const items = useMemo(() => codeSuggestions(locale, currency), [locale, currency]);
   const filtered = rankCodeSuggestions(items, value, locale);
   return (
     <ComboBox

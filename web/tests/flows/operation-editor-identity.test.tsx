@@ -96,7 +96,6 @@ const validationRefusal: HumanRejection = {
     {
       input: "field:claimantName",
       row: null,
-      related: null,
       message: {
         messageId: "diagnostic.TEXT_REQUIRED",
         arguments: [],

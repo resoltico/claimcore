@@ -75,7 +75,7 @@ let private scalarAdmission () =
         DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "not-a-date"
-                BusinessField.IncidentNotificationDate, ""
+                BusinessField.ReceivedDate, ""
                 BusinessField.IncidentCountry, "lowercase"
                 BusinessField.ClaimantName, ""
                 BusinessField.InsurerName, ""

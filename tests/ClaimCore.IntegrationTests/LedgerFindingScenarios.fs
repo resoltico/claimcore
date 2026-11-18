@@ -520,10 +520,10 @@ let internal findingCases =
         indexFinding
             VerificationFinding.CaseWorkProjection
             "UPDATE claimcore.cases SET follow_up=DATE '2027-12-31'"
-        VerificationFinding.CaseNotifiedOnProjection,
+        VerificationFinding.CaseReceivedOnProjection,
         indexFinding
-            VerificationFinding.CaseNotifiedOnProjection
-            "UPDATE claimcore.cases SET notified_on=DATE '2026-08-04'"
+            VerificationFinding.CaseReceivedOnProjection
+            "UPDATE claimcore.cases SET received_on=DATE '2026-08-04'"
         VerificationFinding.CaseClaimedAmountProjection,
         indexFinding
             VerificationFinding.CaseClaimedAmountProjection

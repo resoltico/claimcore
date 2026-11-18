@@ -136,7 +136,7 @@ let internal replayAndRefusal fixture =
                         RecordedFields =
                             [
                                 BusinessField.IncidentDate
-                                BusinessField.IncidentNotificationDate
+                                BusinessField.ReceivedDate
                                 BusinessField.IncidentCountry
                                 BusinessField.IncidentDescription
                                 BusinessField.PolicyNumber

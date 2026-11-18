@@ -227,7 +227,7 @@ const qualify = async (origin, ca) => {
       inputs: {
         "field:caseReference": "DEPLOYMENT-001",
         "field:incidentDate": requester.businessDate,
-        "field:incidentNotificationDate": requester.businessDate,
+        "field:receivedDate": requester.businessDate,
         "field:incidentCountry": "LV",
         "field:claimantName": "Synthetic deployment claimant",
         "field:insurerName": "Synthetic deployment insurer",

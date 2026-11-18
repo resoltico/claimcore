@@ -221,14 +221,13 @@ let tests =
                     100M
                     "Exact replacements reconcile the remaining set")
             testCase
-                "replacement cannot change currency precede decision exceed today or assert nonpositive money"
+                "replacement cannot change currency exceed today or assert nonpositive money"
                 (fun () ->
                     let before = decided () |> pay 3 "2026-02-02" "25"
 
                     for date, amount, currency, violation in
                         [
                             "2026-02-03", "20", "USD", Violation.PaymentCurrencyMismatch
-                            "2026-01-31", "20", "EUR", Violation.ChronologicalOrder
                             "2026-11-16", "20", "EUR", Violation.FutureDate
                             "2026-02-03", "0", "EUR", Violation.PaymentAmountPositive
                         ] do

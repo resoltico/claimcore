@@ -337,7 +337,7 @@ let tests =
                                 "LONG-REVIEW"
                                 "--incident-date"
                                 "2026-01-01"
-                                "--incident-notification-date"
+                                "--received-date"
                                 "2026-01-02"
                                 "--incident-country"
                                 "LV"

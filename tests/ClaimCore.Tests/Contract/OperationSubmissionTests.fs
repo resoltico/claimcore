@@ -72,7 +72,7 @@ let tests =
                 "creation reference is authored and an existing binding needs a positive revision"
                 (fun () ->
                     let created =
-                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:incidentNotificationDate":"2026-01-02","field:incidentCountry":"LV","field:claimantName":"Claimant","field:insurerName":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:receivedDate":"2026-01-02","field:incidentCountry":"LV","field:claimantName":"Claimant","field:insurerName":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
 
                     let submitted = decode created |> accepted
 
@@ -182,20 +182,15 @@ let tests =
                         )
                     ))
                     "Payment selection belongs only to removal")
-            testCase "illegal clearing is an issue on the declared input token" (fun () ->
-                let submission = decode (amend "\"field:claimantName\":null") |> accepted
+            testCase "received can be cleared using its declared token" (fun () ->
+                let submission = decode (amend "\"field:receivedDate\":null") |> accepted
+                let operation = submission.Operation |> accepted
+                let key = TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate)
 
-                match submission.Operation with
-                | Error(Refusal.InvalidInput issues) ->
-                    let issue = InputIssues.toList issues |> List.exactlyOne
-
-                    Expect.equal
-                        issue.Target
-                        (InputTarget.Field BusinessField.ClaimantName)
-                        "The input identity is preserved"
-
-                    Expect.equal issue.GrantRow None "Scalar issues have no row"
-                | other -> failtestf "Expected an input issue: %A" other)
+                Expect.equal
+                    (Map.tryFind key operation.Inputs.Values)
+                    (Some InputValue.Null)
+                    "Explicit clearing")
             testCase
                 "omitted updates keep while declared clearable inputs retain explicit null"
                 (fun () ->

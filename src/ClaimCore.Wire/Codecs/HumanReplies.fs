@@ -77,14 +77,6 @@ module HumanReplies =
             HumanInputIssue.Input = target.Input
             Row = target.Row
             Message = message code parameters
-            Related =
-                issue.RelatedDate
-                |> Option.map (fun related ->
-                    ScreenEntries.value
-                        "relatedDate"
-                        (FieldPresentation.labelId related.Field)
-                        Prominence.Secondary
-                        (PresentedValue.Date related.Value))
         }
 
     let rejection refusal =

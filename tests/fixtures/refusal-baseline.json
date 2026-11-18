@@ -101,7 +101,7 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "incidentNotificationDate",
+          "field": "receivedDate",
           "code": "CALENDAR_DATE_REQUIRED"
         }
       ]
@@ -181,16 +181,6 @@
       "action": "CorrectInput",
       "issues": [
         {
-          "field": "incidentNotificationDate",
-          "code": "CHRONOLOGICAL_ORDER"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
           "field": "claimedAmount",
           "code": "DECIMAL_FORMAT"
         }
@@ -215,7 +205,7 @@
           "code": "FUTURE_DATE"
         },
         {
-          "field": "incidentNotificationDate",
+          "field": "receivedDate",
           "code": "FUTURE_DATE"
         }
       ]

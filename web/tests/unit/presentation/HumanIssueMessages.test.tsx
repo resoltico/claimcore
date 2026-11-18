@@ -8,11 +8,7 @@ const show = (
   message: HumanInputIssue["message"],
   input: HumanInputIssue["input"] = "field:incidentDate",
 ) =>
-  render(
-    <NoticeView
-      value={{ kind: "humanIssues", issues: [{ input, row: null, related: null, message }] }}
-    />,
-  );
+  render(<NoticeView value={{ kind: "humanIssues", issues: [{ input, row: null, message }] }} />);
 
 it("uses the Core-declared widget wording for a supplied calendar issue", () => {
   show({ messageId: "diagnostic.CALENDAR_DATE_REQUIRED", arguments: [] });

@@ -140,7 +140,7 @@ let private summaries () =
                     (value BusinessField.ClaimantName)
                     (Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(Registration.claimant fields.Registration)
+                            Admitted.Name(Registration.claimant fields.Registration |> Option.get)
                         )
                     ))
                     "Claimant is already disclosed"
@@ -149,12 +149,12 @@ let private summaries () =
                     (value BusinessField.InsurerName)
                     (Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(Registration.insurer fields.Registration)
+                            Admitted.Name(Registration.insurer fields.Registration |> Option.get)
                         )
                     ))
                     "Insurer is already disclosed"
 
-                let claimed = Registration.claimed fields.Registration
+                let claimed = Registration.claimed fields.Registration |> Option.get
 
                 Expect.equal
                     (value BusinessField.ClaimedAmount)

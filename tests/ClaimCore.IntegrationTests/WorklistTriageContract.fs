@@ -40,7 +40,7 @@ let private openCase fixture owner number (seed: CaseSeed) =
     let values =
         DomainInputs.registrationWith
             [
-                BusinessField.IncidentNotificationDate, seed.Notification
+                BusinessField.ReceivedDate, seed.Notification
                 BusinessField.ClaimedAmount, seed.Amount
                 BusinessField.ClaimedCurrency, seed.Currency
             ]
@@ -319,7 +319,7 @@ let internal oldestPaging fixture =
 
         let filter =
             { CaseListFilter.empty<string> with
-                Order = CaseListOrder.Notified
+                Order = CaseListOrder.Received
             }
 
         let! first = list owner filter None

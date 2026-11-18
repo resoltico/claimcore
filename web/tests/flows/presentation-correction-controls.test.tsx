@@ -81,7 +81,7 @@ const inputRefusal = (
           },
           action: "CORRECT_INPUT",
         },
-        issues: [{ input, row: null, related: null, message: { messageId, arguments: [] } }],
+        issues: [{ input, row: null, message: { messageId, arguments: [] } }],
       },
     },
   });

@@ -21,7 +21,7 @@ module CaseSection =
 [<RequireQualifiedAccess>]
 type BusinessField =
     | IncidentDate
-    | IncidentNotificationDate
+    | ReceivedDate
     | IncidentCountry
     | IncidentDescription
     | PolicyNumber
@@ -117,7 +117,7 @@ module BusinessField =
                 | Some RecordGroup.Decision -> Some CaseSection.Decision
                 | Some RecordGroup.Payment -> Some CaseSection.Payment
                 | None -> None
-            AllowsAbsence = false
+            AllowsAbsence = group = Some RecordGroup.Registration
             IsAuthored = field <> BusinessField.Status
             Pairs = pairs
         }
@@ -126,7 +126,7 @@ module BusinessField =
         match field with
         | BusinessField.IncidentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) None
-        | BusinessField.IncidentNotificationDate ->
+        | BusinessField.ReceivedDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) None
         | BusinessField.IncidentDescription ->
             { descriptor
@@ -216,6 +216,18 @@ module GroupValues =
         then
             Error
                 "A group requires its declared mandatory fields and no duplicate or undeclared members."
+        elif
+            supplied
+            |> List.exists (fun field ->
+                (BusinessField.describe field).Pairs
+                |> Option.exists (fun pair -> not (List.contains pair supplied)))
+            || (expected
+                |> Set.exists (fun field ->
+                    (BusinessField.describe field).Pairs
+                    |> Option.exists (fun pair ->
+                        List.contains pair supplied && not (List.contains field supplied))))
+        then
+            Error "An amount and its currency must be supplied together."
         else
             Ok(GroupValues(group, Map.ofList members))
 
@@ -270,8 +282,6 @@ type RegistrationInput = private RegistrationInput of GroupValues<Authored>
 type Registration = private Registration of GroupValues<Admitted>
 
 module RegistrationInput =
-    let value field (RegistrationInput values) = GroupValues.raw field values
-
     let tryValue field (RegistrationInput values) =
         GroupValues.tryValue field values |> Option.map Authored.format
 
@@ -294,30 +304,28 @@ module RegistrationInput =
 module Registration =
     let values (Registration values) = GroupValues.items values
 
-    let private requiredValue field (Registration values) =
-        GroupValues.tryValue field values |> Option.get
-
     let private optional field (Registration values) = GroupValues.tryValue field values
 
     let incidentDate record =
-        requiredValue BusinessField.IncidentDate record |> FieldValue.date
+        optional BusinessField.IncidentDate record |> Option.map FieldValue.date
 
-    let incidentNotificationDate record =
-        requiredValue BusinessField.IncidentNotificationDate record |> FieldValue.date
+    let receivedDate record =
+        optional BusinessField.ReceivedDate record |> Option.map FieldValue.date
 
     let country record =
-        requiredValue BusinessField.IncidentCountry record |> FieldValue.country
+        optional BusinessField.IncidentCountry record |> Option.map FieldValue.country
 
     let claimant record =
-        requiredValue BusinessField.ClaimantName record |> FieldValue.name
+        optional BusinessField.ClaimantName record |> Option.map FieldValue.name
 
     let insurer record =
-        requiredValue BusinessField.InsurerName record |> FieldValue.name
+        optional BusinessField.InsurerName record |> Option.map FieldValue.name
 
     let claimed record =
-        Money.create
-            (requiredValue BusinessField.ClaimedAmount record |> FieldValue.amount)
-            (requiredValue BusinessField.ClaimedCurrency record |> FieldValue.currency)
+        Option.map2
+            Money.create
+            (optional BusinessField.ClaimedAmount record |> Option.map FieldValue.amount)
+            (optional BusinessField.ClaimedCurrency record |> Option.map FieldValue.currency)
 
     let description record =
         optional BusinessField.IncidentDescription record
@@ -340,12 +348,7 @@ module Registration =
             then
                 Error "A field requires its declared value kind."
             else
-                let registration = Registration values
-
-                if incidentDate registration > incidentNotificationDate registration then
-                    Error "Incident must be on or before notification."
-                else
-                    Ok registration)
+                Ok(Registration values))
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -365,22 +368,19 @@ module Registration =
         |> RegistrationInput.create
         |> Result.defaultWith invalidOp
 
-    let private order parsed =
-        let date field =
-            parsed
-            |> List.find (fst >> (=) field)
-            |> snd
-            |> Result.toOption
-            |> Option.map FieldValue.date
-
-        match date BusinessField.IncidentDate, date BusinessField.IncidentNotificationDate with
-        | Some incident, Some notification when incident > notification ->
-            [ BusinessField.IncidentNotificationDate, Violation.ChronologicalOrder ]
-        | _ -> []
-
     let internal parsePreparedWith admit parsed =
         let admitted = GroupValues.check admit parsed
-        let errors = GroupValues.errors admitted @ order parsed
+
+        let supplied field =
+            admitted |> List.exists (fst >> (=) field)
+
+        let paired =
+            match supplied BusinessField.ClaimedAmount, supplied BusinessField.ClaimedCurrency with
+            | true, false -> [ BusinessField.ClaimedCurrency, Violation.TextRequired ]
+            | false, true -> [ BusinessField.ClaimedAmount, Violation.TextRequired ]
+            | _ -> []
+
+        let errors = GroupValues.errors admitted @ paired
 
         if List.isEmpty errors then
             GroupValues.admitted admitted |> create |> Result.defaultWith invalidOp |> Ok

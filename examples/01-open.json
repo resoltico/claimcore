@@ -9,7 +9,7 @@
     "inputs": {
       "field:caseReference": "DEMO-0001",
       "field:incidentDate": "2026-08-01",
-      "field:incidentNotificationDate": "2026-08-03",
+      "field:receivedDate": "2026-08-03",
       "field:incidentCountry": "LT",
       "field:claimantName": "Example Translation Services Ltd",
       "field:insurerName": "Example Responsible Insurer",

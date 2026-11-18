@@ -76,8 +76,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "登記事故、索賠人、保險公司和索賠金額。",
-    "source": "bd4ea9e91f3a"
+    "text": "使用參考編號開立案件，並記錄已知的登記資訊。",
+    "source": "39967b35166c"
   },
   "task.people.provisionOwner.label": {
     "text": "設置首位所有者",
@@ -319,9 +319,9 @@
     "text": "下一次跟進",
     "source": "3fc2f012c68c"
   },
-  "caseOrder.NOTIFIED.label": {
-    "text": "報案日期（最早優先）",
-    "source": "41b4f3e7d713"
+  "caseOrder.RECEIVED.label": {
+    "text": "接收日期（最早優先）",
+    "source": "9861820ae493"
   },
   "caseOrder.RECENT.label": {
     "text": "最近更改",
@@ -367,10 +367,6 @@
     "text": "此案件編號已存在。",
     "source": "a3f9c947fa47"
   },
-  "diagnostic.CHRONOLOGICAL_ORDER": {
-    "text": "這些日期的順序不正確。",
-    "source": "a0b9f6502de7"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "不允許使用控制字符。",
     "source": "27b9975ce3fa"
@@ -384,8 +380,8 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "請使用 ISO 3166-1 正式分配的國家代碼，或 XK、ZZ。支援的代碼請見 help schema。",
-    "source": "b1c9f16ea7e3"
+    "text": "請使用 ISO 3166-1 正式分配的國家代碼或 XK。支援的代碼請參閱說明結構描述。",
+    "source": "2b5cbb97f5f0"
   },
   "diagnostic.CURRENCY_FORMAT": {
     "text": "請使用受支援的現行 ISO 4217 貨幣代碼。不接受基金代碼及非國家貨幣代碼。請參閱 help schema。",
@@ -671,9 +667,9 @@
     "text": "事故說明",
     "source": "521e33aecb98"
   },
-  "field.incidentNotificationDate.label": {
-    "text": "報案日期",
-    "source": "3f82631653e9"
+  "field.receivedDate.label": {
+    "text": "接收日期",
+    "source": "49f19beeecf4"
   },
   "field.insurerName.label": {
     "text": "保險公司",
@@ -1175,10 +1171,6 @@
     "text": "付款記錄員",
     "source": "700b2825d9eb"
   },
-  "scalar.country.unknown": {
-    "text": "未知或國際",
-    "source": "55ec863c776b"
-  },
   "scope.CASE.label": {
     "text": "單個案件",
     "source": "bb4ad0b2b38b"
@@ -1483,13 +1475,13 @@
     "text": "事故發生的日期。",
     "source": "ddc981f4ff37"
   },
-  "field.incidentNotificationDate.hint": {
-    "text": "首次得知此事故的日期。",
-    "source": "3ec88dfe4c38"
+  "field.receivedDate.hint": {
+    "text": "您的辦事機構收到此索賠的日期。",
+    "source": "2b179e8a82d2"
   },
   "field.incidentCountry.rule": {
-    "text": "請使用 ISO 3166-1 正式分配的代碼或 XK。{unknownCode} 表示未知或國際。",
-    "source": "0ba1fe273220"
+    "text": "請使用 ISO 3166-1 正式分配的代碼或 XK。",
+    "source": "1842dd6e8029"
   },
   "field.incidentCountry.hint": {
     "text": "事故發生的國家。",
@@ -1764,8 +1756,8 @@
     "source": "2e4de5dc64ba"
   },
   "input.order.rule": {
-    "text": "按編號、最近案件資料更改、通知日期或最早待辦提醒日期排序。資料更改按從新到舊排序；通知和提醒日期按從舊到新排序，缺少日期的排在最後。值相同時按編號排序。",
-    "source": "009775c9c5fe"
+    "text": "依參考編號、案件事實的最新變更、接收日期或最早的待辦提醒日期排序。變更由新到舊排序。接收和提醒日期由早到晚排序，沒有日期的排在最後。如值相同，則按參考編號排序。",
+    "source": "9bf08ffbeef7"
   },
   "input.order.hint": {
     "text": "選擇結果的排列方式。",
@@ -1820,8 +1812,8 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "請選擇受支援的國家代碼，例如 LV，或 XK、ZZ。",
-    "source": "d1667b590685"
+    "text": "請選擇受支援的國家代碼，例如 LV 或 XK。",
+    "source": "03cf24c49011"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
     "text": "請選擇受支援的貨幣代碼，例如 EUR。不接受基金代碼及非國家貨幣代碼。",

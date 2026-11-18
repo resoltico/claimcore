@@ -65,7 +65,7 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
                 BusinessField.ClaimedAmount, Some "9876.5432"
                 BusinessField.ClaimedCurrency, Some "EUR"
                 BusinessField.IncidentDate, Some "2026-09-07"
-                BusinessField.IncidentNotificationDate, Some "2026-09-08"
+                BusinessField.ReceivedDate, Some "2026-09-08"
                 BusinessField.IncidentDescription, Some "Distinctive history\nSecond exact line"
             ]
         |> Result.defaultWith (fun error -> failtestf "%A" error)

@@ -18,7 +18,6 @@ type Violation =
     | NoteIdRequired
     | UpdateRequired
     | CalendarDateRequired
-    | ChronologicalOrder
     | FutureDate
     | DecimalFormat of integerDigits: int * fractionDigits: int
     | CurrencyFormat

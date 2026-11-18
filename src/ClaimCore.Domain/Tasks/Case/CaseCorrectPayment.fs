@@ -71,11 +71,7 @@ let decide context environment (state: DecisionFacts option) binding inputs =
             let! before = CaseRules.acceptedContent gate state
 
             let! replacement =
-                Admission.map2
-                    (fun payment () -> payment)
-                    (CaseParsing.payment (CaseAdmission.fieldAdmission today None) fields)
-                    (CaseParsing.chronology (Some before) false false fields)
-                |> CaseInput.ordered
+                CaseParsing.payment (CaseAdmission.fieldAdmission today None) fields
                 |> Parsing.reject
 
             let! part = selected state id

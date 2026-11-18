@@ -1456,7 +1456,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
         let fields = disclosedFields (accepted edited)
 
         Expect.equal
-            (PartyName.format (Registration.claimant fields.Registration))
+            (PartyName.format (Registration.claimant fields.Registration |> Option.get))
             "Only selected claimant"
             "One asserted fact"
 
@@ -1765,7 +1765,7 @@ let internal pairedPage fixture =
 
             accepted created |> ignore
 
-        for order in [ CaseListOrder.Reference; CaseListOrder.Notified ] do
+        for order in [ CaseListOrder.Reference; CaseListOrder.Received ] do
             let request =
                 {
                     CaseListRequest.Page = { AfterCursor = None; Limit = 2 }

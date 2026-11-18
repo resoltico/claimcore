@@ -55,7 +55,6 @@ type FinancialPositionIssue =
     | DecisionHasPayments
     | CurrencyMismatch
     | ExceedsPayable
-    | PaymentBeforeDecision
     | FuturePayment
     | InvalidRemovalContext
 
@@ -111,10 +110,6 @@ module FinancialPosition =
                 Error FinancialPositionIssue.DecisionRequired
             | Some value when paidValue > Money.value (Decision.payable value) ->
                 Error FinancialPositionIssue.ExceedsPayable
-            | Some value when
-                dates |> Option.exists (fun dates -> dates.Earliest < Decision.date value)
-                ->
-                Error FinancialPositionIssue.PaymentBeforeDecision
             | _ ->
                 Ok
                     {

@@ -123,7 +123,7 @@ let private snapshot (result: Result<CaseReadFacts, StoreFailure>) name hasHandl
             "People belongs to this snapshot"
 
         Expect.equal
-            (PartyName.format (Registration.claimant (fields.Registration)))
+            (PartyName.format (Registration.claimant (fields.Registration) |> Option.get))
             name
             "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
@@ -536,7 +536,8 @@ let tests =
 
                         snapshot
                             result
-                            (RegistrationInput.value BusinessField.ClaimantName (registration))
+                            (RegistrationInput.tryValue BusinessField.ClaimantName (registration)
+                             |> Option.get)
                             true
 
                         let! after =

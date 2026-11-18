@@ -168,7 +168,6 @@ type TaskInputIssue =
         Input: TaskInputId
         Row: TaskRowTarget option
         Violation: Violation
-        RelatedDate: RelatedDate option
     }
 
 module TaskInputIssue =
@@ -185,7 +184,6 @@ module TaskInputIssue =
                     GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.PeopleGrants
                 )
             Violation = issue.Violation
-            RelatedDate = issue.RelatedDate
         }
 
 /// An input rejection always explains at least one failed rule.

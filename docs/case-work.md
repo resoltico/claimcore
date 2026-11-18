@@ -29,7 +29,7 @@ ClaimCore does not send reminder alarms.
 
 ## Open a case
 
-Choose **Open a case**. Enter your reference, claimant, insurer, incident and notification dates,
+Choose **Open a case** and enter your reference. Add any registration facts you know, such as the incident date and country, the date your office received the claim,
 incident country, and claimed amount with its currency. Incident description, policy number and insurer
 claim reference are optional. Review the facts and confirm **Open a case**.
 

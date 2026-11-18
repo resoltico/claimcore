@@ -100,7 +100,6 @@ const rejectedPreview = () =>
               {
                 input: "field:caseReference",
                 row: null,
-                related: null,
                 message: { messageId: "diagnostic.REFERENCE_FORMAT.gui", arguments: [] },
               },
             ],

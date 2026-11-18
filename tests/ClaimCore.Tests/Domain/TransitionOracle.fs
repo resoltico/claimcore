@@ -26,7 +26,7 @@ let private inputs values =
 let private registrationValues name =
     [
         BusinessField.IncidentDate, "2026-08-01"
-        BusinessField.IncidentNotificationDate, "2026-08-03"
+        BusinessField.ReceivedDate, "2026-08-03"
         BusinessField.IncidentCountry, "LV"
         BusinessField.ClaimantName, name
         BusinessField.InsurerName, "Example Alleged Insurer"

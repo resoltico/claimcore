@@ -69,7 +69,16 @@ let registration: RegistrationInput =
     groupInput
         RegistrationInput.create
         "registration"
-        (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
+        (Map.ofList
+            [
+                "incidentDate", "2026-08-01"
+                "receivedDate", "2026-08-03"
+                "incidentCountry", "LV"
+                "claimantName", "Synthetic Party"
+                "insurerName", "Synthetic Insurer"
+                "claimedAmount", "1000.00"
+                "claimedCurrency", "EUR"
+            ])
 
 let registrationFrom values =
     RegistrationInput.replace values registration |> accepted
@@ -89,7 +98,7 @@ let registrationOn incident notification =
     registrationWith
         [
             BusinessField.IncidentDate, incident
-            BusinessField.IncidentNotificationDate, notification
+            BusinessField.ReceivedDate, notification
         ]
         registration
 

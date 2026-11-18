@@ -394,9 +394,8 @@ let internal replies () : IEndpointOutput list =
                                 Reference = reference
                                 ClaimantName =
                                     CaseState.fields snapshot.State
-                                    |> Option.map (fun fields ->
+                                    |> Option.bind (fun fields ->
                                         Registration.claimant fields.Registration)
-                                    |> Option.get
                                 Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor

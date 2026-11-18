@@ -66,7 +66,7 @@ let opening reference =
         [
             BusinessField.CaseReference, reference
             BusinessField.IncidentDate, "2026-01-01"
-            BusinessField.IncidentNotificationDate, "2026-01-02"
+            BusinessField.ReceivedDate, "2026-01-02"
             BusinessField.IncidentCountry, "LV"
             BusinessField.ClaimantName, "Claimant"
             BusinessField.InsurerName, "Insurer"

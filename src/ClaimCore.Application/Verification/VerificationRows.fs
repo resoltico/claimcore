@@ -109,11 +109,11 @@ module internal VerificationRows =
                                             VerificationFinding.CaseSearchProjection
                                             (fun () -> Projections.caseSearchText row)
 
-                                    let! notifiedOn =
+                                    let! receivedOn =
                                         capture
                                             None
-                                            VerificationFinding.CaseNotifiedOnProjection
-                                            (fun () -> Projections.caseNotifiedOn row)
+                                            VerificationFinding.CaseReceivedOnProjection
+                                            (fun () -> Projections.caseReceivedOn row)
 
                                     let! claimedAmount =
                                         capture
@@ -175,7 +175,7 @@ module internal VerificationRows =
                                             ChangedAt = changedAt
                                             SearchText = searchText
                                             WorkSearchText = workSearchText
-                                            NotifiedOn = notifiedOn
+                                            ReceivedOn = receivedOn
                                             Claimed =
                                                 Projections.indexedMoney
                                                     claimedAmount
@@ -228,8 +228,8 @@ module internal VerificationRows =
 
                                     do!
                                         column
-                                            VerificationFinding.CaseNotifiedOnProjection
-                                            (fun row -> row.Index.NotifiedOn)
+                                            VerificationFinding.CaseReceivedOnProjection
+                                            (fun row -> row.Index.ReceivedOn)
 
                                     do!
                                         column

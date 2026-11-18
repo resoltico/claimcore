@@ -109,7 +109,6 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
             {
               input: "field:caseReference",
               row: null,
-              related: null,
               message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
             },
           ],

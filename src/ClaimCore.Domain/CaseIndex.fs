@@ -11,7 +11,7 @@ type CaseIndex =
         ChangedAt: DateTimeOffset
         SearchText: string option
         WorkSearchText: string option
-        NotifiedOn: CalendarDate option
+        ReceivedOn: CalendarDate option
         Claimed: Money option
         Payable: Money option
         Paid: Money option
@@ -36,11 +36,10 @@ module CaseIndex =
             ChangedAt = changedAt
             SearchText = fields |> Option.map CaseSearch.text
             WorkSearchText = workSearch
-            NotifiedOn =
+            ReceivedOn =
                 fields
-                |> Option.map (fun fields ->
-                    Registration.incidentNotificationDate fields.Registration)
-            Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
+                |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
+            Claimed = fields |> Option.bind (fun fields -> Registration.claimed fields.Registration)
             Paid =
                 fields
                 |> Option.bind (fun fields ->
