@@ -28,6 +28,7 @@
     <Compile Include="Notes.fs" />
     <Compile Include="RelatedCases.fs" />
     <Compile Include="Grants.fs" />
+    <Compile Include="CaseReporting.fs" />
     <Compile Include="WorklistSemantics.fs" />
     <Compile Include="CaseStages.fs" />
     <Compile Include="Reads.fs" />

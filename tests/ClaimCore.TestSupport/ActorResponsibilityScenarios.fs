@@ -355,7 +355,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
         Expect.equal
             changed
             (Outcome.Rejected Refusal.InvalidCursor)
-            "Unreleased cursor format 6 binds responsibility"
+            "Cursor format 7 binds responsibility"
 
         let! continued =
             Service.list

@@ -326,12 +326,17 @@ module internal Engine =
                                  |> Option.defaultValue Map.empty)
                                 plan.Changes
 
+                        let! reportDates =
+                            PartProjections.previousReportDates tx.Connection family.Id tx.CancellationToken
+
                         match
                             ProjectionRows.decision
                                 family
                                 plan.Changes
                                 origins
                                 (Map.tryFind family.Id summaries)
+                                (CalendarDate.ofDate plan.Header.BusinessDate.Value)
+                                reportDates
                         with
                         | Error _ -> return Error CoreFault.StoreIntegrityError
                         | Ok rows ->

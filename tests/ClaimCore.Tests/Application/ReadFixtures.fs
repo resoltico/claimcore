@@ -78,4 +78,5 @@ let current () =
         Snapshot = snapshot
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
         Index = CaseIndex.create instant snapshot None None None []
+        ReportDates = CaseReportDates.record (CalendarDate.ofDate DateOnly.MinValue) None None
     }

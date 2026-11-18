@@ -61,6 +61,7 @@ let private facts state responsible due : CaseWorkFacts =
         PaymentsNeedReview = false
         NextPendingDue = due
         NextDeadlineDue = None
+        ReportDates = None
     }
 
 [<Tests>]

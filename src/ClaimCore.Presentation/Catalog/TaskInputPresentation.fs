@@ -43,6 +43,8 @@ module TaskInputPresentation =
         | TaskInputId.TimelineFilter
         | TaskInputId.Order
         | TaskInputId.Due
+        | TaskInputId.CaseDate _
+        | TaskInputId.GroupBy
         | TaskInputId.Assignment ->
             TaskInputId.vocabularyName + "." + TaskInputId.key input + "." + part
 
@@ -59,6 +61,8 @@ module TaskInputPresentation =
         | TaskInputId.ReminderDue
         | TaskInputId.ReminderKindFilter
         | TaskInputId.DeadlineOutcomeFilter
+        | TaskInputId.CaseDate _
+        | TaskInputId.GroupBy
         | TaskInputId.IncludeInactive -> None
         | _ -> Some(messageKey input "hint")
 
@@ -68,6 +72,7 @@ module TaskInputPresentation =
         | TaskInputId.Target(InputTarget.NewCaseReference | InputTarget.LinkTargetReference) ->
             Some(FieldPresentation.descriptor BusinessField.CaseReference)
         | TaskInputId.Target InputTarget.LinkNote -> Some(ScalarRule.PlainText NoteText.constraints)
+        | TaskInputId.CaseDate _ -> Some(ScalarRule.PlannedDate CalendarDate.descriptor)
         | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.Reason) ->
             Some(ScalarRule.Text PartyName.descriptor)
         | TaskInputId.Target InputTarget.ProfileContact ->

@@ -42,6 +42,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
         CaseId = snapshot.CaseId
         Snapshot = snapshot
         Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None None None []
+        ReportDates = CaseReportDates.record (CalendarDate.ofDate DateOnly.MinValue) None None
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 

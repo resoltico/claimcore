@@ -133,6 +133,7 @@ type CaseListFilter<'text> =
         ResponsibleActor: ActorId option
         Assignment: CaseAssignment option
         Due: CaseDue option
+        Dates: Map<CaseDateFilter, CalendarDate>
     }
 
 module CaseListFilter =
@@ -159,6 +160,8 @@ module CaseListFilter =
                 |> Option.map CaseDue.plan
                 |> Option.defaultValue (WorkSelection.All [])
                 WorkSelection.Fact(WorkPredicate.Responsible filter.ResponsibleActor)
+                for item in CaseDateFilter.all do
+                    WorkSelection.Fact(WorkPredicate.CaseDate(item, Map.tryFind item filter.Dates))
             ]
 
     let create lifecycles statuses progress text order =
@@ -172,6 +175,7 @@ module CaseListFilter =
             ResponsibleActor = None
             Assignment = None
             Due = None
+            Dates = Map.empty
         }
 
     let empty<'text> : CaseListFilter<'text> =
@@ -202,6 +206,7 @@ module CaseListFilter =
                     ResponsibleActor = input.ResponsibleActor
                     Assignment = input.Assignment
                     Due = input.Due
+                    Dates = input.Dates
                 })
 
     let matches (filter: CaseListFilter<CaseSearchText>) lifecycle status progress text =

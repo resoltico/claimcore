@@ -46,7 +46,8 @@ module internal Projections =
         + DatabaseSession.dateExpression "deadline_due"
         + " AS deadline_due,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
         + CaseIdentityReads.referenceAt "c.case_id" ""
-        + " AS reserved_reference"
+        + " AS reserved_reference,"
+        + PartProjections.reportDateColumns
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -178,6 +179,7 @@ module internal Projections =
             Snapshot = snapshot
             SnapshotBytes = bytes |> Option.defaultValue Array.empty
             Index = index
+            ReportDates = PartProjections.reportDates row
         }
 
     let caseRow installationId row =

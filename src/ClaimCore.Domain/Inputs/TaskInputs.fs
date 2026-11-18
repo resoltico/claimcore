@@ -35,6 +35,8 @@ type TaskInputId =
     | ReminderKindFilter
     | DeadlineOutcomeFilter
     | IncludeInactive
+    | CaseDate of CaseDateFilter
+    | GroupBy
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskInputId =
@@ -63,6 +65,8 @@ module TaskInputId =
         | TaskInputId.Order -> "order"
         | TaskInputId.Due -> "due"
         | TaskInputId.Assignment -> "assignment"
+        | TaskInputId.CaseDate date -> CaseDateFilter.token date
+        | TaskInputId.GroupBy -> "groupBy"
 
     /// Opaque semantic tokens distinguish facts and group inputs from similarly named query controls.
     let token input =
@@ -92,6 +96,8 @@ module TaskInputId =
             TaskInputId.ReminderKindFilter
             TaskInputId.DeadlineOutcomeFilter
             TaskInputId.IncludeInactive
+            TaskInputId.GroupBy
+            yield! CaseDateFilter.all |> List.map TaskInputId.CaseDate
         ]
 
     let technical =

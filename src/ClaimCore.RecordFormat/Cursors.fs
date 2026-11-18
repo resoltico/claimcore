@@ -154,6 +154,8 @@ module Cursors =
                 filter.View
                 |> Option.map (CaseView.token >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
+                for KeyValue(kind, date) in filter.Dates do
+                    CaseDateFilter.token kind, JsonValue.String(CalendarDate.format date)
             ]
 
     let private instant (value: string) =
@@ -215,7 +217,7 @@ module Cursors =
                 "after", after
                 "filters", caseFilters filter
                 "kind", JsonValue.String "CASES"
-                "v", JsonValue.Integer 6L
+                "v", JsonValue.Integer 7L
             ]
 
     let private casePosition order =
@@ -260,7 +262,7 @@ module Cursors =
             | JsonValue.Object [ "after", after
                                  "filters", filters
                                  "kind", JsonValue.String "CASES"
-                                 "v", JsonValue.Integer 6L ] when
+                                 "v", JsonValue.Integer 7L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after

@@ -25,6 +25,7 @@ let checks _installation instant =
             Snapshot = snapshot
             SnapshotBytes = CaseRecord.encodeSnapshot snapshot
             Index = index
+            ReportDates = CaseReportDates.record (CalendarDate.ofDate DateOnly.MinValue) None None
         }
 
     let check finding get mutate =

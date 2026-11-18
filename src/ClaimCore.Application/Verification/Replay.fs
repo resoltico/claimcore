@@ -96,6 +96,7 @@ module internal Replay =
                         parts
                         state.Fold.Origins
                         (Map.tryFind id state.Fold.Summaries)
+                        state.Fold.ReportDates[id]
                     |> Result.mapError (fun _ ->
                         divergence None VerificationFinding.CaseProjection)
                     |> Result.map (fun row -> Map.add id row rows)))
@@ -123,6 +124,7 @@ module internal Replay =
                     Snapshot = row.Snapshot
                     SnapshotBytes = CaseRecord.encodeSnapshot row.Snapshot
                     Index = row.Index
+                    ReportDates = row.ReportDates
                 })
         )
 

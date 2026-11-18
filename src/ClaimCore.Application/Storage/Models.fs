@@ -27,6 +27,7 @@ type internal StoredCase =
         Snapshot: CaseSnapshot
         SnapshotBytes: byte array
         Index: CaseIndex
+        ReportDates: CaseReportDates
     }
 
 /// A logical part version is inseparable from its complete, decoded accepted root.

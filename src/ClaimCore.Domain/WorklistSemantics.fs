@@ -44,6 +44,7 @@ type CaseWorkFacts =
         NextPendingDue: CalendarDate option
         PaymentsNeedReview: bool
         NextDeadlineDue: CalendarDate option
+        ReportDates: (CaseReportDates * CalendarDate option) option
     }
 
 [<RequireQualifiedAccess>]
@@ -97,6 +98,7 @@ type WorkPredicate =
     | NextDeadlineDue of ReminderDue
     | ReminderState of ReminderState
     | ReminderDue of ReminderDue
+    | CaseDate of CaseDateFilter * CalendarDate option
 
 [<RequireQualifiedAccess>]
 type WorkSelection =
@@ -146,6 +148,12 @@ module WorkSelection =
             | WorkPredicate.Progress value ->
                 CaseState.fields facts.State
                 |> Option.exists (fun (_, progress) -> progress = value)
+            | WorkPredicate.CaseDate(filter, bound) ->
+                let field, _ = CaseDateFilter.bound filter
+                let date =
+                    facts.ReportDates
+                    |> Option.bind (fun (dates, received) -> CaseReportDates.value dates received field)
+                CaseDateFilter.matches filter bound date
             | WorkPredicate.Mine ->
                 facts.Responsible |> Option.exists (fun (actor, _) -> Some actor = requester)
             | WorkPredicate.Responsible value ->

@@ -27,6 +27,7 @@ type TaskChoiceId =
     | DeadlineOutcomeFilter
     | RegistrationCorrection
     | DecisionCorrection
+    | GroupBy
 
 module TaskChoiceId =
     let vocabulary =
@@ -53,6 +54,7 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> vocabularyTokens CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> vocabularyTokens CaseAssignment.vocabulary
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
+        | TaskChoiceId.GroupBy -> vocabularyTokens CaseGrouping.vocabulary
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderKind -> vocabularyTokens ReminderKind.vocabulary
         | TaskChoiceId.DeadlineOutcomeFilter -> vocabularyTokens DeadlineOutcome.vocabulary
@@ -83,6 +85,7 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> Vocabulary.name CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> Vocabulary.name CaseAssignment.vocabulary
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
+        | TaskChoiceId.GroupBy -> Vocabulary.name CaseGrouping.vocabulary
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderKind -> Vocabulary.name ReminderKind.vocabulary
         | TaskChoiceId.DeadlineOutcomeFilter -> Vocabulary.name DeadlineOutcome.vocabulary
@@ -111,6 +114,7 @@ module TaskChoiceId =
         | TaskInputId.Order -> Some TaskChoiceId.Order
         | TaskInputId.Assignment -> Some TaskChoiceId.Assignment
         | TaskInputId.Due -> Some TaskChoiceId.Due
+        | TaskInputId.GroupBy -> Some TaskChoiceId.GroupBy
         | TaskInputId.ReminderState -> Some TaskChoiceId.ReminderState
         | TaskInputId.Target InputTarget.ReminderPlanKind -> Some TaskChoiceId.ReminderKind
         | TaskInputId.DeadlineOutcomeFilter -> Some TaskChoiceId.DeadlineOutcomeFilter
@@ -128,6 +132,7 @@ module TaskChoiceId =
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter
+        | TaskInputId.CaseDate _
         | TaskInputId.IncludeInactive -> None
 
 [<RequireQualifiedAccess>]

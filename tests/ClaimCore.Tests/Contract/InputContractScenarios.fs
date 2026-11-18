@@ -287,6 +287,8 @@ let internal peopleFieldPresentation () =
             | TaskInputId.TimelineFilter
             | TaskInputId.Order
             | TaskInputId.Due
+            | TaskInputId.CaseDate _
+            | TaskInputId.GroupBy
             | TaskInputId.Assignment -> "input."
 
         Expect.equal

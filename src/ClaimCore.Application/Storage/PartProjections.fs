@@ -8,7 +8,7 @@ open ClaimCore.RecordFormat
 
 /// The sole SQL writer for aggregate-derived projection rows.
 module internal PartProjections =
-    let private caseParameters id (snapshot: CaseSnapshot) (index: CaseIndex) =
+    let private caseParameters id (snapshot: CaseSnapshot) (index: CaseIndex) (dates: CaseReportDates) =
         [|
             box (CaseId.value id)
             box (CaseReference.format snapshot.Reference)
@@ -35,6 +35,9 @@ module internal PartProjections =
             DatabaseSession.parameter index.WorkSearchText
             DatabaseSession.parameter (index.Outcome |> Option.map ClosureOutcome.token)
             DatabaseSession.parameter (index.DeadlineDue |> Option.map CalendarDate.format)
+            box (CalendarDate.format dates.Registered)
+            DatabaseSession.parameter (dates.Closed |> Option.map CalendarDate.format)
+            box (CalendarDate.format dates.LastActivity)
         |]
 
     let private exactlyOne count =
@@ -137,6 +140,37 @@ module internal PartProjections =
                 ()
         }
 
+    let reportDateColumns =
+        [ "registered_on"; "closed_on"; "last_activity_on" ]
+        |> List.map (fun column -> DatabaseSession.dateExpression column + " AS " + column)
+        |> String.concat ","
+
+    let reportDates row =
+        let date name =
+            DatabaseSession.namedOptionalCalendarDate name row |> Option.map CalendarDate.ofDate
+
+        match date "registered_on", date "last_activity_on" with
+        | Some registered, Some lastActivity ->
+            { CaseReportDates.Registered = registered
+              Closed = date "closed_on"
+              LastActivity = lastActivity }
+        | _ -> raise (RecordCorruptException "Missing case reporting dates.")
+
+    let previousReportDates connection id token =
+        task {
+            let! rows =
+                DatabaseSession.namedRows
+                    connection
+                    ($"SELECT {reportDateColumns} FROM claimcore.cases WHERE case_id=$1")
+                    [| box (CaseId.value id) |]
+                    token
+
+            match rows with
+            | [] -> return None
+            | [ row ] -> return Some(reportDates row)
+            | _ -> return raise (RecordCorruptException "A case has multiple reporting projections.")
+        }
+
     let family connection (row: FamilyProjectionDelta) token =
         task {
             let id = row.Snapshot.CaseId
@@ -144,8 +178,8 @@ module internal PartProjections =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text,outcome,deadline_due) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18,$19,$20::date) ON CONFLICT(case_id) DO UPDATE SET case_reference=EXCLUDED.case_reference,revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text,outcome=EXCLUDED.outcome,deadline_due=EXCLUDED.deadline_due"
-                    (caseParameters id row.Snapshot row.Index)
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,payment_review,responsible_actor,follow_up,work_search_text,outcome,deadline_due,registered_on,closed_on,last_activity_on) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18,$19,$20::date,$21::date,$22::date,$23::date) ON CONFLICT(case_id) DO UPDATE SET case_reference=EXCLUDED.case_reference,revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,received_on=EXCLUDED.received_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,payment_review=EXCLUDED.payment_review,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text,outcome=EXCLUDED.outcome,deadline_due,registered_on=EXCLUDED.registered_on,closed_on=EXCLUDED.closed_on,last_activity_on=EXCLUDED.last_activity_on"
+                    (caseParameters id row.Snapshot row.Index row.ReportDates)
                     token
 
             exactlyOne changed

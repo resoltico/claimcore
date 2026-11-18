@@ -26,6 +26,7 @@ module internal CaseWorkReads =
             NextPendingDue = work.FollowUp
             PaymentsNeedReview = record.Index.PaymentReview = Some true
             NextDeadlineDue = record.Index.DeadlineDue
+            ReportDates = Some(record.ReportDates, record.Index.ReceivedOn)
         }
 
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =

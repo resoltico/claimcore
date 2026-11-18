@@ -132,8 +132,14 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                 let origins =
                                     Map.ofList [ (change.Kind, change.PartId), change.Stamp ]
 
+                                let reportDates =
+                                    CaseReportDates.record
+                                        (CalendarDate.ofDate header.BusinessDate.Value)
+                                        (Some CaseStatus.Opened)
+                                        None
+
                                 let rows =
-                                    ProjectionRows.family family [ change ] origins None
+                                    ProjectionRows.family family [ change ] origins None reportDates
                                     |> Result.defaultWith (fun error ->
                                         failtestf "Historical projection: %A" error)
 

@@ -225,6 +225,9 @@ module internal VerificationRows =
                                         ProjectionVerification.column finding get expectedRow record
 
                                     do!
+                                        column VerificationFinding.CaseProjection _.ReportDates
+
+                                    do!
                                         column VerificationFinding.CaseStatusProjection (fun row ->
                                             row.Index.Status)
 

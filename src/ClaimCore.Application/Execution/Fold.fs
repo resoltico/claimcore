@@ -30,6 +30,7 @@ type internal FoldState =
         Parts: Map<PartKind * Guid, PartChange>
         Origins: Map<PartKind * Guid, SubjectStamp>
         Summaries: Map<CaseId, Attribution>
+        ReportDates: Map<CaseId, CaseReportDates>
         Accepted: Set<OperationId>
         NaturalKeys: Map<PartKind * string, Guid>
         Nonces: Set<string>
@@ -46,6 +47,7 @@ module internal Fold =
             Parts = Map.empty
             Origins = Map.empty
             Summaries = Map.empty
+            ReportDates = Map.empty
             Accepted = Set.empty
             NaturalKeys = Map.empty
             Nonces = Set.empty
@@ -564,7 +566,22 @@ module internal Fold =
 
                                     proof
                                     |> Result.map (fun (missing, present) ->
+                                        let dates =
+                                            match record.Changes.Head.Aggregate with
+                                            | AggregateReference.Person _ -> next.ReportDates
+                                            | AggregateReference.Family id ->
+                                                let status =
+                                                    next.Families[id]
+                                                    |> CaseFamily.snapshot
+                                                    |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+                                                    |> Option.map _.Status
+
+                                                let date = CalendarDate.ofDate header.BusinessDate.Value
+                                                let previous = Map.tryFind id next.ReportDates
+                                                Map.add id (CaseReportDates.record date status previous) next.ReportDates
+
                                         { next with
+                                            ReportDates = dates
                                             Head = record.Root.Position
                                             Accepted = Set.add header.OperationId next.Accepted
                                             Nonces = Set.union state.Nonces (Set.ofList nonces)

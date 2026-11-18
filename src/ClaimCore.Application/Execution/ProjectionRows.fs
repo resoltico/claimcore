@@ -62,6 +62,7 @@ type internal FamilyProjectionDelta =
     {
         Snapshot: CaseSnapshot
         Index: CaseIndex
+        ReportDates: CaseReportDates
         Work: WorkProjection
         Payments: PaymentProjection list
         Reminders: ReminderProjection list
@@ -128,6 +129,7 @@ module internal ProjectionRows =
     let private familyDelta
         (snapshot: CaseSnapshot)
         (index: CaseIndex)
+        reportDates
         id
         (currentWork: AcceptedPart<CaseWork option> option)
         (parts: PartChange list)
@@ -235,6 +237,7 @@ module internal ProjectionRows =
                 {
                     Snapshot = snapshot
                     Index = index
+                    ReportDates = reportDates
                     Work = work
                     Payments = List.ofSeq payments
                     Reminders = List.ofSeq reminders
@@ -243,19 +246,21 @@ module internal ProjectionRows =
                     Links = List.ofSeq links
                 }
 
-    let family (state: CaseFamily) parts origins summary =
+    let family (state: CaseFamily) parts origins summary reportDates =
         CaseFamily.rows state parts
         |> Result.bind (fun (_, index) ->
             match CaseFamily.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
+            | Some snapshot -> familyDelta snapshot index reportDates state.Id state.Work parts origins summary)
 
-    let decision (state: DecisionFacts) parts origins summary =
+    let decision (state: DecisionFacts) parts origins summary date previous =
         DecisionFacts.rows state parts
         |> Result.bind (fun (_, index) ->
             match DecisionFacts.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
+            | Some snapshot ->
+                let dates = CaseReportDates.record date index.Status previous
+                familyDelta snapshot index dates state.Id state.Work parts origins summary)
 
     let person state =
         Person.rows state
