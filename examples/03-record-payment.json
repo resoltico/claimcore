@@ -13,7 +13,8 @@
     "inputs": {
       "field:paymentDate": "2026-08-20",
       "field:paidAmount": "750.00",
-      "field:paidCurrency": "EUR"
+      "field:paidCurrency": "EUR",
+      "input:direction": "PAID"
     }
   }
 }
