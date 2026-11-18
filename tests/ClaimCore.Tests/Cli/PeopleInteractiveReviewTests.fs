@@ -186,7 +186,8 @@ let private run words (answer: string option) =
 
                             let review =
                                 {
-                                    OperationReview.Task = people.Task
+                                    OperationReview.ChangesOwnSignInIdentity = false
+                                    Task = people.Task
                                     Binding = (Submissions.command people).Binding
                                     Target = ReviewTarget.Person(Some targetActor)
                                     References = { Actors = [ targetActor ]; Cases = [] }

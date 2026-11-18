@@ -25,6 +25,7 @@ let private acts =
         (TaskId.ofLiteral "case.reinstate"), Consequence.Stewardship
         (TaskId.ofLiteral "case.erase"), Consequence.Irreversible
         (TaskId.ofLiteral "people.provisionOwner"), Consequence.Routine
+        (TaskId.ofLiteral "people.recoverOwner"), Consequence.Routine
         (TaskId.ofLiteral "people.register"), Consequence.Routine
         (TaskId.ofLiteral "people.admit"), Consequence.Routine
         (TaskId.ofLiteral "people.grant"), Consequence.Routine
@@ -32,6 +33,7 @@ let private acts =
         (TaskId.ofLiteral "people.enable"), Consequence.Routine
         (TaskId.ofLiteral "people.disable"), Consequence.Stewardship
         (TaskId.ofLiteral "people.setProfile"), Consequence.Routine
+        (TaskId.ofLiteral "people.changeSignInIdentity"), Consequence.Routine
         (TaskId.ofLiteral "people.eraseProfile"), Consequence.Irreversible
         (TaskId.ofLiteral "note.add"), Consequence.Routine
         (TaskId.ofLiteral "note.remove"), Consequence.Routine
@@ -108,7 +110,10 @@ let tests =
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "the actual CLI consumes Core operation consequences for every task" (fun () ->
                 for act, expected in acts do
-                    if act <> (TaskId.ofLiteral "people.provisionOwner") then
+                    let declaration =
+                        ClaimCore.Domain.Tasks.Registry.findDeclaration act |> Option.get
+
+                    if declaration.Exposure = TaskExposure.Client then
                         Expect.equal
                             (TaskRouting.consequence (TaskId.token act))
                             expected

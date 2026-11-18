@@ -98,6 +98,7 @@ let tests =
                             (TaskId.ofLiteral "people.enable")
                             (TaskId.ofLiteral "people.disable")
                             (TaskId.ofLiteral "people.setProfile")
+                            (TaskId.ofLiteral "people.changeSignInIdentity")
                             (TaskId.ofLiteral "people.eraseProfile")
                         ]
                         "Literal existing-account action inventory"

@@ -93,6 +93,10 @@ let tests =
                         (List.contains (TaskId.ofLiteral "people.provisionOwner") acts)
                         "Provisioning is operator-only"
 
+                    Expect.isFalse
+                        (List.contains (TaskId.ofLiteral "people.recoverOwner") acts)
+                        "Owner recovery is operator-only"
+
                     Expect.equal
                         acts.Length
                         (List.distinct acts).Length

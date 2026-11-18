@@ -20,6 +20,7 @@ open ClaimCore.RecordFormat
 
 type Command =
     | Initialize of timeZone: string * owner: InitialOwner
+    | RecoverOwner of OwnerRecoveryInput
     | Verify of InstallationCheckpoint option
     | Rebuild of InstallationCheckpoint * MaintenanceHandle
     | AdmitRestoredInstallation of InstallationCheckpoint * MaintenanceHandle
@@ -32,6 +33,7 @@ type Command =
 [<RequireQualifiedAccess>]
 type CommandName =
     | Initialize
+    | RecoverOwner
     | Verify
     | Rebuild
     | AdmitRestoredInstallation
@@ -58,6 +60,7 @@ module Command =
     let name =
         function
         | Initialize _ -> CommandName.Initialize
+        | RecoverOwner _ -> CommandName.RecoverOwner
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
         | AdmitRestoredInstallation _ -> CommandName.AdmitRestoredInstallation
@@ -97,6 +100,13 @@ module CommandName =
                 CommandArgument.Operand "--owner-name NAME"
                 CommandArgument.Optional("--owner-contact", "TEXT")
                 CommandArgument.Optional("--owner-role", "ROLE")
+            ]
+        | CommandName.RecoverOwner ->
+            [
+                CommandArgument.Operand "--owner-issuer URL"
+                CommandArgument.Operand "--owner-subject SUBJECT"
+                CommandArgument.Optional("--owner-name", "NAME")
+                CommandArgument.Optional("--actor-id", "ID")
             ]
         | CommandName.Verify -> [ CommandArgument.Optional("--checkpoint", "FILE") ]
         | CommandName.Rebuild ->
@@ -236,6 +246,50 @@ module Inputs =
 
                         Error(UsageError.InvalidValue(flag, values[flag])))
 
+    let private recoverOwner arguments =
+        let allowed = [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--actor-id" ]
+
+        let rec options values =
+            function
+            | [] -> Ok values
+            | flag :: raw :: rest when List.contains flag allowed ->
+                if raw.StartsWith("--", StringComparison.Ordinal) then
+                    Error(UsageError.MissingValue flag)
+                elif Map.containsKey flag values then
+                    Error(UsageError.DuplicateOption flag)
+                else
+                    options (Map.add flag raw values) rest
+            | [ flag ] when List.contains flag allowed -> Error(UsageError.MissingValue flag)
+            | flag :: _ -> Error(UsageError.UnknownOption(flag, None))
+
+        options Map.empty arguments
+        |> Result.bind (fun values ->
+            match Map.tryFind "--owner-issuer" values, Map.tryFind "--owner-subject" values with
+            | None, _ -> Error(UsageError.MissingOption "--owner-issuer")
+            | _, None -> Error(UsageError.MissingOption "--owner-subject")
+            | Some issuer, Some subject ->
+                let name = Map.tryFind "--owner-name" values
+
+                let actor =
+                    Map.tryFind "--actor-id" values
+                    |> Option.map (fun raw ->
+                        match Guid.TryParseExact(raw, "D") with
+                        | true, value -> ActorId.create value
+                        | _ -> None)
+
+                match PrincipalKey.human issuer subject, actor with
+                | Ok principal, (None | Some(Some _)) ->
+                    Ok(
+                        RecoverOwner
+                            {
+                                Principal = principal
+                                ActorId = Option.flatten actor
+                                Name = name
+                            }
+                    )
+                | _ ->
+                    Error(UsageError.InvalidValue("--owner-issuer/--owner-subject/--actor-id", "")))
+
     let private verify arguments =
         match arguments with
         | [] -> Ok(Verify None)
@@ -302,6 +356,7 @@ module Inputs =
         | CommandName.Help -> noArguments Help arguments |> usage
         | CommandName.Version -> noArguments Version arguments |> usage
         | CommandName.Initialize -> initialize arguments |> usage
+        | CommandName.RecoverOwner -> recoverOwner arguments |> usage
         | CommandName.Head -> noArguments Head arguments |> usage
         | CommandName.Status -> noArguments Status arguments |> usage
         | CommandName.Maintenance -> maintenance arguments |> usage
@@ -333,6 +388,8 @@ module Inputs =
                         name = CommandName.Initialize
                         ->
                         CommandInputFailure.Operator OperatorFault.InitialOwnerInvalid
+                    | UsageProblem(UsageError.InvalidValue _) when name = CommandName.RecoverOwner ->
+                        CommandInputFailure.Operator OperatorFault.OwnerRecoveryRefused
                     | UsageProblem(UsageError.UnknownOption _ | UsageError.ExtraOperand _ | UsageError.UnknownTopic _) ->
                         CommandInputFailure.Operator OperatorFault.InvocationInvalid
                     | UsageProblem issue ->

@@ -230,6 +230,7 @@ let peopleEnvironment target =
         EnabledHumanOwners = 2
         ActorCount = 1
         TargetPrincipal = Some target
+        PrincipalOwner = None
     }
 
 let principalInputs principal =

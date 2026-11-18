@@ -52,3 +52,7 @@ module PersonDescription =
             ->
             Ok(describe before value)
         | _ -> Error RecordViolation.InvalidSubjectState
+
+    let changesSignInIdentity (description: PersonPartDescription) =
+        description.Principal
+        |> Option.exists (fun change -> change.Before.IsSome && change.After.IsSome)

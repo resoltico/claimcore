@@ -162,7 +162,8 @@ module internal ExecutionEnvironment =
                     task {
                         match binding with
                         | _ when
-                            not (
+                            selected.Declaration.Exposure <> TaskExposure.Operator
+                            && not (
                                 Access.can principal access Capability.ReadAccess Scope.Installation
                             )
                             ->
@@ -203,6 +204,16 @@ module internal ExecutionEnvironment =
                         |]
                         tx.CancellationToken
 
+                let current = person |> Option.map _.Actor.Principal
+
+                let proposed =
+                    InputSelection.personPrincipal selected.Declaration.Exposure current inputs
+
+                let! owner =
+                    match proposed with
+                    | Some key -> AggregateStorage.principalOwner tx key
+                    | None -> System.Threading.Tasks.Task.FromResult None
+
                 let environment =
                     {
                         PersonEnvironment.Requester = access
@@ -211,10 +222,8 @@ module internal ExecutionEnvironment =
                         TargetCases = cases
                         ActorCount = DatabaseSession.value<int> 0 counts.Head
                         EnabledHumanOwners = DatabaseSession.value<int> 1 counts.Head
-                        TargetPrincipal =
-                            person
-                            |> Option.map _.Actor.Principal
-                            |> Option.orElseWith (fun () -> InputSelection.principal inputs)
+                        TargetPrincipal = current |> Option.orElse proposed
+                        PrincipalOwner = owner
                     }
 
                 return DecisionSnapshot.person selected environment person

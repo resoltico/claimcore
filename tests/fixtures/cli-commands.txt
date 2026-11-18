@@ -50,6 +50,7 @@ case timeline R-1
 case timeline R-1 --filter facts --limit 5 --all
 case timeline R-1 --filter work --cursor abc --limit 1
 people set-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored --expected-revision 1
+people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --issuer https://id.example/ --subject new-sub --expected-revision 1
 people erase-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --limit 1
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all

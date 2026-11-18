@@ -92,6 +92,8 @@
     <Compile Include="Tasks/People/PeopleEnable.fs" />
     <Compile Include="Tasks/People/PeopleDisable.fs" />
     <Compile Include="Tasks/People/PeopleSetProfile.fs" />
+    <Compile Include="Tasks/People/PeopleChangeSignInIdentity.fs" />
+    <Compile Include="Tasks/People/PeopleRecoverOwner.fs" />
     <Compile Include="Tasks/People/PeopleEraseProfile.fs" />
     <Compile Include="Tasks/CaseParsing.fs" />
     <Compile Include="Tasks/CaseRules.fs" />

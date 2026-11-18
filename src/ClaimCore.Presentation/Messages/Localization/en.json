@@ -1,4 +1,12 @@
 {
+  "task.people.changeSignInIdentity.label": "Change sign-in identity",
+  "task.people.changeSignInIdentity.meaning": "Bind this account to a new issuer and subject. The account keeps its roles and recorded work.",
+  "task.people.changeSignInIdentity.done": "Sign-in identity changed.",
+  "task.people.recoverOwner.label": "Recover Owner access",
+  "task.people.recoverOwner.meaning": "Restore installation Owner access for a person or register a new Owner.",
+  "diagnostic.IDENTITY_RESERVED": "This sign-in identity is reserved by another account.",
+  "diagnostic.NO_CHANGES": "The sign-in identity is already current.",
+  "notice.changesOwnSignInIdentity": "Signing in with your current identity will no longer open this account.",
   "task.case.amendRegistration.label": "Update claim details",
   "task.case.amendRegistration.meaning": "Change selected claim details. Details you leave out and the case reference stay as they are.",
   "task.case.close.label": "Close the case",

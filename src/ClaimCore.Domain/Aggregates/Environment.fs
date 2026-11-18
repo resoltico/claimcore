@@ -22,4 +22,5 @@ type PersonEnvironment =
         EnabledHumanOwners: int
         ActorCount: int
         TargetPrincipal: PrincipalKey option
+        PrincipalOwner: ActorId option
     }

@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "Mainīt pierakstīšanās identitāti",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "Saistiet šo kontu ar jaunu izdevēju un subjektu. Konta lomas un reģistrētais darbs tiek saglabāti.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "Pierakstīšanās identitāte ir mainīta.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "Atgūt instalācijas īpašnieka piekļuvi",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "Atjaunojiet personai instalācijas īpašnieka piekļuvi vai reģistrējiet jaunu īpašnieku.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "Šī pierakstīšanās identitāte ir rezervēta citam kontam.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "Šī pierakstīšanās identitāte jau tiek izmantota šim kontam.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "Pierakstoties ar pašreizējo identitāti, šo kontu vairs nevarēs atvērt.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "Labot prasījuma datus",
     "source": "5ae6604c4520"

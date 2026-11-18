@@ -15,6 +15,9 @@ type OperatorFault =
     | PermissionDenied
     | TimeZoneInvalid
     | InitialOwnerInvalid
+    | OwnerRecoveryRefused
+    | OwnerRecoveryNameRequired
+    | OwnerRecoveryIdentityReserved
     | AlreadyInitialized
     | UnsupportedServer
     | SchemaMismatch

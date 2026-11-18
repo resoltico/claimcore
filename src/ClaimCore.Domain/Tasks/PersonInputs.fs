@@ -10,6 +10,16 @@ module internal PersonInputs =
         | Some(InputValue.Text value) -> Ok value
         | _ -> Error(Refusal.invalidInput (target, Violation.TextRequired))
 
+    let private signInIdentity inputs =
+        Admission.map2
+            (fun issuer subject -> issuer, subject)
+            (Parsing.text InputTarget.PrincipalIssuer inputs)
+            (Parsing.text InputTarget.PrincipalSubject inputs)
+
+    let identity kind inputs =
+        signInIdentity inputs
+        |> Result.bind (fun (issuer, subject) -> PrincipalKey.ofKind kind issuer subject)
+
     let principal inputs =
         let kind =
             Parsing.text InputTarget.PrincipalKind inputs
@@ -25,10 +35,7 @@ module internal PersonInputs =
         Admission.map2
             (fun kind (issuer, subject) -> kind, issuer, subject)
             kind
-            (Admission.map2
-                (fun issuer subject -> issuer, subject)
-                (Parsing.text InputTarget.PrincipalIssuer inputs)
-                (Parsing.text InputTarget.PrincipalSubject inputs))
+            (signInIdentity inputs)
         |> Result.bind (fun (kind, issuer, subject) -> PrincipalKey.ofKind kind issuer subject)
 
     let profile inputs =

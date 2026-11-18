@@ -239,6 +239,30 @@ let private publishedFaults () =
                     "UPDATE claimcore.baseline_identity SET script_sha256=$1"
                     [| box Baseline.digest |]
 
+            let recovery =
+                [
+                    "recover-owner"
+                    "--owner-issuer"
+                    "https://issuer.example/"
+                    "--owner-subject"
+                    "recovered-owner"
+                ]
+
+            let! proof =
+                AdministrationProcess.invoke binary connection [ "head" ] 0 |> Async.AwaitTask
+
+            let proofPath = privateText "checkpoint.json" (proof.GetRawText())
+
+            let restored =
+                [
+                    "--checkpoint"
+                    proofPath
+                    "--pause-generation"
+                    "1"
+                    "--pause-id"
+                    "10000000-0000-4000-8000-000000000099"
+                ]
+
             // Deliberately bypass the schema CHECK in this owned fixture to exercise stored-format admission.
             do!
                 sql
@@ -252,6 +276,9 @@ let private publishedFaults () =
                     [ "verify" ]
                     [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ]
                     [ "initialize"; "Etc/UTC" ] @ owner
+                    "rebuild" :: restored
+                    "admit-restored-installation" :: restored
+                    recovery @ [ "--owner-name"; "New Owner" ]
                 ] do
                 do! fault connection arguments "FORMAT_MISMATCH" ExitCode.Rejected
 
@@ -342,6 +369,44 @@ let private publishedFaults () =
                 (result.GetProperty("kind").GetString())
                 "STATUS"
                 "Valid source still works after negative controls"
+
+            do!
+                fault
+                    connection
+                    (recovery @ [ "--owner-name"; "New Owner" ])
+                    "OWNER_RECOVERY_REFUSED"
+                    ExitCode.Rejected
+
+            let! _ =
+                ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
+                |> Async.AwaitTask
+
+            do! fault connection recovery "OWNER_RECOVERY_NAME_REQUIRED" ExitCode.Rejected
+
+            let! recovered =
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    (recovery @ [ "--owner-name"; "New Owner" ])
+                    0
+                |> Async.AwaitTask
+
+            Expect.equal
+                (recovered.GetProperty("kind").GetString())
+                "OWNER_RECOVERED"
+                "Published command registers a new Owner"
+
+            let actorId = recovered.GetProperty("actorId").GetGuid()
+
+            let! unchanged =
+                AdministrationProcess.invoke binary connection recovery 0 |> Async.AwaitTask
+
+            Expect.equal
+                (unchanged.GetProperty("kind").GetString())
+                "OWNER_UNCHANGED"
+                "Repeated recovery reports unchanged"
+
+            Expect.equal (unchanged.GetProperty("actorId").GetGuid()) actorId "Same account"
 
             let proxySettings =
                 NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())

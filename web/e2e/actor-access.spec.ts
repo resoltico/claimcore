@@ -6,7 +6,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
-import { login, sessionToken } from "./session-helpers";
+import { browserRequest, login, sessionToken } from "./session-helpers";
+import { type ResponseFor, endpoints } from "@contracts/client";
 
 const ownerRoles = ["CASE_HANDLER", "PAYMENT_RECORDER"] as const;
 const ownerGrants = async (page: Page, active: boolean) => {
@@ -131,5 +132,73 @@ test("unregistered human authenticates without gaining a wider grant", async ({
     await opaqueCaseRefusal(unknown, fixture.reference);
   } finally {
     await context.close();
+  }
+});
+
+test("changing sign-in identity moves case access to a fresh session", async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(2 * freshLoginWorkflowTimeout);
+  const fixture = await prepareRoleFixture(page);
+  const inventory = await syntheticPrincipals();
+  const actor = await selectedActor(page, fixture.principal);
+  const { origin } = new URL(page.url());
+  const existing = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: true });
+  const replacement = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: true });
+  const bind = async (subject: string) =>
+    applyPeople(page, {
+      operationId: mintOperationId(),
+      task: "people.changeSignInIdentity",
+      binding: await reviewedPeopleBinding(page, actor),
+      inputs: {
+        "input:principal.issuer": inventory.issuer,
+        "input:principal.subject": subject,
+      },
+    });
+  const verifyAccess = async (viewer: Page) => {
+    const endpoint = endpoints.find((entry) => entry.id === "case.get")!;
+    const response = await browserRequest(viewer, endpoint.path, {
+      method: endpoint.method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-ClaimCore-Antiforgery": await sessionToken(viewer),
+      },
+      body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: fixture.reference } }),
+    });
+    expect(response.status).toBe(200);
+    const { outcome } = response.payload as ResponseFor<"case.get", "DATA">;
+    expect(outcome.kind).toBe("SUCCEEDED");
+  };
+  let moved = false;
+  try {
+    const oldSession = await existing.newPage();
+    await oldSession.goto("/");
+    await login(oldSession, "Cases", "Sign in", "synthetic-steward");
+    await verifyAccess(oldSession);
+
+    await bind(inventory.replacementSubject);
+    moved = true;
+    await oldSession.reload();
+    await expect(
+      oldSession.getByRole("heading", { name: "You don’t have access yet" }),
+    ).toBeVisible();
+    await opaqueCaseRefusal(oldSession, fixture.reference);
+
+    const newSession = await replacement.newPage();
+    await newSession.goto("/");
+    await login(newSession, "Cases", "Sign in", "synthetic-replacement");
+    await verifyAccess(newSession);
+    expect(
+      await selectedActor(page, { ...fixture.principal, subject: inventory.replacementSubject }),
+    ).toBe(actor);
+  } finally {
+    try {
+      if (moved) {
+        await bind(inventory.stewardSubject);
+      }
+    } finally {
+      await Promise.all([existing.close(), replacement.close()]);
+    }
   }
 });

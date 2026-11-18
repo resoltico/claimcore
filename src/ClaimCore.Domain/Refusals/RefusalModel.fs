@@ -93,6 +93,8 @@ type PeopleRefusal =
     | ActorChanged
     | HumanPrincipalRequired
     | RoleScopeNotApplicable
+    | IdentityReserved
+    | NoChanges
 
 [<RequireQualifiedAccess>]
 type AccessRefusal =

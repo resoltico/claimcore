@@ -14,6 +14,7 @@ type OperationReview =
         Binding: Binding
         Changes: ClaimCore.Domain.Changes.DescribedPart list
         Context: RuntimeContext
+        ChangesOwnSignInIdentity: bool
     }
 
 [<RequireQualifiedAccess>]

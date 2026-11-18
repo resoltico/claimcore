@@ -282,17 +282,6 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
     </fieldset>
   );
 };
-const peopleInputBound = (input: Input, props: Props): boolean => {
-  if (props.binding.kind !== "PEOPLE") {
-    return false;
-  }
-  return (
-    "actorId" in props.binding &&
-    ["input:principal.kind", "input:principal.issuer", "input:principal.subject"].includes(input.id)
-  );
-};
-const boundInput = (input: Input, props: Props): boolean =>
-  input.source === "BINDING" || peopleInputBound(input, props);
 const permitted = (input: Input, props: Props): boolean => {
   const editable =
     props.affordance === undefined ? undefined : new Set<string>(props.affordance.editable);
@@ -301,12 +290,7 @@ const permitted = (input: Input, props: Props): boolean => {
     input.id !== "field:caseReference" ||
     props.task.subject !== "PEOPLE" ||
     grantScope(props.values) === "CASE";
-  return (
-    authored &&
-    (editable === undefined || editable.has(input.id)) &&
-    scoped &&
-    !boundInput(input, props)
-  );
+  return authored && (editable === undefined || editable.has(input.id)) && scoped;
 };
 const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
   // The grant scope already controls omission; a visible case reference is required.

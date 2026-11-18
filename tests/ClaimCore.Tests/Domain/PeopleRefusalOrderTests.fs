@@ -564,6 +564,7 @@ let private ordering () =
                 EnabledHumanOwners = scenario.EnabledOwners
                 ActorCount = scenario.Actors
                 TargetPrincipal = Some targetPrincipal
+                PrincipalOwner = None
             }
 
         let original = T.context 605

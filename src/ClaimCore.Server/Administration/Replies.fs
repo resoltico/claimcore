@@ -15,6 +15,7 @@ open ClaimCore.RecordFormat
 [<RequireQualifiedAccess; NoComparison>]
 type DatabaseSuccess =
     | Initialized of Guid
+    | OwnerRecovery of OwnerRecoveryResult
     | Rebuilt of ProjectionRebuildReport
     | RestoredInstallationAdmitted of RestoreAdmissionReport
     | Status of InstallationStatus
@@ -202,6 +203,29 @@ module Replies =
                 | _ -> None)
                 (record id |> field "installationId" id uuid)
             variant
+                "OWNER_RECOVERED"
+                (OwnerRecoveryResult.Recovered
+                 >> DatabaseSuccess.OwnerRecovery
+                 >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.OwnerRecovery(OwnerRecoveryResult.Recovered(actor,
+                                                                                              operation))) ->
+                    Some(actor, operation)
+                | _ -> None)
+                (record (fun actor operation -> actor, operation)
+                 |> field "actorId" fst ResponseScalars.actorId
+                 |> field "operationId" snd ResponseScalars.operationId)
+            variant
+                "OWNER_UNCHANGED"
+                (OwnerRecoveryResult.Unchanged
+                 >> DatabaseSuccess.OwnerRecovery
+                 >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.OwnerRecovery(OwnerRecoveryResult.Unchanged actor)) ->
+                    Some actor
+                | _ -> None)
+                (record id |> field "actorId" id ResponseScalars.actorId)
+            variant
                 "VERIFIED"
                 (DatabaseSuccess.Verified >> Reply.Succeeded)
                 (function
@@ -298,6 +322,9 @@ module Replies =
 
     let initialized id =
         Reply.Succeeded(DatabaseSuccess.Initialized id) |> encode
+
+    let ownerRecovery result =
+        Reply.Succeeded(DatabaseSuccess.OwnerRecovery result) |> encode
 
     /// Head is the canonical checkpoint artifact, directly reusable as --checkpoint FILE.
     let head checkpoint =

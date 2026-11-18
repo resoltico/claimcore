@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "Cambiar la identidad de inicio de sesión",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "Vincula esta cuenta a un nuevo emisor y sujeto. La cuenta conserva sus roles y el trabajo registrado.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "Se cambió la identidad de inicio de sesión.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "Recuperar el acceso de propietario de la instalación",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "Restablece el acceso de una persona como propietaria de la instalación o registra a un nuevo propietario.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "Esta identidad de inicio de sesión está reservada para otra cuenta.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "Esta cuenta ya utiliza esta identidad de inicio de sesión.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "Si inicias sesión con tu identidad actual, ya no podrás abrir esta cuenta.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "Actualizar los datos de la reclamación",
     "source": "5ae6604c4520"

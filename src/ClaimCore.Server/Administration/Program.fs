@@ -34,6 +34,7 @@ let main arguments =
                 let mutates =
                     match command with
                     | Initialize _
+                    | RecoverOwner _
                     | Rebuild _
                     | AdmitRestoredInstallation _
                     | Maintenance _ -> true

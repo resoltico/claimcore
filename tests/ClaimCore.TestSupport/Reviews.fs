@@ -33,7 +33,8 @@ let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) 
         }
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Target = ReviewTarget.Case(after.CaseId, after.Reference)
         Binding = binding
         References = { Actors = []; Cases = [] }
@@ -79,7 +80,8 @@ let workReview
         |> Seq.toList
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = actors; Cases = [] }
@@ -117,7 +119,8 @@ let reminderReview
         |> Result.defaultWith invalidOp
 
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = []; Cases = [] }
@@ -151,7 +154,8 @@ let personReview
     context
     =
     {
-        OperationReview.Task = task
+        OperationReview.ChangesOwnSignInIdentity = false
+        Task = task
         Binding = binding
         Target = ReviewTarget.Person target
         References = references

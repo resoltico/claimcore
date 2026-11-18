@@ -3919,6 +3919,9 @@
             "$ref": "#/components/schemas/Affordance.people.setProfile"
           },
           {
+            "$ref": "#/components/schemas/Affordance.people.changeSignInIdentity"
+          },
+          {
             "$ref": "#/components/schemas/Affordance.people.eraseProfile"
           },
           {
@@ -3983,6 +3986,7 @@
             "people.enable": "#/components/schemas/Affordance.people.enable",
             "people.disable": "#/components/schemas/Affordance.people.disable",
             "people.setProfile": "#/components/schemas/Affordance.people.setProfile",
+            "people.changeSignInIdentity": "#/components/schemas/Affordance.people.changeSignInIdentity",
             "people.eraseProfile": "#/components/schemas/Affordance.people.eraseProfile",
             "people.admit": "#/components/schemas/Affordance.people.admit",
             "work.update": "#/components/schemas/Affordance.work.update",
@@ -5724,6 +5728,120 @@
           },
           "binding": {
             "$ref": "#/components/schemas/Binding.PEOPLE.new"
+          },
+          "seeds": {
+            "$ref": "#/components/schemas/AffordanceSeeds"
+          },
+          "editable": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "field:incidentDate",
+                "field:incidentNotificationDate",
+                "field:incidentCountry",
+                "field:incidentDescription",
+                "field:policyNumber",
+                "field:insurerClaimReference",
+                "field:claimantName",
+                "field:insurerName",
+                "field:claimedAmount",
+                "field:claimedCurrency",
+                "field:caseReference",
+                "field:paymentDecisionDate",
+                "field:payableAmount",
+                "field:payableCurrency",
+                "field:paymentDate",
+                "field:paidAmount",
+                "field:paidCurrency",
+                "field:status",
+                "field:responsibleActor",
+                "field:handlingSummary",
+                "group:registration",
+                "group:decision",
+                "group:payment",
+                "input:operationId",
+                "input:expectedRevision",
+                "input:expectedFamilySequence",
+                "input:reason",
+                "input:principal.kind",
+                "input:principal.issuer",
+                "input:principal.subject",
+                "input:profile.displayName",
+                "input:profile.contact",
+                "input:directorySearch",
+                "input:grants",
+                "input:role",
+                "input:limit",
+                "input:cursor",
+                "input:text",
+                "input:reminderId",
+                "input:noteId",
+                "input:noteText",
+                "input:paymentId",
+                "input:reminderAction",
+                "input:reminderDueDate",
+                "input:expectedWorkRevision",
+                "input:expectedReminderRevision",
+                "input:scope",
+                "input:actorId",
+                "input:caseId",
+                "input:lifecycle",
+                "input:status",
+                "input:progress",
+                "input:caseView",
+                "input:responsibleActorFilter",
+                "input:roleFilter",
+                "input:reminderView",
+                "input:timelineFilter",
+                "input:order",
+                "input:assignment",
+                "input:due",
+                "input:reminderState",
+                "input:reminderDue",
+                "input:includeInactive"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 63
+          },
+          "choices": {
+            "$ref": "#/components/schemas/AffordanceChoices"
+          },
+          "blocked": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HumanAdvice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "task",
+          "labelId",
+          "binding",
+          "seeds",
+          "editable",
+          "choices",
+          "blocked"
+        ]
+      },
+      "Affordance.people.changeSignInIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.changeSignInIdentity"
+          },
+          "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "$ref": "#/components/schemas/AffordanceSeeds"
@@ -11447,12 +11565,14 @@
               "case.reopen",
               "case.erase",
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit",
               "work.update",
@@ -12179,7 +12299,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 10
+            "maxItems": 12
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
@@ -12662,6 +12782,7 @@
             "WORK_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "CORRECTION_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
+            "NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "FAMILY_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PAYMENT_NOT_FOUND": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
@@ -12674,6 +12795,7 @@
             "DECISION_HAS_PAYMENTS": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "IDENTITY_RESERVED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "NOT_OFFERED": "#/components/schemas/DataRejection.NOT_OFFERED",
             "REMINDER_NOT_OFFERED": "#/components/schemas/DataRejection.REMINDER_NOT_OFFERED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT",
@@ -12733,7 +12855,8 @@
               "CORRECTION_REQUIRES_EXISTING_VALUE",
               "DECISION_HAS_PAYMENTS",
               "HUMAN_PRINCIPAL_REQUIRED",
-              "ROLE_SCOPE_NOT_APPLICABLE"
+              "ROLE_SCOPE_NOT_APPLICABLE",
+              "IDENTITY_RESERVED"
             ]
           },
           "action": {
@@ -13032,7 +13155,8 @@
             "enum": [
               "WORK_NO_CHANGES",
               "CORRECTION_NO_CHANGES",
-              "REMINDER_NO_CHANGES"
+              "REMINDER_NO_CHANGES",
+              "NO_CHANGES"
             ]
           },
           "action": {
@@ -14282,18 +14406,20 @@
             "items": {
               "enum": [
                 "people.provisionOwner",
+                "people.recoverOwner",
                 "people.register",
                 "people.grant",
                 "people.revoke",
                 "people.enable",
                 "people.disable",
                 "people.setProfile",
+                "people.changeSignInIdentity",
                 "people.eraseProfile",
                 "people.admit"
               ]
             },
             "minItems": 0,
-            "maxItems": 9
+            "maxItems": 11
           },
           "profileSeed": {
             "oneOf": [
@@ -15613,12 +15739,14 @@
           "act": {
             "enum": [
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit"
             ]
@@ -17048,6 +17176,36 @@
           "input:grants"
         ]
       },
+      "OperationInputs.people.changeSignInIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:principal.issuer": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:principal.subject": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:principal.issuer",
+          "input:principal.subject"
+        ]
+      },
       "OperationInputs.people.grant": {
         "type": "object",
         "additionalProperties": false,
@@ -17563,12 +17721,14 @@
               "case.reopen",
               "case.erase",
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit",
               "work.update",
@@ -17601,6 +17761,9 @@
           },
           "context": {
             "$ref": "#/components/schemas/RuntimeContext"
+          },
+          "changesOwnSignInIdentity": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -17672,6 +17835,9 @@
             "$ref": "#/components/schemas/OperationSubmission.people.setProfile"
           },
           {
+            "$ref": "#/components/schemas/OperationSubmission.people.changeSignInIdentity"
+          },
+          {
             "$ref": "#/components/schemas/OperationSubmission.people.eraseProfile"
           },
           {
@@ -17727,6 +17893,7 @@
             "people.enable": "#/components/schemas/OperationSubmission.people.enable",
             "people.disable": "#/components/schemas/OperationSubmission.people.disable",
             "people.setProfile": "#/components/schemas/OperationSubmission.people.setProfile",
+            "people.changeSignInIdentity": "#/components/schemas/OperationSubmission.people.changeSignInIdentity",
             "people.eraseProfile": "#/components/schemas/OperationSubmission.people.eraseProfile",
             "people.admit": "#/components/schemas/OperationSubmission.people.admit",
             "work.update": "#/components/schemas/OperationSubmission.work.update",
@@ -18116,6 +18283,30 @@
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.admit"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.changeSignInIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.changeSignInIdentity"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.PEOPLE"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.changeSignInIdentity"
           }
         },
         "required": [
@@ -18962,12 +19153,14 @@
           "task": {
             "enum": [
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit"
             ]
@@ -19121,12 +19314,14 @@
           "act": {
             "enum": [
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit"
             ]
@@ -19925,12 +20120,14 @@
               "case.reopen",
               "case.erase",
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit",
               "work.update",
@@ -20080,7 +20277,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20108,7 +20305,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20140,7 +20337,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20168,7 +20365,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20205,7 +20402,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20235,7 +20432,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20264,7 +20461,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20295,7 +20492,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20324,7 +20521,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20352,7 +20549,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20382,7 +20579,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20411,7 +20608,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20440,7 +20637,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20470,7 +20667,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20503,7 +20700,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20531,7 +20728,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20559,7 +20756,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20596,12 +20793,14 @@
                 "case.reopen",
                 "case.erase",
                 "people.provisionOwner",
+                "people.recoverOwner",
                 "people.register",
                 "people.grant",
                 "people.revoke",
                 "people.enable",
                 "people.disable",
                 "people.setProfile",
+                "people.changeSignInIdentity",
                 "people.eraseProfile",
                 "people.admit",
                 "work.update",
@@ -20616,7 +20815,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -20645,7 +20844,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 31
+            "maxItems": 33
           }
         },
         "required": [
@@ -21783,12 +21982,14 @@
           "act": {
             "enum": [
               "people.provisionOwner",
+              "people.recoverOwner",
               "people.register",
               "people.grant",
               "people.revoke",
               "people.enable",
               "people.disable",
               "people.setProfile",
+              "people.changeSignInIdentity",
               "people.eraseProfile",
               "people.admit"
             ]
@@ -23334,7 +23535,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 10
+            "maxItems": 12
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"

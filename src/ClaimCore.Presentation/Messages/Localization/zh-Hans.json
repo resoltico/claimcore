@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "更改登录身份",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "将此账户绑定到新的签发方和主体。账户保留现有角色和工作记录。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "已更改登录身份。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "恢复安装所有者权限",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "恢复某人作为安装所有者的访问权限，或注册新的所有者。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "此登录身份已为另一账户保留。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "此账户已使用该登录身份。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "以后使用当前身份登录时，将无法打开此账户。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "更新索赔资料",
     "source": "5ae6604c4520"

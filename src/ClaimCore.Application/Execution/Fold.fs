@@ -103,7 +103,7 @@ module internal Fold =
                         |> Option.exists (Access.eligibleAssignee person.Actor.Principal access))
         }
 
-    let personEnvironment state principal maintenance targetPrincipal =
+    let personEnvironment state principal maintenance targetPrincipal principalOwner =
         let cases =
             state.Families
             |> Map.values
@@ -136,6 +136,7 @@ module internal Fold =
                 |> Seq.length
             ActorCount = state.People.Count
             TargetPrincipal = targetPrincipal
+            PrincipalOwner = principalOwner
         }
 
     let private family state binding inputs =
@@ -156,10 +157,11 @@ module internal Fold =
                 |> Seq.tryFind (fun person -> person.Actor.Principal = principal))
         | _ -> None
 
-    let private targetPrincipal state binding inputs =
-        person state binding inputs
-        |> Option.map _.Actor.Principal
-        |> Option.orElseWith (fun () -> InputSelection.principal inputs)
+    let private principalOwner state principal =
+        Map.tryFind
+            (PartKind.Person, (PrincipalKey.naturalKey principal).ToUpperInvariant())
+            state.NaturalKeys
+        |> Option.bind ActorId.create
 
     let snapshot state principal maintenance selected binding inputs =
         match selected with
@@ -179,14 +181,21 @@ module internal Fold =
                  |> Seq.toList)
                 state.Origins
         | Task.Person task ->
+            let before = person state binding inputs
+            let current = before |> Option.map _.Actor.Principal
+
+            let proposed =
+                InputSelection.personPrincipal task.Declaration.Exposure current inputs
+
             DecisionSnapshot.person
                 task
                 (personEnvironment
                     state
                     principal
                     maintenance
-                    (targetPrincipal state binding inputs))
-                (person state binding inputs)
+                    (current |> Option.orElse proposed)
+                    (proposed |> Option.bind (principalOwner state)))
+                before
 
     let decide state context selected binding inputs =
         (snapshot
@@ -412,7 +421,11 @@ module internal Fold =
                 |> Result.bind (fun principal ->
                     let principal =
                         principal
-                        |> Option.orElseWith (fun () -> Person.creationPrincipal record.Changes)
+                        |> Option.orElseWith (fun () ->
+                            InputSelection.personPrincipal
+                                TaskExposure.Operator
+                                None
+                                (Some record.Root.Structure.Retained))
 
                     match principal with
                     | None -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)

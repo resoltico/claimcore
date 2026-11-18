@@ -69,6 +69,7 @@
     <Compile Include="Domain/Tasks/PeopleRegisterTests.fs" />
     <Compile Include="Domain/Tasks/PeopleAdmitTests.fs" />
     <Compile Include="Domain/Tasks/PeopleProvisionOwnerTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleIdentityTests.fs" />
     <Compile Include="Domain/Tasks/PeopleGrantTests.fs" />
     <Compile Include="Domain/Tasks/PeopleRevokeTests.fs" />
     <Compile Include="Domain/Tasks/PeopleEnableTests.fs" />

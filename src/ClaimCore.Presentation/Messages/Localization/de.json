@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "Anmeldeidentität ändern",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "Verknüpfen Sie dieses Konto mit einem neuen Aussteller und Subjekt. Die Rollen und erfassten Vorgänge des Kontos bleiben erhalten.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "Die Anmeldeidentität wurde geändert.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "Zugriff für den Installationseigentümer wiederherstellen",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "Stellen Sie den Zugriff als Installationseigentümer für eine Person wieder her oder registrieren Sie einen neuen Eigentümer.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "Diese Anmeldeidentität ist für ein anderes Konto reserviert.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "Diese Anmeldeidentität wird bereits für dieses Konto verwendet.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "Mit Ihrer bisherigen Anmeldeidentität können Sie dieses Konto künftig nicht mehr öffnen.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "Anspruchsangaben aktualisieren",
     "source": "5ae6604c4520"

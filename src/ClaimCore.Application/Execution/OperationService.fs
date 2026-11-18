@@ -173,6 +173,19 @@ module internal OperationService =
                 let! references =
                     ChangeReferenceReads.read tx plan.Changes.Head.Aggregate plan.Descriptions
 
+                let changesOwnSignInIdentity =
+                    plan.Snapshot.Requester.Actor
+                    |> Option.exists (fun actor ->
+                        plan.Descriptions
+                        |> List.exists (fun part ->
+                            match part.Description with
+                            | ClaimCore.Domain.Changes.PartDescription.Person description ->
+                                part.PartId = ActorId.value actor.ActorId
+                                && ClaimCore.Domain.Changes
+                                    .PersonDescription.changesSignInIdentity
+                                    description
+                            | _ -> false))
+
                 return
                     Outcome.Succeeded(
                         Previewed.Reviewed
@@ -182,6 +195,7 @@ module internal OperationService =
                                 References = references
                                 Binding = plan.Binding
                                 Changes = plan.Descriptions
+                                ChangesOwnSignInIdentity = changesOwnSignInIdentity
                                 Context = ServiceContext.runtime services tx.ObservedAt
                             }
                     )
@@ -337,11 +351,7 @@ module internal OperationService =
                         )
                     )
             | Some operation, Some inputs ->
-                let selected =
-                    ClaimCore.Domain.Tasks.Registry.all
-                    |> List.find (fun task ->
-                        (ClaimCore.Domain.Tasks.Task.declaration task).Exposure =
-                            TaskExposure.Operator)
+                let selected = ClaimCore.Domain.Tasks.Registry.provisionOwner
 
                 return!
                     inTransaction
@@ -359,3 +369,27 @@ module internal OperationService =
                 CancellationToken = token
                 Work = fun tx -> provisionOwnerInTransaction services tx operationId profile roles
             }
+
+    let internal recoverOwnerInTransaction (services: ServiceContext) tx operation binding name =
+        let _, issuer, subject = PrincipalKey.parts services.Principal
+
+        let values =
+            [
+                TaskInputId.Target InputTarget.PrincipalIssuer, InputValue.Text issuer
+                TaskInputId.Target InputTarget.PrincipalSubject, InputValue.Text subject
+                match name with
+                | Some name ->
+                    TaskInputId.Target InputTarget.ProfileDisplayName, InputValue.Text name
+                | None -> ()
+            ]
+            |> Map.ofList
+
+        let inputs = InputMap.create values Map.empty |> Option.get
+
+        inTransaction
+            services
+            tx
+            ClaimCore.Domain.Tasks.Registry.recoverOwner
+            operation
+            binding
+            inputs

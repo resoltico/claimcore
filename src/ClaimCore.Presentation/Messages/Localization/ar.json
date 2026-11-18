@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "تغيير هوية تسجيل الدخول",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "اربط هذا الحساب بجهة إصدار ومعرّف مستخدم جديدين. يحتفظ الحساب بأدواره وأعماله المسجّلة.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "تم تغيير هوية تسجيل الدخول.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "استعادة وصول مالك التثبيت",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "استعد صلاحيات مالك التثبيت لشخص أو سجّل مالكًا جديدًا.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "هوية تسجيل الدخول هذه محجوزة لحساب آخر.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "يستخدم هذا الحساب هوية تسجيل الدخول هذه بالفعل.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "لن تتمكّن من فتح هذا الحساب بتسجيل الدخول باستخدام هويتك الحالية.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "تحديث بيانات المطالبة",
     "source": "5ae6604c4520"

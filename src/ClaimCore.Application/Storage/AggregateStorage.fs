@@ -738,7 +738,7 @@ module internal AggregateStorage =
                 let! anchors =
                     DatabaseSession.rows
                         tx.Connection
-                        "SELECT l.operation_id,e.effect_index,o.operation_id,f.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind='PERSON' AND e.aggregate_id=$1 AND e.part_id=$1 ORDER BY e.revision DESC LIMIT 1"
+                        "SELECT current_op.operation_id,current_part.effect_index,origin_op.operation_id,origin.effect_index,identity_op.operation_id,identity.effect_index FROM claimcore.ledger_effects current_part JOIN claimcore.ledger current_op ON current_op.sequence=current_part.operation_sequence JOIN claimcore.ledger_effects origin ON origin.part_kind=current_part.part_kind AND origin.part_id=current_part.part_id AND origin.revision=1 JOIN claimcore.ledger origin_op ON origin_op.sequence=origin.operation_sequence JOIN LATERAL (SELECT operation_sequence,effect_index FROM claimcore.ledger_effects WHERE part_kind=current_part.part_kind AND part_id=current_part.part_id AND retained ? 'principal' ORDER BY revision DESC LIMIT 1) identity ON true JOIN claimcore.ledger identity_op ON identity_op.sequence=identity.operation_sequence WHERE current_part.aggregate_kind='PERSON' AND current_part.aggregate_id=$1 AND current_part.part_id=$1 ORDER BY current_part.revision DESC LIMIT 1"
                         [| box (ActorId.value id) |]
                         tx.CancellationToken
 
@@ -754,11 +754,18 @@ module internal AggregateStorage =
                         (DatabaseSession.value<Guid> 0 anchor
                          |> DatabaseSession.admitted OperationId.create)
 
-                let! origin, _ =
+                let! origin, cache =
                     operation
                         tx
                         cache
                         (DatabaseSession.value<Guid> 2 anchor
+                         |> DatabaseSession.admitted OperationId.create)
+
+                let! identity, _ =
+                    operation
+                        tx
+                        cache
+                        (DatabaseSession.value<Guid> 4 anchor
                          |> DatabaseSession.admitted OperationId.create)
 
                 let at (record: RetainedOperation) index =
@@ -767,7 +774,14 @@ module internal AggregateStorage =
                     |> Option.defaultWith (fun () -> corrupt "Person accepting index is absent.")
 
                 let person =
-                    Person.restore (at origin 3) (at latest 1) actor revision grants erasure
+                    Person.restore
+                        (at origin 3)
+                        (at latest 1)
+                        (at identity 5)
+                        actor
+                        revision
+                        grants
+                        erasure
                     |> Result.defaultWith (fun _ ->
                         corrupt "Person projection is inconsistent with its accepted anchors.")
 
@@ -783,6 +797,25 @@ module internal AggregateStorage =
 
                 return Some person
             | _ -> return corrupt "Person identity is duplicated."
+        }
+
+    let principalOwner (tx: ReadTx) principal =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT part_id FROM claimcore.ledger_effects WHERE part_kind='PERSON' AND upper(natural_key COLLATE \"C\")=$1"
+                    [| box ((PrincipalKey.naturalKey principal).ToUpperInvariant()) |]
+                    tx.CancellationToken
+
+            match rows with
+            | [] -> return None
+            | [ row ] ->
+                return
+                    Some(
+                        DatabaseSession.value<Guid> 0 row |> DatabaseSession.admitted ActorId.create
+                    )
+            | _ -> return corrupt "A natural person key has multiple owners."
         }
 
     let principal (tx: ReadTx) principal =

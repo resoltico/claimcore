@@ -127,6 +127,18 @@ module internal ReviewDocumentParts =
                                         NoticeTone.Warning
                             })
                 ]
+                @ [
+                    if review.ChangesOwnSignInIdentity then
+                        ScreenEntries.region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice
+                                {
+                                    MessageId = "notice.changesOwnSignInIdentity"
+                                    Reason = None
+                                    Tone = NoticeTone.Warning
+                                })
+                ]
                 @ ScreenEntries.factRegions facts
                 @ (if details.IsEmpty then
                        []

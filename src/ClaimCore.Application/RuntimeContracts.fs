@@ -123,6 +123,18 @@ type InitialOwner =
     }
 
 
+type OwnerRecoveryInput =
+    {
+        Principal: PrincipalKey
+        ActorId: ActorId option
+        Name: string option
+    }
+
+[<RequireQualifiedAccess>]
+type OwnerRecoveryResult =
+    | Recovered of ActorId * OperationId
+    | Unchanged of ActorId
+
 [<RequireQualifiedAccess>]
 type AdministrationFailure =
     | Fault of OperatorFault

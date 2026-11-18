@@ -6,6 +6,7 @@ open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
+open ClaimCore.Application.Execution
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Verification
 
@@ -85,6 +86,96 @@ module internal LedgerAdministration =
                 })
             token
 
+    let recoverOwner (source: NpgsqlDataSource) productVersion (input: OwnerRecoveryInput) token =
+        let refuse fault = raise (OperatorFaultException fault)
+
+        DatabaseSession.transaction
+            source
+            Data.IsolationLevel.ReadCommitted
+            token
+            (fun connection transaction ->
+                task {
+                    ServerSupport.require connection.PostgreSqlVersion
+                    let! installationId, timeZone = Baseline.require connection token
+                    let! _ = Transactions.configure connection Transactions.timeouts token
+                    let! head, observed = Transactions.head connection token
+
+                    let tx =
+                        LedgerStore.InTransaction(
+                            connection,
+                            installationId,
+                            head,
+                            observed,
+                            token
+                        )
+
+                    let! actorId =
+                        match input.ActorId with
+                        | Some _ -> System.Threading.Tasks.Task.FromResult input.ActorId
+                        | None -> AggregateStorage.principalOwner tx input.Principal
+
+                    let! target =
+                        match actorId with
+                        | Some id -> AggregateStorage.person tx id
+                        | None -> System.Threading.Tasks.Task.FromResult None
+
+                    let binding =
+                        match actorId, target with
+                        | Some id, Some person -> Binding.People(id, person.Revision)
+                        | None, None -> Binding.PeopleNew Revision.zero
+                        | _ -> refuse OperatorFault.OwnerRecoveryRefused
+
+                    let store =
+                        LedgerStore(
+                            source,
+                            {
+                                InstallationId = installationId
+                                BusinessTimeZone = timeZone
+                            },
+                            Transactions.timeouts
+                        )
+                        :> IStore
+
+                    let services =
+                        Service.create
+                            productVersion
+                            installationId
+                            store
+                            (InstallationCheck.calendar timeZone)
+                            input.Principal
+
+                    let operation =
+                        Transactions.operationId observed |> OperationId.create |> Option.get
+
+                    let! result =
+                        OperationService.recoverOwnerInTransaction
+                            services
+                            tx
+                            operation
+                            binding
+                            input.Name
+
+                    match result with
+                    | Verdict.Proceed _ ->
+                        let owner =
+                            actorId |> Option.defaultValue (ActorId.ofOperationId operation)
+
+                        do! DatabaseSession.commit transaction token
+                        return OwnerRecoveryResult.Recovered(owner, operation)
+                    | Verdict.Refuse(Refusal.People PeopleRefusal.NoChanges) when actorId.IsSome ->
+                        return OwnerRecoveryResult.Unchanged actorId.Value
+                    | Verdict.Refuse(Refusal.People PeopleRefusal.IdentityReserved) ->
+                        return refuse OperatorFault.OwnerRecoveryIdentityReserved
+                    | Verdict.Refuse(Refusal.InvalidInput _) when
+                        input.Name.IsNone && target.IsNone
+                        ->
+                        return refuse OperatorFault.OwnerRecoveryNameRequired
+                    | Verdict.Refuse _ -> return refuse OperatorFault.OwnerRecoveryRefused
+                    | Verdict.Fail _
+                    | Verdict.Replay _ ->
+                        return raise (RecordCorruptException "Owner recovery recording failed.")
+                })
+
 module internal AdministrationFailures =
     let private installation =
         function
@@ -160,6 +251,9 @@ type Administration(connectionString: string, productVersion: string) =
 
     member _.Initialize(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize source productVersion timeZone owner cancellationToken
+
+    member _.RecoverOwner(input, cancellationToken) =
+        LedgerAdministration.recoverOwner source productVersion input cancellationToken
 
     member _.Verify(expected, cancellationToken) =
         LedgerAdministration.verify source expected cancellationToken

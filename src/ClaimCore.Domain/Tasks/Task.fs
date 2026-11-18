@@ -55,6 +55,12 @@ module TaskDeclaration =
         | ActSubject.People, true -> BindingShape.PeopleNew
         | ActSubject.People, false -> BindingShape.People
 
+    let bindingShapes declaration =
+        match bindingShape declaration, declaration.Exposure with
+        | BindingShape.People, TaskExposure.Operator ->
+            [ BindingShape.People; BindingShape.PeopleNew ]
+        | shape, _ -> [ shape ]
+
 namespace ClaimCore.Domain
 
 open ClaimCore.Domain

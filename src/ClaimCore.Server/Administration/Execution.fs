@@ -16,6 +16,9 @@ module Execution =
             | Initialize(zone, owner) ->
                 let! id = administration.Initialize(zone, owner, token)
                 return Replies.initialized id
+            | RecoverOwner input ->
+                let! result = administration.RecoverOwner(input, token)
+                return Replies.ownerRecovery result
             | Verify expected ->
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
                 let! result = administration.Verify(expected, token)

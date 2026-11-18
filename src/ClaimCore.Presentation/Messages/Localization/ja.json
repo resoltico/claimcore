@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "サインイン ID を変更",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "このアカウントを新しい発行者とサブジェクトに関連付けます。アカウントのロールと作業記録は保持されます。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "サインイン ID を変更しました。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "システム所有者のアクセスを復旧",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "対象者のシステム所有者としてのアクセスを復旧するか、新しい所有者を登録します。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "このサインイン ID は別のアカウント用に予約されています。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "このアカウントはすでにこのサインイン ID を使用しています。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "現在の ID でサインインしても、このアカウントは開けなくなります。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "請求内容を更新",
     "source": "5ae6604c4520"

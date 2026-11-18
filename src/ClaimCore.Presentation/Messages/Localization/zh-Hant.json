@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "變更登入身分",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "將此帳戶繫結至新的簽發者和主體。帳戶會保留現有角色及工作記錄。",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "已變更登入身分。",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "恢復安裝擁有者權限",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "恢復某人作為安裝擁有者的存取權限，或註冊新的擁有者。",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "此登入身分已為另一個帳戶保留。",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "此帳戶已使用該登入身分。",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "日後使用目前的身分登入時，將無法開啟此帳戶。",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "更新索賠資料",
     "source": "5ae6604c4520"

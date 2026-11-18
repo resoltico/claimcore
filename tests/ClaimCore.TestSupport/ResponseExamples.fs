@@ -141,7 +141,8 @@ let preview: PreviewReply =
             Outcome.Succeeded(
                 Previewed.Reviewed
                     {
-                        OperationReview.Task = TaskId.ofLiteral "case.void"
+                        OperationReview.ChangesOwnSignInIdentity = false
+                        Task = TaskId.ofLiteral "case.void"
                         Target = ReviewTarget.Case(snapshot.CaseId, reference)
                         References = { Actors = []; Cases = [] }
                         Binding = Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first)

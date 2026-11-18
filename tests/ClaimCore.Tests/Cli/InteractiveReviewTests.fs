@@ -854,7 +854,8 @@ let reminderReviewDetails =
 
                             let core =
                                 {
-                                    OperationReview.Task =
+                                    OperationReview.ChangesOwnSignInIdentity = false
+                                    Task =
                                         TaskId.ofLiteral (
                                             if compound then
                                                 "reminder.completeAndPlanNext"

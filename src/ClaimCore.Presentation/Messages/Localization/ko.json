@@ -1,4 +1,36 @@
 {
+  "task.people.changeSignInIdentity.label": {
+    "text": "로그인 ID 변경",
+    "source": "d6e69a570915"
+  },
+  "task.people.changeSignInIdentity.meaning": {
+    "text": "이 계정을 새 발급자와 주체에 연결합니다. 계정의 역할과 기록된 작업은 유지됩니다.",
+    "source": "b336d0025bb8"
+  },
+  "task.people.changeSignInIdentity.done": {
+    "text": "로그인 ID를 변경했습니다.",
+    "source": "9a28ccbca4ce"
+  },
+  "task.people.recoverOwner.label": {
+    "text": "설치 소유자 액세스 복구",
+    "source": "bbb46788e17a"
+  },
+  "task.people.recoverOwner.meaning": {
+    "text": "설치 소유자로서의 액세스 권한을 복구하거나 새 소유자를 등록합니다.",
+    "source": "1a53d78003ba"
+  },
+  "diagnostic.IDENTITY_RESERVED": {
+    "text": "이 로그인 ID는 다른 계정에 예약되어 있습니다.",
+    "source": "72ab98b5f222"
+  },
+  "diagnostic.NO_CHANGES": {
+    "text": "이 계정에 이미 이 로그인 ID가 연결되어 있습니다.",
+    "source": "f185cbe05a8f"
+  },
+  "notice.changesOwnSignInIdentity": {
+    "text": "현재 ID로 로그인하면 더 이상 이 계정을 열 수 없습니다.",
+    "source": "cb71619ca387"
+  },
   "task.case.amendRegistration.label": {
     "text": "청구 내역 수정",
     "source": "5ae6604c4520"

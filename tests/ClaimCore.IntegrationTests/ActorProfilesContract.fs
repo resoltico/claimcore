@@ -469,3 +469,154 @@ let internal atomicWrites fixture =
             (DisplayName.Named(PartyName.parse DomainInputs.ownerProfile.DisplayName |> required))
             "Rollback restores the current profile"
     }
+
+let internal signInIdentityChange fixture =
+    task {
+        let! owner = caseWorker fixture
+
+        let create subject =
+            PrincipalKey.human "https://issuer.example/" subject |> required
+
+        let prior = create "old-sub"
+        let replacement = create "new-sub"
+
+        let! registered =
+            execute
+                owner
+                (id fixture 80)
+                prior
+                "people.register"
+                (ClaimCore.TestSupport.Submissions.profile
+                    ClaimCore.TestSupport.DomainInputs.actorProfile)
+
+        acceptedPeople registered
+
+        let actor = CaseFixtures.actorId (id fixture 80)
+
+        let! granted =
+            grant
+                owner
+                (id fixture 81)
+                prior
+                {
+                    GrantInput.Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople granted
+
+        let! opened =
+            Service.executeSubmission
+                owner
+                (request
+                    fixture
+                    82
+                    "REASSIGNED-IDENTITY"
+                    0L
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values registration
+                    )))
+                token
+
+        let case = accepted opened |> caseReceipt
+        let target = CaseSelector.Id case.CaseId
+
+        let! assigned =
+            Service.executeSubmission
+                owner
+                (ClaimCore.TestSupport.Submissions.create
+                    "work.update"
+                    (id fixture 83)
+                    (Binding.Work(target, Revision.zero))
+                    (ClaimCore.TestSupport.Submissions.work
+                        {
+                            CaseWorkInput.Responsible = WorkValue.Set(ActorId.format actor)
+                            Summary = WorkValue.Keep
+                        }))
+                token
+
+        accepted assigned |> ignore
+
+        let identityValues principal =
+            ClaimCore.TestSupport.Submissions.principal principal
+            |> Map.remove (ClaimCore.TestSupport.Submissions.input InputTarget.PrincipalKind)
+
+        let! preview =
+            task {
+                let! command =
+                    personSubmission
+                        fixture.Store
+                        (id fixture 84)
+                        fixture.Owner
+                        None
+                        "people.changeSignInIdentity"
+                        (identityValues (create "owner-replacement"))
+
+                return! Service.previewSubmission owner command token
+            }
+
+        match preview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
+            Expect.isTrue
+                review.ChangesOwnSignInIdentity
+                "A self-change is identified for rendering"
+        | other -> failtestf "Expected self-change review: %A" other
+
+        let! changed =
+            execute
+                owner
+                (id fixture 85)
+                prior
+                "people.changeSignInIdentity"
+                (identityValues replacement)
+
+        acceptedPeople changed
+
+        let! obsolete = Service.get (core fixture prior) { Target = target } token
+
+        Expect.equal
+            obsolete
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "The old principal cannot reach an assigned case"
+
+        let! current = Service.get (core fixture replacement) { Target = target } token
+
+        match current with
+        | Outcome.Succeeded case ->
+            Expect.isTrue
+                case.Mine
+                "The replacement identity inherits the actor's existing responsibility"
+
+            Expect.equal
+                (case.Work.Responsible |> Option.map _.ActorId)
+                (Some actor)
+                "The case still points to the original actor"
+        | other -> failtestf "The replacement identity lost its case access: %A" other
+
+        let! before = operation fixture (id fixture 80)
+        let! after = operation fixture (id fixture 85)
+
+        Expect.equal
+            before.Changes.Head.PartId
+            after.Changes.Head.PartId
+            "Registration and change share one history"
+
+        let! returned =
+            execute
+                owner
+                (id fixture 86)
+                replacement
+                "people.changeSignInIdentity"
+                (identityValues prior)
+
+        acceptedPeople returned
+        let! restored = Service.get (core fixture prior) { Target = target } token
+
+        match restored with
+        | Outcome.Succeeded case ->
+            Expect.isTrue case.Mine "Returning to the earlier key restores its access"
+        | other ->
+            failtestf "The old identity could not be reused by its original account: %A" other
+    }

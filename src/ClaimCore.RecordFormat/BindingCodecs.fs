@@ -304,58 +304,55 @@ module BindingCodecs =
         |> build
         |> named "Binding.PARTY"
 
-    let forDeclaration (declaration: TaskDeclaration) =
-        match declaration.Target with
-        | ActSubject.Case when declaration.Creates -> caseNew
-        | ActSubject.Case when declaration.ReviewsFamilySequence -> caseErase
-        | ActSubject.Case when
-            declaration.Inputs
-            |> List.exists (fun input ->
-                input.Input = TaskInputId.Target InputTarget.PaymentId
-                && input.Source = InputSource.Binding)
-            ->
-            casePayment
-        | ActSubject.Case -> caseExisting
-        | ActSubject.Work -> work
-        | ActSubject.Note when declaration.Creates -> noteNew
-        | ActSubject.Note -> note
-        | ActSubject.Party when declaration.Creates -> partyNew
-        | ActSubject.Party -> party
-        | ActSubject.Link when declaration.Creates -> linkNew
-        | ActSubject.Link -> link
-        | ActSubject.Reminder when declaration.Creates -> reminderNew
-        | ActSubject.Reminder -> reminder
-        | ActSubject.People when declaration.Creates -> peopleNew
-        | ActSubject.People -> people
-
-    let private select codec accepts =
-        branch id (fun value -> if accepts value then Some value else None) codec
-
-    let forValue =
+    let private forShape =
         function
-        | Binding.CaseNew _ -> caseNew
-        | Binding.Case _ -> caseExisting
-        | Binding.CasePayment _ -> casePayment
-        | Binding.CaseErase _ -> caseErase
-        | Binding.Work _ -> work
-        | Binding.ReminderNew _ -> reminderNew
-        | Binding.Reminder _ -> reminder
-        | Binding.NoteNew _ -> noteNew
-        | Binding.Note _ -> note
-        | Binding.PartyNew _ -> partyNew
-        | Binding.Party _ -> party
-        | Binding.LinkNew _ -> linkNew
-        | Binding.Link _ -> link
-        | Binding.PeopleNew _ -> peopleNew
-        | Binding.People _ -> people
+        | BindingShape.CaseNew -> caseNew
+        | BindingShape.Case -> caseExisting
+        | BindingShape.CasePayment -> casePayment
+        | BindingShape.CaseErase -> caseErase
+        | BindingShape.Work -> work
+        | BindingShape.ReminderNew -> reminderNew
+        | BindingShape.Reminder -> reminder
+        | BindingShape.NoteNew -> noteNew
+        | BindingShape.Note -> note
+        | BindingShape.PartyNew -> partyNew
+        | BindingShape.Party -> party
+        | BindingShape.LinkNew -> linkNew
+        | BindingShape.Link -> link
+        | BindingShape.PeopleNew -> peopleNew
+        | BindingShape.People -> people
+
+    let private select shape =
+        branch
+            id
+            (fun value ->
+                if BindingShape.ofValue value = shape then
+                    Some value
+                else
+                    None)
+            (forShape shape)
+
+    let forDeclaration declaration =
+        match TaskDeclaration.bindingShapes declaration with
+        | [ shape ] -> forShape shape
+        | shapes -> choice "Binding.PEOPLE.recover" (List.map select shapes)
+
+    let forValue value = forShape (Binding.shape value)
+
+    let forValue = BindingShape.ofValue >> forShape
 
     let matches declaration value =
-        let expected = forDeclaration declaration
-        let actual = forValue value
-
-        if expected.Schema <> actual.Schema then
+        if
+            not (
+                List.contains
+                    (BindingShape.ofValue value)
+                    (TaskDeclaration.bindingShapes declaration)
+            )
+        then
             false
         else
+            let actual = forValue value
+
             try
                 actual.Write value |> actual.Validate "$" |> Result.isOk
             with :? System.ArgumentException ->
@@ -364,50 +361,17 @@ module BindingCodecs =
     let binding =
         choice
             "Binding"
-            [
-                select caseNew (function
-                    | Binding.CaseNew _ -> true
-                    | _ -> false)
-                select caseExisting (function
-                    | Binding.Case _ -> true
-                    | _ -> false)
-                select casePayment (function
-                    | Binding.CasePayment _ -> true
-                    | _ -> false)
-                select caseErase (function
-                    | Binding.CaseErase _ -> true
-                    | _ -> false)
-                select work (function
-                    | Binding.Work _ -> true
-                    | _ -> false)
-                select reminderNew (function
-                    | Binding.ReminderNew _ -> true
-                    | _ -> false)
-                select reminder (function
-                    | Binding.Reminder _ -> true
-                    | _ -> false)
-                select noteNew (function
-                    | Binding.NoteNew _ -> true
-                    | _ -> false)
-                select note (function
-                    | Binding.Note _ -> true
-                    | _ -> false)
-                select partyNew (function
-                    | Binding.PartyNew _ -> true
-                    | _ -> false)
-                select party (function
-                    | Binding.Party _ -> true
-                    | _ -> false)
-                select linkNew (function
-                    | Binding.LinkNew _ -> true
-                    | _ -> false)
-                select link (function
-                    | Binding.Link _ -> true
-                    | _ -> false)
-                select peopleNew (function
-                    | Binding.PeopleNew _ -> true
-                    | _ -> false)
-                select people (function
-                    | Binding.People _ -> true
-                    | _ -> false)
-            ]
+            ([
+                BindingShape.CaseNew
+                BindingShape.Case
+                BindingShape.CasePayment
+                BindingShape.CaseErase
+                BindingShape.Work
+                BindingShape.ReminderNew
+                BindingShape.Reminder
+                BindingShape.NoteNew
+                BindingShape.Note
+                BindingShape.PeopleNew
+                BindingShape.People
+             ]
+             |> List.map select)

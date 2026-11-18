@@ -156,6 +156,9 @@ let internal tests factory =
                 "people preview writes nothing and exact replay precedes fresh-state refusal"
                 (withFixture factory PeopleReviewContract.peopleReviewReplay)
             testCaseAsync
+                "sign-in identity change preserves an assigned case and its account history"
+                (withFixture factory ActorProfilesContract.signInIdentityChange)
+            testCaseAsync
                 "people loading stays bounded to the requested and accepted scopes"
                 (withFixture factory ScopedPeopleContract.scopedPeople)
             testCaseAsync
