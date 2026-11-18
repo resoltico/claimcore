@@ -80,6 +80,8 @@ let caseRead: CaseReadModel =
     {
         FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
+        Parties = []
+        PartyOffers = []
         LatestPayments = []
         Advice = Inputs.caseAdvice snapshot.State
         Mine = false
@@ -392,10 +394,7 @@ let internal replies () : IEndpointOutput list =
                             {
                                 Reminder = reminder
                                 Reference = reference
-                                ClaimantName =
-                                    CaseState.fields snapshot.State
-                                    |> Option.bind (fun fields ->
-                                        Registration.claimant fields.Registration)
+                                Claimants = []
                                 Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor

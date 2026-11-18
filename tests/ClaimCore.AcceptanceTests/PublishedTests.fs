@@ -530,8 +530,8 @@ let private supplementary fixture =
         ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentCountry, "LT"
-                BusinessField.ClaimantName, name
-                BusinessField.InsurerName, name
+                BusinessField.PolicyNumber, name
+                BusinessField.InsurerClaimReference, name
                 BusinessField.ClaimedAmount, "1.0000"
             ]
             ClaimCore.TestSupport.DomainInputs.registration
@@ -564,7 +564,7 @@ let private supplementary fixture =
             .GetProperty("state")
             .GetProperty("fields")
             .GetProperty("registration")
-            .GetProperty("claimantName")
+            .GetProperty("policyNumber")
             .GetString()
 
     Expect.isTrue (actualName = name) "Scalar boundary exact without public business-text output"

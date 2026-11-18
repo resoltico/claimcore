@@ -231,6 +231,7 @@ type RegionRole =
     | Work
     | NextActions
     | Notes
+    | Parties
     | Activity
     | Results
     | Totals

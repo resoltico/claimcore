@@ -26,9 +26,10 @@ let private item active state timing : ReminderReadModel =
     {
         Reminder = reminder state
         Reference = CaseReference.parse "CLI-TIMING" |> required
-        ClaimantName =
-            (PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest))
-            |> Some
+        Claimants =
+            [
+                (PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest))
+            ]
         Responsible = None
         RecordedAt = DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)
         RecordedBy =

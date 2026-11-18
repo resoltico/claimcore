@@ -11,6 +11,7 @@ let private date value = CalendarDate.parse value |> accepted
 let private scope =
     {
         FamilyFactScope.Payments = Set.ofList [ operation 3; operation 6 ]
+        Parties = Set.empty
         Reminders = Set.singleton (ReminderId.ofOperationId (operation 6))
         Notes = Set.singleton (NoteId.ofOperationId (operation 6))
         Operation = Some(operation 6)

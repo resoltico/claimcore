@@ -465,7 +465,7 @@ let internal identityEvidence fixture actor =
                     (Submissions.fields (
                         RegistrationInput.values (
                             DomainInputs.registrationWith
-                                [ BusinessField.ClaimantName, "Different claimant" ]
+                                [ BusinessField.PolicyNumber, "Different claimant" ]
                                 registration
                         )
                     )))

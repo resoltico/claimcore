@@ -18,7 +18,13 @@ type CaseIndex =
     }
 
 module CaseIndex =
-    let create changedAt (snapshot: CaseSnapshot) (work: CaseWorkSnapshot option) pendingDue =
+    let create
+        changedAt
+        (snapshot: CaseSnapshot)
+        (work: CaseWorkSnapshot option)
+        pendingDue
+        parties
+        =
         let fields = CaseState.fields snapshot.State
 
         let work = if snapshot.State = CaseState.Erased then None else work
@@ -34,7 +40,7 @@ module CaseIndex =
             Status = fields |> Option.map _.Status
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
             ChangedAt = changedAt
-            SearchText = fields |> Option.map CaseSearch.text
+            SearchText = fields |> Option.map (CaseSearch.text parties)
             WorkSearchText = workSearch
             ReceivedOn =
                 fields

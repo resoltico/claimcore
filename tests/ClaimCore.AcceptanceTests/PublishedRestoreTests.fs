@@ -53,8 +53,8 @@ let private openFrame operationId reference =
                 BusinessField.IncidentDate, "2026-09-01"
                 BusinessField.ReceivedDate, "2026-09-02"
                 BusinessField.IncidentCountry, "LV"
-                BusinessField.ClaimantName, "Restore claimant"
-                BusinessField.InsurerName, "Restore insurer"
+                BusinessField.PolicyNumber, "Restore claimant"
+                BusinessField.InsurerClaimReference, "Restore insurer"
                 BusinessField.ClaimedAmount, "10"
                 BusinessField.ClaimedCurrency, "EUR"
             ]

@@ -58,7 +58,7 @@ let tests =
                     let missing =
                         source
                         |> Map.map (fun _ entries ->
-                            entries |> List.filter (fst >> ((<>) "field.claimantName.hint")))
+                            entries |> List.filter (fst >> ((<>) "field.policyNumber.hint")))
 
                     rejects "Unknown core presentation identity" (fun () ->
                         CatalogValidation.validateCatalogs missing |> ignore)

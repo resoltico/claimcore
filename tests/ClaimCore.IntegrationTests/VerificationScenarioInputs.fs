@@ -34,9 +34,7 @@ let private authored (inputs: InputMap) =
     inputs.Collections
     |> Map.fold
         (fun values collection rows ->
-            let key =
-                match collection with
-                | TaskCollectionId.PeopleGrants -> Submissions.input InputTarget.Grants
+            let key = TaskCollectionId.input collection
 
             Map.add
                 key

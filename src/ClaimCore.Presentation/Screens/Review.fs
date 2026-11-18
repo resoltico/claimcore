@@ -263,6 +263,28 @@ module ReviewScreen =
                 ]
 
             differences, unchanged
+        | PartDescription.Party part ->
+            let difference key label format select =
+                changed
+                    (prefix + key)
+                    label
+                    format
+                    {
+                        Before = part.Content.Before |> Option.bind select
+                        After = part.Content.After |> Option.bind select
+                    }
+
+            [
+                difference "role" "field.partyRole.label" (code PartyRole.vocabulary) (fun party ->
+                    Some party.Role)
+                difference "name" "field.partyName.label" PresentedValue.Party _.Name
+                difference
+                    "details"
+                    "field.partyDetails.label"
+                    (PartyDetails.format >> PresentedValue.Narrative)
+                    _.Details
+            ],
+            []
         | PartDescription.Note value ->
             [
                 value.Text

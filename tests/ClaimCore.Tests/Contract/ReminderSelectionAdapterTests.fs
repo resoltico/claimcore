@@ -54,7 +54,7 @@ let private page =
                             state
                         |> required
                     Reference = CaseReference.parse "STATE-OPEN" |> required
-                    ClaimantName = (PartyName.parse "Synthetic claimant" |> required) |> Some
+                    Claimants = [ (PartyName.parse "Synthetic claimant" |> required) ]
                     Responsible = None
                     RecordedAt = DomainInputs.workBasis.ObservedAt
                     RecordedBy = DomainInputs.actorReference (CaseFixtures.actorId (id 20))

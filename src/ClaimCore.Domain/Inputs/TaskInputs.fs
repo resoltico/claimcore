@@ -116,22 +116,26 @@ type InputValue =
     | Boolean of bool
     | Null
 
-/// Collection identity is independent of transport members and UI-local row keys.
-[<RequireQualifiedAccess>]
-type TaskCollectionId = | PeopleGrants
-
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskCollectionId =
     let key =
         function
         | TaskCollectionId.PeopleGrants -> "peopleGrants"
+        | TaskCollectionId.Parties -> "parties"
 
     let input =
         function
         | TaskCollectionId.PeopleGrants -> TaskInputId.Target InputTarget.Grants
+        | TaskCollectionId.Parties -> TaskInputId.Target InputTarget.Parties
 
-    let maximumRows =
+    let maximumRows (collection: TaskCollectionId) = collection.MaximumRows
+
+    let ofRowInput =
         function
-        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
+        | InputTarget.PartyRole
+        | InputTarget.PartyName
+        | InputTarget.PartyDetails -> TaskCollectionId.Parties
+        | _ -> TaskCollectionId.PeopleGrants
 
     /// Acquisition defaults are explicit submitted values; they never bypass task admission.
     let defaultValues =
@@ -139,28 +143,7 @@ module TaskCollectionId =
         | TaskCollectionId.PeopleGrants ->
             Map.ofList
                 [ TaskInputId.Scope, InputValue.Text(ScopeKind.token ScopeKind.Installation) ]
-
-/// Submitted ordinals correlate responses with an immutable client-owned row map.
-type TaskRowTarget =
-    private
-        {
-            Collection: TaskCollectionId
-            Ordinal: int
-        }
-
-module TaskRowTarget =
-    let create collection ordinal =
-        if ordinal < 0 || ordinal >= TaskCollectionId.maximumRows collection then
-            None
-        else
-            Some
-                {
-                    Collection = collection
-                    Ordinal = ordinal
-                }
-
-    let collection target = target.Collection
-    let ordinal target = target.Ordinal
+        | TaskCollectionId.Parties -> Map.empty
 
 /// HUMAN issue targets are semantic identities, with an optional submitted collection row.
 type TaskInputIssue =
@@ -178,11 +161,7 @@ module TaskInputIssue =
                 | InputTarget.Scope -> TaskInputId.Scope
                 | InputTarget.CaseId -> TaskInputId.CaseId
                 | target -> TaskInputId.Target target
-            Row =
-                issue.GrantRow
-                |> Option.bind (
-                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.PeopleGrants
-                )
+            Row = issue.Row
             Violation = issue.Violation
         }
 

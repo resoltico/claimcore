@@ -88,6 +88,9 @@ export const sameConflictTarget = (
   ) {
     return false;
   }
+  if (left.kind === "PARTY" && right.kind === "PARTY") {
+    return !("partyId" in left) || ("partyId" in right && left.partyId === right.partyId);
+  }
   if (left.kind === "REMINDER" && right.kind === "REMINDER") {
     return (
       !("reminderId" in left) || ("reminderId" in right && left.reminderId === right.reminderId)

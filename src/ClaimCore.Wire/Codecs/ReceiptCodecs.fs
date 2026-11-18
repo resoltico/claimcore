@@ -234,6 +234,39 @@ module ReceiptCodecs =
         |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Note)
         |> field "snapshot" _.Snapshot noteDisclosure
 
+    let private partyDisclosure =
+        tagged
+            "PartyDisclosure"
+            [
+                variant
+                    "DISCLOSED"
+                    PartyDisclosure.Disclosed
+                    (function
+                    | PartyDisclosure.Disclosed value -> Some value
+                    | _ -> None)
+                    (record id |> field "content" id partyContent)
+                unitVariant "WITHHELD" PartyDisclosure.Withheld
+                unitVariant "ERASED" PartyDisclosure.Erased
+            ]
+
+    let private partyReceiptFields =
+        (record (fun parent reference id revision act snapshot ->
+            {
+                PartyReceipt.CaseId = parent
+                Reference = reference
+                PartyId = id
+                Revision = revision
+                Act = act
+                Snapshot = snapshot
+            })
+        : Fields<PartyReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "partyId" _.PartyId partyId
+        |> field "revision" _.Revision positiveRevision
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Party)
+        |> field "snapshot" _.Snapshot partyDisclosure
+
     let private reminderReceiptFields =
         (record (fun parent reference act effects ->
             {
@@ -267,6 +300,13 @@ module ReceiptCodecs =
                     | ReceiptSubject.Note value -> Some value
                     | _ -> None)
                     noteReceiptFields
+                variant
+                    "PARTY"
+                    ReceiptSubject.Party
+                    (function
+                    | ReceiptSubject.Party value -> Some value
+                    | _ -> None)
+                    partyReceiptFields
                 variant
                     "REMINDER"
                     ReceiptSubject.Reminder

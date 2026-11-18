@@ -165,12 +165,12 @@ let private currencyGrammarTests =
 
 let private authoredUnicodeRoundTrip () =
     for value in [ "نام‌خانوادگی"; "اسم‍"; "é"; "A️" ] do
-        let snapshot = opening [ BusinessField.ClaimantName, value ] |> accepted
+        let snapshot = opening [ BusinessField.PolicyNumber, value ] |> accepted
 
         Expect.equal
-            (Registration.claimant ((viewFields snapshot).Registration)
+            (Registration.policyNumber ((viewFields snapshot).Registration)
              |> Option.get
-             |> PartyName.format)
+             |> Identifier.format)
             value
             "Authored scalar content remains exact."
 

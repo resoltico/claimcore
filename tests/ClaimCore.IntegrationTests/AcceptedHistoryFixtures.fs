@@ -36,7 +36,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 (Submissions.fields (
                     RegistrationInput.values (
                         DomainInputs.registrationWith
-                            [ BusinessField.ClaimantName, claimant ]
+                            [ BusinessField.PolicyNumber, claimant ]
                             registration
                     )
                 ))
@@ -101,7 +101,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                                                 .registrationWith
                                                                                 [
                                                                                     BusinessField
-                                                                                        .ClaimantName,
+                                                                                        .PolicyNumber,
                                                                                     claimant
                                                                                 ]
                                                                                 registration
@@ -170,7 +170,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format (Registration.claimant (fields.Registration) |> Option.get))
+                (Identifier.format (Registration.policyNumber (fields.Registration) |> Option.get))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
@@ -178,8 +178,8 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
         let values =
             (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
-                    BusinessField.ClaimantName, (name)
-                    BusinessField.InsurerName, ("Corrected Insurer")
+                    BusinessField.PolicyNumber, (name)
+                    BusinessField.InsurerClaimReference, ("Corrected Insurer")
                 ]
                 (registration))
 
@@ -212,7 +212,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                         RegistrationUpdateInput.values (
                             (DomainInputs.registrationUpdate (
                                 ClaimCore.TestSupport.DomainInputs.registrationWith
-                                    [ BusinessField.ClaimantName, (name + "B") ]
+                                    [ BusinessField.PolicyNumber, (name + "B") ]
                                     (values)
                             ))
                         )
@@ -223,7 +223,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
             changed.Outcome
             (ExecuteResult.Rejected(
                 (Refusal.invalidInput (
-                    (InputTarget.Field BusinessField.ClaimantName),
+                    (InputTarget.Field BusinessField.PolicyNumber),
                     (Violation.TooLong 200)
                 ))
             ))
@@ -310,11 +310,11 @@ let private retainedPages (database: PostgresFixture.Database) =
                 (changes.Items
                  |> List.exists (function
                      | TimelineChange.CaseField difference ->
-                         difference.FieldName = BusinessField.ClaimantName
+                         difference.FieldName = BusinessField.PolicyNumber
                          && difference.Before.IsNone
                          && (match difference.After with
-                             | Some(CaseFieldValue.Business(Admitted.Name value)) ->
-                                 PartyName.format value = name
+                             | Some(CaseFieldValue.Business(Admitted.Identifier value)) ->
+                                 Identifier.format value = name
                              | _ -> false)
                      | _ -> false))
                 "Accepted text is compared without current authoring admission or truncation"

@@ -232,8 +232,8 @@ const current = {
                 },
               },
               {
-                key: "claimantName",
-                labelId: "field.claimantName.label",
+                key: "policyNumber",
+                labelId: "field.policyNumber.label",
                 prominence: "PRIMARY",
                 value: {
                   kind: "PARTY",

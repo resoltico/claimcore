@@ -14,8 +14,6 @@ module FieldPresentation =
             BusinessField.IncidentDescription
             BusinessField.PolicyNumber
             BusinessField.InsurerClaimReference
-            BusinessField.ClaimantName
-            BusinessField.InsurerName
             BusinessField.ClaimedAmount
             BusinessField.ClaimedCurrency
             BusinessField.CaseReference
@@ -40,20 +38,16 @@ module FieldPresentation =
 
     let prominence =
         function
-        | BusinessField.ClaimantName
         | BusinessField.ClaimedAmount
         | BusinessField.ClaimedCurrency
         | BusinessField.CaseReference
         | BusinessField.PayableAmount
         | BusinessField.PayableCurrency -> Prominence.Primary
-        | BusinessField.ReceivedDate
-        | BusinessField.InsurerName -> Prominence.Secondary
+        | BusinessField.ReceivedDate -> Prominence.Secondary
         | _ -> Prominence.Detail
 
     let listed =
         function
-        | BusinessField.ClaimantName
-        | BusinessField.InsurerName
         | BusinessField.ClaimedAmount
         | BusinessField.ClaimedCurrency
         | BusinessField.PayableAmount

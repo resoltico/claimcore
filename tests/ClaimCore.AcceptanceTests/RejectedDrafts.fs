@@ -92,7 +92,7 @@ let private businessRefusals fixture =
             "claimedAmount", "١٢٫٥٠", "DECIMAL_FORMAT"
             "claimedAmount", "00.10", "DECIMAL_FORMAT"
             "claimedCurrency", "ĀBC", "CURRENCY_FORMAT"
-            "claimantName", "", "TEXT_REQUIRED"
+            "policyNumber", "", "TEXT_REQUIRED"
         ] do
         let input = input fixture field value
 
@@ -109,7 +109,7 @@ let private businessRefusals fixture =
             assertIssues [ field, diagnostic ] rejection
 
     for value, diagnostic in [ " ", "TEXT_REQUIRED"; String.replicate 201 "x", "TOO_LONG" ] do
-        let input = input fixture "claimantName" value
+        let input = input fixture "policyNumber" value
 
         for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
@@ -121,7 +121,7 @@ let private businessRefusals fixture =
 
             let rejection = require "REJECTED" reply
 
-            assertIssues [ "claimantName", diagnostic ] rejection
+            assertIssues [ "policyNumber", diagnostic ] rejection
 
 
 let private principalRefusals fixture =

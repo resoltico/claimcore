@@ -702,5 +702,17 @@
   "ui.clearCaseRestriction": {
     "text": "Noņemt lietas ierobežojumu",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "Pievienot rindu",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "Noņemt rindu",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "{number}. rinda",
+    "source": "f8c78edd5258"
   }
 }

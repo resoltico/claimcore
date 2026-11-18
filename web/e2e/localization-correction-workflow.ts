@@ -41,8 +41,8 @@ const setupRegistration = {
   incidentDate: "2026-09-01",
   receivedDate: "2026-09-02",
   incidentCountry: "LV",
-  claimantName: "Synthetic claimant",
-  insurerName: "Synthetic insurer",
+  policyNumber: "Synthetic claimant",
+  insurerClaimReference: "Synthetic insurer",
   claimedAmount: "1200.50",
   claimedCurrency: "EUR",
 };
@@ -179,8 +179,8 @@ const acceptSetup = async (
           "incidentDescription",
           "policyNumber",
           "insurerClaimReference",
-          "claimantName",
-          "insurerName",
+          "policyNumber",
+          "insurerClaimReference",
           "claimedAmount",
           "claimedCurrency",
         ];
@@ -278,7 +278,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "l
   }
   const replacements = {
     registration: {
-      claimantName: "A\u0308 العربية\u200D <tag>",
+      policyNumber: "A\u0308 العربية\u200D <tag>",
       claimedAmount: "1.0000",
     },
     decision: {
@@ -376,7 +376,7 @@ export const expectResultFields = (
         modes.registration === "UPDATE"
           ? {
               ...before.fields.registration,
-              claimantName: "A\u0308 العربية\u200D <tag>",
+              policyNumber: "A\u0308 العربية\u200D <tag>",
               claimedAmount: "1",
             }
           : before.fields.registration,

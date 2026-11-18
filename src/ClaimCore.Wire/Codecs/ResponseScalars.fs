@@ -124,6 +124,28 @@ module ResponseScalars =
     let partyName =
         parsed PartyName.parse PartyName.format (boundedUtf8Text 1 PartyName.MaximumBytes)
 
+    let partyId = uuid |> map (PartyId.create >> Option.get) PartyId.value
+
+    let partyContent =
+        (record PartyContent.create: Fields<PartyContent, _>)
+        |> field "role" _.Role (VocabularyCodec.create PartyRole.vocabulary)
+        |> field "name" _.Name (nullable partyName)
+        |> field
+            "details"
+            _.Details
+            (nullable (
+                parsed
+                    PartyDetails.parse
+                    PartyDetails.format
+                    (boundedUtf8Text 1 PartyDetails.constraints.MaximumUtf8Bytes)
+            ))
+        |> buildResult (fun path _ ->
+            {
+                Path = path
+                Reason = "At least one party name or detail must be present."
+            })
+        |> named "PartyContent"
+
     let handlingSummary =
         parsed
             HandlingSummary.parse

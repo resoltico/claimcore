@@ -44,6 +44,8 @@ let private current =
 
 let private caseReply =
     {
+        Parties = []
+        PartyOffers = []
         FamilySequence = Sequence.create 1L |> Option.get
         LatestPayments = []
         Mine = false
@@ -862,8 +864,8 @@ let reminderReviewDetails =
                                             {
                                                 Reminder = before
                                                 Reference = current.Reference
-                                                ClaimantName =
-                                                    (DomainInputs.name "Reminder claimant") |> Some
+                                                Claimants =
+                                                    [ (DomainInputs.name "Reminder claimant") ]
                                                 Responsible = None
                                                 RecordedAt = DomainInputs.workBasis.ObservedAt
                                                 RecordedBy =

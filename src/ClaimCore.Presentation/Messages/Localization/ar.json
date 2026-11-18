@@ -623,10 +623,6 @@
     "text": "مرجع الملف",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "اسم المطالب",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "المبلغ المطالب به",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "تاريخ الاستلام",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "شركة التأمين",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "حجم الصفحة",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "ما الذي حدث. أضف التفاصيل المهمة لهذه المطالبة.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "الشخص أو الشركة التي تقدم المطالبة.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "شركة التأمين المسؤولة عن المطالبة.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "الكل",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "إضافة طرف",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "تسجيل طرف مرتبط بهذا الملف.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "تمت إضافة الطرف.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "تحديث بيانات الطرف",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "تغيير دور هذا الطرف أو اسمه أو تفاصيله.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "تم تحديث بيانات الطرف.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "إزالة الطرف",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "إزالة هذا الطرف من الحالة الحالية للملف. تبقى التفاصيل السابقة في السجل.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "تمت إزالة الطرف.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "الأطراف",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "أضف الأطراف المعروفة.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "دور الطرف",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "اختر دور الطرف في الملف.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "اسم الطرف",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "أدخل اسم الشخص أو المؤسسة إذا كان معروفًا.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "تفاصيل الطرف",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "سجّل تفاصيل الاتصال أو العنوان إذا كانت معروفة.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "استخدم من 1 إلى {maximumScalars} محرف يونيكود. فواصل الأسطر مسموحة.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "معرّف الطرف",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "اختر طرفًا من هذا الملف.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "نسخة الطرف التي تمت مراجعتها",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "استخدم النسخة التي راجعتها.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "استخدم معرّف UUID للطرف.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "اختر دور الطرف.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "أدخل اسمًا أو تفاصيل.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "بلغ هذا الملف الحد الأقصى للأطراف.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "يتجاوز عدد الأطراف المطلوب الحد المسموح.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "المطالبون",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "شركات التأمين",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "المطالب",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "شركة التأمين",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "الممثل",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "طرف آخر",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "طرف",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "طرف",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "تم تسجيل تغيير في بيانات الطرف.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "المطالب",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "طرف يقدّم المطالبة.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "شركة التأمين",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "طرف يقدّم التأمين المرتبط بالمطالبة.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "الممثل",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "طرف يتصرف نيابةً عن شخص مشارك في الملف.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "طرف آخر",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "طرف مشارك في الملف بدور آخر.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "أضف ما يصل إلى {maximumParties} طرفًا.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "اختر دورًا واحدًا من القائمة.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "استخدم معرّف الطرف الذي تريد تغيير بياناته.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "استخدم رقم نسخة الطرف المحدد.",
+    "source": "f6e00e1e4aa8"
   }
 }

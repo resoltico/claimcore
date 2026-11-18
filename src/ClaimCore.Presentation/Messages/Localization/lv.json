@@ -623,10 +623,6 @@
     "text": "Lietas atsauce",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "Prasītāja nosaukums",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "Pieprasītā summa",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "Saņemts",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "Apdrošinātājs",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "Lapas izmērs",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "Kas notika. Pievienojiet šim prasījumam svarīgo informāciju.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "Persona vai uzņēmums, kas iesniedz prasījumu.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "Apdrošinātājs, kas atbild par prasījumu.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "Izmantojiet līdz {maximumIntegerDigits} cipariem pirms decimālpunkta un līdz {maximumFractionDigits} pēc tā. Lietojiet ASCII ciparus un punktu; bez atstarpēm, zīmēm, komatiem un liekām nullēm sākumā.",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "Jebkurš",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "Pievienot dalībnieku",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "Reģistrēt ar šo lietu saistītu dalībnieku.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "Dalībnieks pievienots.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "Labot dalībnieka datus",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "Mainīt šī dalībnieka lomu, vārdu vai kontaktinformāciju.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "Dalībnieka dati laboti.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "Noņemt dalībnieku",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "Noņemt šo dalībnieku no lietas pašreizējiem datiem. Iepriekšējā informācija paliek vēsturē.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "Dalībnieks noņemts.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "Dalībnieki",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "Pievienojiet zināmos dalībniekus.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "Dalībnieka loma",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "Atlasiet dalībnieka lomu lietā.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "Dalībnieka vārds",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "Norādiet personas vārdu vai organizācijas nosaukumu, ja tas ir zināms.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "Dalībnieka kontaktinformācija",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "Norādiet kontaktinformāciju vai adresi, ja tā ir zināma.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "Lietojiet 1–{maximumScalars} unikoda rakstzīmes. Rindpārneses ir atļautas.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "Dalībnieka ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "Atlasiet šīs lietas dalībnieku.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "Pārskatītā dalībnieka versija",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "Izmantojiet pārskatīto versiju.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "Izmantojiet dalībnieka UUID.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "Izvēlieties dalībnieka lomu.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "Norādiet vārdu vai kontaktinformāciju.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "Šajā lietā sasniegts dalībnieku skaita ierobežojums.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "Norādītais dalībnieku skaits pārsniedz ierobežojumu.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "Prasītāji",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "Apdrošinātāji",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "Prasītājs",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "Apdrošinātājs",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "Pārstāvis",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "Cits",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "Dalībnieks",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "Dalībnieks",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "Reģistrētas dalībnieka izmaiņas.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "Prasītājs",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "Dalībnieks, kas iesniedz prasījumu.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "Apdrošinātājs",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "Dalībnieks, kas nodrošina ar prasījumu saistītu apdrošināšanu.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "Pārstāvis",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "Dalībnieks, kas rīkojas citas lietā iesaistītās personas vārdā.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "Cits",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "Dalībnieks, kas lietā iesaistīts citā lomā.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "Pievienojiet līdz {maximumParties} dalībniekiem.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "Izvēlieties vienu no norādītajām lomām.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "Izmantojiet tā dalībnieka identifikatoru, kuru vēlaties mainīt.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "Izmantojiet atlasītā dalībnieka versijas numuru.",
+    "source": "f6e00e1e4aa8"
   }
 }

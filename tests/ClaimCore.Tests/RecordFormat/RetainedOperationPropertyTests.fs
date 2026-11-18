@@ -27,7 +27,7 @@ let private variedCase =
         let values =
             Tasks.openingInputs.Values
             |> Map.add
-                (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+                (TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber))
                 (InputValue.Text name)
             |> Map.add
                 (TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount))
@@ -62,7 +62,7 @@ let private variedCase =
             restored = record
             && (match restored.Changes.Head.Value with
                 | PartValue.Case { Content = Some content } ->
-                    PartyName.format (Registration.claimant content.Registration |> Option.get) =
+                    Identifier.format (Registration.policyNumber content.Registration |> Option.get) =
                         name
                     && (Registration.claimed content.Registration |> Option.get |> Money.format) =
                         (Amount.parse amount |> required |> Amount.format)

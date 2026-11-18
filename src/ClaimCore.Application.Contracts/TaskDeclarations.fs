@@ -5,6 +5,7 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type TaskChoiceId =
     | Role
+    | PartyRole
     | PrincipalKind
     | Scope
     | Lifecycle
@@ -35,6 +36,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> vocabularyTokens Role.vocabulary
+        | TaskChoiceId.PartyRole -> vocabularyTokens PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> vocabularyTokens PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> vocabularyTokens ScopeKind.vocabulary
         | TaskChoiceId.Lifecycle -> vocabularyTokens Lifecycle.vocabulary
@@ -59,6 +61,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> Vocabulary.name Role.vocabulary
+        | TaskChoiceId.PartyRole -> Vocabulary.name PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> Vocabulary.name PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> Vocabulary.name ScopeKind.vocabulary
         | TaskChoiceId.Lifecycle -> Vocabulary.name Lifecycle.vocabulary
@@ -78,6 +81,7 @@ module TaskChoiceId =
     let ofInput =
         function
         | TaskInputId.Target InputTarget.Role -> Some TaskChoiceId.Role
+        | TaskInputId.Target InputTarget.PartyRole -> Some TaskChoiceId.PartyRole
         | TaskInputId.Target InputTarget.PrincipalKind -> Some TaskChoiceId.PrincipalKind
         | TaskInputId.Scope
         | TaskInputId.Target InputTarget.Scope -> Some TaskChoiceId.Scope
@@ -99,7 +103,7 @@ module TaskChoiceId =
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter

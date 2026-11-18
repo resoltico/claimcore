@@ -33,7 +33,7 @@ let tests =
                     ] do
                     let raw =
                         sprintf
-                            """{"claimantName":"Ann","insurerName":"Ins","claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
+                            """{"policyNumber":"Ann","insurerClaimReference":"Ins","claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
                             amount
                             currency
 

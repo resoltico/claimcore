@@ -16,6 +16,7 @@
     <Compile Include="Identifiers.fs" />
     <Compile Include="LedgerPosition.fs" />
     <Compile Include="ActorProfiles.fs" />
+    <Compile Include="Parties.fs" />
     <Compile Include="CaseFields.fs" />
     <Compile Include="Inputs/CorrectionGroupAction.fs" />
     <Compile Include="CaseWork.fs" />
@@ -67,6 +68,7 @@
     <Compile Include="Tasks/Declarations.fs" />
     <Compile Include="Inputs/Parsing.fs" />
     <Compile Include="Tasks/FamilyRules.fs" />
+    <Compile Include="Tasks/Party/PartyTasks.fs" />
     <Compile Include="Tasks/Note/NoteAdd.fs" />
     <Compile Include="Tasks/Note/NoteRemove.fs" />
     <Compile Include="Tasks/Work/WorkUpdate.fs" />

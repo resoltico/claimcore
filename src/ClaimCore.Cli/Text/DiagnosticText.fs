@@ -26,6 +26,7 @@ module internal DiagnosticText =
                     | SubmissionValue.Text reference -> Some(CaseSelector.Reference reference)
                     | _ -> None)
             | OperationBinding.Case(target, _, _, _)
+            | OperationBinding.Party(target, _)
             | OperationBinding.Note(target, _)
             | OperationBinding.Work(target, _)
             | OperationBinding.Reminder(target, _) -> Some target

@@ -21,6 +21,7 @@ type FamilyFactScope =
         Payments: Set<OperationId>
         Reminders: Set<ReminderId>
         Notes: Set<NoteId>
+        Parties: Set<PartyId>
         Operation: OperationId option
     }
 
@@ -46,6 +47,7 @@ type DecisionFacts =
     member this.Work = this.Parts.Work
     member this.Reminders = this.Parts.Reminders
     member this.Notes = this.Parts.Notes
+    member this.Parties = this.Parts.Parties
     member this.Sequence = this.Parts.Sequence
     member this.ChangedAt = this.Parts.ChangedAt
     member this.NextPendingDue = this.Summary.NextPendingDue
@@ -102,6 +104,7 @@ module DecisionFacts =
                       |> List.forall (fun change ->
                           match change.Value with
                           | PartValue.Note value -> value.Removed || value.Text.IsSome
+                          | PartValue.Party value -> value.Content.IsSome
                           | _ -> true))))
 
         if
@@ -130,7 +133,8 @@ module DecisionFacts =
                         NoteId.create part.PartId
                         |> Option.exists (fun id -> Set.contains id scope.Notes)
                     | PartKind.Case
-                    | PartKind.Work -> true
+                    | PartKind.Work
+                    | PartKind.Party -> true
                     | PartKind.Person -> false)
 
             let correlated =
@@ -195,6 +199,10 @@ module DecisionFacts =
                 | Binding.CasePayment(_, _, id) -> Set.contains id scope.Payments
                 | Binding.Reminder(_, id, _) -> Set.contains id scope.Reminders
                 | Binding.Note(_, id) -> Set.contains id scope.Notes
+                | Binding.Party(_, id, _) ->
+                    Set.contains id scope.Parties
+                    || (Map.tryFind id facts.Parts.Parties
+                        |> Option.exists (fun party -> not party.Value.Removed))
                 | _ -> true
 
         if not covered then
@@ -206,6 +214,8 @@ module DecisionFacts =
         | Selected scope when scope.Operation = Some operation -> ()
         | Selected _ ->
             invalidArg "operation" "Decision facts must be acquired for the authoring operation."
+
+    let currentParties (facts: DecisionFacts) = FamilyParts.currentParties facts.Parts
 
     let snapshot (facts: DecisionFacts) = FamilyParts.snapshot facts.Parts
 
@@ -292,6 +302,7 @@ module DecisionFacts =
                                             Payments = parts.Payments |> Map.keys |> Set.ofSeq
                                             Reminders = parts.Reminders |> Map.keys |> Set.ofSeq
                                             Notes = parts.Notes |> Map.keys |> Set.ofSeq
+                                            Parties = parts.Parties |> Map.keys |> Set.ofSeq
                                             Operation = None
                                         }
                         }))
@@ -314,4 +325,11 @@ module DecisionFacts =
                             }))
 
                 let due = facts.NextPendingDue |> Option.toList
-                changes, CaseIndex.create facts.ChangedAt snapshot work due)
+
+                changes,
+                CaseIndex.create
+                    facts.ChangedAt
+                    snapshot
+                    work
+                    due
+                    (FamilyParts.currentParties facts.Parts))

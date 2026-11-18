@@ -111,7 +111,12 @@ let internal retainedText () =
             { viewFields original with
                 Registration =
                     (ClaimCore.TestSupport.DomainInputs.registrationStateWith
-                        [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name name) ]
+                        [
+                            BusinessField.PolicyNumber,
+                            Admitted.Identifier(
+                                Identifier.parse name |> Result.defaultWith (string >> failwith)
+                            )
+                        ]
                         ((viewFields original).Registration))
             }
 
@@ -125,6 +130,8 @@ let internal retainedText () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        Parties = []
+                        PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
                         Mine = false
@@ -220,7 +227,7 @@ let internal policyHints () =
 
     let claimant =
         catalog.RootElement.GetProperty("fields").EnumerateArray()
-        |> Seq.find (fun field -> field.GetProperty("name").GetString() = "claimantName")
+        |> Seq.find (fun field -> field.GetProperty("name").GetString() = "policyNumber")
 
     Expect.equal
         (claimant.GetProperty("scalar").GetProperty("maximumCharacters").GetInt32())

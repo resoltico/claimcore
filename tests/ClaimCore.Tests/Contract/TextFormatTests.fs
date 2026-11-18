@@ -26,8 +26,8 @@ let private restored (name: string) =
     let state = root["state"] |> nonNull
     let fields = state["fields"] |> nonNull
     let registration = fields["registration"] |> nonNull
-    registration["claimantName"] <- System.Text.Json.Nodes.JsonValue.Create name
-    registration["insurerName"] <- System.Text.Json.Nodes.JsonValue.Create name
+    registration["policyNumber"] <- System.Text.Json.Nodes.JsonValue.Create name
+    registration["insurerClaimReference"] <- System.Text.Json.Nodes.JsonValue.Create name
 
     root.ToJsonString()
     |> Text.Encoding.UTF8.GetBytes
@@ -37,10 +37,10 @@ let private authored name =
     let values =
         openingInputs.Values
         |> Map.add
-            (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+            (TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber))
             (InputValue.Text name)
         |> Map.add
-            (TaskInputId.Target(InputTarget.Field BusinessField.InsurerName))
+            (TaskInputId.Target(InputTarget.Field BusinessField.InsurerClaimReference))
             (InputValue.Text name)
 
     InputMap.create values Map.empty |> Option.get

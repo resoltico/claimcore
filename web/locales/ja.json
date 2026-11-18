@@ -702,5 +702,17 @@
   "ui.clearCaseRestriction": {
     "text": "案件の絞り込みを解除",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "行を追加",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "行を削除",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "行 {number}",
+    "source": "f8c78edd5258"
   }
 }

@@ -16,7 +16,7 @@ describe("core act metadata", () => {
         expectedRevision: 0,
       }),
     );
-    expect(values["field:claimantName"]).toBeUndefined();
+    expect(values["field:policyNumber"]).toBeUndefined();
     const close = initialOperationValues(
       operationAffordance("case.close", {
         kind: "CASE",

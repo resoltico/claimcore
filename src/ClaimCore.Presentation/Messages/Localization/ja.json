@@ -623,10 +623,6 @@
     "text": "案件番号",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "請求者名",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "請求額",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "受付日",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "保険会社",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "ページ件数",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "何が起きたか、この請求に必要な詳細を記入してください。",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "請求を行う人または会社。",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "この請求を担当する保険会社。",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "すべて",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "関係者を追加",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "この案件に関係する当事者を記録します。",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "関係者を追加しました。",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "関係者情報を更新",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "この関係者の役割、名前、詳細を変更します。",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "関係者情報を更新しました。",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "関係者を削除",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "現在の案件からこの関係者を削除します。以前の情報は履歴に残ります。",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "関係者を削除しました。",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "関係者",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "判明している関係者を追加してください。",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "関係者の役割",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "関係者が案件にどう関与しているかを選択してください。",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "関係者名",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "分かっていれば個人または組織の名前を入力してください。",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "関係者の詳細",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "分かっていれば連絡先または住所を記録してください。",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "Unicode 文字を 1～{maximumScalars} 文字使用してください。改行できます。",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "関係者 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "この案件の関係者を選択してください。",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "確認済みの関係者のリビジョン",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "確認したリビジョンを使用してください。",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "関係者の UUID を使用してください。",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "関係者の役割を選択してください。",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "名前または詳細を入力してください。",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "この案件の関係者数が上限に達しました。",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "指定した関係者数が上限を超えています。",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "請求者",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "保険会社",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "請求者",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "保険会社",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "代理人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "関係者",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "関係者",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "関係者の変更を記録しました。",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "請求者",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "請求を行う当事者です。",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "保険会社",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "請求に関連する保険を提供する当事者です。",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "代理人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "案件の関係者を代理する当事者です。",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "その他",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "別の役割で案件に関与する当事者です。",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "関係者は最大 {maximumParties} 件追加できます。",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "一覧から役割を 1 つ選択してください。",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "変更する関係者の ID を使用してください。",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "選択した関係者のリビジョン番号を使用してください。",
+    "source": "f6e00e1e4aa8"
   }
 }

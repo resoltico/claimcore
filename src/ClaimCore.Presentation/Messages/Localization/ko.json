@@ -623,10 +623,6 @@
     "text": "청구 건 참조번호",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "청구인 이름",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "청구 금액",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "접수일",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "보험사",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "페이지 크기",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "발생한 일을 설명하세요. 이 청구에 필요한 상세 정보를 추가하세요.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "청구하는 사람 또는 회사입니다.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "이 청구를 담당하는 보험사입니다.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 마침표를 사용하세요. 공백, 부호, 쉼표 또는 불필요한 앞자리 0은 사용할 수 없습니다.",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "전체",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "당사자 추가",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "이 청구 건과 관련된 당사자를 기록합니다.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "당사자를 추가했습니다.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "당사자 수정",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "이 당사자의 역할, 이름 또는 세부 정보를 변경합니다.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "당사자 정보를 수정했습니다.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "당사자 제거",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "현재 청구 건에서 이 당사자를 제거합니다. 이전 정보는 이력에 남습니다.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "당사자를 제거했습니다.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "당사자",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "알고 있는 당사자를 추가하세요.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "당사자 역할",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "당사자가 관여하는 방식을 선택하세요.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "당사자 이름",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "알고 있다면 사람이나 기관의 이름을 입력하세요.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "당사자 세부 정보",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "알고 있다면 연락처나 주소를 기록하세요.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "유니코드 문자 1~{maximumScalars}자를 사용하세요. 줄바꿈을 쓸 수 있습니다.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "당사자 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "이 청구 건의 당사자를 선택하세요.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "검토한 당사자 버전",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "검토한 버전을 사용하세요.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "당사자의 UUID를 사용하세요.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "당사자 역할을 선택하세요.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "이름이나 세부 정보를 입력하세요.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "이 청구 건의 당사자 수가 한도에 도달했습니다.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "입력한 당사자 수가 한도를 초과했습니다.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "청구인",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "보험사",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "청구인",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "보험사",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "대리인",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "당사자",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "당사자",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "당사자 변경 사항을 기록했습니다.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "청구인",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "청구를 제기하는 당사자입니다.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "보험사",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "청구와 관련된 보험을 제공하는 당사자입니다.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "대리인",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "청구 건의 관련자를 대신해 행동하는 당사자입니다.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "기타",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "다른 역할로 청구 건에 관여하는 당사자입니다.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "당사자를 최대 {maximumParties}명까지 추가하세요.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "목록에서 역할을 하나 선택하세요.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "변경할 당사자의 식별자를 사용하세요.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "선택한 당사자의 버전 번호를 사용하세요.",
+    "source": "f6e00e1e4aa8"
   }
 }

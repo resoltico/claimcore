@@ -6,19 +6,19 @@ export const issueMeanings = {
     incidentDate: "When the incident happened.",
     claimedAmount: "How much the claimant is asking for.",
     claimedCurrency: "The currency of the claimed amount.",
-    claimantName: "The person or company making the claim.",
+    policyNumber: "The person or company making the claim.",
   },
   lv: {
     incidentDate: "Kad notika negadījums.",
     claimedAmount: "Summa, ko pieprasa prasītājs.",
     claimedCurrency: "Izvēlieties valūtu pieprasītajai summai.",
-    claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
+    policyNumber: "Persona vai uzņēmums, kas iesniedz prasījumu.",
   },
   ar: {
     incidentDate: "متى وقعت الواقعة.",
     claimedAmount: "المبلغ الذي يطلبه المطالب.",
     claimedCurrency: "اختر العملة التي طُلب بها المبلغ.",
-    claimantName: "الشخص أو الشركة التي تقدم المطالبة.",
+    policyNumber: "الشخص أو الشركة التي تقدم المطالبة.",
   },
 } as const;
 // Independent expected samples for Core-declared GUI input issue variants.

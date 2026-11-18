@@ -107,7 +107,7 @@ let internal independentRevisions fixture =
 
         let patch =
             (RegistrationUpdateInput.replace
-                [ BusinessField.ClaimantName, Some "Financial preview remains valid" ]
+                [ BusinessField.PolicyNumber, Some "Financial preview remains valid" ]
                 (DomainInputs.registrationUpdate registration)
              |> Result.defaultWith failtest)
 

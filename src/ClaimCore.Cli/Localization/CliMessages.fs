@@ -127,6 +127,7 @@ type CliMessage =
     | [<MessageKey("cli.text.uncertain")>] UncertainDelivery
     | [<MessageKey("cli.family.version")>] VersionFamily
     | [<MessageKey("cli.family.case")>] CaseFamily
+    | [<MessageKey("cli.family.party")>] PartyCommands
     | [<MessageKey("cli.family.people")>] PeopleFamily
     | [<MessageKey("cli.family.operation")>] OperationFamily
     | [<MessageKey("cli.family.context")>] ContextFamily

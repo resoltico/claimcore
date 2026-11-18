@@ -37,7 +37,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await openAuthenticated(page);
   const opened = await openCase(page, caseReference);
   await completeAct(page, "case.amendRegistration", {
-    "Claimant name": "Synthetic amended claimant",
+    "Policy number": "Synthetic amended claimant",
   });
   await decide(page);
   await completeAct(page, "case.withdrawDecision");

@@ -702,5 +702,17 @@
   "ui.clearCaseRestriction": {
     "text": "إزالة قيد الملف",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "إضافة صف",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "إزالة الصف",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "الصف {number}",
+    "source": "f8c78edd5258"
   }
 }

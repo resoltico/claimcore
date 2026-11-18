@@ -197,7 +197,7 @@ const current = (
           {
             ...prefixedInputs("field:", {
               ...fields.registration,
-              claimantName: name,
+              policyNumber: name,
             }),
           },
           registrationInputs,
@@ -223,8 +223,8 @@ const current = (
                 },
               },
               {
-                key: "claimantName",
-                labelId: "field.claimantName.label",
+                key: "policyNumber",
+                labelId: "field.policyNumber.label",
                 prominence: "PRIMARY",
                 value: {
                   kind: "PARTY",
@@ -273,7 +273,7 @@ const fact = (revision: number): RegionTimelineEntry => ({
   },
   highlights: [
     {
-      titleId: "field.claimantName.label",
+      titleId: "field.policyNumber.label",
       entries: [
         {
           key: "before",
@@ -310,8 +310,8 @@ const editor = () =>
     />,
   );
 const author = async (user: ReturnType<typeof userEvent.setup>) => {
-  selectFact("claimantName");
-  const field = screen.getByLabelText("Claimant name", {
+  selectFact("policyNumber");
+  const field = screen.getByLabelText("Policy number", {
     exact: true,
   });
   await user.clear(field);
@@ -403,8 +403,8 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
               presentation: {
                 changes: [
                   {
-                    key: "claimantName",
-                    labelId: "field.claimantName.label",
+                    key: "policyNumber",
+                    labelId: "field.policyNumber.label",
                     before: {
                       kind: "PARTY",
                       value: "Latest stored name",
@@ -488,7 +488,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   expect(drafts[1]).toMatchObject({
     task: "case.amendRegistration",
     binding: { kind: "CASE", expectedRevision: 54 },
-    inputs: { "field:claimantName": "My retained draft" },
+    inputs: { "field:policyNumber": "My retained draft" },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(
@@ -723,7 +723,7 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
               },
               issues: [
                 {
-                  input: "field:claimantName",
+                  input: "field:policyNumber",
                   row: null,
                   message: {
                     messageId: "diagnostic.TEXT_REQUIRED",

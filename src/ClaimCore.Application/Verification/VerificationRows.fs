@@ -424,6 +424,13 @@ module internal VerificationRows =
                     [||]
                     token
 
+            let! parties =
+                DatabaseSession.namedRows
+                    connection
+                    ("SELECT " + PartyStorage.columns + " FROM claimcore.case_parties")
+                    [||]
+                    token
+
             let! notes =
                 DatabaseSession.namedRows
                     connection
@@ -448,6 +455,18 @@ module internal VerificationRows =
                     let! expectedWork = Replay.workRows state
                     let! expectedReminders = Replay.reminderRows state
                     let! expectedNotes = Replay.noteRows state
+                    let! expectedParties = Replay.partyRows state
+
+                    let! parties =
+                        capture None VerificationFinding.CasePartiesProjection (fun () ->
+                            parties |> List.map PartyStorage.row)
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CasePartiesProjection
+                            (fun (row: StoredParty) -> row.PartyId)
+                            expectedParties
+                            parties
 
                     do!
                         ProjectionVerification.rows

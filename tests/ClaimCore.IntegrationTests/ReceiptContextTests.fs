@@ -69,7 +69,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                             RegistrationUpdateInput.values (
                                 (DomainInputs.registrationUpdate (
                                     ClaimCore.TestSupport.DomainInputs.registrationWith
-                                        [ BusinessField.ClaimantName, ("Later Party") ]
+                                        [ BusinessField.PolicyNumber, ("Later Party") ]
                                         (registration)
                                 ))
                             )
@@ -114,10 +114,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (PartyName.format (
-                Registration.claimant ((disclosedFields receipt).Registration) |> Option.get
+            (Identifier.format (
+                Registration.policyNumber ((disclosedFields receipt).Registration) |> Option.get
             ))
-            (RegistrationInput.tryValue BusinessField.ClaimantName (registration)
+            (RegistrationInput.tryValue BusinessField.PolicyNumber (registration)
              |> Option.get)
             "Disclosure uses the write's locked context"
 

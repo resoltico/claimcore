@@ -65,6 +65,7 @@ module internal AggregateStorage =
             Payments: OperationId list
             Reminders: ReminderId list
             Notes: NoteId list
+            Parties: PartyId list
             ExcludedPayment: OperationId option
             Operation: OperationId option
         }
@@ -74,6 +75,7 @@ module internal AggregateStorage =
             Payments = []
             Reminders = []
             Notes = []
+            Parties = []
             ExcludedPayment = None
             Operation = None
         }
@@ -120,7 +122,7 @@ module internal AggregateStorage =
 
             let! located =
                 rows
-                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,e.part_kind,e.part_id,e.revision,(SELECT max(s.operation_sequence) FROM claimcore.ledger_effects s WHERE s.aggregate_kind=$2 AND s.aggregate_id=$1) FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence LEFT JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 LEFT JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind=$2 AND e.aggregate_id=$1 AND (e.part_kind=ANY($3::text[]) OR (e.part_kind=$7 AND e.part_id=ANY($4::uuid[])) OR (e.part_kind=$8 AND e.part_id=ANY($5::uuid[])) OR (e.part_kind=$9 AND e.part_id=ANY($6::uuid[]))) ORDER BY e.part_kind,e.part_id,e.revision DESC"
+                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,e.part_kind,e.part_id,e.revision,(SELECT max(s.operation_sequence) FROM claimcore.ledger_effects s WHERE s.aggregate_kind=$2 AND s.aggregate_id=$1) FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence LEFT JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 LEFT JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind=$2 AND e.aggregate_id=$1 AND (e.part_kind=ANY($3::text[]) OR (e.part_kind=$7 AND e.part_id=ANY($4::uuid[])) OR (e.part_kind=$8 AND e.part_id=ANY($5::uuid[])) OR (e.part_kind=$9 AND e.part_id=ANY($6::uuid[])) OR (e.part_kind=$11 AND (e.part_id=ANY($10::uuid[]) OR EXISTS(SELECT 1 FROM claimcore.case_parties p WHERE p.case_id=$1 AND p.party_id=e.part_id AND NOT p.removed AND p.role IS NOT NULL)))) ORDER BY e.part_kind,e.part_id,e.revision DESC"
                     [|
                         box (CaseId.value id)
                         box "FAMILY"
@@ -131,6 +133,8 @@ module internal AggregateStorage =
                         box (PartKind.token PartKind.Payment)
                         box (PartKind.token PartKind.Reminder)
                         box (PartKind.token PartKind.Note)
+                        box (selection.Parties |> List.map PartyId.value |> List.toArray)
+                        box (PartKind.token PartKind.Party)
                     |]
 
             let! projected = FamilyReads.findCase tx id
@@ -384,6 +388,7 @@ module internal AggregateStorage =
                             FamilyFactScope.Payments = Set.ofList paymentIds
                             Reminders = Set.ofList reminderIds
                             Notes = Set.ofList noteIds
+                            Parties = Set.ofList selection.Parties
                             Operation = selection.Operation
                         }
                     |> Result.defaultWith (fun _ ->
@@ -588,11 +593,13 @@ module internal AggregateStorage =
 
             let reminders = selected PartKind.Reminder
             let notes = selected PartKind.Note
+            let parties = selected PartKind.Party
 
             let selection =
                 { emptySelection with
                     Reminders = reminders |> List.map (DatabaseSession.admitted ReminderId.create)
                     Notes = notes |> List.map (DatabaseSession.admitted NoteId.create)
+                    Parties = parties |> List.map (DatabaseSession.admitted PartyId.create)
                 }
 
             let! loaded = readFamilyRoots selection tx id
@@ -605,7 +612,12 @@ module internal AggregateStorage =
                         |> List.map (fun part -> (part.Kind, part.PartId), part.Revision)
                         |> Map.ofList
 
-                    for kind, ids in [ PartKind.Reminder, reminders; PartKind.Note, notes ] do
+                    for kind, ids in
+                        [
+                            PartKind.Reminder, reminders
+                            PartKind.Note, notes
+                            PartKind.Party, parties
+                        ] do
                         if
                             ids
                             |> List.exists (fun part ->
@@ -643,6 +655,10 @@ module internal AggregateStorage =
                     Reminders = [ reminder ]
                 }
             | Binding.Note(_, note) -> { emptySelection with Notes = [ note ] }
+            | Binding.Party(_, party, _) ->
+                { emptySelection with
+                    Parties = [ party ]
+                }
             | _ -> emptySelection
 
         readFamily { selected with Operation = operation } tx id

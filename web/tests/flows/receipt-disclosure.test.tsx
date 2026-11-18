@@ -56,5 +56,5 @@ it("renders the supplied receipt view without assuming a case snapshot", async (
     />,
   );
   expect(await screen.findByText("Synthetic recorder")).toBeVisible();
-  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="policyNumber"]')).toBeNull();
 });

@@ -144,37 +144,37 @@ let internal textRequests fixture () =
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("") ]
+                [ BusinessField.PolicyNumber, ("") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (String(char 0xD800, 1)) ]
+                [ BusinessField.PolicyNumber, (String(char 0xD800, 1)) ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (" Synthetic") ]
+                [ BusinessField.PolicyNumber, (" Synthetic") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, (String('x', 201)) ]
+                [ BusinessField.PolicyNumber, (String('x', 201)) ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("Synthetic\nParty") ]
+                [ BusinessField.PolicyNumber, ("Synthetic\nParty") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.ClaimantName, ("Synthetic​Party") ]
+                [ BusinessField.PolicyNumber, ("Synthetic​Party") ]
                 (registration))
         opening
             fixture
             (ClaimCore.TestSupport.DomainInputs.registrationWith
-                [ BusinessField.InsurerName, ("") ]
+                [ BusinessField.InsurerClaimReference, ("") ]
                 (registration))
     ]
 

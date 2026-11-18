@@ -127,8 +127,17 @@ module ScalarGuidance =
                     "maximumCharacters",
                     GuidanceArgument.Count DirectorySearchText.MaximumCharacters
                 ]
-        | TaskInputId.Target InputTarget.ProfileDisplayName -> forProfileName
+        | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.PartyName) ->
+            forProfileName
         | TaskInputId.Target InputTarget.ProfileContact -> forProfileContact
+        | TaskInputId.Target InputTarget.Parties ->
+            message key [ "maximumParties", GuidanceArgument.Count PartyContent.MaximumCurrent ]
+        | TaskInputId.Target InputTarget.PartyDetails ->
+            message
+                key
+                [
+                    "maximumScalars", GuidanceArgument.Count PartyDetails.constraints.MaximumScalars
+                ]
         | TaskInputId.Target InputTarget.NoteText ->
             message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | TaskInputId.Target InputTarget.ReminderAction ->

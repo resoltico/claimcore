@@ -103,7 +103,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
       page.locator(
-        ".case-header-state [data-region], .entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+        ".case-header-state [data-region], .entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
       ),
     ).toHaveCount(0);
     await expect(page.locator(".case-header-state")).toBeEmpty();
@@ -168,7 +168,7 @@ for (const [name, role, scoped] of cases) {
       await noCaseWorkspace(narrow);
       await expect(
         narrow.locator(
-          ".entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+          ".entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
         ),
       ).toHaveCount(0);
       await opaqueCaseRefusal(narrow, fixture.reference);

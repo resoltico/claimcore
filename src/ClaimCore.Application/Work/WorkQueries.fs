@@ -10,6 +10,7 @@ open System
 open System.Security.Cryptography
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -123,16 +124,21 @@ module internal WorkQueries =
                                                                             Reference =
                                                                                 parent.Snapshot
                                                                                     .Reference
-                                                                            ClaimantName =
-                                                                                CaseState.fields
-                                                                                    parent.Snapshot
-                                                                                        .State
-                                                                                |> Option.bind
-                                                                                    (fun fields ->
-                                                                                        Registration
-                                                                                            .claimant
-                                                                                            fields
-                                                                                                .Registration)
+                                                                            Claimants =
+                                                                                Map.tryFind
+                                                                                    parent.CaseId
+                                                                                    currentFamilies
+                                                                                |> Option.map (
+                                                                                    DecisionFacts
+                                                                                        .currentParties
+                                                                                    >> PartyContent
+                                                                                        .names
+                                                                                        PartyRole
+                                                                                            .Claimant
+                                                                                )
+                                                                                |> Option
+                                                                                    .defaultValue
+                                                                                    []
                                                                             Responsible =
                                                                                 work.Responsible
                                                                             RecordedAt =
@@ -388,8 +394,20 @@ module internal WorkQueries =
                                                                         ReminderReadModel.Reminder =
                                                                             reminder
                                                                         Reference = row.Reference
-                                                                        ClaimantName =
-                                                                            row.ClaimantName
+                                                                        Claimants =
+                                                                            Map.tryFind
+                                                                                row.Stored.CaseId
+                                                                                currentFamilies
+                                                                            |> Option.map (
+                                                                                DecisionFacts
+                                                                                    .currentParties
+                                                                                >> PartyContent
+                                                                                    .names
+                                                                                    PartyRole
+                                                                                        .Claimant
+                                                                            )
+                                                                            |> Option.defaultValue
+                                                                                []
                                                                         Responsible =
                                                                             row.Responsible
                                                                             |> Option.bind

@@ -14,14 +14,14 @@ test("records supplementary scalar boundaries through Web for published native r
   await startOpen(page, reference);
   const name = "🙂".repeat(200);
   await fillNamedField(page, "Country", "LT");
-  await page.getByLabel("Claimant name", { exact: true }).fill(name);
+  await page.getByLabel("Policy number", { exact: true }).fill(name);
   await page.getByLabel("Insurer", { exact: true }).fill(name);
   const identity = await reviewDraft(page);
   await expectAccessible(page);
   await recordReviewed(page);
   await expect(
     page.locator(
-      "section.case-detail [data-region=FACTS] .entries-view [data-entry='claimantName']",
+      "section.case-detail [data-region=FACTS] .entries-view [data-entry='policyNumber']",
     ),
   ).toContainText(name);
   await expect(page.locator("#case-detail-title")).toHaveText(reference);

@@ -89,6 +89,7 @@ module ScreenEntries =
             | PartKind.Payment -> "field.paymentId.label"
             | PartKind.Reminder -> "field.reminderId.label"
             | PartKind.Note -> "field.noteId.label"
+            | PartKind.Party -> "field.partyId.label"
 
         value
             (id.ToString("D") + ".id")

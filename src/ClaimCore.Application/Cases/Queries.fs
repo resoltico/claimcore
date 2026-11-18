@@ -437,8 +437,17 @@ module internal Queries =
                         })))
 
 
-    let private summary installation principal actor paused (work: CaseWorkView) next record =
-        CaseRecords.current installation record
+    let private summary
+        installation
+        principal
+        actor
+        paused
+        (work: CaseWorkView)
+        next
+        parties
+        record
+        =
+        CaseRecords.current installation parties record
         |> Result.map (fun _ ->
             {
                 CaseSummary.CaseId = record.Snapshot.CaseId
@@ -480,6 +489,11 @@ module internal Queries =
                             {
                                 CaseSummaryFacts.Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                Parties =
+                                    Vocabulary.all PartyRole.vocabulary
+                                    |> List.map (fun role ->
+                                        role, PartyContent.names role parties)
+                                    |> Map.ofList
                             })
                         record.Snapshot.State
             })
@@ -502,6 +516,12 @@ module internal Queries =
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
 
+            let! parties =
+                PartyStorage.current
+                    tx.Connection
+                    (records |> List.map _.CaseId)
+                    tx.CancellationToken
+
             let! actor =
                 AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
 
@@ -520,6 +540,7 @@ module internal Queries =
                                     paused
                                     (Map.find record.CaseId work)
                                     (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
+                                    (Map.tryFind record.CaseId parties |> Option.defaultValue [])
                                     record
                                 |> Result.map (fun value -> value :: values)))
                         (Ok [])

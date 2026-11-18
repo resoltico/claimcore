@@ -7,8 +7,6 @@ module CaseSearch =
         | BusinessField.IncidentDescription
         | BusinessField.PolicyNumber
         | BusinessField.InsurerClaimReference
-        | BusinessField.ClaimantName
-        | BusinessField.InsurerName
         | BusinessField.CaseReference
         | BusinessField.HandlingSummary -> true
         // Search is opt-in; a newly declared optional fact is not automatically indexed.
@@ -17,8 +15,8 @@ module CaseSearch =
     let fields =
         BusinessField.declarations |> List.map _.Field |> List.filter searchable
 
-    let text values =
-        fields
-        |> List.choose (fun field -> CaseFields.value field values)
+    let text parties values =
+        (fields |> List.choose (fun field -> CaseFields.value field values))
+        @ (parties |> List.collect PartyContent.searchable)
         |> List.map TextSearch.normalize
         |> String.concat "\u001f"

@@ -90,10 +90,10 @@ const readableCurrent = (history: "NONE" | "FULL" = "FULL") =>
               kind: "ENTRIES",
               entries: [
                 {
-                  key: "claimantName",
-                  labelId: "field.claimantName.label",
+                  key: "policyNumber",
+                  labelId: "field.policyNumber.label",
                   prominence: "PRIMARY",
-                  value: { kind: "PARTY", value: fields.registration.claimantName },
+                  value: { kind: "PARTY", value: fields.registration.policyNumber! },
                 },
               ],
             },

@@ -215,6 +215,33 @@ module TimelineScreen =
                     change
             ]
         | TimelineChange.Reminder change -> reminderDifference change
+        | TimelineChange.Party(_, change) ->
+            [
+                difference
+                    "role"
+                    "field.partyRole.label"
+                    (code PartyRole.vocabulary)
+                    {
+                        Before = change.Before |> Option.map _.Role
+                        After = change.After |> Option.map _.Role
+                    }
+                difference
+                    "name"
+                    "field.partyName.label"
+                    PresentedValue.Party
+                    {
+                        Before = change.Before |> Option.bind _.Name
+                        After = change.After |> Option.bind _.Name
+                    }
+                difference
+                    "details"
+                    "field.partyDetails.label"
+                    (PartyDetails.format >> PresentedValue.Narrative)
+                    {
+                        Before = change.Before |> Option.bind _.Details
+                        After = change.After |> Option.bind _.Details
+                    }
+            ]
         | TimelineChange.Note(_, _, text) ->
             [
                 section

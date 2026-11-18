@@ -139,7 +139,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 (Binding.CaseNew Revision.zero)
                 (opening.Envelope.Inputs
                  |> Map.add
-                     (Submissions.field BusinessField.ClaimantName)
+                     (Submissions.field BusinessField.PolicyNumber)
                      (SubmissionValue.Text "Different claimant"))
 
         let! conflict = Service.executeSubmission services changed token

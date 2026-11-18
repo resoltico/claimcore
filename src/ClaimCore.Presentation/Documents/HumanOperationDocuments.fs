@@ -63,6 +63,14 @@ module HumanReceiptDocument =
                     | WorkDisclosure.Erased -> HumanDisclosure.Erased
 
                 Some value.CaseId, disclosure, true
+            | ReceiptSubject.Party value ->
+                let disclosure =
+                    match value.Snapshot with
+                    | PartyDisclosure.Disclosed _ -> HumanDisclosure.Current
+                    | PartyDisclosure.Withheld -> HumanDisclosure.Withheld
+                    | PartyDisclosure.Erased -> HumanDisclosure.Erased
+
+                Some value.CaseId, disclosure, false
             | ReceiptSubject.Note value ->
                 let disclosure =
                     match value.Snapshot with

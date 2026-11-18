@@ -22,7 +22,8 @@ module Refusals =
         | CaseRefusal.CorrectionRequiresExistingValue
         | CaseRefusal.DecisionHasPayments -> RecommendedAction.CorrectInput
         | CaseRefusal.FamilyChanged
-        | CaseRefusal.PaymentNotFound -> RecommendedAction.ReviewLatest
+        | CaseRefusal.PaymentNotFound
+        | CaseRefusal.PartyLimit -> RecommendedAction.ReviewLatest
         | CaseRefusal.AssigneeUnavailable
         | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
 

@@ -210,8 +210,8 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
         let registration =
             DomainInputs.registrationWith
                 [
-                    BusinessField.ClaimantName, expected.Claimant
-                    BusinessField.InsurerName, expected.Insurer
+                    BusinessField.PolicyNumber, expected.Claimant
+                    BusinessField.InsurerClaimReference, expected.Insurer
                 ]
                 DomainInputs.registration
 

@@ -98,7 +98,7 @@ let private malformed () =
                 opening
                     (id 471)
                     (Map.add
-                        (Submissions.field BusinessField.ClaimantName)
+                        (Submissions.field BusinessField.PolicyNumber)
                         (SubmissionValue.Text " Padded ")
                         registration)
                 Submissions.create

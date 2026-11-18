@@ -30,7 +30,7 @@ it("preserves authored tokens, omission, null, empty text and exact money", () =
   const value = assembleTask(
     "case.amendRegistration",
     {
-      "field:claimantName": "",
+      "field:policyNumber": "",
       "field:incidentDescription": null,
       "field:claimedAmount": "12.3400",
       "field:claimedCurrency": "EUR",
@@ -39,7 +39,7 @@ it("preserves authored tokens, omission, null, empty text and exact money", () =
     operationId,
   );
   expect(value.command.inputs).toEqual({
-    "field:claimantName": "",
+    "field:policyNumber": "",
     "field:incidentDescription": null,
     "field:claimedAmount": "12.3400",
     "field:claimedCurrency": "EUR",

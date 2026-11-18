@@ -43,6 +43,7 @@ module internal Engine =
             | Binding.CasePayment(_, revision, _)
             | Binding.CaseErase(_, revision, _)
             | Binding.Work(_, revision)
+            | Binding.Party(_, _, revision)
             | Binding.Reminder(_, _, revision) -> Revision.value revision = Revision.Maximum
             | Binding.Note _ -> true // Removal reviews the selected note's current accepted version.
             | _ -> false

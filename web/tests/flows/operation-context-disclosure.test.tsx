@@ -23,7 +23,7 @@ const disclosed = caseDocumentInput({
     operationAffordance(
       "case.amendRegistration",
       { kind: "CASE", target: { kind: "ID", caseId: current.subject.caseId }, expectedRevision: 1 },
-      { ...prefixedInputs("field:", { ...fields.registration, claimantName: canary }) },
+      { ...prefixedInputs("field:", { ...fields.registration, policyNumber: canary }) },
       [...registrationInputs],
       {},
     ),
@@ -37,8 +37,8 @@ it("closes prior actor prefills synchronously on token change without reusing th
       {editor({ current: disclosed, initialAct: "case.amendRegistration" })}
     </TestSession>,
   );
-  selectFact("claimantName");
-  expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
+  selectFact("policyNumber");
+  expect(screen.getByLabelText("Policy number", { exact: true })).toHaveValue(canary);
   view.rerender(
     <TestSession credential="new-token">
       {editor({ current: disclosed, initialAct: "case.amendRegistration" })}

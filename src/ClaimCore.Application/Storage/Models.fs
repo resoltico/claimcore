@@ -167,11 +167,19 @@ type internal ReminderPosition =
 
 
 
+type internal StoredParty =
+    {
+        PartyId: PartyId
+        CaseId: CaseId
+        Revision: Revision
+        CreatedPosition: EffectPosition
+        Value: ClaimCore.Domain.Changes.PartyValue
+    }
+
 type internal ReminderRow =
     {
         Stored: StoredReminder
         Reference: CaseReference
-        ClaimantName: PartyName option
         Responsible: ActorId option
         Lifecycle: Lifecycle
         Status: CaseStatus option

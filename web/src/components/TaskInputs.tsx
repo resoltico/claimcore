@@ -445,13 +445,14 @@ const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input
     </>
   );
 };
-const GrantRows = ({
+const CollectionRows = ({
   collection,
   ...props
 }: InputProps & { collection: OperationTaskDefinition["collections"][number] }) => {
   const p = usePresentation();
   const value = props.values[collection.id];
   const rows = isFormCollection(value) ? value.rows : [];
+  const grant = collection.inputs.some(isGrantInput);
   const update = (next: typeof rows) => {
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
   };
@@ -460,27 +461,31 @@ const GrantRows = ({
       <legend>{renderCatalogKey(p, taskInput(collection.input).labelId)}</legend>
       {rows.map((row, index) => (
         <fieldset key={row.key}>
-          <legend>{p.text("ui.roleNumber", { number: p.integer(index + 1) })}</legend>
-          <GrantTargetInput
-            {...props}
-            defaults={collection.defaults}
-            inputs={collection.inputs}
-            editableTarget={collection.inputs.map((input) => input.id)}
-            values={row.values}
-            current={null}
-            errorKey={(id) => taskRowInputKey(collection.id, row.key, id)}
-            onChange={(id, nextValue) => {
-              update(
-                rows.map((previous) =>
-                  previous.key === row.key
-                    ? { ...previous, values: editGrantInput(previous.values, id, nextValue) }
-                    : previous,
-                ),
-              );
-            }}
-          />
+          <legend>
+            {p.text(grant ? "ui.roleNumber" : "ui.rowNumber", { number: p.integer(index + 1) })}
+          </legend>
+          {grant ? (
+            <GrantTargetInput
+              {...props}
+              defaults={collection.defaults}
+              inputs={collection.inputs}
+              editableTarget={collection.inputs.map((input) => input.id)}
+              values={row.values}
+              current={null}
+              errorKey={(id) => taskRowInputKey(collection.id, row.key, id)}
+              onChange={(id, nextValue) => {
+                update(
+                  rows.map((previous) =>
+                    previous.key === row.key
+                      ? { ...previous, values: editGrantInput(previous.values, id, nextValue) }
+                      : previous,
+                  ),
+                );
+              }}
+            />
+          ) : null}
           {collection.inputs
-            .filter((input) => !isGrantInput(input))
+            .filter((input) => !grant || !isGrantInput(input))
             .map((input) => (
               <InputControl
                 key={input.id}
@@ -509,7 +514,7 @@ const GrantRows = ({
               update(rows.filter((previous) => previous.key !== row.key));
             }}
           >
-            {p.text("ui.removeRole")}
+            {p.text(grant ? "ui.removeRole" : "ui.removeRow")}
           </button>
         </fieldset>
       ))}
@@ -527,7 +532,7 @@ const GrantRows = ({
           ]);
         }}
       >
-        {p.text("ui.addRole")}
+        {p.text(grant ? "ui.addRole" : "ui.addRow")}
       </button>
     </fieldset>
   );
@@ -563,7 +568,7 @@ export const TaskInputs = (props: Props) => {
         );
       })}
       {props.task.collections.map((collection) => (
-        <GrantRows key={collection.id} collection={collection} {...inputProps} />
+        <CollectionRows key={collection.id} collection={collection} {...inputProps} />
       ))}
     </>
   );

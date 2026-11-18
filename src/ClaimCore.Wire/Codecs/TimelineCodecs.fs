@@ -141,6 +141,18 @@ module TimelineCodecs =
                      |> field "noteId" (fun (_, id, _) -> id) noteId
                      |> field "text" (fun (_, _, text) -> text) (nullable noteText))
                 variant
+                    "PARTY"
+                    (fun (id, change) -> TimelineChange.Party(id, change))
+                    (function
+                    | TimelineChange.Party(id, change) -> Some(id, change)
+                    | _ -> None)
+                    (record (fun id change -> id, change)
+                     |> field "partyId" fst partyId
+                     |> field
+                         "change"
+                         snd
+                         (ValueChangeCodecs.change "PartyContentChange" partyContent))
+                variant
                     "REMINDER"
                     TimelineChange.Reminder
                     (function

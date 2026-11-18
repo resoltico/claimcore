@@ -8,7 +8,7 @@ import { expectCorrection } from "../../support/correction-serialization-checks"
 
 const authored = {
   registration: {
-    claimantName: "Synthetic replacement",
+    policyNumber: "Synthetic replacement",
     claimedAmount: "1.0000",
     claimedCurrency: "EUR",
   },
@@ -24,7 +24,7 @@ const correction = (registrationChoice: string, decisionChoice: string) => {
       }),
     ),
     "group:registration": registrationChoice,
-    "field:claimantName": authored.registration.claimantName,
+    "field:policyNumber": authored.registration.policyNumber!,
     "field:claimedAmount": authored.registration.claimedAmount,
     "field:claimedCurrency": authored.registration.claimedCurrency,
     "group:decision": decisionChoice,
@@ -58,10 +58,10 @@ it("correction checks detect changed payloads and retain independent literal exp
   if (actual.binding.kind !== "CASE" || actual.task !== "case.correct") {
     throw new Error("Expected correction.");
   }
-  const wrong = { ...authored.registration, claimantName: "Wrong authored value" };
+  const wrong = { ...authored.registration, policyNumber: "Wrong authored value" };
   const changed = {
     ...actual,
-    inputs: { ...actual.inputs, "field:claimantName": "Wrong authored value" },
+    inputs: { ...actual.inputs, "field:policyNumber": "Wrong authored value" },
   };
   expect(() => {
     expectCorrection(changed, literal[2], authored);
@@ -70,11 +70,11 @@ it("correction checks detect changed payloads and retain independent literal exp
     expectCorrection(changed, literal[2], { ...authored, registration: wrong });
   }).toThrow();
   const omitted = JSON.parse(literal[2]) as { inputs: Record<string, unknown> };
-  Reflect.deleteProperty(omitted.inputs, "field:claimantName");
+  Reflect.deleteProperty(omitted.inputs, "field:policyNumber");
   const omissionLiteral = JSON.stringify(omitted);
   expectCorrection(actual, omissionLiteral, authored);
   const missing = { ...actual, inputs: structuredClone(actual.inputs) };
-  Reflect.deleteProperty(missing.inputs, "field:claimantName");
+  Reflect.deleteProperty(missing.inputs, "field:policyNumber");
   expect(() => {
     expectCorrection(missing, omissionLiteral, authored);
   }).toThrow();

@@ -41,7 +41,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = snapshot.CaseId
         Snapshot = snapshot
-        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
+        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None [] []
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
@@ -196,8 +196,8 @@ let private projectionFields: CaseFields =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
-                        BusinessField.ClaimantName, ("Synthetic claimant")
-                        BusinessField.InsurerName, ("Synthetic insurer")
+                        BusinessField.PolicyNumber, ("Synthetic claimant")
+                        BusinessField.InsurerClaimReference, ("Synthetic insurer")
                         BusinessField.ClaimedAmount, ("1234.5678")
                     ]
                     (DomainInputs.registration)
@@ -450,7 +450,7 @@ let private roundTrips database =
                     RegistrationUpdateInput.values (
                         DomainInputs.registrationUpdate (
                             DomainInputs.registrationWith
-                                [ BusinessField.ClaimantName, "Changed synthetic" ]
+                                [ BusinessField.PolicyNumber, "Changed synthetic" ]
                                 DomainInputs.registration
                         )
                     )

@@ -22,6 +22,21 @@ module CaseListScreen =
                 IsMoney = false
                 Read = fun row -> PresentedValue.State row.Headline
             }
+            for role, key, label in
+                [
+                    PartyRole.Claimant, "claimants", "label.claimants"
+                    PartyRole.Insurer, "insurers", "label.insurers"
+                ] do
+                column key label Prominence.Secondary false (fun row ->
+                    match CaseState.fields row.State with
+                    | None -> PresentedValue.Absent "lifecycle.ERASED.label"
+                    | Some fields ->
+                        match Map.tryFind role fields.Parties |> Option.defaultValue [] with
+                        | [] -> optional PresentedValue.Text None
+                        | names ->
+                            PresentedValue.Text(
+                                names |> List.map PartyName.format |> String.concat "; "
+                            ))
             yield!
                 caseFields FieldPresentation.declarations (fun (row: CaseSummary) ->
                     CaseState.fields row.State

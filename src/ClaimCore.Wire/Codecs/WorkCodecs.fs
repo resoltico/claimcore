@@ -40,13 +40,32 @@ module WorkCodecs =
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Reminder"
 
+    let party =
+        (record (fun id revision content offers ->
+            {
+                CaseParty.PartyId = id
+                Revision = revision
+                Content = content
+                Offers = offers |> List.map TaskOffer.Declared
+            })
+        : Fields<CaseParty, _>)
+        |> field "partyId" _.PartyId partyId
+        |> field "revision" _.Revision positiveRevision
+        |> field "content" _.Content partyContent
+        |> field
+            "acts"
+            (fun party -> party.Offers |> List.map TaskOffer.id)
+            (list 2 (TaskVocabulary.forSubject ActSubject.Party))
+        |> build
+        |> named "CaseParty"
+
     let reminderRead =
         (record
             (fun reminder reference claimant responsible recordedAt recordedBy acts active timing ->
                 {
                     ReminderReadModel.Reminder = reminder
                     Reference = reference
-                    ClaimantName = claimant
+                    Claimants = claimant
                     Responsible = responsible
                     RecordedAt = recordedAt
                     RecordedBy = recordedBy
@@ -57,7 +76,7 @@ module WorkCodecs =
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
-        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName (nullable partyName)
+        |> field "claimants" _.Claimants (list PartyContent.MaximumCurrent partyName)
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef

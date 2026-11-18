@@ -98,13 +98,19 @@ let internal assignmentAndDisclosure fixture =
                 ("WORK-A")
                 (0L)
                 "case.open"
-                (ClaimCore.TestSupport.Submissions.fields (
-                    RegistrationInput.values (
-                        (DomainInputs.registrationWith
-                            [ BusinessField.ClaimantName, "Reminder parent claimant" ]
-                            registration)
-                    )
-                ))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values registration)
+                 |> Map.add
+                     (TaskCollectionId.input TaskCollectionId.Parties)
+                     (SubmissionValue.Rows
+                         [
+                             Map.ofList
+                                 [
+                                     TaskInputId.Target InputTarget.PartyRole,
+                                     SubmissionValue.Text "CLAIMANT"
+                                     TaskInputId.Target InputTarget.PartyName,
+                                     SubmissionValue.Text "Reminder parent claimant"
+                                 ]
+                         ]))
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
@@ -320,8 +326,8 @@ let internal assignmentAndDisclosure fixture =
             Expect.equal queue.Items.Length 1 "Scoped-only current reminder visibility"
 
             Expect.equal
-                (PartyName.format queue.Items.Head.ClaimantName)
-                "Reminder parent claimant"
+                (queue.Items.Head.Claimants |> List.map PartyName.format)
+                [ "Reminder parent claimant" ]
                 "Queue context comes from the current parent case"
 
             Expect.equal
@@ -1438,7 +1444,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
 
         let partial: RegistrationUpdateInput =
             (RegistrationUpdateInput.create
-                [ BusinessField.ClaimantName, Some "Only selected claimant" ]
+                [ BusinessField.PolicyNumber, Some "Only selected claimant" ]
              |> Result.defaultWith failtest)
 
         let! edited =
@@ -1456,7 +1462,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
         let fields = disclosedFields (accepted edited)
 
         Expect.equal
-            (PartyName.format (Registration.claimant fields.Registration |> Option.get))
+            (Identifier.format (Registration.policyNumber fields.Registration |> Option.get))
             "Only selected claimant"
             "One asserted fact"
 
@@ -1471,7 +1477,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 (ClaimCore.TestSupport.Submissions.updates (
                     RegistrationUpdateInput.values (
                         (RegistrationUpdateInput.replace
-                            [ BusinessField.ClaimantName, Some "Stale edit" ]
+                            [ BusinessField.PolicyNumber, Some "Stale edit" ]
                             (partial)
                          |> Result.defaultWith failtest)
                     )

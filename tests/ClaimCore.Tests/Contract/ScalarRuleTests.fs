@@ -39,8 +39,8 @@ let listPresentation =
              |> Set.ofList)
             (Set.ofList
                 [
-                    BusinessField.ClaimantName
-                    BusinessField.InsurerName
+                    BusinessField.PolicyNumber
+                    BusinessField.InsurerClaimReference
                     BusinessField.ClaimedAmount
                     BusinessField.ClaimedCurrency
                     BusinessField.PayableAmount
@@ -61,7 +61,7 @@ let listPresentation =
             Expect.equal currency amount "Width reduction cannot orphan the currency"
 
         Expect.equal
-            (FieldPresentation.prominence BusinessField.InsurerName)
+            (FieldPresentation.prominence BusinessField.InsurerClaimReference)
             Prominence.Secondary
             "Insurer is supplementary list context"
 
@@ -84,8 +84,8 @@ let private textAndDateRuleTests =
         "text and date scalar catalog"
         [
             testCase "text rules retain permanent syntax and input bounds" (fun () ->
-                expectText BusinessField.ClaimantName 200
-                expectText BusinessField.InsurerName 200
+                expectText BusinessField.PolicyNumber 200
+                expectText BusinessField.InsurerClaimReference 200
 
                 for name, expected in
                     [

@@ -306,7 +306,7 @@ module HumanCaseDocument =
             actions
             |> List.filter (fun action ->
                 not (isRecommended action)
-                && supplies BusinessField.ClaimantName TaskInputMode.Update action
+                && supplies BusinessField.ReceivedDate TaskInputMode.Update action
                 && not (
                     declarationInputs action
                     |> List.exists (fun input ->

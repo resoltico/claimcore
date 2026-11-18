@@ -223,7 +223,7 @@ type ReminderReadModel =
     {
         Reminder: Reminder
         Reference: CaseReference
-        ClaimantName: PartyName option
+        Claimants: PartyName list
         Responsible: ActorRef option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
@@ -259,6 +259,14 @@ type CaseNotesPage =
         NextCursor: string option
     }
 
+type CaseParty =
+    {
+        PartyId: PartyId
+        Revision: Revision
+        Content: PartyContent
+        Offers: TaskOffer list
+    }
+
 type CaseReadModel =
     {
         FamilySequence: Sequence
@@ -273,6 +281,8 @@ type CaseReadModel =
         Disposition: CaseDisposition option
         NextActions: ReminderReadModel list
         Notes: CaseNotes
+        Parties: CaseParty list
+        PartyOffers: TaskOffer list
         ChangedAt: DateTimeOffset
         RecordedBy: ActorRef
     }

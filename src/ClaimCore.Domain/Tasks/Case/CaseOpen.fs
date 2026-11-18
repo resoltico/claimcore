@@ -6,10 +6,12 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Inputs
 open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
+open ClaimCore.Domain.Tasks.Party
 
 let declaration =
-    family
+    create
         "case.open"
+        AggregateKind.Family
         ActSubject.Case
         true
         ActFamily.Business
@@ -19,6 +21,7 @@ let declaration =
          :: (required (field BusinessField.CaseReference) |> retained)
          :: revision
          :: group TaskInputMode.Optional RecordGroup.Registration)
+        [ PartyTasks.collection ]
 
 let private capability = List.exactlyOne declaration.Capabilities
 
@@ -42,9 +45,14 @@ let private parse admit reference fields =
         (CaseParsing.registration admit fields)
 
 let check inputs =
-    Parsing.check
-        (fun inputs -> parse (fun _ -> Ok) (reference inputs) (CaseParsing.values inputs))
-        inputs
+    let facts =
+        Parsing.check
+            (fun inputs -> parse (fun _ -> Ok) (reference inputs) (CaseParsing.values inputs))
+            inputs
+
+    match PartyTasks.parseRows true inputs with
+    | Error(Rejection.Input issues) -> facts @ TaskInputIssues.toList issues
+    | _ -> facts
 
 let private gate (state: DecisionFacts option) =
     match state with
@@ -80,7 +88,7 @@ let decide
     =
     let fields = CaseParsing.values inputs
     let reference = reference inputs
-    let syntax = parse (fun _ -> Ok) reference fields
+    let syntax = check inputs
 
     match binding, context.Decision.BusinessDate with
     | Binding.CaseNew expected, Some today ->
@@ -98,16 +106,20 @@ let decide
              else
                  FamilyRules.permission environment Scope.Installation capability)
             (fun () ->
-                (if Result.isError syntax then None else gate state)
+                (if not syntax.IsEmpty then None else gate state)
                 |> Option.map Error
                 |> Option.defaultValue (Ok()))
         |> Result.bind (fun () ->
-            if Result.isError syntax || expected = Revision.zero then
+            if not syntax.IsEmpty || expected = Revision.zero then
                 Ok()
             else
                 Error(Refusal.revisionConflict Revision.zero))
         |> Result.bind (fun () -> parse (CaseAdmission.fieldAdmission today None) reference fields)
-        |> Result.map (fun command ->
+        |> Parsing.reject
+        |> Result.bind (fun command ->
+            PartyTasks.parseRows (context.Decision.Lifetime = DecisionLifetime.Recorded) inputs
+            |> Result.map (fun parties -> command, parties))
+        |> Result.map (fun (command, parties) ->
             let id = CaseId.ofOperationId context.Stamp.OperationId
 
             [
@@ -131,8 +143,14 @@ let decide
                           }) with
                     NaturalKey = Some(CaseReference.format command.Reference)
                 }
-            ])
-        |> Parsing.reject
+            ]
+            @ (parties
+               |> List.map (fun (ordinal, party) ->
+                   PartyTasks.initial
+                       context
+                       id
+                       (PartyId.derive context.Stamp.OperationId ordinal)
+                       (Some party))))
         |> Result.map (TaskContext.changes context)
     | _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
@@ -168,7 +186,14 @@ let decideRetained (context: TaskContext) (environment: FamilyEnvironment) state
                           }) with
                     NaturalKey = Some(CaseReference.format reference)
                 }
-            ])
+            ]
+            @ (PartyTasks.rows inputs
+               |> List.map (fun row ->
+                   PartyTasks.initial
+                       context
+                       id
+                       (PartyId.derive context.Stamp.OperationId row.Ordinal)
+                       None)))
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)

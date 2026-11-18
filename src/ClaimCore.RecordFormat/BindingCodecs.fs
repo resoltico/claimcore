@@ -236,6 +236,42 @@ module BindingCodecs =
         |> build
         |> named "Binding.PEOPLE"
 
+    let partyNew =
+        (record Binding.PartyNew: Fields<Binding, _>)
+        |> fixedField "kind" "PARTY"
+        |> field
+            "target"
+            (function
+            | Binding.PartyNew target -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> build
+        |> named "Binding.PARTY.new"
+
+    let party =
+        (record (fun target id revision -> Binding.Party(target, id, revision)): Fields<Binding, _>)
+        |> fixedField "kind" "PARTY"
+        |> field
+            "target"
+            (function
+            | Binding.Party(target, _, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "partyId"
+            (function
+            | Binding.Party(_, id, _) -> id
+            | _ -> mismatch ())
+            (identifier PartyId.create PartyId.value)
+        |> field
+            "expectedRevision"
+            (function
+            | Binding.Party(_, _, revision) -> revision
+            | _ -> mismatch ())
+            (version 1L)
+        |> build
+        |> named "Binding.PARTY"
+
     let forDeclaration (declaration: TaskDeclaration) =
         match declaration.Target with
         | ActSubject.Case when declaration.Creates -> caseNew
@@ -251,6 +287,8 @@ module BindingCodecs =
         | ActSubject.Work -> work
         | ActSubject.Note when declaration.Creates -> noteNew
         | ActSubject.Note -> note
+        | ActSubject.Party when declaration.Creates -> partyNew
+        | ActSubject.Party -> party
         | ActSubject.Reminder when declaration.Creates -> reminderNew
         | ActSubject.Reminder -> reminder
         | ActSubject.People when declaration.Creates -> peopleNew
@@ -270,6 +308,8 @@ module BindingCodecs =
         | Binding.Reminder _ -> reminder
         | Binding.NoteNew _ -> noteNew
         | Binding.Note _ -> note
+        | Binding.PartyNew _ -> partyNew
+        | Binding.Party _ -> party
         | Binding.PeopleNew _ -> peopleNew
         | Binding.People _ -> people
 
@@ -315,6 +355,12 @@ module BindingCodecs =
                     | _ -> false)
                 select note (function
                     | Binding.Note _ -> true
+                    | _ -> false)
+                select partyNew (function
+                    | Binding.PartyNew _ -> true
+                    | _ -> false)
+                select party (function
+                    | Binding.Party _ -> true
                     | _ -> false)
                 select peopleNew (function
                     | Binding.PeopleNew _ -> true

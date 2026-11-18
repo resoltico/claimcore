@@ -276,7 +276,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             let registration =
                 DomainInputs.registrationWith
                     ([
-                        BusinessField.ClaimantName, claimant
+                        BusinessField.PolicyNumber, claimant
                         BusinessField.ClaimedAmount, "500"
                         BusinessField.ClaimedCurrency, "EUR"
                      ]

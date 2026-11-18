@@ -8,13 +8,13 @@ it("detaches replacement values and preserves decimal spelling after authoring c
   const values = {
     ...valuesFor("case.correct"),
     "group:registration": "UPDATE",
-    "field:claimantName": "Before",
+    "field:policyNumber": "Before",
     "field:claimedAmount": "1.0000",
     "field:claimedCurrency": "EUR",
   };
   const request = requestFor(values, "case.correct");
   const prepared = prepareRequest("operation.execute", request);
-  Object.assign(values, { "field:claimantName": "After" });
+  Object.assign(values, { "field:policyNumber": "After" });
   if (
     request.binding.kind !== "CASE" ||
     request.task !== "case.correct" ||
@@ -22,8 +22,8 @@ it("detaches replacement values and preserves decimal spelling after authoring c
   ) {
     throw new Error("Missing correction fixture.");
   }
-  Object.assign(request.inputs, { "field:claimantName": "Changed" });
-  expect(prepared.bytes).toContain('"field:claimantName":"Before"');
+  Object.assign(request.inputs, { "field:policyNumber": "Changed" });
+  expect(prepared.bytes).toContain('"field:policyNumber":"Before"');
   expect(prepared.bytes).toContain('"field:claimedAmount":"1.0000"');
   expect(prepared.input).not.toBe(request);
 });

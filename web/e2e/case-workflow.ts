@@ -107,7 +107,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   expect(current.outcome.data.caseId).toBe(subject.caseId);
   expect(current.outcome.data.revision).toBe(subject.revision);
   await expect(
-    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='policyNumber']"),
   ).toHaveCount(receipt.disclosure === "CURRENT" ? 1 : 0);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
@@ -173,7 +173,7 @@ export const startOpen = async (
   }
   const authored = registration({
     incidentDate: "2026-09-01",
-    claimantName: "Synthetic claimant",
+    policyNumber: "Synthetic claimant",
     claimedAmount: "1200.50",
   });
   for (const [name, value] of Object.entries(authored)) {
@@ -327,7 +327,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
   await expect(
-    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='policyNumber']"),
   ).toBeVisible();
   return identity;
 };

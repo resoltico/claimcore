@@ -702,5 +702,17 @@
   "ui.clearCaseRestriction": {
     "text": "Quitar restricción de expediente",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "Añadir fila",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "Quitar fila",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "Fila {number}",
+    "source": "f8c78edd5258"
   }
 }

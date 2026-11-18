@@ -13,7 +13,7 @@ it("renders supplied columns and cells without field knowledge", () => {
         columns: [
           {
             key: "future-text",
-            labelId: "field.claimantName.label",
+            labelId: "field.policyNumber.label",
             prominence: "PRIMARY",
             isMoney: false,
           },

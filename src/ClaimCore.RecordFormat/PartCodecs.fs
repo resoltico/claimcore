@@ -33,6 +33,11 @@ module PartCodecs =
         | PartValue.Note value -> get value
         | _ -> wrong ()
 
+    let private party get =
+        function
+        | PartValue.Party value -> get value
+        | _ -> wrong ()
+
     let private person get =
         function
         | PartValue.Person value -> get value
@@ -188,6 +193,13 @@ module PartCodecs =
         |> build
         |> named "PartRetained.NOTE"
 
+    let private partyRetained =
+        (record (fun removed -> PartValue.Party { Removed = removed; Content = None })
+        : Fields<PartValue, _>)
+        |> field "removed" (party _.Removed) boolean
+        |> build
+        |> named "PartRetained.PARTY"
+
     let private personRetained =
         (record (fun principal enabled grants ->
             PartValue.Person
@@ -211,6 +223,7 @@ module PartCodecs =
         | PartKind.Work -> workRetained
         | PartKind.Reminder -> reminderRetained
         | PartKind.Note -> noteRetained
+        | PartKind.Party -> partyRetained
         | PartKind.Person -> personRetained
 
     let withCompartment present =
@@ -231,7 +244,8 @@ module PartCodecs =
         | PartValue.Case value -> value.Lifecycle <> Lifecycle.Erased
         | PartValue.Payment _
         | PartValue.Work _
-        | PartValue.Reminder _ -> true
+        | PartValue.Reminder _
+        | PartValue.Party _ -> true
         | PartValue.Note value -> not value.Removed
         | PartValue.Person value -> value.Profile <> ProfileValue.Absent
 
@@ -242,6 +256,7 @@ module PartCodecs =
         | PartValue.Work value -> value.IsSome
         | PartValue.Reminder value -> value.Plan.IsSome
         | PartValue.Note value -> value.Removed || value.Text.IsSome
+        | PartValue.Party value -> value.Content.IsSome
         | PartValue.Person value ->
             match value.Profile with
             | ProfileValue.Present None -> false
@@ -318,6 +333,18 @@ module PartCodecs =
         |> field "due" (plan >> _.Due) date
         |> build
 
+    let partyContent =
+        (record PartyContent.create: Fields<PartyContent, _>)
+        |> field "role" _.Role (VocabularyCodec.create PartyRole.vocabulary)
+        |> field "name" _.Name (nullable (scalar PartyName.parse PartyName.format))
+        |> field "details" _.Details (nullable (scalar PartyDetails.parse PartyDetails.format))
+        |> buildResult (fun path _ ->
+            {
+                Path = path
+                Reason = "At least one party name or detail must be present."
+            })
+        |> named "PartyContent"
+
     let privateValueCodec partId value =
         match value with
         | PartValue.Case retained -> casePrivate retained
@@ -339,6 +366,11 @@ module PartCodecs =
             |> map
                 (fun text -> PartValue.Note { retained with Text = Some text })
                 (note (fun value -> value.Text |> Option.defaultWith wrong))
+        | PartValue.Party retained ->
+            partyContent
+            |> map
+                (fun content -> PartValue.Party { retained with Content = Some content })
+                (party (fun value -> value.Content |> Option.defaultWith wrong))
         | PartValue.Person retained ->
             profile
             |> map

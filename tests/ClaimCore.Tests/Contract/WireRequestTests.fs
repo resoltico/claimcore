@@ -77,8 +77,8 @@ let private scalarAdmission () =
                 BusinessField.IncidentDate, "not-a-date"
                 BusinessField.ReceivedDate, ""
                 BusinessField.IncidentCountry, "lowercase"
-                BusinessField.ClaimantName, ""
-                BusinessField.InsurerName, ""
+                BusinessField.PolicyNumber, ""
+                BusinessField.InsurerClaimReference, ""
                 BusinessField.ClaimedAmount, "not-money"
                 BusinessField.ClaimedCurrency, "eur"
             ]

@@ -107,6 +107,8 @@ let internal queryCodecs () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        Parties = []
+                        PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
                         Mine = false

@@ -430,5 +430,9 @@
   "cli.family.browserSessions": {
     "text": "ClaimCore 브라우저 세션",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "청구 건 당사자",
+    "source": "8eb8f1a7c97c"
   }
 }

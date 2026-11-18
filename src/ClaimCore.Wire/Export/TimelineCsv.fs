@@ -89,6 +89,32 @@ module TimelineCsv =
                 "",
                 (text |> Option.map NoteText.format |> Option.defaultValue "")
             ]
+        | TimelineChange.Party(id, change) ->
+            let prefix = "party." + PartyId.format id + "."
+
+            [
+                difference
+                    (prefix + "role")
+                    PartyRole.token
+                    {
+                        Before = change.Before |> Option.map _.Role
+                        After = change.After |> Option.map _.Role
+                    }
+                difference
+                    (prefix + "name")
+                    PartyName.format
+                    {
+                        Before = change.Before |> Option.bind _.Name
+                        After = change.After |> Option.bind _.Name
+                    }
+                difference
+                    (prefix + "details")
+                    PartyDetails.format
+                    {
+                        Before = change.Before |> Option.bind _.Details
+                        After = change.After |> Option.bind _.Details
+                    }
+            ]
         | TimelineChange.Reminder change ->
             let prefix = "reminder." + ReminderId.format change.ReminderId + "."
 

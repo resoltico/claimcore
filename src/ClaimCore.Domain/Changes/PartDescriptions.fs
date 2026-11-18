@@ -28,6 +28,21 @@ module PartDescriptions =
             Description = description
         }
 
+    let private partyDescription (before: PartyValue option) (after: PartyValue) =
+        let content (value: PartyValue) =
+            if value.Removed then None else value.Content
+
+        PartDescription.Party
+            {
+                Content =
+                    {
+                        Before = before |> Option.bind content
+                        After = content after
+                    }
+                Removed = Difference.value (before |> Option.map _.Removed) (Some after.Removed)
+            }
+        |> Ok
+
     let family
         (before: DecisionFacts option)
         (notes: Map<NoteId, NoteValue>)
@@ -128,6 +143,14 @@ module PartDescriptions =
                                 Error RecordViolation.InvalidSubjectState
                             else
                                 Ok(PartDescription.Note(NoteDescription.describe before value))
+                    | PartValue.Party value ->
+                        let prior =
+                            PartyId.create change.PartId
+                            |> Option.bind (fun id ->
+                                prior |> Option.bind (fun state -> Map.tryFind id state.Parties))
+                            |> Option.map _.Value
+
+                        partyDescription prior value
                     | PartValue.Person _ -> Error RecordViolation.InvalidSubjectState
 
                 description |> Result.map (described change))
@@ -267,6 +290,15 @@ module PartDescriptions =
                                 | _ -> None)
 
                         Ok(PartDescription.Note(NoteDescription.describe prior value))
+                    | PartValue.Party value ->
+                        let prior =
+                            before
+                            |> Option.bind (fun change ->
+                                match change.Value with
+                                | PartValue.Party value -> Some value
+                                | _ -> None)
+
+                        partyDescription prior value
                     | PartValue.Person _ -> Error RecordViolation.InvalidSubjectState
 
                 description |> Result.map (described change))
@@ -424,6 +456,14 @@ module PartDescriptions =
                     |> Option.defaultValue missing
 
                 PartKind.Note, items
+            | PartDescription.Party value ->
+                let items =
+                    PartyId.create part.PartId
+                    |> Option.map (fun id -> [ TimelineChange.Party(id, value.Content) ])
+                    |> Option.map Ok
+                    |> Option.defaultValue missing
+
+                PartKind.Party, items
             | PartDescription.Person _ -> PartKind.Person, missing
 
         items

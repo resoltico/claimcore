@@ -14,8 +14,8 @@ const current: CurrentCase = {
           kind: "ENTRIES",
           entries: [
             {
-              key: "claimantName",
-              labelId: "field.claimantName.label",
+              key: "policyNumber",
+              labelId: "field.policyNumber.label",
               prominence: "PRIMARY",
               value: {
                 kind: "TEXT",
@@ -34,7 +34,7 @@ const current: CurrentCase = {
           entries: [
             {
               key: "opaque-before",
-              labelId: "field.claimantName.label",
+              labelId: "field.policyNumber.label",
               prominence: "PRIMARY",
               value: {
                 kind: "TEXT",

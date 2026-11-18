@@ -47,7 +47,7 @@ let tests =
                 | Some issues -> Refusal.InvalidInput issues, InputIssues.toList issues
                 | other -> failtestf "Expected accumulated invalid input, got %A" other
 
-            let rowIssues = issues |> List.choose _.GrantRow
+            let rowIssues = issues |> List.choose _.Row
 
             Expect.equal
                 rowIssues.Length
@@ -55,7 +55,7 @@ let tests =
                 "Each of the 48 permitted rows contributes its own failure"
 
             Expect.equal
-                (rowIssues |> List.map GrantOrdinal.value)
+                (rowIssues |> List.map TaskRowTarget.ordinal)
                 [ 0..47 ]
                 "Stable submitted ordinals"
 

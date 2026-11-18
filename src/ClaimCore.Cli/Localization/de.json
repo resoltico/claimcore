@@ -430,5 +430,9 @@
   "cli.family.browserSessions": {
     "text": "ClaimCore-Browsersitzungen",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "Parteien eines Falls",
+    "source": "8eb8f1a7c97c"
   }
 }

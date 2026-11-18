@@ -47,6 +47,7 @@ let private groupInput create group overrides =
             [
                 FieldValueKind.CalendarDate, "2026-08-01"
                 FieldValueKind.Country, "LV"
+                FieldValueKind.Identifier, "SYN-1"
                 FieldValueKind.PartyName, "Synthetic Party"
                 FieldValueKind.IncidentDescription, "Synthetic incident description"
                 FieldValueKind.Amount, "1000.00"
@@ -74,8 +75,8 @@ let registration: RegistrationInput =
                 "incidentDate", "2026-08-01"
                 "receivedDate", "2026-08-03"
                 "incidentCountry", "LV"
-                "claimantName", "Synthetic Party"
-                "insurerName", "Synthetic Insurer"
+                "policyNumber", "Synthetic Policy"
+                "insurerClaimReference", "Synthetic Insurer Reference"
                 "claimedAmount", "1000.00"
                 "claimedCurrency", "EUR"
             ])
@@ -89,8 +90,8 @@ let registrationWith changes value =
 let exampleRegistration =
     registrationWith
         [
-            BusinessField.ClaimantName, "Example Claimant Ltd"
-            BusinessField.InsurerName, "Example Alleged Insurer"
+            BusinessField.PolicyNumber, "Example Claimant Ltd"
+            BusinessField.InsurerClaimReference, "Example Alleged Insurer"
         ]
         registration
 

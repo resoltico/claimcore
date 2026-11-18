@@ -127,7 +127,7 @@ let tests =
                                 "--registration"
                                 "update"
                                 "--clear-policy-number"
-                                "--claimant-name"
+                                "--policy-number"
                                 "Edited claimant"
                                 "--decision"
                                 "clear"
@@ -144,7 +144,7 @@ let tests =
                                 InputValue.Text "CLEAR"
                                 TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 InputValue.Null
-                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                                TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 InputValue.Text "Edited claimant"
                             ])
                         "Omitted fields keep, explicit null clears")

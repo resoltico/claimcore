@@ -231,6 +231,8 @@ let tests =
 
                 let reply: CaseReadModel =
                     {
+                        Parties = []
+                        PartyOffers = []
                         FamilySequence = Sequence.create 1L |> Option.get
                         Snapshot =
                             {
@@ -309,10 +311,11 @@ let tests =
                     {
                         Reminder = reminder
                         Reference = DomainInputs.reference "REM-1"
-                        ClaimantName =
-                            (PartyName.parse "Synthetic claimant"
-                             |> Result.defaultWith (string >> failtest))
-                            |> Some
+                        Claimants =
+                            [
+                                (PartyName.parse "Synthetic claimant"
+                                 |> Result.defaultWith (string >> failtest))
+                            ]
                         Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor

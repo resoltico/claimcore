@@ -141,8 +141,8 @@ let internal replayAndRefusal fixture =
                                 BusinessField.IncidentDescription
                                 BusinessField.PolicyNumber
                                 BusinessField.InsurerClaimReference
-                                BusinessField.ClaimantName
-                                BusinessField.InsurerName
+                                BusinessField.PolicyNumber
+                                BusinessField.InsurerClaimReference
                                 BusinessField.ClaimedAmount
                                 BusinessField.ClaimedCurrency
                             ]

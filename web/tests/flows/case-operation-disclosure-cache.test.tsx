@@ -34,7 +34,7 @@ const disclosureScreen = (caption: string): Screen => ({
         entries: [
           {
             key: "private",
-            labelId: "field.claimantName.label",
+            labelId: "field.policyNumber.label",
             prominence: "PRIMARY",
             value: { kind: "PARTY", value: caption },
           },

@@ -111,7 +111,7 @@ it("masks the prior session work draft and waits for a fresh read before offerin
   await waitFor(() => {
     expect(screen.queryByRole("textbox", { name: "Handling summary" })).toBeNull();
   });
-  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="policyNumber"]')).toBeNull();
   expect(document.querySelector(".case-work")).toBeNull();
   await act(async () => {
     release(response());

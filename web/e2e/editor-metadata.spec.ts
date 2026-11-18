@@ -13,8 +13,8 @@ test("prefills routed metadata and confirms discard before changing acts from th
   await openCase(page, caseReference);
   await startAct(page, "case.amendRegistration", "en");
   await progress("metadata-amend-editor");
-  await page.locator('input[data-selects-fields~="claimantName"]').check();
-  const claimant = page.getByLabel("Claimant name", { exact: true });
+  await page.locator('input[data-selects-fields~="policyNumber"]').check();
+  const claimant = page.getByLabel("Policy number", { exact: true });
   await expect(claimant).toHaveValue("Synthetic claimant");
   await claimant.fill("Synthetic amended claimant");
   await progress("metadata-dirty-change");

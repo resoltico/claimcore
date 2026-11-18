@@ -259,6 +259,21 @@ module PartDescriptionCodecs =
         |> build
         |> named "NotePartDescription"
 
+    let party =
+        (record (fun content removed ->
+            {
+                PartyPartDescription.Content = content
+                Removed = removed
+            })
+        : Fields<PartyPartDescription, _>)
+        |> field "content" _.Content (ValueChangeCodecs.change "PartyContentChange" partyContent)
+        |> field
+            "removed"
+            _.Removed
+            (nullable (ValueChangeCodecs.change "PartyRemovedChange" boolean))
+        |> build
+        |> named "PartyPartDescription"
+
     let description =
         tagged
             "PartDescription"
@@ -298,6 +313,13 @@ module PartDescriptionCodecs =
                     | PartDescription.Note value -> Some value
                     | _ -> None)
                     (record id |> field "changes" id note)
+                variant
+                    "PARTY"
+                    PartDescription.Party
+                    (function
+                    | PartDescription.Party value -> Some value
+                    | _ -> None)
+                    (record id |> field "changes" id party)
                 variant
                     "PERSON"
                     PartDescription.Person

@@ -116,12 +116,29 @@ type NoteReceipt =
     }
 
 [<RequireQualifiedAccess>]
+type PartyDisclosure =
+    | Disclosed of PartyContent
+    | Withheld
+    | Erased
+
+type PartyReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        PartyId: PartyId
+        Revision: Revision
+        Act: TaskId
+        Snapshot: PartyDisclosure
+    }
+
+[<RequireQualifiedAccess>]
 type ReceiptSubject =
     | Case of CaseReceipt
     | People of PeopleReceipt
     | Work of WorkReceipt
     | Reminder of ReminderReceipt
     | Note of NoteReceipt
+    | Party of PartyReceipt
 
 type OperationReceipt =
     {

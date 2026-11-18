@@ -515,8 +515,8 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     incidentDate: date,
     receivedDate: date,
     incidentCountry: "LV",
-    claimantName: `${marker} Rīga العربية`,
-    insurerName: "Matrix insurer Apdrošinātājs شركة التأمين",
+    policyNumber: `${marker} Rīga العربية`,
+    insurerClaimReference: "Matrix insurer Apdrošinātājs شركة التأمين",
     claimedAmount: "1234.56",
     claimedCurrency: "EUR",
   });

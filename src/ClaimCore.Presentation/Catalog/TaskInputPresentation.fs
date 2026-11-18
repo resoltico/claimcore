@@ -18,7 +18,7 @@ module TaskInputPresentation =
                 FieldPresentation.ruleId field
             else
                 Vocabulary.messageKey BusinessField.vocabulary field part
-        | TaskInputId.Target(InputTarget.Reason | InputTarget.Text | InputTarget.ProfileDisplayName | InputTarget.ProfileContact) when
+        | TaskInputId.Target(InputTarget.Reason | InputTarget.Text | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.PartyName) when
             part = "rule"
             ->
             "scalar.text.guidance"
@@ -65,6 +65,9 @@ module TaskInputPresentation =
             Some(ScalarRule.Text PartyName.descriptor)
         | TaskInputId.Target InputTarget.ProfileContact ->
             Some(ScalarRule.Text ContactText.descriptor)
+        | TaskInputId.Target InputTarget.PartyName -> Some(ScalarRule.Text PartyName.descriptor)
+        | TaskInputId.Target InputTarget.PartyDetails ->
+            Some(ScalarRule.PlainText PartyDetails.constraints)
         | TaskInputId.Target InputTarget.NoteText -> Some(ScalarRule.PlainText NoteText.constraints)
         | TaskInputId.Target InputTarget.ReminderAction ->
             Some(ScalarRule.PlainText ReminderAction.constraints)

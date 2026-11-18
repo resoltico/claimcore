@@ -192,27 +192,26 @@ module CommandGrammar =
     let collections operation =
         (TaskDeclarations.describe operation).Collections
         |> List.map (fun item ->
-            match item.Collection with
-            | TaskCollectionId.PeopleGrants ->
-                {
-                    Collection = item.Collection
-                    Name = TaskInputId.Target InputTarget.Grants
-                    LabelId =
-                        TaskInputPresentation.messageKey
-                            (TaskInputId.Target InputTarget.Grants)
-                            "label"
-                    MinimumItems = item.MinimumRows
-                    MaximumItems = TaskCollectionId.maximumRows item.Collection
-                })
+            let input = TaskCollectionId.input item.Collection
+
+            {
+                Collection = item.Collection
+                Name = input
+                LabelId = TaskInputPresentation.messageKey input "label"
+                MinimumItems = item.MinimumRows
+                MaximumItems = TaskCollectionId.maximumRows item.Collection
+            })
 
     let collectionFlag (definition: CommandCollection) =
         match definition.Collection with
+        | TaskCollectionId.Parties -> "--party"
         | TaskCollectionId.PeopleGrants ->
             "--" + kebab (inputName (TaskInputId.Target InputTarget.Role))
 
     let collectionPlaceholder (definition: CommandCollection) =
         match definition.Collection with
         | TaskCollectionId.PeopleGrants -> "ROLE[@CASE-REF]"
+        | TaskCollectionId.Parties -> "JSON"
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 

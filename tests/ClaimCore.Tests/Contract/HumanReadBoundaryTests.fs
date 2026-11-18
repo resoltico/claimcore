@@ -315,7 +315,7 @@ let tests =
 
                     let bait =
                         RegistrationInput.replace
-                            [ BusinessField.ClaimantName, "Input bait must not display" ]
+                            [ BusinessField.PolicyNumber, "Input bait must not display" ]
                             DomainInputs.registration
                         |> required
 

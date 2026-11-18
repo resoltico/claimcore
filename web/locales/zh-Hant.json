@@ -702,5 +702,17 @@
   "ui.clearCaseRestriction": {
     "text": "清除案件限制",
     "source": "76ab14deda9c"
+  },
+  "ui.addRow": {
+    "text": "新增列",
+    "source": "1868a8dd78ad"
+  },
+  "ui.removeRow": {
+    "text": "移除列",
+    "source": "1810fddd9e28"
+  },
+  "ui.rowNumber": {
+    "text": "第 {number} 列",
+    "source": "f8c78edd5258"
   }
 }

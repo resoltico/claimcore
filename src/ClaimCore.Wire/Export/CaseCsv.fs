@@ -26,6 +26,11 @@ module CaseCsv =
         |> Option.bind (fun facts -> Map.tryFind field facts.Fields |> Option.flatten)
         |> Option.map CaseFieldValue.format
 
+    let private parties role (row: CaseSummary) =
+        CaseState.fields row.State
+        |> Option.bind (fun facts -> Map.tryFind role facts.Parties)
+        |> Option.map (List.map PartyName.format >> String.concat "; ")
+
     let private columns =
         [
             column "caseReference" (fun row -> Some(CaseReference.format row.Reference))
@@ -35,6 +40,8 @@ module CaseCsv =
             column "headline" (fun row -> Some(CaseHeadline.token row.Headline))
             column "attention" (fun row ->
                 Some(row.Attention |> List.map CaseAttention.token |> String.concat ";"))
+            column "claimants" (parties PartyRole.Claimant)
+            column "insurers" (parties PartyRole.Insurer)
             for field in CaseSummaryFields.declarations do
                 column ("state.fields." + field.Key) (listedValue field.Field)
             column "paidAmount" (fun row -> row.Paid |> Option.map Money.format)

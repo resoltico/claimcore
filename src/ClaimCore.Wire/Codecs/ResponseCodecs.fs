@@ -260,6 +260,8 @@ module ResponseCodecs =
                 disposition
                 nextActions
                 notes
+                parties
+                partyOffers
                 latestPayments
                 changedAt
                 recordedBy
@@ -282,6 +284,8 @@ module ResponseCodecs =
                     Disposition = disposition
                     NextActions = nextActions
                     Notes = notes
+                    Parties = parties
+                    PartyOffers = partyOffers |> List.map TaskOffer.Declared
                     LatestPayments = latestPayments
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
@@ -303,6 +307,11 @@ module ResponseCodecs =
         |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
+        |> field "parties" _.Parties (list PartyContent.MaximumCurrent WorkCodecs.party)
+        |> field
+            "partyActs"
+            (fun value -> value.PartyOffers |> List.map TaskOffer.id)
+            (list 1 (TaskVocabulary.forSubject ActSubject.Party))
         |> field
             "latestPayments"
             _.LatestPayments

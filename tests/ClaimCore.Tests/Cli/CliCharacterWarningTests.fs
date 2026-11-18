@@ -98,8 +98,8 @@ let private example kind =
             let registration =
                 Registration.replace
                     [
-                        BusinessField.ClaimantName,
-                        Admitted.Name(PartyName.parse "After" |> CaseBuilders.accepted)
+                        BusinessField.PolicyNumber,
+                        Admitted.Identifier(Identifier.parse "After" |> CaseBuilders.accepted)
                     ]
                     fields.Registration
                 |> CaseBuilders.accepted
@@ -119,7 +119,7 @@ let private example kind =
                     "case.amendRegistration"
                     (OperationId.value ResponseExamples.receipt.OperationId)
                     (Binding.Case(CaseSelector.Id before.CaseId, before.Revision))
-                    (Submissions.fields [ BusinessField.ClaimantName, "After" ])
+                    (Submissions.fields [ BusinessField.PolicyNumber, "After" ])
 
             let review =
                 Reviews.caseReview
@@ -179,7 +179,7 @@ let private setSavedName example root (value: string) =
             else
                 Seq.empty)
         |> Seq.map nonNull
-        |> Seq.filter (fun entry -> (entry["key"] |> nonNull).GetValue<string>() = "claimantName")
+        |> Seq.filter (fun entry -> (entry["key"] |> nonNull).GetValue<string>() = "policyNumber")
         |> Seq.toList
 
     Expect.isNonEmpty entries "The authored Screen has the saved claimant fact being exercised"
@@ -257,7 +257,7 @@ let private previewWarnings () =
                 |> Seq.find (fun value ->
                     (value["key"] |> nonNull)
                         .GetValue<string>()
-                        .EndsWith(".claimantName", System.StringComparison.Ordinal))
+                        .EndsWith(".policyNumber", System.StringComparison.Ordinal))
 
             (change["before"] |> nonNull)["value"] <- JsonValue.Create before
             (change["after"] |> nonNull)["value"] <- JsonValue.Create after)
@@ -305,7 +305,7 @@ let private humanBudgetAndOrdinaryControl () =
 
     for value in [ "Synthetic Name"; "Synthétic"; "SyntheticName"; "Synthetic😀👩💻" ] do
         rendered Current (fun root -> setSavedName Current root value) (fun language text ->
-            let label = MessageCatalogs.render language "field.claimantName.label" Map.empty
+            let label = MessageCatalogs.render language "field.policyNumber.label" Map.empty
 
             Expect.isTrue
                 (text.Split('\n')
@@ -343,7 +343,7 @@ let private retainedTerminalControls () =
                 |> Seq.find (fun row ->
                     (row["key"] |> nonNull)
                         .GetValue<string>()
-                        .EndsWith(".claimantName", System.StringComparison.Ordinal))
+                        .EndsWith(".policyNumber", System.StringComparison.Ordinal))
 
             (change["before"] |> nonNull)["value"] <- JsonValue.Create value
             (change["after"] |> nonNull)["value"] <- JsonValue.Create "safe")

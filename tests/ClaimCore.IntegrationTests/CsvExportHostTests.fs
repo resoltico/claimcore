@@ -75,7 +75,7 @@ let private qualify () =
             let! service = caseWorker fixture
 
             let registration =
-                DomainInputs.registrationFrom [ BusinessField.ClaimantName, "=CSV α \"quoted\"" ]
+                DomainInputs.registrationFrom [ BusinessField.PolicyNumber, "=CSV α \"quoted\"" ]
 
             for index in 1..51 do
                 let reference = sprintf "CSV-%03d" index

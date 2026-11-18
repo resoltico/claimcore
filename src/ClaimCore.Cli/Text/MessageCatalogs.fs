@@ -95,6 +95,7 @@ module internal MessageCatalogs =
             function
             | "case" -> CliMessage.CaseFamily
             | "note" -> CliMessage.NoteCommands
+            | "party" -> CliMessage.PartyCommands
             | "payment" -> CliMessage.PaymentCommands
             | "work" -> CliMessage.WorkCommands
             | "reminder" -> CliMessage.ReminderCommands

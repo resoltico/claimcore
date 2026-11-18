@@ -26,8 +26,6 @@ type BusinessField =
     | IncidentDescription
     | PolicyNumber
     | InsurerClaimReference
-    | ClaimantName
-    | InsurerName
     | ClaimedAmount
     | ClaimedCurrency
     | CaseReference
@@ -65,6 +63,12 @@ type InputTarget =
     | ReminderId
     | NoteId
     | NoteText
+    | Parties
+    | PartyId
+    | PartyRole
+    | PartyName
+    | PartyDetails
+    | ExpectedPartyRevision
     | PaymentId
     | ReminderAction
     | ReminderDueDate
@@ -143,10 +147,6 @@ module BusinessField =
             }
         | BusinessField.IncidentCountry ->
             descriptor field FieldValueKind.Country (Some RecordGroup.Registration) None
-        | BusinessField.ClaimantName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) None
-        | BusinessField.InsurerName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) None
         | BusinessField.ClaimedAmount ->
             descriptor
                 field
@@ -314,12 +314,6 @@ module Registration =
 
     let country record =
         optional BusinessField.IncidentCountry record |> Option.map FieldValue.country
-
-    let claimant record =
-        optional BusinessField.ClaimantName record |> Option.map FieldValue.name
-
-    let insurer record =
-        optional BusinessField.InsurerName record |> Option.map FieldValue.name
 
     let claimed record =
         Option.map2

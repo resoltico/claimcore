@@ -329,7 +329,13 @@ module internal CaseWorkReads =
                                 {
                                     ReminderReadModel.Reminder = reminder
                                     Reference = row.Reference
-                                    ClaimantName = row.ClaimantName
+                                    Claimants =
+                                        Map.tryFind row.Stored.CaseId currentFamilies
+                                        |> Option.map (
+                                            DecisionFacts.currentParties
+                                            >> PartyContent.names PartyRole.Claimant
+                                        )
+                                        |> Option.defaultValue []
                                     Responsible = work.Responsible
                                     RecordedAt = row.Stored.RecordedAt
                                     RecordedBy = author

@@ -44,6 +44,12 @@ type ReminderValue =
 type NoteValue =
     { Removed: bool; Text: NoteText option }
 
+type PartyValue =
+    {
+        Removed: bool
+        Content: PartyContent option
+    }
+
 /// Assignments are accepted values, not instructions to re-run a grant business rule.
 /// A new accepting position is the enclosing part change's position.
 type GrantAssignment = { Grant: ActorGrant; Active: bool }
@@ -80,6 +86,7 @@ type PartValue =
     | Work of CaseWork option
     | Reminder of ReminderValue
     | Note of NoteValue
+    | Party of PartyValue
     | Person of PersonValue
 
 module PartValue =
@@ -90,6 +97,7 @@ module PartValue =
         | PartValue.Work _ -> PartKind.Work
         | PartValue.Reminder _ -> PartKind.Reminder
         | PartValue.Note _ -> PartKind.Note
+        | PartValue.Party _ -> PartKind.Party
         | PartValue.Person _ -> PartKind.Person
 
     let clear =
@@ -104,6 +112,7 @@ module PartValue =
         | PartValue.Work _ -> PartValue.Work None
         | PartValue.Reminder value -> PartValue.Reminder { value with Plan = None }
         | PartValue.Note value -> PartValue.Note { value with Text = None }
+        | PartValue.Party value -> PartValue.Party { value with Content = None }
         | PartValue.Person value ->
             PartValue.Person
                 { value with

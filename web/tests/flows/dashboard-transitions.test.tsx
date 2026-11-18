@@ -389,7 +389,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fill("Incident date", "2026-09-01");
   fill("Received", "2026-09-02");
   fill("Country", "LV");
-  fill("Claimant name", "Synthetic claimant");
+  fill("Policy number", "Synthetic claimant");
   fill("Insurer", "Synthetic insurer");
   fill("Claimed amount", "12.34");
   fill("Claimed currency", "EUR");

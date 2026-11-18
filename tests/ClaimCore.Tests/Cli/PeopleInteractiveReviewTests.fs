@@ -400,7 +400,7 @@ let tests =
             testCase "malformed case work reminder and people drafts make zero exchanges" (fun () ->
                 let invalid =
                     [
-                        [ "case"; "amend-registration"; "R-1"; "--claimant-name"; "" ]
+                        [ "case"; "amend-registration"; "R-1"; "--policy-number"; "" ]
                         [ "work"; "update"; "R-1"; "--handling-summary"; "" ]
                         [ "reminder"; "create"; "R-1"; "--action"; ""; "--due"; "2026-11-04" ]
                         baseWords "set-profile" @ [ "--name"; "" ]

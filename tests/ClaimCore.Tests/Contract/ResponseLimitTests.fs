@@ -32,8 +32,8 @@ let private fields length : CaseFields =
             CaseFixtures.registration (
                 ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
-                        BusinessField.ClaimantName, (String(char 1, length))
-                        BusinessField.InsurerName, (String(char 1, length))
+                        BusinessField.PolicyNumber, (String(char 1, length))
+                        BusinessField.InsurerClaimReference, (String(char 1, length))
                         BusinessField.ClaimedAmount, ("999999999999999999.9999")
                     ]
                     (DomainInputs.registration)

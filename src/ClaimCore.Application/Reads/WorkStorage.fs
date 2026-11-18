@@ -429,7 +429,6 @@ module internal WorkStorage =
                         Reference = reference
                         Lifecycle = lifecycle
                         Status = status
-                        ClaimantName = Registration.claimant fields.Registration
                         Responsible = responsible
                     })
 

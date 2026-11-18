@@ -195,13 +195,13 @@ let completeByteGoldens =
                     TimeZoneId = "Etc/UTC"
                 }
 
-            let claimantName = "=CSV, α \"quoted\""
+            let policyNumber = "=CSV, α \"quoted\""
 
             let registration =
                 DomainInputs.registrationFrom
                     [
-                        BusinessField.ClaimantName, claimantName
-                        BusinessField.InsurerName, "Insurer"
+                        BusinessField.PolicyNumber, policyNumber
+                        BusinessField.InsurerClaimReference, "Insurer"
                         BusinessField.ClaimedAmount, "1.2345"
                         BusinessField.ClaimedCurrency, "EUR"
                     ]
@@ -228,6 +228,7 @@ let completeByteGoldens =
                             {
                                 Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                Parties = Map.empty
                             }
                     Headline = CaseHeadline.Undecided
                     Attention = [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
@@ -248,7 +249,7 @@ let completeByteGoldens =
             Expect.equal
                 caseBytes
                 (expected
-                    "caseReference,revision,workRevision,state.kind,headline,attention,state.fields.claimantName,state.fields.insurerName,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,paidAmount,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
+                    "caseReference,revision,workRevision,state.kind,headline,attention,state.fields.policyNumber,state.fields.insurerClaimReference,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,paidAmount,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
                     [
                         "CSV-GOLDEN"
                         "7"
@@ -298,10 +299,11 @@ let completeByteGoldens =
                 {
                     Reminder = reminder
                     Reference = reference
-                    ClaimantName =
-                        ((PartyName.parse claimantName
-                          |> Result.defaultWith (fun _ -> failtest "Claimant")))
-                        |> Some
+                    Claimants =
+                        [
+                            PartyName.parse policyNumber
+                            |> Result.defaultWith (fun _ -> failtest "Claimant")
+                        ]
                     Responsible = None
                     RecordedAt = changed
                     RecordedBy = actor

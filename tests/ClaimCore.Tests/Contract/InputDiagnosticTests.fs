@@ -32,12 +32,12 @@ let private principal () =
                     [
                         {
                             Target = InputTarget.PrincipalIssuer
-                            GrantRow = None
+                            Row = None
                             Violation = Violation.TextRequired
                         }
                         {
                             Target = InputTarget.PrincipalSubject
-                            GrantRow = None
+                            Row = None
                             Violation = Violation.TextRequired
                         }
                     ]
@@ -46,7 +46,7 @@ let private principal () =
                         {
                             Target = target
                             Violation = issue
-                            GrantRow = None
+                            Row = None
                         }
                     ]
                 |> InputIssues.ofList

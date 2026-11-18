@@ -52,7 +52,7 @@ module internal PersonInputs =
                             else
                                 InputTarget.ProfileContact
                         Violation = violation
-                        GrantRow = None
+                        Row = None
                     })
                 |> InputIssues.ofList
                 |> Option.get
@@ -73,7 +73,7 @@ module internal PersonInputs =
                             else
                                 InputTarget.ProfileContact
                         Violation = violation
-                        GrantRow = None
+                        Row = None
                     })
                 |> InputIssues.ofList
                 |> Option.get
@@ -155,10 +155,6 @@ module internal PersonInputs =
                 grant input
                 |> Result.mapError (function
                     | Refusal.InvalidInput issues ->
-                        Refusal.InvalidInput(
-                            InputIssues.atGrantRow
-                                (GrantOrdinal.create row.Ordinal |> Option.get)
-                                issues
-                        )
+                        Refusal.InvalidInput(InputIssues.atRow row.Target issues)
                     | refusal -> refusal))
             |> Parsing.collect

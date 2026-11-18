@@ -30,7 +30,7 @@ let private item =
     {
         ReminderReadModel.Reminder = reminder
         Reference = ResponseExamples.caseRead.Snapshot.Reference
-        ClaimantName = (DomainInputs.name "Read-only claimant") |> Some
+        Claimants = [ (DomainInputs.name "Read-only claimant") ]
         Responsible = None
         RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy

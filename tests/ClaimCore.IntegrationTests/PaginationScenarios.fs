@@ -96,7 +96,7 @@ let internal createHistory fixture (actor: ServiceContext) =
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
                 (ClaimCore.TestSupport.DomainInputs.registrationWith
-                    [ BusinessField.ClaimantName, ("Party " + string n) ]
+                    [ BusinessField.PolicyNumber, ("Party " + string n) ]
                     (registration))
 
             let! amended =

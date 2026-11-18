@@ -11,7 +11,7 @@ const known: ReviewPresentation = {
       after: { kind: "MESSAGE", messageId: "lifecycle.ERASED.meaning" },
     },
   ],
-  unchanged: [{ key: "claimant", labelId: "field.claimantName.label" }],
+  unchanged: [{ key: "claimant", labelId: "field.policyNumber.label" }],
 };
 it("admits registered argument-free labels and explicit value messages without comparing values", () => {
   expect(isReviewPresentationComplete(known)).toBe(true);

@@ -48,6 +48,8 @@ module TaskDeclaration =
         | ActSubject.Reminder, false -> BindingShape.Reminder
         | ActSubject.Note, true -> BindingShape.NoteNew
         | ActSubject.Note, false -> BindingShape.Note
+        | ActSubject.Party, true -> BindingShape.PartyNew
+        | ActSubject.Party, false -> BindingShape.Party
         | ActSubject.People, true -> BindingShape.PeopleNew
         | ActSubject.People, false -> BindingShape.People
 

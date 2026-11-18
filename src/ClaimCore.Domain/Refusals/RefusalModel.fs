@@ -2,24 +2,43 @@ namespace ClaimCore.Domain
 
 open System
 
-/// Ordinal in the submitted people grant collection, independent of client row identity.
-[<Struct>]
-type GrantOrdinal = private GrantOrdinal of int
+/// Collection identity and bounded ordinals stay independent of transport and UI-local row keys.
+[<RequireQualifiedAccess>]
+type TaskCollectionId =
+    | PeopleGrants
+    | Parties
 
-module GrantOrdinal =
-    let create value =
-        if value < 0 || value >= PeopleAdmission.MaximumGrants then
+    member this.MaximumRows =
+        match this with
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
+        | TaskCollectionId.Parties -> PartyContent.MaximumCurrent
+
+type TaskRowTarget =
+    private
+        {
+            Collection: TaskCollectionId
+            Ordinal: int
+        }
+
+module TaskRowTarget =
+    let create (collection: TaskCollectionId) ordinal =
+        if ordinal < 0 || ordinal >= collection.MaximumRows then
             None
         else
-            Some(GrantOrdinal value)
+            Some
+                {
+                    Collection = collection
+                    Ordinal = ordinal
+                }
 
-    let value (GrantOrdinal value) = value
+    let collection target = target.Collection
+    let ordinal target = target.Ordinal
 
 type InputIssue =
     {
         Target: InputTarget
         Violation: Violation
-        GrantRow: GrantOrdinal option
+        Row: TaskRowTarget option
     }
 
 type InputIssues = private InputIssues of InputIssue * InputIssue list
@@ -29,7 +48,7 @@ module InputIssues =
         InputIssues(
             {
                 Target = target
-                GrantRow = None
+                Row = None
                 Violation = violation
             },
             []
@@ -45,9 +64,9 @@ module InputIssues =
 
     let append (InputIssues(first, rest)) last = InputIssues(first, rest @ toList last)
 
-    let atGrantRow ordinal issues =
+    let atRow row issues =
         toList issues
-        |> List.map (fun issue -> { issue with GrantRow = Some ordinal })
+        |> List.map (fun issue -> { issue with Row = Some row })
         |> ofList
         |> Option.get
 
@@ -62,6 +81,7 @@ type CaseRefusal =
     | CorrectionRequiresExistingValue
     | DecisionHasPayments
     | PaymentNotFound
+    | PartyLimit
 
 [<RequireQualifiedAccess>]
 type PeopleRefusal =

@@ -623,10 +623,6 @@
     "text": "Fallreferenz",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "Name des Anspruchstellers",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "Geforderter Betrag",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "Eingegangen",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "Versicherer",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "Seitengröße",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "Was geschehen ist. Ergänzen Sie die für diesen Anspruch relevanten Einzelheiten.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "Die Person oder das Unternehmen, die bzw. das den Anspruch stellt.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "Der für den Anspruch zuständige Versicherer.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "Verwenden Sie höchstens {maximumIntegerDigits} Ziffern vor und {maximumFractionDigits} nach dem Dezimalpunkt. Verwenden Sie ASCII-Ziffern und einen Punkt; keine Leerzeichen, Vorzeichen, Kommas oder überflüssigen führenden Nullen.",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "Beliebig",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "Partei hinzufügen",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "Eine mit diesem Fall verbundene Partei erfassen.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "Partei hinzugefügt.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "Partei bearbeiten",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "Rolle, Name oder Angaben dieser Partei ändern.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "Partei aktualisiert.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "Partei entfernen",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "Diese Partei aus dem aktuellen Fall entfernen. Frühere Angaben bleiben im Verlauf erhalten.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "Partei entfernt.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "Parteien",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "Bekannte Parteien hinzufügen.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "Rolle der Partei",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "Beteiligung der Partei auswählen.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "Name der Partei",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "Den Namen der Person oder Organisation eingeben, sofern bekannt.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "Angaben zur Partei",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "Kontaktdaten oder Anschrift erfassen, sofern bekannt.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "1 bis {maximumScalars} Unicode-Zeichen verwenden. Zeilenumbrüche sind erlaubt.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "Partei-ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "Eine Partei aus diesem Fall auswählen.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "Geprüfter Stand der Partei",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "Den geprüften Stand verwenden.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "Die UUID der Partei verwenden.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "Eine Rolle für die Partei auswählen.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "Einen Namen oder Angaben eingeben.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "Die Höchstzahl der Parteien für diesen Fall ist erreicht.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "Die angegebene Zahl der Parteien überschreitet das Limit.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "Anspruchsteller",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "Versicherer",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "Anspruchsteller",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "Versicherer",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "Vertretung",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "Sonstige",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "Partei",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "Partei",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "Änderung an einer Partei erfasst.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "Anspruchsteller",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "Eine Partei, die den Anspruch geltend macht.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "Versicherer",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "Eine Partei, die für den Anspruch relevanten Versicherungsschutz bietet.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "Vertretung",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "Eine Partei, die für eine am Fall beteiligte Person handelt.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "Sonstige",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "Eine Partei, die in einer anderen Rolle am Fall beteiligt ist.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "Bis zu {maximumParties} Parteien hinzufügen.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "Eine der aufgeführten Rollen auswählen.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "Die Kennung der zu ändernden Partei verwenden.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "Die Versionsnummer der ausgewählten Partei verwenden.",
+    "source": "f6e00e1e4aa8"
   }
 }

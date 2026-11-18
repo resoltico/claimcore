@@ -34,7 +34,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   expect(requests).toEqual(["POST /api/operation.preview"]);
   await expect(amount).toHaveValue("00.10");
   await amount.fill("0.10");
-  const name = page.getByLabel("Claimant name", { exact: true });
+  const name = page.getByLabel("Policy number", { exact: true });
   await name.fill("A".repeat(201));
   const policy = await pauseJsonReply(page, "operation.preview");
   await page.getByRole("button", { name: "Review changes" }).click();
@@ -47,7 +47,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
     expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
     expect(outcome.rejection.issues).toHaveLength(1);
     expect(outcome.rejection.issues[0]).toMatchObject({
-      input: "field:claimantName",
+      input: "field:policyNumber",
       row: null,
       message: {
         messageId: "diagnostic.TOO_LONG",
@@ -57,7 +57,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   }
   policy.release();
   await expectInputRefusal(page, name, "en", {
-    meaning: issueMeanings.en.claimantName,
+    meaning: issueMeanings.en.policyNumber,
     issue: "Use at most 200 characters.",
   });
   await expect(page.locator("[data-error-summary]")).toBeFocused();

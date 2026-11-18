@@ -57,6 +57,7 @@
     <Compile Include="Domain/TaskRegistryTests.fs" />
     <Compile Include="Domain/AggregateApplyTests.fs" />
     <Compile Include="Domain/Tasks/NoteAddTests.fs" />
+    <Compile Include="Domain/Tasks/PartyTests.fs" />
     <Compile Include="Domain/Tasks/NoteRemoveTests.fs" />
     <Compile Include="Domain/Tasks/WorkUpdateTests.fs" />
     <Compile Include="Domain/Tasks/ReminderCreateTests.fs" />

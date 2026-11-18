@@ -430,5 +430,9 @@
   "cli.family.browserSessions": {
     "text": "ClaimCore pārlūkprogrammas sesijas",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "Lietas dalībnieki",
+    "source": "8eb8f1a7c97c"
   }
 }

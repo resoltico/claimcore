@@ -125,11 +125,11 @@ const authorCase = (kind: ActKind) => {
       fillRegistrationInputs();
       break;
     case "case.amendRegistration":
-      input("claimantName", "Synthetic replacement");
+      input("policyNumber", "Synthetic replacement");
       break;
     case "case.correct":
       fireEvent.click(document.querySelector('input[name="group:registration"][value="UPDATE"]')!);
-      input("claimantName", "Synthetic correction");
+      input("policyNumber", "Synthetic correction");
       break;
     case "case.decide":
       for (const [name, value] of Object.entries({
@@ -206,11 +206,11 @@ const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] 
   if (request.task === "case.correct") {
     return [
       {
-        key: "claimantName",
-        labelId: "field.claimantName.label",
+        key: "policyNumber",
+        labelId: "field.policyNumber.label",
         before: {
           kind: "PARTY",
-          value: caseFields.registration.claimantName,
+          value: caseFields.registration.policyNumber!,
         },
         after: {
           kind: "PARTY",
@@ -309,10 +309,10 @@ const assertAuthoredCase = (request: CaseInput) => {
     case "case.open":
       expect(request.binding).toEqual({ kind: "CASE", expectedRevision: 0 });
       expect(request.inputs["field:caseReference"]).toBe(caseFields.caseReference);
-      expect(request.inputs["field:claimantName"]).toBe(caseFields.registration.claimantName);
+      expect(request.inputs["field:policyNumber"]).toBe(caseFields.registration.policyNumber!);
       break;
     case "case.amendRegistration":
-      expect(request.inputs["field:claimantName"]).toBe("Synthetic replacement");
+      expect(request.inputs["field:policyNumber"]).toBe("Synthetic replacement");
       break;
     case "case.decide":
       expect(request.inputs["field:payableAmount"]).toBe("5.0000");
@@ -326,7 +326,7 @@ const assertAuthoredCase = (request: CaseInput) => {
     case "case.correct":
       expect(request.inputs).toMatchObject({
         "group:registration": "UPDATE",
-        "field:claimantName": "Synthetic correction",
+        "field:policyNumber": "Synthetic correction",
         "group:decision": "KEEP",
       });
       break;

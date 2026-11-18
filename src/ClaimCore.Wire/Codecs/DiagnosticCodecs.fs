@@ -98,8 +98,10 @@ module DiagnosticCodecs =
                 "row"
                 snd
                 (nullable (
-                    integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
-                    |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64)
+                    integer
+                        0L
+                        (int64 (max PeopleAdmission.MaximumGrants PartyContent.MaximumCurrent - 1))
+                    |> map int int64
                 ))
 
         violationVariants
@@ -109,9 +111,17 @@ module DiagnosticCodecs =
                     {
                         Target = target
                         Violation = violation
-                        GrantRow = row
+                        Row =
+                            row
+                            |> Option.bind (
+                                TaskRowTarget.create (TaskCollectionId.ofRowInput target)
+                            )
                     })
-                (fun issue -> Some((issue.Target, issue.GrantRow), issue.Violation))
+                (fun issue ->
+                    Some(
+                        (issue.Target, issue.Row |> Option.map TaskRowTarget.ordinal),
+                        issue.Violation
+                    ))
                 fields
         )
 

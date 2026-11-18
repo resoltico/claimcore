@@ -64,7 +64,22 @@ export const preview = (
               consequence: "ROUTINE",
               confirmation: { kind: "CASE_REFERENCE", reference },
             },
-            actions: [operationAffordance(input.task, input.binding, input.inputs, [])],
+            actions: [
+              operationAffordance(
+                input.task,
+                input.binding,
+                Object.fromEntries(
+                  Object.entries(input.inputs).filter(
+                    (entry): entry is [string, string | null] =>
+                      entry[1] === null ||
+                      typeof entry[1] === "string" ||
+                      typeof entry[1] === "number" ||
+                      typeof entry[1] === "boolean",
+                  ),
+                ),
+                [],
+              ),
+            ],
           },
         },
       },

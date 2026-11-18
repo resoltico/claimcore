@@ -58,7 +58,7 @@ const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" |
     .getByRole("dialog")
     .locator(".review-values > div")
     .filter({
-      has: page.getByText(ui(language, "field.claimantName.label"), { exact: true }),
+      has: page.getByText(ui(language, "field.policyNumber.label"), { exact: true }),
     });
   await expectClaimantWarning(field, language);
 };
@@ -66,7 +66,7 @@ const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" |
   await expectCaseReadsSettled(page);
   const field = page
     .locator(".case-detail")
-    .locator('[data-region="FACTS"] [data-entry="claimantName"]');
+    .locator('[data-region="FACTS"] [data-entry="policyNumber"]');
   await expectClaimantWarning(field, language);
 };
 // Literal widget-hint oracles remain independent of the browser's message lookup.

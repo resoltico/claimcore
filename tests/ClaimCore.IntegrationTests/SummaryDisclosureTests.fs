@@ -137,19 +137,23 @@ let private summaries () =
                 let value field = Map.find field summary.Fields
 
                 Expect.equal
-                    (value BusinessField.ClaimantName)
+                    (value BusinessField.PolicyNumber)
                     (Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(Registration.claimant fields.Registration |> Option.get)
+                            Admitted.Identifier(
+                                Registration.policyNumber fields.Registration |> Option.get
+                            )
                         )
                     ))
                     "Claimant is already disclosed"
 
                 Expect.equal
-                    (value BusinessField.InsurerName)
+                    (value BusinessField.InsurerClaimReference)
                     (Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(Registration.insurer fields.Registration |> Option.get)
+                            Admitted.Identifier(
+                                Registration.insurerClaimReference fields.Registration |> Option.get
+                            )
                         )
                     ))
                     "Insurer is already disclosed"

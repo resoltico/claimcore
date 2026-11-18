@@ -20,19 +20,26 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
-        CaseSummaryFacts.Fields =
+        CaseSummaryFacts.Parties = Map.empty
+        Fields =
             Map.ofList
                 [
-                    BusinessField.ClaimantName,
+                    BusinessField.PolicyNumber,
                     Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant")
+                            Admitted.Identifier(
+                                Identifier.parse "Synthetic, \"quoted\"\r\nclaimant"
+                                |> Result.defaultWith (string >> failwith)
+                            )
                         )
                     )
-                    BusinessField.InsurerName,
+                    BusinessField.InsurerClaimReference,
                     Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(DomainInputs.name "Synthetic insurer")
+                            Admitted.Identifier(
+                                Identifier.parse "Synthetic insurer"
+                                |> Result.defaultWith (string >> failwith)
+                            )
                         )
                     )
                     BusinessField.ClaimedAmount,
@@ -57,11 +64,23 @@ let private parties claimant insurer =
         Fields =
             facts.Fields
             |> Map.add
-                BusinessField.ClaimantName
-                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name claimant))))
+                BusinessField.PolicyNumber
+                (Some(
+                    CaseFieldValue.Business(
+                        Admitted.Identifier(
+                            Identifier.parse claimant |> Result.defaultWith (string >> failwith)
+                        )
+                    )
+                ))
             |> Map.add
-                BusinessField.InsurerName
-                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name insurer))))
+                BusinessField.InsurerClaimReference
+                (Some(
+                    CaseFieldValue.Business(
+                        Admitted.Identifier(
+                            Identifier.parse insurer |> Result.defaultWith (string >> failwith)
+                        )
+                    )
+                ))
     }
 
 let private row reference =
@@ -526,8 +545,8 @@ let tests =
                             "state.kind"
                             "headline"
                             "attention"
-                            "state.fields.claimantName"
-                            "state.fields.insurerName"
+                            "state.fields.policyNumber"
+                            "state.fields.insurerClaimReference"
                             "state.fields.claimedAmount"
                             "state.fields.claimedCurrency"
                             "state.fields.payableAmount"

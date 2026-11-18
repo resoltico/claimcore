@@ -103,7 +103,7 @@ let tests =
 
                     let claimant =
                         declaration "case.open"
-                        |> input (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+                        |> input (TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber))
 
                     Expect.equal
                         claimant.Retention

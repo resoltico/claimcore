@@ -88,8 +88,8 @@ it("uses the full JSON allowance independently of content length", async () => {
 });
 it("keeps retained text outside current admission policy unchanged during wire parsing", () => {
   const value = {
-    claimantName: "🙂".repeat(201),
-    insurerName: "a\u202eb",
+    policyNumber: "🙂".repeat(201),
+    insurerClaimReference: "a\u202eb",
   };
   expect(admitBytes(new TextEncoder().encode(JSON.stringify(value)))).toEqual(value);
 });

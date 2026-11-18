@@ -56,8 +56,11 @@ let tests =
                             Registration =
                                 DomainInputs.registrationStateWith
                                     [
-                                        BusinessField.ClaimantName,
-                                        Admitted.Name(CaseFixtures.name "A\u202eB")
+                                        BusinessField.PolicyNumber,
+                                        Admitted.Identifier(
+                                            Identifier.parse "A\u202eB"
+                                            |> Result.defaultWith (string >> failwith)
+                                        )
                                     ]
                                     fields.Registration
                         }

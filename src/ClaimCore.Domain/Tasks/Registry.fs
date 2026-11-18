@@ -29,6 +29,9 @@ module Registry =
             ClaimCore.Domain.Tasks.People.EraseProfile.task
             ClaimCore.Domain.Tasks.People.Admit.task
             ClaimCore.Domain.Tasks.Work.Update.task
+            ClaimCore.Domain.Tasks.Party.PartyTasks.add
+            ClaimCore.Domain.Tasks.Party.PartyTasks.update
+            ClaimCore.Domain.Tasks.Party.PartyTasks.remove
             ClaimCore.Domain.Tasks.Note.Add.task
             ClaimCore.Domain.Tasks.Note.Remove.task
             ClaimCore.Domain.Tasks.Reminder.Create.task

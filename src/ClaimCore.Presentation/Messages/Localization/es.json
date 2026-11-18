@@ -623,10 +623,6 @@
     "text": "Referencia del expediente",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "Nombre del reclamante",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "Importe reclamado",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "Recibido",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "Aseguradora",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "Tamaño de página",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "Qué ocurrió. Añade los detalles relevantes para esta reclamación.",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "La persona o empresa que presenta la reclamación.",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "La aseguradora responsable de la reclamación.",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "Cualquiera",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "Añadir parte",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "Registra una parte vinculada a este expediente.",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "Parte añadida.",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "Actualizar parte",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "Cambia el rol, el nombre o los datos de esta parte.",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "Parte actualizada.",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "Retirar parte",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "Retira esta parte del expediente actual. Los datos anteriores se conservan en el historial.",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "Parte retirada.",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "Partes",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "Añade las partes conocidas.",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "Rol de la parte",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "Selecciona cómo participa la parte.",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "Nombre de la parte",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "Indica el nombre de la persona u organización si lo conoces.",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "Datos de la parte",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "Indica los datos de contacto o la dirección si los conoces.",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "Usa entre 1 y {maximumScalars} caracteres Unicode. Se admiten saltos de línea.",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "ID de la parte",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "Selecciona una parte de este expediente.",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "Versión revisada de la parte",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "Usa la versión que revisaste.",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "Usa el UUID de la parte.",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "Selecciona un rol para la parte.",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "Indica un nombre o datos de contacto.",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "El expediente ha alcanzado el límite de partes.",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "El número de partes supera el límite.",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "Reclamantes",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "Aseguradoras",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "Reclamante",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "Aseguradora",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "Representante",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "Otra",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "Parte",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "Parte",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "Cambio de parte registrado.",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "Reclamante",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "Una parte que presenta la reclamación.",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "Aseguradora",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "Una parte que proporciona el seguro relacionado con la reclamación.",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "Representante",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "Una parte que actúa en nombre de alguien implicado en el expediente.",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "Otra",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "Una parte que interviene en el expediente con otro rol.",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "Añade hasta {maximumParties} partes.",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "Elige uno de los roles de la lista.",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "Usa el identificador de la parte que quieras cambiar.",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "Usa el número de versión de la parte seleccionada.",
+    "source": "f6e00e1e4aa8"
   }
 }

@@ -150,8 +150,8 @@ let private validateText target value =
         match target with
         | Reference -> BusinessField.CaseReference
         | Country -> BusinessField.IncidentCountry
-        | Claimant -> BusinessField.ClaimantName
-        | Insurer -> BusinessField.InsurerName
+        | Claimant -> BusinessField.PolicyNumber
+        | Insurer -> BusinessField.InsurerClaimReference
 
     let values =
         Map.add

@@ -110,6 +110,7 @@ module Terms =
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary
             rendered Role.vocabulary
+            rendered PartyRole.vocabulary
             rendered PrincipalKind.vocabulary
             rendered ActorAvailability.vocabulary
             rendered AccountState.vocabulary
@@ -142,6 +143,7 @@ module Terms =
                         "WORK", "timelineKind.WORK.label"
                         "REMINDER", "timelineKind.REMINDER.label"
                         "NOTE", "timelineKind.NOTE.label"
+                        "PARTY", "timelineKind.PARTY.label"
                     ]
             }
             rendered ActSubject.vocabulary

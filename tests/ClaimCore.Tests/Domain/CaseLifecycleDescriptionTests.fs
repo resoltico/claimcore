@@ -18,8 +18,10 @@ let private live name =
         Registration.values fields.Registration
         |> List.map (fun (key, value) ->
             key,
-            if key = BusinessField.ClaimantName then
-                Admitted.Name(CaseFixtures.name name)
+            if key = BusinessField.PolicyNumber then
+                Admitted.Identifier(
+                    Identifier.parse name |> Result.defaultWith (string >> failwith)
+                )
             else
                 value)
         |> Registration.create

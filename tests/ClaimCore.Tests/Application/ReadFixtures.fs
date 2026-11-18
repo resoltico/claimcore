@@ -77,5 +77,5 @@ let current () =
         StoredCase.CaseId = snapshot.CaseId
         Snapshot = snapshot
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
-        Index = CaseIndex.create instant snapshot None []
+        Index = CaseIndex.create instant snapshot None [] []
     }

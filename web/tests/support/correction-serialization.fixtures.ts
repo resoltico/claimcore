@@ -18,16 +18,16 @@ export const correctionSerializations = [
   [
     "UPDATE",
     "KEEP",
-    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:claimantName":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"KEEP"}}',
+    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:policyNumber":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"KEEP"}}',
   ],
   [
     "UPDATE",
     "UPDATE",
-    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:claimantName":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"UPDATE","field:paymentDecisionDate":"2026-09-03","field:payableAmount":"2.0000","field:payableCurrency":"EUR"}}',
+    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:policyNumber":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"UPDATE","field:paymentDecisionDate":"2026-09-03","field:payableAmount":"2.0000","field:payableCurrency":"EUR"}}',
   ],
   [
     "UPDATE",
     "CLEAR",
-    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:claimantName":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"CLEAR"}}',
+    '{"operationId":"00000000-0000-4000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-SERIALIZATION"},"expectedRevision":4},"inputs":{"group:registration":"UPDATE","field:policyNumber":"Synthetic replacement","field:claimedAmount":"1.0000","field:claimedCurrency":"EUR","group:decision":"CLEAR"}}',
   ],
 ] as const;

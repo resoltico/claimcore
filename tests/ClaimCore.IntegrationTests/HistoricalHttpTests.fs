@@ -89,7 +89,7 @@ let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) cs
             (outcome response).GetProperty("data").GetProperty("state").GetProperty("fields")
 
         Expect.equal
-            (fields.GetProperty("registration").GetProperty("claimantName").GetString())
+            (fields.GetProperty("registration").GetProperty("policyNumber").GetString())
             name
             "Retained text reaches the client"
 
@@ -117,8 +117,8 @@ let private retainedHistory (database: PostgresFixture.Database) =
         let values =
             (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
-                    BusinessField.ClaimantName, (name)
-                    BusinessField.InsurerName, ("Corrected insurer")
+                    BusinessField.PolicyNumber, (name)
+                    BusinessField.InsurerClaimReference, ("Corrected insurer")
                 ]
                 (registration))
 
@@ -153,7 +153,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                     RegistrationUpdateInput.values (
                         (DomainInputs.registrationUpdate (
                             ClaimCore.TestSupport.DomainInputs.registrationWith
-                                [ BusinessField.ClaimantName, (name + "B") ]
+                                [ BusinessField.PolicyNumber, (name + "B") ]
                                 (values)
                         ))
                     )
@@ -181,7 +181,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         Expect.equal
             (issues[0].GetProperty("input").GetString())
-            "field:claimantName"
+            "field:policyNumber"
             "Changed assertion is identified"
 
         Expect.equal

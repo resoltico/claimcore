@@ -39,7 +39,7 @@ it.each(["en", "lv", "ar"])(
                   },
                   {
                     key: "authored",
-                    labelId: "field.claimantName.label",
+                    labelId: "field.policyNumber.label",
                     prominence: "PRIMARY",
                     value: { kind: "PARTY", value: "A\u0308 العربية\u200D" },
                   },

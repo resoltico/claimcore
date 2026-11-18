@@ -33,6 +33,8 @@ type internal FamilyParts =
         WorkValue: AcceptedPart<CaseWork option> option
         RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
         NotesValue: Map<NoteId, AcceptedPart<NoteState>>
+        PartiesValue: Map<PartyId, AcceptedPart<PartyValue>>
+        PartyOrigins: Map<PartyId, EffectPosition>
         SequenceValue: Sequence
     }
 
@@ -43,6 +45,7 @@ type internal FamilyParts =
     member this.Work = this.WorkValue
     member this.Reminders = this.RemindersValue
     member this.Notes = this.NotesValue
+    member this.Parties = this.PartiesValue
     member this.Sequence = this.SequenceValue
     member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
 
@@ -59,6 +62,7 @@ type CaseFamily =
     member this.Work = this.Value.Work
     member this.Reminders = this.Value.Reminders
     member this.Notes = this.Value.Notes
+    member this.Parties = this.Value.Parties
     member this.Sequence = this.Value.Sequence
     member this.ChangedAt = this.Value.ChangedAt
 
@@ -133,6 +137,25 @@ module internal FamilyParts =
             (previous |> Option.map _.Revision |> Option.defaultValue Revision.zero)
             change.Revision
 
+    let private partyId (caseStamp: SubjectStamp) (origin: SubjectStamp) =
+        if origin.OperationId = caseStamp.OperationId then
+            let ordinal = EffectPosition.index origin.Position - 1
+
+            if ordinal >= 0 && ordinal < PartyContent.MaximumCurrent then
+                Some(PartyId.derive origin.OperationId ordinal)
+            else
+                None
+        else
+            Some(PartyId.ofOperationId origin.OperationId)
+
+    let currentParties (state: FamilyParts) =
+        state.Parties
+        |> Map.toSeq
+        |> Seq.filter (fun (_, part) -> not part.Value.Removed)
+        |> Seq.sortBy (fun (id, _) -> Map.find id state.PartyOrigins)
+        |> Seq.choose (fun (_, part) -> part.Value.Content)
+        |> Seq.toList
+
     let private clear state =
         { state with
             CaseValue =
@@ -144,6 +167,12 @@ module internal FamilyParts =
                 |> Map.map (fun _ part ->
                     { part with
                         Value = { part.Value with Entry = None }
+                    })
+            PartiesValue =
+                state.Parties
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Content = None }
                     })
             WorkValue = state.Work |> Option.map (fun part -> { part with Value = None })
             RemindersValue =
@@ -190,6 +219,8 @@ module internal FamilyParts =
                             WorkValue = None
                             RemindersValue = Map.empty
                             NotesValue = Map.empty
+                            PartiesValue = Map.empty
+                            PartyOrigins = Map.empty
                             SequenceValue = EffectPosition.sequence change.Stamp.Position
                         })
                 | None, _ -> Error RecordViolation.InvalidHistoryStart
@@ -294,6 +325,35 @@ module internal FamilyParts =
                                 }
                     | Some _ -> Error RecordViolation.InvalidRevisionSequence
                     | None -> invalid
+                | Some before, PartValue.Party value ->
+                    match PartyId.create change.PartId with
+                    | Some party when version (Map.tryFind party before.Parties) change ->
+                        let valid =
+                            match Map.tryFind party before.Parties with
+                            | None ->
+                                not value.Removed
+                                && partyId before.Case.Stamp change.Stamp = Some party
+                            | Some previous ->
+                                not previous.Value.Removed
+                                && (not value.Removed || previous.Value.Content = value.Content)
+
+                        if valid then
+                            let origins =
+                                if Map.containsKey party before.PartyOrigins then
+                                    before.PartyOrigins
+                                else
+                                    Map.add party change.Stamp.Position before.PartyOrigins
+
+                            Ok
+                                { before with
+                                    PartiesValue =
+                                        Map.add party (accepted change value) before.Parties
+                                    PartyOrigins = origins
+                                }
+                        else
+                            invalid
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
                 | Some before, PartValue.Note value ->
                     match NoteId.create change.PartId with
                     | Some note when version (Map.tryFind note before.Notes) change ->
@@ -395,7 +455,7 @@ module internal FamilyParts =
                         None)
                 |> Seq.toList
 
-            CaseIndex.create state.ChangedAt snapshot work due)
+            CaseIndex.create state.ChangedAt snapshot work due (currentParties state))
 
     /// Projection writers consume accepted values and aggregate-derived indexes in the same fold.
     let rows (state: FamilyParts) (changes: PartChange list) =
@@ -421,6 +481,7 @@ module internal FamilyParts =
                         |> List.exists (fun change ->
                             match change.Value with
                             | PartValue.Note value -> not value.Removed && value.Text.IsNone
+                            | PartValue.Party value -> value.Content.IsNone
                             | PartValue.Reminder value -> value.Plan.IsNone
                             | _ -> false))
 
@@ -466,6 +527,13 @@ module internal FamilyParts =
                         | PartKind.Payment
                         | PartKind.Reminder
                         | PartKind.Note -> change.PartId = OperationId.value origin.OperationId
+                        | PartKind.Party ->
+                            let caseOrigin = Map.tryFind (PartKind.Case, CaseId.value id) origins
+
+                            caseOrigin
+                            |> Option.exists (fun stamp ->
+                                partyId stamp origin |> Option.map PartyId.value =
+                                    Some change.PartId)
                         | PartKind.Person -> false)
                 | None -> false)
 
@@ -523,6 +591,14 @@ module internal FamilyParts =
                         | _ -> None)
                     |> Map.ofList
 
+                let parties =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, PartyId.create change.PartId with
+                        | PartValue.Party value, Some party -> Some(party, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
                 let state =
                     {
                         Identity = id
@@ -532,6 +608,11 @@ module internal FamilyParts =
                         WorkValue = work
                         RemindersValue = reminders
                         NotesValue = notes
+                        PartiesValue = parties
+                        PartyOrigins =
+                            parties
+                            |> Map.map (fun party _ ->
+                                (Map.find (PartKind.Party, PartyId.value party) origins).Position)
                         SequenceValue = sequence
                     }
 

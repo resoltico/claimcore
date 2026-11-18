@@ -25,12 +25,11 @@ module ReminderListScreen =
                     code CaseDue.vocabulary CaseDue.Inactive
                 else
                     optional (code ReminderDue.vocabulary) item.Timing)
-            column
-                "claimant"
-                (FieldPresentation.labelId BusinessField.ClaimantName)
-                Prominence.Secondary
-                false
-                (fun item -> optional PresentedValue.Party item.ClaimantName)
+            column "claimants" "label.claimants" Prominence.Secondary false (fun item ->
+                match item.Claimants with
+                | [] -> optional PresentedValue.Text None
+                | names ->
+                    PresentedValue.Text(names |> List.map PartyName.format |> String.concat "; "))
             column
                 "responsible"
                 "field.responsibleActor.label"

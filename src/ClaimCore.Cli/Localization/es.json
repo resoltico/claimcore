@@ -430,5 +430,9 @@
   "cli.family.browserSessions": {
     "text": "Sesiones de navegador de ClaimCore",
     "source": "afe6f30a2564"
+  },
+  "cli.family.party": {
+    "text": "Partes del expediente",
+    "source": "8eb8f1a7c97c"
   }
 }

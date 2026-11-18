@@ -122,7 +122,7 @@ let tests =
                         (correction
                             "UPDATE"
                             "KEEP"
-                            [ text (InputTarget.Field BusinessField.ClaimantName) "Corrected" ]))
+                            [ text (InputTarget.Field BusinessField.PolicyNumber) "Corrected" ]))
                     "No decision assertion"
 
                 Correct.decide
@@ -183,10 +183,10 @@ let tests =
                                 text (InputTarget.Field BusinessField.IncidentDate) "2026-11-20"
                                 text (InputTarget.Field BusinessField.ReceivedDate) "2026-11-21"
                                 text
-                                    (InputTarget.Field BusinessField.ClaimantName)
+                                    (InputTarget.Field BusinessField.PolicyNumber)
                                     (String.replicate 201 "A")
                                 text
-                                    (InputTarget.Field BusinessField.InsurerName)
+                                    (InputTarget.Field BusinessField.InsurerClaimReference)
                                     (String.replicate 201 "B")
                                 text
                                     (InputTarget.Field BusinessField.PaymentDecisionDate)
@@ -207,8 +207,10 @@ let tests =
                         [
                             TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate)
                             TaskInputId.Target(InputTarget.Field BusinessField.ReceivedDate)
-                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)
-                            TaskInputId.Target(InputTarget.Field BusinessField.InsurerName)
+                            TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber)
+                            TaskInputId.Target(
+                                InputTarget.Field BusinessField.InsurerClaimReference
+                            )
                             TaskInputId.Target(InputTarget.Field BusinessField.PaymentDecisionDate)
                         ]
                         "Independent current scalar issues")

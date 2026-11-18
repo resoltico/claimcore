@@ -16,6 +16,10 @@ type Violation =
     | ActorIdRequired
     | ReminderIdRequired
     | NoteIdRequired
+    | PartyIdRequired
+    | PartyRoleRequired
+    | PartyContentRequired
+    | PartyCountRange
     | UpdateRequired
     | CalendarDateRequired
     | FutureDate

@@ -80,7 +80,7 @@ let tests =
 
                     Expect.isTrue
                         (registration.Entries
-                         |> List.exists (fun entry -> entry.Key = "claimantName"))
+                         |> List.exists (fun entry -> entry.Key = "policyNumber"))
                         "Full registration before presentation is supplied"
 
                     let decision = original.Screen.CurrentGroups[1].Section

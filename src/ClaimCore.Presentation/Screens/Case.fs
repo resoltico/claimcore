@@ -100,13 +100,7 @@ module CaseScreen =
             let selected =
                 FieldPresentation.declarations
                 |> List.filter (fun field ->
-                    List.contains
-                        field.Field
-                        [
-                            BusinessField.ClaimantName
-                            BusinessField.InsurerName
-                            BusinessField.ClaimedAmount
-                        ])
+                    List.contains field.Field [ BusinessField.ClaimedAmount ])
 
             let values =
                 FieldPresentation.declarations
@@ -116,6 +110,35 @@ module CaseScreen =
             entries (fields selected (fun () -> Some values)) ())
         |> Option.defaultValue []
 
+
+    let private parties (reply: CaseReadModel) =
+        let columns =
+            [
+                column
+                    "role"
+                    "field.partyRole.label"
+                    Prominence.Primary
+                    false
+                    (fun (party: CaseParty) -> code PartyRole.vocabulary party.Content.Role)
+                column "name" "field.partyName.label" Prominence.Primary false (fun party ->
+                    optional PresentedValue.Party party.Content.Name)
+                column "details" "field.partyDetails.label" Prominence.Secondary false (fun party ->
+                    optional
+                        (PartyDetails.format >> PresentedValue.Narrative)
+                        party.Content.Details)
+            ]
+
+        let table =
+            tableWithControls
+                (fun (party: CaseParty) -> PartyId.format party.PartyId)
+                (fun _ -> None)
+                columns
+                (fun party -> None, List.choose TaskAffordances.fromOffer party.Offers)
+                reply.Parties
+
+        { region RegionRole.Parties (Some "field.parties.label") (RegionContent.Table table) with
+            Actions = List.choose TaskAffordances.fromOffer reply.PartyOffers
+        }
 
     let view (reply: CaseReadModel) =
         let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
@@ -328,6 +351,9 @@ module CaseScreen =
                     for group, facts in List.zip scalarGroups groups do
                         if group = RecordGroup.Registration then
                             yield entryRegion RegionRole.Facts (Some facts.TitleId) facts.Entries
+
+                    if not reply.Parties.IsEmpty || not reply.PartyOffers.IsEmpty then
+                        yield parties reply
 
                     match CaseState.fields reply.Snapshot.State with
                     | Some fields ->

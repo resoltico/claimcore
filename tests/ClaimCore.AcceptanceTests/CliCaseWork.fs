@@ -99,9 +99,9 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 "2026-09-02"
                 "--incident-country"
                 "LV"
-                "--claimant-name"
+                "--policy-number"
                 "CLI work claimant"
-                "--insurer-name"
+                "--insurer-claim-reference"
                 "CLI work insurer"
                 "--claimed-amount"
                 "100"
@@ -390,7 +390,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
          |> Seq.exists (fun value -> value.GetString() = "NO_NEXT_ACTION"))
         "The refreshed attention comes from the core current view"
 
-    fact "amend-registration" 1 [ "--claimant-name"; "CLI selected fact" ] |> ignore
+    fact "amend-registration" 1 [ "--policy-number"; "CLI selected fact" ] |> ignore
 
     fact
         "decide"
@@ -457,12 +457,12 @@ let qualify (fixture: PublishedFixture.Fixture) =
         "Only the five financial/narrative edits advance fact revision"
 
     Expect.equal
-        (fields.GetProperty("registration").GetProperty("claimantName").GetString())
+        (fields.GetProperty("registration").GetProperty("policyNumber").GetString())
         "CLI selected fact"
         "Selected fact changes"
 
     Expect.equal
-        (fields.GetProperty("registration").GetProperty("insurerName").GetString())
+        (fields.GetProperty("registration").GetProperty("insurerClaimReference").GetString())
         "CLI work insurer"
         "Omitted fact survives"
 

@@ -28,6 +28,7 @@ type VerificationFinding =
     | CaseChangedAtProjection
     | CaseSearchProjection
     | CaseNotesProjection
+    | CasePartiesProjection
     | CaseWorkProjection
     | CaseReceivedOnProjection
     | CaseClaimedAmountProjection

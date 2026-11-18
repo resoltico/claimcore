@@ -200,6 +200,24 @@ module internal Replay =
                     }))
             |> Map.ofList)
 
+    let partyRows state =
+        familyRows state
+        |> Result.map (fun rows ->
+            rows
+            |> Map.toList
+            |> List.collect (fun (caseId, row) ->
+                row.Parties
+                |> List.map (fun party ->
+                    party.Id,
+                    {
+                        StoredParty.PartyId = party.Id
+                        CaseId = caseId
+                        Revision = party.Revision
+                        CreatedPosition = party.Origin.Position
+                        Value = party.Value
+                    }))
+            |> Map.ofList)
+
     let payments state =
         familyRows state
         |> Result.map (fun rows ->

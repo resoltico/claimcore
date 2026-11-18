@@ -45,6 +45,7 @@
     <Compile Include="Reads/ViewCountStorage.fs" />
     <Compile Include="Reads/WorkStorage.fs" />
     <Compile Include="Reads/NoteStorage.fs" />
+    <Compile Include="Reads/PartyStorage.fs" />
     <Compile Include="Reads/TimelineStorage.fs" />
     <Compile Include="Reads/TransactionPages.fs" />
     <Compile Include="Reads/RegisterReads.fs" />

@@ -257,6 +257,30 @@ module internal PartProjections =
 
                 exactlyOne changed
 
+            for party in row.Parties do
+                let content = party.Value.Content
+
+                let! changed =
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.case_parties(party_id,case_id,revision,created_sequence,created_effect_index,removed,role,name,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(party_id) DO UPDATE SET revision=EXCLUDED.revision,removed=EXCLUDED.removed,role=EXCLUDED.role,name=EXCLUDED.name,details=EXCLUDED.details WHERE claimcore.case_parties.case_id=EXCLUDED.case_id AND claimcore.case_parties.created_sequence=EXCLUDED.created_sequence AND claimcore.case_parties.created_effect_index=EXCLUDED.created_effect_index"
+                        [|
+                            box (PartyId.value party.Id)
+                            box (CaseId.value id)
+                            box (Revision.value party.Revision)
+                            box (Sequence.value (EffectPosition.sequence party.Origin.Position))
+                            box (EffectPosition.index party.Origin.Position)
+                            box party.Value.Removed
+                            optional (content |> Option.map (_.Role >> PartyRole.token))
+                            optional (content |> Option.bind _.Name |> Option.map PartyName.format)
+                            optional (
+                                content |> Option.bind _.Details |> Option.map PartyDetails.format
+                            )
+                        |]
+                        token
+
+                exactlyOne changed
+
             if row.Snapshot.State = CaseState.Erased then
                 // Erasure clears existing child projections without opening their private roots.
                 for sql in
@@ -264,6 +288,7 @@ module internal PartProjections =
                         "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
                         "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.notes SET text=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.case_parties SET role=NULL,name=NULL,details=NULL WHERE case_id=$1"
                     ] do
                     let! _ =
                         DatabaseSession.execute connection sql [| box (CaseId.value id) |] token

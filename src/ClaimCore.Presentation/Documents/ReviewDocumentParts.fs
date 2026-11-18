@@ -65,6 +65,8 @@ module internal ReviewDocumentParts =
             | Binding.CaseNew _
             | Binding.PeopleNew _
             | Binding.ReminderNew _
+            | Binding.PartyNew _
+            | Binding.Party _
             | Binding.NoteNew _
             | Binding.Note _ -> []
 

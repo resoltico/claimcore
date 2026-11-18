@@ -42,9 +42,9 @@ it("preserves authored content, text selection and operation identity across lan
     }),
   );
   fillRegistrationInputs({
-    claimantName: " ",
+    policyNumber: " ",
   });
-  const name = document.querySelector<HTMLInputElement>('input[data-field-name="claimantName"]')!;
+  const name = document.querySelector<HTMLInputElement>('input[data-field-name="policyNumber"]')!;
   const date = document.querySelector<HTMLElement>('[data-field-name="incidentDate"]')!;
   fireEvent.change(name, {
     target: {
@@ -59,7 +59,7 @@ it("preserves authored content, text selection and operation identity across lan
     await setEditorLanguage(user, language);
   }
   expect(ids.mock.calls.length).toBe(before);
-  const retainedName = screen.getByLabelText<HTMLInputElement>("Claimant name", {
+  const retainedName = screen.getByLabelText<HTMLInputElement>("Policy number", {
     exact: true,
   });
   expect(retainedName.selectionStart).toBe(1);
@@ -163,7 +163,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
     }),
   );
   fillRegistrationInputs({
-    claimantName: " ",
+    policyNumber: " ",
   });
   await setEditorLanguage(user, "lv");
   await user.click(
@@ -199,7 +199,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
           },
           issues: [
             {
-              input: "field:claimantName",
+              input: "field:policyNumber",
               row: null,
               message: {
                 messageId: "diagnostic.TEXT_REQUIRED",
@@ -214,14 +214,14 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await waitFor(() => {
     expect(screen.getByRole("alert")).toHaveFocus();
   });
-  expect(document.querySelector('input[data-field-name="claimantName"]')).toHaveAttribute(
+  expect(document.querySelector('input[data-field-name="policyNumber"]')).toHaveAttribute(
     "aria-invalid",
     "true",
   );
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");
   expect(screen.getByRole("alert")).toHaveTextContent("Pārbaudāmie lauki: 1.");
   expect(
-    document.querySelector('input[data-field-name="claimantName"]'),
+    document.querySelector('input[data-field-name="policyNumber"]'),
   ).toHaveAccessibleDescription(
     "Persona vai uzņēmums, kas iesniedz prasījumu. Nepieciešama netukša vērtība.",
   );
@@ -230,11 +230,11 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   expect(screen.getByRole("alert").textContent).not.toBe(alert);
   expect(screen.getByRole("alert")).toHaveTextContent("Fields to check: 1.");
   expect(
-    document.querySelector('input[data-field-name="claimantName"]'),
+    document.querySelector('input[data-field-name="policyNumber"]'),
   ).toHaveAccessibleDescription(
     "The person or company making the claim. A non-blank value is required.",
   );
-  expect(document.querySelector('input[data-field-name="claimantName"]')).toHaveAttribute(
+  expect(document.querySelector('input[data-field-name="policyNumber"]')).toHaveAttribute(
     "aria-invalid",
     "true",
   );

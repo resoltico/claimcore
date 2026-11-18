@@ -91,6 +91,7 @@ type TimelineChange =
     | Reminder of ReminderDifference
     | Payments of PaymentCollectionDifference
     | Note of removed: bool * NoteId * NoteText option
+    | Party of PartyId * ValueChange<PartyContent>
 
 /// A concise recorded event, not an instruction to perform an act.
 [<RequireQualifiedAccess>]

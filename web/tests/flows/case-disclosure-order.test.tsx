@@ -43,10 +43,10 @@ const readable = (historyDetails: "NONE" | "SUMMARY" | "FULL" = "FULL") =>
               kind: "ENTRIES",
               entries: [
                 {
-                  key: "claimantName",
-                  labelId: "field.claimantName.label",
+                  key: "policyNumber",
+                  labelId: "field.policyNumber.label",
                   prominence: "PRIMARY",
-                  value: { kind: "PARTY", value: fields.registration.claimantName },
+                  value: { kind: "PARTY", value: fields.registration.policyNumber! },
                 },
               ],
             },
@@ -125,7 +125,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable("NONE"));
   vi.stubGlobal("fetch", fetch);
   render(detail());
-  await screen.findAllByText(fields.registration.claimantName);
+  await screen.findAllByText(fields.registration.policyNumber!);
   expect(
     screen.queryByRole("heading", {
       name: "Activity",
@@ -154,7 +154,7 @@ for (const replacement of ["session", "refresh"]) {
         replacement === "refresh" ? 1 : 0,
       ),
     );
-    expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+    expect(screen.queryByText(fields.registration.policyNumber!)).toBeNull();
     expect(oldSignal?.aborted).toBe(true);
     await act(async () => {
       nextCurrent.release(
@@ -181,7 +181,7 @@ for (const replacement of ["session", "refresh"]) {
         name: "Activity",
       }),
     ).toBeNull();
-    expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+    expect(screen.queryByText(fields.registration.policyNumber!)).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 }
@@ -239,7 +239,7 @@ it("appends an authorized next history page without dropping current advice", as
   await waitFor(() => {
     expect(document.querySelectorAll(".case-timeline-panel .region-timeline > li")).toHaveLength(2);
   });
-  expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
+  expect(screen.getAllByText(fields.registration.policyNumber!)[0]).toBeVisible();
   expect(
     screen.queryByRole("button", {
       name: "Load more",

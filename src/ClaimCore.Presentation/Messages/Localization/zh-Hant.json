@@ -623,10 +623,6 @@
     "text": "案件編號",
     "source": "14546393a90a"
   },
-  "field.claimantName.label": {
-    "text": "索賠人姓名或名稱",
-    "source": "905eab24ab68"
-  },
   "field.claimedAmount.label": {
     "text": "索賠金額",
     "source": "36ea8f5c9f5f"
@@ -670,10 +666,6 @@
   "field.receivedDate.label": {
     "text": "接收日期",
     "source": "49f19beeecf4"
-  },
-  "field.insurerName.label": {
-    "text": "保險公司",
-    "source": "949b10334d29"
   },
   "field.limit.label": {
     "text": "每頁數量",
@@ -1490,14 +1482,6 @@
   "field.incidentDescription.hint": {
     "text": "描述發生了什麼，補充與此次索賠有關的重要情況。",
     "source": "85ee20de7828"
-  },
-  "field.claimantName.hint": {
-    "text": "提出索賠的個人或公司。",
-    "source": "f783e293414b"
-  },
-  "field.insurerName.hint": {
-    "text": "負責此索賠的保險公司。",
-    "source": "252df5107d9a"
   },
   "field.claimedAmount.rule": {
     "text": "小數點前最多 {maximumIntegerDigits} 位，小數點後最多 {maximumFractionDigits} 位。請使用 ASCII 數字和英文句點；不得包含空格、正負號、逗號或多餘的前導零。",
@@ -2866,5 +2850,197 @@
   "reminderStateSelection.ANY.label": {
     "text": "不限",
     "source": "2b505597daa7"
+  },
+  "task.party.add.label": {
+    "text": "新增當事方",
+    "source": "bfb2a7177b88"
+  },
+  "task.party.add.meaning": {
+    "text": "記錄與此案件相關的當事方。",
+    "source": "d020aaf4dece"
+  },
+  "task.party.add.done": {
+    "text": "已新增當事方。",
+    "source": "1b16c8f13999"
+  },
+  "task.party.update.label": {
+    "text": "更新當事方",
+    "source": "3f1af6971de5"
+  },
+  "task.party.update.meaning": {
+    "text": "變更此當事方的角色、姓名或詳細資料。",
+    "source": "ede0517933fb"
+  },
+  "task.party.update.done": {
+    "text": "已更新當事方。",
+    "source": "6b1a78c5238e"
+  },
+  "task.party.remove.label": {
+    "text": "移除當事方",
+    "source": "e842bc4acd74"
+  },
+  "task.party.remove.meaning": {
+    "text": "從目前案件移除此當事方。先前的資料仍保留在歷程記錄中。",
+    "source": "d3483defc1e0"
+  },
+  "task.party.remove.done": {
+    "text": "已移除當事方。",
+    "source": "8eadc0c2cd4b"
+  },
+  "field.parties.label": {
+    "text": "當事方",
+    "source": "2729f5dd4807"
+  },
+  "field.parties.hint": {
+    "text": "新增已知的當事方。",
+    "source": "7288151f7058"
+  },
+  "field.partyRole.label": {
+    "text": "當事方角色",
+    "source": "bcc1ec813cc8"
+  },
+  "field.partyRole.hint": {
+    "text": "選擇該當事方的參與方式。",
+    "source": "9caf1ecfe5c5"
+  },
+  "field.partyName.label": {
+    "text": "當事方姓名",
+    "source": "10b5c2a3c214"
+  },
+  "field.partyName.hint": {
+    "text": "如已知，請輸入個人或機構名稱。",
+    "source": "caa49fb92e3f"
+  },
+  "field.partyDetails.label": {
+    "text": "當事方詳細資料",
+    "source": "cdfd714a620f"
+  },
+  "field.partyDetails.hint": {
+    "text": "如已知，請記錄聯絡方式或地址。",
+    "source": "49f5990bbf51"
+  },
+  "field.partyDetails.rule": {
+    "text": "請使用 1 至 {maximumScalars} 個 Unicode 字元。允許換行。",
+    "source": "97b31e9df4ef"
+  },
+  "field.partyId.label": {
+    "text": "當事方 ID",
+    "source": "0f3a13efedd3"
+  },
+  "field.partyId.hint": {
+    "text": "選擇此案件中的當事方。",
+    "source": "1f25f0b7d151"
+  },
+  "field.expectedPartyRevision.label": {
+    "text": "已檢視的當事方修訂版本",
+    "source": "c97597a3cfb7"
+  },
+  "field.expectedPartyRevision.hint": {
+    "text": "使用您檢視過的修訂版本。",
+    "source": "7750a2981772"
+  },
+  "diagnostic.PARTY_ID_REQUIRED": {
+    "text": "請使用當事方的 UUID。",
+    "source": "9eae2ce3d0bb"
+  },
+  "diagnostic.PARTY_ROLE_REQUIRED": {
+    "text": "請選擇當事方角色。",
+    "source": "8c0ee415877b"
+  },
+  "diagnostic.PARTY_CONTENT_REQUIRED": {
+    "text": "請輸入姓名或詳細資料。",
+    "source": "e2a83b363a1e"
+  },
+  "diagnostic.PARTY_LIMIT": {
+    "text": "此案件的當事方數量已達上限。",
+    "source": "8d0db8cfb80e"
+  },
+  "diagnostic.PARTY_COUNT_RANGE": {
+    "text": "指定的當事方數量超過上限。",
+    "source": "ca0d5bfc5351"
+  },
+  "label.claimants": {
+    "text": "索賠人",
+    "source": "6f70ec3454b9"
+  },
+  "label.insurers": {
+    "text": "保險公司",
+    "source": "87d705dce51f"
+  },
+  "partyRole.CLAIMANT.label": {
+    "text": "索賠人",
+    "source": "d64f853383af"
+  },
+  "partyRole.INSURER.label": {
+    "text": "保險公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.REPRESENTATIVE.label": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.OTHER.label": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "subject.PARTY.label": {
+    "text": "當事方",
+    "source": "dfa82f21b3f3"
+  },
+  "timelineKind.PARTY.label": {
+    "text": "當事方",
+    "source": "dfa82f21b3f3"
+  },
+  "change.PARTY.recorded": {
+    "text": "已記錄當事方變更。",
+    "source": "a5d0522684d4"
+  },
+  "partyRole.CLAIMANT.short": {
+    "text": "索賠人",
+    "source": "d64f853383af"
+  },
+  "partyRole.CLAIMANT.meaning": {
+    "text": "提出索賠的當事方。",
+    "source": "108eafc68665"
+  },
+  "partyRole.INSURER.short": {
+    "text": "保險公司",
+    "source": "949b10334d29"
+  },
+  "partyRole.INSURER.meaning": {
+    "text": "提供與索賠相關保險的當事方。",
+    "source": "38237f8ce797"
+  },
+  "partyRole.REPRESENTATIVE.short": {
+    "text": "代表人",
+    "source": "5753cbd622eb"
+  },
+  "partyRole.REPRESENTATIVE.meaning": {
+    "text": "代表案件相關人員行事的當事方。",
+    "source": "32e2e342fd38"
+  },
+  "partyRole.OTHER.short": {
+    "text": "其他",
+    "source": "f97e9da0e3b8"
+  },
+  "partyRole.OTHER.meaning": {
+    "text": "以其他角色參與案件的當事方。",
+    "source": "81ae50588caf"
+  },
+  "field.parties.rule": {
+    "text": "最多新增 {maximumParties} 個當事方。",
+    "source": "f9a268258939"
+  },
+  "field.partyRole.rule": {
+    "text": "從清單中選擇一個角色。",
+    "source": "7aafde55bcd0"
+  },
+  "field.partyId.rule": {
+    "text": "請使用要變更的當事方識別碼。",
+    "source": "e8b294381c5a"
+  },
+  "field.expectedPartyRevision.rule": {
+    "text": "使用所選當事方的版本號碼。",
+    "source": "f6e00e1e4aa8"
   }
 }

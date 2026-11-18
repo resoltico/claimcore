@@ -82,8 +82,20 @@ module internal ReadRowCodecs =
         |> build
         |> named "CaseWorkView"
 
+    let private partySummary =
+        Vocabulary.all PartyRole.vocabulary
+        |> List.map (fun role ->
+            role, PartyRole.token role, true, list PartyContent.MaximumCurrent partyName)
+        |> fieldMapWithPresence
+
     let private facts =
-        (record (fun fields -> { CaseSummaryFacts.Fields = fields }): Fields<CaseSummaryFacts, _>)
+        (record (fun parties fields ->
+            {
+                CaseSummaryFacts.Fields = fields
+                Parties = parties
+            })
+        : Fields<CaseSummaryFacts, _>)
+        |> field "parties" _.Parties partySummary
         |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseSummaryFields.declarations)
 
     let private caseNextAction =

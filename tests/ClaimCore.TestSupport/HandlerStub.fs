@@ -35,8 +35,8 @@ let position: LedgerPosition =
 let private registration =
     DomainInputs.registrationWith
         [
-            BusinessField.ClaimantName, "Synthetic claimant"
-            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.PolicyNumber, "Synthetic claimant"
+            BusinessField.InsurerClaimReference, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.00"
         ]
         DomainInputs.registration

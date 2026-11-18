@@ -27,8 +27,8 @@ let tests =
                         let registration =
                             Registration.replace
                                 [
-                                    BusinessField.ClaimantName,
-                                    Admitted.Name(PartyName.parse oldName |> accepted)
+                                    BusinessField.PolicyNumber,
+                                    Admitted.Identifier(Identifier.parse oldName |> accepted)
                                 ]
                                 content.Registration
                             |> accepted
@@ -49,7 +49,7 @@ let tests =
                         let state = CaseFamily.apply None part |> accepted
 
                         let unchanged =
-                            inputs [ text (InputTarget.Field BusinessField.ClaimantName) oldName ]
+                            inputs [ text (InputTarget.Field BusinessField.PolicyNumber) oldName ]
 
                         Amend.decide
                             (context 2)
@@ -64,7 +64,7 @@ let tests =
                             inputs
                                 [
                                     text
-                                        (InputTarget.Field BusinessField.ClaimantName)
+                                        (InputTarget.Field BusinessField.PolicyNumber)
                                         (oldName + "x")
                                 ]
 
@@ -92,7 +92,7 @@ let tests =
                             [
                                 text (InputTarget.Field BusinessField.PolicyNumber) "P-1"
                                 text
-                                    (InputTarget.Field BusinessField.ClaimantName)
+                                    (InputTarget.Field BusinessField.PolicyNumber)
                                     "Changed claimant"
                             ]
 
@@ -125,7 +125,7 @@ let tests =
                     let registration = after.Case.Value.Content |> Option.get |> _.Registration
 
                     Expect.equal
-                        (PartyName.format (Registration.claimant registration |> Option.get))
+                        (Identifier.format (Registration.policyNumber registration |> Option.get))
                         "Changed claimant"
                         "Omitted value is kept"
 
@@ -147,7 +147,7 @@ let tests =
                         environment
                         (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
-                        (inputs [ text (InputTarget.Field BusinessField.ClaimantName) "Changed" ])
+                        (inputs [ text (InputTarget.Field BusinessField.PolicyNumber) "Changed" ])
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
             testCase
                 "reviewed amendment clears received without changing the earlier revision"
@@ -207,7 +207,7 @@ let tests =
                             (inputs
                                 [
                                     text
-                                        (InputTarget.Field BusinessField.ClaimantName)
+                                        (InputTarget.Field BusinessField.PolicyNumber)
                                         "Changed after rollback"
                                     text
                                         (InputTarget.Field BusinessField.IncidentDate)

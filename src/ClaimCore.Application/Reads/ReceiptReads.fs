@@ -461,6 +461,49 @@ module internal ReceiptReads =
                                                                 Act = declaration.Id
                                                                 Snapshot = shown
                                                             })
+                                    | ActSubject.Party ->
+                                        match record.Changes |> List.tryExactlyOne with
+                                        | Some change ->
+                                            match PartyId.create change.PartId, change.Value with
+                                            | Some party, PartValue.Party value ->
+                                                let revision =
+                                                    Map.tryFind
+                                                        (PartKind.Party, change.PartId)
+                                                        current.Revisions
+
+                                                let shown =
+                                                    if erased then
+                                                        Ok PartyDisclosure.Erased
+                                                    elif
+                                                        not (
+                                                            Option.exists
+                                                                (canRead change.Revision)
+                                                                revision
+                                                        )
+                                                    then
+                                                        Ok PartyDisclosure.Withheld
+                                                    else
+                                                        value.Content
+                                                        |> Option.map (
+                                                            PartyDisclosure.Disclosed >> Ok
+                                                        )
+                                                        |> Option.defaultValue fault
+
+                                                return
+                                                    shown
+                                                    |> Result.map (fun snapshot ->
+                                                        ReceiptSubject.Party
+                                                            {
+                                                                CaseId = id
+                                                                Reference =
+                                                                    current.Snapshot.Reference
+                                                                PartyId = party
+                                                                Revision = change.Revision
+                                                                Act = declaration.Id
+                                                                Snapshot = snapshot
+                                                            })
+                                            | _ -> return fault
+                                        | _ -> return fault
                                     | ActSubject.People -> return fault
                             | _ -> return fault
                         | _ -> return fault

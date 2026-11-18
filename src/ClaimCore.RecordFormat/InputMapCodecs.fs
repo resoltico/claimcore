@@ -42,22 +42,22 @@ module InputMapCodecs =
         |> List.map (fun input -> input, TaskInputId.token input, true, atom)
         |> fieldMapWithPresence
 
-    let private row =
+    let private row collection =
         (record (fun ordinal values -> ordinal, values)
         : Fields<int * Map<TaskInputId, InputValue>, _>)
         |> field
             "ordinal"
             fst
-            (integer 0L (int64 (TaskCollectionId.maximumRows TaskCollectionId.PeopleGrants - 1))
+            (integer 0L (int64 (TaskCollectionId.maximumRows collection - 1))
              |> map int int64)
         |> field "values" snd values
         |> build
 
     let private collections =
-        [ TaskCollectionId.PeopleGrants ]
+        [ TaskCollectionId.PeopleGrants; TaskCollectionId.Parties ]
         |> List.map (fun collection ->
             let rows =
-                boundedList 0 (TaskCollectionId.maximumRows collection) row
+                boundedList 0 (TaskCollectionId.maximumRows collection) (row collection)
                 |> interpret
                     (fun path rows ->
                         if
@@ -162,7 +162,8 @@ module InputMapCodecs =
                         |> List.map _.Input
                         |> Set.ofList
 
-                    if selected.IsEmpty then
+                    // Retain the row positions for replay even when all row values are erasable.
+                    if selected.IsEmpty && retention = InputRetention.Erasable then
                         None
                     else
                         Some(

@@ -268,5 +268,17 @@
     "es": "sesión de navegador de ClaimCore",
     "de": "ClaimCore-Browsersitzung",
     "forbidden": {}
+  },
+  "party": {
+    "en": "Party",
+    "lv": "Dalībnieks",
+    "ar": "طرف",
+    "ko": "당사자",
+    "ja": "関係者",
+    "zh-Hans": "当事方",
+    "zh-Hant": "當事方",
+    "de": "Partei",
+    "es": "Parte",
+    "forbidden": {}
   }
 }

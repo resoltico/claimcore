@@ -145,7 +145,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
       "Erased. Only",
     );
-    await expect(steward.locator(".entries-view [data-entry='claimantName']")).toHaveCount(0);
+    await expect(steward.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
     for (const summary of await history.locator("details > summary").all()) {
       await summary.click();

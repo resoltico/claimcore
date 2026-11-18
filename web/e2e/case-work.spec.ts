@@ -171,6 +171,6 @@ for (const [entered, expected] of [
     await recordReviewed(page);
     const accepted = await currentCase(page, reference);
     expect(accepted.fields.registration.claimedAmount).toBe(expected);
-    expect(accepted.fields.registration.insurerName).toBe("Synthetic insurer");
+    expect(accepted.fields.registration.insurerClaimReference).toBe("Synthetic insurer");
   });
 }

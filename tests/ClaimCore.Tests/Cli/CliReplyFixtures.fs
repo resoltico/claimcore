@@ -34,8 +34,8 @@ let snapshot =
                 CaseFixtures.registration (
                     ClaimCore.TestSupport.DomainInputs.registrationWith
                         [
-                            BusinessField.ClaimantName, ("x")
-                            BusinessField.InsurerName, ("x")
+                            BusinessField.PolicyNumber, ("x")
+                            BusinessField.InsurerClaimReference, ("x")
                             BusinessField.ClaimedAmount, ("0")
                         ]
                         ((DomainInputs.registrationOn "2026-01-01" "2026-01-01"))

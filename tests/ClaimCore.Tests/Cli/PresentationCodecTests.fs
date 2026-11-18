@@ -97,8 +97,8 @@ let tests =
                             (JsonValue.Object [ "changes", JsonValue.Array [] ]))
                         "Unchanged identity list is required")
             testCase "server builder retains the authoritative typed case change values" (fun () ->
-                let before = PartyName.parse "Authoritative᠎Before" |> CaseBuilders.accepted
-                let after = PartyName.parse "Authoritative👩‍💻After" |> CaseBuilders.accepted
+                let before = Identifier.parse "Authoritative᠎Before" |> CaseBuilders.accepted
+                let after = Identifier.parse "Authoritative👩‍💻After" |> CaseBuilders.accepted
 
                 let original =
                     Reviews.caseReview
@@ -126,17 +126,17 @@ let tests =
                                             Fields =
                                                 [
                                                     {
-                                                        FieldName = BusinessField.ClaimantName
+                                                        FieldName = BusinessField.PolicyNumber
                                                         Before =
                                                             Some(
                                                                 CaseFieldValue.Business(
-                                                                    Admitted.Name before
+                                                                    Admitted.Identifier before
                                                                 )
                                                             )
                                                         After =
                                                             Some(
                                                                 CaseFieldValue.Business(
-                                                                    Admitted.Name after
+                                                                    Admitted.Identifier after
                                                                 )
                                                             )
                                                     }
@@ -154,18 +154,18 @@ let tests =
                     supplied.Presentation.Changes
                     |> List.find (fun change ->
                         change.Key.EndsWith(
-                            "." + BusinessField.key BusinessField.ClaimantName,
+                            "." + BusinessField.key BusinessField.PolicyNumber,
                             StringComparison.Ordinal
                         ))
 
                 Expect.equal
                     change.Before
-                    (PresentedValue.Party before)
+                    (PresentedValue.Text(Identifier.format before))
                     "Snapshot text does not replace the supplied core change"
 
                 Expect.equal
                     change.After
-                    (PresentedValue.Party after)
+                    (PresentedValue.Text(Identifier.format after))
                     "Each side retains its own exact value"
 
                 Expect.isTrue

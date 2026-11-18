@@ -28,8 +28,8 @@ let private registrationValues name =
         BusinessField.IncidentDate, "2026-08-01"
         BusinessField.ReceivedDate, "2026-08-03"
         BusinessField.IncidentCountry, "LV"
-        BusinessField.ClaimantName, name
-        BusinessField.InsurerName, "Example Alleged Insurer"
+        BusinessField.PolicyNumber, name
+        BusinessField.InsurerClaimReference, "Example Alleged Insurer"
         BusinessField.ClaimedAmount, "1000"
         BusinessField.ClaimedCurrency, "EUR"
     ]

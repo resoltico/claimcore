@@ -10,18 +10,18 @@ it("keeps human widget hints separate from precise catalog rules and formats dec
   expect(hint("caseReference")).toBe(
     "Your own reference for this case, for example CLM-2026-0001. It cannot be changed later.",
   );
-  expect(hint("claimantName")).toBe("The person or company making the claim.");
+  expect(hint("policyNumber")).toBe("The person or company making the claim.");
   expect(hint("incidentDate")).toBe("When the incident happened.");
   expect(hint("claimedAmount")).toBe("How much the claimant is asking for.");
   expect(hint("claimedCurrency")).toBe("The currency of the claimed amount.");
   expect(p.fieldRule("caseReference")).toContain("80 printable ASCII characters");
-  expect(p.fieldRule("claimantName")).toBe("Up to 200 characters.");
+  expect(p.fieldRule("policyNumber")).toBe("Up to 200 characters.");
   expect(p.fieldRule("claimedAmount")).toContain("4 after it");
   expect(hint("caseReference")).not.toContain("ASCII");
 });
 
 it("keeps input-specific bounds when rules share one wording key", () => {
   const p = createPresenter(defaults);
-  expect(p.fieldRule("claimantName")).toBe("Up to 200 characters.");
+  expect(p.fieldRule("policyNumber")).toBe("Up to 200 characters.");
   expect(p.fieldRule("text")).toBe("Up to 100 characters.");
 });

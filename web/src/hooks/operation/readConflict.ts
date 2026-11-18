@@ -28,6 +28,27 @@ const observe = async (
   if (input.binding.kind === "WORK") {
     observedRevision = current.subject.workRevision;
   }
+  if (input.binding.kind === "PARTY") {
+    if (!("partyId" in input.binding)) {
+      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
+    }
+    const { partyId } = input.binding;
+    const regions = current.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    );
+    const binding = regions
+      .flatMap((row) => row.actions)
+      .find(
+        (action) =>
+          action?.binding.kind === "PARTY" &&
+          "partyId" in action.binding &&
+          action.binding.partyId === partyId,
+      )?.binding;
+    if (binding?.kind !== "PARTY" || !("expectedRevision" in binding)) {
+      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
+    }
+    observedRevision = binding.expectedRevision;
+  }
   if (input.binding.kind === "REMINDER") {
     if (!("reminderId" in input.binding)) {
       return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };

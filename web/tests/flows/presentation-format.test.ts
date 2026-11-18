@@ -89,8 +89,8 @@ it("formats only read-only scalar displays and leaves technical text and currenc
 
 it("uses stable metadata identity rather than supplied English labels as catalog people", () => {
   const p = createPresenter(defaults);
-  expect(p.fieldLabel("claimantName")).toBe("Claimant name");
-  expect(p.fieldHint("claimantName")).not.toBe("");
+  expect(p.fieldLabel("policyNumber")).toBe("Policy number");
+  expect(p.fieldHint("policyNumber")).not.toBe("");
   expect(p.actLabel("case.close")).toBe("Close the case");
   expect(p.actMeaning("case.close")).not.toBe("");
   expect(renderCatalogKey(defaults, taskInput("group:registration").labelId)).not.toBe("");

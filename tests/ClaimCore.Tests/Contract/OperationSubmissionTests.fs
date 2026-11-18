@@ -72,7 +72,7 @@ let tests =
                 "creation reference is authored and an existing binding needs a positive revision"
                 (fun () ->
                     let created =
-                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:receivedDate":"2026-01-02","field:incidentCountry":"LV","field:claimantName":"Claimant","field:insurerName":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:receivedDate":"2026-01-02","field:incidentCountry":"LV","field:policyNumber":"Claimant","field:insurerClaimReference":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
 
                     let submitted = decode created |> accepted
 
@@ -209,14 +209,14 @@ let tests =
             testCase "input key order does not change the typed canonical-intent input" (fun () ->
                 let first =
                     decode (
-                        amend "\"field:policyNumber\":\"PN-1\",\"field:claimantName\":\"Name\""
+                        amend "\"field:policyNumber\":\"PN-1\",\"field:insurerClaimReference\":\"Name\""
                     )
                     |> accepted
                     |> fun submission -> submission.Operation
 
                 let second =
                     decode (
-                        amend "\"field:claimantName\":\"Name\",\"field:policyNumber\":\"PN-1\""
+                        amend "\"field:insurerClaimReference\":\"Name\",\"field:policyNumber\":\"PN-1\""
                     )
                     |> accepted
                     |> fun submission -> submission.Operation
@@ -236,7 +236,7 @@ let tests =
                         "The row member is addressed directly"
 
                     Expect.equal
-                        (issue.GrantRow |> Option.map GrantOrdinal.value)
+                        (issue.Row |> Option.map TaskRowTarget.ordinal)
                         (Some 1)
                         "The second submitted row is ordinal one"
                 | other -> failtestf "Expected a row issue: %A" other)
@@ -289,7 +289,7 @@ let tests =
                 let submission =
                     decode (
                         amend
-                            "\"field:claimantName\":\"\",\"field:incidentDescription\":null,\"field:claimedAmount\":\"12.3400\",\"field:claimedCurrency\":\"EUR\""
+                            "\"field:policyNumber\":\"\",\"field:incidentDescription\":null,\"field:claimedAmount\":\"12.3400\",\"field:claimedCurrency\":\"EUR\""
                     )
                     |> accepted
 
@@ -299,7 +299,7 @@ let tests =
                     operation.Inputs.Values
                     (Map.ofList
                         [
-                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                            TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                             InputValue.Text ""
                             TaskInputId.Target(InputTarget.Field BusinessField.IncidentDescription),
                             InputValue.Null
@@ -322,7 +322,7 @@ let tests =
                     Expect.equal
                         (InputIssues.toList issues
                          |> List.map (fun issue ->
-                             issue.Target, issue.GrantRow |> Option.map GrantOrdinal.value))
+                             issue.Target, issue.Row |> Option.map TaskRowTarget.ordinal))
                         [ InputTarget.Role, Some 0; InputTarget.Role, Some 1 ]
                         "Identical sibling failures retain distinct ordinals"
                 | other -> failtestf "%A" other)

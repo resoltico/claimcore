@@ -17,7 +17,7 @@ it("uses the Core-declared widget wording for a supplied calendar issue", () => 
 });
 
 it("preserves an independently supplied message identity without inferring wording from its input", () => {
-  show({ messageId: "label.recorded", arguments: [] }, "field:claimantName");
+  show({ messageId: "label.recorded", arguments: [] }, "field:policyNumber");
   expect(screen.getByText("Recorded.")).toBeVisible();
 });
 
@@ -27,7 +27,7 @@ it("retains supplied typed arguments and isolation when no widget variant is dec
       messageId: "diagnostic.TOO_LONG",
       arguments: [{ key: "maximumCharacters", value: { kind: "COUNT", value: 200 } }],
     },
-    "field:claimantName",
+    "field:policyNumber",
   );
   expect(container).toHaveTextContent("Use at most 200 characters.");
   expect(container.querySelector("bdi")).toHaveTextContent("200");

@@ -101,8 +101,8 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
     </>,
   );
   const user = userEvent.setup();
-  await user.click(screen.getByRole("checkbox", { name: "Change Claimant name" }));
-  changeField("Claimant name", "Retained local draft");
+  await user.click(screen.getByRole("checkbox", { name: "Change Policy number" }));
+  changeField("Policy number", "Retained local draft");
   act(() => {
     invalidate!();
   });
@@ -110,14 +110,14 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
   await waitFor(() => {
     expect(read).toHaveBeenCalledOnce();
   });
-  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
   expect(preview).not.toHaveBeenCalled();
   act(() => {
     invalidate!();
   });
   await user.click(await screen.findByRole("button", { name: "Reload current case" }));
-  expect(await screen.findByRole("textbox", { name: "Claimant name" })).toHaveValue(
+  expect(await screen.findByRole("textbox", { name: "Policy number" })).toHaveValue(
     "Retained local draft",
   );
   expect(preview).not.toHaveBeenCalled();
@@ -130,7 +130,7 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
     inputs: preview.mock.calls[0]![0].input.inputs,
   }).toEqual({
     task: "case.amendRegistration",
-    inputs: { "field:claimantName": "Retained local draft" },
+    inputs: { "field:policyNumber": "Retained local draft" },
   });
 });
 

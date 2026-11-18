@@ -40,6 +40,12 @@ type NotePartDescription =
         Removed: ValueChange<bool> option
     }
 
+type PartyPartDescription =
+    {
+        Content: ValueChange<PartyContent>
+        Removed: ValueChange<bool> option
+    }
+
 type GrantAssignmentChange =
     {
         Grant: ActorGrant
@@ -65,6 +71,7 @@ type PartDescription =
     | Work of WorkPartDescription
     | Reminder of ReminderPartDescription
     | Note of NotePartDescription
+    | Party of PartyPartDescription
     | Person of PersonPartDescription
 
 module PartDescription =
@@ -75,6 +82,7 @@ module PartDescription =
         | PartDescription.Work _ -> PartKind.Work
         | PartDescription.Reminder _ -> PartKind.Reminder
         | PartDescription.Note _ -> PartKind.Note
+        | PartDescription.Party _ -> PartKind.Party
         | PartDescription.Person _ -> PartKind.Person
 
 type DescribedPart =

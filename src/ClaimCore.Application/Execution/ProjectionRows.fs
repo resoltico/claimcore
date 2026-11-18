@@ -42,6 +42,14 @@ type internal NoteProjection =
         Value: NoteValue
     }
 
+type internal PartyProjection =
+    {
+        Id: PartyId
+        Revision: Revision
+        Origin: SubjectStamp
+        Value: PartyValue
+    }
+
 type internal FamilyProjectionDelta =
     {
         Snapshot: CaseSnapshot
@@ -50,6 +58,7 @@ type internal FamilyProjectionDelta =
         Payments: PaymentProjection list
         Reminders: ReminderProjection list
         Notes: NoteProjection list
+        Parties: PartyProjection list
     }
 
 type internal PersonProjection =
@@ -120,6 +129,7 @@ module internal ProjectionRows =
         let payments = ResizeArray<PaymentProjection>()
         let reminders = ResizeArray<ReminderProjection>()
         let notes = ResizeArray<NoteProjection>()
+        let parties = ResizeArray<PartyProjection>()
 
         for change in parts do
             let value =
@@ -148,6 +158,14 @@ module internal ProjectionRows =
                 notes.Add
                     {
                         Id = NoteId.create change.PartId |> Option.get
+                        Origin = Map.find (change.Kind, change.PartId) origins
+                        Value = value
+                    }
+            | PartValue.Party value ->
+                parties.Add
+                    {
+                        Id = PartyId.create change.PartId |> Option.get
+                        Revision = change.Revision
                         Origin = Map.find (change.Kind, change.PartId) origins
                         Value = value
                     }
@@ -203,6 +221,7 @@ module internal ProjectionRows =
                     Payments = List.ofSeq payments
                     Reminders = List.ofSeq reminders
                     Notes = List.ofSeq notes
+                    Parties = List.ofSeq parties
                 }
 
     let family (state: CaseFamily) parts origins summary =

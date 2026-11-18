@@ -185,14 +185,14 @@ it("an unrelated name edit preserves partial dates while deselection clears only
   );
   selectFact("incidentDate");
   selectFact("receivedDate");
-  selectFact("claimantName");
+  selectFact("policyNumber");
   changeField("Incident date", "");
   changeField("Received", "");
   await enter(user, "day", "12");
   const notified = screen.getByRole("group", { name: "Received" });
   await user.click(notified.querySelector<HTMLElement>('[data-type="month"]')!);
   await user.keyboard("10");
-  await user.type(screen.getByRole("textbox", { name: "Claimant name" }), " edited");
+  await user.type(screen.getByRole("textbox", { name: "Policy number" }), " edited");
   await user.click(screen.getByRole("checkbox", { name: "Change Incident date" }));
   await settings(user);
   const retained = screen.getByRole("group", { name: "Received" });
