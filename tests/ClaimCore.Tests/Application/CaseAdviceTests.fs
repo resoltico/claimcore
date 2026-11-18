@@ -26,7 +26,6 @@ let private kinds =
         (TaskId.ofLiteral "case.correctPayment")
         (TaskId.ofLiteral "case.close")
         (TaskId.ofLiteral "case.reopen")
-        (TaskId.ofLiteral "case.changeReference")
         (TaskId.ofLiteral "case.void")
         (TaskId.ofLiteral "case.reinstate")
         (TaskId.ofLiteral "case.erase")

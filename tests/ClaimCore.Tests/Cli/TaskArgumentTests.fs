@@ -121,6 +121,7 @@ let tests =
                             InputValue.Text "1.2300"
                             TaskInputId.Target(InputTarget.Field BusinessField.PaidCurrency),
                             InputValue.Text "EUR"
+                            TaskInputId.Target InputTarget.PaymentDirection, InputValue.Text "PAID"
                         ])
                     "No authored precision normalization")
             testCase
@@ -154,7 +155,9 @@ let tests =
                                 InputValue.Text "CLEAR"
                                 TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
                                 InputValue.Null
-                                TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
+                                TaskInputId.Target(
+                                    InputTarget.Field BusinessField.InsurerClaimReference
+                                ),
                                 InputValue.Text "Edited insurer reference"
                             ])
                         "Omitted fields keep, explicit null clears")

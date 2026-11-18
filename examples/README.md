@@ -23,7 +23,7 @@ and a payment record, so history can contain more entries than case versions. Hu
 three, inspect the next frame offline with:
 
 ```sh
-claimcore case close DEMO-0001 --expected-revision 3 --dry-run
+claimcore case close DEMO-0001 --outcome other --expected-revision 3 --dry-run
 ```
 
 `help verbs` lists the grammar. `--preview` requests a review without recording; execution checks the

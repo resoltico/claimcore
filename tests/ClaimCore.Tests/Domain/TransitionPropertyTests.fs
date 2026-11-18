@@ -83,7 +83,8 @@ let private binding (model: Oracle.Model) stale witness =
         Binding.CasePayment(
             target,
             expected,
-            model.Payment
+            model.Payments
+            |> List.tryHead
             |> Option.defaultValue (ClaimCore.Tests.TaskBuilders.operation 999)
         )
     | BindingShape.CaseErase -> Binding.CaseErase(target, expected, model.Sequence)

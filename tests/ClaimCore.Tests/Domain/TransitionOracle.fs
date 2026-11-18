@@ -10,7 +10,7 @@ type Witness = { Task: string; Inputs: InputMap }
 type Model =
     {
         Snapshot: CaseSnapshot
-        Payment: OperationId option
+        Payments: OperationId list
         Sequence: Sequence
     }
 
@@ -148,7 +148,7 @@ let initial =
                             Finance = FinancialPosition.undecided
                         }
             }
-        Payment = None
+        Payments = []
         Sequence = Sequence.first
     }
 
@@ -239,14 +239,18 @@ let private changed (fields: CaseFields) witness =
         { fields with
             Finance = FinancialPosition.withDecision None fields.Finance
         }
-    | "case.recordPayment"
-    | "case.correctPayment" ->
+    | "case.recordPayment" ->
+        let count = fields.Finance.PaymentCount + 1L
+
         { fields with
-            Finance = finance fields.Decision "750" 1L
+            Finance = finance fields.Decision (string (750L * count)) count
         }
+    | "case.correctPayment" -> fields
     | "case.removePayment" ->
+        let count = fields.Finance.PaymentCount - 1L
+
         { fields with
-            Finance = finance fields.Decision "0" 0L
+            Finance = finance fields.Decision (string (750L * count)) count
         }
     | "case.close" ->
         { fields with
@@ -284,13 +288,13 @@ let advance (before: Model) stale witness operation sequence =
                                 |> Option.get
                             State = state
                         }
-                    Payment =
+                    Payments =
                         match witness.Task with
-                        | "case.recordPayment"
-                        | "case.correctPayment" -> Some operation
-                        | "case.removePayment"
-                        | "case.erase" -> None
-                        | _ -> before.Payment
+                        | "case.recordPayment" -> operation :: before.Payments
+                        | "case.correctPayment" -> operation :: List.tail before.Payments
+                        | "case.removePayment" -> List.tail before.Payments
+                        | "case.erase" -> []
+                        | _ -> before.Payments
                     Sequence = sequence
                 }
 

@@ -168,7 +168,11 @@ let tests =
                                         Revision.create 7L |> Option.get
                                     )
                                 ))
-                                Map.empty
+                                (Map.ofList
+                                    [
+                                        TaskInputId.Target(InputTarget.Field BusinessField.Outcome),
+                                        InputValue.Text "OTHER"
+                                    ])
                                 []
                                 Map.empty
 
