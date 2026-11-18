@@ -136,8 +136,13 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
     Expect.equal (view.GetProperty("revision").GetInt64()) 6L "Six acts"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("status").GetString())
-        "OPENED"
+        (view
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("handling")
+            .GetProperty("kind")
+            .GetString())
+        "OPEN"
         "Reopened"
 
     Expect.equal
