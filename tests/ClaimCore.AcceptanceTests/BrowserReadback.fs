@@ -58,8 +58,8 @@ let qualify fixture output =
 
     for field, expected in
         [
-            "policyNumber", String.replicate 200 "🙂"
-            "insurerClaimReference", String.replicate 200 "🙂"
+            "policyNumber", String.replicate 80 "🙂"
+            "insurerClaimReference", String.replicate 80 "🙂"
             "incidentCountry", "LT"
         ] do
         Expect.isTrue

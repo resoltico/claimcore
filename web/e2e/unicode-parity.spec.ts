@@ -12,10 +12,10 @@ test("records supplementary scalar boundaries through Web for published native r
   await openAuthenticated(page);
   const reference = `UNICODE-${randomUUID()}`;
   await startOpen(page, reference);
-  const name = "🙂".repeat(200);
+  const name = "🙂".repeat(80);
   await fillNamedField(page, "Country", "LT");
   await page.getByLabel("Policy number", { exact: true }).fill(name);
-  await page.getByLabel("Insurer", { exact: true }).fill(name);
+  await page.getByLabel("Insurer claim reference", { exact: true }).fill(name);
   const identity = await reviewDraft(page);
   await expectAccessible(page);
   await recordReviewed(page);

@@ -158,7 +158,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
 };
 const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
   const name = page.locator('input[data-field-name="policyNumber"]');
-  const authored = `A\u0308 / العربية${"x".repeat(201)}`;
+  const authored = `A\u0308 / العربية${"x".repeat(81)}`;
   await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
   const pending = await pauseJsonReply(page, "operation.preview");
@@ -187,7 +187,7 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
               key: "maximumCharacters",
               value: {
                 kind: "COUNT",
-                value: 200,
+                value: 80,
               },
             },
           ],
@@ -200,9 +200,9 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     await expect(name).toBeFocused();
     await expect(name).toHaveAttribute("aria-invalid", "true");
     const policyText = {
-      lv: "Izmantojiet ne vairāk kā 200 rakstzīmes.",
-      ar: "استخدم \u2068200\u2069 حرفًا كحد أقصى.",
-      en: "Use at most 200 characters.",
+      lv: "Izmantojiet ne vairāk kā 80 rakstzīmes.",
+      ar: "استخدم \u206880\u2069 حرفًا كحد أقصى.",
+      en: "Use at most 80 characters.",
     };
     await expectInputRefusal(page, name, language, {
       meaning: widgetHints[language].policyNumber,
