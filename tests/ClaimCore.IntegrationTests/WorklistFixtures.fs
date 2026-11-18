@@ -143,7 +143,7 @@ let statusSets =
         [ CaseStatus.Opened; CaseStatus.Closed ]
     ]
 
-let progressSets =
+let private originalProgressSets =
     [
         []
         [ CaseProgress.Undecided ]
@@ -167,6 +167,11 @@ let progressSets =
             CaseProgress.Paid
         ]
     ]
+
+let progressSets =
+    originalProgressSets
+    @ (originalProgressSets
+       |> List.map (fun values -> values @ [ CaseProgress.Overpaid ]))
 
 let orders = Vocabulary.all CaseListOrder.vocabulary
 

@@ -75,7 +75,19 @@ let private qualify () =
             let! service = caseWorker fixture
 
             let registration =
-                DomainInputs.registrationFrom [ BusinessField.PolicyNumber, "=CSV α \"quoted\"" ]
+                Submissions.fields (RegistrationInput.values DomainInputs.registration)
+                |> Map.add
+                    (TaskCollectionId.input TaskCollectionId.Parties)
+                    (SubmissionValue.Rows
+                        [
+                            Map.ofList
+                                [
+                                    Submissions.input InputTarget.PartyRole,
+                                    SubmissionValue.Text "CLAIMANT"
+                                    Submissions.input InputTarget.PartyName,
+                                    SubmissionValue.Text "=CSV α \"quoted\""
+                                ]
+                        ])
 
             for index in 1..51 do
                 let reference = sprintf "CSV-%03d" index
@@ -83,13 +95,7 @@ let private qualify () =
                 let! opened =
                     Service.executeSubmission
                         service
-                        (request
-                            fixture
-                            (10000 + index)
-                            reference
-                            0L
-                            "case.open"
-                            (RegistrationInput.values registration |> Submissions.fields))
+                        (request fixture (10000 + index) reference 0L "case.open" registration)
                         token
 
                 accepted opened |> ignore
