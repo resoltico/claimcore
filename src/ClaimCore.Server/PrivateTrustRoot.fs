@@ -1,21 +1,13 @@
 namespace ClaimCore.Server
 
-open ClaimCore.Domain
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
 open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
-open ClaimCore.Server.Composition
 open ClaimCore.HostSecurity
 
-/// An optional owner-private trust root for a local HTTPS qualification issuer only.
-/// Hostname validation remains mandatory. Remote IdPs use system trust and revocation policy.
-module internal OidcTrustRoot =
-    let load path =
-        let invalid () =
-            WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+module internal PrivateTrustRoot =
+    let load fault path =
+        let invalid () = WebStartupDiagnostics.refuse fault
 
         let pem =
             match PrivateInputs.text 32768 path with

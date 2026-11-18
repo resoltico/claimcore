@@ -27,12 +27,14 @@
     <Compile Include="StorageFailureLog.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="AuthFoundation.fs" />
-    <Compile Include="OidcTrustRoot.fs" />
+    <Compile Include="PrivateTrustRoot.fs" />
     <Compile Include="TlsCertificate.fs" />
     <Compile Include="WebBinding.fs" />
     <Compile Include="Metrics.fs" />
     <Compile Include="Security.fs" />
     <Compile Include="SessionKeys.fs" />
+    <Compile Include="DigestConfiguration.fs" />
+    <Compile Include="DigestSmtp.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="OidcStartup.fs" />
     <Compile Include="HttpBody.fs" />
@@ -68,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename).core%(Extension)" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>

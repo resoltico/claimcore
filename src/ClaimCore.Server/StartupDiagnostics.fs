@@ -24,8 +24,28 @@ type WebSetting =
     | SessionIdle
     | SessionAbsolute
     | OidcCaCertFile
+    | DigestSmtpHost
+    | DigestSmtpPort
+    | DigestSmtpTls
+    | DigestSmtpCredentialsFile
+    | DigestSmtpCaCertFile
+    | DigestFrom
+    | DigestTime
+    | DigestLanguage
 
 module WebSettings =
+    let private digestEntries =
+        [
+            WebSetting.DigestSmtpHost, "CLAIMCORE_DIGEST_SMTP_HOST"
+            WebSetting.DigestSmtpPort, "CLAIMCORE_DIGEST_SMTP_PORT"
+            WebSetting.DigestSmtpTls, "CLAIMCORE_DIGEST_SMTP_TLS"
+            WebSetting.DigestSmtpCredentialsFile, "CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE"
+            WebSetting.DigestSmtpCaCertFile, "CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE"
+            WebSetting.DigestFrom, "CLAIMCORE_DIGEST_FROM"
+            WebSetting.DigestTime, "CLAIMCORE_DIGEST_TIME"
+            WebSetting.DigestLanguage, "CLAIMCORE_DIGEST_LANGUAGE"
+        ]
+
     let private entries =
         [
             WebSetting.ConnectionFile, "CLAIMCORE_CONNECTION_FILE"
@@ -48,6 +68,7 @@ module WebSettings =
             WebSetting.SessionAbsolute, "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES"
             WebSetting.OidcCaCertFile, "CLAIMCORE_OIDC_CA_CERT_FILE"
         ]
+        @ digestEntries
 
     let all = entries |> List.map fst
 
@@ -65,6 +86,8 @@ module WebSettings =
 
     let optional =
         all |> List.filter (fun setting -> not (List.contains setting required))
+
+    let internal digest = digestEntries |> List.map fst
 
     let token setting =
         entries |> List.find (fst >> (=) setting) |> snd

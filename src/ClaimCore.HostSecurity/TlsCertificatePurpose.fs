@@ -4,7 +4,7 @@ open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 
-/// Purpose checks shared by the two loopback-only custom-root HTTPS clients.
+/// Purpose checks for custom TLS trust roots.
 module TlsCertificatePurpose =
     let validRoot (certificate: X509Certificate2) (now: DateTime) =
         let basic =
@@ -37,10 +37,8 @@ module TlsCertificatePurpose =
                 |> Seq.exists (fun oid -> oid.Value = "1.3.6.1.5.5.7.3.1")
             | _ -> false)
 
-    let requireServerAuthentication (chain: X509Chain) =
-        chain.ChainPolicy.ApplicationPolicy.Add(
-            System.Security.Cryptography.Oid("1.3.6.1.5.5.7.3.1")
-        )
+    let requireServerAuthentication (policy: X509ChainPolicy) =
+        policy.ApplicationPolicy.Add(System.Security.Cryptography.Oid("1.3.6.1.5.5.7.3.1"))
         |> ignore
 
     /// The caller retains hostname validation and owns the admitted public root.
@@ -49,5 +47,5 @@ module TlsCertificatePurpose =
         chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
         chain.ChainPolicy.CustomTrustStore.Add(root) |> ignore
         chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-        requireServerAuthentication chain
+        requireServerAuthentication chain.ChainPolicy
         serverAuthentication certificate && chain.Build(certificate)

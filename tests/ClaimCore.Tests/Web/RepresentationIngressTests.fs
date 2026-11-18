@@ -62,6 +62,7 @@ let tests =
                                 CoreQueueLimit = 0
                                 LoginPermitLimit = 1
                             }
+                        Digest = None
                         Oidc =
                             Some
                                 {

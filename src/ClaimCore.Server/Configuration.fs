@@ -44,6 +44,7 @@ type WebConfiguration =
         SessionAbsolute: TimeSpan
         RequestGate: RequestGateLimits
         Oidc: OidcConfiguration option
+        Digest: DigestConfiguration option
     }
 
 module Configuration =
@@ -142,7 +143,8 @@ module Configuration =
             let trustRoot =
                 match environment "CLAIMCORE_OIDC_CA_CERT_FILE" with
                 | None -> None
-                | Some path when HttpsOrigins.isLocal issuer -> Some(OidcTrustRoot.load path)
+                | Some path when HttpsOrigins.isLocal issuer ->
+                    Some(PrivateTrustRoot.load WebStartupProblem.OidcConfigurationInvalid path)
                 | Some _ -> invalid ()
 
             Some
@@ -160,9 +162,12 @@ module Configuration =
         { new IDisposable with
             member _.Dispose() =
                 try
-                    configuration.Oidc |> Option.bind _.TrustRoot |> Option.iter _.Dispose()
+                    configuration.Digest |> Option.iter DigestConfiguration.dispose
                 finally
-                    configuration.Certificate.Dispose()
+                    try
+                        configuration.Oidc |> Option.bind _.TrustRoot |> Option.iter _.Dispose()
+                    finally
+                        configuration.Certificate.Dispose()
         }
 
     let private binding () =
@@ -215,6 +220,13 @@ module Configuration =
                     configuredEndpoint.Origin.IdnHost
                     (required WebSetting.CertificatePath)
 
+            let configuredDigest =
+                try
+                    DigestConfiguration.load ()
+                with _ ->
+                    configuredCertificate.Dispose()
+                    reraise ()
+
             {
                 KeyRingDirectory = keyRingDirectory
                 Binding = configuredEndpoint
@@ -224,6 +236,7 @@ module Configuration =
                 SessionAbsolute = sessionAbsolute
                 RequestGate = configuredLimits
                 Oidc = configuredOidc
+                Digest = configuredDigest
             }
         with _ ->
             configuredOidc |> Option.bind _.TrustRoot |> Option.iter _.Dispose()

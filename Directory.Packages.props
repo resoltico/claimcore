@@ -19,6 +19,7 @@
     <PackageVersion Include="JsonSchema.Net" Version="9.7.0" />
     <PackageVersion Include="Markdig" Version="1.6.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.3" />
+    <PackageVersion Include="MailKit" Version="5.0.0" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.17.0" />

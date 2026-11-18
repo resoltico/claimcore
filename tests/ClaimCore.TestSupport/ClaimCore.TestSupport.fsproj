@@ -37,6 +37,7 @@
     <Compile Include="IdentityReadiness.fs" />
     <Compile Include="IdentityRealm.fs" />
     <Compile Include="IdentityServer.fs" />
+    <Compile Include="MailpitFixture.fs" />
     <Compile Include="PrivateTestPaths.fs" />
     <Compile Include="ProbeHttpsFixture.fs" />
     <Compile Include="HandlerStub.fs" />

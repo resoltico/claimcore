@@ -144,6 +144,7 @@ type Host
         let web =
             { TestServerFixture.configuration root with
                 Oidc = Some configuration
+                Digest = None
             }
 
         stage "host routes"
