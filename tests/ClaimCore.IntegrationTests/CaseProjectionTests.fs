@@ -276,6 +276,7 @@ let private projectionBindings () =
                 "received_on", box "2026-08-03 AD"
                 "responsible_actor", box DBNull.Value
                 "follow_up", box DBNull.Value
+                "deadline_due", box DBNull.Value
                 "claimed_amount", box "1234.5678"
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
@@ -310,6 +311,7 @@ let private projectionBindings () =
             "work_search_text", box 44
             "responsible_actor", box Guid.Empty
             "follow_up", box "invalid"
+            "deadline_due", box "invalid"
         ] do
         Expect.throwsT<RecordCorruptException>
             (fun () ->

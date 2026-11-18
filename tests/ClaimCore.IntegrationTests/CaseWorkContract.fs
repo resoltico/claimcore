@@ -1622,7 +1622,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
         let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L "case.correct" correction
         accepted updated |> ignore
 
-        let! chronology =
+        let! futureDecision =
             execute
                 fixture
                 owner
@@ -1637,19 +1637,25 @@ let internal partialUpdatesAndPaymentPeople fixture =
                         Submissions.input (InputTarget.Group RecordGroup.Decision),
                         SubmissionValue.Text "UPDATE"
                         Submissions.field BusinessField.PaymentDecisionDate,
-                        SubmissionValue.Text "2026-08-21"
+                        SubmissionValue.Text "9999-12-31"
                     ])
 
-        match chronology.Outcome with
-        | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
-        | other -> failtestf "Expected chronology refusal: %A" other
+        match futureDecision.Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            let issue = InputIssues.head issues
+
+            Expect.equal
+                (issue.Target, issue.Violation)
+                (InputTarget.Field BusinessField.PaymentDecisionDate, Violation.FutureDate)
+                "The recorded business date still bounds a corrected decision date"
+        | other -> failtestf "Expected future date refusal: %A" other
 
         let! retained = get owner caseId
 
         Expect.equal
             (read retained).Snapshot.Revision
             (CaseFixtures.revision 5L)
-            "Chronology refusal cannot create a revision or silently rebase"
+            "A refused future date cannot create a revision or silently rebase"
     }
 
 let internal finiteDateRange fixture =

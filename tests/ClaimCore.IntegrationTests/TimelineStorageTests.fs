@@ -236,12 +236,34 @@ let tests =
                         [
                             TimelineChange.CaseField
                                 {
+                                    FieldName = BusinessField.Outcome
+                                    Before =
+                                        Some(
+                                            CaseFieldValue.Business(
+                                                Admitted.Outcome ClosureOutcome.Other
+                                            )
+                                        )
+                                    After = None
+                                }
+                            TimelineChange.CaseField
+                                {
                                     FieldName = BusinessField.Status
                                     Before = Some(CaseFieldValue.Status CaseStatus.Closed)
                                     After = Some(CaseFieldValue.Status CaseStatus.Opened)
                                 }
+                            TimelineChange.CaseField
+                                {
+                                    FieldName = BusinessField.ReopenReason
+                                    Before = None
+                                    After =
+                                        Reason.parse "Synthetic work resumed"
+                                        |> Result.defaultWith (string >> failtest)
+                                        |> Admitted.Reason
+                                        |> CaseFieldValue.Business
+                                        |> Some
+                                }
                         ]
-                        "Case status differences come from the immediate case predecessor"
+                        "Reopening compares the preceding outcome and reports the authored reason"
 
                     match changes 99103 with
                     | [ TimelineChange.HandlingSummary change ] ->

@@ -78,7 +78,7 @@ SELECT pg_temp.expect('oversized snapshot refused',
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
 SELECT pg_temp.expect('projection clearing requires accepted matching erasure evidence',
-    $s$UPDATE claimcore.cases SET follow_up=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,payment_review=NULL,outcome=NULL,work_search_text=NULL$s$, 'CC003');
+    $s$UPDATE claimcore.cases SET follow_up=NULL,deadline_due=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,payment_review=NULL,outcome=NULL,work_search_text=NULL$s$, 'CC003');
 SELECT snapshot IS NOT NULL AND received_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference='synthetic-a' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
 \if :retained_projection
 \echo PASS unmatched erasure leaves private projections intact

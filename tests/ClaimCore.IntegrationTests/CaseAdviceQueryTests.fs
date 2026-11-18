@@ -123,14 +123,19 @@ let tests =
                 let current = read current
 
                 Expect.equal
-                    (reason (TaskId.ofLiteral "case.recordPayment") current.Advice)
+                    (reason (TaskId.ofLiteral "case.withdrawDecision") current.Advice)
                     (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
-                    "An authorized payment needs a recorded decision"
+                    "Withdrawal requires a recorded decision"
 
                 Expect.equal
                     current.Advice.Recommended
                     (Some(TaskId.ofLiteral "case.decide"))
                     "The alternative is actually offered"
+
+                Expect.contains
+                    current.Advice.Acts
+                    (TaskId.ofLiteral "case.recordPayment")
+                    "The available payment task has no decision prerequisite"
 
                 Expect.equal
                     (Set.union
@@ -140,6 +145,7 @@ let tests =
                         [
                             "case.open"
                             "case.amendRegistration"
+                            "case.changeReference"
                             "case.correct"
                             "case.decide"
                             "case.withdrawDecision"
@@ -157,15 +163,7 @@ let tests =
                     "The actual producer covers the literal act inventory"
 
                 let! refused =
-                    write
-                        (11)
-                        (owner)
-                        (1L)
-                        "case.recordPayment"
-                        (ClaimCore.TestSupport.Submissions.fields (
-                            PaymentInput.values (DomainInputs.payment)
-                        ))
-                    |> Async.AwaitTask
+                    write (11) (owner) (1L) "case.withdrawDecision" Map.empty |> Async.AwaitTask
 
                 Expect.equal
                     refused.Outcome
@@ -178,25 +176,17 @@ let tests =
                 let current = read current
 
                 Expect.equal
-                    (reason (TaskId.ofLiteral "case.recordPayment") current.Advice)
-                    (Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment))
+                    (reason (TaskId.ofLiteral "case.withdrawDecision") current.Advice)
+                    (Refusal.Access(AccessRefusal.NotAuthorized Capability.Decide))
                     "A readable denied action reports capability before state"
 
                 let! refused =
-                    write
-                        (12)
-                        (reader)
-                        (1L)
-                        "case.recordPayment"
-                        (ClaimCore.TestSupport.Submissions.fields (
-                            PaymentInput.values (DomainInputs.payment)
-                        ))
-                    |> Async.AwaitTask
+                    write (12) (reader) (1L) "case.withdrawDecision" Map.empty |> Async.AwaitTask
 
                 Expect.equal
                     refused.Outcome
                     (ExecuteResult.Rejected(
-                        Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
+                        Refusal.Access(AccessRefusal.NotAuthorized Capability.Decide)
                     ))
                     "Execution enforces the same permission first"
 

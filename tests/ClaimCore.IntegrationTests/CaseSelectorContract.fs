@@ -157,6 +157,13 @@ let identities (fixture: Fixture) =
                 [
                     TimelineChange.CaseField
                         {
+                            FieldName = BusinessField.Outcome
+                            Before = None
+                            After =
+                                Some(CaseFieldValue.Business(Admitted.Outcome ClosureOutcome.Other))
+                        }
+                    TimelineChange.CaseField
+                        {
                             FieldName = BusinessField.Status
                             Before = Some(CaseFieldValue.Status CaseStatus.Opened)
                             After = Some(CaseFieldValue.Status CaseStatus.Closed)
