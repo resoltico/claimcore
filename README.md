@@ -1,9 +1,8 @@
 # ClaimCore
 
-ClaimCore records claims case information, payment decisions and payment entries through a browser or CLI,
-backed by one authenticated HTTPS service and PostgreSQL database. Responsibility, handling summaries
-and independently versioned reminders support day-to-day case work. It records assertions; it does not
-adjudicate coverage or transfer money.
+ClaimCore records claims case information through a browser or CLI, backed by an authenticated HTTPS
+service and PostgreSQL. Track parties, related cases, payment decisions, payments and returns,
+responsibility, notes and deadlines.
 
 ## Try it
 

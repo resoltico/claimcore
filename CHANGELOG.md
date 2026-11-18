@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
-- Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
-- Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
-- DATA payment-page items replace canRemove with independently available task IDs in actions; removal and correction controls follow exactly those supplied IDs.
+- Use a fresh installation for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.
+- Regenerate clients for optional registration, Received dates, party and link parts, typed closure and authority, signed payment totals and reminder completion dates.
+- Open a case with a reference. Clear unknown registration facts, record multiple parties, and search their names or contact details.
+- Record payments and returns in their own currencies at any point in handling. Correct entries atomically and review overpayments or negative net totals.
+- Record a decision basis, choose a closure outcome, and give a reason on reopening. The tracker shows the current closure outcome.
+- Change a case reference while keeping earlier references reserved. Link related cases with disclosure governed by current read access.
+- Track deadlines, record completion dates and filter reminders by kind and deadline outcome. Configure optional daily digest prompts.
+- Filter and group reports by business dates, current outcome, responsibility and days open. Export grouped counts, totals and contributing cases to CSV.
+- Change a person's sign-in identity with roles and responsibilities intact. Use `recover-owner` to restore owner access through the owner connection.
 - Regenerate reminder query clients for explicit ANY state selection; omitted ordinary state remains Pending, and explicit inactive-parent false survives links and filters.
 - CLI hints preserve option-looking values with assigned options; `--` protects reference operands, and lookup hints show required input placeholders.
 - CLI help retains optional reminder --case-id and treats help-like named option values as data.
@@ -19,7 +25,6 @@
 - Download complete bounded CSV for case lists, timelines, reminders and people history; each page rechecks rights, and late failure produces no successful partial file.
 - CLI wording and display locale are independent; --display-locale, CLAIMCORE_DISPLAY_LOCALE and profile displayLocale control dates, numbers, money and counts.
 - Long CLI reviews preserve the previewed identity and installation; operational uncertainty has no ledger journal or automatic retry, and copied hints retain all filters and update choices.
-- Correct erroneous payment entries atomically on open cases, including fully paid cases; receipts retain removed and replacement entry identities.
 - Browser response decoding rejects malformed structures before recovery or date observation; uncertain delivery keeps its recovery identity.
 - Contract generation refuses unsupported browser scalar formats and regex syntax; generated guards preserve complete strings and declared Unicode, byte and calendar bounds.
 - CLI case selectors accept explicit IDs; ID-based erasure confirms the previewed reference, and grant/revoke IDs select case scope.

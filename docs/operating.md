@@ -71,7 +71,7 @@ runtime connection, and the owner connection is mounted only by the administrati
 Use matching service, browser and CLI builds. Before 1.0, each installation-format change requires
 a fresh installation. Initialize an empty database with the current [SQL baseline](../db/baseline.sql).
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-Use installation format 6 and CLI recovery journal format 4 with matching builds. Initialization
+Use installation format 7 and CLI recovery journal format 4 with matching builds. Initialization
 requires an empty database; the runtime refuses unsupported baseline identities and formats without
 converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
 and recovery records rather than attempting to initialize or convert them in place.
@@ -103,6 +103,22 @@ uncertain result. Remote database connections require verified TLS.
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
 | `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Rebuild projections during explicit maintenance. |
 | `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
+
+## Recover owner access
+
+Use the database owner connection and run:
+
+```sh
+claimcore-server recover-owner --owner-issuer URL --owner-subject SUBJECT --owner-name "OWNER NAME"
+```
+
+Supply a name when creating a new person. Use `--actor-id ID` to recover a specific person
+and bind the supplied sign-in identity if it changed. Recovery enables the person and grants
+installation Owner while keeping their other grants. The same command can be repeated safely.
+When the target already has the requested identity and an enabled Owner grant, the result is
+unchanged and the ledger does not advance. The installation must already have a person. Recovery
+works during maintenance. Initialization and recovery are recorded as by the
+installation operator.
 
 Help/version are offline. Owner failures use a separate bounded envelope,
 `{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
@@ -370,9 +386,31 @@ Framework exception logging retains exception types and method names instead of 
 Request records retain endpoint, outcome, status, duration and account/operation identifiers. Treat
 identifiers and private failure files as sensitive when preparing support reports.
 
+## Daily digest configuration
+
+Leave all required digest settings unset to disable delivery. Set the SMTP host, port, TLS mode,
+sender and local delivery time together. Startup reports missing required settings.
+
+| Variable | Value |
+| --- | --- |
+| `CLAIMCORE_DIGEST_SMTP_HOST` | SMTP host name |
+| `CLAIMCORE_DIGEST_SMTP_PORT` | SMTP port |
+| `CLAIMCORE_DIGEST_SMTP_TLS` | `IMPLICIT` or `STARTTLS` |
+| `CLAIMCORE_DIGEST_SMTP_CREDENTIALS_FILE` | Optional private file with user and password on separate lines |
+| `CLAIMCORE_DIGEST_SMTP_CA_CERT_FILE` | Optional trust root file for SMTP |
+| `CLAIMCORE_DIGEST_FROM` | Sender email address |
+| `CLAIMCORE_DIGEST_TIME` | Earliest local delivery time, in `HH:MM` |
+| `CLAIMCORE_DIGEST_LANGUAGE` | Offered language tag, default `en` |
+
+The service claims one attempt per eligible person and business date across all hosts. One message
+contains counts and a link to Reminders. Failed sends and skipped empty messages are recorded as
+outcomes. Delivery has no retry or backfill. The in-app queue is the source for current work
+and due dates. Use the digest as a daily prompt. Logs carry actor identifiers and outcomes.
+The `claimcore_digest_total` metric counts outcomes. Housekeeping prunes claims older than 30 days.
+
 ## Erasure limits
 
-ERASE atomically removes related case, work, reminder and note payloads/nonces, snapshots, narratives, search,
+ERASE atomically removes related case, payment, work, reminder, note, party and source-link payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment

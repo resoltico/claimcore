@@ -292,5 +292,53 @@
     "de": "Übersicht",
     "es": "resumen",
     "forbidden": {}
+  },
+  "outcome": {
+    "en": "outcome",
+    "lv": "iznākums",
+    "ar": "النتيجة",
+    "ko": "결과",
+    "ja": "結果",
+    "zh-Hans": "结果",
+    "zh-Hant": "結果",
+    "de": "Ergebnis",
+    "es": "resultado",
+    "forbidden": {}
+  },
+  "deadline": {
+    "en": "deadline",
+    "lv": "termiņš",
+    "ar": "موعد نهائي",
+    "ko": "기한",
+    "ja": "期限",
+    "zh-Hans": "截止日期",
+    "zh-Hant": "截止日期",
+    "de": "Frist",
+    "es": "plazo",
+    "forbidden": {}
+  },
+  "reminder digest": {
+    "en": "reminder digest",
+    "lv": "atgādinājumu kopsavilkums",
+    "ar": "ملخّص التذكيرات",
+    "ko": "알림 요약",
+    "ja": "リマインダーのダイジェスト",
+    "zh-Hans": "提醒摘要",
+    "zh-Hant": "提醒摘要",
+    "de": "Erinnerungsübersicht",
+    "es": "resumen de recordatorios",
+    "forbidden": {}
+  },
+  "installation operator": {
+    "en": "installation operator",
+    "lv": "instalācijas operators",
+    "ar": "مشغّل التثبيت",
+    "ko": "설치 운영자",
+    "ja": "インストール運用者",
+    "zh-Hans": "安装操作员",
+    "zh-Hant": "安裝操作員",
+    "de": "Installationsbetreiber",
+    "es": "operador de la instalación",
+    "forbidden": {}
   }
 }

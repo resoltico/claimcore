@@ -11,8 +11,8 @@ Cases opens at **Needs attention**. Use the view pills, search and filters to na
 **Decided and not fully paid** includes partly paid cases. Paid cases ready to close need attention too.
 A case with several attention reasons counts once.
 
-Search matches references, policy numbers, insurer claim references, claimant, insurer and current
-narratives. Percent, underscore and backslash are literal text. An exact readable reference has an open
+Search matches the current reference, policy numbers, insurer claim references, party names and
+contact details, and current narratives. Exact reference lookup also accepts earlier references. Percent, underscore and backslash are literal text. An exact readable reference has an open
 link even outside the selected view. Unreadable cases remain undisclosed.
 
 Open a row for its workspace, or use **Reassign** to hand it over directly. Totals use the same selection
@@ -24,17 +24,36 @@ claimcore case list --responsible-actor ACTOR-ID
 claimcore case summary --view mine
 ```
 
-Responsibility does not grant access. Dates and overdue labels use the installation's business date.
-ClaimCore does not send reminder alarms.
+Responsibility leaves read permissions as they were. Dates and overdue labels use the installation's
+business date.
 
 ## Open a case
 
-Choose **Open a case** and enter your reference. Add any registration facts you know, such as the incident date and country, the date your office received the claim,
-incident country, and claimed amount with its currency. Incident description, policy number and insurer
-claim reference are optional. Review the facts and confirm **Open a case**.
+Choose **Open a case** and enter your reference. You can add the incident date and country, Received
+date, narrative, policy number, insurer claim reference and claimed amount with its currency. Received
+means the date your office received the claim. Each observed date must be a valid calendar date at
+or before the business date. Record the actual dates even when they arrived out of order.
 
-The reference cannot change or be reused after erasure. The case starts open and undecided, with empty
-work, notes and next actions. A claimant can be a person or an organization.
+Missing facts show **Not recorded**. An unrecorded country represents an unknown country. Explicit
+zero claimed money remains visible and contributes to summaries. An amount and currency are
+recorded or cleared together. Amend or correct facts as they become known.
+
+Use the party rows while opening the case or manage parties from the workspace. A case can have up
+to 20 current parties, with multiple claimants, insurers, representatives or other parties. Record a
+name, contact details or both. Party changes require Register and access to the case. Removing a
+party hides it from current party lists. Its history stays available to authorized readers until
+case erasure. Case CSV joins current claimant and insurer names in creation order.
+
+## Change the reference or link a case
+
+With Register, use **Change case reference** on an active open or closed case. Every recorded
+reference remains reserved to that case, including after erasure. Opening an earlier reference
+shows the current one and identifies the matched reference.
+
+With Manage case work and read access to both cases, you can link a related case and include a
+note. The source shows its outgoing links. The target shows readable incoming links, newest first,
+and a count. Each case can have up to 20 outgoing links. Links never grant read access. An
+unreadable target shows as unavailable. Erasing the source clears its links.
 
 ## Open the case workspace
 
@@ -43,7 +62,7 @@ Notes and Activity occupy the main column. Work and Next actions sit beside them
 the core's recommendation; **More actions** contains other offered changes. **Record details** holds IDs,
 versions and copy controls.
 
-The paid stage shows progress toward payable. Missing stages stay **Not recorded**, even after closing.
+The Paid stage uses net payments in the decision currency. It is complete when the case is Paid or Overpaid.
 Voided and erased cases show their disposition. A reinstatement notice remains until the next fact change.
 A blocked task link explains the current reason and any offered alternative while preserving the workspace.
 
@@ -52,26 +71,25 @@ identified as either missing or outside your access.
 
 ## Decide and record payment
 
-Choose **Record payment decision** to record a decision date and payable amount with currency. A zero-payable decision is
-already Paid and needs no payment entry. Otherwise choose **Record actual payment**, enter its date and positive
-amount, review and confirm. Keep accurate entries; removal is only for correcting an entry recorded in
-error. Payment counts are bounded by the exact-integer range; page size does not limit the case total.
+Choose **Record payment decision** to enter the decision date, payable amount and currency, and
+optional decision basis. You can revise or withdraw a decision independently of recorded payments.
+A zero-payable decision with zero net paid is Paid.
 
-Payments use the decision currency. Their sum cannot exceed payable. Each date is on or after the
-decision date and no later than the business date. A partial payment leaves the case Partly paid; the
-card shows payable, paid and remaining amounts, the latest three entries and total count. The paged
-`case.payments` read (CLI `case payments`) retrieves earlier current entries, 20 by default and at most 50 per page.
-Choose **Show all payments** in the workspace, then **More payments** to continue. Narrow layouts show
-the same supplied rows as cards; **Remove payment entry** remains attached to its current entry.
+Use **Record actual payment** for each transfer or return. Enter the direction, the actual payment
+date, a positive amount and its own currency. Include the bank or letter reference and a payee
+from the case's current parties when known. A payment can precede the decision or use another
+currency. The payment date must be at or before the business date.
 
-Use an entry's **Remove payment entry** action to remove an assertion recorded in error. This does not refund
-or reverse a transfer. To correct an entry, remove it and record the right one. Earlier history remains
-until case erasure. Recording a payment does not close the case.
+The case shows net paid by currency. Progress compares the decision's payable amount with net paid
+in that currency. An overpayment or negative net raises **Payments need review** on an active open
+case. The tracker uses the latest date of a current Paid entry for the Paid stage. A removed payee
+keeps its last recorded name with a removed marker.
 
-You may revise a decision while retaining entries when currency stays the same, payable covers the paid
-total, and the decision date does not follow an entry. A decision with retained payment entries cannot
-be withdrawn or cleared. Remove entries only if they were recorded in error; keep accurate payments.
-Amount and currency always travel together.
+The workspace shows the latest three entries and their total count. **Show all payments** opens
+the paged list, also available through `claimcore case payments`. Use **Remove payment entry** for
+an assertion recorded in error. **Correct payment entry** replaces the amount, currency, direction,
+date, reference and payee in one operation. The receipt identifies the removed and replacement
+entries. Use Returned to record money actually returned by a recipient.
 
 ## Plan case work
 
@@ -80,10 +98,11 @@ summary edits also permit a closed active case. If someone loses access or is di
 remains visible as unavailable so another handler can take over. Summary author and time follow actual
 text changes, independently of assignment.
 
-Add next actions with a short action and planned date. Dates may be past or future. Choose **Complete reminder**,
-**Cancel reminder** or **Update reminder** as offered. Completion records when you marked the action, not when an external
-event occurred. **Complete and plan next action** records both changes together; a refused part changes neither.
-Reopening a completed or cancelled action requires a date.
+Add next actions with a short action and planned date. Choose Follow-up or Deadline. Pending
+deadlines past their due date appear first in case attention. To complete a reminder, enter when
+the action was done or use today's business date. A completion date cannot be in the future.
+Deadlines completed by their due date show Met. Later completions show Missed. **Complete and plan
+next action** records both changes together. Reopening a completed or cancelled action requires a date.
 
 Closing or voiding preserves pending actions. Reopening or reinstating restores their relevance with the
 same dates. Complete/cancel can clean up actions on a closed active case. Erasure clears work and reminders.
@@ -116,7 +135,7 @@ Notes are independent changes and do not require a case or work revision.
 ## Work attention and queues
 
 Open **Reminders** for actions across readable cases. Standard views select pending, overdue, today,
-upcoming, completed or cancelled work. Additional state, due, assignment and text filters intersect
+upcoming, completed or cancelled work. Kind, deadline outcome, state, due, assignment and text filters intersect
 with the selected view. In **Manual filters**, the initial state is **Pending**; choose **Any** to
 include completed and cancelled reminders too. **Include inactive work** can be selected explicitly
 in either mode and includes closed or voided parent cases where the selected view permits them.
@@ -131,15 +150,20 @@ filters, scroll and focus under the same workspace owner; direct entry falls bac
 
 ## Close or reopen
 
-Choose **Close the case** when handling is finished. Neither a decision nor payment is required. **Reopen the case** resumes
-ordinary work. Reopen before ordinary financial editing of a closed case, or use **Correct case facts** when offered.
+Choose **Close the case** when handling is finished. Confirm the outcome and optionally record a
+closing note. The core suggests Declined for zero payable or Settled when net paid covers a
+positive payable. You can choose any listed outcome. The Closed tracker stage shows that outcome
+and the business date of the close.
+
+Choose **Reopen the case** and enter a reason. The receipt and authorized history record it.
+Reopen and close again to record a new outcome. Each close remains in history.
 
 ## Correct existing facts
 
 Choose **Correct case facts** to revise selected registration and decision facts together. An open case needs an
 existing decision; a closed case can be corrected with or without one. Unselected facts stay unchanged.
-Correction cannot invent a missing decision. Payment entries are changed separately, and retained entries
-continue to constrain any decision change. A refused correction records nothing.
+Correction requires an existing decision for changes to the decision group. You can clear the decision
+basis or withdraw the decision while keeping payment entries. A refused correction records nothing.
 
 ## Case stewardship
 
@@ -149,7 +173,7 @@ accepted reason remains attached to its own receipt and full history entry, incl
 changes; current rights and case erasure control disclosure.
 
 Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
-and notes. The reference remains reserved. Read the consequence and type the shown reference to confirm.
+notes, parties and source links. Every reference remains reserved. Read the consequence and type the shown reference to confirm.
 Erasure also freezes the reviewed case-family sequence. Changes to any owned work, note, reminder or
 payment invalidate that review even when the case fact version stays unchanged. Review again explicitly
 before another attempt. Unrelated cases and account changes do not change this family sequence;
@@ -182,17 +206,27 @@ or delivery need protection. Browser activation and prompting rules apply; this 
 or guarantee protection against forced termination. Unknown history entries have no provable offset and
 are followed without rewriting the history stack.
 
-### Correct an erroneous payment entry
+## Report on current case facts
 
-Select the recorded entry and use **Correct payment entry** to review a replacement date and amount
-in the decision currency. A fully paid open case can be corrected; reopen a closed case first. The
-accepted operation removes the old assertion, records a fresh entry and updates the case once.
-The receipt shows both entry identities and their removed/recorded directions. This does not refund
-or execute a transfer, and the original assertion remains in history until erasure.
+Use registered, received and closed date ranges and the inactivity filter in Cases. Date ranges are
+inclusive. Inactivity uses the latest case-family activity on or before the selected date. A missing
+date falls outside a date filter. These reports describe current facts at the observation time.
 
-Use **Download CSV** on the case list, case timeline or reminder queue to download the selected
-filters from their first page. Downloads are bounded and complete only after every authorized page
-succeeds. A refusal or resource limit returns an explanation instead of a partial CSV.
+Choose a summary group for registered, received or closed month, outcome, responsible person or
+days open. The summary shows case counts and claimed, payable and net-paid totals by currency,
+with each total's contributing-case count. A group can contain cases with no recorded money.
+In the CLI use `claimcore case summary --group-by received-month`.
+
+**Download CSV** exports the selected case list, grouped summary, timeline or reminder queue.
+The reminder export includes kind, completion date and deadline outcome. A refusal or resource
+limit returns an explanation before an incomplete export can be accepted.
+
+## Daily reminder digest
+
+An owner can add a digest email address to a person's profile. When the installation has SMTP
+configured, ClaimCore sends one daily prompt with counts for the person's readable assigned work.
+The message links to the Reminders queue. The in-app queue supplies the current dates and attention.
+See [Digest configuration](operating.md#daily-digest-configuration).
 
 ### Case reminder queue
 
