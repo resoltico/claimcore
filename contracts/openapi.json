@@ -10619,6 +10619,18 @@
             "$ref": "#/components/schemas/Binding.NOTE"
           },
           {
+            "$ref": "#/components/schemas/Binding.PARTY.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.PARTY"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.LINK.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.LINK"
+          },
+          {
             "$ref": "#/components/schemas/Binding.PEOPLE.new"
           },
           {
@@ -15724,6 +15736,9 @@
             "$ref": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS"
           },
           {
+            "$ref": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE"
+          },
+          {
             "$ref": "#/components/schemas/DataRejection.NOT_OFFERED"
           },
           {
@@ -15742,9 +15757,6 @@
             "$ref": "#/components/schemas/DataRejection.NOT_AUTHORIZED"
           },
           {
-            "$ref": "#/components/schemas/DataRejection.HUMAN_PRINCIPAL_REQUIRED"
-          },
-          {
             "$ref": "#/components/schemas/DataRejection.INVALID_CURSOR"
           }
         ],
@@ -15761,26 +15773,26 @@
             "NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "FAMILY_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PAYMENT_NOT_FOUND": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PARTY_LIMIT": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "SELF_LINK": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "DUPLICATE_LINK": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "LINK_LIMIT_REACHED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "CASE_ALREADY_EXISTS": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS",
+            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "SELF_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "DUPLICATE_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "LINK_LIMIT_REACHED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "IDENTITY_RESERVED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "NOT_OFFERED": "#/components/schemas/DataRejection.NOT_OFFERED",
             "REMINDER_NOT_OFFERED": "#/components/schemas/DataRejection.REMINDER_NOT_OFFERED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT",
             "REGISTER_MAINTENANCE": "#/components/schemas/DataRejection.REGISTER_MAINTENANCE",
             "RESOURCE_UNAVAILABLE": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE",
             "NOT_AUTHORIZED": "#/components/schemas/DataRejection.NOT_AUTHORIZED",
-            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/DataRejection.HUMAN_PRINCIPAL_REQUIRED",
-            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/DataRejection.HUMAN_PRINCIPAL_REQUIRED",
-            "IDENTITY_RESERVED": "#/components/schemas/DataRejection.HUMAN_PRINCIPAL_REQUIRED",
             "INVALID_CURSOR": "#/components/schemas/DataRejection.INVALID_CURSOR"
           }
         }
@@ -15793,12 +15805,8 @@
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
               "FAMILY_CHANGED",
-              "CORRECTION_REQUIRES_EXISTING_VALUE",
               "PAYMENT_NOT_FOUND",
               "PARTY_LIMIT",
-              "SELF_LINK",
-              "DUPLICATE_LINK",
-              "LINK_LIMIT_REACHED",
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
               "ACTOR_UNKNOWN",
@@ -15830,12 +15838,16 @@
           "action"
         ]
       },
-      "DataRejection.HUMAN_PRINCIPAL_REQUIRED": {
+      "DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "code": {
             "enum": [
+              "CORRECTION_REQUIRES_EXISTING_VALUE",
+              "SELF_LINK",
+              "DUPLICATE_LINK",
+              "LINK_LIMIT_REACHED",
               "HUMAN_PRINCIPAL_REQUIRED",
               "ROLE_SCOPE_NOT_APPLICABLE",
               "IDENTITY_RESERVED"

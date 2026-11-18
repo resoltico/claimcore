@@ -27,7 +27,9 @@ const isScope = (value: Record<string, unknown>): boolean =>
 const isAttempt = (value: Record<string, unknown>): boolean =>
   uuid(value["attemptId"]) &&
   uuid(value["operationId"]) &&
-  ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE", "PARTY", "LINK"].includes(String(value["subject"])) &&
+  ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE", "PARTY", "LINK"].includes(
+    String(value["subject"]),
+  ) &&
   typeof value["act"] === "string" &&
   taskDefinitions.some(
     (task) =>
