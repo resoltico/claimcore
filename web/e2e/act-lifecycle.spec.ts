@@ -1,9 +1,4 @@
-import {
-  showCaseRecordDetails,
-  openRecovery,
-  goToView,
-  showOperationLookup,
-} from "./workspace-navigation";
+import { showCaseRecordDetails, goToView, showOperationLookup } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
@@ -60,7 +55,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   await expectAccessible(page);
 
-  await openRecovery(page);
+  await goToView(page, "recovery");
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await page.locator('.receipt details[data-region="DETAILS"] > summary').click();
