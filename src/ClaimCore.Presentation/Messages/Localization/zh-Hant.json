@@ -1443,6 +1443,10 @@
     "text": "記錄時間",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "系統營運者",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "記錄人",
     "source": "cebc8d0d5452"

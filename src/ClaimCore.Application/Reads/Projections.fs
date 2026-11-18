@@ -406,7 +406,10 @@ module internal Projections =
         {
             GrantRow.Grant = { Role = role; Scope = scope }
             GrantedAt = DatabaseSession.recordedInstant 4 row
-            GrantedBy = DatabaseSession.value<Guid> 5 row |> DatabaseSession.admitted ActorId.create
+            GrantedBy =
+                DatabaseSession.optional<Guid> 5 row
+                |> Option.map (DatabaseSession.admitted ActorId.create)
+                |> Authority.ofActorId
         },
         { Role = role; CaseId = caseId }
 

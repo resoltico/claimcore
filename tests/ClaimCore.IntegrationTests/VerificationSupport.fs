@@ -242,7 +242,10 @@ let rehashed
                 i64 (Sequence.value header.Sequence)
                 EntryHash.toBytes header.PreviousHash
                 (OperationId.value header.OperationId).ToByteArray(true)
-                (ActorId.value header.ActorId).ToByteArray(true)
+                (match header.Authority with
+                 | Authority.Actor actor ->
+                     Array.append [| 1uy |] ((ActorId.value actor).ToByteArray(true))
+                 | Authority.Operator -> [| 2uy |])
                 i64 header.RecordedAt.UtcTicks
                 (match header.BusinessDate with
                  | None -> [| 0uy |]

@@ -64,10 +64,15 @@ type internal PersonProjection =
 
 /// The same row construction serves a live accepted change and the verified history fold.
 module internal ProjectionRows =
+    let familyActor =
+        function
+        | Authority.Actor actor -> actor
+        | Authority.Operator -> invalidOp "A family effect has operator authority."
+
     let attribution (stamp: SubjectStamp) =
         {
             RecordedAt = stamp.RecordedAt
-            RecordedBy = stamp.ActorId
+            RecordedBy = familyActor stamp.Authority
         }
 
     let summaries

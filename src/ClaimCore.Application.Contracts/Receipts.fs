@@ -129,6 +129,6 @@ type OperationReceipt =
         Position: LedgerPosition
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorRef
+        RecordedBy: AuthorityRef
         Basis: WorkDateBasis
     }

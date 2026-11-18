@@ -266,7 +266,7 @@ module ReceiptScreen =
                         "recordedBy"
                         "label.recordedBy"
                         Prominence.Primary
-                        (PresentedValue.Actor receipt.RecordedBy)
+                        (ActorPresentation.authorityValue receipt.RecordedBy)
                  ]
                  @ knownTarget)
         ]

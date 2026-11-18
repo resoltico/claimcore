@@ -8358,6 +8358,51 @@
           "count"
         ]
       },
+      "AuthorityRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityRef.ACTOR"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityRef.OPERATOR"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACTOR": "#/components/schemas/AuthorityRef.ACTOR",
+            "OPERATOR": "#/components/schemas/AuthorityRef.OPERATOR"
+          }
+        }
+      },
+      "AuthorityRef.ACTOR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTOR"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "actor"
+        ]
+      },
+      "AuthorityRef.OPERATOR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "OPERATOR"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "Binding": {
         "oneOf": [
           {
@@ -14155,7 +14200,7 @@
             "maxLength": 27
           },
           "grantedBy": {
-            "$ref": "#/components/schemas/ActorRef"
+            "$ref": "#/components/schemas/AuthorityRef"
           }
         },
         "required": [
@@ -17480,7 +17525,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/ActorRef"
+            "$ref": "#/components/schemas/AuthorityRef"
           },
           "subject": {
             "$ref": "#/components/schemas/ReceiptSubject"
@@ -18909,7 +18954,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/ActorRef"
+            "$ref": "#/components/schemas/AuthorityRef"
           },
           "target": {
             "$ref": "#/components/schemas/ActorRef"
@@ -22252,7 +22297,7 @@
             "maxLength": 27
           },
           "who": {
-            "$ref": "#/components/schemas/ActorRef"
+            "$ref": "#/components/schemas/PresentedValue"
           },
           "summary": {
             "$ref": "#/components/schemas/PresentedMessage"

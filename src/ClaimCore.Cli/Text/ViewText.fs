@@ -142,9 +142,7 @@ module internal ViewText =
                     |> List.collect (fun entry ->
                         [
                             message rendering entry.Summary
-                            text (PresentedValue.Actor entry.Who)
-                            + " · "
-                            + text (PresentedValue.Instant entry.When)
+                            text entry.Who + " · " + text (PresentedValue.Instant entry.When)
                         ]
                         @ sections entry.Highlights
                         @ (if includeDetails then sections entry.Details else []))

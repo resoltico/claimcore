@@ -71,7 +71,7 @@ let context number =
                     EffectPosition.create (Sequence.create (int64 number) |> Option.get) 0
                     |> Option.get
                 OperationId = id
-                ActorId = actorId
+                Authority = Authority.Actor actorId
                 RecordedAt = observedAt
             }
         Decision =

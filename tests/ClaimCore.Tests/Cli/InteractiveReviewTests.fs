@@ -866,7 +866,10 @@ let reminderReviewDetails =
                                                     DomainInputs.name "Reminder claimant"
                                                 Responsible = None
                                                 RecordedAt = DomainInputs.workBasis.ObservedAt
-                                                RecordedBy = CliReplyFixtures.receipt.RecordedBy
+                                                RecordedBy =
+                                                    CliReplyFixtures.receipt.RecordedBy
+                                                    |> AuthorityRef.actor
+                                                    |> Option.get
                                                 Offers =
                                                     [
                                                         Inputs.offeredTask

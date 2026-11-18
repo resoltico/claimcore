@@ -867,7 +867,7 @@ module PresentationCodecs =
         : Fields<RegionTimelineEntry, _>)
         |> field "key" _.Key key
         |> field "when" _.When instant
-        |> field "who" _.Who ActorCodecs.actorRef
+        |> field "who" _.Who value
         |> field "summary" _.Summary message
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "details" _.Details (list MaximumEntries section)

@@ -4,6 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Execution
 
 module internal TimelineStorage =
     type PageQuery =
@@ -80,7 +81,7 @@ module internal TimelineStorage =
                                 |> Option.map CalendarDate.ofDate
                             Disposition = PartChange.disposition entry.Change
                             RecordedAt = entry.RecordedAt
-                            RecordedBy = entry.ActorId
+                            RecordedBy = ProjectionRows.familyActor entry.Authority
                         }
             | _ -> return raise (RecordCorruptException "Current case stage is duplicated.")
         }

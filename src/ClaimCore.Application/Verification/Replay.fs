@@ -196,7 +196,7 @@ module internal Replay =
                         StoredNote.Note = Note.ofAccepted note.Id caseId note.Value.Text
                         CreatedPosition = note.Origin.Position
                         RecordedAt = note.Origin.RecordedAt
-                        RecordedBy = note.Origin.ActorId
+                        RecordedBy = ProjectionRows.familyActor note.Origin.Authority
                     }))
             |> Map.ofList)
 

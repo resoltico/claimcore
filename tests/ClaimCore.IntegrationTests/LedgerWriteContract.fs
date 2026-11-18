@@ -51,6 +51,11 @@ let internal genesis fixture =
         match result with
         | Ok(Verdict.Proceed receipt) ->
             Expect.equal receipt.Position.Sequence Sequence.first "First operation sequence"
+
+            Expect.equal
+                receipt.RecordedBy
+                AuthorityRef.Operator
+                "The operator records initialization"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -68,8 +73,9 @@ let internal genesis fixture =
                 CancellationToken.None
 
         match observed.Outcome with
-        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) ->
+        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, false)) ->
             Expect.equal receipt.Position.Sequence Sequence.first "Readable accepting root"
+            Expect.equal receipt.RecordedBy AuthorityRef.Operator "The owner did not execute it"
         | other -> failtestf "Missing accepted owner root: %A" other
 
     }
@@ -240,6 +246,80 @@ let internal lockedView fixture =
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
+    }
+
+let internal operatorFamilyRefusal fixture =
+    task {
+        let! actor = caseWorker fixture
+
+        let submission =
+            request
+                fixture
+                12
+                "OPERATOR-FAMILY"
+                0L
+                "case.open"
+                (Submissions.fields (RegistrationInput.values registration))
+
+        let command = Submissions.command submission
+
+        let client, operator =
+            match ClaimCore.Domain.Tasks.Registry.find submission.Task with
+            | Some(ClaimCore.Domain.Tasks.Task.Family selected as client) ->
+                client,
+                ClaimCore.Domain.Tasks.Task.Family
+                    { selected with
+                        Declaration =
+                            { selected.Declaration with
+                                Exposure = TaskExposure.Operator
+                            }
+                    }
+            | _ -> failtest "Expected a family task"
+
+        let! result =
+            fixture.Store.Write
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let context =
+                                    {
+                                        DecisionContext.BusinessDate =
+                                            Some(fixture.Calendar.DateAt tx.ObservedAt)
+                                        ObservedAt = tx.ObservedAt
+                                        Principal = actor.Principal
+                                        Access = AccessView.empty
+                                        Maintenance = false
+                                        Lifetime = DecisionLifetime.Execution None
+                                    }
+
+                                let prepare selected =
+                                    Engine.prepare
+                                        tx
+                                        tx.Head
+                                        context
+                                        selected
+                                        (CaseFixtures.operationId submission.OperationId)
+                                        command.Binding
+                                        command.Inputs
+
+                                let! control = prepare client
+                                Expect.isOk control "The family operation passes actor attribution"
+
+                                let! refused = prepare operator
+
+                                match refused with
+                                | Error(ExecutionStop.Failed CoreFault.InternalError) ->
+                                    return Verdict.Proceed()
+                                | _ ->
+                                    return
+                                        failtest
+                                            "The engine did not reject operator family authority."
+                            }
+                    CancellationToken = CancellationToken.None
+                }
+
+        Expect.equal result (Ok(Verdict.Proceed())) "Neither operation was appended"
     }
 
 let internal caseUpdate fixture =

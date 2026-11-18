@@ -119,7 +119,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             "Disclosure uses the write's locked context"
 
         Expect.equal
-            receipt.RecordedBy.ActorId
+            (receipt.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
             ((CaseFixtures.actorId (id fixture 3)))
             "Original executor"
 

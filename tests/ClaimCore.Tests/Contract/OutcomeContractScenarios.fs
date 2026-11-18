@@ -171,7 +171,7 @@ let internal queryCodecs () =
         (RepresentationReply.Data
             {
                 OperationReply.OperationId = id
-                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, true))
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, false))
             })
 
     |> ignore

@@ -361,6 +361,7 @@
   "label.notApplicable": "Not applicable",
   "label.recordedAt": "Recorded at",
   "label.recordedBy": "Recorded by",
+  "label.installationOperator": "Installation operator",
   "label.reminder": "Reminder",
   "label.before": "Before",
   "label.after": "After",

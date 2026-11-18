@@ -5,10 +5,13 @@ export const openedTimelineEntry: RegionTimelineEntry = {
   key: "1/0",
   when: "2026-11-02T12:00:00.000000Z",
   who: {
-    actorId: "10000000-0000-4000-8000-000000000001",
-    displayName: { kind: "NAMED", value: "Timeline recorder" },
-    principalKind: "HUMAN",
-    availability: "AVAILABLE",
+    kind: "ACTOR",
+    value: {
+      actorId: "10000000-0000-4000-8000-000000000001",
+      displayName: { kind: "NAMED", value: "Timeline recorder" },
+      principalKind: "HUMAN",
+      availability: "AVAILABLE",
+    },
   },
   summary: { messageId: "change.CASE.recorded", arguments: [] },
   highlights: [],

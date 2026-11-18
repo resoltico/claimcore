@@ -13,3 +13,15 @@ module ActorPresentation =
         match actor.DisplayName with
         | DisplayName.Named value -> PartyName.format value
         | DisplayName.Erased -> render formerAccountKey (Map.ofList [ "id", shortId actor ])
+
+    let operatorLabel = "label.installationOperator"
+
+    let authorityValue =
+        function
+        | AuthorityRef.Actor actor -> PresentedValue.Actor actor
+        | AuthorityRef.Operator -> PresentedValue.Message operatorLabel
+
+    let authorityName render =
+        function
+        | AuthorityRef.Actor actor -> displayName render actor
+        | AuthorityRef.Operator -> render operatorLabel Map.empty

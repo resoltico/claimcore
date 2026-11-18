@@ -21,7 +21,9 @@ let private baseWords verb = [ "people"; verb; actor.ToString("D") ]
 let private command (submission: OperationSubmission) = submission
 
 let private targetActor =
-    { CliReplyFixtures.receipt.RecordedBy with
+    let actor = CliReplyFixtures.receipt.RecordedBy |> AuthorityRef.actor |> Option.get
+
+    { actor with
         DisplayName = DisplayName.Named(DomainInputs.name "Current person")
     }
 

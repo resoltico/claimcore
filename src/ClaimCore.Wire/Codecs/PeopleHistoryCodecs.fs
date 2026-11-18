@@ -30,7 +30,7 @@ module PeopleHistoryCodecs =
         |> field "position" _.Position LedgerCodecs.effectPosition
         |> field "operationHash" _.OperationHash LedgerCodecs.hash
         |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "recordedBy" _.RecordedBy ActorCodecs.authorityRef
         |> field "target" _.Target ActorCodecs.actorRef
         |> field "task" _.Task (TaskVocabulary.forSubject ActSubject.People)
         |> field "changes" _.Changes PartDescriptionCodecs.person

@@ -97,11 +97,16 @@ module internal Engine =
         inputs
         =
         task {
+            let declaration = Task.declaration selected
+
             if tx.ObservedAt <> context.ObservedAt then
                 return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
+            elif
+                declaration.Exposure = TaskExposure.Operator
+                && declaration.Aggregate <> AggregateKind.Person
+            then
+                return Error(ExecutionStop.Failed CoreFault.InternalError)
             else
-                let declaration = Task.declaration selected
-
                 let! access = ExecutionEnvironment.requester tx context.Principal
 
                 if
@@ -178,16 +183,14 @@ module internal Engine =
                         else
                             let! resolve = resolver tx binding inputs None
 
-                            let actor =
-                                snapshot.Requester.Actor
-                                |> Option.map _.ActorId
-                                |> Option.orElseWith (fun () ->
-                                    if declaration.Exposure = TaskExposure.Operator then
-                                        Some(ActorId.ofOperationId operation)
-                                    else
-                                        None)
+                            let authority =
+                                match declaration.Exposure with
+                                | TaskExposure.Operator -> Some Authority.Operator
+                                | TaskExposure.Client ->
+                                    snapshot.Requester.Actor
+                                    |> Option.map (_.ActorId >> Authority.Actor)
 
-                            match actor with
+                            match authority with
                             | None ->
                                 return
                                     Error(
@@ -195,7 +198,7 @@ module internal Engine =
                                             Refusal.Access AccessRefusal.ResourceUnavailable
                                         )
                                     )
-                            | Some actor ->
+                            | Some authority ->
                                 let businessDate =
                                     if declaration.Aggregate = AggregateKind.Person then
                                         None
@@ -208,7 +211,7 @@ module internal Engine =
                                         Sequence = Sequence.successor head.Sequence
                                         PreviousHash = head.EntryHash
                                         OperationId = operation
-                                        ActorId = actor
+                                        Authority = authority
                                         RecordedAt = tx.ObservedAt
                                         BusinessDate = businessDate
                                     }
@@ -223,7 +226,7 @@ module internal Engine =
                                         Stamp =
                                             {
                                                 OperationId = operation
-                                                ActorId = actor
+                                                Authority = authority
                                                 RecordedAt = tx.ObservedAt
                                                 Position =
                                                     EffectPosition.create header.Sequence 0

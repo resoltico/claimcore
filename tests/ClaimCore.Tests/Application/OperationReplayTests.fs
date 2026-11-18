@@ -25,14 +25,20 @@ let private revise value = Revision.create value |> Option.get
 let private person number =
     ActorId.ofOperationId (operation number)
 
-let private executor id (record: RetainedOperation) =
-    let header = { record.Root.Header with ActorId = id }
+let private byAuthority authority (record: RetainedOperation) =
+    let header =
+        { record.Root.Header with
+            Authority = authority
+        }
 
     let changes =
         record.Changes
         |> List.map (fun change ->
             { change with
-                Stamp = { change.Stamp with ActorId = id }
+                Stamp =
+                    { change.Stamp with
+                        Authority = authority
+                    }
             })
 
     RetainedOperation.create
@@ -43,6 +49,8 @@ let private executor id (record: RetainedOperation) =
         changes
         (fun () -> Array.create 32 199uy)
     |> required
+
+let private executor id record = byAuthority (Authority.Actor id) record
 
 let private checkReplay steps =
     let ownerRecord, one = owner ()
@@ -625,6 +633,24 @@ let tests =
                         after.People[person 2].Grants[key]
                         (EffectPosition.create (Sequence.create 4L |> Option.get) 0 |> Option.get)
                         "The current grant belongs to its reaffirming person part")
+            testCase "operator authority cannot replay a family operation" (fun () ->
+                let provisioned, state = owner ()
+
+                let opened, _ =
+                    build
+                        state
+                        2
+                        principal
+                        "case.open"
+                        (Binding.CaseNew Revision.zero)
+                        (opening "OPERATOR-FAMILY")
+
+                Expect.isOk (scan [ provisioned; opened ]) "The actor-attributed control replays"
+
+                Expect.equal
+                    (scan [ provisioned; byAuthority Authority.Operator opened ])
+                    (Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled))
+                    "The fold refuses the rehashed family operation with operator authority")
             testCase "bootstrap records the profile and every role in one person part" (fun () ->
                 let record, _ = owner ()
                 let state = scan [ record ] |> required
@@ -634,6 +660,7 @@ let tests =
                     Sequence.first
                     "One operation extends the head once"
 
+                Expect.equal record.Root.Header.Authority Authority.Operator "Operator attribution"
                 Expect.equal record.Changes.Length 1 "One accepted PERSON part"
                 Expect.equal state.People.Count 1 "One principal"
                 let current = state.People[person 1]

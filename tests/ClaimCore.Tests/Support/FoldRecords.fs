@@ -84,12 +84,16 @@ let buildWith mutate (state: FoldState) number requester token binding values =
     let declaration = Task.declaration selected
     let sequence = Sequence.successor state.Head.Sequence
 
-    let actor =
-        state.People
-        |> Map.values
-        |> Seq.tryFind (fun person -> person.Actor.Principal = requester)
-        |> Option.map _.Id
-        |> Option.defaultValue (ActorId.ofOperationId id)
+    let authority =
+        if declaration.Exposure = TaskExposure.Operator then
+            Authority.Operator
+        else
+            state.People
+            |> Map.values
+            |> Seq.tryFind (fun person -> person.Actor.Principal = requester)
+            |> Option.map _.Id
+            |> Option.defaultValue (ActorId.ofOperationId id)
+            |> Authority.Actor
 
     let observed = (OperationId.issuedAt id).AddSeconds 1.
 
@@ -113,7 +117,7 @@ let buildWith mutate (state: FoldState) number requester token binding values =
             Stamp =
                 {
                     OperationId = id
-                    ActorId = actor
+                    Authority = authority
                     RecordedAt = observed
                     Position = EffectPosition.create sequence 0 |> Option.get
                 }
@@ -128,7 +132,7 @@ let buildWith mutate (state: FoldState) number requester token binding values =
             Sequence = sequence
             PreviousHash = state.Head.EntryHash
             OperationId = id
-            ActorId = actor
+            Authority = authority
             RecordedAt = observed
             BusinessDate = date
         }

@@ -281,7 +281,12 @@ let nextAndConflicts =
                                     RecordedAt =
                                         ClaimCore.TestSupport.DomainInputs.workBasis.ObservedAt
                                     RecordedBy =
-                                        { CliReplyFixtures.receipt.RecordedBy with
+                                        let actor =
+                                            CliReplyFixtures.receipt.RecordedBy
+                                            |> AuthorityRef.actor
+                                            |> Option.get
+
+                                        { actor with
                                             DisplayName =
                                                 DisplayName.Named(
                                                     ClaimCore.TestSupport.DomainInputs.name (

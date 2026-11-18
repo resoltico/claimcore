@@ -110,7 +110,8 @@ module internal ApiRoutes =
                 (fun _ reply -> HumanReplies.execute reply)
                 (fun reply ->
                     match reply.Outcome with
-                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | ExecuteResult.Accepted receipt ->
+                        receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
                     | _ -> None)
                 (fun _ -> false)
                 Service.executeSubmission

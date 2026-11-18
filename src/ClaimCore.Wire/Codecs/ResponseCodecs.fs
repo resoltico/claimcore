@@ -633,7 +633,7 @@ module ResponseCodecs =
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope grantScope
         |> field "grantedAt" _.GrantedAt instant
-        |> field "grantedBy" _.GrantedBy ActorCodecs.actorRef
+        |> field "grantedBy" _.GrantedBy ActorCodecs.authorityRef
         |> build
         |> named "GrantReadModel"
 

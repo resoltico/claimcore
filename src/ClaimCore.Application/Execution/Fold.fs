@@ -31,7 +31,7 @@ type internal FoldState =
         Origins: Map<PartKind * Guid, SubjectStamp>
         Summaries: Map<CaseId, Attribution>
         Accepted: Set<OperationId>
-        NaturalKeys: Set<PartKind * string>
+        NaturalKeys: Map<PartKind * string, Guid>
         Nonces: Set<string>
         Missing: Map<CompartmentOwner, EffectPosition list>
         Present: Map<CompartmentOwner, EffectPosition list>
@@ -47,7 +47,7 @@ module internal Fold =
             Origins = Map.empty
             Summaries = Map.empty
             Accepted = Set.empty
-            NaturalKeys = Set.empty
+            NaturalKeys = Map.empty
             Nonces = Set.empty
             Missing = Map.empty
             Present = Map.empty
@@ -60,10 +60,9 @@ module internal Fold =
             match CaseReference.parse text with
             | Error _ -> None
             | Ok reference ->
-                state.Families
-                |> Map.values
-                |> Seq.tryFind (fun family ->
-                    CaseReference.identity family.Reference = CaseReference.identity reference)
+                Map.tryFind (PartKind.Case, CaseReference.identity reference) state.NaturalKeys
+                |> Option.bind CaseId.create
+                |> Option.bind (fun id -> Map.tryFind id state.Families)
 
     let resolveCase state selector =
         resolveFamily state selector |> Option.map _.Id
@@ -232,7 +231,7 @@ module internal Fold =
 
                         if
                             natural
-                            |> Option.exists (fun key -> Set.contains key state.NaturalKeys)
+                            |> Option.exists (fun key -> Map.containsKey key state.NaturalKeys)
                         then
                             Error FoldProblem.NaturalKey
                         else
@@ -259,7 +258,8 @@ module internal Fold =
                                             Map.add key change.Stamp state.Origins
                                     NaturalKeys =
                                         natural
-                                        |> Option.map (fun key -> Set.add key state.NaturalKeys)
+                                        |> Option.map (fun naturalKey ->
+                                            Map.add naturalKey change.PartId state.NaturalKeys)
                                         |> Option.defaultValue state.NaturalKeys
                                 })))
             (Ok state)
@@ -269,16 +269,10 @@ module internal Fold =
         let declaration = Task.declaration selected
         let header = record.Root.Header
 
-        if declaration.Exposure = TaskExposure.Operator then
-            if
-                state.People.IsEmpty
-                && header.ActorId = ActorId.ofOperationId header.OperationId
-            then
-                Ok None
-            else
-                Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
-        else
-            match Map.tryFind header.ActorId state.People with
+        match declaration.Exposure, declaration.Aggregate, header.Authority with
+        | TaskExposure.Operator, AggregateKind.Person, Authority.Operator -> Ok None
+        | TaskExposure.Client, _, Authority.Actor actor ->
+            match Map.tryFind actor state.People with
             | None -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
             | Some person ->
                 let principal = person.Actor.Principal
@@ -321,6 +315,7 @@ module internal Fold =
                         Ok(Some principal)
                     else
                         Error FoldProblem.Decision)
+        | _ -> Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled)
 
     let private revisions state changes =
         changes
@@ -422,7 +417,7 @@ module internal Fold =
                                 Stamp =
                                     {
                                         OperationId = header.OperationId
-                                        ActorId = header.ActorId
+                                        Authority = header.Authority
                                         RecordedAt = header.RecordedAt
                                         Position =
                                             EffectPosition.create header.Sequence 0 |> Option.get

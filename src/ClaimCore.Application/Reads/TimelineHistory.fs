@@ -9,6 +9,7 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Execution
 open ClaimCore.RecordFormat
 
 /// Conflicts and ordinary history share the same accepted-version projection and disclosure.
@@ -64,7 +65,10 @@ module internal TimelineHistory =
         task {
             let mutable authors = Map.empty
 
-            for id in page.Items |> List.map _.ActorId |> List.distinct do
+            for id in
+                page.Items
+                |> List.map (fun entry -> ProjectionRows.familyActor entry.Authority)
+                |> List.distinct do
                 let! person = AggregateStorage.person tx id
 
                 match person with
@@ -163,7 +167,8 @@ module internal TimelineHistory =
                                     Revision = entry.Change.Revision
                                 }
                             RecordedAt = entry.RecordedAt
-                            RecordedBy = Map.find entry.ActorId authors
+                            RecordedBy =
+                                Map.find (ProjectionRows.familyActor entry.Authority) authors
                             Changes = changes
                         }
 

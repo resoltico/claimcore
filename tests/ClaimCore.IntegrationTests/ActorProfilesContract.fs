@@ -77,12 +77,16 @@ let internal lifecycle fixture =
         let changed = accepted changed
 
         Expect.equal
-            changed.RecordedBy.DisplayName
+            (changed.RecordedBy |> AuthorityRef.actor |> Option.get).DisplayName
             (DisplayName.Named(PartyName.parse profile.DisplayName |> required))
             "Self edit returns the post-state name"
 
         let! current = self owner
-        Expect.equal current changed.RecordedBy "Context uses the same current name"
+
+        Expect.equal
+            (AuthorityRef.Actor current)
+            changed.RecordedBy
+            "Context uses the same current name"
 
         let! granted =
             execute
@@ -108,7 +112,7 @@ let internal lifecycle fixture =
         let erased = accepted erased
 
         Expect.equal
-            erased.RecordedBy.DisplayName
+            (erased.RecordedBy |> AuthorityRef.actor |> Option.get).DisplayName
             DisplayName.Erased
             "Self erasure receipt cannot retain the old name"
 

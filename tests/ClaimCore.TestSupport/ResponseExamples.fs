@@ -37,7 +37,7 @@ let receipt: OperationReceipt =
         OperationId = CaseFixtures.operationId id
         Position = position
         RecordedAt = basis.ObservedAt
-        RecordedBy = actor
+        RecordedBy = AuthorityRef.Actor actor
         Basis = basis
         Subject =
             ReceiptSubject.Case
@@ -59,6 +59,7 @@ let receipt: OperationReceipt =
 
 let peopleReceipt =
     { receipt with
+        RecordedBy = AuthorityRef.Operator
         Subject =
             ReceiptSubject.People
                 {

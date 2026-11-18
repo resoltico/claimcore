@@ -579,7 +579,7 @@ let private ordering () =
                 Stamp =
                     if task.Declaration.Exposure = TaskExposure.Operator then
                         { original.Stamp with
-                            ActorId = ActorId.ofOperationId original.Stamp.OperationId
+                            Authority = Authority.Operator
                         }
                     else
                         original.Stamp

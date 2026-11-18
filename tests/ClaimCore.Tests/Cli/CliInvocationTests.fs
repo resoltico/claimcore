@@ -416,7 +416,8 @@ let private peoplePreviewFrame
         else
             Some(
                 DomainInputs.namedActorReference
-                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                    (CliReplyFixtures.receipt.RecordedBy |> AuthorityRef.actor |> Option.get)
+                        .ActorId
                     "Synthetic account"
             )
 

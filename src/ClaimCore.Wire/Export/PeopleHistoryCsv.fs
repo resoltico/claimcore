@@ -3,6 +3,7 @@ namespace ClaimCore.Wire.Export
 open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
 
 /// A part may change several facts. Each CSV row retains the real accepting position.
 module PeopleHistoryCsv =
@@ -19,8 +20,10 @@ module PeopleHistoryCsv =
                 string (EffectPosition.index entry.Position)
                 entry.OperationHash |> EntryHash.toBytes |> System.Convert.ToHexStringLower
                 Csv.instant entry.RecordedAt
-                ActorId.format entry.RecordedBy.ActorId
-                Csv.actorName render entry.RecordedBy
+                match entry.RecordedBy with
+                | AuthorityRef.Actor actor -> ActorId.format actor.ActorId
+                | AuthorityRef.Operator -> ""
+                ActorPresentation.authorityName render entry.RecordedBy
                 ActorId.format entry.Target.ActorId
                 Csv.actorName render entry.Target
                 TaskId.token entry.Task

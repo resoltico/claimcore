@@ -158,7 +158,7 @@ let tests =
                         Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
                         OperationHash = receipt.Position.EntryHash
                         RecordedAt = receipt.RecordedAt
-                        RecordedBy = receipt.RecordedBy
+                        RecordedBy = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                         Subject =
                             {
                                 PartKind = PartKind.Payment
@@ -188,7 +188,7 @@ let tests =
                                     EffectPosition.create receipt.Position.Sequence 0 |> Option.get
                                 OperationHash = receipt.Position.EntryHash
                                 RecordedAt = receipt.RecordedAt
-                                RecordedBy = receipt.RecordedBy
+                                RecordedBy = receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                                 Subject =
                                     {
                                         PartKind = PartKind.Case

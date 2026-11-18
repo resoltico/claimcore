@@ -1443,6 +1443,10 @@
     "text": "Erfasst am",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "Installationsbetreiber",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "Erfasst von",
     "source": "cebc8d0d5452"

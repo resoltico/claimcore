@@ -96,11 +96,17 @@ let private storage () =
             let instant = DateTimeOffset(now.Ticks / 10L * 10L, TimeSpan.Zero)
             let next = Sequence.successor sequence
 
+            let authority =
+                if task = "people.provisionOwner" then
+                    Authority.Operator
+                else
+                    Authority.Actor executor
+
             let stamp =
                 {
                     SubjectStamp.Position = EffectPosition.create next 0 |> Option.get
                     OperationId = identity
-                    ActorId = executor
+                    Authority = authority
                     RecordedAt = instant
                 }
 
@@ -121,7 +127,7 @@ let private storage () =
                     Sequence = next
                     PreviousHash = hash
                     OperationId = identity
-                    ActorId = executor
+                    Authority = authority
                     RecordedAt = instant
                     BusinessDate = None
                 }
@@ -240,7 +246,10 @@ let private storage () =
                     Revision = Revision.first
                     NaturalKey = Some "DATE-HEADER"
                     Erases = None
-                    Stamp = ownerRoot.Structure.Effects.Head.Change.Stamp
+                    Stamp =
+                        { ownerRoot.Structure.Effects.Head.Change.Stamp with
+                            Authority = Authority.Actor executor
+                        }
                     Value =
                         PartValue.Case
                             {
@@ -261,6 +270,7 @@ let private storage () =
             let root =
                 RetainedOperation.create
                     { ownerRoot.Header with
+                        Authority = Authority.Actor executor
                         BusinessDate = Some date
                     }
                     (TaskId.ofLiteral "case.open")
@@ -270,6 +280,17 @@ let private storage () =
                     (fun () -> RandomNumberGenerator.GetBytes 32)
                 |> valid
                 |> _.Root
+
+            if date = DateOnly.MinValue then
+                let parameters = OperationStorage.parameters root
+                parameters[6] <- DBNull.Value
+
+                expectFailureMatching
+                    "23514"
+                    (Some "ledger_family_actor")
+                    database.RuntimeSource
+                    "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7::uuid,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
+                    parameters
 
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()

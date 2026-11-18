@@ -1443,6 +1443,10 @@
     "text": "وقت التسجيل",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "مشغّل التثبيت",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "سجّله",
     "source": "cebc8d0d5452"

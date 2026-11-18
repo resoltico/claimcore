@@ -17,13 +17,16 @@ const document: HumanDocument = {
               link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
               when: "2026-11-09T12:00:00.000000Z",
               who: {
-                actorId: caseId,
-                displayName: {
-                  kind: "NAMED",
-                  value: "Core recorder Ψ",
+                kind: "ACTOR",
+                value: {
+                  actorId: caseId,
+                  displayName: {
+                    kind: "NAMED",
+                    value: "Core recorder Ψ",
+                  },
+                  principalKind: "HUMAN",
+                  availability: "AVAILABLE",
                 },
-                principalKind: "HUMAN",
-                availability: "AVAILABLE",
               },
               summary: {
                 messageId: "task.people.grant.label",

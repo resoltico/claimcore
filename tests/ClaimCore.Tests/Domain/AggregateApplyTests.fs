@@ -22,7 +22,7 @@ let private stamp =
     {
         Position = EffectPosition.create Sequence.first 0 |> Option.get
         OperationId = operation
-        ActorId = actor
+        Authority = Authority.Actor actor
         RecordedAt = DateTimeOffset(2026, 11, 15, 10, 0, 0, TimeSpan.Zero)
     }
 

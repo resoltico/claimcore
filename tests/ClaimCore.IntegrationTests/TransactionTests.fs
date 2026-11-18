@@ -385,7 +385,7 @@ let tests =
                                     Sequence = CaseFixtures.sequence 2L
                                     PreviousHash = EntryHash.zero
                                     OperationId = identity
-                                    ActorId = target
+                                    Authority = Authority.Actor target
                                     RecordedAt =
                                         DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
                                     BusinessDate = None
@@ -416,7 +416,7 @@ let tests =
                                                         0
                                                     |> Option.get
                                                 OperationId = identity
-                                                ActorId = target
+                                                Authority = Authority.Actor target
                                                 RecordedAt =
                                                     DateTimeOffset(
                                                         2026,

@@ -114,3 +114,15 @@ module ActorRef =
             PrincipalKind = principalKind
             Availability = availability
         }
+
+/// The current account label is available only for person-attributed authority.
+[<RequireQualifiedAccess>]
+type AuthorityRef =
+    | Actor of ActorRef
+    | Operator
+
+module AuthorityRef =
+    let actor =
+        function
+        | AuthorityRef.Actor actor -> Some actor
+        | AuthorityRef.Operator -> None

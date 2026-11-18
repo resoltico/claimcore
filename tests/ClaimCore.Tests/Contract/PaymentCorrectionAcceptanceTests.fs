@@ -456,7 +456,8 @@ let tests =
                                         }
                                     Task = review.Task
                                     RecordedAt = receipt.RecordedAt
-                                    RecordedBy = receipt.RecordedBy
+                                    RecordedBy =
+                                        receipt.RecordedBy |> AuthorityRef.actor |> Option.get
                                     Changes =
                                         TimelineChanges.Disclosed(
                                             PartDescriptions.timeline Map.empty description

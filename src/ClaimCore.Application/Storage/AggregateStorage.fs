@@ -6,6 +6,7 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
 
 /// Restores authenticated public roots and only the private values needed by this consumer.
 module internal AggregateStorage =
@@ -434,7 +435,9 @@ module internal AggregateStorage =
                     && work.Snapshot = expectedWork
                     && work.ChangedAt =
                         (facts.Work |> Option.map (fun part -> part.Stamp.RecordedAt))
-                    && work.RecordedBy = (facts.Work |> Option.map (fun part -> part.Stamp.ActorId))
+                    && work.RecordedBy =
+                        (facts.Work
+                         |> Option.map (fun part -> ProjectionRows.familyActor part.Stamp.Authority))
                     ->
                     ()
                 | _ -> corrupt "Consumed work projection disagrees with its accepted root."
@@ -504,7 +507,7 @@ module internal AggregateStorage =
                         stored.Snapshot <> PartChange.reminderSnapshot part
                         || stored.Revision <> part.Revision
                         || stored.RecordedAt <> part.Stamp.RecordedAt
-                        || stored.RecordedBy <> part.Stamp.ActorId
+                        || stored.RecordedBy <> ProjectionRows.familyActor part.Stamp.Authority
                     then
                         corrupt "Selected reminder projection disagrees with its accepted root."
 
@@ -537,7 +540,7 @@ module internal AggregateStorage =
                         Some stored.Note <> PartChange.noteSnapshot part
                         || stored.CreatedPosition <> origin.Position
                         || stored.RecordedAt <> origin.RecordedAt
-                        || stored.RecordedBy <> origin.ActorId
+                        || stored.RecordedBy <> ProjectionRows.familyActor origin.Authority
                     then
                         corrupt "Selected note values/origin disagree with their accepted root."
 

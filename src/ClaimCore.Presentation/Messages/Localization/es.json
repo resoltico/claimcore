@@ -1443,6 +1443,10 @@
     "text": "Registrado el",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "Operador de la instalación",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "Registrado por",
     "source": "cebc8d0d5452"

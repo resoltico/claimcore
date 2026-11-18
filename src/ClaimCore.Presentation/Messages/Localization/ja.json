@@ -1443,6 +1443,10 @@
     "text": "記録日時",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "システムの運用者",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "記録者",
     "source": "cebc8d0d5452"

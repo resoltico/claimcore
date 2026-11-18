@@ -79,7 +79,10 @@ module internal PeopleHistoryReads =
                     people <- Map.add id after people
 
                 let mutable labels = Map.empty
-                let ids = (entries |> List.map _.ActorId) @ targets |> List.distinct
+
+                let ids =
+                    (entries |> List.choose (_.Authority >> Authority.actorId)) @ targets
+                    |> List.distinct
 
                 for id in ids do
                     let! person = AggregateStorage.person tx id
@@ -116,13 +119,18 @@ module internal PeopleHistoryReads =
 
                     let! references = ChangeReferenceReads.read tx entry.Change.Aggregate [ part ]
 
+                    let recorder =
+                        Authority.reference (fun id -> Map.tryFind id labels) entry.Authority
+                        |> Option.defaultWith (fun () ->
+                            raise (RecordCorruptException "History account label is absent."))
+
                     result.Add
                         {
                             OperationId = entry.OperationId
                             Position = entry.Position
                             OperationHash = entry.Operation.Root.Hash
                             RecordedAt = entry.RecordedAt
-                            RecordedBy = Map.find entry.ActorId labels
+                            RecordedBy = recorder
                             Target = Map.find target labels
                             Task = entry.Task
                             Changes = description

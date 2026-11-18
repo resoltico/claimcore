@@ -11,7 +11,7 @@ type OperationHeader =
         Sequence: Sequence
         PreviousHash: EntryHash
         OperationId: OperationId
-        ActorId: ActorId
+        Authority: Authority
         RecordedAt: DateTimeOffset
         BusinessDate: DateOnly option
     }
@@ -84,7 +84,7 @@ module OperationStructure =
                 let stamp = part.Change.Stamp
 
                 stamp.OperationId = header.OperationId
-                && stamp.ActorId = header.ActorId
+                && stamp.Authority = header.Authority
                 && stamp.RecordedAt = header.RecordedAt
                 && EffectPosition.sequence stamp.Position = header.Sequence
                 && EffectPosition.index stamp.Position = index

@@ -225,7 +225,7 @@ let tests =
                                 }
                             Stamp =
                                 { original.Stamp with
-                                    ActorId = readable.Actor.Value.ActorId
+                                    Authority = Authority.Actor readable.Actor.Value.ActorId
                                 }
                         }
 

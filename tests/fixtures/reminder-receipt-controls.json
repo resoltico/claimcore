@@ -17,12 +17,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -89,12 +92,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -161,12 +167,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -233,12 +242,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",

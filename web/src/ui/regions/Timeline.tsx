@@ -49,7 +49,7 @@ export const Timeline = ({
               {...(link === undefined ? {} : { link })}
             />
             <p>
-              <PresentedValue value={{ kind: "ACTOR", value: entry.who }} timeZone={timeZone} /> ·{" "}
+              <PresentedValue value={entry.who} timeZone={timeZone} /> ·{" "}
               <PresentedValue value={{ kind: "INSTANT", value: entry.when }} timeZone={timeZone} />
             </p>
             {entry.details.length === 0 ? null : (

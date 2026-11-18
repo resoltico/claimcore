@@ -89,7 +89,15 @@ module internal ReceiptReads =
     let read basis principal access (tx: ReadTx) (record: RetainedOperation) =
         task {
             let root = record.Root
-            let! author = actor tx root.Header.ActorId
+
+            let! author =
+                task {
+                    match root.Header.Authority with
+                    | Authority.Actor id ->
+                        let! found = actor tx id
+                        return found |> Option.map AuthorityRef.Actor
+                    | Authority.Operator -> return Some AuthorityRef.Operator
+                }
 
             match author, Registry.find root.Structure.Task with
             | Some author, Some selected ->

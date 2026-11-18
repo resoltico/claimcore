@@ -171,6 +171,9 @@ let internal tests factory =
                 "successive writes load the current head case and existing identity once"
                 (withFixture factory LedgerWriteContract.lockedView)
             testCaseAsync
+                "operator authority cannot execute a family operation"
+                (withFixture factory LedgerWriteContract.operatorFamilyRefusal)
+            testCaseAsync
                 "update advances revision and reads back complete fields"
                 (withFixture factory LedgerWriteContract.caseUpdate)
             testCaseAsync

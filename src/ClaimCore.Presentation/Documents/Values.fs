@@ -328,7 +328,7 @@ type RegionTimelineEntry =
     {
         Key: string
         When: DateTimeOffset
-        Who: ActorRef
+        Who: PresentedValue
         Summary: PresentedMessage
         Highlights: Section list
         Details: Section list

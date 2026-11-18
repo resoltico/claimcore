@@ -114,7 +114,7 @@ let internal lifecycle fixture =
 
         Expect.equal
             (initial.SummaryRecordedBy |> Option.map _.ActorId)
-            (Some first.RecordedBy.ActorId)
+            (Some (first.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
             "The author is the actual first editor"
 
         let! assigned =
@@ -122,7 +122,9 @@ let internal lifecycle fixture =
                 editor
                 88005
                 1L
-                (WorkValue.Set(ActorId.format first.RecordedBy.ActorId))
+                (WorkValue.Set(
+                    ActorId.format (first.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
+                ))
                 WorkValue.Keep
 
         let assigned = accepted assigned
@@ -136,17 +138,17 @@ let internal lifecycle fixture =
 
         Expect.equal
             (assignedWork.SummaryRecordedBy |> Option.map _.ActorId)
-            (Some first.RecordedBy.ActorId)
+            (Some (first.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
             "Responsibility-only change does not claim summary authorship"
 
         Expect.equal
             (assignedWork.RecordedBy |> Option.map _.ActorId)
-            (Some assigned.RecordedBy.ActorId)
+            (Some (assigned.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
             "Aggregate work attribution still follows the assignment"
 
         Expect.notEqual
-            assigned.RecordedBy.ActorId
-            first.RecordedBy.ActorId
+            (assigned.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
+            (first.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
             "Different real actors make the negative control meaningful"
 
         let! rewritten =
@@ -157,7 +159,7 @@ let internal lifecycle fixture =
 
         Expect.equal
             ((read current).Work.SummaryRecordedBy |> Option.map _.ActorId)
-            (Some rewritten.RecordedBy.ActorId)
+            (Some (rewritten.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
             "Changing text records its actual editor"
 
         let! reaffirmed =
@@ -165,7 +167,10 @@ let internal lifecycle fixture =
                 owner
                 88007
                 3L
-                (WorkValue.Set(ActorId.format rewritten.RecordedBy.ActorId))
+                (WorkValue.Set(
+                    ActorId.format
+                        (rewritten.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
+                ))
                 (WorkValue.Set "Rewritten summary")
 
         accepted reaffirmed |> ignore
@@ -178,7 +183,7 @@ let internal lifecycle fixture =
 
         Expect.equal
             ((read current).Work.SummaryRecordedBy |> Option.map _.ActorId)
-            (Some rewritten.RecordedBy.ActorId)
+            (Some (rewritten.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId)
             "Reassertion does not steal authorship"
 
         let! cleared = change owner 88008 4L WorkValue.Keep WorkValue.Clear

@@ -103,7 +103,8 @@ let receipt id (reference: string) : OperationReceipt =
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = DomainInputs.actorReference (CaseFixtures.actorId operationId)
+        RecordedBy =
+            AuthorityRef.Actor(DomainInputs.actorReference (CaseFixtures.actorId operationId))
         Basis =
             {
                 ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -275,7 +276,8 @@ type Stub() =
                 (fun _ reply -> HumanReplies.execute reply)
                 (fun reply ->
                     match reply.Outcome with
-                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | ExecuteResult.Accepted receipt ->
+                        receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
                     | _ -> None)
                 (fun _ -> false)
                 (fun _ input token ->

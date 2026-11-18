@@ -167,7 +167,9 @@ let internal updatePeople taskName values mutate (value: RetainedOperation) =
 
 let internal executor id (value: RetainedOperation) =
     rehashed
-        { value.Root.Header with ActorId = id }
+        { value.Root.Header with
+            Authority = Authority.Actor id
+        }
         value.Root.Structure.Task
         value.Root.Structure.Binding
         value.Root.Structure.Retained

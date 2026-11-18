@@ -1443,6 +1443,10 @@
     "text": "Reģistrēts",
     "source": "e4cea0827a11"
   },
+  "label.installationOperator": {
+    "text": "Instalācijas operators",
+    "source": "50798fd4c355"
+  },
   "label.recordedBy": {
     "text": "Reģistrēja",
     "source": "cebc8d0d5452"

@@ -60,7 +60,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                         Sequence = Sequence.successor tx.Head.Sequence
                                         PreviousHash = tx.Head.EntryHash
                                         OperationId = operation
-                                        ActorId = actor
+                                        Authority = Authority.Actor actor
                                         RecordedAt = tx.ObservedAt
                                         BusinessDate = Some(fixture.Calendar.DateAt tx.ObservedAt)
                                     }
@@ -81,7 +81,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                     EffectPosition.create header.Sequence 0
                                                     |> Option.get
                                                 OperationId = operation
-                                                ActorId = actor
+                                                Authority = Authority.Actor actor
                                                 RecordedAt = tx.ObservedAt
                                             }
                                         Value =

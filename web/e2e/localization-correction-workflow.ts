@@ -245,11 +245,14 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       step.fields,
     );
     const { recordedBy: acceptedActor } = receipt;
+    if (acceptedActor.kind !== "ACTOR") {
+      throw new Error("Expected an account recorder for a case operation.");
+    }
     const acceptedRevision = receipt.subject.revision;
     if (recordedBy !== undefined) {
-      expect(acceptedActor.actorId).toBe(recordedBy);
+      expect(acceptedActor.actor.actorId).toBe(recordedBy);
     }
-    recordedBy = acceptedActor.actorId;
+    recordedBy = acceptedActor.actor.actorId;
     revision = acceptedRevision;
   }
   await (await showExactLookup(page)).fill(reference);

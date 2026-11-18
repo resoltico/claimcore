@@ -332,7 +332,7 @@ let private exampleFrames () =
                 SubjectStamp.Position =
                     EffectPosition.create (CaseFixtures.sequence (int64 index + 1L)) 0 |> Option.get
                 OperationId = OperationId.create submission.OperationId |> Option.get
-                ActorId = ClaimCore.Tests.TaskBuilders.actorId
+                Authority = Authority.Actor ClaimCore.Tests.TaskBuilders.actorId
                 RecordedAt = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
             }
 

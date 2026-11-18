@@ -50,7 +50,7 @@ type internal StoredEffect =
     member this.Sequence = this.OperationValue.Root.Header.Sequence
     member this.EntryHash = EntryHash.toBytes this.OperationValue.Root.Hash
     member this.OperationId = this.OperationValue.Root.Header.OperationId
-    member this.ActorId = this.OperationValue.Root.Header.ActorId
+    member this.Authority = this.OperationValue.Root.Header.Authority
     member this.RecordedAt = this.OperationValue.Root.Header.RecordedAt
     member this.Task = this.OperationValue.Root.Structure.Task
 
@@ -147,7 +147,7 @@ type internal GrantRow =
     {
         Grant: ScopedGrant
         GrantedAt: DateTimeOffset
-        GrantedBy: ActorId
+        GrantedBy: Authority
     }
 
 

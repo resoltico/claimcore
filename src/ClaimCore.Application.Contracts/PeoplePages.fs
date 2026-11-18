@@ -50,7 +50,7 @@ type GrantReadModel =
         Role: Role
         Scope: GrantScope
         GrantedAt: DateTimeOffset
-        GrantedBy: ActorRef
+        GrantedBy: AuthorityRef
         Controls: TaskOffer list
     }
 
@@ -73,7 +73,7 @@ type PeopleHistoryEntry =
         Position: EffectPosition
         OperationHash: EntryHash
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorRef
+        RecordedBy: AuthorityRef
         Target: ActorRef
         Task: TaskId
         Changes: ClaimCore.Domain.Changes.PersonPartDescription

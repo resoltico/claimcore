@@ -63,3 +63,17 @@ module internal ActorCodecs =
         |> field "availability" _.Availability (VocabularyCodec.create ActorAvailability.vocabulary)
         |> build
         |> named "ActorRef"
+
+    let authorityRef =
+        tagged
+            "AuthorityRef"
+            [
+                variant
+                    "ACTOR"
+                    AuthorityRef.Actor
+                    (function
+                    | AuthorityRef.Actor value -> Some value
+                    | AuthorityRef.Operator -> None)
+                    (record id |> field "actor" id actorRef)
+                unitVariant "OPERATOR" AuthorityRef.Operator
+            ]

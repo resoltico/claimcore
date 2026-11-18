@@ -85,7 +85,7 @@ module OperationPublicCodecs =
                                             {
                                                 Position = position
                                                 OperationId = header.OperationId
-                                                ActorId = header.ActorId
+                                                Authority = header.Authority
                                                 RecordedAt = header.RecordedAt
                                             }
                                     }

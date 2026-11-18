@@ -131,9 +131,11 @@ let private actors (database: PostgresFixture.Database) =
             rewrite database receipt.Position.Sequence (fun retained ->
                 rehashed
                     { retained.Root.Header with
-                        ActorId =
-                            ActorId.ofOperationId (
-                                CaseFixtures.operationId (id database.Fixture 20)
+                        Authority =
+                            Authority.Actor(
+                                ActorId.ofOperationId (
+                                    CaseFixtures.operationId (id database.Fixture 20)
+                                )
                             )
                     }
                     retained.Root.Structure.Task

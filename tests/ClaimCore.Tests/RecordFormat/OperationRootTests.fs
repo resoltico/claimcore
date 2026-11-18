@@ -24,14 +24,14 @@ let private setMember name value =
 [<Tests>]
 let tests =
     testList
-        "format 6 operation roots"
+        "format 7 operation roots"
         [
             testCase
-                "independently framed public metadata derives the literal format 6 digest"
+                "independently framed public metadata derives the literal format 7 digest"
                 (fun () ->
                     let record = publicRecord ()
                     let root = record.Root
-                    // Independent Python struct/uuid/hashlib calculation: 545 bytes, .NET UTC ticks below.
+                    // Independent Python struct/uuid/hashlib calculation: 546 bytes, .NET UTC ticks below.
                     Expect.equal
                         root.Header.RecordedAt.UtcTicks
                         639297792000000000L
@@ -39,7 +39,7 @@ let tests =
 
                     Expect.equal
                         (EntryHash.toBytes root.Hash |> Convert.ToHexStringLower)
-                        "eac18d8f7cfac2a992a74718e9c5c821775b6c5480d2219c9848677025aaccb7"
+                        "8c6aa0bbb29898bcb7147fd8b92cbbab69720b814ecaf95a575af3b957fb0a57"
                         "Literal SHA-256 vector"
 
                     Expect.equal
@@ -118,8 +118,15 @@ let tests =
                             OperationId = ClaimCore.Tests.TaskBuilders.operation 99
                         }
                         { root.Header with
-                            ActorId =
-                                ActorId.ofOperationId (ClaimCore.Tests.TaskBuilders.operation 99)
+                            Authority =
+                                Authority.Actor(
+                                    ActorId.ofOperationId (
+                                        ClaimCore.Tests.TaskBuilders.operation 99
+                                    )
+                                )
+                        }
+                        { root.Header with
+                            Authority = Authority.Operator
                         }
                         { root.Header with
                             RecordedAt = root.Header.RecordedAt.AddTicks 10L

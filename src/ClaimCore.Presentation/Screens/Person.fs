@@ -52,7 +52,7 @@ module PersonScreen =
                 column "grantedAt" "label.grantedAt" Prominence.Secondary false (fun row ->
                     PresentedValue.Instant row.GrantedAt)
                 column "grantedBy" "label.grantedBy" Prominence.Secondary false (fun row ->
-                    PresentedValue.Actor row.GrantedBy)
+                    ActorPresentation.authorityValue row.GrantedBy)
             ]
 
         Screen.create

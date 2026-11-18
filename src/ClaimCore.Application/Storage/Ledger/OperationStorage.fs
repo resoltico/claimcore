@@ -71,7 +71,9 @@ module internal OperationStorage =
             box (EntryHash.toBytes root.Hash)
             box (int16 InstallationFormat.Current)
             box (OperationId.value header.OperationId)
-            box (ActorId.value header.ActorId)
+            DatabaseSession.parameter (
+                header.Authority |> Authority.actorId |> Option.map ActorId.value
+            )
             box header.RecordedAt
             DatabaseSession.parameter (
                 header.BusinessDate
@@ -95,7 +97,7 @@ module internal OperationStorage =
     let append connection root token =
         DatabaseSession.execute
             connection
-            "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
+            "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7::uuid,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
             (parameters root)
             token
 
@@ -154,9 +156,10 @@ module internal OperationStorage =
                             |> EntryHash.ofBytes
                             |> Option.defaultWith corrupt
                         OperationId = operation
-                        ActorId =
-                            DatabaseSession.value<Guid> 4 row
-                            |> DatabaseSession.admitted ActorId.create
+                        Authority =
+                            DatabaseSession.optional<Guid> 4 row
+                            |> Option.map (DatabaseSession.admitted ActorId.create)
+                            |> Authority.ofActorId
                         RecordedAt = DatabaseSession.instant 5 row
                         BusinessDate = DatabaseSession.optionalCalendarDate 6 row
                     }

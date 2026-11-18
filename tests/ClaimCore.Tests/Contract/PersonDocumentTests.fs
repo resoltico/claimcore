@@ -140,7 +140,7 @@ let tests =
                             Role = Role.CaseReader
                             Scope = GrantScope.Case(parent, ResponseExamples.snapshot.Reference)
                             GrantedAt = DomainInputs.workBasis.ObservedAt
-                            GrantedBy = ResponseExamples.caseRead.RecordedBy
+                            GrantedBy = AuthorityRef.Actor(ResponseExamples.caseRead.RecordedBy)
                         }
 
                     let read offers =

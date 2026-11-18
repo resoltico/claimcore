@@ -78,5 +78,8 @@ let receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
     }

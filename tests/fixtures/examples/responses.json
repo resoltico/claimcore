@@ -54,12 +54,15 @@
               {
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
                 "recordedBy": {
-                  "actorId": "10000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
+                  "kind": "ACTOR",
+                  "actor": {
+                    "actorId": "10000000-0000-7000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  }
                 },
                 "task": "people.disable",
                 "changes": {
@@ -1167,12 +1170,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "CASE",
@@ -1251,12 +1257,15 @@
               },
               "recordedAt": "2026-01-01T00:00:00.000000Z",
               "recordedBy": {
-                "actorId": "10000000-0000-7000-8000-000000000001",
-                "displayName": {
-                  "kind": "ERASED"
-                },
-                "principalKind": "HUMAN",
-                "availability": "AVAILABLE"
+                "kind": "ACTOR",
+                "actor": {
+                  "actorId": "10000000-0000-7000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                }
               },
               "subject": {
                 "kind": "CASE",
@@ -1826,12 +1835,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "PEOPLE",
@@ -1892,12 +1904,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "WORK",
@@ -1948,12 +1963,15 @@
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
             "recordedBy": {
-              "actorId": "40000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "40000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "REMINDER",
@@ -2256,12 +2274,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": {
-              "actorId": "10000000-0000-7000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
-              },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "kind": "ACTOR",
+              "actor": {
+                "actorId": "10000000-0000-7000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             },
             "subject": {
               "kind": "PEOPLE",
@@ -2384,7 +2405,7 @@
       "valid": true
     },
     {
-      "name": "owner-provisioning-own-observation",
+      "name": "owner-provisioning-operator-observation",
       "endpoint": "operation.get",
       "valid": true,
       "value": {
@@ -2400,12 +2421,7 @@
               },
               "recordedAt": "2026-01-01T00:00:00.000000Z",
               "recordedBy": {
-                "actorId": "10000000-0000-7000-8000-000000000001",
-                "displayName": {
-                  "kind": "ERASED"
-                },
-                "principalKind": "HUMAN",
-                "availability": "AVAILABLE"
+                "kind": "OPERATOR"
               },
               "subject": {
                 "kind": "PEOPLE",
@@ -2445,7 +2461,7 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "byRequester": true
+            "byRequester": false
           }
         },
         "representation": "DATA"

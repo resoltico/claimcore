@@ -29,7 +29,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 6 "Fresh installations use the consolidated grammar"
+        Expect.equal initial.InstallationFormat 7 "Fresh installations use the consolidated grammar"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -228,12 +228,12 @@ let private actionState (database: PostgresFixture.Database) =
              replayed.Position,
              replayed.Subject,
              replayed.RecordedAt,
-             replayed.RecordedBy.ActorId)
+             replayed.RecordedBy)
             (original.OperationId,
              original.Position,
              original.Subject,
              original.RecordedAt,
-             original.RecordedBy.ActorId)
+             original.RecordedBy)
             "Retained acceptance preserves its identity, facts and original recording metadata"
 
         Expect.isGreaterThanOrEqual

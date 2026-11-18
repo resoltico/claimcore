@@ -68,7 +68,10 @@ let private receipt disclosure : OperationReceipt =
                 BusinessDate = DateOnly.FromDateTime instant.UtcDateTime
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy =
+            AuthorityRef.Actor(
+                ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
+            )
         Subject =
             ReceiptSubject.Case
                 {
@@ -142,7 +145,10 @@ let private boundedPeople () =
                                     Role = grant.Role
                                     Scope = grant.Scope
                                     GrantedAt = DomainInputs.workBasis.ObservedAt
-                                    GrantedBy = DomainInputs.actorReference actor.ActorId
+                                    GrantedBy =
+                                        AuthorityRef.Actor(
+                                            DomainInputs.actorReference actor.ActorId
+                                        )
                                 }
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }

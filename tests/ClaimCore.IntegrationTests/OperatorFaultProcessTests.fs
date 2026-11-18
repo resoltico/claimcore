@@ -242,14 +242,22 @@ let private publishedFaults () =
             // Deliberately bypass the schema CHECK in this owned fixture to exercise stored-format admission.
             do!
                 sql
-                    "ALTER TABLE claimcore.installation DROP CONSTRAINT installation_installation_format_check; UPDATE claimcore.installation SET installation_format=1"
+                    "ALTER TABLE claimcore.installation DROP CONSTRAINT installation_installation_format_check; UPDATE claimcore.installation SET installation_format=6"
                     [||]
 
-            do! fault connection [ "status" ] "FORMAT_MISMATCH" ExitCode.Rejected
+            for arguments in
+                [
+                    [ "status" ]
+                    [ "head" ]
+                    [ "verify" ]
+                    [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ]
+                    [ "initialize"; "Etc/UTC" ] @ owner
+                ] do
+                do! fault connection arguments "FORMAT_MISMATCH" ExitCode.Rejected
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=6; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=6)"
+                    "UPDATE claimcore.installation SET installation_format=7; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=7)"
                     [||]
 
             do! sql "DELETE FROM claimcore.installation" [||]
@@ -257,7 +265,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(6,$1,'Etc/UTC')"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(7,$1,'Etc/UTC')"
                     [| box database.Fixture.InstallationId |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
