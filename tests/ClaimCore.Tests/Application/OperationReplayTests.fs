@@ -116,7 +116,10 @@ let private checkReplay steps =
 
                 (if closed then "case.close" else "case.reopen"),
                 Binding.Case(CaseSelector.Id caseId, revise caseRevision),
-                inputs []
+                (if closed then
+                     inputs [ input (InputTarget.Field BusinessField.Outcome) "SETTLED" ]
+                 else
+                     inputs [ input InputTarget.Reason "New documents received" ])
             | _ ->
                 notes <- notes + 1
 
@@ -267,7 +270,7 @@ let tests =
                             principal
                             "case.close"
                             (Binding.Case(CaseSelector.Id parent, Revision.first))
-                            InputMap.empty
+                            (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
 
                     let terminal = Revision.create Revision.Maximum |> Option.get
 

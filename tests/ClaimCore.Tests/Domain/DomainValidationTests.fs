@@ -102,7 +102,11 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply "case.close" InputMap.empty |> accepted
+                        opened ()
+                        |> apply
+                            "case.close"
+                            (ClaimCore.Tests.TaskBuilders.closingInputs "SETTLED")
+                        |> accepted
                     ] do
                     let view = snapshot state
 

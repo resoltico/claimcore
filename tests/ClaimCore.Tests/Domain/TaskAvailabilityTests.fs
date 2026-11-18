@@ -155,7 +155,8 @@ let tests =
 
                     let rows =
                         [
-                            family (), [ "case.amendRegistration"; "case.decide" ]
+                            family (),
+                            [ "case.amendRegistration"; "case.decide"; "case.recordPayment" ]
                             decided (),
                             [
                                 "case.correct"
@@ -167,6 +168,7 @@ let tests =
                             [
                                 "case.correct"
                                 "case.decide"
+                                "case.withdrawDecision"
                                 "case.recordPayment"
                                 "case.removePayment"
                                 "case.correctPayment"
@@ -175,10 +177,18 @@ let tests =
                             [
                                 "case.correct"
                                 "case.decide"
+                                "case.withdrawDecision"
+                                "case.recordPayment"
                                 "case.removePayment"
                                 "case.correctPayment"
                             ]
-                            zero, [ "case.correct"; "case.decide"; "case.withdrawDecision" ]
+                            zero,
+                            [
+                                "case.correct"
+                                "case.decide"
+                                "case.withdrawDecision"
+                                "case.recordPayment"
+                            ]
                         ]
 
                     for state, financial in rows do

@@ -122,10 +122,22 @@ let samples =
         { payment with
             Task = "case.correctPayment"
         }
-        bare "case.close"
-        bare "case.reopen"
+        {
+            Task = "case.close"
+            Inputs = business [ BusinessField.Outcome, "SETTLED" ]
+        }
+        reason "case.reopen"
         reason "case.void"
         reason "case.reinstate"
+        {
+            Task = "case.changeReference"
+            Inputs =
+                inputs
+                    [
+                        TaskInputId.Target InputTarget.NewCaseReference,
+                        InputValue.Text "ORACLE-REVISED"
+                    ]
+        }
         bare "case.erase"
     ]
 
@@ -156,7 +168,8 @@ let private text field (witness: Witness) =
 
 let private activeEligible (fields: CaseFields) witness =
     match witness.Task with
-    | "case.close" -> true
+    | "case.close"
+    | "case.changeReference" -> true
     | "case.amendRegistration" -> fields.Decision.IsNone
     | "case.decide"
     | "case.recordPayment" -> true
@@ -169,6 +182,7 @@ let private eligible (fields: CaseFields) witness =
     match witness.Task with
     | "case.open" -> false
     | "case.reopen" -> fields.Status = CaseStatus.Closed
+    | "case.changeReference" -> CaseReference.format fields.CaseReference <> "ORACLE-REVISED"
     | "case.correct" -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields witness
@@ -255,6 +269,10 @@ let private changed (fields: CaseFields) witness =
                     }
         }
     | "case.reopen" -> { fields with Handling = Handling.Open }
+    | "case.changeReference" ->
+        { fields with
+            CaseReference = CaseReference.parse "ORACLE-REVISED" |> required
+        }
     | _ -> fields
 
 let advance (before: Model) stale witness operation sequence =

@@ -104,7 +104,12 @@ let tests =
                             1
                             0L
                             "case.open"
-                            (text (RegistrationInput.values DomainInputs.registration))
+                            (text (
+                                RegistrationInput.values DomainInputs.registration
+                                |> List.filter (fun (field, _) ->
+                                    field <> BusinessField.PolicyNumber
+                                    && field <> BusinessField.InsurerClaimReference)
+                            ))
                             None
 
                     Expect.isNone

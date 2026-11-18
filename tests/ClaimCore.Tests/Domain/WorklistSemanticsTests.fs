@@ -206,6 +206,7 @@ let views =
                 "NO_NEXT_ACTION"
                 "UNASSIGNED"
                 "ASSIGNEE_UNAVAILABLE"
+                "PAYMENTS_NEED_REVIEW"
                 "READY_TO_CLOSE"
             ]
             "Attention reasons are not views")

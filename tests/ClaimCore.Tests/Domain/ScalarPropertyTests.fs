@@ -143,7 +143,7 @@ let private textLimit =
     | Reference -> 80
     | Country -> 2
     | Claimant
-    | Insurer -> 200
+    | Insurer -> 80
 
 let private validateText target value =
     let field =
@@ -224,7 +224,7 @@ let tests =
                     ]
 
                 Expect.isOk
-                    (validateText Claimant (String.replicate 200 "😀"))
+                    (validateText Claimant (String.replicate 80 "😀"))
                     "Supplementary Unicode length is counted in scalar values"
 
                 invalidValues

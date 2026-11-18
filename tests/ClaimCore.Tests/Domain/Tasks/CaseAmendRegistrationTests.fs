@@ -92,8 +92,8 @@ let tests =
                             [
                                 text (InputTarget.Field BusinessField.PolicyNumber) "P-1"
                                 text
-                                    (InputTarget.Field BusinessField.PolicyNumber)
-                                    "Changed claimant"
+                                    (InputTarget.Field BusinessField.InsurerClaimReference)
+                                    "Changed insurer reference"
                             ]
 
                     let state =
@@ -125,8 +125,9 @@ let tests =
                     let registration = after.Case.Value.Content |> Option.get |> _.Registration
 
                     Expect.equal
-                        (Identifier.format (Registration.policyNumber registration |> Option.get))
-                        "Changed claimant"
+                        (Registration.insurerClaimReference registration
+                         |> Option.map Identifier.format)
+                        (Some "Changed insurer reference")
                         "Omitted value is kept"
 
                     Expect.isNone (Registration.policyNumber registration) "Explicit clearing"
