@@ -3,7 +3,7 @@ import { type ResponseFor } from "@contracts/client";
 import { openRecovery } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { openCase, startAct, reviewDraft } from "./case-workflow";
+import { openCase, startClose, reviewDraft } from "./case-workflow";
 import {
   openAuthenticated,
   expectAccessible,
@@ -15,7 +15,7 @@ import { recoveryRecords } from "./recovery-storage";
 const loseAcceptedClose = async (page: Page) => {
   await openCase(page, `UNCONFIRMED-${randomUUID()}`);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
-  await startAct(page, "case.close", "en");
+  await startClose(page);
   await reviewDraft(page);
   await confirmReview(page);
   const pending = await pauseJsonReply(page, "operation.execute", true);
@@ -102,7 +102,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   await openAuthenticated(page);
   const reference = `STORAGE-REFUSAL-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "case.close", "en");
+  await startClose(page);
   const previewed = page.waitForRequest((request) =>
     request.url().endsWith("/api/operation.preview"),
   );

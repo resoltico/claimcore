@@ -9,7 +9,15 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { completeAct, openCase, lookupCase, caseActionButton } from "./case-workflow";
+import {
+  completeAct,
+  openCase,
+  lookupCase,
+  caseActionButton,
+  startClose,
+  reviewDraft,
+  recordReviewed,
+} from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
@@ -77,6 +85,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   const payment = await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "300.25",
+    "Paid currency": "EUR",
   });
   await page
     .locator('.case-detail [data-region="PAYMENTS"]')
@@ -85,9 +94,11 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectCaseReadsSettled(page);
-  await completeAct(page, "case.close");
+  await startClose(page);
+  await reviewDraft(page);
+  await recordReviewed(page);
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
-  await completeAct(page, "case.reopen");
+  await completeAct(page, "case.reopen", { Reason: "Review additional evidence" });
   await expectRevision(page, "6");
   const entries = page.locator(".case-timeline-panel .region-timeline > li");
   await expect(entries).toHaveCount(8);

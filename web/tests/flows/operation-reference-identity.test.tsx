@@ -46,7 +46,7 @@ const sentDraft = (body: unknown): SentDraft => {
   return JSON.parse(body) as SentDraft;
 };
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("keeps existing references immutable and delegates a reviewed commit", async () => {
+it("keeps the bound case identity outside closure inputs and delegates a reviewed commit", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch
@@ -69,6 +69,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     }),
   ).toBeNull();
   expect(screen.getAllByText(fields.caseReference).length).toBeGreaterThan(0);
+  await user.click(screen.getByRole("radio", { name: /^Other$/u }));
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());

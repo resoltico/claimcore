@@ -24,10 +24,11 @@ describe("core act metadata", () => {
         expectedRevision: 0,
       }),
     );
+    expect(close).not.toHaveProperty("field:outcome");
     expect(
       assembleOperation(
         operationEntry({ subject: "CASE", kind: "case.close" }),
-        close,
+        { ...close, "field:outcome": "OTHER" },
         {
           kind: "CASE",
           target: { kind: "REFERENCE", caseReference: fields.caseReference },

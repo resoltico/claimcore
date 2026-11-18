@@ -6,7 +6,7 @@ import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-re
 import { type Page, expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 
-import { openCase, startOpen, startAct } from "./case-workflow";
+import { openCase, startOpen, startAct, startClose } from "./case-workflow";
 import { openAuthenticated, browserRequest, sessionToken, installationId } from "./session-helpers";
 import {
   confirmReview,
@@ -135,7 +135,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     const reference = `MISSING-${randomUUID()}`;
     await openCase(page, reference);
-    await startAct(page, "case.close", "en");
+    await startClose(page);
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
     await page

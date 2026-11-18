@@ -390,7 +390,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fill("Received", "2026-09-02");
   fill("Country", "LV");
   fill("Policy number", "Synthetic claimant");
-  fill("Insurer", "Synthetic insurer");
+  fill("Insurer claim reference", "Synthetic insurer");
   fill("Claimed amount", "12.34");
   fill("Claimed currency", "EUR");
   await user.click(getButton("Review changes"));

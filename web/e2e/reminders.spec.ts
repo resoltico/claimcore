@@ -103,10 +103,8 @@ test("stores exact optional LF incident text and clears it without a financial a
   expect(cleared.outcome.data.state.fields.registration.incidentDescription ?? null).toBeNull();
   expect(cleared.outcome.data.state.fields.finance.decision).toBeNull();
   expect(cleared.outcome.data.state.fields.finance).toMatchObject({
-    paidAmount: "0",
+    totals: [],
     paymentCount: 0,
-    firstPaymentDate: null,
-    lastPaymentDate: null,
   });
 });
 test("supports multiple independently revised reminders, terminal records, reopen and last-completion attention", async ({
@@ -585,15 +583,14 @@ test("paid description correction preserves payment, then a closed case accepts 
     payableCurrency: "EUR",
   });
   expect(current.outcome.data.state.fields.finance).toMatchObject({
-    paidAmount: "500",
+    totals: [{ currency: "EUR", paid: "500", returned: "0" }],
     paymentCount: 1,
-    firstPaymentDate: "2026-09-04",
-    lastPaymentDate: "2026-09-04",
   });
   expect(current.outcome.data.latestPayments).toMatchObject([
     {
       paymentDate: "2026-09-04",
-      paidAmount: "500",
+      direction: "PAID",
+      money: { amount: "500", currency: "EUR" },
     },
   ]);
   expect(current.outcome.data.work).toMatchObject({

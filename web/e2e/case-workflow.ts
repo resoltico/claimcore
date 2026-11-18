@@ -256,6 +256,11 @@ export const startAct = async (
     timeout: 10_000,
   });
 };
+export const startClose = async (page: Page): Promise<void> => {
+  await startAct(page, "case.close", "en");
+  await page.getByRole("radio", { name: "Other", exact: true }).check();
+};
+
 export const reviewDraft = async (
   page: Page,
   values: Readonly<Record<string, string>> = {},

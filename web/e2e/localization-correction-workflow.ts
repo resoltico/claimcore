@@ -175,8 +175,6 @@ const acceptSetup = async (
           "incidentDescription",
           "policyNumber",
           "insurerClaimReference",
-          "policyNumber",
-          "insurerClaimReference",
           "claimedAmount",
           "claimedCurrency",
         ];
@@ -206,7 +204,10 @@ const acceptSetup = async (
               entry: {
                 paymentId: request.operationId,
                 paymentDate: "2026-09-05",
-                totals: [{ currency: "EUR", paid: "300.25", returned: "0" }],
+                direction: "PAID",
+                money: { amount: "300.25", currency: "EUR" },
+                reference: null,
+                payee: null,
               },
             },
           ]

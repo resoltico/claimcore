@@ -18,7 +18,7 @@ import {
   sessionToken,
   expectAccessible,
 } from "./session-helpers";
-import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
+import { startOpen, reviewDraft, openCase, startClose } from "./case-workflow";
 import { isHostFailure } from "../src/protocol/client";
 
 /** A not-started admission refusal is not the pending/final lookup observation. */
@@ -350,7 +350,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
   const scope = await scopeFor(page);
-  await startAct(page, "case.close", "en");
+  await startClose(page);
   const identity = await reviewDraft(page);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   let executions = 0;

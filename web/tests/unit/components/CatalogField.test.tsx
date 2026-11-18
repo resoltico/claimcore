@@ -29,7 +29,7 @@ it("warns for an unassigned code without blocking it", () => {
   expect(screen.getByText("QQ is not a known country code. Check it.")).toBeVisible();
   expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-invalid", "true");
   view.rerender(<CatalogField field={country} value="ZZ" onChange={vi.fn()} />);
-  expect(screen.getByText("ZZ: Not an assigned country code")).toBeVisible();
+  expect(screen.getByText("ZZ is not a known country code. Check it.")).toBeVisible();
 });
 
 it("uses LF textarea and scalar guidance without UTF16 maxlength or truncation", () => {

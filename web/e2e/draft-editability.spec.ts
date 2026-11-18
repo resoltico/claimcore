@@ -58,7 +58,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     await selected.check();
   }
   const fields = page.locator(".operation-form-card [data-field-name]");
-  await expect(fields).toHaveCount(10);
+  await expect(fields).toHaveCount(8);
   await expect(
     page.getByRole("textbox", {
       name: "Incident description",

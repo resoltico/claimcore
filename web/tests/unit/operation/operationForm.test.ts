@@ -90,6 +90,7 @@ it("takes the selected entry from identity while request constants derive from t
         expectedRevision: 0,
       }),
     ),
+    "field:outcome": "OTHER",
     kind: "PEOPLE",
     "act.kind": "people.disable",
   };

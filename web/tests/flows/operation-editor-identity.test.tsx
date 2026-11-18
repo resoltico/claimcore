@@ -154,17 +154,17 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     "This operation ID was already used for a different change. Use a new ID.",
   );
   selectFact("policyNumber");
-  const claimant = screen.getByLabelText("Policy number", {
+  const policy = screen.getByLabelText("Policy number", {
     exact: true,
   });
-  await user.clear(claimant);
-  await user.type(claimant, "Synthetic B");
+  await user.clear(policy);
+  await user.type(policy, "Synthetic B");
   await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Fields to check: 1.");
-  expect(claimant).toHaveAccessibleDescription(
-    "The person or company making the claim. A non-blank value is required.",
+  expect(policy).toHaveAccessibleDescription(
+    "The policy number used by the insurer. A non-blank value is required.",
   );
-  expect(claimant).toHaveAttribute("aria-invalid", "true");
+  expect(policy).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).inputs["field:policyNumber"]).toBe("Synthetic A");
   expect(sentDraft(2).inputs["field:policyNumber"]).toBe("Synthetic B");
@@ -268,11 +268,11 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   }
   await chooseOption(user, registration, "UPDATE");
   selectFact("policyNumber");
-  const claimant = screen.getByLabelText("Policy number", {
+  const policy = screen.getByLabelText("Policy number", {
     exact: true,
   });
-  await user.clear(claimant);
-  await user.type(claimant, "Corrected claimant");
+  await user.clear(policy);
+  await user.type(policy, "Corrected policy");
   await user.click(getButton("Review changes"));
   const body = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]?.body;
   if (typeof body !== "string") {
@@ -283,7 +283,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     task: "case.correct",
     inputs: {
       "group:registration": "UPDATE",
-      "field:policyNumber": "Corrected claimant",
+      "field:policyNumber": "Corrected policy",
       "group:decision": "KEEP",
     },
   });

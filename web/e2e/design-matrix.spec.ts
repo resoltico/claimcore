@@ -110,6 +110,7 @@ const recordPaymentReview = async (run: Run) => {
       minimumFractionDigits: 2,
     }).format(100),
   );
+  await fillBusinessField(run.page, "paidCurrency", "EUR");
   await run.page.getByRole("dialog").locator('button[type="submit"]').click();
   await expect(
     run.page.getByRole("dialog").locator("button[data-confirm-operation]"),

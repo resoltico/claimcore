@@ -3,7 +3,7 @@ import { showCaseRecordDetails } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { openCase, reviewDraft, startAct } from "./case-workflow";
+import { openCase, reviewDraft, startClose } from "./case-workflow";
 import {
   browserRequest,
   login,
@@ -72,7 +72,7 @@ test("native beforeunload blocks document navigation only while execution is in 
   await openAuthenticated(page);
   const reference = `UNLOAD-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "case.close", "en");
+  await startClose(page);
   const identity = await reviewDraft(page);
   const execution = await pauseJsonReply(page, "operation.execute");
   const dialogs: string[] = [];

@@ -5,7 +5,7 @@ import { settingsNavigation } from "./localization-support";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
-import { openCase, startAct, reviewDraft } from "./case-workflow";
+import { openCase, startClose, reviewDraft } from "./case-workflow";
 const dropFirstReply = async (
   page: Page,
   requests: (string | null)[],
@@ -140,7 +140,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
 }) => {
   await openAuthenticated(page);
   await openCase(page, `UNCERTAIN-${randomUUID()}`);
-  await startAct(page, "case.close", "en");
+  await startClose(page);
   const previewed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );
