@@ -75,12 +75,12 @@ export const useCaseWorkPanels = ({
     () => ({ ...(state === undefined ? {} : { state }), includeInactive: true }),
     [state],
   );
-  const open = (next: Editor) => {
+  const open = (next: Editor, { anchorToTrigger = true } = {}) => {
     returnFocus.current = editorOrigin(next);
     recorded.clear();
     setEditor({
       ...next,
-      ...(returnFocus.current === null ? {} : { anchor: returnFocus.current }),
+      ...(anchorToTrigger && returnFocus.current !== null ? { anchor: returnFocus.current } : {}),
     });
   };
   const close = () => {
@@ -132,27 +132,35 @@ export const useCaseWorkPanels = ({
           : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
         {...(editor === null && workAction !== undefined
           ? {
-              onAssign: () => {
-                open({
-                  subject: "WORK",
-                  action: workAction,
-                  kind: workAction.task,
-                  identity: "work",
-                  prefill: {
-                    "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
+              onAssign: (origin: string) => {
+                open(
+                  {
+                    subject: "WORK",
+                    action: workAction,
+                    kind: workAction.task,
+                    identity: "work",
+                    origin,
+                    prefill: {
+                      "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
+                    },
                   },
-                });
+                  { anchorToTrigger: false },
+                );
               },
-              onSummary: () => {
-                open({
-                  subject: "WORK",
-                  action: workAction,
-                  kind: workAction.task,
-                  identity: "work",
-                  prefill: {
-                    "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
+              onSummary: (origin: string) => {
+                open(
+                  {
+                    subject: "WORK",
+                    action: workAction,
+                    kind: workAction.task,
+                    identity: "work",
+                    origin,
+                    prefill: {
+                      "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
+                    },
                   },
-                });
+                  { anchorToTrigger: false },
+                );
               },
             }
           : {})}

@@ -13,8 +13,8 @@ export const CaseWork = ({
   canUpdateSummary: boolean;
   region?: Region;
   timeZone: string;
-  onAssign?: () => void;
-  onSummary?: () => void;
+  onAssign?: (origin: string) => void;
+  onSummary?: (origin: string) => void;
 }) => {
   const p = usePresentation();
   return region === undefined ? null : (
@@ -25,12 +25,24 @@ export const CaseWork = ({
         headerActions={
           <div className="case-work-controls">
             {canAssign && onAssign !== undefined ? (
-              <button id="case-work-assignee" type="button" onClick={onAssign}>
+              <button
+                id="case-work-assignee"
+                type="button"
+                onClick={(event) => {
+                  onAssign(event.currentTarget.id);
+                }}
+              >
                 {p.text("ui.changeResponsible")}
               </button>
             ) : null}
             {canUpdateSummary && onSummary !== undefined ? (
-              <button id="case-work-summary" type="button" onClick={onSummary}>
+              <button
+                id="case-work-summary"
+                type="button"
+                onClick={(event) => {
+                  onSummary(event.currentTarget.id);
+                }}
+              >
                 {p.text("ui.editSummary")}
               </button>
             ) : null}
