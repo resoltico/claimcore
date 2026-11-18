@@ -347,7 +347,7 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":6", "\"v\":6.0")
+            baseJson.Replace("\"v\":7", "\"v\":7.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do

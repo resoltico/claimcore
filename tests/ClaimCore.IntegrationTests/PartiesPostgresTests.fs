@@ -196,6 +196,31 @@ let private integration (database: PostgresFixture.Database) =
                 (Submissions.createRaw task (id fixture operation) selection inputs)
                 token
 
+        let other = CaseSelector.Reference "PARTY-OTHER"
+
+        let! otherOpened =
+            Service.executeSubmission
+                owner
+                (request fixture 679 "PARTY-OTHER" 0L "case.open" Map.empty)
+                token
+
+        accepted otherOpened |> ignore
+
+        let! foreignPayee =
+            changePayment
+                680
+                "case.recordPayment"
+                (OperationBinding.Case(other, 1L, None, None))
+                (payment Map.empty)
+
+        match foreignPayee.Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues |> List.map _.Violation)
+                [ Violation.PayeeUnavailable ]
+                "A party on another case cannot be a payee"
+        | other -> failtestf "Expected a cross-case payee refusal: %A" other
+
         let! paymentReceipt =
             changePayment
                 676

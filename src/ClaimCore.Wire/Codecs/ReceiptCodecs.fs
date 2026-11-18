@@ -34,7 +34,7 @@ module ReceiptCodecs =
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
                      |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
-                     |> optionalField "reopenReason" _.ReopenReason reason
+                     |> optionalField "reopenReason" _.ReopenReason CaseStateCodecs.reason
                      |> field
                          "recordedFields"
                          _.RecordedFields

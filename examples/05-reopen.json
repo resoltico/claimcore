@@ -10,6 +10,6 @@
       },
       "expectedRevision": 4
     },
-    "inputs": {}
+    "inputs": { "input:reason": "Additional documents received" }
   }
 }

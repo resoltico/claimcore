@@ -202,7 +202,16 @@ let tests =
                     "Work changes do not replace latest case-fact act"
 
                 let! reopened = write 78005 4L "case.reopen" reason
-                accepted reopened |> ignore
+                let reopened = accepted reopened |> caseReceipt
+
+                match reopened.Snapshot with
+                | SnapshotDisclosure.Disclosed value ->
+                    Expect.equal
+                        (value.ReopenReason |> Option.map Reason.format)
+                        (Some "Additional documents received")
+                        "Authorized receipt carries the reason"
+                | _ -> failtest "Expected an authorized reopening receipt"
+
                 let! current = get ()
 
                 match (read current).Stages with
