@@ -1,4 +1,5 @@
 import { apiEndpoints, requestEndpoint, resultNotice } from "../../api/service";
+import type { CaseSelector } from "@contracts/client";
 import { hasDocumentSubject } from "../../protocol/types";
 
 import { isDisclosureRefused } from "../../api/outcomes";
@@ -15,6 +16,48 @@ type Result =
       notice: Extract<OperationAction, { type: "CONFLICT_READ_FAILED" }>["notice"];
       refused: boolean;
     };
+type Failed = Extract<Result, { kind: "failed" }>;
+const incomplete: Failed = {
+  kind: "failed",
+  notice: { kind: "local", reason: "incomplete" },
+  refused: false,
+};
+
+const partyRevision = (current: ConflictObservation["current"], partyId: string) =>
+  current.screen.regions
+    .flatMap((region) => (region.content.kind === "TABLE" ? region.content.rows : []))
+    .flatMap((row) => row.actions)
+    .flatMap((action) => {
+      const binding = action?.binding;
+      return binding?.kind === "PARTY" && "partyId" in binding && binding.partyId === partyId
+        ? [binding.expectedRevision]
+        : [];
+    })[0];
+
+const reminderRevision = async (
+  effect: Effect,
+  target: CaseSelector,
+  reminderId: string,
+  signal: AbortSignal,
+): Promise<number | Failed> => {
+  const result = await requestEndpoint(
+    apiEndpoints.reminderGet,
+    effect.identity.credential,
+    { target, reminderId },
+    signal,
+  );
+  if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
+    return { kind: "failed", notice: resultNotice(result), refused: isDisclosureRefused(result) };
+  }
+  return (
+    result.value.outcome.document.actions.flatMap(({ binding }) =>
+      binding.kind === "REMINDER" && "expectedRevision" in binding
+        ? [binding.expectedRevision]
+        : [],
+    )[0] ?? incomplete
+  );
+};
+
 const observe = async (
   effect: Effect,
   current: ConflictObservation["current"],
@@ -23,56 +66,23 @@ const observe = async (
   if (current.disclosure === "ERASED") {
     return { kind: "observed", value: { current, revision: null } };
   }
-  const { input } = effect.source.prepared;
-  let observedRevision = current.subject.revision;
-  if (input.binding.kind === "WORK") {
-    observedRevision = current.subject.workRevision;
+  const { binding } = effect.source.prepared.input;
+  let revision: number | Failed = current.subject.revision;
+  if (binding.kind === "WORK") {
+    revision = current.subject.workRevision;
+  } else if ("partyId" in binding) {
+    revision = partyRevision(current, binding.partyId) ?? incomplete;
+  } else if ("reminderId" in binding) {
+    revision = await reminderRevision(effect, binding.target, binding.reminderId, signal);
+  } else if (binding.kind === "PARTY" || binding.kind === "REMINDER") {
+    return incomplete;
   }
-  if (input.binding.kind === "PARTY") {
-    if (!("partyId" in input.binding)) {
-      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
-    }
-    const { partyId } = input.binding;
-    const regions = current.screen.regions.flatMap((region) =>
-      region.content.kind === "TABLE" ? region.content.rows : [],
-    );
-    const binding = regions
-      .flatMap((row) => row.actions)
-      .find(
-        (action) =>
-          action?.binding.kind === "PARTY" &&
-          "partyId" in action.binding &&
-          action.binding.partyId === partyId,
-      )?.binding;
-    if (binding?.kind !== "PARTY" || !("expectedRevision" in binding)) {
-      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
-    }
-    observedRevision = binding.expectedRevision;
+  if (typeof revision !== "number") {
+    return revision;
   }
-  if (input.binding.kind === "REMINDER") {
-    if (!("reminderId" in input.binding)) {
-      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
-    }
-    const result = await requestEndpoint(
-      apiEndpoints.reminderGet,
-      effect.identity.credential,
-      { target: input.binding.target, reminderId: input.binding.reminderId },
-      signal,
-    );
-    if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
-      return { kind: "failed", notice: resultNotice(result), refused: isDisclosureRefused(result) };
-    }
-    const binding = result.value.outcome.document.actions.find(
-      (action) => action.binding.kind === "REMINDER" && "expectedRevision" in action.binding,
-    )?.binding;
-    if (binding?.kind !== "REMINDER" || !("expectedRevision" in binding)) {
-      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
-    }
-    observedRevision = binding.expectedRevision;
-  }
-  return observedRevision < effect.minimumRevision
-    ? { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false }
-    : { kind: "observed", value: { current, revision: observedRevision } };
+  return revision < effect.minimumRevision
+    ? incomplete
+    : { kind: "observed", value: { current, revision } };
 };
 export const readConflict = async (
   effect: Effect,

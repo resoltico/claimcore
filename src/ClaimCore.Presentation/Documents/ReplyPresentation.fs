@@ -22,7 +22,7 @@ module Refusals =
         | CaseRefusal.SelfLink
         | CaseRefusal.DuplicateLink
         | CaseRefusal.LinkLimitReached
-        | CaseRefusal.CorrectionRequiresExistingValue
+        | CaseRefusal.CorrectionRequiresExistingValue -> RecommendedAction.CorrectInput
         | CaseRefusal.FamilyChanged
         | CaseRefusal.PaymentNotFound
         | CaseRefusal.PartyLimit -> RecommendedAction.ReviewLatest
