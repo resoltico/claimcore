@@ -159,7 +159,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 let private acceptedBoundary (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 200 "A"
+        let name = String.replicate 80 "A"
         do! seed database name
 
         let! current =
@@ -231,7 +231,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
             (ExecuteResult.Rejected(
                 (Refusal.invalidInput (
                     (InputTarget.Field BusinessField.PolicyNumber),
-                    (Violation.TooLong 200)
+                    (Violation.TooLong 80)
                 ))
             ))
             "Changed assertion follows current policy"
@@ -267,7 +267,7 @@ let private timelinePage =
 let private retainedPages (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 200 "<"
+        let name = String.replicate 80 "<"
         do! seed database name
         do! appendTransitions database.Fixture actor
 

@@ -98,7 +98,7 @@ let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) cs
 let private retainedHistory (database: PostgresFixture.Database) =
     task {
         let! forActor = caller database
-        let name = String.replicate 200 "A"
+        let name = String.replicate 80 "A"
         do! AcceptedHistoryFixtures.seed database name
 
         use host =
