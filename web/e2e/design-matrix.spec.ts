@@ -60,7 +60,7 @@ const expandedFilters = async (run: Run) => {
     await trigger.click();
   }
   const summaries = run.page.locator(".worklist-filters details > summary");
-  await expect(summaries).toHaveCount(3);
+  await expect(summaries).toHaveCount(4);
   for (const summary of await summaries.all()) {
     await summary.click();
   }
