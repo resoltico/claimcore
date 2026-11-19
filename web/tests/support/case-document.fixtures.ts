@@ -1,6 +1,5 @@
-import { operationTask } from "../../src/protocol/taskCatalog";
 import type { CurrentCase } from "../../src/protocol/types";
-import type { Screen } from "@contracts/client";
+import { taskDefinitions, type Screen } from "@contracts/client";
 import { workBasis } from "./inputs";
 
 /** An authored HUMAN document, independent of the DATA case projection and its presentation policy. */
@@ -56,11 +55,13 @@ export const caseDocumentInput = (
 });
 
 /** Fixture authors choose offers explicitly; declaration metadata supplies only their input identities. */
-export const registrationInputs = operationTask("case.amendRegistration")
-  .inputs.filter((input) => input.source === "AUTHORED" && input.id !== "field:caseReference")
+export const registrationInputs = taskDefinitions
+  .find((task) => task.id === "case.amendRegistration")!
+  .inputs.filter((input) => input.source === "AUTHORED")
   .map((input) => input.id);
-export const decisionInputs = operationTask("case.decide")
-  .inputs.filter((input) => input.source === "AUTHORED" && input.id !== "field:caseReference")
+export const decisionInputs = taskDefinitions
+  .find((task) => task.id === "case.decide")!
+  .inputs.filter((input) => input.source === "AUTHORED")
   .map((input) => input.id);
 export const correctionChoices = {
   registration: ["KEEP", "UPDATE"],

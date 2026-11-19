@@ -165,7 +165,7 @@ const current = {
             expectedRevision: 3,
           },
           {},
-          ["field:handlingSummary", "field:responsibleActor"],
+          ["field:outcome", "field:closingNote"],
           {},
         ),
         operationAffordance(
@@ -176,7 +176,7 @@ const current = {
             expectedRevision: 3,
           },
           {},
-          ["field:handlingSummary", "field:responsibleActor"],
+          ["input:reason"],
           {},
         ),
         operationAffordance(
@@ -188,7 +188,7 @@ const current = {
             expectedRevision: 3,
           },
           {},
-          ["field:handlingSummary", "field:responsibleActor"],
+          [],
           {},
         ),
         operationAffordance(
@@ -209,7 +209,7 @@ const current = {
             target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
           },
           {},
-          ["field:handlingSummary", "field:responsibleActor"],
+          ["input:reminderAction", "input:reminderDueDate", "input:kind"],
           {},
         ),
       ],

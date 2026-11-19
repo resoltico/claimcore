@@ -35,7 +35,7 @@ const current: CurrentCase = caseDocumentInput({
         "group:registration": "KEEP",
         "group:decision": "KEEP",
       },
-      [...registrationInputs, ...decisionInputs],
+      registrationInputs,
       {
         "group:registration": correctionChoices.registration,
         "group:decision": correctionChoices.decision,
@@ -73,7 +73,7 @@ const current: CurrentCase = caseDocumentInput({
         "group:registration": "KEEP",
         "group:decision": "KEEP",
       },
-      [...registrationInputs, ...decisionInputs],
+      ["field:outcome", "field:closingNote"],
       {
         "group:registration": correctionChoices.registration,
         "group:decision": correctionChoices.decision,

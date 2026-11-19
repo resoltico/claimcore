@@ -6,7 +6,6 @@ import {
   type OperationSubmission,
   type InputAtom,
   type HumanDocument,
-  type TaskInputId,
 } from "@contracts/client";
 /** Builders supply control inputs; policy expectations remain literal in the calling tests. */
 export const operationAffordance = <
@@ -16,7 +15,7 @@ export const operationAffordance = <
   task: T,
   binding: B,
   seeds: Readonly<Record<string, InputAtom>> = {},
-  editable?: ReadonlyArray<TaskInputId>,
+  editable?: Extract<Affordance, { readonly task: NoInfer<T> }>["editable"],
   choices: Affordance["choices"] = {},
 ): Affordance & { readonly task: T; readonly binding: B } => {
   const declaration = taskDefinitions.find((value) => value.id === task)!;
