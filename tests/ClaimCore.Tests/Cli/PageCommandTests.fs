@@ -133,8 +133,15 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
             Errors = fun bytes -> errors.Write(bytes: byte array)
         }
 
+    let declaration = EndpointDeclarations.find "case.list" |> Option.get
+
     let code =
-        PageCommand.runWith { Width = 4096; BoldHeader = false } io pending CancellationToken.None
+        ReadCommand.runWith
+            { Width = 4096; BoldHeader = false }
+            declaration
+            io
+            pending
+            CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code, output.ToArray(), errors.ToArray(), List.ofSeq calls
@@ -256,6 +263,136 @@ let private declaredPages () =
             (filters calls[1])
             (filters calls[0])
             "Traversal preserves every other request member"
+
+let private snapshot success wrongRoute serialize =
+    let mutable serializations = 0
+    // Keep the test endpoint local. Its genuinely nonpaged grammar has no continuation member.
+    let endpoint =
+        { Api.caseGet with
+            Csv =
+                Some
+                    {
+                        Header = Csv.row [ "revision" ]
+                        Rows =
+                            fun _ value ->
+                                serializations <- serializations + 1
+
+                                if not serialize then
+                                    invalidOp "Synthetic CSV serialization failure."
+
+                                match value with
+                                | RepresentationReply.Data(Outcome.Succeeded snapshot) ->
+                                    Some(Csv.row [ Revision.format snapshot.Snapshot.Revision ])
+                                | _ ->
+                                    failtest "CSV serialization is only called for successful DATA."
+                    }
+        }
+
+    let request =
+        {
+            CaseGetRequest.Target = CaseSelector.Reference "CSV-SNAPSHOT"
+        }
+
+    let frame = Frames.create endpoint request |> CaseBuilders.accepted
+
+    let initial =
+        Grammar.prepare
+            (fun () -> failtest "A read never allocates an operation ID")
+            [ "case"; "get"; "CSV-SNAPSHOT" ]
+        |> CaseBuilders.accepted
+
+    let prepared =
+        { initial with
+            Invocation = frame
+            Format = VerbFormat.Csv
+        }
+
+    let endpointDeclaration = EndpointDeclarations.find "case.get" |> Option.get
+    let declaration = { endpointDeclaration with Csv = true }
+
+    let output = ResizeArray<byte array>()
+    let errors = ResizeArray<byte array>()
+    let mutable exchanges = 0
+
+    let io: ReadPageIO =
+        {
+            Exchange =
+                fun frame _ ->
+                    exchanges <- exchanges + 1
+
+                    Expect.equal
+                        (Frames.representation frame)
+                        Representation.Data
+                        "The one exchange requests DATA"
+
+                    Expect.isNone
+                        (JsonValue.tryMember "cursor" (Frames.input frame))
+                        "The snapshot has no cursor"
+
+                    let correlated =
+                        if wrongRoute then
+                            Frames.create { endpoint with Id = Api.caseNotes.Id } request
+                            |> CaseBuilders.accepted
+                        else
+                            frame
+
+                    let value =
+                        if success then
+                            Outcome.Succeeded ResponseExamples.caseRead
+                        else
+                            Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+                    CliReply.result
+                        correlated
+                        (endpoint.Output.Write(RepresentationReply.Data value))
+                    |> CaseBuilders.accepted
+                    |> Task.FromResult
+            Deliver = fun _ _ -> failtest "CSV does not print a native reply frame"
+            Output = output.Add
+            Errors = errors.Add
+        }
+
+    let options = { Width = 4096; BoldHeader = false }
+
+    let code =
+        (ReadCommand.runWith options declaration io prepared CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()
+
+    Expect.equal exchanges 1 "The snapshot uses exactly one exchange"
+    code, List.ofSeq output, List.ofSeq errors, serializations
+
+[<Tests>]
+let snapshotCsvTests =
+    testList
+        "native CSV snapshot acquisition"
+        [
+            testCase "one nonpaged DATA response serializes the complete CSV" (fun () ->
+                let code, output, errors, calls = snapshot true false true
+                Expect.equal code 0 "The admitted snapshot succeeded"
+
+                Expect.equal
+                    (output |> List.map Encoding.UTF8.GetString)
+                    [ "revision\r\n1\r\n" ]
+                    "Header and rows are emitted together with canonical line endings"
+
+                Expect.isEmpty errors "No cursor or failure guidance on a snapshot success"
+                Expect.equal calls 1 "The endpoint serializer runs once")
+            testCase
+                "a refusal, wrong endpoint or failed serializer publishes no header or rows"
+                (fun () ->
+                    for success, wrongRoute, serialize, calls in
+                        [ false, false, true, 0; true, true, true, 0; true, false, false, 1 ] do
+                        let code, output, errors, actual = snapshot success wrongRoute serialize
+                        Expect.equal code 2 "The refusal or invalid response exits nonzero"
+                        Expect.isEmpty output "Snapshot validation precedes any stdout bytes"
+                        Expect.isNonEmpty errors "Failure guidance goes to stderr"
+
+                        Expect.equal
+                            actual
+                            calls
+                            "Only a correlated success reaches the serializer")
+        ]
 
 [<Tests>]
 let tests =
@@ -676,6 +813,31 @@ let tests =
                         (Encoding.UTF8.GetString bytes)
                         "'=authored display name"
                         "New profile-name column retains formula neutrality")
+            testCase "ordinary CSV reports the next cursor without following it" (fun () ->
+                let code, bytes, errors, calls =
+                    run
+                        [ "--format"; "csv" ]
+                        [ Outcome.Succeeded(page [ row "FIRST" ] (Some "next-opaque")) ]
+
+                Expect.equal code 0 "One healthy page succeeds"
+                Expect.equal calls.Length 1 "Only --all advances"
+                Expect.hasLength (parseCsv bytes) 2 "One header and one row"
+
+                Expect.stringContains
+                    (Encoding.UTF8.GetString errors)
+                    "next-opaque"
+                    "Continuation guidance stays on stderr")
+            testCase "CSV traversal refuses a repeated cursor" (fun () ->
+                Expect.throwsT<InvalidOperationException>
+                    (fun () ->
+                        run
+                            [ "--format"; "csv"; "--all" ]
+                            [
+                                Outcome.Succeeded(page [ row "FIRST" ] (Some "same"))
+                                Outcome.Succeeded(page [ row "SECOND" ] (Some "same"))
+                            ]
+                        |> ignore)
+                    "A repeated continuation cannot masquerade as end-of-data")
             testCase "CSV all follows cursors with one header and unchanged filters" (fun () ->
                 let code, bytes, _, calls =
                     run
