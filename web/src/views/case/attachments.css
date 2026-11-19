@@ -2,6 +2,10 @@
   display: block;
 }
 
+.case-attachments input[type="file"] {
+  max-inline-size: 100%;
+}
+
 .attachment-list {
   list-style: none;
   margin: 0;

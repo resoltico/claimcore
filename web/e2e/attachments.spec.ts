@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { ResponseFor } from "@contracts/client";
 import { openCase } from "./case-workflow";
+import { noHorizontalOverflow } from "./layout-support";
 import { browserRequest, openAuthenticated } from "./session-helpers";
 import { recoveryRecords } from "./recovery-storage";
 import { observedAccess, workRequest } from "./work-workflow";
@@ -125,6 +126,9 @@ test("reviews private files, displays native previews and withdraws disclosure @
   expect(old.outcome.kind).toBe("ACCEPTED");
   expect(JSON.stringify(old)).not.toContain(portable);
   await expect(page.locator(".case-timeline-panel")).not.toContainText(portable);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(attachments.getByLabel("Choose a file", { exact: true })).toBeVisible();
+  await noHorizontalOverflow(page, "narrow");
 });
 
 test("settles a lost upload acknowledgement with an identity-only recovery record", async ({
