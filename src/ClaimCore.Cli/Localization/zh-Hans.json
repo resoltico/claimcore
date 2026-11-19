@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "在配置文件中保存公开连接、语言和显示区域设置。\\n语言决定措辞；--display-locale 决定日期和数字格式。优先级：选项、CLAIMCORE_DISPLAY_LOCALE、配置文件、语言默认值。\\n使用 `claimcore configure --show` 查看有效值及其来源。\\n通过文件提供机密信息；它们不会保存在配置文件中。\\n参阅 docs/integrating.md#cli-use。",
-    "source": "08119fe9649d"
+    "text": "在配置文件中保存公开连接、语言和显示区域设置。\n语言决定措辞；--display-locale 决定日期和数字格式。优先级：选项、CLAIMCORE_DISPLAY_LOCALE、配置文件、语言默认值。\n使用 `claimcore configure --show` 查看有效值及其来源。\n通过文件提供机密信息；它们不会保存在配置文件中。\n参阅 docs/integrating.md#cli-use。",
+    "source": "2a54539e2577"
   },
   "cli.help.delivery": {
     "text": "传送未确认时，退出码 4 会输出可重新发送的准确请求。\n重新发送不会重复记录。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 检查；回答将在 {window} 内确定。",
@@ -438,5 +438,45 @@
   "cli.family.link": {
     "text": "关联案件",
     "source": "99bba925fcb4"
+  },
+  "cli.usage.invalidUuid": {
+    "text": "请为 {flag} 使用带连字符的 UUID。",
+    "source": "324b6ca181ab"
+  },
+  "cli.usage.invalidBoolean": {
+    "text": "请为 {flag} 使用 true 或 false。",
+    "source": "fab3d618d06d"
+  },
+  "cli.usage.collectionJson": {
+    "text": "请为 {flag} 的每一行使用有效的 JSON。",
+    "source": "fca50076f4c1"
+  },
+  "cli.usage.collectionDuplicateMember": {
+    "text": "在 {flag} 的一行中，每个成员最多使用一次。",
+    "source": "b3d8707365d0"
+  },
+  "cli.usage.collectionExpectedObject": {
+    "text": "请为 {flag} 的每一行提供一个 JSON 对象。",
+    "source": "3fdec4cf8ccc"
+  },
+  "cli.usage.collectionUnknownMember": {
+    "text": "请仅使用 {flag} 帮助中列出的成员名称。",
+    "source": "d6f035190064"
+  },
+  "cli.usage.collectionInvalidMember": {
+    "text": "请使用 {flag} 帮助中列出的成员类型和选项。",
+    "source": "de16aec361f4"
+  },
+  "cli.usage.collectionTooLarge": {
+    "text": "{flag} 的这一行超出大小限制。",
+    "source": "79a67afc982a"
+  },
+  "cli.usage.collectionCount": {
+    "text": "请为 {flag} 提供 {minimum} 至 {maximum} 行。",
+    "source": "b824190ee0f3"
+  },
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
+    "text": "请将 {setting} 设置为绝对目录路径，以使用本地恢复。",
+    "source": "5c168d61cfd3"
   }
 }

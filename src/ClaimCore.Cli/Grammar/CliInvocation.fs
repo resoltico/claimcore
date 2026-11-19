@@ -173,7 +173,7 @@ module CliInvocations =
                 match System.Guid.TryParseExact(raw, "D") with
                 | true, attempt when attempt <> System.Guid.Empty ->
                     admitted (RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt))
-                | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
+                | _ -> Error(UsageError.InvalidUuid "ATTEMPT_ID")
             | _ -> Error(UsageError.MissingOperand "list | check ATTEMPT_ID"))
 
     let private admitCommand command tail =

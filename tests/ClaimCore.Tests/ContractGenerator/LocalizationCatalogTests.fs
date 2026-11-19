@@ -96,8 +96,19 @@ let private actualProducers () =
 
     let failures =
         [
-            for code in Vocabulary.all CliFailureCode.vocabulary do
-                yield CliMessage.Failure(code |> CliFailureCode.toFailure |> ClientFailure.ofFrame)
+            for failure, _ in CliFailureCode.simple do
+                yield CliMessage.Failure(ClientFailure.ofFrame failure)
+
+            yield
+                CliMessage.Failure(
+                    ClientFailure.ofFrame (CliFailure.InvalidFrame InvalidFrameReason.Schema)
+                )
+
+            yield
+                CliMessage.Failure(
+                    CliFailure.RecoveryRootNotAbsolute RecoveryRootSetting.Home
+                    |> ClientFailure.ofFrame
+                )
             yield
                 CliMessage.Failure(
                     ClientFailure.ConfigurationIssue(

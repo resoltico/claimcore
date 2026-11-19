@@ -172,3 +172,5 @@ The bounded CSV resource advice and browser download chrome are agent-translated
 these additions await fluent review.
 
 The case-targeted reminder captions and case-restriction reset control are agent-translated in all offered languages and await fluent review.
+
+The revised CLI diagnostic and recovery setup wording is AI-assisted in all eight translated languages and awaits fluent review.

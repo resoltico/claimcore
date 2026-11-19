@@ -2,7 +2,6 @@ namespace ClaimCore.Cli
 
 open System
 open System.Collections.Generic
-open System.Globalization
 open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -89,7 +88,6 @@ module internal TaskArguments =
                 if
                     acquired.IsNone
                     && input.Required
-                    && input.Declaration.DefaultText.IsNone
                     && input.Argument = CommandArgument.Named
                     && not clear
                     && not (incomplete && input.Declaration.Source = InputSource.ExpectedRevision)
@@ -106,34 +104,23 @@ module internal TaskArguments =
                         let scalar =
                             match input.Declaration.Atom with
                             | TaskAtom.Integer ->
+                                let minimum, maximum =
+                                    SubmissionDeclarations.integerBounds
+                                        (TaskRouting.operationDeclaration kind)
+                                        input.Name
+
                                 match
-                                    Int64.TryParse(
-                                        value,
-                                        NumberStyles.AllowLeadingSign,
-                                        CultureInfo.InvariantCulture
-                                    )
+                                    VerbOptions.integer (flag input.Name) minimum maximum value
                                 with
-                                | true, number when
-                                    number
-                                    >= (SubmissionDeclarations.integerBounds
-                                            (TaskRouting.operationDeclaration kind)
-                                            input.Name
-                                        |> fst)
-                                    && number
-                                       <= (SubmissionDeclarations.integerBounds
-                                               (TaskRouting.operationDeclaration kind)
-                                               input.Name
-                                           |> snd)
-                                    ->
-                                    SubmissionValue.Integer number
-                                | _ ->
-                                    problems.Add(UsageError.InvalidValue(flag input.Name, value))
+                                | Ok number -> SubmissionValue.Integer number
+                                | Error problem ->
+                                    problems.Add problem
                                     SubmissionValue.Integer 0L
                             | TaskAtom.Boolean ->
                                 match Boolean.TryParse value with
                                 | true, value -> SubmissionValue.Boolean value
                                 | _ ->
-                                    problems.Add(UsageError.InvalidValue(flag input.Name, value))
+                                    problems.Add(UsageError.InvalidBoolean(flag input.Name))
                                     SubmissionValue.Boolean false
                             | TaskAtom.Text -> SubmissionValue.Text value
 
@@ -161,10 +148,10 @@ module internal TaskArguments =
         let uuid input =
             text input
             |> Option.bind (fun value ->
-                match Guid.TryParseExact(value, "D") with
-                | true, id -> Some id
-                | _ ->
-                    problems.Add(UsageError.InvalidValue(flag input, value))
+                match VerbOptions.uuid (flag input) value with
+                | Ok id -> Some id
+                | Error problem ->
+                    problems.Add problem
                     None)
 
         let revision input =
@@ -186,12 +173,8 @@ module internal TaskArguments =
 
             SubmissionAssembly.caseSelection values
             |> Result.defaultWith (fun _ ->
-                problems.Add(
-                    UsageError.InvalidValue(
-                        flag TaskInputId.CaseId,
-                        text TaskInputId.CaseId |> Option.defaultValue ""
-                    )
-                )
+                if (text TaskInputId.CaseId).IsNone then
+                    problems.Add(UsageError.InvalidValue(flag TaskInputId.CaseId, ""))
 
                 CaseSelector.Reference "")
 
@@ -263,32 +246,59 @@ module internal TaskArguments =
 
                     let partyRow (value: string) =
                         let fields =
-                            (TaskDeclarations.describe task).Collections
-                            |> List.find (fun item -> item.Collection = collection.Collection)
-                            |> _.Inputs
-                            |> List.map (fun input -> TaskInputId.token input.Input, input.Input)
+                            collection.Members
+                            |> List.map (fun input -> TaskInputId.token input.Input, input)
                             |> Map.ofList
 
-                        let denied () =
-                            problems.Add(UsageError.InvalidValue(name, "JSON"))
+                        let denied reason =
+                            problems.Add(UsageError.InvalidCollection(name, reason))
                             Map.empty
 
-                        match StrictJson.read 8192 (System.Text.Encoding.UTF8.GetBytes value) with
+                        match
+                            StrictJson.readClassified
+                                8192
+                                (System.Text.Encoding.UTF8.GetBytes value)
+                        with
+                        | Error failure ->
+                            match failure.Kind with
+                            | JsonFailureReason.NotJson -> denied CollectionProblem.MalformedJson
+                            | JsonFailureReason.DuplicateKey ->
+                                denied CollectionProblem.DuplicateMember
+                            | JsonFailureReason.TooLarge -> denied CollectionProblem.TooLarge
+                            | JsonFailureReason.Schema -> denied CollectionProblem.InvalidMember
                         | Ok(JsonValue.Object values) ->
-                            let scalars =
-                                values
-                                |> List.choose (function
-                                    | key, JsonValue.String text ->
-                                        Map.tryFind key fields
-                                        |> Option.map (fun field ->
-                                            field, SubmissionValue.Text text)
-                                    | _ -> None)
-
-                            if scalars.Length = values.Length then
-                                Map.ofList scalars
+                            if values |> List.exists (fst >> fields.ContainsKey >> not) then
+                                denied CollectionProblem.UnknownMember
                             else
-                                denied ()
-                        | _ -> denied ()
+                                let admit (key, atom) =
+                                    let field = fields[key]
+
+                                    match atom, field.Atom, field.Clearable with
+                                    | JsonValue.String text, TaskAtom.Text, _ ->
+                                        let choices =
+                                            TaskChoiceId.ofInput field.Input
+                                            |> Option.map TaskChoiceId.tokens
+                                            |> Option.defaultValue []
+
+                                        if choices.IsEmpty || List.contains text choices then
+                                            Some(field.Input, SubmissionValue.Text text)
+                                        else
+                                            None
+                                    | JsonValue.Boolean flag, TaskAtom.Boolean, _ ->
+                                        Some(field.Input, SubmissionValue.Boolean flag)
+                                    | JsonValue.Integer number, TaskAtom.Integer, _ ->
+                                        Some(field.Input, SubmissionValue.Integer number)
+                                    | JsonValue.Null, _, true ->
+                                        Some(field.Input, SubmissionValue.Clear)
+                                    | _ -> None
+
+                                let members = values |> List.choose admit
+
+                                if members.Length = values.Length then
+                                    Map.ofList members
+                                else
+                                    denied CollectionProblem.InvalidMember
+                        | Ok _ -> denied CollectionProblem.ExpectedObject
 
                     let parse =
                         match collection.Collection with
@@ -296,9 +306,18 @@ module internal TaskArguments =
                         | TaskCollectionId.Parties -> partyRow
 
                     if roles.Length > collection.MaximumItems then
-                        problems.Add(UsageError.InvalidValue(name, string roles.Length))
+                        problems.Add(
+                            UsageError.InvalidCollectionCount(
+                                name,
+                                collection.MinimumItems,
+                                collection.MaximumItems
+                            )
+                        )
 
-                    if roles.IsEmpty && collection.MinimumItems = 0 then
+                    if
+                        roles.Length > collection.MaximumItems
+                        || (roles.IsEmpty && collection.MinimumItems = 0)
+                    then
                         values
                     else
                         values

@@ -7,6 +7,24 @@ open System.Collections.Generic
 open ClaimCore.Presentation
 
 module internal VerbOptions =
+    let integer flag minimum maximum (value: string) =
+        match
+            System.Numerics.BigInteger.TryParse(
+                value,
+                System.Globalization.NumberStyles.AllowLeadingSign,
+                System.Globalization.CultureInfo.InvariantCulture
+            )
+        with
+        | false, _ -> Error(UsageError.InvalidInteger(flag, value))
+        | true, parsed when parsed < bigint (minimum: int64) || parsed > bigint (maximum: int64) ->
+            Error(UsageError.InvalidRange(flag, value, minimum, maximum))
+        | true, parsed -> Ok(int64 parsed)
+
+    let uuid flag (value: string) =
+        match System.Guid.TryParseExact(value, "D") with
+        | true, id when id <> System.Guid.Empty -> Ok id
+        | _ -> Error(UsageError.InvalidUuid flag)
+
     let private distance (left: string) (right: string) =
         let costs = Array2D.zeroCreate<int> (left.Length + 1) (right.Length + 1)
 

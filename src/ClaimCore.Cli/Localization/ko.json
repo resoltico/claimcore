@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "공개 연결 설정, 언어 및 표시 로캘을 프로필에 저장합니다.\\n언어는 문구를, --display-locale은 날짜와 숫자 형식을 선택합니다. 우선순위는 옵션, CLAIMCORE_DISPLAY_LOCALE, 프로필, 언어 기본값입니다.\\n`claimcore configure --show`로 유효한 값과 출처를 확인합니다.\\n비밀 값은 파일로 제공하며 프로필에 저장되지 않습니다.\\ndocs/integrating.md#cli-use를 참조하세요.",
-    "source": "08119fe9649d"
+    "text": "공개 연결 설정, 언어 및 표시 로캘을 프로필에 저장합니다.\n언어는 문구를, --display-locale은 날짜와 숫자 형식을 선택합니다. 우선순위는 옵션, CLAIMCORE_DISPLAY_LOCALE, 프로필, 언어 기본값입니다.\n`claimcore configure --show`로 유효한 값과 출처를 확인합니다.\n비밀 값은 파일로 제공하며 프로필에 저장되지 않습니다.\ndocs/integrating.md#cli-use를 참조하세요.",
+    "source": "2a54539e2577"
   },
   "cli.help.delivery": {
     "text": "전달이 확인되지 않으면 종료 코드 4가 다시 보낼 정확한 요청을 출력합니다.\n다시 보내도 두 번 기록되지는 않습니다.\n`claimcore recovery list`와 `claimcore recovery check`로 확인하세요. 답변은 {window} 이내에 확정됩니다.",
@@ -438,5 +438,45 @@
   "cli.family.link": {
     "text": "관련 청구 건 연결",
     "source": "99bba925fcb4"
+  },
+  "cli.usage.invalidUuid": {
+    "text": "{flag}에는 하이픈이 포함된 UUID를 사용하세요.",
+    "source": "324b6ca181ab"
+  },
+  "cli.usage.invalidBoolean": {
+    "text": "{flag}에는 true 또는 false를 사용하세요.",
+    "source": "fab3d618d06d"
+  },
+  "cli.usage.collectionJson": {
+    "text": "{flag}의 각 행에 올바른 JSON을 사용하세요.",
+    "source": "fca50076f4c1"
+  },
+  "cli.usage.collectionDuplicateMember": {
+    "text": "{flag}의 한 행에서 각 필드는 한 번만 사용하세요.",
+    "source": "b3d8707365d0"
+  },
+  "cli.usage.collectionExpectedObject": {
+    "text": "{flag}의 각 행에 JSON 객체 하나를 제공하세요.",
+    "source": "3fdec4cf8ccc"
+  },
+  "cli.usage.collectionUnknownMember": {
+    "text": "{flag} 도움말에 나열된 필드 이름만 사용하세요.",
+    "source": "d6f035190064"
+  },
+  "cli.usage.collectionInvalidMember": {
+    "text": "{flag} 도움말에 나열된 필드 유형과 선택지를 사용하세요.",
+    "source": "de16aec361f4"
+  },
+  "cli.usage.collectionTooLarge": {
+    "text": "{flag} 행이 크기 제한을 초과했습니다.",
+    "source": "79a67afc982a"
+  },
+  "cli.usage.collectionCount": {
+    "text": "{flag}에 {minimum}개에서 {maximum}개 사이의 행을 제공하세요.",
+    "source": "b824190ee0f3"
+  },
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
+    "text": "로컬 복구를 사용하려면 {setting}에 절대 디렉터리 경로를 지정하세요.",
+    "source": "5c168d61cfd3"
   }
 }

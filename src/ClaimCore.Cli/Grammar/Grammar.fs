@@ -49,6 +49,12 @@ module Grammar =
         function
         | UsageError.UnknownOption(flag, _)
         | UsageError.MissingOption flag
+        | UsageError.InvalidInteger(flag, _)
+        | UsageError.InvalidRange(flag, _, _, _)
+        | UsageError.InvalidUuid flag
+        | UsageError.InvalidBoolean flag
+        | UsageError.InvalidCollection(flag, _)
+        | UsageError.InvalidCollectionCount(flag, _, _)
         | UsageError.InvalidValue(flag, _)
         | UsageError.InvalidChoice(flag, _, _)
         | UsageError.NotApplicable(flag, _)
@@ -61,7 +67,13 @@ module Grammar =
         | UsageError.DuplicateOption _ -> 5
         | UsageError.MissingValue _ -> 4
         | UsageError.InvalidChoice _
-        | UsageError.InvalidValue _ -> 3
+        | UsageError.InvalidInteger _
+        | UsageError.InvalidRange _
+        | UsageError.InvalidUuid _
+        | UsageError.InvalidBoolean _
+        | UsageError.InvalidCollection _
+        | UsageError.InvalidCollectionCount _ -> 3
+        | UsageError.InvalidValue _ -> 2
         | UsageError.MissingOption _ -> 0
         | _ -> 2
 

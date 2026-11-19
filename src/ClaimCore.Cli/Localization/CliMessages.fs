@@ -62,6 +62,21 @@ type CliMessage =
     | [<MessageKey("cli.usage.missingOperand")>] MissingOperand of operand: string
     | [<MessageKey("cli.usage.extraOperand")>] ExtraOperand of operand: string
     | [<MessageKey("cli.usage.invalidInteger")>] InvalidInteger of flag: string * value: string
+    | [<MessageKey("cli.usage.invalidUuid")>] InvalidUuid of flag: string
+    | [<MessageKey("cli.usage.invalidBoolean")>] InvalidBoolean of flag: string
+    | [<MessageKey("cli.usage.collectionJson")>] InvalidCollectionJson of flag: string
+    | [<MessageKey("cli.usage.collectionDuplicateMember")>] CollectionDuplicateMember of
+        flag: string
+    | [<MessageKey("cli.usage.collectionExpectedObject")>] CollectionExpectedObject of flag: string
+    | [<MessageKey("cli.usage.collectionUnknownMember")>] CollectionUnknownMember of flag: string
+    | [<MessageKey("cli.usage.collectionInvalidMember")>] CollectionInvalidMember of flag: string
+    | [<MessageKey("cli.usage.collectionTooLarge")>] CollectionTooLarge of flag: string
+    | [<MessageKey("cli.usage.collectionCount")>] InvalidCollectionCount of
+        flag: string *
+        minimum: string *
+        maximum: string
+    | [<MessageKey("cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE")>] RecoveryRootNotAbsolute of
+        setting: string
     | [<MessageKey("cli.usage.invalidValue")>] InvalidValue of flag: string * value: string
     | [<MessageKey("cli.usage.invalidRange")>] InvalidRange of
         flag: string *
@@ -178,6 +193,7 @@ module CliMessages =
         function
         | ClientFailure.InstallationMismatch -> "cli.failure.INSTALLATION_MISMATCH"
         | ClientFailure.RecoveryUnavailable -> "cli.failure.RECOVERY_UNAVAILABLE"
+        | ClientFailure.RecoveryRootNotAbsolute _ -> "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE"
         | ClientFailure.Configuration -> "cli.failure.CONFIGURATION_INVALID"
         | ClientFailure.ConfigurationIssue _ -> "cli.configurationIssue"
         | ClientFailure.AuthenticationTimeout -> "cli.failure.AUTHENTICATION_TIMEOUT"
@@ -218,6 +234,8 @@ module CliMessages =
 
     let rec produce message =
         match message with
+        | CliMessage.Failure(ClientFailure.RecoveryRootNotAbsolute setting) ->
+            produce (CliMessage.RecoveryRootNotAbsolute(RecoveryRootSetting.token setting))
         | CliMessage.Failure(ClientFailure.ConfigurationIssue(setting, issue)) ->
             produce (
                 CliMessage.ConfigurationIssue(

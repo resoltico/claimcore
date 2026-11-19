@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "Guarde la conexión pública, el idioma y la configuración regional de visualización en el perfil.\\nEl idioma determina el texto; --display-locale determina fechas y números. Prioridad: opción, CLAIMCORE_DISPLAY_LOCALE, perfil y valor predeterminado del idioma.\\nUse `claimcore configure --show` para ver valores y fuentes.\\nProporcione secretos mediante archivos; nunca se guardan en el perfil.\\nConsulte docs/integrating.md#cli-use.",
-    "source": "08119fe9649d"
+    "text": "Guarde la conexión pública, el idioma y la configuración regional de visualización en el perfil.\nEl idioma determina el texto; --display-locale determina fechas y números. Prioridad: opción, CLAIMCORE_DISPLAY_LOCALE, perfil y valor predeterminado del idioma.\nUse `claimcore configure --show` para ver valores y fuentes.\nProporcione secretos mediante archivos; nunca se guardan en el perfil.\nConsulte docs/integrating.md#cli-use.",
+    "source": "2a54539e2577"
   },
   "cli.help.delivery": {
     "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta para reenviarla.\nReenviarla no puede registrarla dos veces.\nUsa `claimcore recovery list` y `claimcore recovery check`; la respuesta será definitiva en {window}.",
@@ -438,5 +438,45 @@
   "cli.family.link": {
     "text": "Vínculos con expedientes",
     "source": "99bba925fcb4"
+  },
+  "cli.usage.invalidUuid": {
+    "text": "Usa un UUID con guiones para {flag}.",
+    "source": "324b6ca181ab"
+  },
+  "cli.usage.invalidBoolean": {
+    "text": "Usa true o false para {flag}.",
+    "source": "fab3d618d06d"
+  },
+  "cli.usage.collectionJson": {
+    "text": "Usa JSON válido en cada fila de {flag}.",
+    "source": "fca50076f4c1"
+  },
+  "cli.usage.collectionDuplicateMember": {
+    "text": "Usa cada campo como máximo una vez en una fila de {flag}.",
+    "source": "b3d8707365d0"
+  },
+  "cli.usage.collectionExpectedObject": {
+    "text": "Proporciona un objeto JSON por cada fila de {flag}.",
+    "source": "3fdec4cf8ccc"
+  },
+  "cli.usage.collectionUnknownMember": {
+    "text": "Usa solo los nombres de campo que aparecen en la ayuda de {flag}.",
+    "source": "d6f035190064"
+  },
+  "cli.usage.collectionInvalidMember": {
+    "text": "Usa los tipos de campo y las opciones que aparecen en la ayuda de {flag}.",
+    "source": "de16aec361f4"
+  },
+  "cli.usage.collectionTooLarge": {
+    "text": "La fila de {flag} supera el límite de tamaño.",
+    "source": "79a67afc982a"
+  },
+  "cli.usage.collectionCount": {
+    "text": "Proporciona entre {minimum} y {maximum} filas para {flag}.",
+    "source": "b824190ee0f3"
+  },
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
+    "text": "Configura {setting} con una ruta de directorio absoluta para usar la recuperación local.",
+    "source": "5c168d61cfd3"
   }
 }

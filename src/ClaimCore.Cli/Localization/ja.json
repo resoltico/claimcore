@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "公開接続設定、言語、表示ロケールをプロファイルに保存します。\\n言語は文言を、--display-locale は日付と数値の形式を指定します。優先順位はオプション、CLAIMCORE_DISPLAY_LOCALE、プロファイル、言語の既定値です。\\n`claimcore configure --show` で有効な値と取得元を確認できます。\\n秘密情報はファイルで指定し、プロファイルには保存されません。\\ndocs/integrating.md#cli-use を参照してください。",
-    "source": "08119fe9649d"
+    "text": "公開接続設定、言語、表示ロケールをプロファイルに保存します。\n言語は文言を、--display-locale は日付と数値の形式を指定します。優先順位はオプション、CLAIMCORE_DISPLAY_LOCALE、プロファイル、言語の既定値です。\n`claimcore configure --show` で有効な値と取得元を確認できます。\n秘密情報はファイルで指定し、プロファイルには保存されません。\ndocs/integrating.md#cli-use を参照してください。",
+    "source": "2a54539e2577"
   },
   "cli.help.delivery": {
     "text": "送信結果が未確認の場合、終了コード4で再送信用の正確な要求を出力します。\n再送信しても二重に記録されることはありません。\n`claimcore recovery list`と`claimcore recovery check`で確認してください。回答は{window}以内に確定します。",
@@ -438,5 +438,45 @@
   "cli.family.link": {
     "text": "案件の関連付け",
     "source": "99bba925fcb4"
+  },
+  "cli.usage.invalidUuid": {
+    "text": "{flag} にはハイフン付きの UUID を使用してください。",
+    "source": "324b6ca181ab"
+  },
+  "cli.usage.invalidBoolean": {
+    "text": "{flag} には true または false を指定してください。",
+    "source": "fab3d618d06d"
+  },
+  "cli.usage.collectionJson": {
+    "text": "{flag} の各行には有効な JSON を使用してください。",
+    "source": "fca50076f4c1"
+  },
+  "cli.usage.collectionDuplicateMember": {
+    "text": "{flag} の1行で各フィールドは1回まで指定できます。",
+    "source": "b3d8707365d0"
+  },
+  "cli.usage.collectionExpectedObject": {
+    "text": "{flag} の各行に JSON オブジェクトを1つ指定してください。",
+    "source": "3fdec4cf8ccc"
+  },
+  "cli.usage.collectionUnknownMember": {
+    "text": "{flag} のヘルプに記載されたフィールド名だけを使用してください。",
+    "source": "d6f035190064"
+  },
+  "cli.usage.collectionInvalidMember": {
+    "text": "{flag} のヘルプに記載されたフィールドの型と選択肢を使用してください。",
+    "source": "de16aec361f4"
+  },
+  "cli.usage.collectionTooLarge": {
+    "text": "{flag} の行がサイズ制限を超えています。",
+    "source": "79a67afc982a"
+  },
+  "cli.usage.collectionCount": {
+    "text": "{flag} には {minimum} 行以上、{maximum} 行以下を指定してください。",
+    "source": "b824190ee0f3"
+  },
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
+    "text": "ローカルで復旧するには {setting} にディレクトリの絶対パスを指定してください。",
+    "source": "5c168d61cfd3"
   }
 }

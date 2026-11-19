@@ -24,6 +24,29 @@ module Discovery =
             }
 
 
+    let private choices input =
+        TaskChoiceId.ofInput input
+        |> Option.map TaskChoiceId.tokens
+        |> Option.defaultValue []
+
+    let private partyExample (collection: CommandCollection) =
+        let required, optional =
+            collection.Members |> List.partition CommandGrammar.needsValue
+
+        required @ List.truncate 1 optional
+        |> List.map (fun memberInput ->
+            let value =
+                match choices memberInput.Input, memberInput.Atom with
+                | choice :: _, _ -> JsonValue.String choice
+                | [], TaskAtom.Text -> JsonValue.String "Example"
+                | [], TaskAtom.Integer -> JsonValue.Integer 1L
+                | [], TaskAtom.Boolean -> JsonValue.Boolean true
+
+            TaskInputId.token memberInput.Input, value)
+        |> JsonValue.Object
+        |> WireWriter.bytes
+        |> Encoding.UTF8.GetString
+
     let private operationText (rendering: RenderingContext) operations =
         operations
         |> List.map (fun operation ->
@@ -104,7 +127,33 @@ module Discovery =
                    + ReplyTextFormat.number rendering (int64 binding.MinimumItems)
                    + "–"
                    + ReplyTextFormat.number rendering (int64 binding.MaximumItems)
-                   + "]"))
+                   + "]"
+                   + (if definition.Collection <> TaskCollectionId.Parties then
+                          ""
+                      else
+                          let members =
+                              definition.Members
+                              |> List.map (fun item ->
+                                  let token = TaskInputId.token item.Input
+
+                                  let choices =
+                                      match choices item.Input with
+                                      | [] -> ""
+                                      | values -> " " + String.concat "|" values
+
+                                  let field = token + choices
+
+                                  if CommandGrammar.needsValue item then
+                                      field
+                                  else
+                                      "[" + field + "]")
+
+                          "\n  "
+                          + String.concat "\n  " members
+                          + "\n  "
+                          + CommandGrammar.collectionFlag definition
+                          + " "
+                          + CommandGrammar.quoteArgument (partyExample definition))))
             |> String.concat "\n")
         |> String.concat "\n\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
@@ -153,11 +202,8 @@ module Discovery =
             |> fun text -> Some(text + "\n")
 
     let helpJson (rendering: RenderingContext) topic text (operations: string list) =
-        let input (value: TaskInputDeclaration) =
-            let choices =
-                TaskChoiceId.ofInput value.Input
-                |> Option.map TaskChoiceId.tokens
-                |> Option.defaultValue []
+        let input required (value: TaskInputDeclaration) =
+            let choices = choices value.Input
 
             JsonValue.Object
                 [
@@ -167,10 +213,20 @@ module Discovery =
                     "mode", JsonValue.String(TaskInputMode.token value.Mode)
                     "source", JsonValue.String(InputSource.token value.Source)
                     "choices", JsonValue.Array(choices |> List.map JsonValue.String)
+                    "required", JsonValue.Boolean required
+                    "default",
+                    value.DefaultText
+                    |> Option.map JsonValue.String
+                    |> Option.defaultValue JsonValue.Null
                 ]
 
         let operation kind =
-            let declaration = TaskDeclarations.describe (kind)
+            let declaration = TaskDeclarations.describe kind
+
+            let required =
+                CommandGrammar.inputs kind
+                |> List.map (fun input -> input.Name, input.Required)
+                |> Map.ofList
 
             let collections =
                 CommandGrammar.collections kind
@@ -180,6 +236,14 @@ module Discovery =
                             "id", JsonValue.String(TaskCollectionId.key item.Collection)
                             "minimumRows", JsonValue.Integer(int64 item.MinimumItems)
                             "maximumRows", JsonValue.Integer(int64 item.MaximumItems)
+                            "flag", JsonValue.String(CommandGrammar.collectionFlag item)
+                            "members",
+                            item.Members
+                            |> List.map (fun value ->
+                                input (CommandGrammar.needsValue value) value)
+                            |> JsonValue.Array
+                            if item.Collection = TaskCollectionId.Parties then
+                                "example", JsonValue.String(partyExample item)
                         ])
 
             JsonValue.Object
@@ -191,7 +255,13 @@ module Discovery =
                     JsonValue.Object
                         [
                             "id", JsonValue.String(declaration.Id)
-                            "inputs", JsonValue.Array(declaration.Inputs |> List.map input)
+                            "inputs",
+                            declaration.Inputs
+                            |> List.map (fun value ->
+                                input
+                                    (Map.tryFind value.Input required |> Option.defaultValue false)
+                                    value)
+                            |> JsonValue.Array
                             "collections", JsonValue.Array collections
                         ]
                 ]

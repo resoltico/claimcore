@@ -326,14 +326,8 @@ module Frames =
         failure |> CliFailureCode.ofFailure |> CliFailureCode.token
 
     let private simpleFailure =
-        Codec.record CliFailureCode.toFailure
-        |> Codec.field
-            "code"
-            CliFailureCode.ofFailure
-            (Codec.enumeration (
-                Vocabulary.entries CliFailureCode.vocabulary
-                |> List.filter (fun (code, _) -> code <> CliFailureCode.InvalidFrame)
-            ))
+        Codec.record id
+        |> Codec.field "code" id (Codec.enumeration CliFailureCode.simple)
         |> Codec.build
 
     let private configurationFailure =
@@ -341,6 +335,12 @@ module Frames =
         |> Codec.fixedField "code" (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)
         |> Codec.field "issue" snd (Codec.enumeration ConfigurationIssue.all)
+        |> Codec.build
+
+    let private recoveryRootFailure =
+        Codec.record id
+        |> Codec.fixedField "code" (CliFailureCode.token CliFailureCode.RecoveryRootNotAbsolute)
+        |> Codec.field "setting" id (Codec.enumeration RecoveryRootSetting.tokens)
         |> Codec.build
 
     let private invalidFrameFailure =
@@ -360,6 +360,7 @@ module Frames =
                     id
                     (function
                     | CliFailure.ConfigurationIssue _
+                    | CliFailure.RecoveryRootNotAbsolute _
                     | CliFailure.InvalidFrame _ -> None
                     | failure -> Some failure)
                     simpleFailure
@@ -369,6 +370,12 @@ module Frames =
                     | CliFailure.ConfigurationIssue(setting, issue) -> Some(setting, issue)
                     | _ -> None)
                     configurationFailure
+                Codec.branch
+                    CliFailure.RecoveryRootNotAbsolute
+                    (function
+                    | CliFailure.RecoveryRootNotAbsolute setting -> Some setting
+                    | _ -> None)
+                    recoveryRootFailure
                 Codec.branch
                     CliFailure.InvalidFrame
                     (function

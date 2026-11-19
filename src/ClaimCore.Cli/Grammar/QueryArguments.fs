@@ -2,7 +2,6 @@ namespace ClaimCore.Cli
 
 open System
 open System.Collections.Generic
-open System.Globalization
 open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -81,10 +80,10 @@ module internal QueryArguments =
                 None)
 
         let uuid name value =
-            match Guid.TryParseExact(value, "D") with
-            | true, value when value <> Guid.Empty -> Some(Codec.uuid.Write value)
-            | _ ->
-                problems.Add(UsageError.InvalidChoice(flag name, value, []))
+            match VerbOptions.uuid (flag name) value with
+            | Ok id -> Some id
+            | Error problem ->
+                problems.Add problem
                 None
 
         let scalar (input: CommandInput) value =
@@ -97,7 +96,7 @@ module internal QueryArguments =
                 | "true" -> Some(JsonValue.Boolean true)
                 | "false" -> Some(JsonValue.Boolean false)
                 | _ ->
-                    problems.Add(UsageError.InvalidChoice(flag name, value, [ "true"; "false" ]))
+                    problems.Add(UsageError.InvalidBoolean(flag name))
                     None
             | CommandAtom.Integer ->
                 let maximum =
@@ -105,37 +104,25 @@ module internal QueryArguments =
                     |> Option.map _.MaximumLimit
                     |> Option.defaultValue Paging.MaximumPageSize
 
-                match
-                    Int64.TryParse(
-                        value,
-                        NumberStyles.AllowLeadingSign,
-                        CultureInfo.InvariantCulture
-                    )
-                with
-                | true, number when number >= 1L && number <= int64 maximum ->
-                    Some(JsonValue.Integer number)
-                | _ ->
-                    problems.Add(UsageError.InvalidRange(flag name, value, 1, maximum))
+                match VerbOptions.integer (flag name) 1L (int64 maximum) value with
+                | Ok number -> Some(JsonValue.Integer number)
+                | Error problem ->
+                    problems.Add problem
                     None
             | CommandAtom.Text ->
                 match name with
                 | TaskInputId.CaseId ->
-                    match Guid.TryParseExact(value, "D") with
-                    | true, id when id <> Guid.Empty ->
-                        Some(
-                            RequestCodecs.caseSelector.Write(
-                                CaseSelector.Id(CaseId.create id |> Option.get)
-                            )
-                        )
-                    | _ ->
-                        problems.Add(UsageError.InvalidValue("--case-id", value))
-                        None
+                    uuid name value
+                    |> Option.map (fun id ->
+                        RequestCodecs.caseSelector.Write(
+                            CaseSelector.Id(CaseId.create id |> Option.get)
+                        ))
                 | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
                     Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
                 | TaskInputId.ActorId
                 | TaskInputId.ResponsibleActorFilter
                 | TaskInputId.Target(InputTarget.OperationId | InputTarget.ReminderId) ->
-                    uuid name value
+                    uuid name value |> Option.map Codec.uuid.Write
                 | TaskInputId.Target InputTarget.Cursor ->
                     let maximum =
                         declaration.Page

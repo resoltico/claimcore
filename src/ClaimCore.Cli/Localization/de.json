@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "Speichern Sie öffentliche Verbindungs-, Sprach- und Anzeigegebietsschema-Einstellungen im Profil.\\nDie Sprache bestimmt den Wortlaut; --display-locale bestimmt Datums- und Zahlenformate. Vorrang: Option, CLAIMCORE_DISPLAY_LOCALE, Profil, Sprachstandard.\\n`claimcore configure --show` zeigt wirksame Werte und Quellen.\\nGeben Sie Geheimnisse über Dateien an; sie werden nie im Profil gespeichert.\\nSiehe docs/integrating.md#cli-use.",
-    "source": "08119fe9649d"
+    "text": "Speichern Sie öffentliche Verbindungs-, Sprach- und Anzeigegebietsschema-Einstellungen im Profil.\nDie Sprache bestimmt den Wortlaut; --display-locale bestimmt Datums- und Zahlenformate. Vorrang: Option, CLAIMCORE_DISPLAY_LOCALE, Profil, Sprachstandard.\n`claimcore configure --show` zeigt wirksame Werte und Quellen.\nGeben Sie Geheimnisse über Dateien an; sie werden nie im Profil gespeichert.\nSiehe docs/integrating.md#cli-use.",
+    "source": "2a54539e2577"
   },
   "cli.help.delivery": {
     "text": "Bei unbestätigter Übermittlung gibt Exitcode 4 die genaue Anfrage zum erneuten Senden aus.\nErneutes Senden kann sie nicht doppelt erfassen.\nPrüfen Sie mit `claimcore recovery list` und `claimcore recovery check`; die Antwort wird innerhalb von {window} endgültig.",
@@ -438,5 +438,45 @@
   "cli.family.link": {
     "text": "Fallverknüpfungen",
     "source": "99bba925fcb4"
+  },
+  "cli.usage.invalidUuid": {
+    "text": "Verwenden Sie für {flag} eine UUID mit Bindestrichen.",
+    "source": "324b6ca181ab"
+  },
+  "cli.usage.invalidBoolean": {
+    "text": "Verwenden Sie für {flag} true oder false.",
+    "source": "fab3d618d06d"
+  },
+  "cli.usage.collectionJson": {
+    "text": "Verwenden Sie für jede Zeile von {flag} gültiges JSON.",
+    "source": "fca50076f4c1"
+  },
+  "cli.usage.collectionDuplicateMember": {
+    "text": "Geben Sie jedes Feld in einer Zeile von {flag} höchstens einmal an.",
+    "source": "b3d8707365d0"
+  },
+  "cli.usage.collectionExpectedObject": {
+    "text": "Geben Sie für jede Zeile von {flag} genau ein JSON-Objekt an.",
+    "source": "3fdec4cf8ccc"
+  },
+  "cli.usage.collectionUnknownMember": {
+    "text": "Verwenden Sie nur die in der Hilfe für {flag} aufgeführten Feldnamen.",
+    "source": "d6f035190064"
+  },
+  "cli.usage.collectionInvalidMember": {
+    "text": "Verwenden Sie die in der Hilfe für {flag} aufgeführten Feldtypen und Auswahlmöglichkeiten.",
+    "source": "de16aec361f4"
+  },
+  "cli.usage.collectionTooLarge": {
+    "text": "Die Zeile von {flag} überschreitet die zulässige Größe.",
+    "source": "79a67afc982a"
+  },
+  "cli.usage.collectionCount": {
+    "text": "Geben Sie für {flag} zwischen {minimum} und {maximum} Zeilen an.",
+    "source": "b824190ee0f3"
+  },
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
+    "text": "Setzen Sie {setting} auf einen absoluten Verzeichnispfad, um die lokale Wiederherstellung zu verwenden.",
+    "source": "5c168d61cfd3"
   }
 }

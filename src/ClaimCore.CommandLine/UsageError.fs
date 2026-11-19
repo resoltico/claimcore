@@ -6,6 +6,15 @@ open System
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
+type CollectionProblem =
+    | MalformedJson
+    | DuplicateMember
+    | ExpectedObject
+    | UnknownMember
+    | InvalidMember
+    | TooLarge
+
+[<RequireQualifiedAccess>]
 type UsageError =
     | UnknownCommand of command: string * suggestions: string list
     | UnknownOption of flag: string * suggestion: string option
@@ -13,7 +22,12 @@ type UsageError =
     | MissingOperand of operand: string
     | ExtraOperand of operand: string
     | InvalidValue of flag: string * value: string
-    | InvalidRange of flag: string * value: string * minimum: int * maximum: int
+    | InvalidInteger of flag: string * value: string
+    | InvalidRange of flag: string * value: string * minimum: int64 * maximum: int64
+    | InvalidUuid of flag: string
+    | InvalidBoolean of flag: string
+    | InvalidCollection of flag: string * problem: CollectionProblem
+    | InvalidCollectionCount of flag: string * minimum: int * maximum: int
     | InvalidChoice of flag: string * value: string * allowed: string list
     | NotApplicable of flag: string * because: string
     | DuplicateOption of flag: string
@@ -132,6 +146,70 @@ module UsageError =
                 (record id |> field "topic" id text)
         ]
 
+    let private collectionProblem =
+        enumeration
+            [
+                CollectionProblem.MalformedJson, "MALFORMED_JSON"
+                CollectionProblem.DuplicateMember, "DUPLICATE_MEMBER"
+                CollectionProblem.ExpectedObject, "EXPECTED_OBJECT"
+                CollectionProblem.UnknownMember, "UNKNOWN_MEMBER"
+                CollectionProblem.InvalidMember, "INVALID_MEMBER"
+                CollectionProblem.TooLarge, "TOO_LARGE"
+            ]
+
+    let private typedValues =
+        [
+            variant
+                "INVALID_INTEGER"
+                UsageError.InvalidInteger
+                (function
+                | UsageError.InvalidInteger(flag, value) -> Some(flag, value)
+                | _ -> None)
+                (record (fun flag value -> flag, value)
+                 |> field "flag" fst text
+                 |> field "value" snd text)
+            variant
+                "INVALID_UUID"
+                UsageError.InvalidUuid
+                (function
+                | UsageError.InvalidUuid flag -> Some flag
+                | _ -> None)
+                (record id |> field "flag" id text)
+            variant
+                "INVALID_BOOLEAN"
+                UsageError.InvalidBoolean
+                (function
+                | UsageError.InvalidBoolean flag -> Some flag
+                | _ -> None)
+                (record id |> field "flag" id text)
+            variant
+                "INVALID_COLLECTION"
+                UsageError.InvalidCollection
+                (function
+                | UsageError.InvalidCollection(flag, problem) -> Some(flag, problem)
+                | _ -> None)
+                (record (fun flag problem -> flag, problem)
+                 |> field "flag" fst text
+                 |> field "problem" snd collectionProblem)
+            variant
+                "INVALID_COLLECTION_COUNT"
+                UsageError.InvalidCollectionCount
+                (function
+                | UsageError.InvalidCollectionCount(flag, minimum, maximum) ->
+                    Some(flag, minimum, maximum)
+                | _ -> None)
+                (record (fun flag minimum maximum -> flag, minimum, maximum)
+                 |> field "flag" (fun (flag, _, _) -> flag) text
+                 |> field
+                     "minimum"
+                     (fun (_, minimum, _) -> minimum)
+                     (integer 0L (int64 Int32.MaxValue) |> map int int64)
+                 |> field
+                     "maximum"
+                     (fun (_, _, maximum) -> maximum)
+                     (integer 0L (int64 Int32.MaxValue) |> map int int64))
+        ]
+
     let private ranges =
         [
             variant
@@ -147,11 +225,12 @@ module UsageError =
                  |> field
                      "minimum"
                      (fun (_, _, minimum, _) -> minimum)
-                     (integer 0L (int64 Int32.MaxValue) |> map int int64)
+                     (integer -JsonValue.MaximumInteger JsonValue.MaximumInteger)
                  |> field
                      "maximum"
                      (fun (_, _, _, maximum) -> maximum)
-                     (integer 0L (int64 Int32.MaxValue) |> map int int64))
+                     (integer -JsonValue.MaximumInteger JsonValue.MaximumInteger))
         ]
 
-    let codec = tagged "UsageError" (selections @ values @ cardinality @ ranges)
+    let codec =
+        tagged "UsageError" (selections @ values @ cardinality @ typedValues @ ranges)

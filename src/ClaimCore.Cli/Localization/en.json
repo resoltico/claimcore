@@ -32,7 +32,7 @@
   "cli.help.commands": "Run {command} for commands.",
   "cli.help.dryRunUsage": "With --dry-run: {usage}",
   "cli.help.configuration": "Settings are saved in ~/.config/claimcore/profile.json. Environment variables override them.\nSecrets are never saved; supply them through a file.\nRun `claimcore configure --show` to see effective values and their sources.\nSee docs/integrating.md#cli-use.",
-  "cli.help.configure": "Save public connection, language and display-locale settings in the profile.\\nLanguage selects wording; --display-locale selects dates and numbers. Display locale uses flag, CLAIMCORE_DISPLAY_LOCALE, profile, then the language default.\\nRun `claimcore configure --show` to inspect effective values and their sources.\\nSupply secrets through files; they are never saved in the profile.\\nSee docs/integrating.md#cli-use.",
+  "cli.help.configure": "Save public connection, language and display-locale settings in the profile.\nLanguage selects wording; --display-locale selects dates and numbers. Display locale uses flag, CLAIMCORE_DISPLAY_LOCALE, profile, then the language default.\nRun `claimcore configure --show` to inspect effective values and their sources.\nSupply secrets through files; they are never saved in the profile.\nSee docs/integrating.md#cli-use.",
   "cli.help.delivery": "If delivery is unconfirmed, exit code 4 prints the exact request to send again.\nSending it again cannot record it twice.\nUse `claimcore recovery list` and `claimcore recovery check` to see the answer; it becomes final within {window}.",
   "cli.help.examples": "Prepare requests offline, inspect schemas, then send an admitted frame.",
   "cli.help.globalOptions": "Global options",
@@ -108,5 +108,15 @@
   "cli.text.operationalUnresolved": "The command's answer was not confirmed. Repeating it may affect newer state.",
   "cli.family.browserSessions": "ClaimCore browser sessions",
   "cli.family.party": "Case parties",
-  "cli.family.link": "Related case links"
+  "cli.family.link": "Related case links",
+  "cli.usage.invalidUuid": "Use a UUID in hyphenated form for {flag}.",
+  "cli.usage.invalidBoolean": "Use true or false for {flag}.",
+  "cli.usage.collectionJson": "Use valid JSON for each {flag} row.",
+  "cli.usage.collectionDuplicateMember": "Use each member at most once in a {flag} row.",
+  "cli.usage.collectionExpectedObject": "Supply one JSON object for each {flag} row.",
+  "cli.usage.collectionUnknownMember": "Use only the member names listed in help for {flag}.",
+  "cli.usage.collectionInvalidMember": "Use the member types and choices listed in help for {flag}.",
+  "cli.usage.collectionTooLarge": "The {flag} row exceeds the size limit.",
+  "cli.usage.collectionCount": "Supply between {minimum} and {maximum} rows for {flag}.",
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": "Set {setting} to an absolute directory path to use local recovery."
 }
