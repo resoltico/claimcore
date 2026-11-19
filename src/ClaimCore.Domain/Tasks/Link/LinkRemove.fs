@@ -30,15 +30,17 @@ let private selected binding (state: DecisionFacts) =
 let private gate retained (environment: FamilyEnvironment) binding state =
     FamilyRules.active false state
     |> Option.orElseWith (fun () ->
-        let aloud =
+        let available =
             selected binding state
             |> Option.exists (fun (_, part) ->
                 match part.Value.Content with
                 | Some content ->
-                    environment.RelatedCase(CaseSelector.Id content.Target) |> Option.isSome
+                    environment.RelatedCase(CaseSelector.Id content.Target)
+                    |> RelatedCase.availableTarget
+                    |> Option.isSome
                 | None -> retained)
 
-        if aloud then None else Some FamilyRules.unavailable)
+        if available then None else Some FamilyRules.unavailable)
 
 let availability environment state binding =
     FamilyRules.availability

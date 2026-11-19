@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "المتابعات المستحقة اليوم",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "تم الإرسال",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "تعذّر الإرسال",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "المواعيد النهائية المعلّقة التي مضى تاريخ استحقاقها.",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "المواعيد النهائية المعلّقة المستحقة اليوم.",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "المواعيد النهائية المعلّقة المستحقة خلال الأيام السبعة المقبلة.",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "المتابعات المعلّقة التي مضى تاريخ استحقاقها.",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "المتابعات المعلّقة المستحقة اليوم.",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "قبل خادم ترحيل البريد الملخص اليومي.",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "فشلت محاولة إرسال الملخص اليومي.",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "فارغ",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "لم تكن هناك تذكيرات لإدراجها في الملخص اليومي.",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "المشغّل",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "الجهة التي تسجّل الإعداد الأولي واستعادة وصول المالك من خلال أوامر إدارة قاعدة البيانات.",
+    "source": "ee88ee15dfdb"
   }
 }

@@ -56,6 +56,8 @@ let private links database =
 
         accepted opened |> ignore
 
+        let! sourceRecord = Service.get owner { Target = source } token
+
         let! added =
             run owner 111 "link.add" (OperationBinding.Link(source, None)) (related "LINK-TARGET")
 
@@ -141,6 +143,48 @@ let private links database =
         Expect.equal hidden.Outcome refusal "Linking cannot reveal a hidden case"
         Expect.equal missing.Outcome refusal "Missing cases produce the same refusal"
 
+        let sourceGrant =
+            {
+                Role = Role.CaseHandler
+                Scope = GrantTarget.CaseId((succeeded sourceRecord).Snapshot.CaseId)
+            }
+
+        let! grantedSource = grant owner (id fixture 123) worker sourceGrant true
+        acceptedPeople grantedSource
+
+        let! scopedSource = get scoped "synthetic-a"
+        let! scopedTarget = get scoped "LINK-TARGET"
+
+        Expect.equal
+            (scopedSource.Outgoing
+             |> List.choose _.Case
+             |> List.map (_.Reference >> CaseReference.format))
+            [ "LINK-TARGET" ]
+            "Scoped access reveals the outgoing link"
+
+        Expect.equal
+            (scopedSource.Outgoing |> List.map _.CanRemove)
+            [ true ]
+            "A scoped case handler can remove a link to a readable target"
+
+        Expect.isTrue scopedSource.CanAdd "A scoped case handler can add links"
+
+        Expect.equal
+            (scopedTarget.Incoming
+             |> List.choose _.Case
+             |> List.map (_.Reference >> CaseReference.format))
+            [ "synthetic-a" ]
+            "Scoped access reveals the incoming link"
+
+        Expect.equal scopedTarget.IncomingCount 1L "A readable source contributes to the count"
+
+        let! revokedSource = grant owner (id fixture 124) worker sourceGrant false
+        acceptedPeople revokedSource
+
+        let! afterRevocation = get scoped "LINK-TARGET"
+        Expect.isEmpty afterRevocation.Incoming "Revocation hides the incoming link"
+        Expect.equal afterRevocation.IncomingCount 0L "Revocation removes the source from the count"
+
         let! removed =
             run
                 owner
@@ -208,6 +252,12 @@ let private links database =
             [ Lifecycle.Erased ]
             "Readable erased targets keep their erased status"
 
+        Expect.equal
+            (erasedTarget.Outgoing |> List.map _.CanRemove)
+            [ false ]
+            "An erased target's link has no removal offer"
+
+        let! _ = verified database
         do! erase "synthetic-a" 121
         let! erasedSource = get owner "LINK-TARGET"
         Expect.equal erasedSource.IncomingCount 0L "Source erasure clears the reverse link"

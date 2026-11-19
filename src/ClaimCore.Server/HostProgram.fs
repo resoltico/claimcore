@@ -150,7 +150,7 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }
 
-let private configuredBuilder
+let internal configuredBuilder
     assets
     (configuration: WebConfiguration)
     (oidc: OidcConfiguration)

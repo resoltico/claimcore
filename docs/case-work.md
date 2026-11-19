@@ -50,10 +50,12 @@ With Register, use **Change case reference** on an active open or closed case. E
 reference remains reserved to that case, including after erasure. Opening an earlier reference
 shows the current one and identifies the matched reference.
 
-With Manage case work and read access to both cases, you can link a related case and include a
-note. The source shows its outgoing links. The target shows readable incoming links, newest first,
-and a count. Each case can have up to 20 outgoing links. Links never grant read access. An
-unreadable target shows as unavailable. Erasing the source clears its links.
+Adding or removing a link requires Manage case work, read access to both cases, and a target that
+has not been erased. You can include a note when adding a link. The source shows its outgoing links.
+The target shows readable incoming links, newest first, and a count. Case-scoped access suffices
+for these reads. Each case can have up to 20 outgoing links. Links never grant read access. An
+unreadable target shows as unavailable. A readable erased target shows as erased. Erasing the
+source clears its links.
 
 ## Open the case workspace
 

@@ -965,5 +965,18 @@
   "digestCount.OVERDUE_FOLLOW_UPS.line": "Overdue follow-ups — {count}",
   "digestCount.OVERDUE_FOLLOW_UPS.short": "Overdue follow-ups",
   "digestCount.FOLLOW_UPS_DUE_TODAY.line": "Follow-ups due today — {count}",
-  "digestCount.FOLLOW_UPS_DUE_TODAY.short": "Follow-ups due today"
+  "digestCount.FOLLOW_UPS_DUE_TODAY.short": "Follow-ups due today",
+  "digestOutcome.SENT.shortLabel": "Sent",
+  "digestOutcome.FAILED.shortLabel": "Failed",
+  "digestCount.OVERDUE_DEADLINES.description": "Pending deadlines whose due date has passed.",
+  "digestCount.DEADLINES_DUE_TODAY.description": "Pending deadlines due today.",
+  "digestCount.UPCOMING_DEADLINES.description": "Pending deadlines due in the next seven days.",
+  "digestCount.OVERDUE_FOLLOW_UPS.description": "Pending follow-ups whose due date has passed.",
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": "Pending follow-ups due today.",
+  "digestOutcome.SENT.description": "The mail relay accepted the daily digest.",
+  "digestOutcome.FAILED.description": "The daily digest send attempt failed.",
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": "Empty",
+  "digestOutcome.SKIPPED_EMPTY.description": "There were no reminders to include in the daily digest.",
+  "label.installationOperator.shortLabel": "Operator",
+  "label.installationOperator.description": "The authority that records initialization and owner recovery through database administration commands."
 }

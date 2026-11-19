@@ -25,3 +25,8 @@ module RelatedCase =
 
     [<Literal>]
     let MaximumIncomingShown = 20
+
+    let internal availableTarget =
+        function
+        | Some(id, lifecycle) when lifecycle <> Lifecycle.Erased -> Some id
+        | _ -> None
