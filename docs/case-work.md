@@ -152,7 +152,8 @@ that can run programs, such as `.exe`, `.js` and `.msi`. Put a refused file in a
 needs it. The register preserves the exact bytes and stores one copy of identical bytes per case.
 Each file can be up to 25 MiB, including empty files. Each case can retain up to 100 distinct files
 and 256 MiB in total. **Preview** opens supported static PNG and JPEG images and PDFs in the browser.
-Use **Download** for the original file, including when a preview is unavailable.
+PDF preview shows the page and its static form appearances in a read-only view. Use **Download**
+for the original file, including when a preview is unavailable.
 
 Withdrawal records who acted and when. It hides the selected attachment's details in current
 reads, earlier receipts and history. Its bytes still count against the case's limits. Uploading the

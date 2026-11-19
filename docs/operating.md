@@ -77,6 +77,11 @@ before accessing installation data. Use a fresh database when the format changes
 existing database and recovery records separately. The available owner commands initialize,
 verify, rebuild or restore matching data. There is no migration or cross-format reader.
 
+If you used the unreleased format-8 attachments build from PR #178, preserve that database with its
+matching build and use a fresh installation for this build. Both builds report format 8 and share a
+SQL baseline identity. The earlier build stored a `preview` field in attachment descriptors. The
+current [record codec](../src/ClaimCore.RecordFormat/PartCodecs.fs) rejects that field.
+
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and

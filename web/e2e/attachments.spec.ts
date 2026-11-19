@@ -3,13 +3,14 @@ import { deflateSync } from "node:zlib";
 import { expect, test, type Frame, type Locator, type Page } from "@playwright/test";
 import type { ResponseFor } from "@contracts/client";
 import { openCase } from "./case-workflow";
-import { bluePage, redPage, syntheticPdf } from "./attachment-pdf-fixtures";
+import { bluePage, filledWidgetPdf, redPage, syntheticPdf } from "./attachment-pdf-fixtures";
 import {
   confirmAttachmentChange as confirm,
   downloadAttachment as download,
   uploadAttachment as upload,
 } from "./attachment-workflow";
 import { noHorizontalOverflow } from "./layout-support";
+import { selectLanguage } from "./localization-support";
 import { browserRequest, expectAccessible, openAuthenticated } from "./session-helpers";
 import { recoveryRecords } from "./recovery-storage";
 import { workRequest, type observedAccess } from "./work-workflow";
@@ -61,7 +62,14 @@ const centerPixel = (frame: Frame) =>
     );
   });
 
-test("renders and pages through PDFs inside the opaque viewer @engine", async ({ page }) => {
+// macOS WebKit's default Tab behavior skips buttons. Option+Tab includes them.
+const pagerTab = (browserName: string) =>
+  browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
+
+test("renders and pages through PDFs inside the opaque viewer @engine", async ({
+  page,
+  browserName,
+}) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
   await openCase(page, `ATTACH-PDF-${randomUUID()}`);
@@ -148,20 +156,103 @@ test("renders and pages through PDFs inside the opaque viewer @engine", async ({
   expect(sandbox.violations.filter((directive) => directive === "connect-src")).toHaveLength(2);
 
   const next = row.getByRole("button", { name: "Next page", exact: true });
-  await next.focus();
-  await next.press("Enter");
+  const previous = row.getByRole("button", { name: "Previous page", exact: true });
+  await expect(previous).toBeDisabled();
+  await page.keyboard.press(pagerTab(browserName));
+  await expect(next).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(controls.status).toHaveText("Page 2 of 2");
+  await expect(next).toBeDisabled();
+  await expect(previous).toBeFocused();
   expect(await centerPixel(frame)).toEqual([0, 0, 255, 255]);
-  await row.getByRole("button", { name: "Previous page", exact: true }).click();
+  await page.keyboard.press("Enter");
   await expect(controls.status).toHaveText("Page 1 of 2");
+  await expect(previous).toBeDisabled();
+  await expect(next).toBeFocused();
   expect(await centerPixel(frame)).toEqual([255, 0, 0, 255]);
   await expect(page.locator("html")).not.toHaveAttribute("data-pdf-blob-created", "true");
   await page.emulateMedia({ forcedColors: "active" });
   expect(await centerPixel(frame)).toEqual([255, 0, 0, 255]);
   await expectAccessible(page);
-  await controls.close.click();
+  await page.keyboard.press(`Shift+${pagerTab(browserName)}`);
+  await expect(controls.close).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(controls.iframe).toHaveCount(0);
   await expect(controls.preview).toBeFocused();
+});
+
+test("keeps the PDF pager usable in narrow Arabic and forced colors @engine", async ({
+  page,
+  browserName,
+}) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-RTL-${randomUUID()}`);
+  await upload(
+    page,
+    documentPanel(page),
+    pdfName,
+    pdfName,
+    "application/pdf",
+    syntheticPdf([redPage, bluePage]),
+  );
+  await selectLanguage(page, "ar");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ forcedColors: "active" });
+
+  const panel = page.getByRole("region", { name: "المرفقات", exact: true });
+  await expect(panel.getByLabel("اختر ملفًا", { exact: true })).toBeVisible();
+  const row = panel.locator(".attachment-list > li").filter({ hasText: pdfName });
+  const preview = row.getByRole("button", { name: "معاينة", exact: true });
+  await preview.focus();
+  await page.keyboard.press("Enter");
+  const iframe = row.locator("iframe");
+  await expect(iframe).toHaveAttribute("title", "معاينة");
+  const close = row.getByRole("button", { name: "إغلاق", exact: true });
+  const next = row.getByRole("button", { name: "الصفحة التالية", exact: true });
+  const previous = row.getByRole("button", { name: "الصفحة السابقة", exact: true });
+  const status = row.getByRole("status");
+  await expect(status).toHaveText("الصفحة \u20681\u2069 من \u20682\u2069");
+  await expect(close).toBeFocused();
+  await page.keyboard.press(pagerTab(browserName));
+  await expect(next).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(status).toHaveText("الصفحة \u20682\u2069 من \u20682\u2069");
+  await expect(previous).toBeFocused();
+  expect(await centerPixel(viewerFrame(page))).toEqual([0, 0, 255, 255]);
+  await noHorizontalOverflow(page, "narrow");
+  await expectAccessible(page);
+  await page.keyboard.press("Enter");
+  await expect(status).toHaveText("الصفحة \u20681\u2069 من \u20682\u2069");
+  await expect(next).toBeFocused();
+  await page.keyboard.press(`Shift+${pagerTab(browserName)}`);
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(iframe).toHaveCount(0);
+  await expect(preview).toBeFocused();
+});
+
+test("paints a filled PDF widget into the canvas without interactive elements @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-WIDGET-${randomUUID()}`);
+  const { row } = await upload(
+    page,
+    documentPanel(page),
+    pdfName,
+    pdfName,
+    "application/pdf",
+    filledWidgetPdf(),
+  );
+  const controls = await previewDocument(row);
+  await expect(controls.status).toHaveText("Page 1 of 1");
+  const frame = viewerFrame(page);
+  expect(await centerPixel(frame)).toEqual([255, 0, 0, 255]);
+  expect(
+    await frame
+      .locator("body")
+      .evaluate((body) => Array.from(body.children, (element) => element.localName).toSorted()),
+  ).toEqual(["canvas", "script"]);
 });
 
 test("discards invalid trapped-frame replies and deadlines preserve download", async ({ page }) => {
@@ -470,13 +561,116 @@ test("drops a preview verified after observing withdrawal in another tab", async
   await expect(panel.getByRole("img", { name })).toHaveCount(0);
 });
 
-test("masks the case workspace when an admitted attachment list rejects the session", async ({
+test("withdrawal closes a pending PDF frame and discards its queued page reply @engine", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.addInitScript(() => {
+    if (window !== window.top) {
+      return;
+    }
+    const channels = window.MessageChannel;
+    const descriptor = Object.getOwnPropertyDescriptor(MessagePort.prototype, "onmessage")!;
+    window.MessageChannel = class extends channels {
+      constructor() {
+        super();
+        const { port1 } = this;
+        Object.defineProperty(port1, "onmessage", {
+          get(): unknown {
+            return descriptor.get?.call(port1);
+          },
+          set(handler: ((event: MessageEvent<unknown>) => void) | null) {
+            if (handler === null) {
+              descriptor.set?.call(port1, null);
+              return;
+            }
+            descriptor.set?.call(port1, (event: MessageEvent<unknown>) => {
+              const { data } = event;
+              if (
+                typeof data !== "object" ||
+                data === null ||
+                !("page" in data) ||
+                data.page !== 2 ||
+                !("requestId" in data) ||
+                data.requestId !== 2 ||
+                !("pageCount" in data) ||
+                data.pageCount !== 2
+              ) {
+                handler.call(port1, event);
+                return;
+              }
+              document.documentElement.dataset["pdfReply"] = "held";
+              document.addEventListener(
+                "release-pdf-reply",
+                () => {
+                  // The real ACK was queued in the parent while the viewer was alive.
+                  const clear = window.clearTimeout;
+                  let cleared = false;
+                  window.clearTimeout = (timeout) => {
+                    cleared = true;
+                    clear(timeout);
+                  };
+                  try {
+                    handler.call(port1, event);
+                  } finally {
+                    window.clearTimeout = clear;
+                  }
+                  document.documentElement.dataset["pdfReply"] = cleared ? "admitted" : "ignored";
+                },
+                { once: true },
+              );
+            });
+          },
+        });
+      }
+    };
+  });
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-PDF-LATE-${randomUUID()}`);
+  const panel = documentPanel(page);
+  const { row } = await upload(
+    page,
+    panel,
+    pdfName,
+    pdfName,
+    "application/pdf",
+    syntheticPdf([redPage, bluePage]),
+  );
+  const controls = await previewDocument(row);
+  await expect(controls.status).toHaveText("Page 1 of 2");
+  await row.getByRole("button", { name: "Next page", exact: true }).click();
+  const html = page.locator("html");
+  await expect(html).toHaveAttribute("data-pdf-reply", "held");
+  await expect(controls.status).toHaveText("Page 1 of 2");
+  await expect(controls.iframe).toBeVisible();
+
+  const withdrawal = await page.context().newPage();
+  await withdrawal.goto(page.url());
+  const withdrawalRow = withdrawal.locator(".attachment-list > li").filter({ hasText: pdfName });
+  await withdrawalRow.getByRole("button", { name: "Withdraw attachment", exact: true }).click();
+  await confirm(withdrawal, "/api/operation.execute");
+  await withdrawal.close();
+  await page
+    .locator(".case-timeline-panel")
+    .getByRole("tab", { name: "Attachments", exact: true })
+    .click();
+  await expect(panel.locator("iframe")).toHaveCount(0);
+  await expect(row).toHaveCount(0);
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("release-pdf-reply"));
+  });
+  await expect(html).toHaveAttribute("data-pdf-reply", "ignored");
+  await expect(panel.locator("iframe")).toHaveCount(0);
+});
+
+test("masks the case workspace when an admitted attachment list rejects the session @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await openCase(page, `ATTACH-LIST-${randomUUID()}`);
   const entered = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
+  const upstream = Promise.withResolvers<unknown>();
   await page.route("**/api/case.attachments", async (route) => {
     entered.resolve();
     await release.promise;
@@ -486,6 +680,8 @@ test("masks the case workspace when an admitted attachment list rejects the sess
       .filter((cookie) => !cookie.trim().startsWith("__Host-ClaimCoreSession="))
       .join(";");
     const response = await route.fetch({ headers, maxRedirects: 0 });
+    const envelope: unknown = await response.json();
+    upstream.resolve(envelope);
     await route.fulfill({ response });
   });
   const attempt = page.waitForResponse(
@@ -502,7 +698,7 @@ test("masks the case workspace when an admitted attachment list rejects the sess
   }
   const refusal = await attempt;
   expect(refusal.status()).toBe(401);
-  expect(await refusal.json()).toMatchObject({ hostFailure: { code: "SESSION_REJECTED" } });
+  expect(await upstream.promise).toMatchObject({ hostFailure: { code: "SESSION_REJECTED" } });
   await expect(facts).toHaveCount(0);
   await expect(page.getByText("You are signed out", { exact: false }).first()).toBeVisible();
 });

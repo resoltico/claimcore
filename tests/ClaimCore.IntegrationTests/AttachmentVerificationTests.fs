@@ -284,12 +284,29 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected authorized metadata: %A" other
 
+let private payloadQueries connection =
+    task {
+        let! rows =
+            DatabaseSession.rows
+                connection
+                """
+                SELECT coalesce(sum(calls), 0)::bigint FROM public.pg_stat_statements
+                WHERE query ILIKE '%SELECT payload FROM claimcore.attachment_blobs%'
+                """
+                [||]
+                token
+
+        return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
+    }
+
 let private measure sql action explanation =
     task {
         let! _ =
             DatabaseSession.execute sql "SELECT public.pg_stat_statements_reset()" [||] token
 
         let! result = action ()
+        let! payloadReads = payloadQueries sql
+        Expect.equal payloadReads 0L "Metadata reads issue zero payload SELECTs"
         let! acquired = rootHydrationQueries sql
         Expect.equal acquired (1L, 1L, 1L, 0L) explanation
         return result
@@ -313,6 +330,18 @@ let private metadataQueries (database: PostgresFixture.Database) =
 
         for number in 0..1 do
             do! add number
+
+        let! _ =
+            DatabaseSession.execute sql "SELECT public.pg_stat_statements_reset()" [||] token
+
+        let! content = Attachments.download actor (Attachments.attachmentGuid fixture 710)
+        read content |> ignore
+        let! payloadReads = payloadQueries sql
+
+        Expect.equal
+            payloadReads
+            1L
+            "The positive control reaches the payload SELECT, independently of its result"
 
         let! two =
             measure

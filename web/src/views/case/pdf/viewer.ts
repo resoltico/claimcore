@@ -90,7 +90,8 @@ const initialize = (port: MessagePort, bytes: ArrayBuffer) => {
     const render = pageData.render({
       canvas: result,
       viewport: pageData.getViewport({ scale }),
-      annotationMode: AnnotationMode.DISABLE,
+      // Paint static appearances into the canvas without creating an interactive layer.
+      annotationMode: AnnotationMode.ENABLE,
     });
     active = render;
     try {
