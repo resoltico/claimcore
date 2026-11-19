@@ -325,6 +325,9 @@ let internal oldestPaging fixture =
     task {
         let! owner = setup fixture
 
+        do! execute fixture owner 50 "TRIAGE-0" 0L "case.open" Map.empty
+        do! execute fixture owner 51 "TRIAGE-E" 0L "case.open" Map.empty
+
         let filter =
             { CaseListFilter.empty<string> with
                 Order = CaseListOrder.Received
@@ -334,14 +337,16 @@ let internal oldestPaging fixture =
         let! second = list owner filter first.NextCursor
         let! third = list owner filter second.NextCursor
         let! fourth = list owner filter third.NextCursor
-        let rows = [ first; second; third; fourth ] |> List.collect _.Items
+        let! fifth = list owner filter fourth.NextCursor
+        let! sixth = list owner filter fifth.NextCursor
+        let rows = [ first; second; third; fourth; fifth; sixth ] |> List.collect _.Items
 
         Expect.equal
             (rows |> List.map (fun row -> CaseReference.format row.Reference))
-            [ "TRIAGE-B"; "TRIAGE-C"; "TRIAGE-A"; "TRIAGE-D" ]
-            "Oldest dates first, reference ties, erased last"
+            [ "TRIAGE-B"; "TRIAGE-C"; "TRIAGE-A"; "TRIAGE-0"; "TRIAGE-D"; "TRIAGE-E" ]
+            "Dated rows precede active undated and erased rows across page boundaries"
 
-        Expect.isNone fourth.NextCursor "The erased tail completes the keyset"
+        Expect.isNone sixth.NextCursor "The final active undated case completes the keyset"
 
         let! changed =
             Service.list

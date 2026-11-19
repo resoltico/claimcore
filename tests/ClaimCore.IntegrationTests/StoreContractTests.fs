@@ -120,7 +120,7 @@ let internal tests factory =
                 "triage summary counts and exact sums share the selected scope"
                 (withFixture factory WorklistTriageContract.exactTotals)
             testCaseAsync
-                "triage notification order pages null dates last and binds assignment"
+                "triage Received order pages active undated cases last and binds assignment"
                 (withFixture factory WorklistTriageContract.oldestPaging)
             testCaseAsync
                 "triage visibility excludes forbidden roles independently of responsibility"
