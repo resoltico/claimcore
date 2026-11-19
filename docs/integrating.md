@@ -12,8 +12,9 @@ byte admission; interpretation, ownership and operation correlation remain consu
 strings and check declared Gregorian dates, scalar/UTF-8 bounds and complete pattern consumption. The
 generator refuses unsupported scalar formats and regex syntax rather than emitting an unchecked browser
 pattern. Its supported syntax is deliberately finite; it does not translate arbitrary native regexes.
-These guards cannot recover duplicate members or numeric lexemes already lost by `JSON.parse`. The
-native CLI decodes complete replies with its codecs.
+The browser checks response structure before observing dates or starting recovery. Its JSON parser
+does not preserve duplicate-member and numeric-lexeme evidence. Timestamp strings retain their
+precision. The native CLI decodes complete replies with its codecs.
 
 ## Authenticate
 
@@ -58,8 +59,9 @@ embed that same document. Its closed subject identifies the resource; screen reg
 continuation, observation basis, disclosure and history describe the current presentation. DATA replies
 retain endpoint-specific automation types.
 
-An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
-`blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+An `Affordance` carries `task`, `labelId`, `binding`, scalar-or-null `seeds`, `editable`, contextual
+`choices` and `blocked`. The task-discriminated union associates each operation with its binding
+shape. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
 Operation bindings, creation basis, revision bounds, fixed-seed policy, correction-field activation and
 scope-selection defaults are supplied by shared declarations. Native acquisition uses the pure
 `SubmissionAssembly` facade; browser acquisition interprets generated `taskDefinitions.binding`,
@@ -67,8 +69,9 @@ scope-selection defaults are supplied by shared declarations. Native acquisition
 zero and empty text, retain their presence. UPDATE seeds stay display hints until explicitly authored;
 noneditable fixed inputs remain immutable. Missing scope may acquire a default; contradictory selectors
 or explicit installation scope with a case selector refuse instead of widening the grant.
-Operation controls preview and execute; command controls post seeds plus edits to their declared
-endpoint. Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
+Operation controls preview and execute. A command control posts the complete validated request from
+its `COMMAND` binding to the declared endpoint, with empty seeds, editable fields and choices.
+Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
 `RECOMMENDATION` screen regions.
 A `CONTEXT` region associates form context with its supplied actions; show it for the selected task,
 rather than presenting it as another set of current facts. Other section and row actions retain their
@@ -103,6 +106,32 @@ Current access governs each read, including receipts and history. Discard cached
 new observation tightens disclosure or changes the account/installation. A previously visible action
 or document does not authorize a later write.
 
+### Case reports
+
+The [OpenAPI contract](../contracts/openapi.json) defines the `case.summary` selection and page
+fields. Each DATA page returns the observation, whole-selection counts, report rows and a
+continuation. Grouped pages contain one row per group and currency, with a blank-currency row for
+groups without money. Clear grouping to page through the overall currency breakdown. Each page
+reflects current read access and facts. Same-day changes can move results between pages. A
+continuation binds the requester, installation, selection and business date. Restart after a
+change to any of those inputs.
+
+Use `claimcore case summary --format=csv` for the current report page. Add `--all` to stream
+its continuation pages with one header. HTTP offers a bounded complete download.
+
+### Reminder query selections
+
+`reminder.list` distinguishes an omitted state from explicit `state: "ANY"`. With no standard view,
+omission retains the Pending default; `ANY` adds no state constraint and includes Pending,
+Completed and Cancelled rows permitted by the remaining selection. A standard view retains its own
+predicates, so an explicit state filter intersects rather than replaces the view.
+
+Omitted `includeInactive` defaults to false without a view and true with a view. Explicit false and
+true always remain explicit, including in Core links, URL serialization, page requests and CSV
+export selections. The browser renders effective defaults from generated owner metadata rather than
+reimplementing those rules. Case reminder links supply explicit `ANY` and `includeInactive: true`.
+The query uses `reminderStateSelection`. Each recorded reminder is Pending, Completed or Cancelled.
+
 ## Submit a change
 
 Start with the task's help and the current target. Use the offered versions and identities, and author
@@ -113,7 +142,8 @@ changes select an actor ID and require `binding.expectedRevision`. Acquire the p
 of a case or person uses an explicit zero revision and no new-target selector. `case.open` authors
 `field:caseReference` in `inputs`. Creating a reminder or note selects its parent case, without a
 child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
-selection, work, reminder, note and person shapes; command controls use the shared empty binding.
+selection, work, reminder, note and person shapes. A nonledger command control supplies its typed
+request directly.
 CLI automation supplies reviewed version flags where the task declares them; interactive commands can
 acquire and freeze those preconditions for review.
 
@@ -158,11 +188,29 @@ Successful payloads vary by endpoint. Rejections use the shared representation-s
 shape, and failures use the common fault shape with a Core message ID. Input issues target declared
 input tokens. Use structured codes and actions for automation; do not parse translated prose.
 
+### Case and payment contracts
+
+Case receipts expose `payments`, an ordered list of entry differences. `case.correctPayment` binds
+the selected `paymentId` and one case revision, then returns both removed and recorded differences
+in one accepted operation. DATA payment-page items expose `actions`, the list of task IDs available
+for the selected entry. Removal and correction are independently available.
+
+Use `receivedDate` for the date the office received the claim. Registration facts other than the
+reference are optional. Claimed money is an optional pair. Party rows and edits use the supplied
+collection and binding declarations. Payment entries carry direction, their own money,
+evidence reference and payee ID. Reference queries resolve earlier spellings under current read access.
+
+The case handling status is open or closed. Close takes a required outcome and an optional note.
+Reopen takes a reason. Observation-time case summaries support business date filters, grouping and
+signed net-paid totals with contributing-case counts. Reminder kinds and deadline completion outcomes
+are available through list and export contracts. Use the published shape for stage values and
+operator or actor attribution rather than inferring it from a display name.
+
 ## Post a command
 
-A COMMAND control posts its declared semantic inputs to the definition's endpoint, without an
-operation ID or operation preview. Merge its seeds with authored edits and use the endpoint's typed
-request schema. For example, `people.requests.dismiss` accepts:
+Post the request from a `COMMAND` binding directly to the endpoint named in its task definition.
+This submission uses no operation ID or preview. For example, `people.requests.dismiss` accepts
+a kind-aware principal with the issuer and subject from the request:
 
 ```json
 {
@@ -174,6 +222,20 @@ request schema. For example, `people.requests.dismiss` accepts:
 
 Command requests admit only their declared semantic input keys. Render the returned HUMAN document
 for command feedback. Do not repeat an uncertain operational write automatically.
+
+### Browser-session termination transport
+
+`session.terminateOwn` accepts `{}`. `people.terminateSessions` accepts the selected registered person
+as `{"input:actorId":"UUID"}` and requires current ManageAccess. Both are authenticated operational
+writes, with the existing origin/antiforgery/contract/body gates. They do not require an installation
+header, but any supplied `ClaimCore-Installation` header must be one valid matching UUID. The same
+optional binding rule applies to preview and other actor routes; absent optional preview bindings
+remain valid. OpenAPI declares required versus optional installation headers.
+
+DATA returns `SUCCEEDED` with `data.count` and `data.self`, or typed `REJECTED`, `FAILED` or
+`OUTCOME_UNKNOWN`. HUMAN carries the supplied completion/uncertainty document; confirmed success also
+has a required boolean `self` so clients clear the right current browser ownership. Unknown results
+have no count or operation identity. They are not safe automatic retries relative to later sessions.
 
 ## Recover an uncertain change
 
@@ -209,6 +271,29 @@ CSV cells beginning with formula-trigger characters are prefixed, including afte
 Preserve that prefix when passing exports to spreadsheet software. CSV is not a new authorization or
 retention boundary: exported copies remain the recipient's responsibility after source erasure.
 
+### Bounded CSV download
+
+`POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
+`case.summary`, `case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
+without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
+authentication/origin/antiforgery and installation headers. CSV is not a representation token.
+
+A success is complete UTF-8 `text/csv` with identity content encoding, exact `Content-Length`, a fixed
+safe attachment filename and the confirmed `ClaimCore-Installation`. JSON failures retain typed
+Core refusal/fault meaning or bounded-export resource advice. OpenAPI describes both media bodies.
+The complete CSV is buffered before success delivery, bounded by the shared response-byte limit.
+The Server cancels processing after 15 seconds, independently of the browser's response deadline;
+request abort and host shutdown also cancel it. Read admission remains held through actual cleanup
+and delivery. A later-page refusal, storage failure, impossible continuation or size overflow does
+not produce a successful partial file. Narrow the selection or use existing CLI traversal when the
+bounded download is insufficient.
+
+Every page reauthorizes through the existing Core query in a fresh snapshot. An export is not a
+cross-page database snapshot and does not promise retroactive withdrawal of bytes authorized in
+an earlier snapshot. CSV scalar formatting is canonical; shared fallback account captions use the
+source English catalog. Browser downloads validate media, identity encoding, complete declared byte
+length and owner/installation scope before creating a Blob, then release temporary object URLs.
+
 ## CLI use
 
 ```sh
@@ -231,31 +316,7 @@ trusts the same server that supplies its JavaScript and keeps transport identity
 For implementation and verification commands, see [Contributing](contributing.md#verification).
 For the business workflow and terminology, see [Case work](case-work.md) and the [Glossary](glossary.md).
 
-### Current foundation contracts
-
-Use a fresh format 7 installation with matching builds. Case receipts expose `payments`, an ordered
-list of entry differences; there is no singular `payment` member. `case.correctPayment` binds the
-selected `paymentId` and one case revision, then returns both removed and recorded differences in
-one accepted operation. DATA payment-page items expose `actions`, a finite list of independently
-available task IDs, replacing `canRemove`; consumers must not infer correction from removal.
-Presentation attaches exactly those supplied actions to the selected entry. HUMAN controls include their shared `labelId`. Command bindings use a
-closed `COMMAND` branch containing the complete validated operational request rather than seeds.
-
-Use `receivedDate` for the date the office received the claim. Registration facts other than the
-reference are optional. Claimed money is an optional pair. Party rows and edits use the supplied
-collection and binding declarations. Payment entries carry direction, their own money,
-evidence reference and payee ID. Reference queries resolve earlier spellings under current read access.
-
-Case handling is open or closed with a required outcome. Close takes an outcome and optional note.
-Reopen takes a reason. Observation-time case summaries support business date filters, grouping and
-signed net-paid totals with contributing-case counts. Reminder kinds and deadline completion outcomes
-are available through list and export contracts. Use the published shape for stage values and
-operator or actor attribution rather than inferring it from a display name.
-
-Browser response admission is generated from the finite Wire codec schemas. It rejects malformed
-structure before date observation or recovery. Structural admission does not establish every native
-interpretation predicate. JSON parsing loses duplicate-member and numeric-lexeme evidence; those
-byte-level guarantees are not claimed by the browser. Precise timestamp strings remain unchanged.
+### Option syntax
 
 CLI existing-case reads and actions accept `--case-id UUID` as an alternative to a reference operand.
 References that look like UUIDs remain references. Grant/revoke ID selectors select case scope;
@@ -281,21 +342,6 @@ profile defaults are inserted before the marker. Text acquired from files, stdin
 passed as an assigned value and cannot become an option. Contextual read-form hints include required
 acquisition placeholders such as `<operation-id>`; replace the placeholder with the intended value.
 
-### Reminder query selections
-
-`reminder.list` distinguishes an omitted state from explicit `state: "ANY"`. With no standard view,
-omission retains the Pending default; `ANY` adds no state constraint and includes Pending,
-Completed and Cancelled rows permitted by the remaining selection. A standard view retains its own
-predicates, so an explicit state filter intersects rather than replaces the view.
-
-Omitted `includeInactive` defaults to false without a view and true with a view. Explicit false and
-true always remain explicit, including in Core links, URL serialization, page requests and CSV
-export selections. The browser renders effective defaults from generated owner metadata rather than
-reimplementing those rules. Case reminder links supply explicit `ANY` and `includeInactive: true`.
-Regenerate clients for the query-only `reminderStateSelection` vocabulary; stored reminder states
-remain Pending, Completed and Cancelled. These are exchange-contract changes, not a durable-format
-change or a migration.
-
 ### CLI language and display locale
 
 Human CLI output selects wording independently from dates, times, numbers and money. Use
@@ -305,8 +351,8 @@ in command help. Selection uses flag, environment, profile `displayLocale`, then
 language's regional default. An explicit unsupported selected locale refuses visibly, including
 offline preparation. `claimcore configure --show` reports the effective display locale and its source.
 
-Language retains its existing precedence: `--language`, `CLAIMCORE_LANGUAGE`, profile `language`,
-then `LC_ALL`, `LC_MESSAGES` and `LANG` through supported language matching. For example,
+The wording selection uses `--language`, `CLAIMCORE_LANGUAGE`, profile `language`, then `LC_ALL`,
+`LC_MESSAGES` and `LANG` through supported language matching. For example,
 `claimcore case get REF --language en --display-locale lv-LV` uses English wording with Latvian
 date and numeric conventions. Each shell
 command resolves a fresh immutable presentation context; review, paging, receipts and recovery keep
@@ -319,57 +365,3 @@ A ledger request's identity and installation are frozen at its first preview. A 
 cannot silently allocate another operation or switch installations. Expiry requires an explicit new
 review. Operational commands do not acquire ledger recovery identities; uncertain delivery is
 reported without a journal retry frame or automatic repeat.
-### Browser-session termination transport
-
-`session.terminateOwn` accepts `{}`. `people.terminateSessions` accepts the selected registered person
-as `{"input:actorId":"UUID"}` and requires current ManageAccess. Both are authenticated operational
-writes, with the existing origin/antiforgery/contract/body gates. They do not require an installation
-header, but any supplied `ClaimCore-Installation` header must be one valid matching UUID. The same
-optional binding rule applies to preview and other actor routes; absent optional preview bindings
-remain valid. OpenAPI declares required versus optional installation headers.
-
-DATA returns `SUCCEEDED` with `data.count` and `data.self`, or typed `REJECTED`, `FAILED` or
-`OUTCOME_UNKNOWN`. HUMAN carries the supplied completion/uncertainty document; confirmed success also
-has a required boolean `self` so clients clear the right current browser ownership. Unknown results
-have no count or operation identity. They are not safe automatic retries relative to later sessions.
-
-HUMAN task controls now form a closed, task-discriminated union. Each operation carries its own binding
-shape; each command carries its complete validated request and empty seeds/editable/choices. Dismissal
-retains distinct HUMAN/SERVICE principals with bounded issuer/subject fields and fallible decoding.
-Mismatched task/command bindings fail structural admission instead of reaching a seed-map cast.
-
-### Case reports
-
-The [OpenAPI contract](../contracts/openapi.json) defines the `case.summary` selection and page
-fields. Each DATA page returns the observation, whole-selection counts, report rows and a
-continuation. Grouped pages contain one row per group and currency, with a blank-currency row for
-groups without money. Clear grouping to page through the overall currency breakdown. Each page
-reflects current read access and facts. Same-day changes can move results between pages. A
-continuation binds the requester, installation, selection and business date. Restart after a
-change to any of those inputs.
-
-Use `claimcore case summary --format=csv` for the current report page. Add `--all` to stream
-its continuation pages with one header. HTTP offers a bounded complete download.
-
-### Bounded CSV download
-
-`POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
-`case.summary`, `case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
-without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
-authentication/origin/antiforgery and installation headers. CSV is not a representation token.
-
-A success is complete UTF-8 `text/csv` with identity content encoding, exact `Content-Length`, a fixed
-safe attachment filename and the confirmed `ClaimCore-Installation`. JSON failures retain typed
-Core refusal/fault meaning or bounded-export resource advice. OpenAPI describes both media bodies.
-The complete CSV is buffered before success delivery, bounded by the shared response-byte limit.
-The Server cancels processing after 15 seconds, independently of the browser's response deadline;
-request abort and host shutdown also cancel it. Read admission remains held through actual cleanup
-and delivery. A later-page refusal, storage failure, impossible continuation or size overflow does
-not produce a successful partial file. Narrow the selection or use existing CLI traversal when the
-bounded download is insufficient.
-
-Every page reauthorizes through the existing Core query in a fresh snapshot. An export is not a
-cross-page database snapshot and does not promise retroactive withdrawal of bytes authorized in
-an earlier snapshot. CSV scalar formatting is canonical; shared fallback account captions use the
-source English catalog. Browser downloads validate media, identity encoding, complete declared byte
-length and owner/installation scope before creating a Blob, then release temporary object URLs.

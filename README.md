@@ -1,32 +1,30 @@
 # ClaimCore
 
 ClaimCore records claims case information through a browser or CLI, backed by an authenticated HTTPS
-service and PostgreSQL. Track parties, related cases, payment decisions, payments and returns,
-responsibility, notes and deadlines.
+service and PostgreSQL. Record claim facts, parties, related cases, payment decisions, payments and
+returns. Assign responsibility, plan deadlines and report on the cases you can read.
 
 ## Try it
 
 Follow [Getting started](docs/getting-started.md) for a fresh synthetic installation, sign-in and first
-case. The [examples](examples/README.md) demonstrate changes through JSON calls and human commands.
-Operators manage identity, access, backups and erasure of copies outside the live database.
-Initialize an empty database with the [supported installation format](src/ClaimCore.RecordFormat/InstallationFormat.fs)
-and matching clients. CLI recovery records must match the [supported journal grammar](src/ClaimCore.Cli/Recovery/RecoveryJournal.fs).
-Build with the SDK pinned in [global.json](global.json); framework-dependent CLI distributions require its matching .NET runtime.
+case. Use the [synthetic examples](examples/README.md) to try structured requests and human commands.
+For hosting and matching artifacts, follow [Operating](docs/operating.md#install-from-release-artifacts).
+For source builds, use the pinned toolchains in [Contributing](docs/contributing.md#first-checkout).
 
 The [HTTP contract](contracts/openapi.json) defines the endpoints. Actor endpoints negotiate HUMAN documents
-with locale-neutral semantic Screens or DATA projections for automation. Native text and browser clients
-request HUMAN; JSON and CSV use DATA. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
-are checked with `operation.get`; the browser checks them automatically.
+with locale-neutral semantic screens or DATA projections for automation. Browser and CLI text views
+use HUMAN. Automation can read typed DATA JSON or export CSV.
+[Delivery recovery](docs/integrating.md#recover-an-uncertain-change) explains how to check an
+unconfirmed change without recording it again.
 
 ```sh
 claimcore help
 claimcore help case open
 claimcore schema operation.execute request
-claimcore work views
-claimcore operation get OPERATION_ID
 ```
 
-Help and discovery work offline. Live commands require the [CLI configuration](docs/integrating.md#cli-use).
+Help and schema inspection work offline. After [configuring the CLI](docs/integrating.md#cli-use),
+run `claimcore work views` to inspect work queues or `claimcore operation get OPERATION_ID` to check a change.
 
 ## Find your task
 
@@ -45,20 +43,21 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 
 | Need | ClaimCore provides | Operator or external responsibility |
 | --- | --- | --- |
-| Record case handling | Facts, responsibility, notes, reminders, payment decisions and entries | Coverage adjudication and real-world verification |
-| Control access | OIDC principals, scoped roles and current authorization on reads and writes | Identity-provider membership and account security |
-| Coordinate changes | Reviewed versions, atomic acceptance and exact-operation recovery | Resolving business conflicts and uncertain external actions |
-| Inspect recorded work | Authorized receipts and history, verification and checkpoint comparison | Independent checkpoint custody and protection against trusted-administrator rewriting |
-| Remove private contents | Case/profile erasure within the live installation | Retention and disposal of backups, exports and other copies |
-| Run the service | Server image, native CLI archives, production Compose template and local evaluation setup | Deployment, capacity, monitoring, certificates and backups |
-| Handle money | Payment decisions and assertions of actual payments | Transfers, refunds, banking and accounting integrations |
+| Record case handling | Claim facts, parties, related cases, notes, responsibility and reminders | Coverage adjudication, fact checking and handling decisions |
+| Handle money | Payment decisions, recorded payments and returns, and net totals by currency | Transfers, refunds, banking and accounting |
+| Find and report on work | Case and reminder queues, paged case summaries, and bounded CSV downloads | Use, retention and disposal of exported copies |
+| Control access | OIDC sign-in, scoped roles and current read/write authorization | Identity-provider membership and account security |
+| Coordinate changes | Review, version checks, atomic acceptance and exact-operation recovery | Resolving business conflicts and confirming external actions |
+| Verify recorded work | Authorized receipts and history, verification and checkpoint comparison | Independent checkpoint custody and trusted administrator access |
+| Erase private contents | Case and profile erasure in the live register | Retention and disposal of WAL, backups, replicas and other copies |
+| Run the service | Server image, CLI archives, production Compose template and local evaluation setup | Deployment, capacity, monitoring, certificates and backups |
 
 ## Languages
 
 English is the source. The interface also offers Latvian, Arabic, Korean, Japanese, Simplified Chinese,
-Traditional Chinese, Spanish and German. Language and regional formats are independent; Arabic supports
-RTL. Release qualification requires current translations in every offered language. Translations are
-AI-assisted and await human linguistic review; see the [language status](docs/glossary.md#language-review).
+Traditional Chinese, Spanish and German. Language and regional formats are independent. Arabic
+supports right-to-left layout. Translations are AI-assisted and await human linguistic review.
+See [language review](docs/glossary.md#language-review).
 
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work. Releases provide source and CLI archives with checksums and record
