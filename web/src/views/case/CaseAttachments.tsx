@@ -39,11 +39,12 @@ import { ownerScope, type OwnerScope } from "../../protocol/ownerScope";
 import { useSessionContext } from "../../session/SessionContext";
 import { Actions } from "../../ui/regions/Actions";
 import { Button } from "../../ui/Button";
+import { ButtonControl } from "../../ui/ButtonControl";
 import { DocumentPreview } from "./pdf/DocumentPreview";
 import "./attachments.css";
 
 type CapturedFile = Awaited<ReturnType<typeof captureAttachment>>;
-type Preview = { id: string; generation: number; labelId: string } & (
+type Preview = { id: string; generation: number; labelId: string; focusOrigin: Element | null } & (
   { kind: "image"; name: string; url: string; error: boolean } | { kind: "pdf"; bytes: ArrayBuffer }
 );
 type Props = {
@@ -212,6 +213,7 @@ const useAttachmentInteraction = (
   const deliver = (
     control: AttachmentTransferControl,
     file: { bytes: Uint8Array<ArrayBuffer>; mediaType: string },
+    focusOrigin: Element | null,
   ) => {
     const { bytes, mediaType } = file;
     const {
@@ -224,7 +226,7 @@ const useAttachmentInteraction = (
       downloadFile(bytes, mediaType, name);
       return;
     }
-    const presentation = { id, labelId, generation: ++generation.current };
+    const presentation = { id, labelId, generation: ++generation.current, focusOrigin };
     if (mediaType === attachmentTransport.pdfMediaType) {
       setPreview({ ...presentation, kind: "pdf", bytes: bytes.buffer });
       return;
@@ -240,6 +242,16 @@ const useAttachmentInteraction = (
     }
     trigger.current = element instanceof HTMLElement ? element : null;
 
+    const initialFocus = document.activeElement;
+    let focusMoved = false;
+    const observeFocus = (event: FocusEvent) => {
+      if (event.target !== initialFocus && event.target !== document.body) {
+        focusMoved = true;
+      }
+    };
+    if (control.kind === "PREVIEW") {
+      document.addEventListener("focusin", observeFocus, { signal: request.signal });
+    }
     const result = await requestAttachment(
       control.kind,
       control.request,
@@ -248,7 +260,9 @@ const useAttachmentInteraction = (
       owner,
       currentOwner,
       request.signal,
-    );
+    ).finally(() => {
+      document.removeEventListener("focusin", observeFocus);
+    });
     if (!finish(request)) {
       return;
     }
@@ -261,7 +275,7 @@ const useAttachmentInteraction = (
     setNotice(feedback);
     if (result.kind === "outcome" && result.value.kind === "RECEIVED") {
       try {
-        deliver(control, result.value.file);
+        deliver(control, result.value.file, focusMoved ? null : document.activeElement);
       } catch {
         const failed =
           control.kind === "DOWNLOAD"
@@ -316,9 +330,12 @@ const AttachmentPreview = ({
   const p = usePresentation();
   const unavailable = renderCatalogKey(p, "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE");
   const control = useRef<HTMLButtonElement>(null);
+  const { focusOrigin } = preview;
   useEffect(() => {
-    control.current?.focus();
-  }, []);
+    if (focusOrigin !== null && document.activeElement === focusOrigin) {
+      control.current?.focus();
+    }
+  }, [focusOrigin]);
   const body = () => {
     if (preview.kind === "pdf") {
       return (
@@ -344,15 +361,15 @@ const AttachmentPreview = ({
   };
   return (
     <div className="attachment-preview">
-      <button
+      <ButtonControl
         type="button"
         ref={control}
-        onClick={() => {
+        onPress={() => {
           interaction.close(true);
         }}
       >
         {p.text("ui.close")}
-      </button>
+      </ButtonControl>
       {body()}
     </div>
   );

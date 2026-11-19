@@ -1,6 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { deflateSync } from "node:zlib";
-import { expect, test, type Frame, type Locator, type Page } from "@playwright/test";
+import {
+  errors,
+  expect,
+  test,
+  type Frame,
+  type Locator,
+  type Page,
+  type Request,
+} from "@playwright/test";
 import type { ResponseFor } from "@contracts/client";
 import { openCase } from "./case-workflow";
 import { bluePage, filledWidgetPdf, redPage, syntheticPdf } from "./attachment-pdf-fixtures";
@@ -399,6 +407,119 @@ const previewImage = async (row: Locator, name: string) => {
     .toBe(1);
   return { img, preview };
 };
+
+test("a delayed PDF preview preserves deliberately moved keyboard focus @engine", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-PDF-FOCUS-${randomUUID()}`);
+  const { row } = await upload(
+    page,
+    documentPanel(page),
+    pdfName,
+    pdfName,
+    "application/pdf",
+    syntheticPdf([redPage]),
+  );
+  const preview = row.getByRole("button", { name: "Preview", exact: true });
+  const close = row.getByRole("button", { name: "Close", exact: true });
+  const frame = row.locator("iframe");
+  const rendered = row.getByRole("status");
+  const other = page.locator(".case-timeline-panel").getByRole("tab", {
+    name: "Attachments",
+    exact: true,
+  });
+  const held = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  await page.route(
+    "**/api/attachment.preview",
+    async (route) => {
+      const response = await route.fetch({ maxRedirects: 0 });
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toBe("application/pdf");
+      held.resolve();
+      await release.promise;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+
+  await preview.focus();
+  await page.keyboard.press("Enter");
+  try {
+    await held.promise;
+    await expect(frame).toHaveCount(0);
+    await other.focus();
+    await expect(other).toBeFocused();
+  } finally {
+    release.resolve();
+  }
+  await expect(rendered).toHaveText("Page 1 of 1");
+  await expect(other).toBeFocused();
+
+  await close.focus();
+  await page.keyboard.press("Enter");
+  await expect(frame).toHaveCount(0);
+  await expect(preview).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(rendered).toHaveText("Page 1 of 1");
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(frame).toHaveCount(0);
+  await expect(preview).toBeFocused();
+});
+
+test("held Enter closes a PDF preview once before a separate press can reopen it @engine", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-PDF-CLOSE-${randomUUID()}`);
+  const { row } = await upload(
+    page,
+    documentPanel(page),
+    pdfName,
+    pdfName,
+    "application/pdf",
+    syntheticPdf([redPage]),
+  );
+  const preview = row.getByRole("button", { name: "Preview", exact: true });
+  const close = row.getByRole("button", { name: "Close", exact: true });
+  const frame = row.locator("iframe");
+  const isPreviewRequest = (request: Request) =>
+    new URL(request.url()).pathname === "/api/attachment.preview";
+  await preview.focus();
+  await page.keyboard.press("Enter");
+  await expect(row.getByRole("status")).toHaveText("Page 1 of 1");
+  await expect(close).toBeFocused();
+
+  const repeated = page.waitForRequest(isPreviewRequest, { timeout: 1500 }).then(
+    () => true,
+    (error: unknown) => {
+      if (error instanceof errors.TimeoutError) {
+        return false;
+      }
+      throw error;
+    },
+  );
+  await page.keyboard.down("Enter");
+  try {
+    await page.keyboard.down("Enter");
+    await page.keyboard.down("Enter");
+  } finally {
+    await page.keyboard.up("Enter");
+  }
+  expect(await repeated).toBe(false);
+  await expect(frame).toHaveCount(0);
+  await expect(preview).toBeFocused();
+
+  const separate = page.waitForRequest(isPreviewRequest);
+  await page.keyboard.press("Enter");
+  await separate;
+  await expect(row.getByRole("status")).toHaveText("Page 1 of 1");
+  await expect(close).toBeFocused();
+});
 
 test("reviews private files, displays native previews and withdraws disclosure @engine", async ({
   page,

@@ -282,15 +282,26 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected authorized metadata: %A" other
 
-let private listWithoutPayloadAccess (database: PostgresFixture.Database) =
+let private attachmentTimeline actor after limit =
+    Service.timeline
+        actor
+        {
+            Target = Attachments.target
+            Filter = Some TimelineFilter.Attachments
+            AfterCursor = after
+            Limit = limit
+        }
+        token
+
+let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
     task {
         let! actor = Attachments.setup database
         let fixture = database.Fixture
 
-        let! added =
-            Attachments.upload actor (draft fixture 710 Attachments.bytes) Attachments.bytes
-
-        accepted added |> ignore
+        for number in [ 710; 711 ] do
+            let payload = [| byte (number - 710) |]
+            let! added = Attachments.upload actor (draft fixture number payload) payload
+            accepted added |> ignore
 
         // This database belongs to this case. Keep column grants for metadata only.
         do!
@@ -327,10 +338,33 @@ let private listWithoutPayloadAccess (database: PostgresFixture.Database) =
         match listed with
         | Outcome.Succeeded page ->
             Expect.sequenceEqual
-                (page.Items |> List.map _.AttachmentId)
-                [ Attachments.attachmentGuid fixture 710 ]
-                "Listing still returns the seeded attachment"
+                (page.Items |> List.map _.AttachmentId |> List.sort)
+                ([ 710; 711 ] |> List.map (Attachments.attachmentGuid fixture) |> List.sort)
+                "Listing still returns both seeded attachments"
         | other -> failtestf "Listing must succeed without payload-column access: %A" other
+
+        let! first = attachmentTimeline actor None 1
+        let page = read first
+
+        Expect.sequenceEqual
+            (page.Items |> List.map _.Subject.PartId)
+            [ id fixture 711 ]
+            "The first page returns the newest attachment"
+
+        let cursor =
+            page.NextCursor
+            |> Option.defaultWith (fun () -> failtest "The first page has a continuation")
+
+        let! continued = attachmentTimeline actor (Some cursor) 1
+
+        match continued with
+        | Outcome.Succeeded page ->
+            Expect.sequenceEqual
+                (page.Items |> List.map _.Subject.PartId)
+                [ id fixture 710 ]
+                "The continuation returns the older attachment"
+        | other ->
+            failtestf "Timeline continuation must succeed without payload-column access: %A" other
     }
 
 let private measure sql action explanation =
@@ -385,18 +419,7 @@ let private metadataQueries (database: PostgresFixture.Database) =
             12
             "The larger list cannot avoid reading the added metadata"
 
-        let history after limit =
-            Service.timeline
-                actor
-                {
-                    Target = Attachments.target
-                    Filter = Some TimelineFilter.Attachments
-                    AfterCursor = after
-                    Limit = limit
-                }
-                token
-
-        let! first = history None 1
+        let! first = attachmentTimeline actor None 1
 
         let cursor =
             (read first).NextCursor
@@ -419,7 +442,7 @@ let private metadataQueries (database: PostgresFixture.Database) =
         let! continued =
             measure
                 sql
-                (fun () -> history (Some cursor) 20)
+                (fun () -> attachmentTimeline actor (Some cursor) 20)
                 "Latest-state redaction for multiple historical roots uses one metadata batch"
 
         let page = (read continued).Items
@@ -459,8 +482,8 @@ let tests =
                 "erased-row verification detects a malformed present digest"
                 (run malformedErasedDigest)
             testCaseAsync
-                "attachment listing succeeds without payload-column access"
-                (run listWithoutPayloadAccess)
+                "attachment listing and timeline continuation succeed without payload-column access"
+                (run metadataWithoutPayloadAccess)
             testCaseAsync
                 "metadata hydration batches lists and a historical continuation"
                 (async {
