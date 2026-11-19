@@ -110,6 +110,12 @@ module internal ProjectionRebuild =
                         for row in people |> Map.values do
                             do! PartProjections.personGrants connection row token
 
+                        do!
+                            AttachmentStorage.rebuildProjection
+                                connection
+                                (Replay.attachmentProjection state)
+                                token
+
                         let! validated =
                             Verification.projections connection installation state token
 

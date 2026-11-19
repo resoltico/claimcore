@@ -91,6 +91,7 @@ module TimelineCsv =
                             After = change.After
                         }
             ]
+        | TimelineChange.Attachment _ -> []
         | TimelineChange.Note(_, id, text) ->
             [
                 "note." + NoteId.format id + ".text",

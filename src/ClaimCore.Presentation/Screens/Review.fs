@@ -316,6 +316,31 @@ module ReviewScreen =
                         }
             ],
             []
+        | PartDescription.Attachment attachment ->
+            let changes =
+                attachment.Display
+                |> Option.map (fun display ->
+                    [
+                        changed
+                            (prefix + "name")
+                            "field.attachmentName.label"
+                            (AttachmentName.value >> PresentedValue.Narrative)
+                            {
+                                Before = None
+                                After = Some display.Name
+                            }
+                        changed
+                            (prefix + "length")
+                            "field.attachmentLength.label"
+                            PresentedValue.Count
+                            {
+                                Before = None
+                                After = Some display.Length
+                            }
+                    ])
+                |> Option.defaultValue []
+
+            changes, []
         | PartDescription.Note value ->
             [
                 value.Text

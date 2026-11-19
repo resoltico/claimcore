@@ -251,6 +251,7 @@ let private timelineLimit () =
                 Outcome.Succeeded
                     {
                         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                        AttachmentDisclosure = Sequence.zero
                         Basis = DomainInputs.workBasis
                         CaseId = CaseFixtures.caseId id
                         Reference = CaseFixtures.reference reference
@@ -428,6 +429,7 @@ let private reminderTimelineLimit () =
             Outcome.Succeeded
                 {
                     CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                    AttachmentDisclosure = Sequence.zero
                     Basis = DomainInputs.workBasis
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference reference

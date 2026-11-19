@@ -11,11 +11,13 @@ import {
   representationHeader,
   type RequestByEndpoint,
   endpoints,
+  attachmentTransport,
   strictByteProfile,
   consumerContractIdentity,
   correlationOf,
   isEndpointResponse,
 } from "@contracts/client";
+import { operationTask } from "../protocol/taskCatalog";
 import { admitBytes } from "../protocol/schema";
 import { isHostFailure, isObject } from "../protocol/client";
 export type * from "../protocol/types";
@@ -33,6 +35,7 @@ export const apiEndpoints = {
   caseSummary: "case.summary",
   caseTimeline: "case.timeline",
   caseNotes: "case.notes",
+  caseAttachments: "case.attachments",
   casePayments: "case.payments",
   reminderList: "reminder.list",
   reminderGet: "reminder.get",
@@ -261,7 +264,75 @@ export function requestEndpoint<K extends EndpointId>(
 ): Promise<ApiResult<ServiceResponse<K, Representation>>> {
   return request(id, credential, input, signal, installationId, representation);
 }
+const uploadAttachment = (
+  prepared: PreparedRequest<"operation.execute">,
+  file: File,
+  credential: string,
+  installationId: string,
+  callerSignal: AbortSignal,
+): Promise<ApiResult<ServiceResponse<"operation.execute">>> =>
+  withinResponseDeadline(
+    async (signal) => {
+      if (
+        signal.aborted ||
+        operationTask(prepared.input.task).execution !== "ATTACHMENT_UPLOAD" ||
+        file.size > attachmentTransport.maximumFileBytes
+      ) {
+        return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
+      }
+      const form = new FormData();
+      form.append(
+        attachmentTransport.manifestPartName,
+        new Blob([prepared.bytes], { type: attachmentTransport.manifestMediaType }),
+        attachmentTransport.manifestFileName,
+      );
+      form.append(
+        attachmentTransport.filePartName,
+        new Blob([file], { type: attachmentTransport.downloadMediaType }),
+        attachmentTransport.fileName,
+      );
+      const observeDate = captureBusinessDateObserver("RESOURCE", credential);
+      try {
+        const response = await sendHttp(
+          { path: attachmentTransport.uploadPath, method: "POST" },
+          {
+            Accept: "application/json",
+            "ClaimCore-Contract": consumerContractIdentity,
+            "ClaimCore-Installation": installationId,
+            "X-ClaimCore-Antiforgery": credential,
+            [representationHeader]: "HUMAN",
+          },
+          form,
+          signal,
+        );
+        if (
+          response.status === 200 &&
+          response.headers.get("ClaimCore-Installation") !== installationId
+        ) {
+          void response.body?.cancel().catch(() => undefined);
+          return {
+            kind: "deliveryFailure",
+            notice: { kind: "invalidHttp", status: response.status },
+          };
+        }
+        const reply = await result(prepared.endpoint, response, signal, prepared.input, "HUMAN");
+        if (!signal.aborted && reply.kind === "outcome") {
+          observeDate(reply.value);
+        }
+        return reply;
+      } catch {
+        return {
+          kind: "deliveryFailure",
+          notice: localNotice(signal.aborted ? "cancelled" : "unreachable"),
+        };
+      }
+    },
+    callerSignal,
+    attachmentTransport.deadlineMilliseconds,
+  );
+
 export const service = {
+  uploadAttachment,
   session: (signal?: AbortSignal) => request("session", undefined, undefined, signal),
   logout: (credential: string) => request("session.logout", credential, {}),
   context: (credential: string, signal?: AbortSignal) => request("context", credential, {}, signal),

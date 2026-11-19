@@ -1,4 +1,4 @@
-import { coreLinkPath } from "../routing/coreLinks";
+import { attachmentFragment, coreLinkPath } from "../routing/coreLinks";
 import { followLink } from "../routing/followLink";
 import { navigate } from "../routing/navigation";
 import { renderCatalogKey } from "../presentation/messages";
@@ -13,7 +13,12 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
 import { ButtonControl as Button } from "../ui/ButtonControl";
-import { type CurrentCase, type CatalogDocument, isCurrentCase } from "../api/service";
+import {
+  apiEndpoints,
+  type CurrentCase,
+  type CatalogDocument,
+  isCurrentCase,
+} from "../api/service";
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { ScreenView } from "../ui/ScreenView";
@@ -72,6 +77,7 @@ const CurrentPresentation = ({
   onMutationLockChange,
   disclosureAvailable,
   authoringAvailable,
+  attachmentAuthoringAvailable,
   timeline,
   recordDetails,
   onAct,
@@ -83,6 +89,7 @@ const CurrentPresentation = ({
   onChanged: () => void;
   disclosureAvailable: boolean;
   authoringAvailable: boolean;
+  attachmentAuthoringAvailable: boolean;
   onMutationLockChange: MutationLockChange;
   onAct: CaseDetailProps["onAct"];
 }) => {
@@ -92,6 +99,7 @@ const CurrentPresentation = ({
     onLockChange: onMutationLockChange,
     disclosureAvailable,
     authoringAvailable,
+    attachmentAuthoringAvailable,
   });
   const facts =
     disclosureAvailable && view !== null ? (
@@ -121,6 +129,7 @@ const CurrentPresentation = ({
             />
           )}
           {panels.notes}
+          {panels.attachments}
           {timeline}
         </div>
         <aside className="case-work-rail">
@@ -173,7 +182,13 @@ const CaseHeader = ({
                 href={href}
                 onClick={(event) => {
                   followLink(event, () => {
-                    navigate(href);
+                    if (named.link.endpoint === apiEndpoints.caseAttachments) {
+                      const panel = document.getElementById(attachmentFragment);
+                      panel?.focus();
+                      panel?.scrollIntoView();
+                    } else {
+                      navigate(href);
+                    }
                   });
                 }}
               >
@@ -376,6 +391,7 @@ const CaseDisclosure = ({
           recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
           authoringAvailable={authoringAvailable && retainedNoteOffer}
+          attachmentAuthoringAvailable={authoringAvailable}
           view={current.screen}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}

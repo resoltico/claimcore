@@ -21,6 +21,7 @@ type OperationBinding<'revision> =
         expectedFamilySequence: int64 option
     | Work of target: CaseSelector * expectedRevision: 'revision
     | Note of target: CaseSelector * noteId: Guid option
+    | Attachment of target: CaseSelector * attachmentId: Guid option
     | Party of target: CaseSelector * current: (Guid * 'revision) option
     | Link of target: CaseSelector * linkId: Guid option
     | Reminder of target: CaseSelector * current: (Guid * 'revision) option
@@ -78,6 +79,9 @@ module OperationSubmission =
             OperationBinding.Party(target, Some(PartyId.value id, Revision.value revision))
         | Binding.NoteNew target -> OperationBinding.Note(target, None)
         | Binding.Note(target, id) -> OperationBinding.Note(target, Some(NoteId.value id))
+        | Binding.AttachmentNew target -> OperationBinding.Attachment(target, None)
+        | Binding.Attachment(target, id) ->
+            OperationBinding.Attachment(target, Some(AttachmentId.value id))
         | Binding.LinkNew target -> OperationBinding.Link(target, None)
         | Binding.Link(target, id) -> OperationBinding.Link(target, Some(LinkId.value id))
         | Binding.PeopleNew revision -> OperationBinding.People(None, Revision.value revision)
@@ -345,6 +349,15 @@ module OperationSubmission =
         | ActSubject.Note, OperationBinding.Note(selection, Some id) when not declaration.Creates ->
             identity NoteId.create InputTarget.NoteId Violation.NoteIdRequired id
             |> Result.map (fun id -> Binding.Note(selection, id))
+        | ActSubject.Attachment, OperationBinding.Attachment(selection, None) when
+            declaration.Creates
+            ->
+            Ok(Binding.AttachmentNew selection)
+        | ActSubject.Attachment, OperationBinding.Attachment(selection, Some id) when
+            not declaration.Creates
+            ->
+            identity AttachmentId.create InputTarget.AttachmentId Violation.AttachmentIdRequired id
+            |> Result.map (fun id -> Binding.Attachment(selection, id))
         | ActSubject.Party, OperationBinding.Party(selection, None) when declaration.Creates ->
             Ok(Binding.PartyNew selection)
         | ActSubject.Party, OperationBinding.Party(selection, Some(id, expected)) when
@@ -516,6 +529,7 @@ module OperationSubmission =
         | BindingShape.PartyNew, OperationBinding.Party(_, None)
         | BindingShape.ReminderNew, OperationBinding.Reminder(_, None)
         | BindingShape.NoteNew, OperationBinding.Note(_, None)
+        | BindingShape.AttachmentNew, OperationBinding.Attachment(_, None)
         | BindingShape.LinkNew, OperationBinding.Link(_, None) -> Ok()
         | BindingShape.Party, OperationBinding.Party(_, Some(id, expected)) ->
             collect
@@ -543,6 +557,12 @@ module OperationSubmission =
                 ]
         | BindingShape.Note, OperationBinding.Note(_, note) ->
             identifier NoteId.create InputTarget.NoteId Violation.NoteIdRequired note
+        | BindingShape.Attachment, OperationBinding.Attachment(_, attachment) ->
+            identifier
+                AttachmentId.create
+                InputTarget.AttachmentId
+                Violation.AttachmentIdRequired
+                attachment
         | BindingShape.Link, OperationBinding.Link(_, link) ->
             identifier LinkId.create InputTarget.LinkId Violation.LinkIdRequired link
         | BindingShape.PeopleNew, OperationBinding.People(None, expected) ->
@@ -610,6 +630,8 @@ module OperationSubmission =
             | OperationBinding.Work(target, Some revision) ->
                 Some(OperationBinding.Work(target, revision))
             | OperationBinding.Note(target, note) -> Some(OperationBinding.Note(target, note))
+            | OperationBinding.Attachment(target, attachment) ->
+                Some(OperationBinding.Attachment(target, attachment))
             | OperationBinding.Party(target, None) -> Some(OperationBinding.Party(target, None))
             | OperationBinding.Party(target, Some(id, Some revision)) ->
                 Some(OperationBinding.Party(target, Some(id, revision)))
@@ -775,6 +797,8 @@ module SubmissionAssembly =
         | BindingShape.Work -> OperationBinding.Work(selection, expected)
         | BindingShape.NoteNew -> OperationBinding.Note(selection, None)
         | BindingShape.Note -> OperationBinding.Note(selection, selectedIdentity)
+        | BindingShape.AttachmentNew -> OperationBinding.Attachment(selection, None)
+        | BindingShape.Attachment -> OperationBinding.Attachment(selection, selectedIdentity)
         | BindingShape.PartyNew -> OperationBinding.Party(selection, None)
         | BindingShape.Party ->
             OperationBinding.Party(
@@ -813,6 +837,8 @@ module SubmissionAssembly =
         | BindingShape.Work -> Binding.Work(selected (), expected ())
         | BindingShape.NoteNew -> Binding.NoteNew(selected ())
         | BindingShape.Note -> Binding.Note(selected (), identified NoteId.create)
+        | BindingShape.AttachmentNew -> Binding.AttachmentNew(selected ())
+        | BindingShape.Attachment -> Binding.Attachment(selected (), identified AttachmentId.create)
         | BindingShape.PartyNew -> Binding.PartyNew(selected ())
         | BindingShape.Party -> Binding.Party(selected (), identified PartyId.create, expected ())
         | BindingShape.LinkNew -> Binding.LinkNew(selected ())
@@ -850,6 +876,8 @@ module SubmissionAssembly =
             OperationBinding.Party(target, None)
         | OperationBinding.Note(target, id), OperationBinding.Note _ ->
             OperationBinding.Note(target, id)
+        | OperationBinding.Attachment(target, id), OperationBinding.Attachment _ ->
+            OperationBinding.Attachment(target, id)
         | OperationBinding.Link(target, id), OperationBinding.Link _ ->
             OperationBinding.Link(target, id)
         | OperationBinding.Reminder(target, None), OperationBinding.Reminder(_, None) ->

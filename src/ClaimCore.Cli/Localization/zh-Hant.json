@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "案件附件",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "預設值為 {value}。",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "請將 {setting} 設為絕對目錄路徑，以使用本機復原。",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "上傳尚未確認。使用 {statusCommand} 檢查原作業。如果無法找回完全相同的已核對檔案，請先等待確認原作業未被接受，再開始新的上傳。",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "附件已儲存。",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "無法將附件儲存到選取的位置。",
+    "source": "915060f3dc90"
   }
 }

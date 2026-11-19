@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 8. Earlier formats are refused.
+- Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) through the Web workspace or CLI. Preview supported static PNG and JPEG files in the browser.
+- Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
+- Regenerate clients for attachment list and transfer contracts and the attachment disclosure sequence on timeline pages.
+
 ## [0.20.0] - 2026-11-19
 
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.

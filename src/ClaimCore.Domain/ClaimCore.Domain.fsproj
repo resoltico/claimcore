@@ -26,6 +26,8 @@
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Reminders.fs" />
     <Compile Include="Notes.fs" />
+    <Compile Include="AttachmentPreview.fs" />
+    <Compile Include="Attachments.fs" />
     <Compile Include="RelatedCases.fs" />
     <Compile Include="Grants.fs" />
     <Compile Include="CaseReporting.fs" />
@@ -45,6 +47,7 @@
     <Compile Include="RecordedState.fs" />
     <Compile Include="CaseWorkPolicy.fs" />
     <Compile Include="DecisionContext.fs" />
+    <Compile Include="AttachmentAccess.fs" />
     <Compile Include="CaseSearch.fs" />
     <Compile Include="CaseIndex.fs" />
     <Compile Include="Inputs/TaskInputs.fs" />
@@ -70,11 +73,13 @@
     <Compile Include="Tasks/Task.fs" />
     <Compile Include="Tasks/Declarations.fs" />
     <Compile Include="Inputs/Parsing.fs" />
+    <Compile Include="Inputs/AttachmentInputs.fs" />
     <Compile Include="Inputs/RelatedCaseInput.fs" />
     <Compile Include="Tasks/FamilyRules.fs" />
     <Compile Include="Tasks/Party/PartyTasks.fs" />
     <Compile Include="Tasks/Note/NoteAdd.fs" />
     <Compile Include="Tasks/Note/NoteRemove.fs" />
+    <Compile Include="Tasks/Attachment/AttachmentTasks.fs" />
     <Compile Include="Tasks/Link/LinkAdd.fs" />
     <Compile Include="Tasks/Link/LinkRemove.fs" />
     <Compile Include="Tasks/Work/WorkUpdate.fs" />

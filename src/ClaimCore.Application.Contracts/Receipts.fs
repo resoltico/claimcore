@@ -116,6 +116,21 @@ type NoteReceipt =
         Snapshot: NoteDisclosure
     }
 
+[<RequireQualifiedAccess>]
+type AttachmentDisclosure =
+    | Disclosed of AttachmentDisplay
+    | Withheld
+    | Erased
+
+type AttachmentReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        AttachmentId: AttachmentId
+        Act: TaskId
+        Snapshot: AttachmentDisclosure
+    }
+
 type LinkReceipt =
     {
         Reference: CaseReference
@@ -147,6 +162,7 @@ type ReceiptSubject =
     | Work of WorkReceipt
     | Reminder of ReminderReceipt
     | Note of NoteReceipt
+    | Attachment of AttachmentReceipt
     | Party of PartyReceipt
     | Link of LinkReceipt
 

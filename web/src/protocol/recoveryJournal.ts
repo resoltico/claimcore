@@ -7,7 +7,8 @@ export type RecoveryRecord = RecoveryScope & {
   readonly format: 2;
   readonly attemptId: string;
   readonly operationId: string;
-  readonly subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "PARTY" | "LINK";
+  readonly subject:
+    "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "PARTY" | "LINK" | "ATTACHMENT";
   readonly act: string;
 };
 export type JournalPublication = "inserted" | "existing";
@@ -28,7 +29,7 @@ const isScope = (value: Record<string, unknown>): boolean =>
 const isAttempt = (value: Record<string, unknown>): boolean =>
   uuid(value["attemptId"]) &&
   uuid(value["operationId"]) &&
-  ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE", "PARTY", "LINK"].includes(
+  ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE", "PARTY", "LINK", "ATTACHMENT"].includes(
     String(value["subject"]),
   ) &&
   typeof value["act"] === "string" &&

@@ -107,10 +107,13 @@ module SubmissionDeclarations =
             | BindingShape.Work ->
                 revision InputTarget.ExpectedWorkRevision creationRevision None, None, None
             | BindingShape.NoteNew
+            | BindingShape.AttachmentNew
             | BindingShape.PartyNew
             | BindingShape.LinkNew
             | BindingShape.ReminderNew -> None, None, None
             | BindingShape.Note -> None, Some(TaskInputId.Target InputTarget.NoteId), None
+            | BindingShape.Attachment ->
+                None, Some(TaskInputId.Target InputTarget.AttachmentId), None
             | BindingShape.Party ->
                 revision InputTarget.ExpectedPartyRevision existingRevision None,
                 Some(TaskInputId.Target InputTarget.PartyId),

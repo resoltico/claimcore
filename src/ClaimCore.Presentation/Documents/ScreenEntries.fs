@@ -98,6 +98,7 @@ module ScreenEntries =
             | PartKind.Payment -> "field.paymentId.label"
             | PartKind.Reminder -> "field.reminderId.label"
             | PartKind.Note -> "field.noteId.label"
+            | PartKind.Attachment -> "field.attachmentId.label"
             | PartKind.Party -> "field.partyId.label"
             | PartKind.Link -> "field.linkId.label"
 

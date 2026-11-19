@@ -19,6 +19,18 @@ type internal VerbConsole =
         Review: InteractiveConsole
     }
 
+/// A local publication remains successful if an interrupt races with the completed write.
+[<RequireQualifiedAccess>]
+type internal VerbCompletion =
+    | Completed of exitCode: int
+    | OutputPublished
+
+module internal VerbCompletion =
+    let exitCode =
+        function
+        | VerbCompletion.Completed code -> code
+        | VerbCompletion.OutputPublished -> ExitCode.value ExitCode.Success
+
 /// Ordinary verbs and the shell share preparation, review, pagination and delivery.
 module internal VerbRunner =
     let private render (prepared: PreparedVerb) frame (reply: CliReply) =
@@ -149,6 +161,148 @@ module internal VerbRunner =
             | _ -> return Error reply.ExitCode
         }
 
+    let private attachmentPreflightReply invocation (response: CliReply) =
+        match response.Frame.Result with
+        | FrameResult.Reply value ->
+            let outcome =
+                match ServiceReply.value Api.operationPreview value with
+                | Some(RepresentationReply.Data {
+                                                    Outcome = Outcome.Succeeded(Previewed.AlreadyAccepted receipt)
+                                                }) -> ExecuteResult.AlreadyAccepted receipt
+                | Some(RepresentationReply.Data { Outcome = Outcome.Rejected refusal }) ->
+                    ExecuteResult.Rejected refusal
+                | Some(RepresentationReply.Data { Outcome = Outcome.Failed fault }) ->
+                    ExecuteResult.Failed fault
+                | _ -> invalidOp "A machine preflight must return a terminal DATA outcome."
+
+            let reply =
+                RepresentationReply.Data
+                    {
+                        ExecuteReply.OperationId = Frames.operationId invocation |> Option.get
+                        Outcome = outcome
+                    }
+
+            let delivery =
+                match outcome with
+                | ExecuteResult.AlreadyAccepted _ -> DeliveryState.Delivered
+                | _ -> DeliveryState.NotSent
+
+            CliReply.result invocation (Api.operationExecute.Output.Write reply)
+            |> Result.defaultWith (fun _ ->
+                invalidOp "Preflight must preserve the execution reply contract.")
+            |> CliReply.forAttempt invocation delivery
+        | _ -> CliReply.forAttempt invocation DeliveryState.NotSent response
+
+    let private describeMachineReview
+        (io: VerbConsole)
+        (prepared: PreparedVerb)
+        submission
+        frame
+        (reply: PreviewReply)
+        =
+        let humanFrame = Frames.withRepresentation Representation.Human frame
+
+        let human =
+            RepresentationReply.Human(HumanReplies.previewSubmission submission reply)
+
+        let rendered =
+            CliReply.result humanFrame (Api.operationPreview.Output.Write human)
+            |> Result.defaultWith (fun _ -> invalidOp "A reviewed DATA result can render as text.")
+            |> fun described ->
+                ReplyText.bytesForWithDetails
+                    prepared.Details
+                    prepared.Rendering
+                    (Some humanFrame)
+                    described.Frame
+
+        io.Errors.Write(rendered)
+        io.Errors.WriteByte(byte '\n')
+        io.Errors.Flush()
+
+    let private attachmentReview
+        (io: VerbConsole)
+        (processor: RemoteFrameProcessor)
+        prepared
+        token
+        =
+        task {
+            let submission = Frames.value Api.operationExecute prepared.Invocation |> Option.get
+            let machine = prepared.Format = VerbFormat.Json
+
+            let preview =
+                Frames.create Api.operationPreview submission
+                |> Result.defaultWith (fun _ ->
+                    invalidOp "An admitted attachment operation can be reviewed.")
+                |> Frames.withRepresentation (
+                    if machine then
+                        Representation.Data
+                    else
+                        Representation.Human
+                )
+
+            let! dispatched, reply = processor.ExchangePrepared(preview, token)
+
+            if not machine then
+                processor.Deliver(render prepared dispatched, reply)
+
+            let result =
+                match reply.Frame.Result with
+                | FrameResult.Reply value -> ServiceReply.value Api.operationPreview value
+                | _ -> None
+
+            let reviewed =
+                match result with
+                | Some(RepresentationReply.Human {
+                                                     Outcome = HumanPreviewResult.Reviewed _
+                                                 }) -> true
+                | Some(RepresentationReply.Data {
+                                                    Outcome = Outcome.Succeeded(Previewed.Reviewed _)
+                                                }) -> true
+                | _ -> false
+
+            if not reviewed then
+                if machine then
+                    let terminal = attachmentPreflightReply prepared.Invocation reply
+                    processor.Deliver(render prepared prepared.Invocation, terminal)
+                    return Error terminal.ExitCode
+                else
+                    return Error reply.ExitCode
+            else
+                let confirmed =
+                    match prepared.Confirmation with
+                    | Some value -> String.Equals(value, "yes", StringComparison.Ordinal)
+                    | None when io.Review.IsInteractive ->
+                        let prompt =
+                            MessageCatalogs.renderCli
+                                prepared.Language
+                                CliMessage.ReviewConfirmation
+
+                        match result with
+                        | Some(RepresentationReply.Data review) ->
+                            describeMachineReview io prepared submission dispatched review
+                            CliDiscovery.writeText io.Errors prompt
+                        | _ -> prompt |> System.Text.Encoding.UTF8.GetBytes |> io.Review.Write
+
+                        CliConfirmation.confirmed prepared.Language (io.Review.ReadLine())
+                    | _ -> false
+
+                if not confirmed then
+                    CliDiscovery.writeText
+                        io.Errors
+                        (MessageCatalogs.renderCli prepared.Language CliMessage.NotRecorded)
+
+                    return Error(ExitCode.value ExitCode.Cancelled)
+                else
+                    return
+                        Frames.installationId dispatched
+                        |> Option.bind (fun installation ->
+                            Frames.bindInstallation installation prepared.Invocation
+                            |> Result.toOption)
+                        |> Option.map Frames.freeze
+                        |> Option.map Ok
+                        |> Option.defaultValue (Error(ExitCode.value ExitCode.Failed))
+        }
+
     let rec private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
             match
@@ -184,6 +338,14 @@ module internal VerbRunner =
                     (UsageText.render prepared.Language arguments [ issue ])
 
                 return ExitCode.value ExitCode.Usage
+            | Ok(prepared, None) when
+                Frames.value Api.operationExecute prepared.Invocation
+                |> Option.exists (fun input ->
+                    CommandGrammar.attachmentTransfer (TaskId.token input.Task))
+                ->
+                match! attachmentReview io processor prepared token with
+                | Ok frame -> return! execute processor prepared frame token
+                | Error exit -> return exit
             | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! readOutput io processor prepared token
             | Ok(prepared, None) when CliConfirmation.needsReferencePreview prepared.Invocation ->
@@ -290,7 +452,7 @@ module internal VerbRunner =
 
                 Some(ExitCode.value ExitCode.Rejected)
 
-    let run io (processor: RemoteFrameProcessor) arguments token =
+    let private runVerb io (processor: RemoteFrameProcessor) arguments token =
         task {
             let expanded = TextInputs.expand io.Review.IsInteractive arguments
 
@@ -328,4 +490,67 @@ module internal VerbRunner =
                     }
 
                 return! InteractiveReview.run Guid.CreateVersion7 io.Review transport draft token
+        }
+
+
+    let private download saveAttachment io (processor: RemoteFrameProcessor) arguments token =
+        task {
+            match Grammar.prepareAttachmentDownload arguments with
+            | Error problems ->
+                CliDiscovery.writeText
+                    io.Errors
+                    (UsageText.render (CliInvocations.usageLanguage arguments) arguments problems)
+
+                return VerbCompletion.Completed(ExitCode.value ExitCode.Usage)
+            | Ok(selection, path, rendering) ->
+                let write stream message =
+                    CliDiscovery.writeText
+                        stream
+                        (MessageCatalogs.renderCli rendering.Language message + "\n")
+
+                let errors lines =
+                    lines
+                    |> String.concat "\n"
+                    |> fun text -> CliDiscovery.writeText io.Errors (text + "\n")
+
+                match! processor.Download(selection, token) with
+                | Ok bytes ->
+                    match saveAttachment path bytes token with
+                    | Ok() ->
+                        write io.Output CliMessage.AttachmentSaved
+                        return VerbCompletion.OutputPublished
+                    | Error() ->
+                        write io.Errors CliMessage.AttachmentOutputFailed
+                        return VerbCompletion.Completed(ExitCode.value ExitCode.Failed)
+                | Error(AttachmentDownloadFailure.Access reply) ->
+                    errors (ReplyText.resultLines rendering None reply.Frame.Result)
+                    return VerbCompletion.Completed reply.ExitCode
+                | Error(AttachmentDownloadFailure.Local reason) ->
+                    let reply = CliReply.local reason
+                    errors (ReplyText.resultLines rendering None reply.Frame.Result)
+                    return VerbCompletion.Completed reply.ExitCode
+                | Error(AttachmentDownloadFailure.Host failure) ->
+                    errors (ReplyText.resultLines rendering None (FrameResult.HostFailure failure))
+                    return VerbCompletion.Completed(ExitCode.value ExitCode.Failed)
+                | Error(AttachmentDownloadFailure.Refused(AttachmentTransferFailure.Rejected rejection)) ->
+                    errors (HumanText.rejection false rendering rejection)
+                    return VerbCompletion.Completed(ExitCode.value ExitCode.Rejected)
+                | Error(AttachmentDownloadFailure.Refused(AttachmentTransferFailure.Failed fault)) ->
+                    errors (DiagnosticText.faultLines rendering fault)
+                    return VerbCompletion.Completed(ExitCode.value ExitCode.Failed)
+        }
+
+    let runWithCompletion saveAttachment io processor arguments token =
+        if CommandGrammar.attachmentDownload arguments then
+            download saveAttachment io processor arguments token
+        else
+            task {
+                let! code = runVerb io processor arguments token
+                return VerbCompletion.Completed code
+            }
+
+    let run io processor arguments token =
+        task {
+            let! completion = runWithCompletion AttachmentFiles.save io processor arguments token
+            return VerbCompletion.exitCode completion
         }

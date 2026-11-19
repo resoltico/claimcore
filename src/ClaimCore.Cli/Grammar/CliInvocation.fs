@@ -102,7 +102,10 @@ module CliInvocations =
             |> List.filter (fun entry ->
                 List.truncate words.Length (CommandGrammar.words entry) = words)
 
-        if List.isEmpty words || List.isEmpty matches then
+        if
+            List.isEmpty words
+            || (List.isEmpty matches && words <> CommandGrammar.attachmentDownloadWords)
+        then
             Error(UsageError.UnknownCommand(String.concat " " words, []))
         else
             Ok(CliInvocation.CommandHelp(words, RenderingContext.forLanguage language, json))
@@ -228,7 +231,8 @@ module CliInvocations =
             CommandGrammar.operations
             |> List.exists (fun operation -> CommandGrammar.words operation = commandPath)
 
-        family && (helpRequested || commandPath.Length = 1 && not complete)
+        (family || CommandGrammar.attachmentDownload arguments)
+        && (helpRequested || commandPath.Length = 1 && not complete)
 
     let admit (arguments: string list) =
         match arguments with
@@ -311,7 +315,9 @@ module CliInvocations =
         | CliInvocation.Help _
         | CliInvocation.CommandHelp _
         | CliInvocation.Recovery _ -> true
-        | CliInvocation.Verb words -> CommandGrammar.tryOperation words |> Option.isSome
+        | CliInvocation.Verb words ->
+            CommandGrammar.attachmentDownload words
+            || (CommandGrammar.tryOperation words |> Option.isSome)
         | CliInvocation.Version _
         | CliInvocation.Schema _
         | CliInvocation.Call
@@ -384,7 +390,8 @@ module CliInvocations =
                                 | CliInvocation.Recovery selected ->
                                     CliInvocation.Recovery { selected with Rendering = context }
                                 | CliInvocation.Verb words when
-                                    CommandGrammar.tryOperation words |> Option.isSome
+                                    CommandGrammar.attachmentDownload words
+                                    || (CommandGrammar.tryOperation words |> Option.isSome)
                                     ->
                                     let words =
                                         if languages.IsEmpty then

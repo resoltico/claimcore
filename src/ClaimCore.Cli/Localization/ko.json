@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "사건 첨부 파일",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "기본값은 {value}입니다.",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "로컬 복구를 사용하려면 {setting}에 절대 디렉터리 경로를 지정하세요.",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "업로드가 확인되지 않았습니다. {statusCommand}로 원래 작업을 확인하세요. 검토한 파일을 그대로 복구할 수 없으면 작업이 접수되지 않았다는 확인을 받은 후 새 업로드를 시작하세요.",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "첨부 파일을 저장했습니다.",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "선택한 위치에 첨부 파일을 저장할 수 없습니다.",
+    "source": "915060f3dc90"
   }
 }

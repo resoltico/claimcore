@@ -241,6 +241,10 @@ module TimelineScreen =
                         After = change.After |> Option.bind _.Details
                     }
             ]
+        | TimelineChange.Attachment(_, _, display) ->
+            display
+            |> Option.map (AttachmentsScreen.details >> section "section.attachments.label")
+            |> Option.toList
         | TimelineChange.Note(_, _, text) ->
             [
                 section
@@ -445,4 +449,24 @@ module TimelineScreen =
             [ region RegionRole.Activity None (RegionContent.Timeline(List.map item rows)) ]
 
     let view (reply: CaseTimelinePage) =
-        rows reply.Items |> page reply.Basis reply.Items.Length reply.NextCursor
+        let screen = rows reply.Items
+
+        let details =
+            entryRegion
+                RegionRole.Details
+                (Some "label.recordDetails")
+                [
+                    value
+                        "attachmentCaseId"
+                        "input.caseId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(CaseId.format reply.CaseId))
+                    value
+                        "attachmentDisclosure"
+                        "label.attachmentDisclosure"
+                        Prominence.Detail
+                        (PresentedValue.Count(Sequence.value reply.AttachmentDisclosure))
+                ]
+
+        Screen.create (screen.Regions @ [ details ])
+        |> page reply.Basis reply.Items.Length reply.NextCursor

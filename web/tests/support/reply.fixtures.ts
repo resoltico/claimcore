@@ -230,6 +230,7 @@ const replies: Replies = {
   "case.summary": () => read({ kind: "LIST" }),
   "case.assignees": () => read({ kind: "LIST" }),
   "case.notes": () => read({ kind: "LIST" }),
+  "case.attachments": () => read({ kind: "LIST" }),
   "case.payments": () => read({ kind: "CASE", caseId, revision: 1, workRevision: 0 }),
   "case.timeline": () => read({ kind: "LIST" }),
   "work.views": () => read({ kind: "LIST" }),

@@ -53,9 +53,12 @@ module internal ControlHints =
         | Binding.Work(value, revision) ->
             selection value @ [ version InputTarget.ExpectedWorkRevision revision ]
         | Binding.PartyNew value
+        | Binding.AttachmentNew value
         | Binding.NoteNew value
         | Binding.LinkNew value
         | Binding.ReminderNew value -> selection value
+        | Binding.Attachment(value, id) ->
+            selection value @ [ target InputTarget.AttachmentId, AttachmentId.format id ]
         | Binding.Note(value, id) ->
             selection value @ [ target InputTarget.NoteId, NoteId.format id ]
         | Binding.Party(value, id, revision) ->
@@ -216,7 +219,14 @@ module internal ControlHints =
                                 (collection.Name,
                                  "<" + CommandGrammar.collectionPlaceholder collection + ">"))
 
-                    binding bound @ fixedValues @ editable @ rows, [ "--preview" ]
+                    let suffix =
+                        [
+                            "--preview"
+                            if CommandGrammar.uploadsFile task then
+                                "--file PATH"
+                        ]
+
+                    binding bound @ fixedValues @ editable @ rows, suffix
                 | ActionControl.Command(CommandRequest.DismissAccessRequest principal) ->
                     let principal = PrincipalKey.toInput principal
 

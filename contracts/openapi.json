@@ -1059,6 +1059,118 @@
         }
       }
     },
+    "/api/case.attachments": {
+      "post": {
+        "operationId": "case.attachments",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseAttachmentsReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseGetRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/case.payments": {
       "post": {
         "operationId": "case.payments",
@@ -2639,6 +2751,441 @@
           }
         }
       }
+    },
+    "/api/attachment.upload": {
+      "post": {
+        "operationId": "attachment.upload",
+        "x-claimcore-effect": "LEDGER_EXECUTION",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "manifest",
+                  "file"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "manifest": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/OperationSubmission"
+                      },
+                      {
+                        "properties": {
+                          "task": {
+                            "const": "attachment.add"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "manifest": {
+                  "contentType": "application/json",
+                  "x-claimcore-filename": "manifest.json"
+                },
+                "file": {
+                  "contentType": "application/octet-stream",
+                  "x-claimcore-filename": "payload.bin"
+                }
+              },
+              "x-claimcore-part-order": [
+                "manifest",
+                "file"
+              ],
+              "x-claimcore-max-request-byte-length": 26284572
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "headers": {
+              "ClaimCore-Installation": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/Uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        }
+      }
+    },
+    "/api/attachment.download": {
+      "post": {
+        "operationId": "attachment.download",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachmentReadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 26214400
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "const": "identity"
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "ClaimCore-Installation": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/Uuid"
+                }
+              },
+              "Content-Digest": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^sha-256=:[A-Za-z0-9+/]{43}=:$"
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store, no-transform, max-age=0"
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "x-claimcore-binary-success-only": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentTransferFailureReply"
+                }
+              },
+              "application/octet-stream": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        }
+      }
+    },
+    "/api/attachment.preview": {
+      "post": {
+        "operationId": "attachment.preview",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachmentReadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 26214400
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "const": "identity"
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "ClaimCore-Installation": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/Uuid"
+                }
+              },
+              "Content-Digest": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^sha-256=:[A-Za-z0-9+/]{43}=:$"
+                },
+                "x-claimcore-binary-success-only": true
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store, no-transform, max-age=0"
+                },
+                "x-claimcore-binary-success-only": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentTransferFailureReply"
+                }
+              },
+              "image/png": {},
+              "image/jpeg": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3958,6 +4505,12 @@
             "$ref": "#/components/schemas/Affordance.note.remove"
           },
           {
+            "$ref": "#/components/schemas/Affordance.attachment.add"
+          },
+          {
+            "$ref": "#/components/schemas/Affordance.attachment.withdraw"
+          },
+          {
             "$ref": "#/components/schemas/Affordance.link.add"
           },
           {
@@ -4023,6 +4576,8 @@
             "party.remove": "#/components/schemas/Affordance.party.remove",
             "note.add": "#/components/schemas/Affordance.note.add",
             "note.remove": "#/components/schemas/Affordance.note.remove",
+            "attachment.add": "#/components/schemas/Affordance.attachment.add",
+            "attachment.withdraw": "#/components/schemas/Affordance.attachment.withdraw",
             "link.add": "#/components/schemas/Affordance.link.add",
             "link.remove": "#/components/schemas/Affordance.link.remove",
             "reminder.create": "#/components/schemas/Affordance.reminder.create",
@@ -4036,6 +4591,300 @@
             "people.terminateSessions": "#/components/schemas/Affordance.people.terminateSessions"
           }
         }
+      },
+      "Affordance.attachment.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "attachment.add"
+          },
+          "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT.new"
+          },
+          "seeds": {
+            "$ref": "#/components/schemas/AffordanceSeeds"
+          },
+          "editable": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "field:incidentDate",
+                "field:receivedDate",
+                "field:incidentCountry",
+                "field:incidentDescription",
+                "field:policyNumber",
+                "field:insurerClaimReference",
+                "field:claimedAmount",
+                "field:claimedCurrency",
+                "field:caseReference",
+                "field:paymentDecisionDate",
+                "field:payableAmount",
+                "field:payableCurrency",
+                "field:decisionBasis",
+                "field:outcome",
+                "field:closingNote",
+                "field:reopenReason",
+                "field:paymentDate",
+                "field:paidAmount",
+                "field:paidCurrency",
+                "field:status",
+                "field:responsibleActor",
+                "field:handlingSummary",
+                "group:registration",
+                "group:decision",
+                "group:payment",
+                "input:operationId",
+                "input:expectedRevision",
+                "input:expectedFamilySequence",
+                "input:reason",
+                "input:principal.kind",
+                "input:principal.issuer",
+                "input:principal.subject",
+                "input:profile.displayName",
+                "input:profile.contact",
+                "input:profile.digestEmail",
+                "input:directorySearch",
+                "input:grants",
+                "input:role",
+                "input:limit",
+                "input:cursor",
+                "input:text",
+                "input:reminderId",
+                "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
+                "input:newReference",
+                "input:linkId",
+                "input:relatedCaseReference",
+                "input:relatedCaseId",
+                "input:linkNote",
+                "input:noteText",
+                "input:parties",
+                "input:partyId",
+                "input:partyRole",
+                "input:partyName",
+                "input:partyDetails",
+                "input:expectedPartyRevision",
+                "input:paymentId",
+                "input:direction",
+                "input:reference",
+                "input:payee",
+                "input:reminderAction",
+                "input:reminderDueDate",
+                "input:kind",
+                "input:doneOn",
+                "input:expectedWorkRevision",
+                "input:expectedReminderRevision",
+                "input:scope",
+                "input:actorId",
+                "input:caseId",
+                "input:lifecycle",
+                "input:status",
+                "input:progress",
+                "input:caseView",
+                "input:responsibleActorFilter",
+                "input:roleFilter",
+                "input:reminderView",
+                "input:timelineFilter",
+                "input:order",
+                "input:assignment",
+                "input:due",
+                "input:reminderState",
+                "input:reminderDue",
+                "input:reminderKind",
+                "input:deadlineOutcome",
+                "input:includeInactive",
+                "input:groupBy",
+                "input:registeredFrom",
+                "input:registeredThrough",
+                "input:receivedFrom",
+                "input:receivedThrough",
+                "input:closedFrom",
+                "input:closedThrough",
+                "input:inactiveSince"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 96
+          },
+          "choices": {
+            "$ref": "#/components/schemas/AffordanceChoices"
+          },
+          "blocked": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HumanAdvice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "task",
+          "labelId",
+          "binding",
+          "seeds",
+          "editable",
+          "choices",
+          "blocked"
+        ]
+      },
+      "Affordance.attachment.withdraw": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "attachment.withdraw"
+          },
+          "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT"
+          },
+          "seeds": {
+            "$ref": "#/components/schemas/AffordanceSeeds"
+          },
+          "editable": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "field:incidentDate",
+                "field:receivedDate",
+                "field:incidentCountry",
+                "field:incidentDescription",
+                "field:policyNumber",
+                "field:insurerClaimReference",
+                "field:claimedAmount",
+                "field:claimedCurrency",
+                "field:caseReference",
+                "field:paymentDecisionDate",
+                "field:payableAmount",
+                "field:payableCurrency",
+                "field:decisionBasis",
+                "field:outcome",
+                "field:closingNote",
+                "field:reopenReason",
+                "field:paymentDate",
+                "field:paidAmount",
+                "field:paidCurrency",
+                "field:status",
+                "field:responsibleActor",
+                "field:handlingSummary",
+                "group:registration",
+                "group:decision",
+                "group:payment",
+                "input:operationId",
+                "input:expectedRevision",
+                "input:expectedFamilySequence",
+                "input:reason",
+                "input:principal.kind",
+                "input:principal.issuer",
+                "input:principal.subject",
+                "input:profile.displayName",
+                "input:profile.contact",
+                "input:profile.digestEmail",
+                "input:directorySearch",
+                "input:grants",
+                "input:role",
+                "input:limit",
+                "input:cursor",
+                "input:text",
+                "input:reminderId",
+                "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
+                "input:newReference",
+                "input:linkId",
+                "input:relatedCaseReference",
+                "input:relatedCaseId",
+                "input:linkNote",
+                "input:noteText",
+                "input:parties",
+                "input:partyId",
+                "input:partyRole",
+                "input:partyName",
+                "input:partyDetails",
+                "input:expectedPartyRevision",
+                "input:paymentId",
+                "input:direction",
+                "input:reference",
+                "input:payee",
+                "input:reminderAction",
+                "input:reminderDueDate",
+                "input:kind",
+                "input:doneOn",
+                "input:expectedWorkRevision",
+                "input:expectedReminderRevision",
+                "input:scope",
+                "input:actorId",
+                "input:caseId",
+                "input:lifecycle",
+                "input:status",
+                "input:progress",
+                "input:caseView",
+                "input:responsibleActorFilter",
+                "input:roleFilter",
+                "input:reminderView",
+                "input:timelineFilter",
+                "input:order",
+                "input:assignment",
+                "input:due",
+                "input:reminderState",
+                "input:reminderDue",
+                "input:reminderKind",
+                "input:deadlineOutcome",
+                "input:includeInactive",
+                "input:groupBy",
+                "input:registeredFrom",
+                "input:registeredThrough",
+                "input:receivedFrom",
+                "input:receivedThrough",
+                "input:closedFrom",
+                "input:closedThrough",
+                "input:inactiveSince"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 96
+          },
+          "choices": {
+            "$ref": "#/components/schemas/AffordanceChoices"
+          },
+          "blocked": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HumanAdvice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "task",
+          "labelId",
+          "binding",
+          "seeds",
+          "editable",
+          "choices",
+          "blocked"
+        ]
       },
       "Affordance.case.amendRegistration": {
         "type": "object",
@@ -4102,6 +4951,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4154,7 +5007,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4245,6 +5098,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4297,7 +5154,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4388,6 +5245,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4440,7 +5301,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4531,6 +5392,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4583,7 +5448,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4674,6 +5539,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4726,7 +5595,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4817,6 +5686,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -4869,7 +5742,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -4960,6 +5833,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5012,7 +5889,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5103,6 +5980,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5155,7 +6036,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5246,6 +6127,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5298,7 +6183,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5389,6 +6274,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5441,7 +6330,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5532,6 +6421,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5584,7 +6477,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5675,6 +6568,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5727,7 +6624,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5818,6 +6715,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -5870,7 +6771,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5961,6 +6862,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6013,7 +6918,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6104,6 +7009,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6156,7 +7065,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6247,6 +7156,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6299,7 +7212,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6390,6 +7303,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6442,7 +7359,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6533,6 +7450,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6585,7 +7506,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6676,6 +7597,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6728,7 +7653,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6819,6 +7744,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -6871,7 +7800,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -6962,6 +7891,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7014,7 +7947,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7105,6 +8038,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7157,7 +8094,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7248,6 +8185,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7300,7 +8241,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7391,6 +8332,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7443,7 +8388,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7534,6 +8479,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7586,7 +8535,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7677,6 +8626,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7729,7 +8682,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7820,6 +8773,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -7872,7 +8829,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7963,6 +8920,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8015,7 +8976,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -8109,6 +9070,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8255,6 +9220,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8307,7 +9276,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -8398,6 +9367,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8450,7 +9423,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -8544,6 +9517,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8690,6 +9667,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8742,7 +9723,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -8833,6 +9814,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -8885,7 +9870,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -8976,6 +9961,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9028,7 +10017,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -9119,6 +10108,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9171,7 +10164,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -9262,6 +10255,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9314,7 +10311,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -9405,6 +10402,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9457,7 +10458,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -9551,6 +10552,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9697,6 +10702,10 @@
                 "input:text",
                 "input:reminderId",
                 "input:noteId",
+                "input:attachmentId",
+                "input:attachmentName",
+                "input:attachmentLength",
+                "input:attachmentDigest",
                 "input:newReference",
                 "input:linkId",
                 "input:relatedCaseReference",
@@ -9749,7 +10758,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 92
+            "maxItems": 96
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -9998,11 +11007,12 @@
               "enum": [
                 "FACTS",
                 "WORK",
-                "NOTES"
+                "NOTES",
+                "ATTACHMENTS"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "input:order": {
             "type": "array",
@@ -10241,6 +11251,18 @@
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:noteId": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:attachmentId": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:attachmentName": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:attachmentLength": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:attachmentDigest": {
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:newReference": {
@@ -10544,6 +11566,275 @@
           "count"
         ]
       },
+      "AttachmentDisclosure": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AttachmentDisclosure.DISCLOSED"
+          },
+          {
+            "$ref": "#/components/schemas/AttachmentDisclosure.WITHHELD"
+          },
+          {
+            "$ref": "#/components/schemas/AttachmentDisclosure.ERASED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "DISCLOSED": "#/components/schemas/AttachmentDisclosure.DISCLOSED",
+            "WITHHELD": "#/components/schemas/AttachmentDisclosure.WITHHELD",
+            "ERASED": "#/components/schemas/AttachmentDisclosure.ERASED"
+          }
+        }
+      },
+      "AttachmentDisclosure.DISCLOSED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISCLOSED"
+          },
+          "view": {
+            "$ref": "#/components/schemas/AttachmentDisplay"
+          }
+        },
+        "required": [
+          "kind",
+          "view"
+        ]
+      },
+      "AttachmentDisclosure.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AttachmentDisclosure.WITHHELD": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WITHHELD"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AttachmentDisplay": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "x-claimcore-maxUtf8Bytes": 120
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 26214400
+          }
+        },
+        "required": [
+          "name",
+          "length"
+        ]
+      },
+      "AttachmentPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "disclosure": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentRow"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "canAdd": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "basis",
+          "caseId",
+          "reference",
+          "disclosure",
+          "items",
+          "canAdd"
+        ]
+      },
+      "AttachmentPartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "withdrawn": {
+            "type": "boolean"
+          },
+          "display": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AttachmentDisplay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "withdrawn",
+          "display"
+        ]
+      },
+      "AttachmentReadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "target",
+          "attachmentId"
+        ]
+      },
+      "AttachmentRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "x-claimcore-maxUtf8Bytes": 120
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 26214400
+          },
+          "recordedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "canWithdraw": {
+            "type": "boolean"
+          },
+          "canPreview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attachmentId",
+          "name",
+          "length",
+          "recordedAt",
+          "recordedBy",
+          "canWithdraw",
+          "canPreview"
+        ]
+      },
+      "AttachmentTransferFailure": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AttachmentTransferFailure.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/AttachmentTransferFailure.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "REJECTED": "#/components/schemas/AttachmentTransferFailure.REJECTED",
+            "FAILED": "#/components/schemas/AttachmentTransferFailure.FAILED"
+          }
+        }
+      },
+      "AttachmentTransferFailure.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "fault": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "fault"
+        ]
+      },
+      "AttachmentTransferFailure.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "AttachmentTransferFailureReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/AttachmentTransferFailure"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
       "AuthorityRef": {
         "oneOf": [
           {
@@ -10619,6 +11910,12 @@
             "$ref": "#/components/schemas/Binding.NOTE"
           },
           {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT"
+          },
+          {
             "$ref": "#/components/schemas/Binding.PARTY.new"
           },
           {
@@ -10636,6 +11933,42 @@
           {
             "$ref": "#/components/schemas/Binding.PEOPLE"
           }
+        ]
+      },
+      "Binding.ATTACHMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ATTACHMENT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "attachmentId"
+        ]
+      },
+      "Binding.ATTACHMENT.new": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ATTACHMENT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
         ]
       },
       "Binding.CASE": {
@@ -11913,6 +13246,69 @@
               }
             ]
           }
+        ]
+      },
+      "CaseAttachmentsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply"
+          },
+          {
+            "$ref": "#/components/schemas/CaseAttachmentsReply.DATA"
+          }
+        ]
+      },
+      "CaseAttachmentsReply.DATA": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CaseAttachmentsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
+        ]
+      },
+      "CaseAttachmentsReply.DATA_RESULT.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseAttachmentsReply.DATA_RESULT.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejected"
+          },
+          {
+            "$ref": "#/components/schemas/Failed"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/CaseAttachmentsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
+          }
+        }
+      },
+      "CaseAttachmentsReply.DATA_RESULT.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AttachmentPage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
         ]
       },
       "CaseDisposition": {
@@ -14619,6 +16015,8 @@
               "party.remove",
               "note.add",
               "note.remove",
+              "attachment.add",
+              "attachment.withdraw",
               "link.add",
               "link.remove",
               "reminder.create",
@@ -14653,6 +16051,11 @@
         "properties": {
           "disclosure": {
             "$ref": "#/components/schemas/HistoryDisclosure"
+          },
+          "attachmentDisclosure": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
@@ -14689,6 +16092,7 @@
         },
         "required": [
           "disclosure",
+          "attachmentDisclosure",
           "basis",
           "caseId",
           "caseReference",
@@ -14770,7 +16174,8 @@
             "enum": [
               "FACTS",
               "WORK",
-              "NOTES"
+              "NOTES",
+              "ATTACHMENTS"
             ]
           },
           "cursor": {
@@ -15848,6 +17253,9 @@
       "DataRejection": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/DataRejection.ATTACHMENT_DUPLICATE"
+          },
+          {
             "$ref": "#/components/schemas/DataRejection.OPERATION_CLOCK_UNAVAILABLE"
           },
           {
@@ -15884,7 +17292,7 @@
             "$ref": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT"
           },
           {
-            "$ref": "#/components/schemas/DataRejection.REGISTER_MAINTENANCE"
+            "$ref": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED"
           },
           {
             "$ref": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE"
@@ -15899,6 +17307,7 @@
         "discriminator": {
           "propertyName": "code",
           "mapping": {
+            "ATTACHMENT_DUPLICATE": "#/components/schemas/DataRejection.ATTACHMENT_DUPLICATE",
             "OPERATION_CLOCK_UNAVAILABLE": "#/components/schemas/DataRejection.OPERATION_CLOCK_UNAVAILABLE",
             "OPERATION_ID_OUT_OF_WINDOW": "#/components/schemas/DataRejection.OPERATION_ID_OUT_OF_WINDOW",
             "CASE_DATE_RANGE": "#/components/schemas/DataRejection.CASE_DATE_RANGE",
@@ -15927,7 +17336,8 @@
             "NOT_OFFERED": "#/components/schemas/DataRejection.NOT_OFFERED",
             "REMINDER_NOT_OFFERED": "#/components/schemas/DataRejection.REMINDER_NOT_OFFERED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT",
-            "REGISTER_MAINTENANCE": "#/components/schemas/DataRejection.REGISTER_MAINTENANCE",
+            "ATTACHMENT_CAPACITY_REACHED": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED",
+            "REGISTER_MAINTENANCE": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED",
             "RESOURCE_UNAVAILABLE": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE",
             "NOT_AUTHORIZED": "#/components/schemas/DataRejection.NOT_AUTHORIZED",
             "INVALID_CURSOR": "#/components/schemas/DataRejection.INVALID_CURSOR"
@@ -15957,6 +17367,45 @@
         "required": [
           "code",
           "action"
+        ]
+      },
+      "DataRejection.ATTACHMENT_CAPACITY_REACHED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "ATTACHMENT_CAPACITY_REACHED",
+              "REGISTER_MAINTENANCE"
+            ]
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.ATTACHMENT_DUPLICATE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "ATTACHMENT_DUPLICATE"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "attachmentId"
         ]
       },
       "DataRejection.CASE_ALREADY_EXISTS": {
@@ -16218,22 +17667,6 @@
           "phase",
           "issuedAt",
           "observedAt"
-        ]
-      },
-      "DataRejection.REGISTER_MAINTENANCE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "REGISTER_MAINTENANCE"
-          },
-          "action": {
-            "const": "READ_CURRENT"
-          }
-        },
-        "required": [
-          "code",
-          "action"
         ]
       },
       "DataRejection.REMINDER_NOT_OFFERED": {
@@ -17191,7 +18624,8 @@
                 "enum": [
                   "FACTS",
                   "WORK",
-                  "NOTES"
+                  "NOTES",
+                  "ATTACHMENTS"
                 ]
               }
             },
@@ -18735,6 +20169,12 @@
             "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "REMINDER_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "NOTE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_NAME_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_LENGTH_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_DIGEST_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_PAYLOAD_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_PAYLOAD_MISMATCH": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PARTY_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PARTY_ROLE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PARTY_CONTENT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -18892,6 +20332,12 @@
               "ACTOR_ID_REQUIRED",
               "REMINDER_ID_REQUIRED",
               "NOTE_ID_REQUIRED",
+              "ATTACHMENT_ID_REQUIRED",
+              "ATTACHMENT_NAME_INVALID",
+              "ATTACHMENT_LENGTH_INVALID",
+              "ATTACHMENT_DIGEST_INVALID",
+              "ATTACHMENT_PAYLOAD_REQUIRED",
+              "ATTACHMENT_PAYLOAD_MISMATCH",
               "PARTY_ID_REQUIRED",
               "PARTY_ROLE_REQUIRED",
               "PARTY_CONTENT_REQUIRED",
@@ -19016,6 +20462,10 @@
           "input:text",
           "input:reminderId",
           "input:noteId",
+          "input:attachmentId",
+          "input:attachmentName",
+          "input:attachmentLength",
+          "input:attachmentDigest",
           "input:newReference",
           "input:linkId",
           "input:relatedCaseReference",
@@ -19162,6 +20612,7 @@
               "case.summary",
               "case.timeline",
               "case.notes",
+              "case.attachments",
               "case.payments",
               "reminder.list",
               "reminder.get",
@@ -19444,6 +20895,7 @@
             "enum": [
               "OPEN_CASE",
               "FOLLOW_UP",
+              "ATTACHMENTS",
               "VIEW"
             ]
           },
@@ -19796,6 +21248,47 @@
         },
         "required": [
           "operationId"
+        ]
+      },
+      "OperationInputs.attachment.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:attachmentName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:attachmentLength": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:attachmentDigest": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:attachmentName",
+          "input:attachmentLength",
+          "input:attachmentDigest"
         ]
       },
       "OperationInputs.case.amendRegistration": {
@@ -21412,6 +22905,8 @@
               "party.remove",
               "note.add",
               "note.remove",
+              "attachment.add",
+              "attachment.withdraw",
               "link.add",
               "link.remove",
               "reminder.create",
@@ -21545,6 +23040,12 @@
             "$ref": "#/components/schemas/OperationSubmission.note.remove"
           },
           {
+            "$ref": "#/components/schemas/OperationSubmission.attachment.add"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.attachment.withdraw"
+          },
+          {
             "$ref": "#/components/schemas/OperationSubmission.link.add"
           },
           {
@@ -21601,6 +23102,8 @@
             "party.remove": "#/components/schemas/OperationSubmission.party.remove",
             "note.add": "#/components/schemas/OperationSubmission.note.add",
             "note.remove": "#/components/schemas/OperationSubmission.note.remove",
+            "attachment.add": "#/components/schemas/OperationSubmission.attachment.add",
+            "attachment.withdraw": "#/components/schemas/OperationSubmission.attachment.withdraw",
             "link.add": "#/components/schemas/OperationSubmission.link.add",
             "link.remove": "#/components/schemas/OperationSubmission.link.remove",
             "reminder.create": "#/components/schemas/OperationSubmission.reminder.create",
@@ -21611,6 +23114,54 @@
             "reminder.completeAndPlanNext": "#/components/schemas/OperationSubmission.reminder.completeAndPlanNext"
           }
         }
+      },
+      "OperationSubmission.attachment.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "attachment.add"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT.new"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.attachment.add"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.attachment.withdraw": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "attachment.withdraw"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.ATTACHMENT"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/Empty"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
       },
       "OperationSubmission.case.amendRegistration": {
         "type": "object",
@@ -22557,6 +24108,9 @@
             "$ref": "#/components/schemas/PartDescription.REMINDER"
           },
           {
+            "$ref": "#/components/schemas/PartDescription.ATTACHMENT"
+          },
+          {
             "$ref": "#/components/schemas/PartDescription.NOTE"
           },
           {
@@ -22576,12 +24130,29 @@
             "PAYMENT": "#/components/schemas/PartDescription.PAYMENT",
             "WORK": "#/components/schemas/PartDescription.WORK",
             "REMINDER": "#/components/schemas/PartDescription.REMINDER",
+            "ATTACHMENT": "#/components/schemas/PartDescription.ATTACHMENT",
             "NOTE": "#/components/schemas/PartDescription.NOTE",
             "PARTY": "#/components/schemas/PartDescription.PARTY",
             "LINK": "#/components/schemas/PartDescription.LINK",
             "PERSON": "#/components/schemas/PartDescription.PERSON"
           }
         }
+      },
+      "PartDescription.ATTACHMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ATTACHMENT"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/AttachmentPartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
       },
       "PartDescription.CASE": {
         "type": "object",
@@ -24488,6 +26059,8 @@
               "party.remove",
               "note.add",
               "note.remove",
+              "attachment.add",
+              "attachment.withdraw",
               "link.add",
               "link.remove",
               "reminder.create",
@@ -24662,7 +26235,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24690,7 +26263,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24724,7 +26297,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24752,7 +26325,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24789,7 +26362,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24819,7 +26392,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24850,7 +26423,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24879,7 +26452,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24910,7 +26483,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24940,7 +26513,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -24971,7 +26544,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25000,7 +26573,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25029,7 +26602,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25059,7 +26632,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25087,7 +26660,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25115,7 +26688,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25146,7 +26719,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25175,7 +26748,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25203,7 +26776,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25232,7 +26805,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25262,7 +26835,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25295,7 +26868,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25323,7 +26896,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25351,7 +26924,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25405,6 +26978,8 @@
                 "party.remove",
                 "note.add",
                 "note.remove",
+                "attachment.add",
+                "attachment.withdraw",
                 "link.add",
                 "link.remove",
                 "reminder.create",
@@ -25416,7 +26991,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -25445,7 +27020,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 39
+            "maxItems": 41
           }
         },
         "required": [
@@ -26462,6 +28037,9 @@
             "$ref": "#/components/schemas/ReceiptSubject.WORK"
           },
           {
+            "$ref": "#/components/schemas/ReceiptSubject.ATTACHMENT"
+          },
+          {
             "$ref": "#/components/schemas/ReceiptSubject.NOTE"
           },
           {
@@ -26482,6 +28060,7 @@
           "mapping": {
             "CASE": "#/components/schemas/ReceiptSubject.CASE",
             "WORK": "#/components/schemas/ReceiptSubject.WORK",
+            "ATTACHMENT": "#/components/schemas/ReceiptSubject.ATTACHMENT",
             "NOTE": "#/components/schemas/ReceiptSubject.NOTE",
             "PARTY": "#/components/schemas/ReceiptSubject.PARTY",
             "LINK": "#/components/schemas/ReceiptSubject.LINK",
@@ -26489,6 +28068,44 @@
             "PEOPLE": "#/components/schemas/ReceiptSubject.PEOPLE"
           }
         }
+      },
+      "ReceiptSubject.ATTACHMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ATTACHMENT"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "act": {
+            "enum": [
+              "attachment.add",
+              "attachment.withdraw"
+            ]
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AttachmentDisclosure"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "caseReference",
+          "attachmentId",
+          "act",
+          "snapshot"
+        ]
       },
       "ReceiptSubject.CASE": {
         "type": "object",
@@ -26792,6 +28409,7 @@
               "WORK",
               "NEXT_ACTIONS",
               "NOTES",
+              "ATTACHMENTS",
               "PARTIES",
               "RELATED_CASES",
               "ACTIVITY",
@@ -28994,6 +30612,21 @@
                   ],
                   "properties": {
                     "role": {
+                      "const": "ATTACHMENTS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
                       "const": "PARTIES"
                     }
                   }
@@ -29597,6 +31230,10 @@
           "input:text",
           "input:reminderId",
           "input:noteId",
+          "input:attachmentId",
+          "input:attachmentName",
+          "input:attachmentLength",
+          "input:attachmentDigest",
           "input:newReference",
           "input:linkId",
           "input:relatedCaseReference",
@@ -29677,6 +31314,9 @@
             "$ref": "#/components/schemas/TimelineChange.HANDLING_SUMMARY"
           },
           {
+            "$ref": "#/components/schemas/TimelineChange.ATTACHMENT"
+          },
+          {
             "$ref": "#/components/schemas/TimelineChange.NOTE"
           },
           {
@@ -29696,11 +31336,43 @@
             "LIFECYCLE": "#/components/schemas/TimelineChange.LIFECYCLE",
             "RESPONSIBILITY": "#/components/schemas/TimelineChange.RESPONSIBILITY",
             "HANDLING_SUMMARY": "#/components/schemas/TimelineChange.HANDLING_SUMMARY",
+            "ATTACHMENT": "#/components/schemas/TimelineChange.ATTACHMENT",
             "NOTE": "#/components/schemas/TimelineChange.NOTE",
             "PARTY": "#/components/schemas/TimelineChange.PARTY",
             "REMINDER": "#/components/schemas/TimelineChange.REMINDER"
           }
         }
+      },
+      "TimelineChange.ATTACHMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ATTACHMENT"
+          },
+          "withdrawn": {
+            "type": "boolean"
+          },
+          "attachmentId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "display": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AttachmentDisplay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "withdrawn",
+          "attachmentId",
+          "display"
+        ]
       },
       "TimelineChange.CASE_FIELD": {
         "type": "object",
@@ -29972,6 +31644,9 @@
             "$ref": "#/components/schemas/TimelineEvent.PART_NOTE_RECORDED"
           },
           {
+            "$ref": "#/components/schemas/TimelineEvent.PART_ATTACHMENT_RECORDED"
+          },
+          {
             "$ref": "#/components/schemas/TimelineEvent.PART_PARTY_RECORDED"
           },
           {
@@ -30031,6 +31706,7 @@
             "PART_WORK_RECORDED": "#/components/schemas/TimelineEvent.PART_WORK_RECORDED",
             "PART_REMINDER_RECORDED": "#/components/schemas/TimelineEvent.PART_REMINDER_RECORDED",
             "PART_NOTE_RECORDED": "#/components/schemas/TimelineEvent.PART_NOTE_RECORDED",
+            "PART_ATTACHMENT_RECORDED": "#/components/schemas/TimelineEvent.PART_ATTACHMENT_RECORDED",
             "PART_PARTY_RECORDED": "#/components/schemas/TimelineEvent.PART_PARTY_RECORDED",
             "PART_LINK_RECORDED": "#/components/schemas/TimelineEvent.PART_LINK_RECORDED",
             "PART_PERSON_RECORDED": "#/components/schemas/TimelineEvent.PART_PERSON_RECORDED",
@@ -30124,6 +31800,22 @@
           },
           "messageId": {
             "const": "timeline.event.noteRemoved"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_ATTACHMENT_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_ATTACHMENT_RECORDED"
+          },
+          "messageId": {
+            "const": "change.ATTACHMENT.recorded"
           }
         },
         "required": [
@@ -30587,6 +32279,7 @@
               "WORK",
               "REMINDER",
               "NOTE",
+              "ATTACHMENT",
               "PARTY",
               "LINK",
               "PERSON"

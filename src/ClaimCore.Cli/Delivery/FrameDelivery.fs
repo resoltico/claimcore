@@ -37,26 +37,34 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
                 errors.Write(System.Text.Encoding.UTF8.GetBytes(message + "\n"))
             | Some frame ->
-                errors.Write(
-                    System.Text.Encoding.UTF8.GetBytes(
-                        (MessageCatalogs.renderCli
+                let status =
+                    CommandGrammar.commandText (QueryTaskId.key QueryTaskId.OperationGet)
+                    + " "
+                    + (Frames.operationId frame
+                       |> Option.map string
+                       |> Option.defaultValue "OPERATION_ID")
+
+                match Frames.upload frame with
+                | Some _ ->
+                    let message =
+                        MessageCatalogs.renderCli
+                            currentLanguage
+                            (CliMessage.AttachmentUnresolved status)
+
+                    errors.Write(System.Text.Encoding.UTF8.GetBytes(message + "\n"))
+                | None ->
+                    let message =
+                        MessageCatalogs.renderCli
                             currentLanguage
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
-                                CommandGrammar.commandText (
-                                    QueryTaskId.key QueryTaskId.OperationGet
-                                )
-                                + " "
-                                + (Frames.operationId frame
-                                   |> Option.map string
-                                   |> Option.defaultValue "OPERATION_ID")
+                                status
                             ))
-                         + "\n")
-                    )
-                )
 
-                errors.Write(Frames.encodeInvocation frame)
-                errors.WriteByte(byte '\n')
+                    errors.Write(System.Text.Encoding.UTF8.GetBytes(message + "\n"))
+                    errors.Write(Frames.encodeInvocation frame)
+                    errors.WriteByte(byte '\n')
+
                 errors.Flush())
 
     let writeWith (renderReply: CliReply -> byte array) (reply: CliReply) =
@@ -74,7 +82,11 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         if uncertainChange then
             retryFrame ()
 
-        lock gate (fun () -> potentiallyChanged <- uncertainChange)
+        lock gate (fun () ->
+            potentiallyChanged <- uncertainChange
+
+            if pending |> Option.exists (Frames.upload >> Option.isSome) then
+                pending <- None)
 
     new(output, errors, language) =
         new FrameDelivery(output, errors, language, (fun reply -> reply.Bytes))

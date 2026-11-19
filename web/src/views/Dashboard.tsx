@@ -575,7 +575,11 @@ export const Dashboard = () => {
     if (!feedback.accept(receipt, operationId)) {
       return;
     }
-    cache?.invalidate();
+    if (receipt.document.disclosure === "ERASED") {
+      cache?.observeAttachmentErasure(receipt.caseId);
+    } else {
+      cache?.invalidate();
+    }
     setRefresh((value) => value + 1);
     navigate(casePath(receipt.caseId));
   };

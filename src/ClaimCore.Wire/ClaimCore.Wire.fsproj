@@ -30,6 +30,7 @@
     <Compile Include="Codecs/ListedCaseFieldCodecs.fs" />
     <Compile Include="Codecs/ActorCodecs.fs" />
     <Compile Include="Codecs/LedgerCodecs.fs" />
+    <Compile Include="Codecs/AttachmentCodecs.fs" />
     <Compile Include="Codecs/ValueChangeCodecs.fs" />
     <Compile Include="Codecs/CaseStateCodecs.fs" />
     <Compile Include="Codecs/TimelineCodecs.fs" />
@@ -66,6 +67,7 @@
     <Compile Include="Codecs/HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Export/ExportTransport.fs" />
+    <Compile Include="Api/AttachmentTransport.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="Catalog/Catalog.fs" />

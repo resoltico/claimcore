@@ -15,6 +15,7 @@ let private scope =
         Parties = Set.empty
         Reminders = Set.singleton (ReminderId.ofOperationId (operation 6))
         Notes = Set.singleton (NoteId.ofOperationId (operation 6))
+        Attachments = Set.empty
         Operation = Some(operation 6)
     }
 

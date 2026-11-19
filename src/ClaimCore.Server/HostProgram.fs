@@ -100,7 +100,8 @@ let private configureAntiforgery directory issuer idle sessions (services: IServ
     SessionKeys.configure directory issuer idle sessions services
 
     services.AddAntiforgery(fun options ->
-        options.HeaderName <- "X-ClaimCore-Antiforgery"
+        options.HeaderName <- RequestGate.antiforgeryHeader
+        options.SuppressReadingTokenFromFormBody <- true
         options.Cookie.Name <- "__Host-ClaimCoreAntiforgery"
         options.Cookie.HttpOnly <- true
         options.Cookie.IsEssential <- true

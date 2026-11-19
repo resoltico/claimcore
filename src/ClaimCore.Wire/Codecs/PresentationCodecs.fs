@@ -423,6 +423,13 @@ module PresentationCodecs =
                     | _ -> None)
                     RequestCodecs.timelineRequest
                 query
+                    QueryTaskId.CaseAttachments
+                    Link.CaseAttachments
+                    (function
+                    | Link.CaseAttachments value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseGetRequest
+                query
                     QueryTaskId.CaseNotes
                     Link.CaseNotes
                     (function

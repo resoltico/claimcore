@@ -47,3 +47,46 @@ export const responseBytes = async (
     reader.releaseLock();
   }
 };
+
+/** Read a declared binary transfer into a single bounded allocation. */
+export const exactResponseBytes = async (
+  response: Response,
+  expected: number,
+  signal: AbortSignal,
+): Promise<Uint8Array<ArrayBuffer>> => {
+  if (response.body === null) {
+    if (expected === 0 && !signal.aborted) {
+      return new Uint8Array(0);
+    }
+    throw new Error("Response body unavailable.");
+  }
+  const reader = response.body.getReader();
+  const bytes = new Uint8Array(expected);
+  let consumed = 0;
+  const cancel = () => {
+    void reader.cancel().catch(() => undefined);
+  };
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    while (!signal.aborted) {
+      // oxlint-disable-next-line no-await-in-loop -- Read this bounded body in order.
+      const { value, done } = await reader.read();
+      if (done || signal.aborted) {
+        break;
+      }
+      if (value.byteLength > expected - consumed) {
+        throw new Error("Response exceeds its declared length.");
+      }
+      bytes.set(value, consumed);
+      consumed += value.byteLength;
+    }
+    if (signal.aborted || consumed !== expected) {
+      throw new Error("Response did not match its declared length.");
+    }
+    return bytes;
+  } finally {
+    signal.removeEventListener("abort", cancel);
+    cancel();
+    reader.releaseLock();
+  }
+};

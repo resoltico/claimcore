@@ -202,6 +202,27 @@ module TypeScript =
                 |}
             )
             + " as const;"
+            "export const attachmentTransport = "
+            + JsonSerializer.Serialize(
+                {|
+                    uploadPath = AttachmentTransport.uploadPath
+                    downloadPath = AttachmentTransport.downloadPath
+                    previewPath = AttachmentTransport.previewPath
+                    manifestPartName = AttachmentTransport.manifestPartName
+                    manifestFileName = AttachmentTransport.manifestFileName
+                    manifestMediaType = AttachmentTransport.manifestMediaType
+                    filePartName = AttachmentTransport.filePartName
+                    fileName = AttachmentTransport.fileName
+                    downloadMediaType = AttachmentTransport.downloadMediaType
+                    pngMediaType = AttachmentTransport.pngMediaType
+                    jpegMediaType = AttachmentTransport.jpegMediaType
+                    digestHeader = AttachmentTransport.digestHeader
+                    maximumFileBytes = AttachmentLimits.FileBytes
+                    deadlineMilliseconds =
+                        int AttachmentTransport.transferDeadline.TotalMilliseconds
+                |}
+            )
+            + " as const;"
             ResponseDecoders.source ()
             "export const limits = { maximumPageSize: "
             + string Paging.MaximumPageSize

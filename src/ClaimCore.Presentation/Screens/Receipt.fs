@@ -285,6 +285,43 @@ module ReceiptScreen =
                         ClaimCore.Domain.Changes.PartKind.Party
                         (PartyId.value item.PartyId)
                 ]
+            | ReceiptSubject.Attachment item ->
+                let entries =
+                    match item.Snapshot with
+                    | AttachmentDisclosure.Disclosed attachment ->
+                        AttachmentsScreen.details attachment
+                    | AttachmentDisclosure.Erased ->
+                        [
+                            value
+                                "attachmentName"
+                                "field.attachmentName.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesErased")
+                        ]
+                    | AttachmentDisclosure.Withheld ->
+                        [
+                            value
+                                "attachmentName"
+                                "field.attachmentName.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesWithheld")
+                        ]
+
+                [
+                    section
+                        "section.attachments.label"
+                        (value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference item.Reference)
+                         :: entries)
+                ],
+                [
+                    partIdentity
+                        ClaimCore.Domain.Changes.PartKind.Attachment
+                        (AttachmentId.value item.AttachmentId)
+                ]
             | ReceiptSubject.Note item ->
                 let entries =
                     match item.Snapshot with
@@ -375,7 +412,26 @@ module ReceiptScreen =
                         Prominence.Primary
                         (ActorPresentation.authorityValue receipt.RecordedBy)
                  ]
-                 @ knownTarget)
+                 @ knownTarget
+                 @ (match receipt.Subject with
+                    | ReceiptSubject.Attachment attachment ->
+                        [
+                            value
+                                "attachmentCaseId"
+                                "input.caseId.label"
+                                Prominence.Detail
+                                (PresentedValue.Identifier(CaseId.format attachment.CaseId))
+                            if
+                                attachment.Snapshot <> AttachmentDisclosure.Erased
+                                && not (TaskConsequences.declaration attachment.Act).Creates
+                            then
+                                value
+                                    "attachmentDisclosure"
+                                    "label.attachmentDisclosure"
+                                    Prominence.Detail
+                                    (PresentedValue.Count(Sequence.value receipt.Position.Sequence))
+                        ]
+                    | _ -> []))
         ]
 
     /// Host session presentation contains no antiforgery-token value.
@@ -461,6 +517,7 @@ module ReceiptScreen =
             match receipt.Subject with
             | ReceiptSubject.Case item -> item.Act
             | ReceiptSubject.Work item -> item.Act
+            | ReceiptSubject.Attachment item -> item.Act
             | ReceiptSubject.Note item -> item.Act
             | ReceiptSubject.Party item -> item.Act
             | ReceiptSubject.Link item -> item.Act
@@ -471,6 +528,7 @@ module ReceiptScreen =
             match receipt.Subject with
             | ReceiptSubject.Case item -> Some item.Reference
             | ReceiptSubject.Work item -> Some item.Reference
+            | ReceiptSubject.Attachment item -> Some item.Reference
             | ReceiptSubject.Note item -> Some item.Reference
             | ReceiptSubject.Party item -> Some item.Reference
             | ReceiptSubject.Link item -> Some item.Reference

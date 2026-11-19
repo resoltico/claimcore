@@ -18,6 +18,8 @@ module internal AdmissionPolicy =
     let housekeeping = 1
     let digest = 1
     let maximumCorePermits = 4
+    let attachmentTransfers = 2
+    let attachmentTransferDeadline = TimeSpan.FromSeconds 180.
 
     let maximumQueuedWriters = 8
 
@@ -71,6 +73,26 @@ type internal RequestCapacity() =
         member _.Dispose() =
             owned |> Option.iter _.Dispose()
             owned <- None
+
+/// A complete transfer has one process slot and exclusive use of its principal's transfer slot.
+type internal AttachmentTransferAdmission() =
+    let sync = obj ()
+    let mutable owners: Set<PrincipalKey> = Set.empty
+
+    member _.TryAcquire(principal) =
+        lock sync (fun () ->
+            if
+                owners.Count >= AdmissionPolicy.attachmentTransfers
+                || Set.contains principal owners
+            then
+                None
+            else
+                owners <- Set.add principal owners
+
+                Some(
+                    AdmissionLease.once (fun () ->
+                        lock sync (fun () -> owners <- Set.remove principal owners))
+                ))
 
 [<NoEquality; NoComparison>]
 type private PrincipalPartition =

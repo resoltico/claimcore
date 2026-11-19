@@ -18,6 +18,8 @@ type Binding =
     | Reminder of CaseSelector * ReminderId * Revision
     | NoteNew of CaseSelector
     | Note of CaseSelector * NoteId
+    | AttachmentNew of CaseSelector
+    | Attachment of CaseSelector * AttachmentId
     | PartyNew of CaseSelector
     | Party of CaseSelector * PartyId * Revision
     | LinkNew of CaseSelector
@@ -36,6 +38,8 @@ module Binding =
         | Binding.Reminder(target, _, _)
         | Binding.NoteNew target
         | Binding.Note(target, _)
+        | Binding.AttachmentNew target
+        | Binding.Attachment(target, _)
         | Binding.PartyNew target
         | Binding.Party(target, _, _)
         | Binding.LinkNew target
@@ -53,6 +57,8 @@ type BindingShape =
     | Reminder
     | NoteNew
     | Note
+    | AttachmentNew
+    | Attachment
     | PartyNew
     | Party
     | LinkNew
@@ -76,6 +82,8 @@ module BindingShape =
         | Binding.Reminder _ -> BindingShape.Reminder
         | Binding.NoteNew _ -> BindingShape.NoteNew
         | Binding.Note _ -> BindingShape.Note
+        | Binding.AttachmentNew _ -> BindingShape.AttachmentNew
+        | Binding.Attachment _ -> BindingShape.Attachment
         | Binding.PartyNew _ -> BindingShape.PartyNew
         | Binding.Party _ -> BindingShape.Party
         | Binding.LinkNew _ -> BindingShape.LinkNew

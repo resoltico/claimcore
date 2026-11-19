@@ -11,6 +11,10 @@ inputs:
     description: Set up the Node release selected by .node-version and install the declared npm.
     required: false
     default: "true"
+  browser-acceptance:
+    description: Prepare Ubuntu browser acceptance runners and install the isolated NSS profile utility.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -63,3 +67,12 @@ runs:
         test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
         npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
         test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+    - if: inputs.browser-acceptance == 'true'
+      name: Prepare Ubuntu browser dependencies
+      shell: bash
+      run: |
+        # Prefer the Ubuntu Azure mirror over the runner's cloud-specific HTTP mirror.
+        # Keep the runner's fallback mirrors, signed sources and security pocket.
+        sudo sed -i -E 's#^http://(azure\.archive|us-east-2\.ec2\.archive)\.ubuntu\.com/ubuntu/#https://azure.archive.ubuntu.com/ubuntu/#' /etc/apt/apt-mirrors.txt
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends libnss3-tools

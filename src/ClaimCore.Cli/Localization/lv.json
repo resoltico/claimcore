@@ -1,4 +1,20 @@
 {
+  "cli.family.attachment": {
+    "text": "Lietas pielikumi",
+    "source": "5c371fd9e78a"
+  },
+  "cli.attachment.saved": {
+    "text": "Pielikums saglabāts.",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "Pielikumu neizdevās saglabāt izvēlētajā vietā.",
+    "source": "915060f3dc90"
+  },
+  "cli.attachment.unresolved": {
+    "text": "Augšupielāde nav apstiprināta. Pārbaudiet sākotnējo darbību ar {statusCommand}. Ja nevarat atgūt tieši pārskatīto failu, pirms jaunas augšupielādes sagaidiet galīgu apstiprinājumu, ka darbība nav reģistrēta.",
+    "source": "7870875bce87"
+  },
   "cli.help.defaultValue": {
     "text": "Noklusējuma vērtība ir {value}.",
     "source": "9756d5de7f5b"

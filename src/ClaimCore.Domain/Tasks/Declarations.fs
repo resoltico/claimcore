@@ -53,6 +53,7 @@ module internal Declarations =
             Family = family
             Consequence = consequence
             ReviewsFamilySequence = false
+            Execution = TaskExecution.Structured
             Capabilities = capabilities
             Inputs = inputs
             Collections = collections

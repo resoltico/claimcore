@@ -643,6 +643,34 @@
       "scalar": null
     },
     {
+      "name": "attachmentId",
+      "labelId": "field.attachmentId.label",
+      "hintId": "field.attachmentId.hint",
+      "ruleId": "field.attachmentId.rule",
+      "scalar": null
+    },
+    {
+      "name": "attachmentName",
+      "labelId": "field.attachmentName.label",
+      "hintId": "field.attachmentName.hint",
+      "ruleId": "field.attachmentName.rule",
+      "scalar": null
+    },
+    {
+      "name": "attachmentLength",
+      "labelId": "field.attachmentLength.label",
+      "hintId": "field.attachmentLength.hint",
+      "ruleId": "field.attachmentLength.rule",
+      "scalar": null
+    },
+    {
+      "name": "attachmentDigest",
+      "labelId": "field.attachmentDigest.label",
+      "hintId": "field.attachmentDigest.hint",
+      "ruleId": "field.attachmentDigest.rule",
+      "scalar": null
+    },
+    {
       "name": "newReference",
       "labelId": "field.newReference.label",
       "hintId": "field.newReference.hint",

@@ -754,5 +754,25 @@
   "ui.rowNumber": {
     "text": "Fila {number}",
     "source": "f8c78edd5258"
+  },
+  "ui.attachments.file": {
+    "text": "Seleccionar archivo",
+    "source": "3e10c3cd6e0d"
+  },
+  "ui.attachments.download": {
+    "text": "Descargar",
+    "source": "d6eafe823591"
+  },
+  "ui.attachments.preview": {
+    "text": "Previsualizar imagen",
+    "source": "190571956ca0"
+  },
+  "ui.attachments.previewError": {
+    "text": "No se pudo mostrar la imagen. Descarga el archivo original.",
+    "source": "c8b3a7434d30"
+  },
+  "ui.attachments.empty": {
+    "text": "No hay adjuntos actuales.",
+    "source": "6d2a34c560f7"
   }
 }

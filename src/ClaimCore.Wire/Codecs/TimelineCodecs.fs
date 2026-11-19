@@ -145,6 +145,21 @@ module TimelineCodecs =
                          id
                          (ValueChangeCodecs.change "HandlingSummaryChange" handlingSummary))
                 variant
+                    "ATTACHMENT"
+                    (fun (withdrawn, id, display) ->
+                        TimelineChange.Attachment(withdrawn, id, display))
+                    (function
+                    | TimelineChange.Attachment(withdrawn, id, display) ->
+                        Some(withdrawn, id, display)
+                    | _ -> None)
+                    (record (fun withdrawn id display -> withdrawn, id, display)
+                     |> field "withdrawn" (fun (withdrawn, _, _) -> withdrawn) boolean
+                     |> field "attachmentId" (fun (_, id, _) -> id) AttachmentCodecs.id
+                     |> field
+                         "display"
+                         (fun (_, _, display) -> display)
+                         (nullable AttachmentCodecs.display))
+                variant
                     "NOTE"
                     (fun (act, id, text) -> TimelineChange.Note(act, id, text))
                     (function
@@ -496,9 +511,10 @@ module TimelineCodecs =
         VocabularyCodec.create HistoryDisclosure.vocabulary |> named "HistoryDisclosure"
 
     let page =
-        (record (fun disclosure basis parent reference items next ->
+        (record (fun disclosure attachmentDisclosure basis parent reference items next ->
             {
                 CaseTimelinePage.Disclosure = disclosure
+                AttachmentDisclosure = attachmentDisclosure
                 Basis = basis
                 CaseId = parent
                 Reference = reference
@@ -507,6 +523,7 @@ module TimelineCodecs =
             })
         : Fields<CaseTimelinePage, _>)
         |> field "disclosure" _.Disclosure disclosure
+        |> field "attachmentDisclosure" _.AttachmentDisclosure AttachmentCodecs.sequence
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference

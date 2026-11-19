@@ -459,6 +459,18 @@
       }
     },
     {
+      "id": "case.attachments-reference",
+      "endpoint": "case.attachments",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        }
+      }
+    },
+    {
       "id": "case.notes-current",
       "endpoint": "case.notes",
       "direction": "request",

@@ -1,3 +1,4 @@
+import type { AttachmentTransferFailureReply } from "@contracts/client";
 import type { ApiResult, EndpointOutcome } from "../protocol/types";
 import { localNotice, type Notice } from "../protocol/notices";
 const humanNotice = (value: EndpointOutcome): Notice | null => {
@@ -49,23 +50,21 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   }
   return localNotice("incomplete");
 };
-export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean => {
+export const isDisclosureRefused = (
+  result: ApiResult<EndpointOutcome | AttachmentTransferFailureReply>,
+): boolean => {
   if (result.kind === "hostFailure") {
     return result.failure.code === "SESSION_REJECTED";
   }
   if (result.kind !== "outcome") {
     return false;
   }
-  const { value } = result;
-  if ("representation" in value && value.representation === "HUMAN") {
-    return (
-      value.outcome.kind === "REJECTED" &&
-      value.outcome.rejection.advice.action === "ASK_FOR_ACCESS"
-    );
+  const { outcome } = result.value;
+  if (outcome.kind !== "REJECTED" || !("rejection" in outcome)) {
+    return false;
   }
-  return (
-    value.outcome.kind === "REJECTED" &&
-    "rejection" in value.outcome &&
-    value.outcome.rejection.code === "RESOURCE_UNAVAILABLE"
-  );
+  const { rejection } = outcome;
+  return "advice" in rejection
+    ? rejection.advice.action === "ASK_FOR_ACCESS"
+    : rejection.code === "RESOURCE_UNAVAILABLE";
 };

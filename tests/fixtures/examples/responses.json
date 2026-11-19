@@ -1112,7 +1112,8 @@
               }
             ],
             "nextCursor": null,
-            "disclosure": "FULL"
+            "disclosure": "FULL",
+            "attachmentDisclosure": 0
           }
         },
         "representation": "DATA"
@@ -2567,6 +2568,29 @@
             "nextCursor": null,
             "offers": [],
             "exactReference": null
+          }
+        },
+        "representation": "DATA"
+      }
+    },
+    {
+      "name": "case.attachments-current",
+      "endpoint": "case.attachments",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-09-01T00:00:00.000000Z",
+              "businessDate": "2026-09-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "10000000-0000-7000-8000-000000000001",
+            "reference": "CASE-1",
+            "disclosure": 1,
+            "items": [],
+            "canAdd": false
           }
         },
         "representation": "DATA"

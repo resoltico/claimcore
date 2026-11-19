@@ -15,6 +15,7 @@ let all () : IEndpointInput list =
         yield EndpointValues.input Api.logout ()
         yield EndpointValues.input Api.context ()
         yield EndpointValues.input Api.caseGet { Target = target }
+        yield EndpointValues.input Api.caseAttachments { Target = target }
         yield
             EndpointValues.input
                 Api.caseNotes

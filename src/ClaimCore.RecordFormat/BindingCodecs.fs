@@ -206,6 +206,38 @@ module BindingCodecs =
         |> build
         |> named "Binding.NOTE"
 
+    let attachmentNew =
+        (record Binding.AttachmentNew: Fields<Binding, _>)
+        |> fixedField "kind" "ATTACHMENT"
+        |> field
+            "target"
+            (function
+            | Binding.AttachmentNew target -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> build
+        |> named "Binding.ATTACHMENT.new"
+
+    let attachment =
+        let identity = identifier AttachmentId.create AttachmentId.value
+
+        (record (fun target id -> Binding.Attachment(target, id)): Fields<Binding, _>)
+        |> fixedField "kind" "ATTACHMENT"
+        |> field
+            "target"
+            (function
+            | Binding.Attachment(target, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "attachmentId"
+            (function
+            | Binding.Attachment(_, id) -> id
+            | _ -> mismatch ())
+            identity
+        |> build
+        |> named "Binding.ATTACHMENT"
+
     let linkNew =
         (record Binding.LinkNew: Fields<Binding, _>)
         |> fixedField "kind" "LINK"
@@ -315,6 +347,8 @@ module BindingCodecs =
         | BindingShape.Reminder -> reminder
         | BindingShape.NoteNew -> noteNew
         | BindingShape.Note -> note
+        | BindingShape.AttachmentNew -> attachmentNew
+        | BindingShape.Attachment -> attachment
         | BindingShape.PartyNew -> partyNew
         | BindingShape.Party -> party
         | BindingShape.LinkNew -> linkNew

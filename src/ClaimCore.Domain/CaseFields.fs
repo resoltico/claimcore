@@ -67,6 +67,10 @@ type InputTarget =
     | Text
     | ReminderId
     | NoteId
+    | AttachmentId
+    | AttachmentName
+    | AttachmentLength
+    | AttachmentDigest
     | NewCaseReference
     | LinkId
     | LinkTargetReference

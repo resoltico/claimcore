@@ -225,6 +225,7 @@ let internal lockedView fixture =
                                         (CaseFixtures.operationId original.OperationId)
                                         command.Binding
                                         command.Inputs
+                                        None
 
                                 match prepared with
                                 | Error(ExecutionStop.AlreadyAccepted record) ->
@@ -307,6 +308,7 @@ let internal operatorFamilyRefusal fixture =
                                         (CaseFixtures.operationId submission.OperationId)
                                         command.Binding
                                         command.Inputs
+                                        None
 
                                 let! control = prepare client
                                 Expect.isOk control "The family operation passes actor attribution"

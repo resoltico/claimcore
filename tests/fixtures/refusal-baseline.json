@@ -813,6 +813,46 @@
       "code": "LINK_LIMIT_REACHED",
       "action": "CorrectInput",
       "target": null
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "attachmentId",
+          "code": "ATTACHMENT_ID_REQUIRED"
+        },
+        {
+          "field": "attachmentName",
+          "code": "ATTACHMENT_NAME_INVALID"
+        },
+        {
+          "field": "attachmentLength",
+          "code": "ATTACHMENT_LENGTH_INVALID"
+        },
+        {
+          "field": "attachmentDigest",
+          "code": "ATTACHMENT_DIGEST_INVALID"
+        },
+        {
+          "field": "attachmentDigest",
+          "code": "ATTACHMENT_PAYLOAD_REQUIRED"
+        },
+        {
+          "field": "attachmentDigest",
+          "code": "ATTACHMENT_PAYLOAD_MISMATCH"
+        }
+      ]
+    },
+    {
+      "code": "ATTACHMENT_DUPLICATE",
+      "action": "ReadCurrent",
+      "target": null
+    },
+    {
+      "code": "ATTACHMENT_CAPACITY_REACHED",
+      "action": "ReadCurrent",
+      "target": null
     }
   ]
 }

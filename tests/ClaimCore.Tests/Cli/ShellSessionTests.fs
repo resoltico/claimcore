@@ -184,6 +184,152 @@ let private interruptCommand () =
         Expect.equal code 130 "Second Ctrl-C at the empty prompt exits"
     }
 
+type private ObservedOutput(onWrite: unit -> unit) =
+    inherit MemoryStream()
+
+    override _.Write(bytes: ReadOnlySpan<byte>) =
+        onWrite ()
+        base.Write bytes
+
+let private interruptAroundPublication () =
+    task {
+        let fixture =
+            Environment.GetEnvironmentVariable "CLAIMCORE_ATTACHMENT_TEST_NO_HARDLINK_DIRECTORY"
+            |> Option.ofObj
+
+        let directory =
+            match fixture with
+            | None -> Directory.CreateTempSubdirectory "claimcore-shell-download-"
+            | Some path ->
+                Directory.CreateDirectory(Path.Combine(path, Guid.NewGuid().ToString("N")))
+
+        try
+            let bytes = [| 0x61uy; 0uy; 0xffuy |]
+            let before = Path.Combine(directory.FullName, "before.bin")
+            let after = Path.Combine(directory.FullName, "after.bin")
+
+            let download target =
+                ShellLine.Text(
+                    "attachment download REF 018f785e-1b45-7cc4-b9c9-cebf5f897689 --output "
+                    + CommandGrammar.quoteArgument target
+                )
+
+            use terminal =
+                new Terminal([ download before; download after; ShellLine.Text "context" ])
+
+            let signal () =
+                TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+            let incoming, returnBytes, laterRead = signal (), signal (), signal ()
+            let mutable transfers = 0
+            let mutable interrupt = ignore
+            let mutable observedSave = false
+
+            use output =
+                new ObservedOutput(fun () ->
+                    if fixture.IsNone then
+                        // The real file publication has returned. Interrupt before its status reaches the shell.
+                        Expect.equal
+                            (File.ReadAllBytes after)
+                            bytes
+                            "The published file is complete."
+
+                        observedSave <- true
+                        interrupt ())
+
+            let save path buffer cancelled =
+                AttachmentFiles.saveWith
+                    (fun output bytes ->
+                        Expect.isSome fixture "The fixture triggers actual exclusive creation."
+                        Expect.isTrue (File.Exists after) "The exclusive destination exists."
+                        Expect.equal output.Length 0L "Interrupt precedes the content write."
+                        observedSave <- true
+                        interrupt ()
+                        output.Write bytes
+                        output.Flush(true))
+                    path
+                    buffer
+                    cancelled
+
+            let receive _ _ =
+                task {
+                    transfers <- transfers + 1
+
+                    if transfers = 1 then
+                        incoming.SetResult()
+                        do! returnBytes.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+
+                    return Ok bytes
+                }
+
+            let invoke _ beforeSend cancelled =
+                task {
+                    beforeSend ()
+                    laterRead.SetResult()
+                    do! Task.Delay(Timeout.Infinite, cancelled)
+                    return CliReply.local ClientFailure.Unavailable
+                }
+
+            use processor =
+                RemoteFrameProcessor.ForTest(
+                    Stream.Null,
+                    output,
+                    terminal.Errors,
+                    invoke,
+                    noDiscard,
+                    download = receive
+                )
+
+            let shell =
+                ShellSession(
+                    Clock(),
+                    { terminal.Console with
+                        Output = output
+                    },
+                    processor,
+                    saveAttachment = save
+                )
+
+            interrupt <- shell.Interrupt
+
+            let running = shell.Run()
+            do! incoming.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+            shell.Interrupt()
+            returnBytes.SetResult()
+            do! laterRead.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+            shell.Interrupt()
+            do! terminal.AtRead 4
+            terminal.Submit(ShellLine.Text "exit")
+            let! _ = running.WaitAsync(TimeSpan.FromSeconds 5.)
+
+            Expect.isFalse (File.Exists before) "Interrupt before save creates no output."
+            Expect.isTrue observedSave "The publication race occurred before status delivery."
+
+            Expect.equal
+                (File.ReadAllBytes after)
+                bytes
+                "Interrupt after save preserves exact bytes."
+
+            Expect.stringContains
+                (text output)
+                "Attachment saved."
+                "A completed save remains visible."
+
+            let statuses =
+                (text terminal.Errors).Split('\n')
+                |> Array.map _.Trim()
+                |> Array.filter (fun line ->
+                    line.StartsWith("Exit code:", StringComparison.Ordinal))
+                |> Array.toList
+
+            Expect.equal
+                statuses
+                [ "Exit code: 130"; "Exit code: 0"; "Exit code: 130" ]
+                "Cancellation applies before publication and to the following command."
+        finally
+            directory.Delete true
+    }
+
 let private interruptPrompt () =
     task {
         let clock = Clock()
@@ -298,6 +444,10 @@ let tests =
             }
             testTask "Ctrl-C cancels the command and a second at the prompt exits" {
                 do! interruptCommand ()
+            }
+            testTask
+                "Ctrl-C reports cancellation before attachment publication and success after it" {
+                do! interruptAroundPublication ()
             }
             testTask "Ctrl-C clears prompt input before a second exits" { do! interruptPrompt () }
             testTask "consecutive prompt interrupts cannot disappear between reads" {

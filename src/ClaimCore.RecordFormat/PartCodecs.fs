@@ -204,6 +204,40 @@ module PartCodecs =
         |> build
         |> named "PartRetained.NOTE"
 
+    let private attachmentRetained =
+        let added =
+            record (fun introduces ->
+                PartValue.Attachment(AttachmentEffect.Added(introduces, None)))
+            |> field
+                "introducesBlob"
+                (function
+                | PartValue.Attachment(AttachmentEffect.Added(introduces, _)) -> introduces
+                | _ -> wrong ())
+                boolean
+            |> build
+
+        let withdrawn =
+            record (fun _ -> PartValue.Attachment AttachmentEffect.Withdrawn)
+            |> field "withdrawn" (fun _ -> true) (boolean |> refine id)
+            |> build
+
+        choice
+            "PartRetained.ATTACHMENT"
+            [
+                branch
+                    id
+                    (function
+                    | PartValue.Attachment(AttachmentEffect.Added _) as value -> Some value
+                    | _ -> None)
+                    added
+                branch
+                    id
+                    (function
+                    | PartValue.Attachment AttachmentEffect.Withdrawn as value -> Some value
+                    | _ -> None)
+                    withdrawn
+            ]
+
     let private partyRetained =
         (record (fun removed -> PartValue.Party { Removed = removed; Content = None })
         : Fields<PartValue, _>)
@@ -241,6 +275,7 @@ module PartCodecs =
         | PartKind.Work -> workRetained
         | PartKind.Reminder -> reminderRetained
         | PartKind.Note -> noteRetained
+        | PartKind.Attachment -> attachmentRetained
         | PartKind.Party -> partyRetained
         | PartKind.Link -> linkRetained
         | PartKind.Person -> personRetained
@@ -266,6 +301,8 @@ module PartCodecs =
         | PartValue.Reminder _
         | PartValue.Party _ -> true
         | PartValue.Note value -> not value.Removed
+        | PartValue.Attachment(AttachmentEffect.Added _) -> true
+        | PartValue.Attachment AttachmentEffect.Withdrawn -> false
         | PartValue.Link value -> not value.Removed
         | PartValue.Person value -> value.Profile <> ProfileValue.Absent
 
@@ -276,6 +313,8 @@ module PartCodecs =
         | PartValue.Work value -> value.IsSome
         | PartValue.Reminder value -> value.Plan.IsSome
         | PartValue.Note value -> value.Removed || value.Text.IsSome
+        | PartValue.Attachment(AttachmentEffect.Added(_, descriptor)) -> descriptor.IsSome
+        | PartValue.Attachment AttachmentEffect.Withdrawn -> true
         | PartValue.Party value -> value.Content.IsSome
         | PartValue.Link value -> value.Removed || value.Content.IsSome
         | PartValue.Person value ->
@@ -389,6 +428,62 @@ module PartCodecs =
             })
         |> named "PartyContent"
 
+    let private attachmentPrivate introduces =
+        let parseCanonical parse format =
+            text
+            |> interpret
+                (fun path candidate ->
+                    match parse candidate with
+                    | Some parsed when format parsed = candidate -> Ok parsed
+                    | _ -> invalid path)
+                format
+
+        let descriptor =
+            function
+            | PartValue.Attachment(AttachmentEffect.Added(_, Some descriptor)) -> descriptor
+            | _ -> wrong ()
+
+        (record (fun blob name length digest preview ->
+            AttachmentIntent.create name length digest
+            |> Option.map (fun intent ->
+                PartValue.Attachment(
+                    AttachmentEffect.Added(
+                        introduces,
+                        Some
+                            {
+                                Blob = blob
+                                Intent = intent
+                                Preview = preview
+                            }
+                    )
+                ))
+            |> function
+                | Some value -> Ok value
+                | None -> Error())
+        : Fields<PartValue, _>)
+        |> field "blob" (descriptor >> _.Blob) (identifier AttachmentId.create AttachmentId.value)
+        |> field
+            "name"
+            (descriptor >> _.Intent >> AttachmentIntent.name)
+            (parseCanonical AttachmentName.parse AttachmentName.value)
+        |> field
+            "length"
+            (descriptor >> _.Intent >> AttachmentIntent.length)
+            (integer 0L (int64 AttachmentLimits.FileBytes))
+        |> field
+            "digest"
+            (descriptor >> _.Intent >> AttachmentIntent.digest)
+            (parseCanonical AttachmentDigest.parse AttachmentDigest.value)
+        |> optionalField
+            "preview"
+            (descriptor >> _.Preview)
+            (enumeration [ AttachmentPreview.Png, "PNG"; AttachmentPreview.Jpeg, "JPEG" ])
+        |> buildResult (fun path _ ->
+            {
+                Path = path
+                Reason = "Invalid attachment descriptor."
+            })
+
     let privateValueCodec partId value =
         match value with
         | PartValue.Case retained -> casePrivate retained
@@ -405,6 +500,9 @@ module PartCodecs =
                 | PartValue.Work(Some value) -> value
                 | _ -> wrong ())
         | PartValue.Reminder retained -> reminderPrivate retained
+        | PartValue.Attachment(AttachmentEffect.Added(introduces, _)) ->
+            attachmentPrivate introduces
+        | PartValue.Attachment AttachmentEffect.Withdrawn -> wrong ()
         | PartValue.Note retained ->
             scalar NoteText.parse NoteText.format
             |> map

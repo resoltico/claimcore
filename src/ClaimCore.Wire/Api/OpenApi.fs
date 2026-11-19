@@ -9,7 +9,7 @@ open ClaimCore.Json
 
 open System.Net.Http
 
-/// The JSON registry and CSV media declaration determine the complete structural contract.
+/// JSON and complete-object media share the installation and host failure contracts.
 module OpenApi =
     let private prefix = "#/components/schemas/"
     let private text = JsonValue.String
@@ -107,16 +107,16 @@ module OpenApi =
             name,
             object [ "description", text ("HTTP " + code); "content", hostContent status ])
 
-    let private responses output =
-        let success =
-            "200", object [ "description", text "HTTP 200"; "content", content output ]
-
+    let private withHostResponses success =
         let failures =
             hostResponses
             |> List.map (fun (code, name, _) ->
                 code, object [ "$ref", text ("#/components/responses/" + name) ])
 
-        object (success :: failures)
+        object (("200", success) :: failures)
+
+    let private responses output =
+        withHostResponses (object [ "description", text "HTTP 200"; "content", content output ])
 
     let private operation (endpoint: Route) =
         let parameters = [ header "ClaimCore-Contract" true ResponseScalars.digest.Schema ]
@@ -242,6 +242,199 @@ module OpenApi =
                 )
             ]
 
+    let private attachmentBinaryResponse transfer =
+        let media =
+            match transfer with
+            | AttachmentTransfer.Download -> [ AttachmentTransport.downloadMediaType ]
+            | AttachmentTransfer.Preview ->
+                [ AttachmentTransport.pngMediaType; AttachmentTransport.jpegMediaType ]
+            | AttachmentTransfer.Upload -> invalidArg (nameof transfer) "Upload replies are JSON."
+
+        let responseHeader shape =
+            object [ "schema", shape; "x-claimcore-binary-success-only", JsonValue.Boolean true ]
+
+        object
+            [
+                "description", text "HTTP 200"
+                "headers",
+                object
+                    [
+                        "Content-Length",
+                        schema (Schema.Integer(0L, int64 AttachmentLimits.FileBytes))
+                        |> responseHeader
+                        "Content-Encoding", schema (Schema.Const "identity") |> responseHeader
+                        "ClaimCore-Installation",
+                        object
+                            [
+                                "required", JsonValue.Boolean true
+                                "schema", schema Codec.uuid.Schema
+                            ]
+                        AttachmentTransport.digestHeader,
+                        object
+                            [
+                                "type", text "string"
+                                "pattern", text "^sha-256=:[A-Za-z0-9+/]{43}=:$"
+                            ]
+                        |> responseHeader
+                        "Cache-Control",
+                        schema (Schema.Const "no-store, no-transform, max-age=0") |> responseHeader
+                        if transfer = AttachmentTransfer.Download then
+                            "Content-Disposition",
+                            object [ "type", text "string" ] |> responseHeader
+                    ]
+                "content",
+                object (
+                    ("application/json",
+                     object [ "schema", schema AttachmentTransport.failure.Schema ])
+                    :: (media |> List.map (fun mediaType -> mediaType, object []))
+                )
+            ]
+
+    let private attachmentUploadContent =
+        let encoding media filename =
+            object [ "contentType", text media; "x-claimcore-filename", text filename ]
+
+        let uploadTask =
+            ClaimCore.Domain.Tasks.Registry.clientDeclarations
+            |> List.filter (fun declaration ->
+                declaration.Execution = TaskExecution.AttachmentUpload)
+            |> List.exactlyOne
+            |> _.Id
+            |> TaskId.token
+
+        let manifest =
+            object
+                [
+                    "allOf",
+                    array
+                        [
+                            schema Api.operationExecute.Input.Schema
+                            object
+                                [
+                                    "properties",
+                                    object [ "task", object [ "const", text uploadTask ] ]
+                                ]
+                        ]
+                ]
+
+        object
+            [
+                AttachmentTransport.multipartMediaType,
+                object
+                    [
+                        "schema",
+                        object
+                            [
+                                "type", text "object"
+                                "required",
+                                array (
+                                    List.map
+                                        text
+                                        [
+                                            AttachmentTransport.manifestPartName
+                                            AttachmentTransport.filePartName
+                                        ]
+                                )
+                                "additionalProperties", JsonValue.Boolean false
+                                "properties",
+                                object
+                                    [
+                                        AttachmentTransport.manifestPartName, manifest
+                                        AttachmentTransport.filePartName,
+                                        object [ "type", text "string"; "format", text "binary" ]
+                                    ]
+                            ]
+                        "encoding",
+                        object
+                            [
+                                AttachmentTransport.manifestPartName,
+                                encoding
+                                    AttachmentTransport.manifestMediaType
+                                    AttachmentTransport.manifestFileName
+                                AttachmentTransport.filePartName,
+                                encoding
+                                    AttachmentTransport.downloadMediaType
+                                    AttachmentTransport.fileName
+                            ]
+                        "x-claimcore-part-order",
+                        array (
+                            List.map
+                                text
+                                [
+                                    AttachmentTransport.manifestPartName
+                                    AttachmentTransport.filePartName
+                                ]
+                        )
+                        "x-claimcore-max-request-byte-length",
+                        JsonValue.Integer(
+                            int64 (
+                                AttachmentTransport.maximumUploadBytes Limits.MaximumRequestBytes
+                            )
+                        )
+                    ]
+            ]
+
+    let private attachmentOperation transfer =
+        let id = AttachmentTransport.token transfer
+        let upload = transfer = AttachmentTransfer.Upload
+
+        let result =
+            if upload then
+                withHostResponses (
+                    object
+                        [
+                            "description", text "HTTP 200"
+                            "headers",
+                            object
+                                [
+                                    "ClaimCore-Installation",
+                                    object
+                                        [
+                                            "required", JsonValue.Boolean true
+                                            "schema", schema Codec.uuid.Schema
+                                        ]
+                                ]
+                            "content", content Api.operationExecute.Output.Schema
+                        ]
+                )
+            else
+                withHostResponses (attachmentBinaryResponse transfer)
+
+        object
+            [
+                "operationId", text id
+                "x-claimcore-effect",
+                text (
+                    EndpointEffect.token (
+                        if upload then
+                            EndpointEffect.LedgerExecution
+                        else
+                            EndpointEffect.Read
+                    )
+                )
+                "parameters",
+                array
+                    [
+                        header "ClaimCore-Contract" true ResponseScalars.digest.Schema
+                        header "ClaimCore-Installation" true Codec.uuid.Schema
+                        header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema
+                        if upload then
+                            representationHeader
+                    ]
+                "security", security id
+                "requestBody",
+                object
+                    [
+                        "required", JsonValue.Boolean true
+                        "content",
+                        if upload then
+                            attachmentUploadContent
+                        else
+                            content AttachmentTransport.request.Schema
+                    ]
+                "responses", result
+            ]
+
     let private inspected (endpoint: Route) =
         endpoint.Token,
         endpoint.Method.Method.ToLowerInvariant(),
@@ -274,16 +467,25 @@ module OpenApi =
         let roots =
             (Api.all
              |> List.collect (fun endpoint -> [ endpoint.InputSchema; endpoint.OutputSchema ]))
-            @ [ ExportTransport.request.Schema; ExportTransport.failure.Schema ]
+            @ [
+                ExportTransport.request.Schema
+                ExportTransport.failure.Schema
+                AttachmentTransport.request.Schema
+                AttachmentTransport.failure.Schema
+            ]
 
         endpoints
         |> List.fold
             (fun state (_, _, _, definitions) -> SchemaDefinitions.merge state definitions)
             (SchemaDefinitions.merge
                 HostFailureCodecs.reply.Definitions
-                (SchemaDefinitions.merge
+                ([
                     ExportTransport.request.Definitions
-                    ExportTransport.failure.Definitions))
+                    ExportTransport.failure.Definitions
+                    AttachmentTransport.request.Definitions
+                    AttachmentTransport.failure.Definitions
+                 ]
+                 |> List.fold SchemaDefinitions.merge Map.empty))
         |> fun definitions ->
             SchemaJson.reachable definitions (HostFailureCodecs.reply.Schema :: roots)
 
@@ -299,7 +501,12 @@ module OpenApi =
                     |> List.map (fun (id, method, operation, _) ->
                         "/api/" + id, object [ method, operation ])
                     |> fun paths ->
-                        paths @ [ ExportTransport.path, object [ "post", exportOperation ] ]
+                        paths
+                        @ [ ExportTransport.path, object [ "post", exportOperation ] ]
+                        @ (AttachmentTransport.all
+                           |> List.map (fun transfer ->
+                               AttachmentTransport.path transfer,
+                               object [ "post", attachmentOperation transfer ]))
                 )
                 "components",
                 object

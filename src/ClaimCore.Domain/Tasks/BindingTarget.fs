@@ -7,6 +7,7 @@ type ActSubject =
     | Work
     | Reminder
     | Note
+    | Attachment
     | Party
     | Link
 

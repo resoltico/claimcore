@@ -182,6 +182,13 @@ module HostRoutes =
         )
         |> ignore
 
+        for transfer in AttachmentTransport.all do
+            application.MapPost(
+                AttachmentTransport.path transfer,
+                Func<HttpContext, Task>(AttachmentRoutes.handle transfer configuration withActor)
+            )
+            |> ignore
+
         for endpoint in Api.all do
             let handler =
                 match Api.identity endpoint with

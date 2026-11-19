@@ -3,7 +3,7 @@ import { deliveryOptions } from "./deliveryOptions";
 export const sendHttp = (
   endpoint: { readonly path: string; readonly method: string },
   headers: Readonly<Record<string, string>>,
-  body: string | undefined,
+  body: BodyInit | undefined,
   signal: AbortSignal,
 ): Promise<Response> =>
   fetch(endpoint.path, {

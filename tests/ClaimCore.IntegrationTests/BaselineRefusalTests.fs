@@ -155,15 +155,15 @@ let tests =
         [
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
-                (refusedInstallation Baseline.identifier 7s alteredBaseline)
+                (refusedInstallation Baseline.identifier 8s alteredBaseline)
             testCaseAsync
-                "an installation with format 6 and the preceding baseline identity refuses without mutation"
-                (refusedInstallation "claimcore" 6s (fun () ->
+                "an installation with format 7 and the preceding baseline identity refuses without mutation"
+                (refusedInstallation "claimcore" 7s (fun () ->
                     File
                         .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
-                        .Replace("installation_format = 7", "installation_format = 6")
+                        .Replace("installation_format = 8", "installation_format = 7")
                     |> Encoding.UTF8.GetBytes))
             testCaseAsync
                 "a schema with a different checksum is refused untouched"
-                (refusedInstallation Baseline.identifier 7s differentChecksum)
+                (refusedInstallation Baseline.identifier 8s differentChecksum)
         ]

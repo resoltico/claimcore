@@ -4,6 +4,17 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 
 module PartDescriptions =
+    let private attachment =
+        function
+        | AttachmentEffect.Added(_, descriptor) ->
+            PartDescription.Attachment
+                {
+                    Withdrawn = false
+                    Display = Option.map AttachmentDescriptor.display descriptor
+                }
+        | AttachmentEffect.Withdrawn ->
+            PartDescription.Attachment { Withdrawn = true; Display = None }
+
     let notes (parts: PartChange seq) =
         parts
         |> Seq.choose (fun change ->
@@ -144,6 +155,7 @@ module PartDescriptions =
                                     After = value.Content
                                 }
                         )
+                    | PartValue.Attachment value -> Ok(attachment value)
                     | PartValue.Note value ->
                         match NoteId.create change.PartId with
                         | None -> Error RecordViolation.InvalidSubjectState
@@ -320,6 +332,7 @@ module PartDescriptions =
                                 | _ -> None)
 
                         Ok(PartDescription.Note(NoteDescription.describe prior value))
+                    | PartValue.Attachment value -> Ok(attachment value)
                     | PartValue.Party value ->
                         let prior =
                             before
@@ -488,6 +501,15 @@ module PartDescriptions =
                     |> Option.defaultValue missing
 
                 PartKind.Note, items
+            | PartDescription.Attachment value ->
+                let items =
+                    AttachmentId.create part.PartId
+                    |> Option.map (fun id ->
+                        [ TimelineChange.Attachment(value.Withdrawn, id, value.Display) ])
+                    |> Option.map Ok
+                    |> Option.defaultValue missing
+
+                PartKind.Attachment, items
             | PartDescription.Party value ->
                 let items =
                     PartyId.create part.PartId

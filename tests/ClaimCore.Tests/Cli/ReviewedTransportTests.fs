@@ -159,6 +159,101 @@ let tests =
         "reviewed native transport boundaries"
         [
             testCase
+                "machine attachment preflight rejection and fault emit one not-sent execution frame"
+                (fun () ->
+                    for preview, outcome, exit in
+                        [
+                            Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable),
+                            "REJECTED",
+                            2
+                            Outcome.Failed CoreFault.StoreUnavailable, "FAILED", 3
+                        ] do
+                        use output = new MemoryStream()
+                        use errors = new MemoryStream()
+                        let calls = ResizeArray<string>()
+
+                        let invoke frame dispatched _ =
+                            calls.Add((Frames.endpoint frame).Token)
+                            dispatched ()
+
+                            let reply =
+                                RepresentationReply.Data
+                                    {
+                                        PreviewReply.OperationId =
+                                            Frames.operationId frame |> Option.get
+                                        Outcome = preview
+                                    }
+
+                            CliReply.result frame (Api.operationPreview.Output.Write reply)
+                            |> required
+                            |> Task.FromResult
+
+                        use processor =
+                            RemoteFrameProcessor.ForTest(
+                                Stream.Null,
+                                output,
+                                errors,
+                                invoke,
+                                fun _ -> Task.FromResult()
+                            )
+
+                        let io =
+                            {
+                                Output = output
+                                Errors = errors
+                                Review =
+                                    {
+                                        IsInteractive = false
+                                        ReadLine = (fun () -> None)
+                                        Write = ignore
+                                    }
+                            }
+
+                        let code =
+                            VerbRunner.run
+                                io
+                                processor
+                                [
+                                    "attachment"
+                                    "withdraw"
+                                    "CASE-1"
+                                    "018f785e-1b45-7cc4-b9c9-cebf5f897689"
+                                    "--confirm"
+                                    "yes"
+                                    "--format"
+                                    "json"
+                                ]
+                                CancellationToken.None
+                            |> sync
+
+                        Expect.equal code exit "The terminal outcome determines the command exit"
+
+                        Expect.sequenceEqual
+                            calls
+                            [ "operation.preview" ]
+                            "Execution is never dispatched"
+
+                        let bytes = output.ToArray()
+                        let frame = Frames.decode bytes |> required
+
+                        Expect.equal
+                            frame.Endpoint
+                            (Some Api.operationExecute.Id)
+                            "Execution-shaped reply"
+
+                        Expect.equal
+                            frame.Delivery
+                            DeliveryState.NotSent
+                            "Preflight did not send execution"
+
+                        use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)
+
+                        Expect.stringContains
+                            (document.RootElement.GetRawText())
+                            outcome
+                            "Terminal outcome survives the mapping")
+
+            testCase
                 "operational commands send once through the actual processor without ledger recovery"
                 (fun () ->
                     for failDelivery in [ false; true ] do

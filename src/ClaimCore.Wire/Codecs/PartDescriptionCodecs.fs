@@ -276,6 +276,18 @@ module PartDescriptionCodecs =
         |> build
         |> named "RelatedCaseContent"
 
+    let private attachment =
+        (record (fun withdrawn display ->
+            {
+                AttachmentPartDescription.Withdrawn = withdrawn
+                Display = display
+            })
+        : Fields<AttachmentPartDescription, _>)
+        |> field "withdrawn" _.Withdrawn boolean
+        |> field "display" _.Display (nullable AttachmentCodecs.display)
+        |> build
+        |> named "AttachmentPartDescription"
+
     let note =
         (record (fun v0 v1 ->
             {
@@ -338,6 +350,13 @@ module PartDescriptionCodecs =
                     | PartDescription.Reminder value -> Some value
                     | _ -> None)
                     (record id |> field "changes" id reminder)
+                variant
+                    "ATTACHMENT"
+                    PartDescription.Attachment
+                    (function
+                    | PartDescription.Attachment value -> Some value
+                    | _ -> None)
+                    (record id |> field "changes" id attachment)
                 variant
                     "NOTE"
                     PartDescription.Note

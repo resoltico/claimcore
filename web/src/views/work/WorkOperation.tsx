@@ -3,7 +3,8 @@ import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import type { TaskId, OperationBinding } from "@contracts/client";
+import { clientCompositions, type TaskId, type OperationBinding } from "@contracts/client";
+import { attachmentReceiptFields } from "../../api/attachmentDisclosure";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 
 import type { FormValues } from "../../protocol/forms";
@@ -15,10 +16,11 @@ import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
   noteIntent?: NoteIntent | undefined;
+  upload?: File | undefined;
   affordance?: OperationAffordance;
   current: CurrentCase;
   disclosureAvailable: boolean;
-  subject: "WORK" | "REMINDER" | "NOTE" | "LINK";
+  subject: "WORK" | "REMINDER" | "NOTE" | "LINK" | "ATTACHMENT";
   kind: string;
   targetIdentity?: string;
   completionAnchor?: string | undefined;
@@ -34,6 +36,7 @@ type Props = {
 export const WorkOperation = ({
   current,
   noteIntent,
+  upload,
   disclosureAvailable,
   subject,
   kind,
@@ -48,6 +51,7 @@ export const WorkOperation = ({
   onDisclosureRefused,
 }: Props) => {
   const { bind: bindNote } = useInlineNoteDraft();
+  const { caseId } = current.subject;
   const credential = useCredential();
   const anchor = useRef<HTMLElement | null>(
     completionAnchor === undefined ? null : document.getElementById(completionAnchor),
@@ -56,17 +60,28 @@ export const WorkOperation = ({
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
   const accepted = useCallback(
-    (receipt: OperationReceipt, operationId: string) => {
+    (receipt: OperationReceipt, operationId: string, task: TaskId) => {
       if (recorded.current !== operationId) {
         recorded.current = operationId;
-        cache?.invalidate();
+        const fields = attachmentReceiptFields(receipt);
+        if (
+          fields?.caseId === caseId &&
+          (receipt.disclosure === "ERASED" || fields.sequence !== undefined)
+        ) {
+          cache?.observeAttachmentReceipt(receipt);
+        } else if (task === clientCompositions.attachmentWithdrawal) {
+          cache?.confirmAttachmentWithdrawal(caseId);
+        } else {
+          cache?.invalidate();
+        }
         onRecorded(receipt, operationId);
       }
     },
-    [cache, onRecorded],
+    [cache, caseId, onRecorded],
   );
   const model = useOperation({
     subject,
+    upload,
     kind,
     current,
     credential,
@@ -122,7 +137,7 @@ export const WorkOperation = ({
     }
   }, [disclosureAvailable]);
   const navigation = useOperationNavigation(model, onClose);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (
       model.ownerVerified &&
       model.receipt !== null &&
@@ -130,7 +145,7 @@ export const WorkOperation = ({
       model.prepared !== null
     ) {
       navigation.committed();
-      accepted(model.receipt, model.prepared.input.operationId);
+      accepted(model.receipt, model.prepared.input.operationId, model.prepared.input.task);
     }
   }, [model.receipt, model.prepared, model.ownerVerified, subject, navigation, accepted]);
   return (
@@ -143,6 +158,7 @@ export const WorkOperation = ({
         onClose={navigation.close}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
+        capturedInputs={upload !== undefined}
       />
     </>
   );

@@ -7,6 +7,7 @@ const responseDeadlineMs = 20_000;
 export const withinResponseDeadline = async <T>(
   work: (signal: AbortSignal) => Promise<ApiResult<T>>,
   callerSignal?: AbortSignal,
+  milliseconds = responseDeadlineMs,
 ): Promise<ApiResult<T>> => {
   const controller = new AbortController();
   let notifyCancellation: (value: ApiResult<T>) => void = () => undefined;
@@ -30,7 +31,7 @@ export const withinResponseDeadline = async <T>(
     timer = setTimeout(() => {
       resolve({ kind: "deliveryFailure", notice: localNotice("responseTimeout") });
       controller.abort();
-    }, responseDeadlineMs);
+    }, milliseconds);
   });
   let completed = false;
   try {

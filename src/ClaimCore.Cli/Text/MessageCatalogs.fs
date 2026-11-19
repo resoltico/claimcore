@@ -95,6 +95,7 @@ module internal MessageCatalogs =
             function
             | "case" -> CliMessage.CaseFamily
             | "note" -> CliMessage.NoteCommands
+            | "attachment" -> CliMessage.AttachmentCommands
             | "party" -> CliMessage.PartyCommands
             | "link" -> CliMessage.LinkCommands
             | "payment" -> CliMessage.PaymentCommands
@@ -165,6 +166,9 @@ module internal MessageCatalogs =
             CommandGrammar.operations
             |> List.map (fun operation ->
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation)
+            |> fun commands ->
+                commands
+                @ [ CliIdentity.programName + " " + CommandGrammar.attachmentDownloadSynopsis ]
             |> String.concat "\n"
             |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 

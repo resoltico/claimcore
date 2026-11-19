@@ -16,16 +16,16 @@ open ClaimCore.TestSupport
 
 let private capturedArguments () =
     File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-commands.txt"))
-    |> Array.map (fun row ->
-        row.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-        |> List.ofArray
-        |> CliExamples.complete)
+    |> Array.map (fun row -> CliExamples.fromCapture row |> CliExamples.complete)
     |> Array.toList
 
 let private cliStrictness () =
     let prepare arguments =
         Grammar.prepare (fun () -> "11111111-2222-7333-8444-555555555555") arguments
         |> Result.isOk
+
+    let prepareAttachmentDownload arguments =
+        Grammar.prepareAttachmentDownload arguments |> Result.isOk
 
     let host arguments =
         CliInvocations.admit arguments |> Result.isOk
@@ -42,6 +42,17 @@ let private cliStrictness () =
 
     let cases =
         (captures |> List.map (fun arguments -> arguments, prepare))
+        @ [
+            [
+                "attachment"
+                "download"
+                "R-1"
+                "11111111-2222-7333-8444-555555555554"
+                "--output"
+                "sample.txt"
+            ],
+            prepareAttachmentDownload
+        ]
         @ ([
             [ "help" ]
             [ "version" ]

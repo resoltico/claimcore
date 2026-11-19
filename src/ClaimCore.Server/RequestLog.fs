@@ -38,7 +38,15 @@ module internal RequestLog =
                     if csvExport then
                         ExportTransport.token
                     else
-                        endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown"
+                        match
+                            Option.ofObj context.Request.Path.Value
+                            |> Option.bind AttachmentTransport.tryPath
+                        with
+                        | Some transfer -> AttachmentTransport.token transfer
+                        | None ->
+                            endpoint
+                            |> Option.map EndpointIds.token
+                            |> Option.defaultValue "unknown"
                 MetricEndpoint = endpoint
                 CsvExport = csvExport
                 MetricResult = RequestMetricResult.HostFailure

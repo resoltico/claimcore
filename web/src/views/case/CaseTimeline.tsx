@@ -1,4 +1,8 @@
 import { CsvExportButton } from "../../components/CsvExportButton";
+import { attachmentDisclosureOf } from "../../api/attachmentDisclosure";
+import { useEndpointCache } from "../../hooks/EndpointProvider";
+import type { PresentedPage } from "../../protocol/types";
+import type { EndpointCache } from "../../hooks/endpointCache";
 import { apiEndpoints } from "../../api/service";
 import {
   type ExportRequest,
@@ -39,9 +43,63 @@ const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.caseTimeline]
     nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     disclosure: doc.disclosure,
+    attachmentDisclosure: attachmentDisclosureOf(doc),
   };
 };
 type TimelinePage = NonNullable<ReturnType<typeof select>>;
+const timelineContinuation = (page: TimelinePage) =>
+  String(page.attachmentDisclosure?.sequence ?? "");
+
+type TimelineInput = (cursor: string | null) => CaseTimelineRequest;
+
+const useTimelineAdmission = (input: TimelineInput) => {
+  const cache = useEndpointCache()!;
+  const [erasedReadback, setErasedReadback] = useState<{
+    cache: EndpointCache;
+    generation: number;
+    input: TimelineInput;
+    page: TimelinePage;
+  } | null>(null);
+
+  const admit = useCallback(
+    (response: HumanResponseByEndpoint[typeof apiEndpoints.caseTimeline]) => {
+      const page = select(response);
+      const observation = page?.attachmentDisclosure;
+      const { target } = input(null);
+      if (observation && target.kind === "ID" && observation.caseId !== target.caseId) {
+        return null;
+      }
+      if (page?.disclosure === "ERASED") {
+        if (observation && cache.observeAttachmentErasure(observation.caseId)) {
+          setErasedReadback({ cache, generation: cache.invalidation(), input, page });
+        }
+        return page;
+      }
+      return observation &&
+        !cache.observeAttachmentDisclosure(observation.caseId, observation.sequence)
+        ? null
+        : page;
+    },
+    [cache, input],
+  );
+
+  const visibleViews = (loading: boolean, views: ReadonlyArray<PresentedPage>) => {
+    if (!loading && erasedReadback !== null) {
+      setErasedReadback(null);
+    }
+    // This erased page was already admitted by the current request. Keep its structural
+    // history until the erasure-triggered revalidation finishes, within the same scope.
+    return loading &&
+      erasedReadback?.cache === cache &&
+      erasedReadback.input === input &&
+      erasedReadback.generation === cache.invalidation()
+      ? [{ view: erasedReadback.page.screen, basis: erasedReadback.page.basis }]
+      : views;
+  };
+
+  return { admit, visibleViews };
+};
+
 const useTimelineDisclosure = (
   page: TimelinePage | null,
   disclosure: HistoryDisclosure,
@@ -113,12 +171,14 @@ export const CaseTimeline = ({
     }),
     [targetKind, targetValue, filter],
   );
+  const { admit, visibleViews } = useTimelineAdmission(input);
   const result = useEndpointPage<
     typeof apiEndpoints.caseTimeline,
     RegionTimelineEntry,
     TimelinePage
-  >(apiEndpoints.caseTimeline, input, select, onDisclosureChanged);
+  >(apiEndpoints.caseTimeline, input, admit, onDisclosureChanged, undefined, timelineContinuation);
   const suppressed = useTimelineDisclosure(result.page, disclosure, result.loading, result.load);
+  const views = visibleViews(result.loading, result.views);
 
   return (
     <section
@@ -168,7 +228,7 @@ export const CaseTimeline = ({
           </p>
         )}
         {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-        <PageTables views={suppressed ? [] : result.views} />
+        <PageTables views={suppressed ? [] : views} />
         {result.page !== null && result.items.length === 0 && !result.loading ? (
           <p>{p.text("ui.timeline.empty")}</p>
         ) : null}

@@ -754,5 +754,25 @@
   "ui.rowNumber": {
     "text": "第 {number} 列",
     "source": "f8c78edd5258"
+  },
+  "ui.attachments.file": {
+    "text": "選取檔案",
+    "source": "3e10c3cd6e0d"
+  },
+  "ui.attachments.download": {
+    "text": "下載",
+    "source": "d6eafe823591"
+  },
+  "ui.attachments.preview": {
+    "text": "預覽影像",
+    "source": "190571956ca0"
+  },
+  "ui.attachments.previewError": {
+    "text": "無法顯示影像。請下載原始檔案。",
+    "source": "c8b3a7434d30"
+  },
+  "ui.attachments.empty": {
+    "text": "目前沒有附件。",
+    "source": "6d2a34c560f7"
   }
 }

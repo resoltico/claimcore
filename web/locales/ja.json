@@ -754,5 +754,25 @@
   "ui.rowNumber": {
     "text": "行 {number}",
     "source": "f8c78edd5258"
+  },
+  "ui.attachments.file": {
+    "text": "ファイルを選択",
+    "source": "3e10c3cd6e0d"
+  },
+  "ui.attachments.download": {
+    "text": "ダウンロード",
+    "source": "d6eafe823591"
+  },
+  "ui.attachments.preview": {
+    "text": "画像をプレビュー",
+    "source": "190571956ca0"
+  },
+  "ui.attachments.previewError": {
+    "text": "画像を表示できませんでした。元のファイルをダウンロードしてください。",
+    "source": "c8b3a7434d30"
+  },
+  "ui.attachments.empty": {
+    "text": "現在の添付ファイルはありません。",
+    "source": "6d2a34c560f7"
   }
 }

@@ -67,6 +67,8 @@ module internal ReviewDocumentParts =
             | Binding.ReminderNew _
             | Binding.PartyNew _
             | Binding.Party _
+            | Binding.AttachmentNew _
+            | Binding.Attachment _
             | Binding.NoteNew _
             | Binding.LinkNew _
             | Binding.Link _

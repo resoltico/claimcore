@@ -42,6 +42,7 @@ export type OperationFormProps = {
   formId?: string;
   onMount?: (form: HTMLFormElement) => void;
   onFieldBlur?: (control: EventTarget | null) => void;
+  capturedInputs?: boolean;
 };
 const FormContext = ({ current, task }: { current: CurrentCase | null; task: string }) =>
   current === null ? null : (
@@ -58,7 +59,7 @@ const FormContext = ({ current, task }: { current: CurrentCase | null; task: str
       timeZone={current.basis.observation.timeZone}
     />
   );
-const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
+const OperationInputs = ({ model, current, offered, capturedInputs }: OperationFormProps) => {
   const p = usePresentation();
   const creation = model.task.creates && current === null;
   const allowed = offered.includes(model.entry.kind);
@@ -76,7 +77,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
       {model.task.inputs.some((input) => taskInput(input.id).kind === "GROUP") ? (
         <p>{p.text("label.correctionSelection")}</p>
       ) : null}
-      {offered.length === 0 && !creation ? null : (
+      {capturedInputs === true || (offered.length === 0 && !creation) ? null : (
         <TaskInputs
           task={model.task}
           affordance={model.affordance ?? undefined}

@@ -7,6 +7,7 @@
     <Compile Include="CaseTransitionInputs.fs" />
     <Compile Include="CsvExportHostTests.fs" />
     <Compile Include="LedgerStructureTests.fs" />
+    <Compile Include="AttachmentLedgerTests.fs" />
     <Compile Include="SubmissionServiceTests.fs" />
     <Compile Include="ReceiptDisclosureTests.fs" />
     <Compile Include="PaymentPositionTests.fs" />
@@ -56,6 +57,9 @@
     <Compile Include="ReminderPostgresTests.fs" />
     <Compile Include="StewardshipReasonConsumerTests.fs" />
     <Compile Include="NotesPostgresTests.fs" />
+    <Compile Include="AttachmentPostgresTests.fs" />
+    <Compile Include="AttachmentPhysicalRecoveryTests.fs" />
+    <Compile Include="AttachmentVerificationTests.fs" />
     <Compile Include="PartiesPostgresTests.fs" />
     <Compile Include="HandoverPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />

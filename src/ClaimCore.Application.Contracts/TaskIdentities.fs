@@ -10,6 +10,7 @@ type QueryTaskId =
     | CaseSummary
     | CaseTimeline
     | CaseNotes
+    | CaseAttachments
     | CasePayments
     | ReminderList
     | ReminderGet
@@ -32,6 +33,7 @@ module QueryTaskId =
                 QueryTaskId.CaseSummary, "case.summary"
                 QueryTaskId.CaseTimeline, "case.timeline"
                 QueryTaskId.CaseNotes, "case.notes"
+                QueryTaskId.CaseAttachments, "case.attachments"
                 QueryTaskId.CasePayments, "case.payments"
                 QueryTaskId.ReminderList, "reminder.list"
                 QueryTaskId.ReminderGet, "reminder.get"

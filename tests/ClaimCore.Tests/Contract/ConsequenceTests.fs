@@ -38,6 +38,8 @@ let private acts =
         (TaskId.ofLiteral "party.add"), Consequence.Routine
         (TaskId.ofLiteral "party.update"), Consequence.Routine
         (TaskId.ofLiteral "party.remove"), Consequence.Routine
+        (TaskId.ofLiteral "attachment.add"), Consequence.Stewardship
+        (TaskId.ofLiteral "attachment.withdraw"), Consequence.Stewardship
         (TaskId.ofLiteral "note.add"), Consequence.Routine
         (TaskId.ofLiteral "note.remove"), Consequence.Routine
         (TaskId.ofLiteral "link.add"), Consequence.Routine
@@ -58,6 +60,7 @@ let private queries =
         QueryTaskId.CaseList, Consequence.Routine
         QueryTaskId.CaseSummary, Consequence.Routine
         QueryTaskId.CaseTimeline, Consequence.Routine
+        QueryTaskId.CaseAttachments, Consequence.Routine
         QueryTaskId.CaseNotes, Consequence.Routine
         QueryTaskId.CasePayments, Consequence.Routine
         QueryTaskId.ReminderList, Consequence.Routine

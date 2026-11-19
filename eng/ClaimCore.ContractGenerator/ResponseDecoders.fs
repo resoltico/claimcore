@@ -113,6 +113,9 @@ module ResponseDecoders =
         + "const exportFailureRoot:ResponseSchema = "
         + schemaDescriptor ExportTransport.failure.Schema
         + ";\n"
+        + "const attachmentTransferFailureRoot:ResponseSchema = "
+        + schemaDescriptor AttachmentTransport.failure.Schema
+        + ";\n"
         + "export const caseSelectionDateFields = "
         + JsonSerializer.Serialize dateFields
         + " as const;\n"
@@ -386,6 +389,7 @@ export const caseSelectionMember = (key: string): ResponseSchema | undefined => 
 export const isCaseListSelection = (value: unknown): value is CaseListSelection =>
   isResponseStructure(["ref", caseSelectionName], value);
 export const isCsvExportFailure = (value:unknown):value is ExportFailureReply => isResponseStructure(exportFailureRoot,value);
+export const isAttachmentTransferFailure = (value:unknown):value is AttachmentTransferFailureReply => isResponseStructure(attachmentTransferFailureRoot,value);
 export const isEndpointResponse = <E extends EndpointId>(
   endpoint: E,
   value: unknown,

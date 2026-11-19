@@ -92,6 +92,7 @@ module Grammar =
         incomplete
         allocate
         (entry: string)
+        source
         options
         operands
         (problems: ResizeArray<UsageError>)
@@ -100,7 +101,7 @@ module Grammar =
         | _ when problems.Count > 0 -> Choice1Of2 None
         | Some kind ->
             let intent =
-                TaskArguments.mutation incomplete allocate kind options operands problems
+                TaskArguments.mutation incomplete allocate kind source options operands problems
 
             Choice2Of2 intent
         | None ->
@@ -153,14 +154,28 @@ module Grammar =
                     arguments
                     problems
 
+            let source, sourceIssue =
+                if not (CommandGrammar.uploadsFile entry) || problems.Count > 0 then
+                    None, None
+                else
+                    match options.TryGetValue "--file" with
+                    | true, [ Some path ] ->
+                        match AttachmentFiles.capture path with
+                        | Ok source -> Some source, None
+                        | Error() -> None, Some(UsageError.InvalidValue("--file", ""))
+                    | _ -> None, Some(UsageError.MissingOption "--file")
+
             let body =
                 build
                     (incomplete || options.ContainsKey "--dry-run")
                     newId
                     entry
+                    source
                     options
                     operands
                     problems
+
+            sourceIssue |> Option.iter problems.Add
 
             let endpoint =
                 if options.ContainsKey "--preview" && (TaskRouting.act entry).IsSome then
@@ -230,6 +245,7 @@ module Grammar =
             if
                 options.ContainsKey "--confirm"
                 && TaskRouting.consequence entry <> Consequence.Irreversible
+                && not (CommandGrammar.attachmentTransfer entry)
             then
                 problems.Add(
                     UsageError.NotApplicable(
@@ -237,6 +253,12 @@ module Grammar =
                         String.concat " " (CommandGrammar.words entry)
                     )
                 )
+
+            if CommandGrammar.attachmentTransfer entry then
+                match options.TryGetValue "--confirm" with
+                | true, [ Some value ] when value <> "yes" ->
+                    problems.Add(UsageError.InvalidChoice("--confirm", value, [ "yes" ]))
+                | _ -> ()
 
             let found = errors problems
 
@@ -258,6 +280,7 @@ module Grammar =
                         (rendering |> Option.get)
                         (options.ContainsKey "--preview")
                         (options.ContainsKey "--details")
+                        (source |> Option.map _.Bytes)
                         (match options.TryGetValue "--confirm" with
                          | true, [ Some value ] -> Some value
                          | _ -> None)
@@ -283,7 +306,7 @@ module Grammar =
                         }
                 )
 
-        let finish input dryRun format all language _ details confirmation =
+        let finish input dryRun format all language preview details upload confirmation =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
@@ -304,6 +327,7 @@ module Grammar =
                             invocation
                         else
                             Frames.provisional invocation
+                        |> Frames.withUpload (if preview then None else upload)
                     DryRun = dryRun
                     Confirmation = confirmation
                     Format = format
@@ -333,7 +357,7 @@ module Grammar =
                             Reason = "An operation draft is required."
                         }
 
-            let finish (endpoint, intent) _ format _ language _ _ _ =
+            let finish (endpoint, intent) _ format _ language _ _ _ _ =
                 Ok
                     {
                         Bytes =
@@ -374,7 +398,7 @@ module Grammar =
                         Reason = "An operation draft is required."
                     }
 
-        let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
+        let finish input _ _ _ language preview _ upload _ = Ok(input, language, preview, upload)
 
         prepareWith
             true
@@ -382,3 +406,80 @@ module Grammar =
             finish
             (fun () -> invalidOp "A draft never allocates an operation ID.")
             arguments
+
+    let internal prepareAttachmentDownload arguments =
+        let flags = [ "--output"; "--case-id"; "--language"; "--display-locale" ]
+        let problems = ResizeArray<UsageError>()
+
+        let options, operands =
+            VerbOptions.tokenize flags flags [] [] (List.skip 2 arguments) problems
+
+        let option name =
+            match options.TryGetValue name with
+            | true, [ Some value ] -> Some value
+            | _ -> None
+
+        let language = option "--language" |> Option.defaultValue "en"
+
+        let display =
+            option "--display-locale"
+            |> Option.defaultValue
+                (LocalizationPolicy.languageOption (
+                    if List.contains language LocalizationPolicy.languages then
+                        language
+                    else
+                        "en"
+                ))
+                    .displayLocale
+
+        let rendering = RenderingContext.create language display
+
+        if not (List.contains language LocalizationPolicy.languages) then
+            problems.Add(
+                UsageError.InvalidChoice("--language", language, LocalizationPolicy.languages)
+            )
+
+        if not (List.contains display LocalizationPolicy.displayLocales) then
+            problems.Add(
+                UsageError.InvalidChoice(
+                    "--display-locale",
+                    display,
+                    LocalizationPolicy.displayLocales
+                )
+            )
+
+        let selection =
+            match option "--case-id", operands with
+            | Some raw, [ attachment ] ->
+                match VerbOptions.uuid "--case-id" raw with
+                | Ok caseId -> Some(CaseSelector.Id(CaseId.create caseId |> Option.get), attachment)
+                | Error problem ->
+                    problems.Add problem
+                    None
+            | None, [ reference; attachment ] -> Some(CaseSelector.Reference reference, attachment)
+            | _ ->
+                problems.Add(UsageError.MissingOperand "CASE ATTACHMENT-ID")
+                None
+
+        let selection =
+            selection
+            |> Option.bind (fun (target, attachment) ->
+                match VerbOptions.uuid "ATTACHMENT-ID" attachment with
+                | Ok id ->
+                    Some
+                        {
+                            AttachmentReadRequest.Target = target
+                            AttachmentId = AttachmentId.create id |> Option.get
+                        }
+                | Error problem ->
+                    problems.Add problem
+                    None)
+
+        match selection, option "--output", rendering with
+        | Some selection, Some path, Some rendering when problems.Count = 0 ->
+            Ok(selection, path, rendering)
+        | _, destination, _ ->
+            if destination.IsNone && not (options.ContainsKey "--output") then
+                problems.Add(UsageError.MissingOption "--output")
+
+            Error(List.ofSeq problems)

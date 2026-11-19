@@ -26,6 +26,7 @@ import { service, resultNotice } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 
 import type { Notice } from "../protocol/notices";
+import type { EndpointCache } from "../hooks/endpointCache";
 
 type RecoveryOwner = OwnerScope & { scope: RecoveryScope; credential: string };
 type RecoveryOwnerIdentity = OwnerScope & { credential: string };
@@ -105,10 +106,9 @@ const checkAttempt = async (
   signal: AbortSignal,
   current: () => boolean,
   update: UpdateRecovery,
-  readGeneration: () => number,
-  invalidateDisclosure: () => void,
+  cache: EndpointCache,
 ) => {
-  const generation = readGeneration();
+  let generation = cache.invalidation();
   const result = await service.operationGet(
     record.operationId,
     owner.credential,
@@ -119,7 +119,16 @@ const checkAttempt = async (
     return;
   }
   if (isDisclosureRefused(result)) {
-    invalidateDisclosure();
+    cache.invalidate();
+  }
+  const outcome = result.kind === "outcome" ? result.value.outcome : null;
+  let disclose = true;
+  if (outcome?.kind === "ACCEPTED" && outcome.byRequester) {
+    const wasCurrent = generation === cache.invalidation();
+    disclose = cache.observeAttachmentReceipt(outcome.document);
+    if (wasCurrent) {
+      generation = cache.invalidation();
+    }
   }
   const feedback = attemptFeedback(result);
   if (feedback.kind === "pending") {
@@ -153,7 +162,7 @@ const checkAttempt = async (
     cleanup: null,
   };
   const show = (previous: RecoveryView, answer: RecoveryFinalAnswer): RecoveryView => {
-    if (answer.generation !== readGeneration()) {
+    if (!disclose || answer.generation !== cache.invalidation()) {
       return previous;
     }
     return {
@@ -282,16 +291,7 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
           }
           update((previous) => ({ ...previous, busy: record.attemptId }));
           // oxlint-disable-next-line no-await-in-loop -- One scoped attempt at a time avoids background bursts and stops on an owner change.
-          await checkAttempt(
-            record,
-            owner,
-            journal,
-            controller.signal,
-            current,
-            update,
-            cache.invalidation,
-            cache.invalidate,
-          );
+          await checkAttempt(record, owner, journal, controller.signal, current, update, cache);
         }
       } catch {
         update((previous) => ({

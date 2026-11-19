@@ -383,6 +383,7 @@ let internal atomicWrites fixture =
                                         (CaseFixtures.operationId submission.OperationId)
                                         input.Binding
                                         input.Inputs
+                                        None
 
                                 let plan = prepared |> required
 

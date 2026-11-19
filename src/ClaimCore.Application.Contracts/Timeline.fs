@@ -9,6 +9,7 @@ type TimelineFilter =
     | Facts
     | Work
     | Notes
+    | Attachments
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TimelineFilter =
@@ -20,6 +21,7 @@ module TimelineFilter =
         | TimelineFilter.Facts -> [ PartKind.Case; PartKind.Payment ]
         | TimelineFilter.Work -> [ PartKind.Work; PartKind.Reminder; PartKind.Link ]
         | TimelineFilter.Notes -> [ PartKind.Note ]
+        | TimelineFilter.Attachments -> [ PartKind.Attachment ]
 
     let token = Vocabulary.token vocabulary
 
@@ -34,6 +36,7 @@ type CaseTimelineRequest =
 type CaseTimelinePage =
     {
         Disclosure: HistoryDisclosure
+        AttachmentDisclosure: Sequence
         Basis: WorkDateBasis
         CaseId: CaseId
         Reference: CaseReference

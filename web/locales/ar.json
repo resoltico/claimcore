@@ -754,5 +754,25 @@
   "ui.rowNumber": {
     "text": "الصف {number}",
     "source": "f8c78edd5258"
+  },
+  "ui.attachments.file": {
+    "text": "اختر ملفًا",
+    "source": "3e10c3cd6e0d"
+  },
+  "ui.attachments.download": {
+    "text": "تنزيل",
+    "source": "d6eafe823591"
+  },
+  "ui.attachments.preview": {
+    "text": "معاينة الصورة",
+    "source": "190571956ca0"
+  },
+  "ui.attachments.previewError": {
+    "text": "تعذّر عرض الصورة. نزّل الملف الأصلي.",
+    "source": "c8b3a7434d30"
+  },
+  "ui.attachments.empty": {
+    "text": "لا توجد مرفقات حالية.",
+    "source": "6d2a34c560f7"
   }
 }

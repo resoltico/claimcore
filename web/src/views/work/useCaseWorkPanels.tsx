@@ -20,14 +20,16 @@ import type { ReminderActHandler } from "./reminderActions";
 import type { FormValues } from "../../protocol/forms";
 import { CaseNextActions } from "./CaseNextActions";
 import { WorkOperation } from "./WorkOperation";
+import { CaseAttachments } from "../case/CaseAttachments";
 import { CaseNotes } from "../case/CaseNotes";
 import { CaseWork } from "../case/CaseWork";
 
 type ReminderStateFilter = ReminderListRequest["state"];
 type Editor = {
   noteIntent?: NoteIntent;
+  upload?: File;
   action: OperationAffordance;
-  subject: "WORK" | "REMINDER" | "NOTE" | "LINK";
+  subject: "WORK" | "REMINDER" | "NOTE" | "LINK" | "ATTACHMENT";
   kind: string;
   identity: string;
   prefill: FormValues;
@@ -44,10 +46,12 @@ export const useCaseWorkPanels = ({
   onLockChange,
   disclosureAvailable,
   authoringAvailable = disclosureAvailable,
+  attachmentAuthoringAvailable,
 }: {
   current: CurrentCase;
   disclosureAvailable: boolean;
   authoringAvailable?: boolean;
+  attachmentAuthoringAvailable: boolean;
   onChanged: () => void;
   onLockChange: MutationLockChange;
 }) => {
@@ -233,6 +237,7 @@ export const useCaseWorkPanels = ({
         key={`${editor.subject}:${editor.kind}:${editor.identity}`}
         current={current}
         noteIntent={editor.noteIntent}
+        upload={editor.upload}
         subject={editor.subject}
         kind={editor.kind}
         targetIdentity={editor.identity}
@@ -285,6 +290,44 @@ export const useCaseWorkPanels = ({
       onDisclosureRefused={onChanged}
     />
   );
+  const attachments = (
+    <CaseAttachments
+      key={current.subject.caseId}
+      current={current}
+      disclosureAvailable={disclosureAvailable}
+      authoringAvailable={attachmentAuthoringAvailable}
+      editing={editor !== null}
+      onAdd={(action, captured) => {
+        open(
+          {
+            subject: "ATTACHMENT",
+            kind: action.task,
+            identity: "add",
+            action,
+            binding: action.binding,
+            upload: captured.file,
+            prefill: {
+              "input:attachmentName": captured.file.name,
+              "input:attachmentLength": String(captured.file.size),
+              "input:attachmentDigest": captured.digest,
+            },
+          },
+          { anchorToTrigger: false },
+        );
+      }}
+      onWithdraw={(action) => {
+        open({
+          subject: "ATTACHMENT",
+          kind: action.task,
+          identity: action.task,
+          action,
+          binding: action.binding,
+          prefill: {},
+        });
+      }}
+      onDisclosureChanged={onChanged}
+    />
+  );
   const onLinkAction = (action: Affordance, originId?: string) => {
     if (!isOperationAffordance(action) || action.binding?.kind !== "LINK") {
       return;
@@ -299,5 +342,13 @@ export const useCaseWorkPanels = ({
       ...(originId === undefined ? {} : { origin: originId }),
     });
   };
-  return { work, nextActions, notes, operation, onLinkAction, editing: editor !== null };
+  return {
+    work,
+    nextActions,
+    notes,
+    attachments,
+    operation,
+    onLinkAction,
+    editing: editor !== null,
+  };
 };

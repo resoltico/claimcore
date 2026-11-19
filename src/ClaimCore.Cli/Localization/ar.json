@@ -1,4 +1,20 @@
 {
+  "cli.family.attachment": {
+    "text": "مرفقات الملف",
+    "source": "5c371fd9e78a"
+  },
+  "cli.attachment.saved": {
+    "text": "تم حفظ المرفق.",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "تعذّر حفظ المرفق في الوجهة المحددة.",
+    "source": "915060f3dc90"
+  },
+  "cli.attachment.unresolved": {
+    "text": "لم يُؤكد الرفع. تحقق من العملية الأصلية باستخدام {statusCommand}. إذا تعذّر استعادة الملف الذي راجعته بعينه، فانتظر التأكيد النهائي على عدم تسجيل العملية قبل بدء رفع آخر.",
+    "source": "7870875bce87"
+  },
   "cli.help.defaultValue": {
     "text": "القيمة الافتراضية هي {value}.",
     "source": "9756d5de7f5b"

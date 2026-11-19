@@ -24,6 +24,7 @@
     <Compile Include="Authentication/RemoteConfiguration.fs" />
     <Compile Include="Authentication/CliConfigure.fs" />
     <Compile Include="Delivery/ServiceReply.fs" />
+    <Compile Include="Delivery/AttachmentFiles.fs" />
     <Compile Include="Delivery/Frames.fs" />
     <Compile Include="Recovery/RecoveryJournal.fs" />
     <Compile Include="Grammar/Schemas.fs" />
@@ -57,6 +58,7 @@
     <Compile Include="Authentication/MemoryTokenSession.fs" />
     <Compile Include="Authentication/RemoteAccessSession.fs" />
     <Compile Include="Delivery/RemoteServiceCall.fs" />
+    <Compile Include="Delivery/AttachmentBinaryCall.fs" />
     <Compile Include="Delivery/FrameDelivery.fs" />
     <Compile Include="Delivery/RemoteFrameProcessing.fs" />
     <Compile Include="Text/TextDescriptorValue.fs" />

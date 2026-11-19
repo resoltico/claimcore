@@ -25,10 +25,7 @@ let private commandExamples () =
     Expect.isNonEmpty rows "CLI examples are not empty"
 
     for row in rows do
-        let arguments =
-            row.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            |> List.ofArray
-            |> CliExamples.complete
+        let arguments = CliExamples.fromCapture row |> CliExamples.complete
 
         let actual =
             Grammar.prepare

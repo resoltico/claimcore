@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "案件附件",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "默认值为 {value}。",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "请将 {setting} 设置为绝对目录路径，以使用本地恢复。",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "上传尚未确认。使用 {statusCommand} 检查原操作。如果无法找回完全相同的已核对文件，请先等待确认原操作未被接受，再开始新的上传。",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "附件已保存。",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "无法将附件保存到选定位置。",
+    "source": "915060f3dc90"
   }
 }

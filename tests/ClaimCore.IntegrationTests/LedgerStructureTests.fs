@@ -5,6 +5,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Application.Storage
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 
 let private token = CancellationToken.None
@@ -12,7 +13,7 @@ let private token = CancellationToken.None
 // Deliberately unregistered task/part tokens and opaque payload bytes exercise SQL structure only.
 let private appendFunction =
     """
-CREATE FUNCTION public.test_append_part(i uuid,a text,aggregate_id uuid,k text,part_id uuid,r bigint,ref_key text,erase text,erase_id uuid,private_content boolean)
+CREATE FUNCTION public.test_append_part(i uuid,a text,aggregate_id uuid,k text,part_id uuid,r bigint,ref_key text,erase text,erase_id uuid,private_content boolean,p_format smallint)
 RETURNS void LANGUAGE plpgsql AS $$
 DECLARE h claimcore.ledger_head%ROWTYPE; n bigint; effect jsonb; compartments jsonb;
 BEGIN
@@ -26,10 +27,10 @@ BEGIN
   effect:=effect||jsonb_build_object('compartment',0);
   compartments:=jsonb_build_array(jsonb_build_object('ordinal',0,'owner',jsonb_build_object('kind',CASE a WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END,'id',aggregate_id),'commitment',repeat('11',32),'nonce',lpad(to_hex(n),64,'0'),'payload','7b7d'));
  END IF;
- PERFORM claimcore.append_operation(i,n,h.entry_hash,decode(lpad(to_hex(n),64,'0'),'hex'),7::smallint,gen_random_uuid(),'00000000-0000-4000-8000-000000000001',clock_timestamp(),CASE a WHEN 'PERSON' THEN NULL ELSE DATE '2026-11-16' END,a,'sample.change',jsonb_build_object('binding','{}'::jsonb,'retained','{}'::jsonb),jsonb_build_array(effect),compartments);
+ PERFORM claimcore.append_operation(i,n,h.entry_hash,decode(lpad(to_hex(n),64,'0'),'hex'),p_format,gen_random_uuid(),'00000000-0000-4000-8000-000000000001',clock_timestamp(),CASE a WHEN 'PERSON' THEN NULL ELSE DATE '2026-11-16' END,a,'sample.change',jsonb_build_object('binding','{}'::jsonb,'retained','{}'::jsonb),jsonb_build_array(effect),compartments);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.test_append_part(uuid,text,uuid,text,uuid,bigint,text,text,uuid,boolean) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION public.test_append_part(uuid,text,uuid,text,uuid,bigint,text,text,uuid,boolean,smallint) TO claimcore_runtime;
 """
 
 let private id number =
@@ -64,7 +65,7 @@ let private controls (database: PostgresFixture.Database) =
                 let! _ =
                     DatabaseSession.execute
                         runtime
-                        "SELECT public.test_append_part($1::uuid,$2::text,$3::uuid,$4::text,$5::uuid,$6::bigint,$7::text,$8::text,$9::uuid,$10::boolean)"
+                        "SELECT public.test_append_part($1::uuid,$2::text,$3::uuid,$4::text,$5::uuid,$6::bigint,$7::text,$8::text,$9::uuid,$10::boolean,$11::smallint)"
                         [|
                             box database.Fixture.InstallationId
                             box aggregate
@@ -76,6 +77,7 @@ let private controls (database: PostgresFixture.Database) =
                             nullable erase
                             nullable erasedId
                             box privateContent
+                            box (int16 InstallationFormat.Current)
                         |]
                         token
 

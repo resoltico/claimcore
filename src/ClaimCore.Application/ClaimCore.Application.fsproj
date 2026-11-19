@@ -26,6 +26,7 @@
     <Compile Include="Storage/PrincipalLock.fs" />
     <Compile Include="Storage/ExpiryFrontierStorage.fs" />
     <Compile Include="Storage/Ledger/OperationStorage.fs" />
+    <Compile Include="Storage/AttachmentStorage.fs" />
     <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Storage/PartProjections.fs" />
     <Compile Include="Storage/Schema/Baseline.fs" />
@@ -75,6 +76,7 @@
     <Compile Include="Reads/TimelineHistory.fs" />
     <Compile Include="Reads/ConflictReads.fs" />
     <Compile Include="Reads/CaseReadContext.fs" />
+    <Compile Include="Reads/AttachmentReads.fs" />
     <Compile Include="Reads/CaseLinkReads.fs" />
     <Compile Include="Execution/OperationService.fs" />
     <Compile Include="Work/CaseWorkReads.fs" />

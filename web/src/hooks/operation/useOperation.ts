@@ -59,7 +59,8 @@ import type { Notice } from "../../protocol/notices";
 type Options = {
   affordance?: OperationAffordance | undefined;
   affordances?: ReadonlyArray<OperationAffordance>;
-  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "LINK";
+  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "LINK" | "ATTACHMENT";
+  upload?: File | undefined;
   prefill?: FormValues | undefined;
   binding?: OperationBinding | undefined;
   targetIdentity?: string | undefined;
@@ -427,6 +428,8 @@ type AttemptContext = {
   attempts: Map<string, RecoveryRecord>;
   current: () => boolean;
   dispatch: React.Dispatch<OperationAction>;
+  upload: File | undefined;
+  transfers: Map<string, AbortController>;
 };
 const executeOwnedAttempt = async (
   effect: ExecuteEffect,
@@ -481,7 +484,23 @@ const executeOwnedAttempt = async (
       type: "HANDOFF",
       identity: effect.identity,
     });
-    return runNetwork(executing, scope.installationId);
+    if (context.upload === undefined) {
+      return runNetwork(executing, scope.installationId);
+    }
+    const controller = new AbortController();
+    context.transfers.set(effect.identity.id, controller);
+    return service
+      .uploadAttachment(
+        executing.source.prepared,
+        context.upload,
+        effect.identity.credential,
+        scope.installationId,
+        controller.signal,
+      )
+      .then((reply) => completion(executing, reply))
+      .finally(() => {
+        context.transfers.delete(effect.identity.id);
+      });
   });
   if (prepared.kind === "notSent") {
     return {
@@ -548,6 +567,7 @@ const useEffects = (
     ownerVerified,
   });
   const reads = useRef(new Map<string, AbortController>());
+  const transfers = useRef(new Map<string, AbortController>());
   useLayoutEffect(() => {
     if (
       !sameOwnerScope(
@@ -562,6 +582,9 @@ const useEffects = (
       for (const controller of reads.current.values()) {
         controller.abort();
       }
+      for (const controller of transfers.current.values()) {
+        controller.abort();
+      }
     }
     latest.current = {
       options,
@@ -574,9 +597,13 @@ const useEffects = (
   useEffect(() => {
     alive.current = true;
     const ownedReads = reads.current;
+    const ownedTransfers = transfers.current;
     return () => {
       alive.current = false;
       for (const controller of ownedReads.values()) {
+        controller.abort();
+      }
+      for (const controller of ownedTransfers.values()) {
         controller.abort();
       }
     };
@@ -654,6 +681,8 @@ const useEffects = (
             attempts: attempts.current,
             current,
             dispatch,
+            upload: options.upload,
+            transfers: transfers.current,
           });
         };
         void run().then((action) => {
@@ -1055,13 +1084,16 @@ export const useOperation = (supplied: Options) => {
     contextEpoch,
   );
   const cache = useEndpointCache();
+  const publishingErasedConflict = useRef(false);
   useLayoutEffect(
     () =>
       cache?.subscribeInvalidation(() => {
-        dispatch({
-          type: "INVALIDATE",
-          refused: true,
-        });
+        if (!publishingErasedConflict.current) {
+          dispatch({
+            type: "INVALIDATE",
+            refused: true,
+          });
+        }
       }),
     [cache],
   );
@@ -1085,6 +1117,20 @@ export const useOperation = (supplied: Options) => {
   useCreationDraftRestore(state, dispatch, options, ownerVerified, requester);
   useEffects(state, dispatch, options, scopeVerified);
   useLock(state, options.onLockChange, ownerChanged);
+  const conflictCase = state.disclosed.conflict?.latest?.current;
+  useLayoutEffect(() => {
+    if (!ownerVerified || conflictCase?.disclosure !== "ERASED") {
+      return;
+    }
+    // The current conflict already applies the erased disclosure ceiling. Other
+    // readers must revalidate, but this admitted observation should stay visible.
+    publishingErasedConflict.current = true;
+    try {
+      cache?.observeCaseErasure(conflictCase);
+    } finally {
+      publishingErasedConflict.current = false;
+    }
+  }, [cache, conflictCase, ownerVerified]);
   const view = operationView(state);
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   const controls = actions(state, dispatch, options, ownerVerified);
