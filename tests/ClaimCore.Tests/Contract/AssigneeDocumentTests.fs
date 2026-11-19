@@ -73,34 +73,30 @@ let tests =
                     let opaque =
                         { original with
                             Screen =
-                                { original.Screen with
-                                    Regions =
-                                        original.Screen.Regions
-                                        |> List.map (fun region ->
-                                            match region.Content with
-                                            | RegionContent.Table table ->
-                                                { region with
-                                                    Content =
-                                                        RegionContent.Table
-                                                            { table with
-                                                                Rows =
-                                                                    table.Rows
-                                                                    |> List.map (fun row ->
-                                                                        { row with
-                                                                            Values =
-                                                                                [
-                                                                                    PresentedValue
-                                                                                        .Text(
-                                                                                            "opaque:"
-                                                                                            + row
-                                                                                                .Key
-                                                                                        )
-                                                                                ]
-                                                                        })
-                                                            }
-                                                }
-                                            | _ -> region)
-                                }
+                                original.Screen.Regions
+                                |> List.map (fun region ->
+                                    match region.Content with
+                                    | RegionContent.Table table ->
+                                        { region with
+                                            Content =
+                                                RegionContent.Table
+                                                    { table with
+                                                        Rows =
+                                                            table.Rows
+                                                            |> List.map (fun row ->
+                                                                { row with
+                                                                    Values =
+                                                                        [
+                                                                            PresentedValue.Text(
+                                                                                "opaque:"
+                                                                                + row.Key
+                                                                            )
+                                                                        ]
+                                                                })
+                                                    }
+                                        }
+                                    | _ -> region)
+                                |> fun regions -> Screen.withRegions regions original.Screen
                         }
 
                     let encoded = Codec.encode HumanDocumentCodecs.document opaque

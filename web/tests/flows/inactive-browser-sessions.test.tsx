@@ -76,7 +76,10 @@ const succeeded = () =>
             regions: [
               {
                 role: "NOTICE",
-                content: { kind: "NOTICE", messageId: "label.sessionsTerminated", tone: "INFO" },
+                content: {
+                  kind: "NOTICE",
+                  notices: [{ messageId: "label.sessionsTerminated", tone: "INFO" }],
+                },
               },
             ],
           },

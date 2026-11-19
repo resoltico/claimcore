@@ -116,7 +116,10 @@ const acceptsOperation = async (): Promise<void> => {
               regions: [
                 {
                   role: "NOTICE",
-                  content: { kind: "NOTICE", tone: "INFO", messageId: "task.case.close.done" },
+                  content: {
+                    kind: "NOTICE",
+                    notices: [{ tone: "INFO", messageId: "task.case.close.done" }],
+                  },
                 },
                 {
                   role: "DETAILS",

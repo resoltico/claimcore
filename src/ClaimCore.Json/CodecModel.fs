@@ -13,6 +13,7 @@ type Schema =
     | JsonObject
     | Object of properties: (string * Schema) list * optionalMembers: string list
     | Array of items: Schema * minItems: int * maxItems: int
+    | KeyedArray of shape: Schema * key: string * singletonValues: string list
     | String of
         pattern: string option *
         format: string option *

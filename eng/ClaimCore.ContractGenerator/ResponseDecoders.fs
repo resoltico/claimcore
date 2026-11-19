@@ -23,6 +23,15 @@ module ResponseDecoders =
                 |> String.concat ","
 
             array [ quote "object"; "{" + fields + "}"; optional |> List.map quote |> array ]
+        | Schema.KeyedArray((Schema.Array _ as shape), key, values) ->
+            array
+                [
+                    quote "keyedArray"
+                    schemaDescriptor shape
+                    quote key
+                    values |> List.map quote |> array
+                ]
+        | Schema.KeyedArray _ -> invalidArg "shape" "Keyed cardinality requires an array."
         | Schema.Array(item, minimum, maximum) ->
             array [ quote "array"; schemaDescriptor item; number minimum; number maximum ]
         | Schema.String(pattern, format, minimum, maximum, bytes) ->
@@ -104,6 +113,7 @@ export type ResponseSchema =
       ReadonlyArray<string>,
     ]
   | readonly ["array", ResponseSchema, number, number]
+  | readonly ["keyedArray", ResponseSchema, string, ReadonlyArray<string>]
   | readonly [
       "string",
       string | null,
@@ -271,6 +281,19 @@ const responseCompound = (
       return responseMembers(schema, value, child);
     case "array":
       return responseArray(schema, value, child);
+    case "keyedArray": {
+      if (!Array.isArray(value) || !admit(schema[1], value)) return false;
+      const seen = new Set<string>();
+      return value.every((item: unknown) => {
+        if (!responseObject(item)) return false;
+        const key = item[schema[2]];
+        if (typeof key !== "string") return false;
+        if (!schema[3].includes(key)) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
     case "oneOf":
       return schema[1].filter((shape) => admit(shape, value)).length === 1;
     case "ref":

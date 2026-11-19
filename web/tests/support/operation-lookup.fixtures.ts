@@ -47,9 +47,13 @@ export const pendingLookup = (operationId: string, finalAt = "2026-11-07T10:10:0
                 role: "NOTICE",
                 content: {
                   kind: "NOTICE",
-                  messageId: "label.operationPending",
-                  tone: "INFO",
-                  reason: { kind: "INSTANT", value: finalAt },
+                  notices: [
+                    {
+                      messageId: "label.operationPending",
+                      tone: "INFO",
+                      reason: { kind: "INSTANT", value: finalAt },
+                    },
+                  ],
                 },
               },
             ],

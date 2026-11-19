@@ -41,35 +41,32 @@ let tests =
                         """{"regions":[{"role":"FACTS","titleId":"subject.CASE.label","content":{"kind":"ENTRIES","entries":[{"key":"future-field","labelId":"field.caseReference.label","prominence":"PRIMARY","value":{"kind":"REFERENCE","value":"CASE-1"}}]}}]}"""
 
                     let expected =
-                        {
-                            Screen.CurrentGroups = []
-                            Regions =
-                                [
-                                    {
-                                        Link = None
-                                        Actions = []
-                                        Role = RegionRole.Facts
-                                        TitleId = Some "subject.CASE.label"
-                                        Content =
-                                            RegionContent.Entries
-                                                [
-                                                    {
-                                                        Recorded = false
-                                                        Key = "future-field"
-                                                        LabelId = "field.caseReference.label"
-                                                        Prominence = Prominence.Primary
-                                                        Value =
-                                                            PresentedValue.Reference(
-                                                                CaseReference.parse "CASE-1"
-                                                                |> Result.defaultWith (
-                                                                    string >> failtest
-                                                                )
+                        Screen.create
+                            [
+                                {
+                                    Link = None
+                                    Actions = []
+                                    Role = RegionRole.Facts
+                                    TitleId = Some "subject.CASE.label"
+                                    Content =
+                                        RegionContent.Entries
+                                            [
+                                                {
+                                                    Recorded = false
+                                                    Key = "future-field"
+                                                    LabelId = "field.caseReference.label"
+                                                    Prominence = Prominence.Primary
+                                                    Value =
+                                                        PresentedValue.Reference(
+                                                            CaseReference.parse "CASE-1"
+                                                            |> Result.defaultWith (
+                                                                string >> failtest
                                                             )
-                                                    }
-                                                ]
-                                    }
-                                ]
-                        }
+                                                        )
+                                                }
+                                            ]
+                                }
+                            ]
 
                     Expect.equal
                         (decode literal)
@@ -119,19 +116,16 @@ let tests =
                         }
 
                     let expected =
-                        {
-                            Screen.CurrentGroups = []
-                            Regions =
-                                [
-                                    {
-                                        Link = None
-                                        Actions = []
-                                        Role = RegionRole.Results
-                                        TitleId = None
-                                        Content = RegionContent.Table table
-                                    }
-                                ]
-                        }
+                        Screen.create
+                            [
+                                {
+                                    Link = None
+                                    Actions = []
+                                    Role = RegionRole.Results
+                                    TitleId = None
+                                    Content = RegionContent.Table table
+                                }
+                            ]
 
                     Expect.equal
                         (decode literal)
@@ -139,14 +133,9 @@ let tests =
                         "Stable identity and supplied values survive"
 
                     let empty =
-                        { expected with
-                            Regions =
-                                [
-                                    { expected.Regions.Head with
-                                        Content = RegionContent.Table { table with Rows = [] }
-                                    }
-                                ]
-                        }
+                        Screen.mapContent
+                            (fun _ _ -> RegionContent.Table { table with Rows = [] })
+                            expected
 
                     Expect.equal
                         (PresentationCodecs.view.Write empty |> PresentationCodecs.view.Read "$")
@@ -167,19 +156,33 @@ let tests =
             testCase "roles are closed and only FACTS can repeat" (fun () ->
                 let region = """{"role":"WORK","content":{"kind":"ENTRIES","entries":[]}}"""
 
-                Expect.isError
-                    (decode ("{\"regions\":[" + region + "," + region + "]}"))
-                    "Repeated work refuses"
+                let document values =
+                    "{\"regions\":[" + String.concat "," values + "]}"
 
-                Expect.isOk
-                    (decode (
-                        "{\"regions\":["
-                        + region.Replace("WORK", "FACTS")
-                        + ","
-                        + region.Replace("WORK", "FACTS")
-                        + "]}"
-                    ))
-                    "Separate fact groups are allowed"
+                for token, role in [ "RESULTS", RegionRole.Results; "NOTICE", RegionRole.Notice ] do
+                    let singleton = region.Replace("WORK", token)
+
+                    Expect.isError
+                        (decode (document [ singleton; singleton ]))
+                        "Duplicate roles refuse"
+
+                    let placed = ScreenEntries.region role None (RegionContent.Entries [])
+
+                    Expect.throwsT<System.ArgumentException>
+                        (fun () -> Screen.create [ placed; placed ] |> ignore)
+                        "Duplicate placements cannot construct a screen"
+
+                let facts = region.Replace("WORK", "FACTS")
+                let singleton = region.Replace("WORK", "RESULTS")
+
+                let view =
+                    decode (document [ facts; singleton; facts; region ])
+                    |> Result.defaultWith (sprintf "%A" >> failtest)
+
+                Expect.equal
+                    (view.Regions |> List.map _.Role)
+                    [ RegionRole.Facts; RegionRole.Results; RegionRole.Facts; RegionRole.Work ]
+                    "The decoder keeps interspersed Facts in authored order"
 
                 Expect.isError
                     (decode ("{\"regions\":[" + region.Replace("WORK", "UNDECLARED") + "]}"))
@@ -188,48 +191,45 @@ let tests =
                 "DETAILS is absent from ordinary CLI output and explicit when requested"
                 (fun () ->
                     let screen =
-                        {
-                            Screen.CurrentGroups = []
-                            Regions =
-                                [
-                                    {
-                                        Link = None
-                                        Actions = []
-                                        Role = RegionRole.Identity
-                                        TitleId = None
-                                        Content =
-                                            RegionContent.Entries
-                                                [
-                                                    {
-                                                        Recorded = false
-                                                        Key = "case"
-                                                        LabelId = "field.caseReference.label"
-                                                        Prominence = Prominence.Primary
-                                                        Value = PresentedValue.Text "CASE-1"
-                                                    }
-                                                ]
-                                    }
-                                    {
-                                        Link = None
-                                        Actions = []
-                                        Role = RegionRole.Details
-                                        TitleId = Some "label.recordDetails"
-                                        Content =
-                                            RegionContent.Entries
-                                                [
-                                                    {
-                                                        Recorded = false
-                                                        Key = "version"
-                                                        LabelId = "label.revisionLabel"
-                                                        Prominence = Prominence.Detail
-                                                        Value =
-                                                            PresentedValue.Identifier
-                                                                "TECHNICAL-VERSION"
-                                                    }
-                                                ]
-                                    }
-                                ]
-                        }
+                        Screen.create
+                            [
+                                {
+                                    Link = None
+                                    Actions = []
+                                    Role = RegionRole.Identity
+                                    TitleId = None
+                                    Content =
+                                        RegionContent.Entries
+                                            [
+                                                {
+                                                    Recorded = false
+                                                    Key = "case"
+                                                    LabelId = "field.caseReference.label"
+                                                    Prominence = Prominence.Primary
+                                                    Value = PresentedValue.Text "CASE-1"
+                                                }
+                                            ]
+                                }
+                                {
+                                    Link = None
+                                    Actions = []
+                                    Role = RegionRole.Details
+                                    TitleId = Some "label.recordDetails"
+                                    Content =
+                                        RegionContent.Entries
+                                            [
+                                                {
+                                                    Recorded = false
+                                                    Key = "version"
+                                                    LabelId = "label.revisionLabel"
+                                                    Prominence = Prominence.Detail
+                                                    Value =
+                                                        PresentedValue.Identifier
+                                                            "TECHNICAL-VERSION"
+                                                }
+                                            ]
+                                }
+                            ]
 
                     Expect.isFalse
                         ((ViewText.render (RenderingContext.forLanguage "en") screen

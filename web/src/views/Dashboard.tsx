@@ -244,21 +244,11 @@ const requesterGuidance = (requester: RequesterDocument): Screen => ({
         { role: "IDENTITY", titleId: region.titleId, content: { kind: "ENTRIES", entries: [] } },
       ];
     }
-    if (
-      region.role === "NOTICE" &&
-      region.content.kind === "NOTICE" &&
-      hasStaticMessage(region.content.messageId)
-    ) {
-      return [
-        {
-          role: "NOTICE",
-          content: {
-            kind: "NOTICE",
-            messageId: region.content.messageId,
-            tone: region.content.tone,
-          },
-        },
-      ];
+    if (region.role === "NOTICE" && region.content.kind === "NOTICE") {
+      const notices = region.content.notices
+        .filter((item) => hasStaticMessage(item.messageId))
+        .map(({ messageId, tone }) => ({ messageId, tone }));
+      return notices.length === 0 ? [] : [{ role: "NOTICE", content: { kind: "NOTICE", notices } }];
     }
     return [];
   }),

@@ -112,8 +112,10 @@ let tests =
                     (paused.Screen.Regions
                      |> List.exists (fun region ->
                          match region.Content with
-                         | RegionContent.Notice notice ->
-                             notice.MessageId = "diagnostic.REGISTER_MAINTENANCE"
+                         | RegionContent.Notice notices ->
+                             notices
+                             |> List.exists (fun notice ->
+                                 notice.MessageId = "diagnostic.REGISTER_MAINTENANCE")
                          | _ -> false))
                     "Core notice"
 

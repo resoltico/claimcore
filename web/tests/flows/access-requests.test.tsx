@@ -188,7 +188,10 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
           regions: [
             {
               role: "NOTICE",
-              content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+              content: {
+                kind: "NOTICE",
+                notices: [{ messageId: "label.requestDismissed", tone: "INFO" }],
+              },
             },
           ],
         },
@@ -288,7 +291,10 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
             regions: [
               {
                 role: "NOTICE",
-                content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+                content: {
+                  kind: "NOTICE",
+                  notices: [{ messageId: "label.requestDismissed", tone: "INFO" }],
+                },
               },
             ],
           },
@@ -395,7 +401,10 @@ it("reviews and dismisses the selected page-local request without reusing an ear
         regions: [
           {
             role: "NOTICE",
-            content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+            content: {
+              kind: "NOTICE",
+              notices: [{ messageId: "label.requestDismissed", tone: "INFO" }],
+            },
           },
         ],
       },

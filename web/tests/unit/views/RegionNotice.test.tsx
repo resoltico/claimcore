@@ -8,9 +8,13 @@ it("renders the supplied void notice while the tracker remains available separat
         role: "NOTICE",
         content: {
           kind: "NOTICE",
-          messageId: "lifecycle.VOIDED.meaning",
-          tone: "WARNING",
-          reason: { kind: "TEXT", value: "Duplicate case" },
+          notices: [
+            {
+              messageId: "lifecycle.VOIDED.meaning",
+              tone: "WARNING",
+              reason: { kind: "TEXT", value: "Duplicate case" },
+            },
+          ],
         },
       }}
     />,

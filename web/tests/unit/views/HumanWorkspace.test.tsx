@@ -176,8 +176,7 @@ it("renders the Core maintenance notice without a requester maintenance DTO", as
           role: "NOTICE",
           content: {
             kind: "NOTICE",
-            messageId: "diagnostic.REGISTER_MAINTENANCE",
-            tone: "WARNING",
+            notices: [{ messageId: "diagnostic.REGISTER_MAINTENANCE", tone: "WARNING" }],
           },
         },
       ],

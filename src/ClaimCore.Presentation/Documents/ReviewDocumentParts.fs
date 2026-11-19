@@ -115,29 +115,26 @@ module internal ReviewDocumentParts =
                         RegionRole.Notice
                         None
                         (RegionContent.Notice
-                            {
-                                MessageId = PresentationKeys.consequence review.Task
-                                Reason = None
-                                Tone =
-                                    if
-                                        TaskConsequences.ofTask review.Task = Consequence.Routine
-                                    then
-                                        NoticeTone.Info
-                                    else
-                                        NoticeTone.Warning
-                            })
-                ]
-                @ [
-                    if review.ChangesOwnSignInIdentity then
-                        ScreenEntries.region
-                            RegionRole.Notice
-                            None
-                            (RegionContent.Notice
+                            [
                                 {
-                                    MessageId = "notice.changesOwnSignInIdentity"
+                                    MessageId = PresentationKeys.consequence review.Task
                                     Reason = None
-                                    Tone = NoticeTone.Warning
-                                })
+                                    Tone =
+                                        if
+                                            TaskConsequences.ofTask review.Task =
+                                                Consequence.Routine
+                                        then
+                                            NoticeTone.Info
+                                        else
+                                            NoticeTone.Warning
+                                }
+                                if review.ChangesOwnSignInIdentity then
+                                    {
+                                        MessageId = "notice.changesOwnSignInIdentity"
+                                        Reason = None
+                                        Tone = NoticeTone.Warning
+                                    }
+                            ])
                 ]
                 @ ScreenEntries.factRegions facts
                 @ (if details.IsEmpty then

@@ -265,21 +265,25 @@ module ContextScreen =
                         RegionRole.Notice
                         None
                         (RegionContent.Notice
-                            {
-                                MessageId = "label.accessRequested"
-                                Reason = None
-                                Tone = NoticeTone.Info
-                            })
+                            [
+                                {
+                                    MessageId = "label.accessRequested"
+                                    Reason = None
+                                    Tone = NoticeTone.Info
+                                }
+                            ])
                 | RequesterState.Active item when item.Maintenance.Active ->
                     region
                         RegionRole.Notice
                         None
                         (RegionContent.Notice
-                            {
-                                MessageId = "diagnostic.REGISTER_MAINTENANCE"
-                                Reason = None
-                                Tone = NoticeTone.Warning
-                            })
+                            [
+                                {
+                                    MessageId = "diagnostic.REGISTER_MAINTENANCE"
+                                    Reason = None
+                                    Tone = NoticeTone.Warning
+                                }
+                            ])
                 | _ -> ()
                 if not facts.IsEmpty then
                     entryRegion RegionRole.Facts None facts

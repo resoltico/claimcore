@@ -26701,27 +26701,41 @@
           "kind": {
             "const": "NOTICE"
           },
-          "messageId": {
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 256
-          },
-          "reason": {
-            "$ref": "#/components/schemas/PresentedValue"
-          },
-          "tone": {
-            "enum": [
-              "INFO",
-              "WARNING",
-              "FINAL"
-            ]
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "messageId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "reason": {
+                  "$ref": "#/components/schemas/PresentedValue"
+                },
+                "tone": {
+                  "enum": [
+                    "INFO",
+                    "WARNING",
+                    "FINAL"
+                  ]
+                }
+              },
+              "required": [
+                "messageId",
+                "tone"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 8
           }
         },
         "required": [
           "kind",
-          "messageId",
-          "tone"
+          "notices"
         ]
       },
       "RegionContent.Body.STAGES": {
@@ -28626,7 +28640,279 @@
               "$ref": "#/components/schemas/Region"
             },
             "minItems": 0,
-            "maxItems": 324
+            "maxItems": 324,
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "IDENTITY"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "NOTICE"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "PROGRESS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "ATTENTION"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "RECOMMENDATION"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "CONTEXT"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "PAYMENTS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "WORK"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "NEXT_ACTIONS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "NOTES"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "PARTIES"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "RELATED_CASES"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "ACTIVITY"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "RESULTS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "TOTALS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "ACCOUNT"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "ACCESS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "const": "DETAILS"
+                    }
+                  }
+                },
+                "minContains": 0,
+                "maxContains": 1
+              }
+            ]
           },
           "currentGroups": {
             "type": "array",

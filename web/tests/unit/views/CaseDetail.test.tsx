@@ -39,7 +39,10 @@ it("erased cases retain their exact reference and revision but expose no facts o
               },
               {
                 role: "NOTICE",
-                content: { kind: "NOTICE", messageId: "lifecycle.ERASED.meaning", tone: "FINAL" },
+                content: {
+                  kind: "NOTICE",
+                  notices: [{ messageId: "lifecycle.ERASED.meaning", tone: "FINAL" }],
+                },
               },
             ],
           },

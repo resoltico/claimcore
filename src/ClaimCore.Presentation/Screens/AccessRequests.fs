@@ -75,9 +75,11 @@ module AccessRequestsScreen =
                     RegionRole.Notice
                     None
                     (RegionContent.Notice
-                        {
-                            MessageId = "label.requestDismissed"
-                            Reason = None
-                            Tone = NoticeTone.Info
-                        })
+                        [
+                            {
+                                MessageId = "label.requestDismissed"
+                                Reason = None
+                                Tone = NoticeTone.Info
+                            }
+                        ])
             ]

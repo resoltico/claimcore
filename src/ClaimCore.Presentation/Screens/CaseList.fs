@@ -154,8 +154,8 @@ module CaseListScreen =
             match reply.ExactReference with
             | None -> screen
             | Some exact ->
-                let includeExact (region: Region) =
-                    match region.Content with
+                let includeExact _ content =
+                    match content with
                     | RegionContent.Table data ->
                         let exactSection =
                             section
@@ -168,17 +168,12 @@ module CaseListScreen =
                                         (PresentedValue.Reference exact.CaseReference)
                                 ]
 
-                        { region with
-                            Content =
-                                RegionContent.Table
-                                    { data with
-                                        Sections = [ exactSection ]
-                                    }
-                        }
-                    | _ -> region
+                        RegionContent.Table
+                            { data with
+                                Sections = [ exactSection ]
+                            }
+                    | _ -> content
 
-                { screen with
-                    Regions = screen.Regions |> List.map includeExact
-                }
+                Screen.mapContent includeExact screen
 
         page reply.Basis reply.Items.Length reply.NextCursor screen

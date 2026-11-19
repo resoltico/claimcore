@@ -41,7 +41,10 @@ const document: HumanDocument = {
     regions: [
       {
         role: "NOTICE",
-        content: { kind: "NOTICE", messageId: "label.sessionsTerminated", tone: "INFO" },
+        content: {
+          kind: "NOTICE",
+          notices: [{ messageId: "label.sessionsTerminated", tone: "INFO" }],
+        },
       },
     ],
   },
@@ -122,8 +125,7 @@ it.each(["acknowledgement", "delivery", "malformed"] as const)(
             role: "NOTICE" as const,
             content: {
               kind: "NOTICE" as const,
-              messageId: "label.sessionTerminationUnknown",
-              tone: "WARNING" as const,
+              notices: [{ messageId: "label.sessionTerminationUnknown", tone: "WARNING" as const }],
             },
           },
         ],

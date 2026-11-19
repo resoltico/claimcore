@@ -33,6 +33,7 @@ module TypeScript =
         function
         | Schema.JsonObject -> "Readonly<Record<string, unknown>>"
         | Schema.Object(properties, optional) -> objectType value properties optional
+        | Schema.KeyedArray(shape, _, _) -> value shape
         | Schema.Array(item, _, _) -> "ReadonlyArray<" + value item + ">"
         | Schema.String _ -> "string"
         | Schema.Integer(minimum, maximum) -> if minimum = maximum then string minimum else "number"

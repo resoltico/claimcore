@@ -110,7 +110,10 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
           regions: [
             {
               role: "NOTICE",
-              content: { kind: "NOTICE", messageId: "label.recordedChange", tone: "INFO" },
+              content: {
+                kind: "NOTICE",
+                notices: [{ messageId: "label.recordedChange", tone: "INFO" }],
+              },
             },
           ],
         },

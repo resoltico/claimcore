@@ -175,11 +175,13 @@ module CaseTotalsScreen =
                     RegionRole.Notice
                     None
                     (RegionContent.Notice
-                        {
-                            MessageId = "notice.summaryCurrentFacts"
-                            Reason = None
-                            Tone = NoticeTone.Info
-                        })
+                        [
+                            {
+                                MessageId = "notice.summaryCurrentFacts"
+                                Reason = None
+                                Tone = NoticeTone.Info
+                            }
+                        ])
                 entryRegion RegionRole.Totals None values
             ]
             @ groupRows reply.Groups

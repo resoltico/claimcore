@@ -8,6 +8,7 @@ module SchemaJson =
         | Schema.EnumPartition(schema, _, _, _, _) -> references schema
         | Schema.Object(properties, _) -> properties |> List.collect (snd >> references)
         | Schema.Array(items, _, _) -> references items
+        | Schema.KeyedArray(shape, _, _) -> references shape
         | Schema.OneOf(variants, discriminator) ->
             (variants |> List.collect references)
             @ (discriminator |> Option.map (snd >> List.map snd) |> Option.defaultValue [])
@@ -138,6 +139,29 @@ module SchemaJson =
                     "minItems", number minimum
                     "maxItems", number maximum
                 ]
+        | Schema.KeyedArray((Schema.Array _ as shape), key, singletons) ->
+            match value prefix shape with
+            | JsonValue.Object properties ->
+                let constraintFor token =
+                    JsonValue.Object
+                        [
+                            "contains",
+                            JsonValue.Object
+                                [
+                                    "type", text "object"
+                                    "required", JsonValue.Array [ text key ]
+                                    "properties",
+                                    JsonValue.Object [ key, value prefix (Schema.Const token) ]
+                                ]
+                            "minContains", number 0
+                            "maxContains", number 1
+                        ]
+
+                JsonValue.Object(
+                    properties @ [ "allOf", JsonValue.Array(List.map constraintFor singletons) ]
+                )
+            | _ -> invalidOp "Expected an array schema object."
+        | Schema.KeyedArray _ -> invalidArg "shape" "Keyed cardinality requires an array."
         | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
             JsonValue.Object(stringFields pattern format minimum maximum maximumUtf8Bytes)
         | Schema.Integer(minimum, maximum) ->

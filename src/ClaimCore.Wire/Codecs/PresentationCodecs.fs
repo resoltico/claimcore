@@ -919,7 +919,8 @@ module PresentationCodecs =
                     (function
                     | RegionContent.Notice notice -> Some notice
                     | _ -> None)
-                    noticeFields
+                    (record id
+                     |> field "notices" id (boundedList 1 RegionNotice.maximum (build noticeFields)))
                 variant
                     (tag RegionContentKind.Timeline)
                     RegionContent.Timeline
@@ -996,12 +997,17 @@ module PresentationCodecs =
             |> build
 
         (record (fun regions groups ->
-            {
-                Screen.Regions = regions
-                CurrentGroups = defaultArg groups []
-            })
+            Screen.create regions |> Screen.withCurrentGroups (defaultArg groups []))
         : Fields<Screen, _>)
-        |> field "regions" _.Regions (list MaximumEntries region)
+        |> field
+            "regions"
+            _.Regions
+            (let regions = list MaximumEntries region
+
+             restrict
+                 (Schema.KeyedArray(regions.Schema, "role", PresentationStructure.singletonRegions))
+                 PresentationStructure.regions
+                 regions)
         |> optionalField "currentGroups" (_.CurrentGroups >> supplied) (list 2 currentGroup)
         |> build
         |> fun codec -> restrict codec.Schema PresentationStructure.screen codec

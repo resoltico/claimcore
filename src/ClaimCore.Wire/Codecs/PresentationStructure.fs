@@ -54,16 +54,30 @@ module internal PresentationStructure =
                     path
                     "Table columns and rows require unique keys, matching widths and disjoint covering groups."
 
-    let screen path value =
-        let roles =
-            array "regions" value
-            |> List.choose (JsonValue.tryMember "role")
-            |> List.filter ((<>) (JsonValue.String "FACTS"))
+    let singletonRegions =
+        ClaimCore.Presentation.Screen.singletonRoles
+        |> List.map (ClaimCore.Domain.Vocabulary.token ClaimCore.Presentation.RegionRole.vocabulary)
 
+    let regions path =
+        function
+        | JsonValue.Array values ->
+            let roles =
+                values
+                |> List.choose (JsonValue.tryMember "role")
+                |> List.filter (fun role ->
+                    singletonRegions |> List.exists (JsonValue.String >> (=) role))
+
+            if unique roles then
+                Ok()
+            else
+                fail path "Only FACTS may repeat within a screen."
+        | _ -> fail path "Expected ordered regions."
+
+    let screen path value =
         let groups =
             array "currentGroups" value |> List.choose (JsonValue.tryMember "group")
 
-        if unique roles && unique groups then
+        if unique groups then
             Ok()
         else
-            fail path "Only FACTS may repeat within a screen."
+            fail path "Current groups must be unique."
