@@ -118,7 +118,10 @@ const assertListPresentation = async (
   if (payload.outcome.kind !== "SUCCEEDED") {
     return;
   }
-  const rows = page.locator(".table-view tbody > tr:not(.table-group)");
+  const results = page.locator(
+    '.worklist .view-tab-panel > .screen-view > [data-region="RESULTS"]',
+  );
+  const rows = results.locator(".table-view tbody > tr:not(.table-group)");
   const table = payload.outcome.document.screen.regions.find(
     (region) => region.role === "RESULTS",
   )?.content;
@@ -146,9 +149,7 @@ const assertListPresentation = async (
     ),
   );
   expect(assigned, "The independently assigned matrix case must appear in Mine").toBeDefined();
-  await expect(
-    page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.key}"]`),
-  ).toBeVisible();
+  await expect(rows.locator(`a[href="/cases/id/${assigned!.key}"]`)).toBeVisible();
 };
 const principalKindFact = (screen: Screen) => {
   const value = screen.regions
