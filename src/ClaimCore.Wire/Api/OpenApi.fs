@@ -247,7 +247,11 @@ module OpenApi =
             match transfer with
             | AttachmentTransfer.Download -> [ AttachmentTransport.downloadMediaType ]
             | AttachmentTransfer.Preview ->
-                [ AttachmentTransport.pngMediaType; AttachmentTransport.jpegMediaType ]
+                [
+                    AttachmentTransport.pngMediaType
+                    AttachmentTransport.jpegMediaType
+                    AttachmentTransport.pdfMediaType
+                ]
             | AttachmentTransfer.Upload -> invalidArg (nameof transfer) "Upload replies are JSON."
 
         let responseHeader shape =
@@ -280,7 +284,12 @@ module OpenApi =
                         schema (Schema.Const "no-store, no-transform, max-age=0") |> responseHeader
                         if transfer = AttachmentTransfer.Download then
                             "Content-Disposition",
-                            object [ "type", text "string" ] |> responseHeader
+                            object
+                                [
+                                    "type", text "string"
+                                    "pattern", text AttachmentTransport.dispositionPattern
+                                ]
+                            |> responseHeader
                     ]
                 "content",
                 object (

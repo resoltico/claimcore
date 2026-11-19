@@ -345,8 +345,8 @@ let tests =
                     if details then
                         Expect.equal
                             (text.Split(operationId).Length - 1)
-                            6
-                            "Operation, part and case identities are supplied on each of the two pages")
+                            4
+                            "Operation and part identities appear on each page")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->

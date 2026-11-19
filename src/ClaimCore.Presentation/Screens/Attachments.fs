@@ -42,7 +42,7 @@ module AttachmentsScreen =
             ]
 
         let table =
-            tableWithControls
+            tableWithTransfers
                 (fun (item: AttachmentRow) -> AttachmentId.format item.AttachmentId)
                 (fun item ->
                     Some
@@ -61,18 +61,24 @@ module AttachmentsScreen =
                                                 (PresentedValue.Identifier(
                                                     AttachmentId.format item.AttachmentId
                                                 ))
-                                            value
-                                                "canPreview"
-                                                "label.attachmentPreview"
-                                                Prominence.Detail
-                                                (PresentedValue.Count(
-                                                    if item.CanPreview then 1L else 0L
-                                                ))
                                         ]
                                 ]
                         })
                 columns
                 (fun item -> None, TaskAffordances.attachmentWithdraw page.CaseId item)
+                (fun item ->
+                    AttachmentRead.offered item.CanPreview
+                    |> List.map (fun transfer ->
+                        {
+                            Kind = transfer
+                            LabelId = (EndpointDeclarations.attachmentRead transfer).LabelId
+                            Request =
+                                {
+                                    Target = CaseSelector.Id page.CaseId
+                                    AttachmentId = item.AttachmentId
+                                }
+                            Name = item.Name
+                        }))
                 page.Items
 
         Screen.create
@@ -86,21 +92,6 @@ module AttachmentsScreen =
                             "field.caseReference.label"
                             Prominence.Primary
                             (PresentedValue.Reference page.Reference)
-                    ]
-                entryRegion
-                    RegionRole.Details
-                    (Some "label.recordDetails")
-                    [
-                        value
-                            "attachmentCaseId"
-                            "input.caseId.label"
-                            Prominence.Detail
-                            (PresentedValue.Identifier(CaseId.format page.CaseId))
-                        value
-                            "attachmentDisclosure"
-                            "label.attachmentDisclosure"
-                            Prominence.Detail
-                            (PresentedValue.Count(Sequence.value page.Disclosure))
                     ]
                 region
                     RegionRole.Attachments

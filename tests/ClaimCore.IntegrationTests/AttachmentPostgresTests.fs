@@ -85,6 +85,15 @@ let internal download owner attachment =
 let internal upload owner command payload =
     Service.executeAttachmentUpload owner command (ReadOnlyMemory<byte> payload) token
 
+let private preview owner attachment =
+    Service.previewAttachment
+        owner
+        {
+            Target = target
+            AttachmentId = attachment
+        }
+        token
+
 let private attachmentReceipt (receipt: OperationReceipt) =
     match receipt.Subject with
     | ReceiptSubject.Attachment attachment -> attachment
@@ -123,6 +132,15 @@ let private assertDownload expected (result: Outcome<AttachmentContent>) =
         expected
         "Exact bytes cross the PostgreSQL store boundary"
 
+let private blockedType =
+    Refusal.invalidInput (InputTarget.AttachmentName, Violation.AttachmentTypeRefused)
+
+let private expectBlocked (reply: ExecuteReply) =
+    Expect.equal
+        reply.Outcome
+        (ExecuteResult.Rejected blockedType)
+        "The type decision refuses before retention checks"
+
 let private grantAttachmentRoles (fixture: Fixture) owner =
     task {
         for number, role in [ 11, Role.DataSteward; 12, Role.Auditor ] do
@@ -147,14 +165,21 @@ let internal setup (database: PostgresFixture.Database) =
         return owner
     }
 
-let private maintained database =
+let private maintainedAt (database: PostgresFixture.Database) generation =
     task {
-        do! enterMaintenance database
+        let pauseId = Guid.Parse "10000000-0000-4000-8000-000000000099"
 
-        return
-            MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
-            |> Option.get
+        let! mode =
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                (MaintenanceChange.Acquire(generation, pauseId))
+                token
+
+        Expect.isTrue mode.State.Active "The owner explicitly pauses register writes"
+        return MaintenanceHandle.create (generation + 1L) pauseId |> Option.get
     }
+
+let private maintained database = maintainedAt database 0L
 
 let private lifecycle (database: PostgresFixture.Database) =
     task {
@@ -169,6 +194,30 @@ let private lifecycle (database: PostgresFixture.Database) =
         match bypass.Outcome with
         | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
         | other -> failtestf "Metadata-only execution accepted an upload: %A" other
+
+        let forbidden = add fixture 29 "file.exe"
+        let! beforeRefusal = verified database
+        let! review = Service.previewSubmission owner forbidden token
+
+        Expect.equal
+            review.Outcome
+            (Outcome.Rejected blockedType)
+            "Authorized metadata review identifies the blocked name"
+
+        let! blocked = upload owner forbidden bytes
+        expectBlocked blocked
+        let! afterRefusal = verified database
+        Expect.equal afterRefusal beforeRefusal "Refusal leaves the verified ledger unchanged"
+
+        let! blobs =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT count(*) FROM claimcore.attachment_blobs WHERE blob_id=$1"
+                    [| box forbidden.OperationId |]
+                    token)
+
+        Expect.equal (DatabaseSession.value<int64> 0 blobs.Head) 0L "Refusal stores no blob"
 
         let! raced = Task.WhenAll [| upload owner first bytes; upload owner second bytes |]
 
@@ -201,6 +250,14 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         let! checkedBytes = download owner current
         assertDownload bytes checkedBytes
+        let! duplicateType = upload owner (add fixture 30 "matching.js") bytes
+        expectBlocked duplicateType
+        let! exactReplay = upload owner submitted bytes
+
+        expectReceipt
+            (replayReceipt exactReplay)
+            (accepted acceptedReply)
+            "Exact retry keeps the receipt"
 
         let secondTarget = CaseSelector.Reference "synthetic-b"
 
@@ -226,6 +283,8 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         let! wrong = Service.downloadAttachment owner wrongParent token
         assertUnavailable wrong
+        let! wrongPreview = Service.previewAttachment owner wrongParent token
+        assertUnavailable wrongPreview
 
         let service =
             PrincipalKey.service "https://issuer.example/" "attachment-reader"
@@ -269,6 +328,21 @@ let private lifecycle (database: PostgresFixture.Database) =
         | other ->
             failtestf "A reader learned the duplicate through an unauthorized upload: %A" other
 
+        let! revoked =
+            grant
+                owner
+                (id fixture 44)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseId attachment.CaseId
+                }
+                false
+
+        acceptedPeople revoked
+        let! revokedPreview = preview scopedReader current
+        assertUnavailable revokedPreview
+
         let! stale = Service.executeSubmission owner staleErase token
 
         Expect.equal
@@ -297,6 +371,8 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         let! unavailable = download owner current
         assertUnavailable unavailable
+        let! withdrawnPreview = preview owner current
+        assertUnavailable withdrawnPreview
 
         let! repeated = Service.executeSubmission owner (withdraw fixture 27 current) token
 
@@ -327,9 +403,9 @@ let private lifecycle (database: PostgresFixture.Database) =
             AttachmentDisclosure.Withheld
             "Fresh acceptance lookup redacts withdrawn metadata"
 
-        let! preview = Service.previewSubmission owner submitted token
+        let! retainedReview = Service.previewSubmission owner submitted token
 
-        match read preview.Outcome with
+        match read retainedReview.Outcome with
         | Previewed.AlreadyAccepted receipt ->
             Expect.equal
                 (attachmentReceipt receipt).Snapshot
@@ -428,7 +504,7 @@ let private lifecycle (database: PostgresFixture.Database) =
         let! afterRepair = download owner reattached.AttachmentId
         assertDownload bytes afterRepair
 
-        let! _ =
+        let! resumed =
             RegisterMaintenanceStore.change
                 database.OwnerSource
                 (MaintenanceChange.Resume handle)
@@ -439,6 +515,8 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         let! erased = download owner reattached.AttachmentId
         assertUnavailable erased
+        let! erasedPreview = preview owner reattached.AttachmentId
+        assertUnavailable erasedPreview
         let! expiredIntent = upload owner submitted bytes
 
         Expect.equal
@@ -460,35 +538,25 @@ let private lifecycle (database: PostgresFixture.Database) =
             | OperationLookupResult.Accepted(receipt, _) ->
                 let document = ClaimCore.Presentation.HumanReceiptDocument.ofCore receipt
 
-                let entries =
-                    document.Screen.Regions
-                    |> List.collect (fun region ->
-                        match region.Content with
-                        | ClaimCore.Presentation.RegionContent.Entries entries -> entries
-                        | _ -> [])
-
                 Expect.equal
                     document.Disclosure
                     ClaimCore.Presentation.HumanDisclosure.Erased
                     "Authorized HUMAN lookup reports terminal attachment disclosure"
 
                 Expect.equal
-                    (entries
-                     |> List.tryFind (fun entry -> entry.Key = "attachmentCaseId")
-                     |> Option.map _.Value)
-                    (Some(
-                        ClaimCore.Presentation.PresentedValue.Identifier(
-                            CaseId.format attachment.CaseId
-                        )
-                    ))
-                    "Both erased add and withdrawal receipts identify the same case"
-
-                Expect.isFalse
-                    (entries |> List.exists (fun entry -> entry.Key = "attachmentDisclosure"))
-                    "Erasure carries no historical withdrawal sequence"
+                    (document.AttachmentObservation
+                     |> Option.map (fun observation -> observation.CaseId, observation.Sequence))
+                    (Some(attachment.CaseId, receipt.Position.Sequence))
+                    "Erased add and withdrawal receipts carry their typed attachment observation"
             | other -> failtestf "Expected authorized erased attachment receipt: %A" other
 
-        let! _ = verified database
+        let! erasedHead = checkpoint database
+        let! erasedHandle = maintainedAt database resumed.State.Generation
+
+        let! erasedRebuild =
+            ProjectionRebuild.rebuild database.OwnerSource erasedHead erasedHandle token
+
+        Expect.isOk erasedRebuild "Accepted attachment history still rebuilds after erasure"
         return ()
     }
 
@@ -561,6 +629,141 @@ let private corruptWithdrawn (database: PostgresFixture.Database) =
             ()
     }
 
+let private previewEligibility (database: PostgresFixture.Database) =
+    task {
+        let! owner = setup database
+        let fixture = database.Fixture
+
+        let png =
+            Convert.FromBase64String
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=="
+
+        let overProfile =
+            Convert.FromBase64String
+                "iVBORw0KGgoAAAANSUhEUgAAIAEAAAABCAYAAACZiUteAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=="
+
+        // Complete baseline JPEG framing for a one-pixel, one-component image.
+        let jpeg =
+            Convert.FromHexString "FFD8FFC0000B080001000101011100FFDA0008010100003F0001FFD9"
+
+        let cases =
+            [
+                71, "red.jpg", png, true, Some AttachmentPreview.Png
+                72, "frame.JPEG", jpeg, true, Some AttachmentPreview.Jpeg
+                73,
+                "record.pdf",
+                Encoding.ASCII.GetBytes "%PDF-1.7\n",
+                true,
+                Some AttachmentPreview.Pdf
+                74, "fake.pdf", Encoding.ASCII.GetBytes "prefix before %PDF-1.7", true, None
+                75, "fake.png", Encoding.ASCII.GetBytes "not a PNG", true, None
+                76, "large.png", overProfile, true, None
+                77, "neutral.txt", Encoding.ASCII.GetBytes "%PDF-2.0\n", false, None
+            ]
+
+        for number, name, payload, _, _ in cases do
+            let command =
+                draft
+                    fixture
+                    number
+                    name
+                    (payload.Length.ToString(CultureInfo.InvariantCulture))
+                    (SHA256.HashData(payload) |> Convert.ToHexStringLower)
+
+            let! reply = upload owner command payload
+            accepted reply |> ignore
+
+        let expectedOffers =
+            cases |> List.map (fun (_, name, _, offered, _) -> name, offered) |> Map.ofList
+
+        let assertOffers (result: Outcome<AttachmentPage>) =
+            let offers =
+                (read result).Items
+                |> List.map (fun item -> AttachmentName.value item.Name, item.CanPreview)
+                |> Map.ofList
+
+            Expect.equal
+                offers
+                expectedOffers
+                "Only canonical name suffixes govern list availability"
+
+        let! listed = list owner
+        assertOffers listed
+        let page = read listed
+        let document = ClaimCore.Presentation.HumanReadDocuments.attachments page
+
+        Expect.equal
+            (document.AttachmentObservation
+             |> Option.map (fun observation -> observation.CaseId, observation.Sequence))
+            (Some(page.CaseId, page.Disclosure))
+            "The HUMAN list carries its typed attachment observation"
+
+        let rows =
+            document.Screen.Regions
+            |> List.pick (fun region ->
+                match region.Content with
+                | ClaimCore.Presentation.RegionContent.Table table -> Some table.Rows
+                | _ -> None)
+
+        for number, name, _, offered, _ in cases do
+            let id = attachmentGuid fixture number
+            let row = rows |> List.find (fun row -> row.Key = AttachmentId.format id)
+
+            Expect.equal
+                (row.Transfers |> List.map (fun transfer -> transfer.Kind, transfer.LabelId))
+                [
+                    AttachmentRead.Download, "endpoint.attachment.download.label"
+                    if offered then
+                        AttachmentRead.Preview, "endpoint.attachment.preview.label"
+                ]
+                "HUMAN controls bind core-provided availability to the localized binary reads"
+
+            for transfer in row.Transfers do
+                Expect.equal (AttachmentName.value transfer.Name) name "Independent expected name"
+
+                Expect.equal
+                    transfer.Request.Target
+                    (CaseSelector.Id page.CaseId)
+                    "Bound case identity"
+
+                Expect.equal transfer.Request.AttachmentId id "Bound attachment identity"
+
+        for number, name, payload, _, expected in cases do
+            let id = attachmentGuid fixture number
+            let! proposed = preview owner id
+
+            match expected, proposed with
+            | Some kind, Outcome.Succeeded content ->
+                Expect.equal content.Preview (Some kind) name
+                assertDownload payload proposed
+            | None, Outcome.Rejected Refusal.AttachmentPreviewUnavailable -> ()
+            | _ -> failtestf "Unexpected preview for %s: %A" name proposed
+
+            let! downloaded = download owner id
+            assertDownload payload downloaded
+
+        let! _ = verified database
+
+        let pdf = attachmentGuid fixture 73
+
+        do!
+            guardedSql
+                database
+                "UPDATE claimcore.attachment_blobs SET payload=decode('255044462d322e300a','hex') WHERE blob_id=$1"
+                [| box (AttachmentId.value pdf) |]
+
+        do! finding VerificationFinding.AttachmentPayloads database
+
+        let! withoutVerifiedPayload = list owner
+        assertOffers withoutVerifiedPayload
+        let! failed = preview owner pdf
+
+        Expect.equal
+            failed
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "Reading the tampered blob fails"
+    }
+
 let private expectCapacity (reply: ExecuteReply) =
     Expect.equal
         reply.Outcome
@@ -605,6 +808,21 @@ let private slotCapacity (database: PostgresFixture.Database) =
         accepted withdrawn |> ignore
         let! refused = candidate 202 101uy
         expectCapacity refused
+
+        let beyondQuota = [| 101uy |]
+
+        let! blocked =
+            upload
+                owner
+                (draft
+                    fixture
+                    205
+                    "not-capacity.exe"
+                    "1"
+                    (SHA256.HashData beyondQuota |> Convert.ToHexStringLower))
+                beyondQuota
+
+        expectBlocked blocked
 
         let reattachment = fromPayload fixture 203 [| 0uy |]
 
@@ -1010,6 +1228,9 @@ let tests =
                 "attachment download snapshots straddle withdrawal"
                 (run readAcrossWithdrawal)
             testCaseAsync "acceptance, withdrawal, old disclosure and list rebuild" (run lifecycle)
+            testCaseAsync
+                "preview availability uses names and verified bytes at their respective read boundaries"
+                (run previewEligibility)
             testCaseAsync
                 "withdrawn-only bytes remain authoritative for verify, rebuild and restore"
                 (run corruptWithdrawn)

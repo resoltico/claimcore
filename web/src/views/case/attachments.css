@@ -37,3 +37,11 @@
   block-size: auto;
   object-fit: contain;
 }
+
+.attachment-document {
+  display: block;
+  inline-size: 100%;
+  block-size: clamp(16rem, 65vh, 40rem);
+  border: 0;
+  pointer-events: none;
+}

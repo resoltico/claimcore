@@ -206,7 +206,7 @@ let private configureRoutes
     =
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(fun context next ->
-            HttpHeaders.register context
+            HttpHeaders.register configuration.Binding.Origin context
             next.Invoke context)
     )
     |> ignore

@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import publicAssets from "./scripts/public-assets.plugin.mjs";
+import { attachmentPreviewResources } from "./scripts/attachment-viewer.mjs";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import type { InlineConfig } from "vitest/node";
@@ -9,7 +10,7 @@ import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
 export default {
-  plugins: [react(), publicAssets()],
+  plugins: [react(), attachmentPreviewResources(), publicAssets()],
   resolve: {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },

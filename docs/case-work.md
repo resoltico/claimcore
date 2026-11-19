@@ -147,10 +147,12 @@ Open **Attachments** in the case workspace. Anyone who can read the case can lis
 current files. A human case handler can add and withdraw files on open and closed cases while
 writes are available. Voided cases retain readable files.
 
-Select a local file and review its saved filename before confirming. The register preserves the
-exact bytes and stores one copy of identical bytes per case. Each file can be up to 25 MiB,
-including empty files. Each case can retain up to 100 distinct files and 256 MiB in total.
-Preview is available for supported static PNG and JPEG files. Use **Download** for the original file.
+Select a local file and review its saved filename before confirming. The register refuses file types
+that can run programs, such as `.exe`, `.js` and `.msi`. Put a refused file in an archive if the case
+needs it. The register preserves the exact bytes and stores one copy of identical bytes per case.
+Each file can be up to 25 MiB, including empty files. Each case can retain up to 100 distinct files
+and 256 MiB in total. **Preview** opens supported static PNG and JPEG images and PDFs in the browser.
+Use **Download** for the original file, including when a preview is unavailable.
 
 Withdrawal records who acted and when. It hides the selected attachment's details in current
 reads, earlier receipts and history. Its bytes still count against the case's limits. Uploading the
@@ -164,8 +166,9 @@ claimcore attachment download CASE-REFERENCE ATTACHMENT-ID --output ./evidence-c
 claimcore attachment withdraw CASE-REFERENCE ATTACHMENT-ID
 ```
 
-Use `--details` to find the attachment ID in the list. The CLI verifies the complete download before
-opening the destination. It normally publishes atomically from a private staging directory in the
+Use `--details` to find the attachment ID in the list. The CLI checks the download name against the
+current authorized list and verifies the complete download before opening the destination. It
+normally publishes atomically from a private staging directory in the
 system temporary area. When the destination is on a different filesystem or the filesystem rejects
 hard links as unsupported, the CLI creates the destination exclusively and writes the verified bytes
 there. Both methods refuse existing entries, including symlinks, and request owner-only permissions.

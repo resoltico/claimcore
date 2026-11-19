@@ -3,8 +3,9 @@ module ClaimCore.ServerTests.PublicAssetTests
 open System
 open System.IO
 open System.Net
+open System.Net.Http
 open System.Text
-open System.Text.Json
+open System.Text.Json.Nodes
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -208,23 +209,11 @@ let private mismatch () =
     let directory = Directory.CreateTempSubdirectory("claimcore-public-inventory-")
 
     try
-        Directory.CreateDirectory(Path.Combine(directory.FullName, "assets")) |> ignore
-        File.WriteAllText(Path.Combine(directory.FullName, "assets/public-12345678.js"), "actual")
+        publishedInventory
+            directory.FullName
+            [ "assets/public-12345678.js", Encoding.UTF8.GetBytes "original" ]
 
-        File.WriteAllBytes(
-            Path.Combine(directory.FullName, "public-assets.json"),
-            JsonSerializer.SerializeToUtf8Bytes
-                {|
-                    schema = 1
-                    assets =
-                        [|
-                            {|
-                                path = "/assets/public-12345678.js"
-                                sha256 = String.replicate 64 "0"
-                            |}
-                        |]
-                |}
-        )
+        File.WriteAllText(Path.Combine(directory.FullName, "assets/public-12345678.js"), "actual")
 
         let mutable refused = false
 
@@ -236,6 +225,91 @@ let private mismatch () =
         Expect.isTrue refused "An unreviewed replacement cannot borrow a public content identity"
     finally
         directory.Delete true
+
+let private viewerPath = "/attachment-preview/viewer"
+
+let private serveViewer () =
+    task {
+        use host = new Host(true)
+
+        let csp (response: HttpResponseMessage) =
+            response.Headers.GetValues "Content-Security-Policy" |> Seq.exactlyOne
+
+        use! response = host.Client.GetAsync viewerPath
+        Expect.equal response.StatusCode HttpStatusCode.OK "Dedicated viewer route"
+
+        Expect.equal
+            (csp response)
+            ("sandbox allow-scripts; default-src 'none'; "
+             + "script-src 'sha256-Oez3mJJV+hbsf5/1ENpn6ZL6yHiBCLK0YcbpTojVxw0=' 'wasm-unsafe-eval'; "
+             + "style-src 'sha256-1hj0evi+8hPjf5liRRmaj505DN12cgYX64varRumCIw='; "
+             + "img-src blob: data:; connect-src 'none'; worker-src blob:; "
+             + "frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
+            "The viewer has its own hash-pinned opaque sandbox"
+
+        Expect.isFalse (response.Headers.Contains "X-Frame-Options") "The viewer can be framed"
+        Expect.isTrue (response.Headers.CacheControl |> nonNull).NoStore "Fresh viewer navigation"
+        Expect.isFalse (response.Headers.Contains "Set-Cookie") "No private session writes"
+        let! served = response.Content.ReadAsByteArrayAsync()
+
+        Expect.equal
+            served
+            (File.ReadAllBytes(Path.Combine(host.AssetsDirectory, "attachment-preview.viewer")))
+            "The host serves the actual admitted bytes"
+
+        use! workspace = host.Client.GetAsync "/"
+
+        Expect.equal
+            (csp workspace)
+            ("default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; "
+             + "img-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; "
+             + "base-uri 'none'; frame-ancestors 'none'; "
+             + "frame-src https://localhost:5443/attachment-preview/viewer; form-action 'self'; "
+             + "manifest-src 'self'; media-src 'none'; worker-src 'none'")
+            "Workspace CSP permits just the configured viewer"
+
+        Expect.equal
+            (workspace.Headers.GetValues "X-Frame-Options" |> Seq.exactlyOne)
+            "DENY"
+            "Workspace retains frame denial"
+
+        use! wrongMethod = host.Client.PostAsync(viewerPath, null)
+
+        Expect.equal
+            wrongMethod.StatusCode
+            HttpStatusCode.MethodNotAllowed
+            "Viewer serves read methods"
+
+        use! alternate = host.Client.GetAsync "/attachment-preview.viewer"
+
+        Expect.isFalse
+            ((csp alternate).StartsWith("sandbox", StringComparison.Ordinal))
+            "Build file has no viewer route"
+    }
+
+let private viewerMismatch tamper =
+    let directory = Directory.CreateTempSubdirectory("claimcore-viewer-inventory-")
+
+    try
+        publishedInventory directory.FullName []
+        tamper directory.FullName
+        let mutable refused = false
+
+        try
+            PublicAssets.Inventory directory.FullName |> ignore
+        with WebStartupException WebStartupProblem.AssetsMissing ->
+            refused <- true
+
+        Expect.isTrue refused "The startup inventory must refuse the altered viewer"
+    finally
+        directory.Delete true
+
+let private changeInlineHash (key: string) directory =
+    let manifest = Path.Combine(directory, "public-assets.json")
+    let root = JsonNode.Parse(File.ReadAllText manifest) |> nonNull
+    let viewer = root["viewer"] |> nonNull
+    viewer[key] <- JsonValue.Create "unverified"
+    File.WriteAllText(manifest, root.ToJsonString())
 
 [<Tests>]
 let tests =
@@ -255,4 +329,17 @@ let tests =
                 "keeps cookie-bearing public requests outside session storage and contains private capacity rejection"
                 (async { do! cookieStorageIsolation () |> Async.AwaitTask })
             testCase "refuses an inventory that disagrees with the published content" mismatch
+            testCaseAsync
+                "applies dedicated viewer and workspace security headers"
+                (async { do! serveViewer () |> Async.AwaitTask })
+            testCase "refuses a tampered viewer document" (fun () ->
+                viewerMismatch (fun directory ->
+                    File.AppendAllText(
+                        Path.Combine(directory, "attachment-preview.viewer"),
+                        "changed"
+                    )))
+            for key in [ "scriptSha256"; "styleSha256" ] do
+                testCase
+                    $"refuses a false {key} for an otherwise verified viewer document"
+                    (fun () -> viewerMismatch (changeInlineHash key))
         ]

@@ -1,4 +1,4 @@
-import { act, within } from "@testing-library/react";
+import { act, fireEvent, within } from "@testing-library/react";
 import { service } from "../../../../src/api/service";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { closeReview, closeReceipt } from "../../../support/operation-documents.fixtures";
@@ -8,6 +8,7 @@ import userEvent from "@testing-library/user-event";
 import type { HumanDocument, RegionRow, ResponseFor } from "@contracts/client";
 import { afterEach, expect, test, vi } from "vitest";
 import { useEndpointCache } from "../../../../src/hooks/EndpointProvider";
+import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { JournalContext } from "../../../../src/recovery/JournalContext";
 import { RecoveryProvider } from "../../../../src/recovery/RecoveryContext";
 import { ObservedReceipt } from "../../../../src/views/operation/ObservedReceipt";
@@ -18,6 +19,8 @@ import { CaseAttachments } from "../../../../src/views/case/CaseAttachments";
 import { mockEndpoint } from "../../../support/endpoint-mocks";
 import { humanReadReply } from "../../../support/human-read-reply.fixtures";
 import { current } from "../../../support/operation-form.fixtures";
+import { activeRequester } from "../../../support/human-requester.fixtures";
+import type { CurrentCase } from "../../../../src/protocol/types";
 import { definition } from "../../../support/service-ui.fixtures";
 import {
   render,
@@ -42,29 +45,10 @@ const caseWithAttachments = {
 const attachmentList = (actions: NonNullable<RegionRow["actions"]> = []): HumanDocument => ({
   ...current,
   subject: { kind: "LIST" },
+  attachmentObservation: { caseId: selected.caseId, sequence: 3 },
   actions: [],
   screen: {
     regions: [
-      {
-        role: "DETAILS",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "attachmentCaseId",
-              labelId: "input.caseId.label",
-              prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: selected.caseId },
-            },
-            {
-              key: "attachmentDisclosure",
-              labelId: "label.attachmentDisclosure",
-              prominence: "DETAIL",
-              value: { kind: "COUNT", value: 3 },
-            },
-          ],
-        },
-      },
       {
         role: "ATTACHMENTS",
         titleId: "section.attachments.label",
@@ -83,23 +67,20 @@ const attachmentList = (actions: NonNullable<RegionRow["actions"]> = []): HumanD
               key: attachmentId,
               actions,
               values: [{ kind: "NARRATIVE", value: filename }],
-              detail: {
-                summary: null,
-                highlights: [],
-                sections: [
-                  {
-                    titleId: "label.recordDetails",
-                    entries: [
-                      {
-                        key: "canPreview",
-                        labelId: "label.attachmentPreview",
-                        prominence: "DETAIL",
-                        value: { kind: "COUNT", value: 1 },
-                      },
-                    ],
-                  },
-                ],
-              },
+              transfers: [
+                {
+                  kind: "DOWNLOAD",
+                  labelId: "endpoint.attachment.download.label",
+                  request: { target: selected, attachmentId },
+                  name: filename,
+                },
+                {
+                  kind: "PREVIEW",
+                  labelId: "endpoint.attachment.preview.label",
+                  request: { target: selected, attachmentId },
+                  name: filename,
+                },
+              ],
             },
           ],
         },
@@ -125,15 +106,19 @@ const setup = async () => {
   });
   const pendingList = Promise.withResolvers<Awaited<ReturnType<typeof list>>>();
   list.mockReturnValue(pendingList.promise);
-  const workspace = (available: boolean) => (
-    <>
+  const workspace = (
+    available: boolean,
+    selectedCase: CurrentCase = caseWithAttachments,
+    requester = activeRequester,
+  ) => (
+    <RequesterContext value={requester}>
       <CacheDriver
         capture={(value) => {
           scope[0] = value;
         }}
       />
       <CaseAttachments
-        current={caseWithAttachments}
+        current={selectedCase}
         editing={false}
         disclosureAvailable={available}
         authoringAvailable
@@ -141,7 +126,7 @@ const setup = async () => {
         onWithdraw={vi.fn()}
         onDisclosureChanged={changed}
       />
-    </>
+    </RequesterContext>
   );
   const { rerender } = render(workspace(true));
   expect(await screen.findByText(filename)).toBeVisible();
@@ -151,6 +136,25 @@ const setup = async () => {
     cache: scope[0]!,
     setAvailable: (available: boolean) => {
       rerender(workspace(available));
+    },
+    changeSelection: () => {
+      rerender(
+        workspace(true, {
+          ...caseWithAttachments,
+          subject: { ...current.subject, caseId: "b0000000-0000-4000-8000-000000000042" },
+        }),
+      );
+    },
+    changeOwner: () => {
+      rerender(
+        workspace(true, caseWithAttachments, {
+          ...activeRequester,
+          subject: {
+            ...activeRequester.subject,
+            actorId: "a0000000-0000-4000-8000-000000000042",
+          },
+        }),
+      );
     },
   };
 };
@@ -224,13 +228,13 @@ test("keeps a readable list and leaves download actionable after a typed store f
   expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
 });
 
-const mockPreview = (digest: () => Promise<ArrayBuffer>, url: string) => {
+const mockPreview = (digest: () => Promise<ArrayBuffer>, url: string, mediaType = "image/png") => {
   vi.stubGlobal("crypto", { subtle: { digest } });
   vi.stubGlobal("fetch", () =>
     Promise.resolve(
       new Response("abc", {
         headers: {
-          "content-type": "image/png",
+          "content-type": mediaType,
           "content-length": "3",
           "content-encoding": "identity",
           "ClaimCore-Installation": testWorkspaceIdentity.installationId,
@@ -253,12 +257,114 @@ const mockPreview = (digest: () => Promise<ArrayBuffer>, url: string) => {
   return { create, revoke };
 };
 
+test("opening the same PDF again always replaces the viewer frame", async () => {
+  const hash = Uint8Array.from(atob("ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0="), (byte) =>
+    byte.charCodeAt(0),
+  ).buffer;
+  const digest = vi.fn(() => Promise.resolve(hash));
+  mockPreview(digest, "blob:unexpected", "application/pdf");
+  await setup();
+  const preview = screen.getByRole("button", { name: "Preview" });
+  await userEvent.click(preview);
+  const previous = await screen.findByTitle("Preview");
+  await act(async () => {
+    fireEvent.click(preview);
+    await vi.waitFor(() => {
+      expect(digest).toHaveBeenCalledTimes(2);
+    });
+  });
+  expect(screen.getByTitle("Preview")).not.toBe(previous);
+  expect(previous).not.toBeInTheDocument();
+});
+
+test.each(["selection", "owner", "withdrawal", "erasure", "access refusal"] as const)(
+  "removes a PDF frame with a pending page after %s and ignores its late reply",
+  async (cause) => {
+    const hash = Uint8Array.from(atob("ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0="), (byte) =>
+      byte.charCodeAt(0),
+    ).buffer;
+    const { create } = mockPreview(
+      () => Promise.resolve(hash),
+      "blob:unexpected",
+      "application/pdf",
+    );
+    const port: {
+      onmessage: ((event: MessageEvent<unknown>) => void) | null;
+      close: () => void;
+      postMessage: (message: unknown) => void;
+    } = { onmessage: null, close: vi.fn(), postMessage: vi.fn() };
+    function channel() {
+      return { port1: port, port2: {} };
+    }
+    vi.stubGlobal("MessageChannel", channel);
+    const { cache, list, changed, changeOwner, changeSelection } = await setup();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Preview" }));
+    const frame = await screen.findByTitle("Preview");
+    if (!(frame instanceof HTMLIFrameElement) || frame.contentWindow === null) {
+      throw new Error("Expected an admitted PDF frame.");
+    }
+    vi.spyOn(frame.contentWindow, "postMessage").mockReturnValue(undefined);
+    fireEvent.load(frame);
+    const reply = port.onmessage;
+    if (reply === null) {
+      throw new Error("Expected a connection to the PDF frame.");
+    }
+    const rendered = (requestId: number, page: number) => {
+      act(() => {
+        reply(new MessageEvent("message", { data: { requestId, page, pageCount: 2 } }));
+      });
+    };
+    rendered(1, 1);
+    expect(screen.getByText("Page 1 of 2")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(port.postMessage).toHaveBeenCalledWith({ requestId: 2, page: 2 });
+
+    switch (cause) {
+      case "selection":
+        changeSelection();
+        break;
+      case "owner":
+        changeOwner();
+        break;
+      case "withdrawal":
+        act(() => {
+          cache.confirmAttachmentChange(selected.caseId, 4);
+        });
+        break;
+      case "erasure":
+        act(() => {
+          cache.observeAttachmentErasure(selected.caseId);
+        });
+        break;
+      case "access refusal":
+        list.mockResolvedValue({
+          kind: "outcome",
+          status: 200,
+          value: { representation: "HUMAN", ...resourceUnavailable },
+        });
+        act(() => {
+          cache.invalidate();
+        });
+        await waitFor(() => {
+          expect(changed).toHaveBeenCalledTimes(1);
+        });
+        break;
+    }
+    expect(port.close).toHaveBeenCalledTimes(1);
+    expect(frame).not.toBeInTheDocument();
+    rendered(2, 2);
+    expect(screen.queryByText("Page 2 of 2")).not.toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+  },
+);
+
 test("discards a valid preview whose digest completes after a newer attachment disclosure", async () => {
   const pendingHash = Promise.withResolvers<ArrayBuffer>();
   const hash = vi.fn(() => pendingHash.promise);
   const { create } = mockPreview(hash, "blob:late-preview");
   const { cache } = await setup();
-  await userEvent.setup().click(screen.getByRole("button", { name: "Preview image" }));
+  await userEvent.setup().click(screen.getByRole("button", { name: "Preview" }));
   await waitFor(() => {
     expect(hash).toHaveBeenCalledTimes(1);
   });
@@ -395,30 +501,12 @@ test("reports one list access refusal across a parent revalidation", async () =>
   expect(list).toHaveBeenCalledTimes(2);
 });
 
-const disclosureRegion = (sequence?: number): HumanDocument["screen"]["regions"][number] => ({
-  role: "DETAILS",
-  content: {
-    kind: "ENTRIES",
-    entries: [
-      {
-        key: "attachmentCaseId",
-        labelId: "input.caseId.label",
-        prominence: "DETAIL",
-        value: { kind: "IDENTIFIER", value: selected.caseId },
-      },
-      ...(sequence === undefined
-        ? []
-        : [
-            {
-              key: "attachmentDisclosure",
-              labelId: "label.attachmentDisclosure",
-              prominence: "DETAIL" as const,
-              value: { kind: "COUNT" as const, value: sequence },
-            },
-          ]),
-    ],
-  },
-});
+const attachmentObservation = (sequence: number) => ({ caseId: selected.caseId, sequence });
+const receiptCaseLink = {
+  rel: "OPEN_CASE",
+  labelId: "label.openCase",
+  link: { endpoint: "case.get", input: { target: selected } },
+} as const;
 const historyWithAttachment = () => {
   const historical = "private history filename";
   const old = timelineDocument([
@@ -441,7 +529,7 @@ const historyWithAttachment = () => {
   ]);
   return {
     historical,
-    document: { ...old, screen: { regions: [...old.screen.regions, disclosureRegion(3)] } },
+    document: { ...old, attachmentObservation: attachmentObservation(3) },
   };
 };
 const withdrawalAction = operationAffordance(
@@ -453,7 +541,7 @@ const withdrawalAction = operationAffordance(
 const withdrawable = attachmentList([withdrawalAction]);
 const withdrawalReceipt = (operationId: string): HumanDocument => ({
   ...closeReceipt,
-  screen: { regions: [disclosureRegion(5)] },
+  attachmentObservation: attachmentObservation(5),
   subject: { kind: "RECEIPT", operationId },
   links: [],
 });
@@ -562,7 +650,7 @@ test("confirmed withdrawal masks old attachments and history through a list faul
   expect(timeline.mock.calls.length).toBeGreaterThan(1);
   expect(panel.queryByText(filename)).not.toBeInTheDocument();
   expect(panel.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
-  expect(panel.queryByRole("button", { name: "Preview image" })).not.toBeInTheDocument();
+  expect(panel.queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
   expect(panel.queryByRole("button", { name: "Withdraw attachment" })).not.toBeInTheDocument();
   expect(screen.queryByText(old.historical)).not.toBeInTheDocument();
 
@@ -580,9 +668,9 @@ const staleReceipt: HumanDocument = {
   ...closeReceipt,
   subject: { kind: "RECEIPT", operationId: staleReceiptId },
   disclosure: "CURRENT",
+  attachmentObservation: attachmentObservation(3),
   screen: {
     regions: [
-      disclosureRegion(),
       {
         role: "FACTS",
         content: {
@@ -696,14 +784,14 @@ test.each([
       expect(lookup).toHaveBeenCalledTimes(1);
     });
     act(() => {
-      cache.confirmAttachmentWithdrawal(selected.caseId, 2);
+      cache.confirmAttachmentChange(selected.caseId, 2);
     });
     expect(await screen.findByText(filename)).toBeVisible();
     expect(await screen.findByText(historical)).toBeVisible();
     expect(await screen.findByText(receiptName)).toBeVisible();
     expect(cache.attachmentDisclosure(selected.caseId)).toBe(3);
     const revoke = mockLivePreview();
-    await userEvent.click(screen.getByRole("button", { name: "Preview image" }));
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(await screen.findByRole("img", { name: filename })).toBeVisible();
 
     caseGet.mockReturnValue(Promise.withResolvers<Awaited<ReturnType<typeof caseGet>>>().promise);
@@ -719,7 +807,8 @@ test.each([
       ...closeReceipt,
       disclosure: "ERASED",
       subject: { kind: "RECEIPT", operationId: record.operationId },
-      screen: { regions: [disclosureRegion(sequence)] },
+      links: [receiptCaseLink],
+      ...(sequence === undefined ? {} : { attachmentObservation: attachmentObservation(sequence) }),
     } as const satisfies HumanDocument;
     await act(async () => {
       pending.resolve(mockAcceptedReceipt(erased, record.operationId));
@@ -746,7 +835,7 @@ test.each([
     expect(screen.queryByText(filename)).not.toBeInTheDocument();
     expect(screen.queryByText(historical)).not.toBeInTheDocument();
     expect(screen.queryByText(receiptName)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Preview image" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
   },
 );
@@ -807,7 +896,7 @@ const erasedHistory = () => {
     structural,
     reply: humanReadReply("case.timeline", {
       ...page,
-      screen: { regions: [...page.screen.regions, disclosureRegion(9)] },
+      attachmentObservation: attachmentObservation(9),
     }),
   };
 };
@@ -821,7 +910,7 @@ test("an authoritative first erased timeline page removes attachment disclosure 
   expect(await screen.findByText(filename)).toBeVisible();
   expect(await screen.findByText(receiptName)).toBeVisible();
   const revoke = mockLivePreview();
-  await userEvent.click(screen.getByRole("button", { name: "Preview image" }));
+  await userEvent.click(screen.getByRole("button", { name: "Preview" }));
   expect(await screen.findByRole("img", { name: filename })).toBeVisible();
   expect(timeline).toHaveBeenCalledTimes(1);
 
@@ -834,13 +923,14 @@ test("an authoritative first erased timeline page removes attachment disclosure 
   const { structural, reply } = erasedHistory();
   const erased = { kind: "outcome", status: 200, value: reply } as const;
   const before = cache.invalidation();
+  const caseReads = caseGet.mock.calls.length;
   await act(async () => {
     first.resolve(erased);
     await first.promise;
   });
   expect(screen.queryByText(filename)).not.toBeInTheDocument();
   expect(cache.invalidation()).toBe(before + 1);
-  expect(caseGet).toHaveBeenCalledTimes(2);
+  expect(caseGet).toHaveBeenCalledTimes(caseReads + 1);
   expect(timeline).toHaveBeenCalledTimes(2);
   expect(screen.getByText(structural)).toBeVisible();
   expect(screen.queryByText(receiptName)).not.toBeInTheDocument();

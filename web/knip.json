@@ -9,6 +9,7 @@
   ],
   "entry": [
     "index.html!",
+    "src/views/case/pdf/viewer.ts!",
     "e2e/cli-pkce-driver.mjs",
     "e2e/deployment-qualification.mjs",
     "../contracts/*.ts",

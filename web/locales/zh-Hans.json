@@ -759,20 +759,20 @@
     "text": "选择文件",
     "source": "3e10c3cd6e0d"
   },
-  "ui.attachments.download": {
-    "text": "下载",
-    "source": "d6eafe823591"
-  },
-  "ui.attachments.preview": {
-    "text": "预览图像",
-    "source": "190571956ca0"
-  },
-  "ui.attachments.previewError": {
-    "text": "无法显示图像。请下载原始文件。",
-    "source": "c8b3a7434d30"
-  },
   "ui.attachments.empty": {
     "text": "没有当前附件。",
     "source": "6d2a34c560f7"
+  },
+  "ui.previousPage": {
+    "text": "上一页",
+    "source": "1208ec01f223"
+  },
+  "ui.nextPage": {
+    "text": "下一页",
+    "source": "c08ac736a5e2"
+  },
+  "ui.documentPage": {
+    "text": "第 {page} 页，共 {count} 页",
+    "source": "e80db00f5ef1"
   }
 }

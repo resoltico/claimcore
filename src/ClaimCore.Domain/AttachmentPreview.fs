@@ -3,20 +3,16 @@ namespace ClaimCore.Domain
 open System
 open System.Buffers.Binary
 
-module AttachmentLimits =
-    [<Literal>]
-    let FileBytes = 26_214_400
-
-    [<Literal>]
-    let RetainedFiles = 100L
-
-    [<Literal>]
-    let RetainedBytes = 268_435_456L
+[<RequireQualifiedAccess>]
+type AttachmentPreviewCandidate =
+    | Raster
+    | Document
 
 [<RequireQualifiedAccess>]
 type AttachmentPreview =
     | Png
     | Jpeg
+    | Pdf
 
 module AttachmentPreview =
     [<Literal>]
@@ -24,6 +20,12 @@ module AttachmentPreview =
 
     [<Literal>]
     let MaximumPixels = 16_000_000UL
+
+    let candidate name =
+        match AttachmentName.suffix name |> Option.map _.ToLowerInvariant() with
+        | Some("png" | "jpg" | "jpeg") -> Some AttachmentPreviewCandidate.Raster
+        | Some "pdf" -> Some AttachmentPreviewCandidate.Document
+        | _ -> None
 
     let private bounded width height =
         width > 0u
@@ -227,9 +229,18 @@ module AttachmentPreview =
 
             valid && ended && offset = bytes.Length
 
-    /// A bounded single-raster profile. The browser still handles decoding and decode errors.
-    let classify (bytes: ReadOnlySpan<byte>) =
-        if bytes.Length > AttachmentLimits.FileBytes then None
-        elif png bytes then Some AttachmentPreview.Png
-        elif jpeg bytes then Some AttachmentPreview.Jpeg
-        else None
+    let private pdfSignature = [| 37uy; 80uy; 68uy; 70uy; 45uy |]
+
+    /// Rasters must fit the single-image profile. The browser still handles decoding and decode errors.
+    let classify candidate (bytes: ReadOnlySpan<byte>) =
+        if bytes.Length > AttachmentLimits.FileBytes then
+            None
+        else
+            match candidate with
+            | AttachmentPreviewCandidate.Raster when png bytes -> Some AttachmentPreview.Png
+            | AttachmentPreviewCandidate.Raster when jpeg bytes -> Some AttachmentPreview.Jpeg
+            | AttachmentPreviewCandidate.Document when
+                bytes.StartsWith(ReadOnlySpan<byte> pdfSignature)
+                ->
+                Some AttachmentPreview.Pdf
+            | _ -> None

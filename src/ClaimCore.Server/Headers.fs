@@ -2,33 +2,63 @@ namespace ClaimCore.Server
 
 open System
 open System.Threading.Tasks
+open ClaimCore.Wire
 open Microsoft.AspNetCore.Http
 
 module HttpHeaders =
     let private publicAssetKey = obj ()
     let private catalogKey = obj ()
     let private binaryKey = obj ()
+    let private viewerKey = obj ()
     let internal noTransform (context: HttpContext) = context.Items[binaryKey] <- box true
     let internal catalog (context: HttpContext) = context.Items[catalogKey] <- box true
 
     let internal publicAsset (context: HttpContext) =
         context.Items[publicAssetKey] <- box true
 
-    let private contentSecurityPolicy =
+    let internal viewer scriptHash styleHash (context: HttpContext) =
+        context.Items[viewerKey] <- box (scriptHash, styleHash)
+
+    let private contentSecurityPolicy frameSource =
         "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; "
         + "img-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; "
-        + "base-uri 'none'; frame-ancestors 'none'; frame-src 'none'; form-action 'self'; "
+        + "base-uri 'none'; frame-ancestors 'none'; frame-src "
+        + frameSource
+        + "; form-action 'self'; "
         + "manifest-src 'self'; media-src 'none'; worker-src 'none'"
 
-    let apply (context: HttpContext) =
+    let private viewerPolicy scriptHash styleHash =
+        $"sandbox allow-scripts; default-src 'none'; script-src 'sha256-{scriptHash}' 'wasm-unsafe-eval'; "
+        + $"style-src 'sha256-{styleHash}'; img-src blob: data:; connect-src 'none'; "
+        + "worker-src blob:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"
+
+    let internal apply (origin: Uri) (context: HttpContext) =
         let headers = context.Response.Headers
-        headers.ContentSecurityPolicy <- contentSecurityPolicy
+
+        match context.Items.TryGetValue viewerKey with
+        | true, (:? (string * string) as hashes) ->
+            let scriptHash, styleHash = hashes
+            headers.ContentSecurityPolicy <- viewerPolicy scriptHash styleHash
+            headers.Remove "X-Frame-Options" |> ignore
+        | _ ->
+            let frameSource =
+                if
+                    (context.Response.ContentType |> Option.ofObj)
+                    |> Option.exists (fun value ->
+                        value.StartsWith("text/html", StringComparison.OrdinalIgnoreCase))
+                then
+                    Uri(origin, AttachmentTransport.viewerPath).AbsoluteUri
+                else
+                    "'none'"
+
+            headers.ContentSecurityPolicy <- contentSecurityPolicy frameSource
+            headers.["X-Frame-Options"] <- "DENY"
+
         headers.XContentTypeOptions <- "nosniff"
         headers.["Referrer-Policy"] <- "no-referrer"
         headers.["Permissions-Policy"] <- "camera=(), geolocation=(), microphone=(), payment=()"
         headers.["Cross-Origin-Opener-Policy"] <- "same-origin"
         headers.["Cross-Origin-Resource-Policy"] <- "same-origin"
-        headers.["X-Frame-Options"] <- "DENY"
         headers.["X-Robots-Tag"] <- "noindex, nofollow"
 
     let noStore (context: HttpContext) =
@@ -38,10 +68,10 @@ module HttpHeaders =
         headers.Expires <- "0"
 
     /// Registered outermost: reverse callback order makes this the final owned policy.
-    let register (context: HttpContext) =
+    let register origin (context: HttpContext) =
         context.Response.OnStarting(
             Func<Task>(fun () ->
-                apply context
+                apply origin context
 
                 let publicResponse =
                     context.Items.ContainsKey publicAssetKey

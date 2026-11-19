@@ -579,7 +579,8 @@ module PresentationCodecs =
                             | _ -> None)
                             (record id |> field "request" id (CommandControlCodecs.forTask command))
                     ]
-            | ClientTaskKind.Query -> invalidOp "A query is not an action control."
+            | ClientTaskKind.Query
+            | ClientTaskKind.Binary -> invalidOp "A read is not an action control."
 
         let seeds =
             TaskInputId.all
@@ -652,7 +653,9 @@ module PresentationCodecs =
             |> field "blocked" _.Blocked (nullable advice)
 
         TaskDeclarations.all
-        |> List.filter (fun declaration -> declaration.Kind <> ClientTaskKind.Query)
+        |> List.filter (fun declaration ->
+            declaration.Kind = ClientTaskKind.Operation
+            || declaration.Kind = ClientTaskKind.Command)
         |> List.map (fun declaration ->
             variant
                 declaration.Id
@@ -798,14 +801,31 @@ module PresentationCodecs =
         |> field "current" _.Current (VocabularyCodec.create CaseStageKind.vocabulary)
         |> field "steps" _.Steps (list CaseStageKind.all.Length stage)
 
+    let private attachmentTransfer =
+        (record (fun kind label request name ->
+            {
+                Kind = kind
+                LabelId = label
+                Request = request
+                Name = name
+            })
+        : Fields<AttachmentTransferControl, _>)
+        |> field "kind" _.Kind (VocabularyCodec.create AttachmentRead.vocabulary)
+        |> field "labelId" _.LabelId key
+        |> field "request" _.Request AttachmentCodecs.request
+        |> field "name" _.Name AttachmentCodecs.name
+        |> build
+        |> named "AttachmentTransferControl"
+
     let private row =
-        (record (fun key values detail link actions ->
+        (record (fun key values detail link actions transfers ->
             {
                 RegionRow.Key = key
                 Values = values
                 Detail = detail
                 Link = link
                 Actions = defaultArg actions []
+                Transfers = defaultArg transfers []
             })
         : Fields<RegionRow, _>)
         |> field "key" _.Key key
@@ -816,6 +836,14 @@ module PresentationCodecs =
             "actions"
             (fun value -> if value.Actions.IsEmpty then None else Some value.Actions)
             actions
+        |> optionalField
+            "transfers"
+            (fun value ->
+                if value.Transfers.IsEmpty then
+                    None
+                else
+                    Some value.Transfers)
+            (list AttachmentRead.all.Length attachmentTransfer)
         |> build
         |> named "RegionRow"
 

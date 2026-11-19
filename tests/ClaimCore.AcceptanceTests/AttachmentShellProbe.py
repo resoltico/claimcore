@@ -1,4 +1,4 @@
-"""Check already accepted and fresh withdrawals through the published terminal shell."""
+"""Check attachment refusals and withdrawal retries in the published terminal shell."""
 
 import os
 import shlex
@@ -7,7 +7,7 @@ import sys
 from ShellTerminalProbe import Terminal
 
 
-def run(cli, reference, case_id, attachment, accepted, fresh):
+def run(cli, reference, case_id, attachment, accepted, fresh, blocked_path, blocked_id):
     terminal = Terminal(cli, os.environ)
 
     def command(arguments, expected):
@@ -33,6 +33,12 @@ def run(cli, reference, case_id, attachment, accepted, fresh):
             ["attachment", "withdraw", reference, attachment, "--operation-id", fresh],
             2,
         )
+        start = terminal.offset
+        terminal.command(shlex.join([
+            "attachment", "add", reference, "--file", blocked_path, "--operation-id", blocked_id,
+        ]).encode(), 2)
+        rendered = terminal.output[start:terminal.offset].lower()
+        assert b"files of this type can run programs" in rendered, "Expected Core type refusal"
         terminal.send(b"exit\n")
         terminal.finish(0)
     finally:

@@ -24,7 +24,8 @@ module EndpointInputs =
     let memberName (declaration: EndpointDeclaration) input =
         match declaration.Kind with
         | EndpointKind.Command -> TaskInputId.token input
-        | EndpointKind.Query -> queryMember input
+        | EndpointKind.Query
+        | EndpointKind.Binary -> queryMember input
 
     /// Codec structure and use-case declarations independently describe the same request boundary.
     let check id (codec: Codec<'input>) =

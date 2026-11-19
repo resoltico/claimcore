@@ -412,26 +412,7 @@ module ReceiptScreen =
                         Prominence.Primary
                         (ActorPresentation.authorityValue receipt.RecordedBy)
                  ]
-                 @ knownTarget
-                 @ (match receipt.Subject with
-                    | ReceiptSubject.Attachment attachment ->
-                        [
-                            value
-                                "attachmentCaseId"
-                                "input.caseId.label"
-                                Prominence.Detail
-                                (PresentedValue.Identifier(CaseId.format attachment.CaseId))
-                            if
-                                attachment.Snapshot <> AttachmentDisclosure.Erased
-                                && not (TaskConsequences.declaration attachment.Act).Creates
-                            then
-                                value
-                                    "attachmentDisclosure"
-                                    "label.attachmentDisclosure"
-                                    Prominence.Detail
-                                    (PresentedValue.Count(Sequence.value receipt.Position.Sequence))
-                        ]
-                    | _ -> []))
+                 @ knownTarget)
         ]
 
     /// Host session presentation contains no antiforgery-token value.

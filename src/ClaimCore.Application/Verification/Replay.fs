@@ -111,8 +111,7 @@ module internal Replay =
                                     AttachmentIntent.length stored.Intent =
                                         AttachmentIntent.length descriptor.Intent
                                     && AttachmentIntent.digest stored.Intent =
-                                        AttachmentIntent.digest descriptor.Intent
-                                    && stored.Preview = descriptor.Preview)))
+                                        AttachmentIntent.digest descriptor.Intent)))
                     | true, None -> true
                     | false, None ->
                         current.Origins |> Map.exists (fun _ origin -> origin.IntroducesBlob)

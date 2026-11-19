@@ -277,7 +277,7 @@ let private attachments () =
     for path, expectedMedia in
         [
             "/api/attachment.download", [ "application/octet-stream" ]
-            "/api/attachment.preview", [ "image/png"; "image/jpeg" ]
+            "/api/attachment.preview", [ "image/png"; "image/jpeg"; "application/pdf" ]
         ] do
         let response = operation path |> child "responses" |> child "200"
         let media = response |> child "content"
@@ -312,6 +312,24 @@ let private attachments () =
         Expect.isFalse
             (evaluate validator success.RootElement)
             "JSON cannot masquerade as binary success."
+
+        if path = "/api/attachment.download" then
+            let disposition =
+                headers
+                |> child "Content-Disposition"
+                |> child "schema"
+                |> _.ToJsonString()
+                |> Utf8SchemaValidation.build
+
+            for header, admits in
+                [
+                    "attachment; filename*=UTF-8''R%C3%A9sum%C3%A9.pdf", true
+                    "attachment; filename=\"resume.pdf\"; filename*=UTF-8''R%C3%A9sum%C3%A9.pdf",
+                    false
+                    "attachment; filename*=UTF-8''broken%XX.pdf", false
+                ] do
+                use value = JsonDocument.Parse(JsonSerializer.Serialize header)
+                Expect.equal (evaluate disposition value.RootElement) admits header
 
 [<Tests>]
 let tests =

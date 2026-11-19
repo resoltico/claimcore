@@ -112,6 +112,8 @@ module internal WebWire =
                 AttachmentTransport.pngMediaType, None
             | AttachmentTransfer.Preview, Some AttachmentPreview.Jpeg ->
                 AttachmentTransport.jpegMediaType, None
+            | AttachmentTransfer.Preview, Some AttachmentPreview.Pdf ->
+                AttachmentTransport.pdfMediaType, None
             | _ -> invalidOp "An attachment response requires a confirmed transfer media type."
 
         CompleteAttachmentResult(content.Bytes, mediaType, disposition, installation) :> IResult

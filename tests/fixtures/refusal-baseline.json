@@ -827,6 +827,10 @@
           "code": "ATTACHMENT_NAME_INVALID"
         },
         {
+          "field": "attachmentName",
+          "code": "ATTACHMENT_TYPE_REFUSED"
+        },
+        {
           "field": "attachmentLength",
           "code": "ATTACHMENT_LENGTH_INVALID"
         },
@@ -852,6 +856,11 @@
     {
       "code": "ATTACHMENT_CAPACITY_REACHED",
       "action": "ReadCurrent",
+      "target": null
+    },
+    {
+      "code": "ATTACHMENT_PREVIEW_UNAVAILABLE",
+      "action": "NoneRequired",
       "target": null
     }
   ]

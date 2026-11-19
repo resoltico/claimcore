@@ -163,12 +163,9 @@ module internal MessageCatalogs =
                     value ExitCode.Cancelled
                 ))
         | HelpTopic.Verbs ->
-            CommandGrammar.operations
+            CommandGrammar.verbs
             |> List.map (fun operation ->
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation)
-            |> fun commands ->
-                commands
-                @ [ CliIdentity.programName + " " + CommandGrammar.attachmentDownloadSynopsis ]
             |> String.concat "\n"
             |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 

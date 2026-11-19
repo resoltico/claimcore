@@ -313,6 +313,7 @@ let tests =
                     let document =
                         {
                             HumanDocument.Subject = DocumentSubject.List
+                            AttachmentObservation = None
                             Screen =
                                 Screen.create
                                     [

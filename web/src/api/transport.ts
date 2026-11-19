@@ -23,3 +23,13 @@ export const getCatalogHttp = (language: string, signal: AbortSignal): Promise<R
     headers: { Accept: "application/json" },
     signal,
   });
+
+export const getAttachmentPreviewResourceHttp = (
+  path: string,
+  signal: AbortSignal,
+): Promise<Response> =>
+  fetch(path, {
+    credentials: "omit",
+    redirect: "error",
+    signal,
+  });

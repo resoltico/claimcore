@@ -69,7 +69,7 @@ let private bodyDeadline () =
 
 let private headers () =
     let context = DefaultHttpContext()
-    HttpHeaders.apply context
+    HttpHeaders.apply (Uri "https://localhost:5443") context
     HttpHeaders.noStore context
 
     Expect.equal

@@ -40,6 +40,14 @@ let intent inputs =
             nameAndCount
             digest
 
+let admissible inputs =
+    intent inputs
+    |> Result.bind (fun parsed ->
+        if AttachmentType.refused (AttachmentIntent.name parsed) then
+            Error(Parsing.issue InputTarget.AttachmentName Violation.AttachmentTypeRefused)
+        else
+            Ok parsed)
+
 let canonicalInputs (inputs: InputMap) intent =
     let values =
         inputs.Values

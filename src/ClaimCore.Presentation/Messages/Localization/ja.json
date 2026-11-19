@@ -4019,6 +4019,10 @@
     "text": "対応する名前のファイルを選択してください。",
     "source": "f1d655317805"
   },
+  "diagnostic.ATTACHMENT_TYPE_REFUSED": {
+    "text": "この種類のファイルはプログラムを実行できるため、添付できません。案件に必要な場合は、ファイルをアーカイブに入れてください。",
+    "source": "20ba6ec4e964"
+  },
   "diagnostic.ATTACHMENT_LENGTH_INVALID": {
     "text": "ファイルサイズは 25 MiB 以下にしてください。",
     "source": "8b03ed678e72"
@@ -4038,6 +4042,10 @@
   "diagnostic.ATTACHMENT_DUPLICATE": {
     "text": "このファイルはすでに案件に添付されています。",
     "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE": {
+    "text": "この添付ファイルはプレビューできません。",
+    "source": "a75175457556"
   },
   "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
     "text": "案件の添付ファイル保存上限に達しました。",
@@ -4063,12 +4071,20 @@
     "text": "添付ファイルの変更を記録しました。",
     "source": "9c5ab3a2b28f"
   },
-  "label.attachmentPreview": {
-    "text": "画像プレビュー",
-    "source": "f09247433bef"
+  "endpoint.attachment.download.label": {
+    "text": "ダウンロード",
+    "source": "d6eafe823591"
   },
-  "label.attachmentDisclosure": {
-    "text": "添付ファイル記録の位置",
-    "source": "02ce853f42c9"
+  "endpoint.attachment.download.meaning": {
+    "text": "現在の添付ファイルをファイルに保存します。",
+    "source": "6ff0b4d23f78"
+  },
+  "endpoint.attachment.preview.label": {
+    "text": "プレビュー",
+    "source": "324b134f57c7"
+  },
+  "endpoint.attachment.preview.meaning": {
+    "text": "現在の添付ファイルをワークスペース内で表示します。",
+    "source": "5e943e102857"
   }
 }

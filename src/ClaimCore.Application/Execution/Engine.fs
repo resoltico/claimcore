@@ -106,13 +106,7 @@ module internal Engine =
                         | None -> AttachmentStorage.usage tx caseId
 
                     let admit introduces blob payload =
-                        let preview = AttachmentPreview.classify (VerifiedAttachment.bytes verified)
-
-                        let descriptor =
-                            { descriptor with
-                                Blob = blob
-                                Preview = preview
-                            }
+                        let descriptor = { descriptor with Blob = blob }
 
                         let accepted =
                             { change with

@@ -6,6 +6,24 @@ open ClaimCore.Domain
 type EndpointKind =
     | Query
     | Command
+    | Binary
+
+[<RequireQualifiedAccess>]
+type AttachmentRead =
+    | Download
+    | Preview
+
+module AttachmentRead =
+    let vocabulary =
+        Vocabulary.ofUnion<AttachmentRead> "attachmentRead" TokenCasing.ScreamingSnake None
+
+    let all = [ AttachmentRead.Download; AttachmentRead.Preview ]
+
+    let offered previewCandidate =
+        if previewCandidate then
+            all
+        else
+            [ AttachmentRead.Download ]
 
 /// These are use-case bounds, shared by transport admission and command acquisition.
 type EndpointPage =
@@ -25,6 +43,8 @@ type EndpointDeclaration =
     }
 
     member this.Paged = this.Page.IsSome
+    member this.LabelId = "endpoint." + this.Id + ".label"
+    member this.MeaningId = "endpoint." + this.Id + ".meaning"
 
 module EndpointDeclarations =
     let private required input =
@@ -206,7 +226,21 @@ module EndpointDeclarations =
                 Csv = false
             })
 
-    let all = queries @ commands
+    let attachmentRead transfer =
+        let id =
+            match transfer with
+            | AttachmentRead.Download -> "attachment.download"
+            | AttachmentRead.Preview -> "attachment.preview"
+
+        {
+            Id = id
+            Kind = EndpointKind.Binary
+            Inputs = [ caseTarget; required (target InputTarget.AttachmentId) ]
+            Page = None
+            Csv = false
+        }
+
+    let all = queries @ commands @ List.map attachmentRead AttachmentRead.all
 
     let private byId =
         all |> List.map (fun declaration -> declaration.Id, declaration) |> Map.ofList

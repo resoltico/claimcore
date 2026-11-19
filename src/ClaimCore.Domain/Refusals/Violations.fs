@@ -18,6 +18,7 @@ type Violation =
     | NoteIdRequired
     | AttachmentIdRequired
     | AttachmentNameInvalid
+    | AttachmentTypeRefused
     | AttachmentLengthInvalid
     | AttachmentDigestInvalid
     | AttachmentPayloadRequired

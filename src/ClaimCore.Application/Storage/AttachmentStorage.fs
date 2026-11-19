@@ -205,14 +205,11 @@ module internal AttachmentStorage =
 
     let read tx caseId (descriptor: AttachmentDescriptor) =
         task {
-            let! origin, bytes = storedBytes tx caseId descriptor.Blob descriptor.Intent
+            let! _, bytes = storedBytes tx caseId descriptor.Blob descriptor.Intent
 
-            if origin.Preview <> descriptor.Preview then
-                return corrupt ()
-            else
-                return
-                    VerifiedAttachment.verify descriptor.Intent (ReadOnlyMemory bytes)
-                    |> Option.defaultWith corrupt
+            return
+                VerifiedAttachment.verify descriptor.Intent (ReadOnlyMemory bytes)
+                |> Option.defaultWith corrupt
         }
 
     let findMatch (tx: ReadTx) caseId verified =
@@ -378,16 +375,8 @@ module internal AttachmentStorage =
                                 matches <- false
                             else
                                 use stream = reader.GetStream 8
-                                // SequentialAccess keeps the provider from buffering the row. One
-                                // bounded file is needed to corroborate the recorded preview profile.
-                                let bytes = Array.zeroCreate (int length)
-                                do! stream.ReadExactlyAsync(Memory bytes, token)
-                                let actualDigest = SHA256.HashData(ReadOnlySpan<byte> bytes)
-
-                                matches <-
-                                    actualDigest = digest
-                                    && AttachmentPreview.classify (ReadOnlySpan<byte> bytes) =
-                                        descriptor.Preview
+                                let! actualDigest = SHA256.HashDataAsync(stream, token)
+                                matches <- actualDigest = digest
                         | None ->
                             matches <-
                                 reader.IsDBNull 4

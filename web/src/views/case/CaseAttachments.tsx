@@ -1,5 +1,7 @@
 import {
+  attachmentTransport,
   clientCompositions,
+  type AttachmentTransferControl,
   type CaseSelector,
   type HumanDocument,
   type RegionRow,
@@ -21,7 +23,6 @@ import {
   isAttachmentDisclosureRefused,
   requestAttachment,
 } from "../../api/attachments";
-import { attachmentDisclosureOf } from "../../api/attachmentDisclosure";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { apiEndpoints, type CurrentCase } from "../../api/service";
 import { PresentedValue } from "../../components/PresentedValue";
@@ -38,11 +39,13 @@ import { ownerScope, type OwnerScope } from "../../protocol/ownerScope";
 import { useSessionContext } from "../../session/SessionContext";
 import { Actions } from "../../ui/regions/Actions";
 import { Button } from "../../ui/Button";
+import { DocumentPreview } from "./pdf/DocumentPreview";
 import "./attachments.css";
 
 type CapturedFile = Awaited<ReturnType<typeof captureAttachment>>;
-type Preview = { id: string; name: string; url: string; error: boolean };
-type TransferKind = "download" | "preview";
+type Preview = { id: string; generation: number; labelId: string } & (
+  { kind: "image"; name: string; url: string; error: boolean } | { kind: "pdf"; bytes: ArrayBuffer }
+);
 type Props = {
   current: CurrentCase;
   editing: boolean;
@@ -53,11 +56,6 @@ type Props = {
   onDisclosureChanged: () => void;
 };
 type Target = Extract<CaseSelector, { kind: "ID" }>;
-const previewOffered = (row: RegionRow): boolean =>
-  [...(row.detail?.highlights ?? []), ...(row.detail?.sections ?? [])]
-    .flatMap((section) => section.entries)
-    .some(({ key, value }) => key === "canPreview" && value.kind === "COUNT" && value.value === 1);
-
 const downloadFile = (bytes: Uint8Array<ArrayBuffer>, mediaType: string, name: string) => {
   const url = URL.createObjectURL(new Blob([bytes], { type: mediaType }));
   const link = document.createElement("a");
@@ -78,7 +76,7 @@ const downloadFile = (bytes: Uint8Array<ArrayBuffer>, mediaType: string, name: s
 const useAttachmentDisclosure = (selectedCase: string, document: HumanDocument | null) => {
   const cache = useEndpointCache()!;
   useSyncExternalStore(cache.subscribeInvalidation, cache.invalidation, cache.invalidation);
-  const candidate = document === null ? null : attachmentDisclosureOf(document);
+  const candidate = document?.attachmentObservation;
   const sequence =
     candidate?.caseId === selectedCase && !cache.attachmentsErased(selectedCase)
       ? candidate.sequence
@@ -157,6 +155,7 @@ const useAttachmentInteraction = (
   const alive = useRef(true);
   const active = useRef<AbortController | null>(null);
   const url = useRef<string | null>(null);
+  const generation = useRef(0);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -211,32 +210,40 @@ const useAttachmentInteraction = (
     return true;
   };
   const deliver = (
-    kind: TransferKind,
-    attachmentId: string,
-    name: string,
+    control: AttachmentTransferControl,
     file: { bytes: Uint8Array<ArrayBuffer>; mediaType: string },
   ) => {
     const { bytes, mediaType } = file;
-    if (kind === "download") {
+    const {
+      kind,
+      name,
+      labelId,
+      request: { attachmentId: id },
+    } = control;
+    if (kind === "DOWNLOAD") {
       downloadFile(bytes, mediaType, name);
-    } else {
-      const next = URL.createObjectURL(new Blob([bytes], { type: mediaType }));
-      url.current = next;
-      setPreview({ id: attachmentId, name, url: next, error: false });
+      return;
     }
+    const presentation = { id, labelId, generation: ++generation.current };
+    if (mediaType === attachmentTransport.pdfMediaType) {
+      setPreview({ ...presentation, kind: "pdf", bytes: bytes.buffer });
+      return;
+    }
+    const next = URL.createObjectURL(new Blob([bytes], { type: mediaType }));
+    url.current = next;
+    setPreview({ ...presentation, kind: "image", name, url: next, error: false });
   };
-  const receive = async (kind: TransferKind, attachmentId: string, name: string) => {
+  const receive = async (control: AttachmentTransferControl, element: Element) => {
     const request = begin();
     if (request === null) {
       return;
     }
-    const element = document.activeElement;
     trigger.current = element instanceof HTMLElement ? element : null;
 
     const result = await requestAttachment(
-      kind,
-      { target, attachmentId },
-      name,
+      control.kind,
+      control.request,
+      control.name,
       credential,
       owner,
       currentOwner,
@@ -247,15 +254,29 @@ const useAttachmentInteraction = (
     }
     const feedback = attachmentNotice(result);
     if (feedback !== null && isAttachmentDisclosureRefused(result)) {
+      close();
       onRefusal(feedback);
       return;
     }
     setNotice(feedback);
     if (result.kind === "outcome" && result.value.kind === "RECEIVED") {
       try {
-        deliver(kind, attachmentId, name, result.value.file);
+        deliver(control, result.value.file);
       } catch {
-        setNotice(localNotice("downloadFailed"));
+        const failed =
+          control.kind === "DOWNLOAD"
+            ? localNotice("downloadFailed")
+            : {
+                kind: "human" as const,
+                advice: {
+                  message: {
+                    messageId: "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE",
+                    arguments: [],
+                  },
+                  action: "NONE_REQUIRED" as const,
+                },
+              };
+        setNotice(failed);
       }
     }
   };
@@ -275,7 +296,7 @@ const useAttachmentInteraction = (
       }
     }
   };
-  const decodeError = (value: Preview) => {
+  const decodeError = (value: Extract<Preview, { kind: "image" }>) => {
     if (url.current === value.url) {
       releaseUrl();
       setPreview({ ...value, error: true });
@@ -285,12 +306,41 @@ const useAttachmentInteraction = (
 };
 type Interaction = ReturnType<typeof useAttachmentInteraction>;
 
-const ImagePreview = ({ preview, interaction }: { preview: Preview; interaction: Interaction }) => {
+const AttachmentPreview = ({
+  preview,
+  interaction,
+}: {
+  preview: Preview;
+  interaction: Interaction;
+}) => {
   const p = usePresentation();
+  const unavailable = renderCatalogKey(p, "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE");
   const control = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     control.current?.focus();
   }, []);
+  const body = () => {
+    if (preview.kind === "pdf") {
+      return (
+        <DocumentPreview
+          bytes={preview.bytes}
+          title={renderCatalogKey(p, preview.labelId)}
+          unavailable={unavailable}
+        />
+      );
+    }
+    return preview.error ? (
+      <p role="alert">{unavailable}</p>
+    ) : (
+      <img
+        alt={preview.name}
+        src={preview.url}
+        onError={() => {
+          interaction.decodeError(preview);
+        }}
+      />
+    );
+  };
   return (
     <div className="attachment-preview">
       <button
@@ -302,60 +352,37 @@ const ImagePreview = ({ preview, interaction }: { preview: Preview; interaction:
       >
         {p.text("ui.close")}
       </button>
-      {preview.error ? (
-        <p role="alert">{p.text("ui.attachments.previewError")}</p>
-      ) : (
-        <img
-          alt={preview.name}
-          src={preview.url}
-          onError={() => {
-            interaction.decodeError(preview);
-          }}
-        />
-      )}
+      {body()}
     </div>
   );
 };
 const AttachmentControls = ({
   row,
-  name,
   interaction,
   editing,
   onWithdraw,
 }: {
   row: RegionRow;
-  name: string;
   interaction: Interaction;
   editing: boolean;
   onWithdraw: Props["onWithdraw"];
 }) => {
   const p = usePresentation();
   const { busy } = interaction;
-  const start = (kind: TransferKind) => {
-    void interaction.receive(kind, row.key, name);
-  };
   return (
     <div className="attachment-actions">
-      <Button
-        variant="secondary"
-        isDisabled={busy}
-        onPress={() => {
-          start("download");
-        }}
-      >
-        {p.text("ui.attachments.download")}
-      </Button>
-      {previewOffered(row) ? (
+      {row.transfers?.map((transfer) => (
         <Button
+          key={transfer.kind}
           variant="secondary"
           isDisabled={busy}
-          onPress={() => {
-            start("preview");
+          onPress={({ target }) => {
+            void interaction.receive(transfer, target);
           }}
         >
-          {p.text("ui.attachments.preview")}
+          {renderCatalogKey(p, transfer.labelId)}
         </Button>
-      ) : null}
+      ))}
       {editing || busy ? null : (
         <Actions
           actions={row.actions ?? []}
@@ -388,8 +415,6 @@ type AttachmentRowProps = {
 };
 const AttachmentRow = ({ row, columns, zone, interaction, ...controls }: AttachmentRowProps) => {
   const p = usePresentation();
-  const filename = row.values[columns.findIndex(({ key }) => key === "attachmentName")];
-  const name = filename?.kind === "NARRATIVE" ? filename.value : null;
   const { preview } = interaction;
   return (
     <li>
@@ -406,11 +431,9 @@ const AttachmentRow = ({ row, columns, zone, interaction, ...controls }: Attachm
           );
         })}
       </dl>
-      {name === null ? null : (
-        <AttachmentControls {...controls} row={row} name={name} interaction={interaction} />
-      )}
+      <AttachmentControls {...controls} row={row} interaction={interaction} />
       {preview === null || preview.id !== row.key ? null : (
-        <ImagePreview key={preview.url} preview={preview} interaction={interaction} />
+        <AttachmentPreview key={preview.generation} preview={preview} interaction={interaction} />
       )}
     </li>
   );

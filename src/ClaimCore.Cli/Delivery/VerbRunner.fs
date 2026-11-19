@@ -493,9 +493,16 @@ module internal VerbRunner =
         }
 
 
-    let private download saveAttachment io (processor: RemoteFrameProcessor) arguments token =
+    let private download
+        saveAttachment
+        io
+        (processor: RemoteFrameProcessor)
+        operation
+        arguments
+        token
+        =
         task {
-            match Grammar.prepareAttachmentDownload arguments with
+            match Grammar.prepareAttachmentDownload operation arguments with
             | Error problems ->
                 CliDiscovery.writeText
                     io.Errors
@@ -541,9 +548,9 @@ module internal VerbRunner =
         }
 
     let runWithCompletion saveAttachment io processor arguments token =
-        if CommandGrammar.attachmentDownload arguments then
-            download saveAttachment io processor arguments token
-        else
+        match CommandGrammar.tryBinaryRead arguments with
+        | Some operation -> download saveAttachment io processor operation arguments token
+        | None ->
             task {
                 let! code = runVerb io processor arguments token
                 return VerbCompletion.Completed code

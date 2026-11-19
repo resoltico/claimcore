@@ -107,6 +107,7 @@ let tests =
                                         Link = None
                                         Actions = []
                                         Key = "entity-7"
+                                        Transfers = []
                                         Values = [ PresentedValue.Count 7L ]
                                         Detail = None
                                     }

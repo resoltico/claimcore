@@ -32,6 +32,7 @@ let invalidTables =
                 Link = None
                 Actions = []
                 RegionRow.Key = key
+                Transfers = []
                 Values = values
                 Detail = None
             }

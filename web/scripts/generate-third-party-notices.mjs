@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { decoderLicenses } from "./attachment-viewer.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const webDirectory = resolve(scriptDirectory, "..");
@@ -35,7 +36,9 @@ const dependencies = Object.entries(inventory)
   });
 
 const grouped = Map.groupBy(dependencies, (dependency) => dependency.licenseText);
-const notice = Array.from(grouped, ([licenseText, packages]) =>
+const separator =
+  "\n\n--------------------------------------------------------------------------------\n\n";
+const packageNotices = Array.from(grouped, ([licenseText, packages]) =>
   [
     ...packages.flatMap(({ name, licenses, repository }) => [
       `Package: ${name}`,
@@ -45,7 +48,14 @@ const notice = Array.from(grouped, ([licenseText, packages]) =>
     ]),
     licenseText,
   ].join("\n"),
-).join("\n\n--------------------------------------------------------------------------------\n\n");
+);
+const resourceNotices = decoderLicenses.map((path) => {
+  const asset = path.pathname.endsWith("/cmaps/LICENSE")
+    ? "Adobe CMaps (BSD-3-Clause)"
+    : path.pathname.split("/").at(-1);
+  return `PDF preview resource: ${asset}\n\n${readFileSync(path, "utf8").trim()}`;
+});
+const notice = [...packageNotices, ...resourceNotices].join(separator);
 
 const header = [
   "ClaimCore Web — third-party notices",

@@ -3,12 +3,61 @@ namespace ClaimCore.Server
 open System
 open System.IO
 open System.Security.Cryptography
+open System.Text
 open System.Text.Json
+open System.Text.RegularExpressions
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 
 /// A process serves the exact verified public bytes captured from its published build inventory.
 module internal PublicAssets =
+    type Viewer =
+        {
+            Bytes: byte array
+            ScriptHash: string
+            StyleHash: string
+        }
+
+    let private digest bytes =
+        Convert.ToHexStringLower(SHA256.HashData(bytes: byte array))
+
+    let private readViewer directory (inventory: JsonElement) =
+        let viewer = inventory.GetProperty "viewer"
+        let bytes = File.ReadAllBytes(Path.Combine(directory, "attachment-preview.viewer"))
+
+        if digest bytes <> (viewer.GetProperty("sha256").GetString() |> nonNull) then
+            invalidOp "The published attachment viewer differs from its inventory."
+
+        let html = UTF8Encoding(false, true).GetString bytes
+
+        let hash tag (key: string) =
+            let blocks =
+                Regex.Matches(
+                    html,
+                    $"<{tag}>([\\s\\S]*?)</{tag}>",
+                    RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+                )
+
+            if blocks.Count <> 1 then
+                invalidOp "The published attachment viewer is missing its unique inline block."
+
+            let content = blocks[0].Groups[1].Value
+
+            let actual =
+                content |> Encoding.UTF8.GetBytes |> SHA256.HashData |> Convert.ToBase64String
+
+            if actual <> (viewer.GetProperty(key).GetString() |> nonNull) then
+                invalidOp
+                    "The published attachment viewer inline content differs from its inventory."
+
+            actual
+
+        {
+            Bytes = bytes
+            ScriptHash = hash "script" "scriptSha256"
+            StyleHash = hash "style" "styleSha256"
+        }
+
     type private Asset =
         {
             Bytes: byte array
@@ -25,6 +74,8 @@ module internal PublicAssets =
         | ".png" -> "image/png"
         | ".webp" -> "image/webp"
         | ".woff2" -> "font/woff2"
+        | ".bcmap" -> "application/octet-stream"
+        | ".wasm" -> "application/wasm"
         | _ -> invalidOp "Unsupported public build asset."
 
     let private load directory =
@@ -32,46 +83,49 @@ module internal PublicAssets =
         let manifest = Path.Combine(directory, "public-assets.json")
         use document = JsonDocument.Parse(File.ReadAllBytes manifest)
 
-        if document.RootElement.GetProperty("schema").GetInt32() <> 1 then
+        if document.RootElement.GetProperty("schema").GetInt32() <> 2 then
             invalidOp "Unsupported public inventory."
 
-        document.RootElement.GetProperty("assets").EnumerateArray()
-        |> Seq.map (fun item ->
-            let path = item.GetProperty("path").GetString() |> nonNull
-            let expected = item.GetProperty("sha256").GetString() |> nonNull
-            let file = Path.GetFullPath(Path.Combine(directory, path.TrimStart('/')))
+        let viewer = readViewer directory document.RootElement
 
-            if
-                not (
-                    path.StartsWith("/assets/", StringComparison.Ordinal)
-                    || path = "/react-aria-pressable.css"
-                    || path.StartsWith("/locales/", StringComparison.Ordinal)
-                )
-                || not (file.StartsWith(root, StringComparison.Ordinal))
-            then
-                invalidOp "Invalid public build path."
+        let assets =
+            document.RootElement.GetProperty("assets").EnumerateArray()
+            |> Seq.map (fun item ->
+                let path = item.GetProperty("path").GetString() |> nonNull
+                let expected = item.GetProperty("sha256").GetString() |> nonNull
+                let file = Path.GetFullPath(Path.Combine(directory, path.TrimStart('/')))
 
-            let bytes = File.ReadAllBytes file
-            let hash = Convert.ToHexStringLower(SHA256.HashData bytes)
+                if
+                    not (
+                        path.StartsWith("/assets/", StringComparison.Ordinal)
+                        || path = "/react-aria-pressable.css"
+                        || path.StartsWith("/locales/", StringComparison.Ordinal)
+                    )
+                    || not (file.StartsWith(root, StringComparison.Ordinal))
+                then
+                    invalidOp "Invalid public build path."
 
-            if hash <> expected then
-                invalidOp "Public build content identity differs."
+                let bytes = File.ReadAllBytes file
+                let hash = digest bytes
 
-            path,
-            {
-                Bytes = bytes
-                ContentType = mediaType file
-                ETag = "\"" + hash + "\""
-            })
-        |> Seq.toList
-        |> fun assets ->
-            if assets.Length <> (assets |> List.map fst |> Set.ofList |> Set.count) then
-                invalidOp "Duplicate public build path."
+                if hash <> expected then
+                    invalidOp "Public build content identity differs."
 
-            Map.ofList assets
+                path,
+                {
+                    Bytes = bytes
+                    ContentType = mediaType file
+                    ETag = "\"" + hash + "\""
+                })
+            |> Seq.toList
+
+        if assets.Length <> (assets |> List.map fst |> Set.ofList |> Set.count) then
+            invalidOp "Duplicate public build path."
+
+        Map.ofList assets, viewer
 
     type Inventory(directory: string) =
-        let assets =
+        let assets, viewer =
             try
                 load directory
             with _ ->
@@ -79,6 +133,8 @@ module internal PublicAssets =
 
         member _.TryRead path =
             assets |> Map.tryFind path |> Option.map _.Bytes
+
+        member _.Viewer = viewer
 
         member _.Serve(context: HttpContext, next: RequestDelegate) : Task =
             task {

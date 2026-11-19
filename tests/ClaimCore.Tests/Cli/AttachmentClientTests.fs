@@ -13,6 +13,8 @@ open ClaimCore.Cli
 open ClaimCore.Wire
 open ClaimCore.Domain
 
+let private expectedName = AttachmentName.parse "Résumé.txt" |> Option.get
+let private disposition = "attachment; filename*=UTF-8''R%C3%A9sum%C3%A9.txt"
 let private bytes = Encoding.UTF8.GetBytes "abc"
 let private digest = "sha-256=:ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=:"
 let private installation = Guid.Parse "f43a4a58-f27a-4f13-9ed1-b102d46f9ce7"
@@ -29,10 +31,7 @@ let private response () =
     message.Content.Headers.ContentType <-
         MediaTypeHeaderValue AttachmentTransport.downloadMediaType
 
-    message.Content.Headers.TryAddWithoutValidation(
-        "Content-Disposition",
-        "attachment; filename=\"evidence.txt\"; filename*=UTF-8''evidence.txt"
-    )
+    message.Content.Headers.TryAddWithoutValidation("Content-Disposition", disposition)
     |> ignore
 
     message
@@ -43,7 +42,7 @@ let private received header change =
         change value
 
         let! result =
-            AttachmentBinaryCall.receive header value CancellationToken.None
+            AttachmentBinaryCall.receive header expectedName value CancellationToken.None
             |> Async.AwaitTask
 
         return result
@@ -209,6 +208,31 @@ let tests =
                         Expect.isFalse (File.Exists notWritten) "Cancelled work has no destination"
                     finally
                         directory.Delete true)
+            testCase
+                "binary downloads derive the public command and required output help"
+                (fun () ->
+                    let output =
+                        Discovery.commandHelp
+                            (RenderingContext.forLanguage "en")
+                            [ "attachment"; "download" ]
+                        |> Option.defaultWith (fun () ->
+                            failtest "Attachment download help must be available.")
+
+                    for text in
+                        [
+                            "Download"
+                            "Save the current attachment to a file."
+                            "attachment download"
+                            "--output PATH"
+                            "ATTACHMENT-ID"
+                            "CASE-REFERENCE"
+                        ] do
+                        Expect.stringContains
+                            output
+                            text
+                            "Help renders the declared transfer with CLI output syntax"
+
+                    Expect.isFalse (output.Contains "[--output PATH]") "Output is required")
             testCaseAsync
                 "verified transfer requires the confirmed installation, digest and exact bytes"
                 (async {
@@ -240,16 +264,31 @@ let tests =
 
                     Expect.isError longContent "Overlong body refuses"
 
-                    let! hostileName =
-                        received installation (fun value ->
-                            value.Content.Headers.Remove "Content-Disposition" |> ignore
+                    let withDisposition (disposition: string) (value: HttpResponseMessage) =
+                        value.Content.Headers.Remove "Content-Disposition" |> ignore
 
-                            value.Content.Headers.Add(
-                                "Content-Disposition",
-                                "attachment; filename=\"evidence.txt\"; filename*=UTF-8''..%2Fevidence.txt"
-                            ))
+                        value.Content.Headers.TryAddWithoutValidation(
+                            "Content-Disposition",
+                            disposition
+                        )
+                        |> ignore
 
-                    Expect.isError hostileName "Invalid basename refuses"
+                    let! otherCanonicalName =
+                        received
+                            installation
+                            (withDisposition "attachment; filename*=UTF-8''different.txt")
+
+                    Expect.isError
+                        otherCanonicalName
+                        "A canonical header for a different attachment name refuses"
+
+                    let! fallback =
+                        received
+                            installation
+                            (withDisposition
+                                "attachment; filename=Rsum.txt; filename*=UTF-8''R%C3%A9sum%C3%A9.txt")
+
+                    Expect.isError fallback "An additional ASCII filename refuses"
                 })
             match
                 Environment.GetEnvironmentVariable "CLAIMCORE_ATTACHMENT_TEST_NO_HARDLINK_DIRECTORY"

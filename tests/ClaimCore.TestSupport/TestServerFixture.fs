@@ -125,7 +125,7 @@ let private pipeline assets (application: WebApplication) sink readiness =
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(fun context next ->
             context.Connection.RemoteIpAddress <- IPAddress.Loopback
-            HttpHeaders.register context
+            HttpHeaders.register origin context
             next.Invoke context)
     )
     |> ignore
@@ -184,6 +184,48 @@ let private login (context: HttpContext) : Task =
         context.Response.StatusCode <- 200
     }
 
+let publishedInventory directory (buildAssets: (string * byte array) list) =
+    let sha256 (bytes: byte array) = SHA256.HashData bytes
+    let script = "document.querySelector('canvas').width = 1;"
+    let style = "canvas { display: block; }"
+
+    let html =
+        $"<!doctype html><html><head><style>{style}</style></head><body><canvas></canvas><script>{script}</script></body></html>"
+        |> Encoding.UTF8.GetBytes
+
+    File.WriteAllBytes(Path.Combine(directory, "attachment-preview.viewer"), html)
+
+    let assets =
+        buildAssets
+        |> Map.ofList
+        |> Map.toList
+        |> List.map (fun (path, bytes) ->
+            let file = Path.Combine(directory, path)
+            Directory.CreateDirectory(Path.GetDirectoryName file |> nonNull) |> ignore
+            File.WriteAllBytes(file, bytes)
+
+            {|
+                path = "/" + path
+                sha256 = sha256 bytes |> Convert.ToHexStringLower
+            |})
+
+    File.WriteAllBytes(
+        Path.Combine(directory, "public-assets.json"),
+        JsonSerializer.SerializeToUtf8Bytes
+            {|
+                schema = 2
+                assets = assets
+                viewer =
+                    {|
+                        sha256 = sha256 html |> Convert.ToHexStringLower
+                        scriptSha256 =
+                            script |> Encoding.UTF8.GetBytes |> sha256 |> Convert.ToBase64String
+                        styleSha256 =
+                            style |> Encoding.UTF8.GetBytes |> sha256 |> Convert.ToBase64String
+                    |}
+            |}
+    )
+
 type Host
     (
         ready: bool,
@@ -212,23 +254,8 @@ type Host
              |> Array.map (fun path -> "locales/" + Path.GetFileName path, File.ReadAllBytes path)
              |> Array.toList)
             @ defaultArg buildAssets []
-            |> Map.ofList
-            |> Map.toList
-            |> List.map (fun (path, bytes) ->
-                let file = Path.Combine(assets, path)
-                Directory.CreateDirectory(Path.GetDirectoryName file |> nonNull) |> ignore
-                File.WriteAllBytes(file, bytes)
 
-                {|
-                    path = "/" + path
-                    sha256 = Convert.ToHexStringLower(SHA256.HashData bytes)
-                |})
-
-        File.WriteAllBytes(
-            Path.Combine(assets, "public-assets.json"),
-            JsonSerializer.SerializeToUtf8Bytes {| schema = 1; assets = inventory |}
-        )
-
+        publishedInventory assets inventory
         services builder sessions
 
     let application = builder.Build()

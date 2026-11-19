@@ -106,7 +106,9 @@ let tests =
                         Api.operationPreview.Token
                         :: (TaskDeclarations.all
                             |> List.map (fun task ->
-                                TaskRouting.endpoint task.Id |> ActorEndpoint.token))
+                                match task.Kind with
+                                | ClientTaskKind.Binary -> task.Id
+                                | _ -> TaskRouting.endpoint task.Id |> ActorEndpoint.token))
                         |> Set.ofList
 
                     let expected =
@@ -115,6 +117,7 @@ let tests =
                         |> List.filter (fun token ->
                             token <> "session" && token <> "session.logout")
                         |> Set.ofList
+                        |> Set.union (set [ "attachment.download"; "attachment.preview" ])
 
                     Expect.equal endpoints expected "Host session bootstrap is separate")
             testCase

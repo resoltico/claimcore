@@ -96,7 +96,10 @@ module internal AttachmentReads =
                                     RecordedAt = change.Stamp.RecordedAt
                                     RecordedBy = author
                                     CanWithdraw = canEdit
-                                    CanPreview = descriptor.Preview.IsSome
+                                    CanPreview =
+                                        AttachmentIntent.name descriptor.Intent
+                                        |> AttachmentPreview.candidate
+                                        |> Option.isSome
                                 }
                         | _ -> Error CoreFault.StoreIntegrityError)
                     |> QueryResults.collect
@@ -132,22 +135,22 @@ module internal AttachmentReads =
                              | _ -> None))
                 with
                 | Error refusal -> return Outcome.Rejected refusal
-                | Ok descriptor when preview && descriptor.Preview.IsNone ->
-                    return QueryResults.unavailable
-                | Ok descriptor ->
+                | Ok descriptor when not preview ->
                     let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
+                    return Outcome.Succeeded { Bytes = bytes; Preview = None }
+                | Ok descriptor ->
+                    let candidate =
+                        AttachmentIntent.name descriptor.Intent |> AttachmentPreview.candidate
 
-                    if
-                        preview
-                        && AttachmentPreview.classify (VerifiedAttachment.bytes bytes)
-                           <> descriptor.Preview
-                    then
-                        return Outcome.Failed CoreFault.StoreIntegrityError
-                    else
-                        return
-                            Outcome.Succeeded
-                                {
-                                    Bytes = bytes
-                                    Preview = if preview then descriptor.Preview else None
-                                }
+                    match candidate with
+                    | None -> return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
+                    | Some candidate ->
+                        let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
+
+                        match
+                            AttachmentPreview.classify candidate (VerifiedAttachment.bytes bytes)
+                        with
+                        | Some kind ->
+                            return Outcome.Succeeded { Bytes = bytes; Preview = Some kind }
+                        | None -> return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
             })

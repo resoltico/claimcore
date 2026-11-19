@@ -5,6 +5,14 @@ open System.IO
 open System.Text.Json
 open Expecto
 
+let private refusesAssets (fixture: PublishedFixture.Fixture) reason =
+    let result =
+        ProcessRunner.dotnet 60_000 fixture.WebBinary [ "serve" ] fixture.WebEnvironment None
+
+    Expect.equal result.ExitCode 3 reason
+    use error = JsonDocument.Parse(ReadOnlyMemory result.StandardError)
+    Expect.equal (error.RootElement.GetProperty("code").GetString()) "ASSETSMISSING" reason
+
 let qualify (fixture: PublishedFixture.Fixture) =
     let directory = Path.GetDirectoryName fixture.WebBinary |> nonNull
     let index = Path.Combine(directory, "wwwroot/index.html")
@@ -12,18 +20,18 @@ let qualify (fixture: PublishedFixture.Fixture) =
     File.Move(index, held)
 
     try
-        let result =
-            ProcessRunner.dotnet 60_000 fixture.WebBinary [ "serve" ] fixture.WebEnvironment None
-
-        Expect.equal result.ExitCode 3 "Missing published index prevents host opening"
-        use error = JsonDocument.Parse(ReadOnlyMemory result.StandardError)
-
-        Expect.equal
-            (error.RootElement.GetProperty("code").GetString())
-            "ASSETSMISSING"
-            "The asset guard rejects the absent index"
+        refusesAssets fixture "Missing published index prevents host opening"
     finally
         File.Move(held, index)
+
+    let viewer = Path.Combine(directory, "wwwroot/attachment-preview.viewer")
+    let original = File.ReadAllBytes viewer
+
+    try
+        File.AppendAllText(viewer, "\n")
+        refusesAssets fixture "A tampered published viewer prevents host opening"
+    finally
+        File.WriteAllBytes(viewer, original)
 
     let expected = Path.Combine(fixture.Root, "web/dist")
 

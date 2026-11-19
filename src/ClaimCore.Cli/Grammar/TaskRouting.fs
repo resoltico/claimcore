@@ -16,6 +16,8 @@ module TaskRouting =
             |> List.find (fun query -> QueryTaskId.key query = task)
             |> ActorEndpoint.Query
         | ClientTaskKind.Command -> CommandTaskId.parse task |> Option.get |> ActorEndpoint.Command
+        | ClientTaskKind.Binary ->
+            invalidArg (nameof task) "Binary reads have a separate transport."
 
     let act task =
         (TaskDeclarations.describe task).Ledger |> Option.map _.Id
@@ -30,13 +32,12 @@ module TaskRouting =
     let consequence task =
         (TaskDeclarations.describe task).Consequence
 
-    let private message task suffix =
-        (if (TaskDeclarations.describe task).Kind = ClientTaskKind.Operation then
-             "task."
-         else
-             "endpoint.")
-        + task
-        + suffix
+    let private messages task =
+        let declaration = TaskDeclarations.describe task
 
-    let labelId task = message task ".label"
-    let meaningId task = message task ".meaning"
+        match declaration.Endpoint with
+        | Some endpoint -> endpoint.LabelId, endpoint.MeaningId
+        | None -> "task." + task + ".label", "task." + task + ".meaning"
+
+    let labelId task = messages task |> fst
+    let meaningId task = messages task |> snd

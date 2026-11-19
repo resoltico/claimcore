@@ -24,10 +24,11 @@
     "theme": "node scripts/generate-theme.mjs"
   },
   "dependencies": {
+    "@internationalized/date": "3.12.4",
+    "pdfjs-dist": "5.4.624",
     "react": "19.3.1",
     "react-aria-components": "1.22.1",
-    "react-dom": "19.3.1",
-    "@internationalized/date": "3.12.4"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

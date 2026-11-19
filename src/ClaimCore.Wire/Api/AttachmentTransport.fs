@@ -20,17 +20,19 @@ type AttachmentTransferFailure =
 /// Complete attachment transfers are exchange media outside the ordinary JSON endpoint registry.
 module AttachmentTransport =
     let all =
-        [
-            AttachmentTransfer.Upload
-            AttachmentTransfer.Download
-            AttachmentTransfer.Preview
-        ]
+        AttachmentTransfer.Upload
+        :: (AttachmentRead.all
+            |> List.map (function
+                | AttachmentRead.Download -> AttachmentTransfer.Download
+                | AttachmentRead.Preview -> AttachmentTransfer.Preview))
 
     let token =
         function
         | AttachmentTransfer.Upload -> "attachment.upload"
-        | AttachmentTransfer.Download -> "attachment.download"
-        | AttachmentTransfer.Preview -> "attachment.preview"
+        | AttachmentTransfer.Download ->
+            (EndpointDeclarations.attachmentRead AttachmentRead.Download).Id
+        | AttachmentTransfer.Preview ->
+            (EndpointDeclarations.attachmentRead AttachmentRead.Preview).Id
 
     let path transfer = "/api/" + token transfer
 
@@ -50,6 +52,15 @@ module AttachmentTransport =
     let downloadMediaType = "application/octet-stream"
     let pngMediaType = "image/png"
     let jpegMediaType = "image/jpeg"
+    let pdfMediaType = "application/pdf"
+    let viewerPath = "/attachment-preview/viewer"
+    let dispositionPrefix = "attachment; filename*=UTF-8''"
+
+    let dispositionPattern =
+        "^"
+        + dispositionPrefix.Replace("*", "\\*", StringComparison.Ordinal)
+        + "(?:[A-Za-z0-9._-]|%[A-F0-9]{2})+$"
+
     let digestHeader = "Content-Digest"
     let transferDeadline = TimeSpan.FromSeconds 200.
 
@@ -76,22 +87,12 @@ module AttachmentTransport =
         "sha-256=:" + base64 + ":"
 
     let disposition name =
-        "attachment; filename=\""
-        + AttachmentName.asciiFallback name
-        + "\"; filename*=UTF-8''"
-        + Uri.EscapeDataString(AttachmentName.value name)
+        dispositionPrefix + Uri.EscapeDataString(AttachmentName.value name)
 
     let request =
-        (Codec.record (fun target id ->
-            {
-                AttachmentReadRequest.Target = target
-                AttachmentId = id
-            })
-        : Fields<AttachmentReadRequest, _>)
-        |> Codec.field "target" _.Target RequestCodecs.caseSelector
-        |> Codec.field "attachmentId" _.AttachmentId AttachmentCodecs.id
-        |> Codec.build
-        |> Codec.named "AttachmentReadRequest"
+        (AttachmentCodecs.request, AttachmentRead.all)
+        ||> List.fold (fun codec transfer ->
+            EndpointInputs.check (EndpointDeclarations.attachmentRead transfer).Id codec)
 
     let private outcome =
         Codec.taggedOn

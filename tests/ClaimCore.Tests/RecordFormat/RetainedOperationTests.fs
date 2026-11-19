@@ -39,6 +39,44 @@ let tests =
     testList
         "generic retained accepted values"
         [
+            testCase "attachment descriptors retain identity and intent only" (fun () ->
+                let blobId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+                let blob = AttachmentId.create blobId |> Option.get
+                let name = AttachmentName.parse "Evidence.pdf" |> Option.get
+                let digestText = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                let digest = AttachmentDigest.parse digestText |> Option.get
+                let intent = AttachmentIntent.create name 0L digest |> Option.get
+
+                let effect =
+                    PartValue.Attachment(
+                        AttachmentEffect.Added(true, Some { Blob = blob; Intent = intent })
+                    )
+
+                let vector =
+                    JsonValue.Object
+                        [
+                            "blob", JsonValue.String "10000000-0000-7000-8000-000000000001"
+                            "name", JsonValue.String "Evidence.pdf"
+                            "length", JsonValue.Integer 0L
+                            "digest", JsonValue.String digestText
+                        ]
+
+                Expect.equal
+                    (PartCodecs.privateValue blobId effect)
+                    (Ok(Some vector))
+                    "Format 8 descriptor"
+
+                let codec = PartCodecs.privateValueCodec blobId effect
+                Expect.equal (codec.Read "$" vector) (Ok effect) "The descriptor round-trips"
+
+                match vector with
+                | JsonValue.Object fields ->
+                    Expect.isError
+                        (codec.Read
+                            "$"
+                            (JsonValue.Object(fields @ [ "preview", JsonValue.String "PNG" ])))
+                        "The earlier preview field is refused"
+                | _ -> failtest "Expected an attachment descriptor object")
             testCase
                 "live records keep structured inputs and accepted values without reparsing"
                 (fun () ->

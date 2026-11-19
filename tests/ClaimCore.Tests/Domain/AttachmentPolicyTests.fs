@@ -19,7 +19,9 @@ let private id (value: string) =
     AttachmentId.create (Guid.Parse value) |> Option.get
 
 let private classify bytes =
-    AttachmentPreview.classify (ReadOnlySpan<byte>(bytes: byte array))
+    AttachmentPreview.classify
+        AttachmentPreviewCandidate.Raster
+        (ReadOnlySpan<byte>(bytes: byte array))
 
 // A single red RGBA pixel with valid chunk CRCs. The negative vectors change a single
 // eligibility property and carry their own corresponding chunk CRCs.
@@ -80,16 +82,43 @@ let tests =
                     (AttachmentName.parse (String.replicate 4097 "x"))
                     "Bound input before work")
 
-            testCase "ASCII disposition fallback is itself portable" (fun () ->
-                Expect.equal
-                    (name "CÓM1.éxe" |> AttachmentName.asciiFallback)
-                    "CM1.xe"
-                    "Unicode is stripped from both stem and extension"
+            testCase "intake refuses launchable suffixes of the final canonical name" (fun () ->
+                for candidate in
+                    [
+                        "report.exe"
+                        "REPORT.EXE"
+                        "a.b.c.ps1"
+                        "x.settingcontent-ms"
+                        "photo.jpg.lnk"
+                        String.replicate 140 "x" + ".exe"
+                    ] do
+                    Expect.isTrue (name candidate |> AttachmentType.refused) candidate
 
-                Expect.equal
-                    (name "CÖON.文" |> AttachmentName.asciiFallback)
-                    "_CON"
-                    "The final ASCII stem cannot become a device name")
+                for candidate in
+                    [
+                        "evidence.zip"
+                        "letter.docx"
+                        "signed.asice"
+                        "signed.bdoc"
+                        "signed.edoc"
+                        "mail.eml"
+                        "scan.pdf"
+                        "README"
+                        "exe.notes.txt"
+                        "evidence.jśs"
+                        String.replicate 140 "x" + ".settingcontent-ms"
+                    ] do
+                    Expect.isFalse (name candidate |> AttachmentType.refused) candidate
+
+                for candidate, canonical, refused in
+                    [
+                        "evidence.exe.", "evidence.exe", true
+                        "evidence.exe ", "evidence.exe_", false
+                        "evidence.txt:x.exe", "evidence.txtx.exe", true
+                    ] do
+                    let admitted = name candidate
+                    Expect.equal (AttachmentName.value admitted) canonical candidate
+                    Expect.equal (AttachmentType.refused admitted) refused canonical)
 
             testCase "verified bytes include empty and reject descriptor mismatch" (fun () ->
                 let empty = intent 0L |> Option.get
@@ -190,7 +219,6 @@ let tests =
                         {
                             Blob = blob
                             Intent = VerifiedAttachment.intent one
-                            Preview = None
                         }
 
                     let matchBytes active =
@@ -374,7 +402,6 @@ let tests =
                     {
                         Blob = first
                         Intent = intent 0L |> Option.get
-                        Preview = None
                     }
 
                 let added = AttachmentEffect.Added(true, Some descriptor)

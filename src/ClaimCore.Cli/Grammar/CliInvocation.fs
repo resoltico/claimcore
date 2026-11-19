@@ -98,14 +98,11 @@ module CliInvocations =
 
     let private commandHelp (words: string list) language json =
         let matches =
-            CommandGrammar.operations
+            CommandGrammar.verbs
             |> List.filter (fun entry ->
                 List.truncate words.Length (CommandGrammar.words entry) = words)
 
-        if
-            List.isEmpty words
-            || (List.isEmpty matches && words <> CommandGrammar.attachmentDownloadWords)
-        then
+        if List.isEmpty words || List.isEmpty matches then
             Error(UsageError.UnknownCommand(String.concat " " words, []))
         else
             Ok(CliInvocation.CommandHelp(words, RenderingContext.forLanguage language, json))
@@ -222,16 +219,16 @@ module CliInvocations =
                 not (word.StartsWith("-", System.StringComparison.Ordinal)))
 
         let family =
-            CommandGrammar.operations
+            CommandGrammar.verbs
             |> List.exists (fun entry ->
                 let words = CommandGrammar.words entry
                 not commandPath.IsEmpty && List.truncate commandPath.Length words = commandPath)
 
         let complete =
-            CommandGrammar.operations
+            CommandGrammar.verbs
             |> List.exists (fun operation -> CommandGrammar.words operation = commandPath)
 
-        (family || CommandGrammar.attachmentDownload arguments)
+        (family || (CommandGrammar.tryBinaryRead arguments).IsSome)
         && (helpRequested || commandPath.Length = 1 && not complete)
 
     let admit (arguments: string list) =
@@ -316,7 +313,7 @@ module CliInvocations =
         | CliInvocation.CommandHelp _
         | CliInvocation.Recovery _ -> true
         | CliInvocation.Verb words ->
-            CommandGrammar.attachmentDownload words
+            (CommandGrammar.tryBinaryRead words).IsSome
             || (CommandGrammar.tryOperation words |> Option.isSome)
         | CliInvocation.Version _
         | CliInvocation.Schema _
@@ -390,7 +387,7 @@ module CliInvocations =
                                 | CliInvocation.Recovery selected ->
                                     CliInvocation.Recovery { selected with Rendering = context }
                                 | CliInvocation.Verb words when
-                                    CommandGrammar.attachmentDownload words
+                                    (CommandGrammar.tryBinaryRead words).IsSome
                                     || (CommandGrammar.tryOperation words |> Option.isSome)
                                     ->
                                     let words =

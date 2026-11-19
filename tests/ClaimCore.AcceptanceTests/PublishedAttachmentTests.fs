@@ -35,7 +35,7 @@ let private qualify () =
 
         let sourcePath = Path.Combine(fixture.Directory, "source evidence.txt")
         let destination = Path.Combine(fixture.Directory, "downloaded evidence.txt")
-        let content = Array.init 131_073 (fun index -> byte (index % 256))
+        let content = Array.init 1_048_577 (fun index -> byte (index % 256))
         File.WriteAllBytes(sourcePath, content)
 
         let cli arguments expected =
@@ -80,6 +80,32 @@ let private qualify () =
 
         Expect.isFalse (uploaded.GetRawText().Contains sourcePath) "Local path stays private"
         machine addArguments 0 "ALREADY_ACCEPTED" "DELIVERED" |> ignore
+
+        let blockedPath = Path.Combine(fixture.Directory, "blocked evidence.exe")
+        let blockedId = id ()
+        File.WriteAllText(blockedPath, "Synthetic attachment for testing filename policy.")
+
+        let blocked =
+            machine
+                [
+                    "attachment"
+                    "add"
+                    reference
+                    "--file"
+                    blockedPath
+                    "--confirm"
+                    "yes"
+                    "--operation-id"
+                    blockedId
+                ]
+                2
+                "REJECTED"
+                "NOT_SENT"
+
+        Expect.stringContains
+            (blocked.GetRawText())
+            "ATTACHMENT_TYPE_REFUSED"
+            "CLI preflight returns the typed name violation"
 
         let current =
             verb fixture environment [ "case"; "attachments"; reference ] 0
@@ -173,6 +199,8 @@ let private qualify () =
                     add
                     withdrawal
                     id ()
+                    blockedPath
+                    id ()
                 ]
                 environment
 
@@ -181,7 +209,7 @@ let private qualify () =
         Expect.equal
             shellResult.ExitCode
             0
-            "Published terminal shell adjudicates both withdrawal retries"
+            "Published terminal shell adjudicates withdrawal retries and refused attachment types"
 
         let removed =
             verb fixture environment [ "case"; "attachments"; reference ] 0
@@ -204,23 +232,27 @@ let private qualify () =
 
         do! fixture.StopAndCaptureWeb(TimeSpan.FromSeconds 30.)
 
-        let refusedRequests =
+        let requestsFor (operationId: string) =
             File.ReadLines(Path.Combine(fixture.Directory, "web.stderr"))
-            |> Seq.filter (fun line -> line.Contains(refusedId, StringComparison.Ordinal))
+            |> Seq.filter (fun line -> line.Contains(operationId, StringComparison.Ordinal))
             |> Seq.choose (fun line ->
                 use document = JsonDocument.Parse line
                 let root = document.RootElement
 
                 match root.TryGetProperty "operationId", root.TryGetProperty "endpoint" with
-                | (true, operation), (true, endpoint) when operation.GetString() = refusedId ->
+                | (true, operation), (true, endpoint) when operation.GetString() = operationId ->
                     endpoint.GetString() |> Option.ofObj
                 | _ -> None)
             |> Seq.toList
 
         Expect.equal
-            refusedRequests
+            (requestsFor refusedId)
             [ "operation.preview" ]
             "The server observed no execute for preflight-only refusal"
+
+        Expect.isTrue
+            (requestsFor blockedId |> List.forall ((=) "operation.preview"))
+            "The CLI rejected the blocked attachment type before upload"
 
         fixture.Complete()
     }

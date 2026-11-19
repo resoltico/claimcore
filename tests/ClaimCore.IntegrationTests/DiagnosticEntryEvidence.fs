@@ -616,6 +616,20 @@ let attachmentEvidence () =
         let! duplicate = upload (valid 8708) bytes
         witnesses.Add(refused duplicate)
 
+        let! blocked = upload (draft 8709 "evidence.exe" "3" digest) bytes
+        witnesses.Add(refused blocked)
+
+        let! unavailable =
+            Service.previewAttachment
+                actor
+                {
+                    AttachmentReadRequest.Target = target
+                    AttachmentId = AttachmentId.create (id fixture 8707) |> Option.get
+                }
+                ct
+
+        witnesses.Add(queryRefused unavailable)
+
         let tinyFile number value =
             let payload = [| value |]
 

@@ -759,20 +759,20 @@
     "text": "파일 선택",
     "source": "3e10c3cd6e0d"
   },
-  "ui.attachments.download": {
-    "text": "다운로드",
-    "source": "d6eafe823591"
-  },
-  "ui.attachments.preview": {
-    "text": "이미지 미리 보기",
-    "source": "190571956ca0"
-  },
-  "ui.attachments.previewError": {
-    "text": "이미지를 표시할 수 없습니다. 원본 파일을 다운로드하세요.",
-    "source": "c8b3a7434d30"
-  },
   "ui.attachments.empty": {
     "text": "현재 첨부 파일이 없습니다.",
     "source": "6d2a34c560f7"
+  },
+  "ui.previousPage": {
+    "text": "이전 페이지",
+    "source": "1208ec01f223"
+  },
+  "ui.nextPage": {
+    "text": "다음 페이지",
+    "source": "c08ac736a5e2"
+  },
+  "ui.documentPage": {
+    "text": "전체 {count}페이지 중 {page}페이지",
+    "source": "e80db00f5ef1"
   }
 }

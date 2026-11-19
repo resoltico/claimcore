@@ -207,7 +207,7 @@ module internal OperationService =
 
     let private admitted (submission: OperationSubmission) =
         // Check syntax before time- and state-dependent decisions; RequestRefusals still loads the current caller.
-        match OperationSubmission.syntax submission with
+        match OperationSubmission.deliverySyntax submission with
         | Some issues -> Error(Refusal.InvalidInput issues)
         | None ->
             match

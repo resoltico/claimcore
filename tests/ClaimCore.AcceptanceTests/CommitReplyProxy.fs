@@ -9,19 +9,48 @@ open System.Net.Sockets
 open System.Text
 open System.Threading
 open System.Threading.Tasks
+open ClaimCore.Domain
 
-let private packet (stream: NetworkStream) token =
+let private maximumInspectedLength = 1_048_576
+
+let private forwardPacket (source: NetworkStream) (target: NetworkStream) inspect token =
     task {
         let header = Array.zeroCreate<byte> 5
-        do! stream.ReadExactlyAsync(Memory header, token).AsTask()
+        do! source.ReadExactlyAsync(Memory header, token).AsTask()
         let length = BinaryPrimitives.ReadInt32BigEndian(ReadOnlySpan(header, 1, 4))
+        let carriesAttachment = header[0] = byte 'B' || header[0] = byte 'D'
 
-        if length < 4 || length > 1_048_576 then
+        if
+            length < 4
+            || length > AttachmentLimits.FileBytes + maximumInspectedLength
+            || (length > maximumInspectedLength && not carriesAttachment)
+        then
             invalidOp "Invalid synthetic PostgreSQL packet."
 
-        let body = Array.zeroCreate<byte>(length - 4)
-        do! stream.ReadExactlyAsync(Memory body, token).AsTask()
-        return Array.append header body
+        if length > maximumInspectedLength then
+            // Bind parameters and DataRow fields can carry an attachment. Neither changes
+            // commit observation, so relay it with bounded scratch space.
+            do! target.WriteAsync(ReadOnlyMemory header, token).AsTask()
+            let buffer = Array.zeroCreate<byte> 65_536
+            let mutable remaining = length - 4
+
+            while remaining > 0 do
+                let count = min remaining buffer.Length
+                do! source.ReadExactlyAsync(Memory(buffer, 0, count), token).AsTask()
+                do! target.WriteAsync(ReadOnlyMemory(buffer, 0, count), token).AsTask()
+                remaining <- remaining - count
+
+            return true
+        else
+            let bytes = Array.zeroCreate<byte>(length + 1)
+            header.CopyTo(bytes, 0)
+            do! source.ReadExactlyAsync(Memory(bytes, 5, length - 4), token).AsTask()
+            let forward = inspect bytes
+
+            if forward then
+                do! target.WriteAsync(ReadOnlyMemory bytes, token).AsTask()
+
+            return forward
     }
 
 let private startup (client: NetworkStream) (server: NetworkStream) token =
@@ -104,10 +133,13 @@ let private frontend
     (token: CancellationToken)
     =
     task {
-        while not token.IsCancellationRequested do
-            let! bytes = packet client token
+        let inspect bytes =
             transaction.Observe bytes
-            do! server.WriteAsync(ReadOnlyMemory bytes, token).AsTask()
+            true
+
+        while not token.IsCancellationRequested do
+            let! _ = forwardPacket client server inspect token
+            ()
     }
 
 [<NoEquality; NoComparison>]
@@ -129,20 +161,23 @@ let private backend (relay: BackendRelay) =
     let close = relay.Close
     let token = relay.CancellationToken
 
+    let inspect bytes =
+        let interception = if transaction.Commit bytes then control.Take() else None
+
+        match interception with
+        | Some completion ->
+            // The actual server emitted COMMIT completion. Withhold it from Npgsql.
+            close ()
+            completion.TrySetResult() |> ignore
+            false
+        | None -> true
+
     task {
         let mutable active = true
 
         while active && not token.IsCancellationRequested do
-            let! bytes = packet server token
-            let interception = if transaction.Commit bytes then control.Take() else None
-
-            match interception with
-            | Some completion ->
-                // The actual server emitted COMMIT completion. Withhold it from Npgsql.
-                close ()
-                completion.TrySetResult() |> ignore
-                active <- false
-            | None -> do! client.WriteAsync(ReadOnlyMemory bytes, token).AsTask()
+            let! forwarded = forwardPacket server client inspect token
+            active <- forwarded
     }
 
 let private serve

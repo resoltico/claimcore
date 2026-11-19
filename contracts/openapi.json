@@ -3005,7 +3005,8 @@
               },
               "Content-Disposition": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^attachment; filename\\*=UTF-8''(?:[A-Za-z0-9._-]|%[A-F0-9]{2})+$"
                 },
                 "x-claimcore-binary-success-only": true
               }
@@ -3151,7 +3152,8 @@
                 }
               },
               "image/png": {},
-              "image/jpeg": {}
+              "image/jpeg": {},
+              "application/pdf": {}
             }
           },
           "400": {
@@ -11648,6 +11650,24 @@
           "length"
         ]
       },
+      "AttachmentObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "caseId",
+          "sequence"
+        ]
+      },
       "AttachmentPage": {
         "type": "object",
         "additionalProperties": false,
@@ -11760,7 +11780,7 @@
           "canWithdraw": {
             "type": "boolean"
           },
-          "canPreview": {
+          "previewCandidate": {
             "type": "boolean"
           }
         },
@@ -11771,7 +11791,39 @@
           "recordedAt",
           "recordedBy",
           "canWithdraw",
-          "canPreview"
+          "previewCandidate"
+        ]
+      },
+      "AttachmentTransferControl": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "DOWNLOAD",
+              "PREVIEW"
+            ]
+          },
+          "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "request": {
+            "$ref": "#/components/schemas/AttachmentReadRequest"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "x-claimcore-maxUtf8Bytes": 120
+          }
+        },
+        "required": [
+          "kind",
+          "labelId",
+          "request",
+          "name"
         ]
       },
       "AttachmentTransferFailure": {
@@ -17316,6 +17368,7 @@
             "WORK_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "CORRECTION_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
+            "ATTACHMENT_PREVIEW_UNAVAILABLE": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "FAMILY_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
@@ -17744,6 +17797,7 @@
               "WORK_NO_CHANGES",
               "CORRECTION_NO_CHANGES",
               "REMINDER_NO_CHANGES",
+              "ATTACHMENT_PREVIEW_UNAVAILABLE",
               "NO_CHANGES"
             ]
           },
@@ -19685,6 +19739,9 @@
                 "type": "null"
               }
             ]
+          },
+          "attachmentObservation": {
+            "$ref": "#/components/schemas/AttachmentObservation"
           }
         },
         "required": [
@@ -20171,6 +20228,7 @@
             "NOTE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ATTACHMENT_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ATTACHMENT_NAME_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ATTACHMENT_TYPE_REFUSED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ATTACHMENT_LENGTH_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ATTACHMENT_DIGEST_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ATTACHMENT_PAYLOAD_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -20334,6 +20392,7 @@
               "NOTE_ID_REQUIRED",
               "ATTACHMENT_ID_REQUIRED",
               "ATTACHMENT_NAME_INVALID",
+              "ATTACHMENT_TYPE_REFUSED",
               "ATTACHMENT_LENGTH_INVALID",
               "ATTACHMENT_DIGEST_INVALID",
               "ATTACHMENT_PAYLOAD_REQUIRED",
@@ -28680,6 +28739,14 @@
             },
             "minItems": 0,
             "maxItems": 46
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentTransferControl"
+            },
+            "minItems": 0,
+            "maxItems": 2
           }
         },
         "required": [

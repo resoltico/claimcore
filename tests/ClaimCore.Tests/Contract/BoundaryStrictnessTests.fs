@@ -25,7 +25,9 @@ let private cliStrictness () =
         |> Result.isOk
 
     let prepareAttachmentDownload arguments =
-        Grammar.prepareAttachmentDownload arguments |> Result.isOk
+        CommandGrammar.tryBinaryRead arguments
+        |> Option.exists (fun operation ->
+            Grammar.prepareAttachmentDownload operation arguments |> Result.isOk)
 
     let host arguments =
         CliInvocations.admit arguments |> Result.isOk

@@ -270,6 +270,14 @@ module NoticeTone =
     let vocabulary =
         Vocabulary.ofUnion<NoticeTone> "noticeTone" TokenCasing.ScreamingSnake None
 
+type AttachmentTransferControl =
+    {
+        Kind: AttachmentRead
+        LabelId: string
+        Request: AttachmentReadRequest
+        Name: AttachmentName
+    }
+
 type RegionRow =
     {
         Key: string
@@ -277,6 +285,7 @@ type RegionRow =
         Detail: RowDetail option
         Link: Link option
         Actions: Affordance list
+        Transfers: AttachmentTransferControl list
     }
 
 type RegionRowGroup =

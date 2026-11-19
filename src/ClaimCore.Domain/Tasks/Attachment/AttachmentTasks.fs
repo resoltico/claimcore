@@ -63,14 +63,7 @@ let private addDecision
         |> Result.map (fun intent ->
             let id = AttachmentId.ofOperationId context.Stamp.OperationId
 
-            let descriptor =
-                intent
-                |> Option.map (fun intent ->
-                    {
-                        Blob = id
-                        Intent = intent
-                        Preview = None
-                    })
+            let descriptor = intent |> Option.map (fun intent -> { Blob = id; Intent = intent })
 
             [
                 FamilyRules.change
@@ -89,7 +82,7 @@ let add =
         {
             Declaration = addDeclaration
             Authorize = authorize
-            Check = Parsing.check AttachmentInputs.intent
+            Check = Parsing.check AttachmentInputs.admissible
             Availability =
                 fun environment state binding ->
                     FamilyRules.availability
@@ -106,7 +99,7 @@ let add =
                         environment
                         state
                         binding
-                        (AttachmentInputs.intent inputs |> Result.map Some)
+                        (AttachmentInputs.admissible inputs |> Result.map Some)
             DecideRetained =
                 fun context environment state binding _ ->
                     addDecision context environment state binding (Ok None)

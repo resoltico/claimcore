@@ -407,12 +407,18 @@ module Grammar =
             (fun () -> invalidOp "A draft never allocates an operation ID.")
             arguments
 
-    let internal prepareAttachmentDownload arguments =
-        let flags = [ "--output"; "--case-id"; "--language"; "--display-locale" ]
+    let internal prepareAttachmentDownload operation arguments =
+        let flags = (CommandGrammar.optionGrammar operation).Available
         let problems = ResizeArray<UsageError>()
 
         let options, operands =
-            VerbOptions.tokenize flags flags [] [] (List.skip 2 arguments) problems
+            VerbOptions.tokenize
+                flags
+                flags
+                []
+                []
+                (List.skip (CommandGrammar.words operation).Length arguments)
+                problems
 
         let option name =
             match options.TryGetValue name with
