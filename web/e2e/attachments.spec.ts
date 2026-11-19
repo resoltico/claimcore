@@ -97,14 +97,17 @@ test("renders and pages through PDFs inside the opaque viewer @engine", async ({
   const response = await viewer;
   expect(response.status()).toBe(200);
   expect(response.headers()["x-frame-options"]).toBeUndefined();
-  const html = await response.text();
   const hash = (content: string) => createHash("sha256").update(content).digest("base64");
-  const script = /<script>([\s\S]*?)<\/script>/u.exec(html)?.[1];
-  const style = /<style>([\s\S]*?)<\/style>/u.exec(html)?.[1];
-  expect(script).toBeDefined();
-  expect(style).toBeDefined();
+  const inline = await frame.evaluate(() => {
+    const script = document.querySelector("script")?.textContent;
+    const style = document.querySelector("style")?.textContent;
+    if (!script || !style) {
+      throw new Error("The published viewer is missing its inline script or style.");
+    }
+    return { script, style };
+  });
   expect(response.headers()["content-security-policy"]).toContain(
-    `script-src 'sha256-${hash(script!)}' 'wasm-unsafe-eval'; style-src 'sha256-${hash(style!)}'`,
+    `script-src 'sha256-${hash(inline.script)}' 'wasm-unsafe-eval'; style-src 'sha256-${hash(inline.style)}'`,
   );
 
   const sandbox = await frame.evaluate(async () => {
