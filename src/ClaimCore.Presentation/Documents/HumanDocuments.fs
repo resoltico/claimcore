@@ -598,10 +598,16 @@ module HumanReadDocuments =
         let links =
             value.ExactReference
             |> Option.map (fun value ->
-                named
-                    "field.caseReference.label"
-                    LinkRelation.OpenCase
-                    (Link.caseById value.CaseId))
+                let destination =
+                    match value.MatchedReference with
+                    | Some matched ->
+                        Link.CaseGet
+                            {
+                                Target = CaseSelector.Reference(CaseReference.format matched)
+                            }
+                    | None -> Link.caseById value.CaseId
+
+                named "field.caseReference.label" LinkRelation.OpenCase destination)
             |> Option.toList
 
         resource

@@ -109,20 +109,19 @@ const cases: HumanDocument = {
               ],
             },
           ],
-          sections: [
+        },
+      },
+      {
+        role: "FACTS",
+        titleId: "label.exactReference",
+        content: {
+          kind: "ENTRIES",
+          entries: [
             {
-              titleId: "label.exactReference",
-              entries: [
-                {
-                  key: "exactReference",
-                  labelId: "field.caseReference.label",
-                  prominence: "PRIMARY",
-                  value: {
-                    kind: "TEXT",
-                    value: "Core exact case Δ",
-                  },
-                },
-              ],
+              key: "exactReference",
+              labelId: "field.caseReference.label",
+              prominence: "PRIMARY",
+              value: { kind: "TEXT", value: "Core exact case Δ" },
             },
           ],
         },
@@ -225,10 +224,13 @@ it("uses supplied tab labels/counts and separate typed row/exact-match destinati
       name: "Core exact case Δ",
     }),
   );
-  expect(select).toHaveBeenLastCalledWith({
-    kind: "ID",
-    caseId: exactId,
-  });
+  expect(select).toHaveBeenLastCalledWith(
+    {
+      kind: "ID",
+      caseId: exactId,
+    },
+    "case-exact-match",
+  );
   expect(
     screen.queryByRole("button", {
       name: "Reassign",

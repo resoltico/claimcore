@@ -60,6 +60,7 @@ const EntryValue = ({
   ) {
     return (
       <a
+        id={link.id}
         href={link.href}
         onClick={(event) => {
           followLink(event, link.follow);

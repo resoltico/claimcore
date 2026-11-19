@@ -17,7 +17,7 @@ const targetInput = (link: Link): CaseSelector | undefined => {
   }
   return undefined;
 };
-const caseTargetPath = (target: CaseSelector) =>
+export const caseTargetPath = (target: CaseSelector) =>
   target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference);
 export const caseLinkTarget = (link: Link) =>
   link.endpoint === "case.get" ? targetInput(link) : undefined;

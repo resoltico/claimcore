@@ -1,12 +1,11 @@
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
-import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
+import { caseLinkTarget, caseTargetPath } from "../routing/coreLinks";
 import type { RegionRow, CaseSelector } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
-import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import {} from "./worklist/worklist.css";
@@ -32,9 +31,10 @@ import {
 import { CaseSelectionRecovery } from "./worklist/CaseSelectionRecovery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { PageTables } from "../ui/PageTables";
+import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
-  onSelect: (target: CaseSelector) => void;
+  onSelect: (target: CaseSelector, originId?: string) => void;
   onMutationLockChange?: MutationLockChange;
   disclosureAvailable?: boolean;
 };
@@ -52,11 +52,9 @@ const casePage = (response: ServiceResponse<typeof apiEndpoints.caseList>) => {
     items: doc.screen.regions.flatMap((region) =>
       region.content.kind === "TABLE" ? region.content.rows : [],
     ),
-    exactCaseId:
+    exactTarget:
       doc.links.flatMap((named) =>
-        named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
-          ? [caseLinkId(named.link)!]
-          : [],
+        named.rel === "OPEN_CASE" ? (caseLinkTarget(named.link) ?? []) : [],
       )[0] ?? null,
     nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
@@ -160,12 +158,15 @@ const WorklistResults = ({
   editing: boolean;
 }) => {
   const p = usePresentation();
-  const exact = page.page?.exactCaseId ?? null;
+  const current = page.page;
+  const exact = current?.exactTarget ?? null;
+  const exactOrigin = "case-exact-match";
   return (
     <>
       {page.items.length === 0 && exact === null ? null : (
         <PageTables
           views={page.views}
+          roles={["RESULTS"]}
           actionPresentation={(action) => {
             if (action.binding.kind !== "WORK" || action.binding.target.kind !== "ID") {
               return {};
@@ -188,14 +189,22 @@ const WorklistResults = ({
               reassign(action);
             }
           }}
+        />
+      )}
+      {current === null || !current.screen.regions.some(({ role }) => role === "FACTS") ? null : (
+        <ScreenView
+          view={current.screen}
+          timeZone={current.basis.timeZone}
+          roles={["FACTS"]}
           {...(exact === null
             ? {}
             : {
                 sectionLink: {
                   column: "exactReference",
-                  href: casePath(exact),
+                  id: exactOrigin,
+                  href: caseTargetPath(exact),
                   follow: () => {
-                    onSelect({ kind: "ID", caseId: exact });
+                    onSelect(exact, exactOrigin);
                   },
                 },
               })}

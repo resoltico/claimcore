@@ -154,26 +154,31 @@ module CaseListScreen =
             match reply.ExactReference with
             | None -> screen
             | Some exact ->
-                let includeExact _ content =
-                    match content with
-                    | RegionContent.Table data ->
-                        let exactSection =
-                            section
-                                "label.exactReference"
-                                [
-                                    value
-                                        "exactReference"
-                                        "field.caseReference.label"
-                                        Prominence.Primary
-                                        (PresentedValue.Reference exact.CaseReference)
-                                ]
+                let facts =
+                    [
+                        value
+                            "exactReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference exact.CaseReference)
+                        match exact.MatchedReference with
+                        | Some reference ->
+                            value
+                                "matchedReference"
+                                "label.referenceChangedFrom"
+                                Prominence.Secondary
+                                (PresentedValue.Reference reference)
+                        | None -> ()
+                    ]
 
-                        RegionContent.Table
-                            { data with
-                                Sections = [ exactSection ]
-                            }
-                    | _ -> content
-
-                Screen.mapContent includeExact screen
+                Screen.withRegions
+                    (screen.Regions
+                     @ [
+                         region
+                             RegionRole.Facts
+                             (Some "label.exactReference")
+                             (RegionContent.Entries facts)
+                     ])
+                    screen
 
         page reply.Basis reply.Items.Length reply.NextCursor screen

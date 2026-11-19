@@ -579,28 +579,37 @@ module internal Queries =
             match text |> Option.bind (CaseReference.parse >> Result.toOption) with
             | None -> return None
             | Some reference ->
-                let! record = FamilyReads.findCaseByReference tx (CaseReference.format reference)
+                let text = CaseReference.format reference
+                let! record = FamilyReads.findCaseByReference tx text
 
                 match record with
                 | None -> return None
                 | Some record ->
                     let! actor = AccessReads.access tx services.Principal (Some record.CaseId)
 
-                    return
-                        if
-                            CaseRecords.authorize
-                                services.Principal
-                                actor
-                                Capability.ReadCase
-                                (Some record)
-                        then
+                    if
+                        CaseRecords.authorize
+                            services.Principal
+                            actor
+                            Capability.ReadCase
+                            (Some record)
+                    then
+                        let! matched =
+                            CaseIdentityReads.matchedEarlier
+                                tx
+                                record.CaseId
+                                record.Snapshot.Reference
+                                (CaseSelector.Reference text)
+
+                        return
                             Some
                                 {
-                                    CaseRef.CaseId = record.CaseId
+                                    ExactCaseReference.CaseId = record.CaseId
                                     CaseReference = record.Snapshot.Reference
+                                    MatchedReference = matched
                                 }
-                        else
-                            None
+                    else
+                        return None
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =

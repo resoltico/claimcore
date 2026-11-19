@@ -662,7 +662,8 @@
             },
             "exactReference": {
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "CASE-001"
+              "caseReference": "CASE-001",
+              "matchedReference": null
             }
           }
         },
