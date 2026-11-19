@@ -160,6 +160,12 @@ type ClientTaskDeclaration =
     member this.Collections = this.CollectionsValue
     member this.Ledger = this.LedgerValue
     member this.Endpoint = this.EndpointValue
+
+    member this.EditableInputs =
+        this.LedgerValue
+        |> Option.map TaskDeclaration.editableInputs
+        |> Option.defaultValue []
+
     member this.Creates = this.LedgerValue |> Option.exists _.Creates
 
     member this.Consequence =

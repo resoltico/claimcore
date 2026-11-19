@@ -61,7 +61,8 @@ retain endpoint-specific automation types.
 
 An `Affordance` carries `task`, `labelId`, `binding`, scalar-or-null `seeds`, `editable`, contextual
 `choices` and `blocked`. The task-discriminated union associates each operation with its binding
-shape. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+shape and its declared editable input IDs. A particular control may offer a subset. Read task kind,
+endpoint, consequence, creation and input metadata from `taskDefinitions`.
 Operation bindings, creation basis, revision bounds, fixed-seed policy, correction-field activation and
 scope-selection defaults are supplied by shared declarations. Native acquisition uses the pure
 `SubmissionAssembly` facade; browser acquisition interprets generated `taskDefinitions.binding`,

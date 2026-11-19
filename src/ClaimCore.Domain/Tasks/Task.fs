@@ -38,6 +38,13 @@ type TaskDeclaration =
         && List.forall Access.humanOnlyCapability this.Capabilities
 
 module TaskDeclaration =
+    let editableInputs (declaration: TaskDeclaration) =
+        (declaration.Inputs
+         |> List.filter (fun input -> input.Source = InputSource.Authored)
+         |> List.map _.Input)
+        @ (declaration.Collections
+           |> List.map (fun collection -> TaskCollectionId.input collection.Collection))
+
     let bindingShape (declaration: TaskDeclaration) =
         let binds input =
             declaration.Inputs

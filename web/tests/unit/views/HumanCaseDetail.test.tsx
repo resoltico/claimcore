@@ -95,13 +95,8 @@ const document: HumanDocument = {
     operationAffordance(
       "case.amendRegistration",
       { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 4 },
-      {
-        ...prefixedInputs("field:", {
-          handlingSummary: "Editable summary seed",
-          responsibleActor: null,
-        }),
-      },
-      ["field:handlingSummary"],
+      { "field:incidentDescription": "Editable registration seed" },
+      ["field:incidentDescription"],
       {},
     ),
     operationAffordance(
