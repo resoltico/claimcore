@@ -99,9 +99,9 @@ test("renders and pages through PDFs inside the opaque viewer @engine", async ({
   expect(response.headers()["x-frame-options"]).toBeUndefined();
   const hash = (content: string) => createHash("sha256").update(content).digest("base64");
   const inline = await frame.evaluate(() => {
-    const script = document.querySelector("script")?.textContent;
-    const style = document.querySelector("style")?.textContent;
-    if (!script || !style) {
+    const script = document.querySelector("script")?.textContent ?? "";
+    const style = document.querySelector("style")?.textContent ?? "";
+    if (script.length === 0 || style.length === 0) {
       throw new Error("The published viewer is missing its inline script or style.");
     }
     return { script, style };
