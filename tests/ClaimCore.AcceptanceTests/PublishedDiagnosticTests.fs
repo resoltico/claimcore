@@ -84,8 +84,8 @@ let private qualify () =
         do!
             sql
                 "DROP VIEW claimcore.baseline_identity; ALTER TABLE claimcore.diagnostic_identity RENAME TO baseline_identity; DROP FUNCTION claimcore.diagnostic_failure()"
-        // Disposal of the first published process drains the ordinary production sink to files.
-        do! fixture.RestartWeb()
+        // The response can arrive before request middleware writes its final log record.
+        do! fixture.StopAndCaptureWeb(TimeSpan.FromSeconds 30.)
         let errors = File.ReadAllText(Path.Combine(fixture.Directory, "web.stderr"))
         let output = File.ReadAllText(Path.Combine(fixture.Directory, "web.stdout"))
 
