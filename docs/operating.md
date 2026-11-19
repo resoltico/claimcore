@@ -68,27 +68,14 @@ runtime connection, and the owner connection is mounted only by the administrati
 
 ## Install a fresh register
 
-Use matching service, browser and CLI builds. Before 1.0, each installation-format change requires
-a fresh installation. Initialize an empty database with the current [SQL baseline](../db/baseline.sql).
-[InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-Use installation format 7 and CLI recovery journal format 4 with matching builds. Initialization
-requires an empty database; the runtime refuses unsupported baseline identities and formats without
-converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
-and recovery records rather than attempting to initialize or convert them in place.
-
-An earlier format 7 preview could record a `link.remove` after its target case was erased.
-Such a database can pass schema and format admission. If the retained history still identifies the
-link's target, the corrected build can reject that recorded operation during semantic verification.
-Erasing the source case can clear the private target identity and limit what replay can check.
-
-If your preview database contains such a removal, preserve the earlier database and its recovery
-records, including backups and trusted checkpoints. Start the corrected build with a fresh
-database. Both `verify` and `admit-restored-installation` replay retained history. Restore
-admission checks the full retained ledger even with an older trusted checkpoint. It stops on
-authoritative history divergence before advancing expiry or invalidating sessions. A successful
-restore admission still requires the separate projection checks in `verify`. Rebuild also checks
-authoritative history before it can repair projections. See
-[Backups and restore](#backups-and-restore).
+Use matching service, browser and CLI builds. Initialize an empty database with the current
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 7 and
+[CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
+or owner command checks the database against the supported
+[installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
+before accessing installation data. Use a fresh database when the format changes. Preserve any
+existing database and recovery records separately. The available owner commands initialize,
+verify, rebuild or restore matching data. There is no migration or cross-format reader.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
@@ -361,11 +348,14 @@ claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-server status
 ```
 
-Restore admission verifies installation and accepted prefix, raises the frontier to the greater current
-or trusted cutoff, and invalidates restored sessions in one transaction. A missing/mismatched accepted
-prefix requires actual history recovery; advancing expiry cannot restore missing acceptances. Never
-lower/reset the frontier to recover availability. An uncertain acknowledgement or failed output after
-mutation requires inspecting the result; keep traffic isolated and retain the exact checkpoint.
+Restore admission checks the installation, accepted prefix and full retained ledger before raising
+the expiry frontier to the greater current or trusted cutoff and invalidating restored sessions.
+Both writes commit together. Use `verify` separately to check projections. If replay finds a
+missing or mismatched prefix or invalid accepted history, keep traffic isolated and preserve the
+database, recovery records and trusted checkpoints. Rebuild repairs projections only when replay
+validates the retained ledger. Recover missing acceptances from trusted backup/WAL evidence. Never
+lower the frontier to recover availability. Inspect status after an uncertain acknowledgement or
+output failure, and keep the exact checkpoint.
 
 Confirm restored cookies no longer authenticate before reopening traffic. Session invalidation alone
 does not protect bearer/CLI clients; the trusted prefix and durable expiry frontier are required too.

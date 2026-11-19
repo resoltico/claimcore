@@ -25,12 +25,11 @@ CI splits native acceptance into `walkthrough` and `remaining` via `CLAIMCORE_AC
 An unset selector runs all native cases. Chromium uses `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` and
 `2/2`; Firefox and WebKit select `@engine` cases without splitting. Each job owns its fixtures.
 `acceptance` runs both complete scopes locally. Offline CLI checks run in-process in unit with one
-published smoke per category. Docs-only PRs run configuration, lint and unit; see the
-[docs-only classification](../docs/contributing.md#verification). Gate permits skipped jobs only for
-that path. Main pushes, merge groups and manual dispatch always run the full set.
-Contract generation also validates
-semantic catalog structure, typed term namespaces, declared producer arguments and renderer/core wording ownership. Browser production builds use only app/protocol sources;
-the frontend verification stage still checks the whole TypeScript solution and runs all browser unit tests.
+published smoke per category. The [verification policy](../docs/contributing.md#verification)
+describes the docs-only Gate and full event coverage.
+Contract generation checks catalog structure, term namespaces, producer arguments and wording
+ownership. Browser production builds use the app and protocol sources. Frontend verification
+checks the full TypeScript solution and runs the browser unit tests.
 [Durable byte examples](../tests/fixtures/durable-vectors.json) carry fixed expectations and
 derivation notes and hand-authored expected bytes. [SQL baseline identity](../src/ClaimCore.Application/Storage/Schema/Baseline.fs) derives from
 exact embedded source bytes. The installation format is owned by [InstallationFormat.fs](../src/ClaimCore.RecordFormat/InstallationFormat.fs).
