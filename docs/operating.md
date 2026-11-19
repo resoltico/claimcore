@@ -76,6 +76,20 @@ requires an empty database; the runtime refuses unsupported baseline identities 
 converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
 and recovery records rather than attempting to initialize or convert them in place.
 
+An earlier format 7 preview could record a `link.remove` after its target case was erased.
+Such a database can pass schema and format admission. If the retained history still identifies the
+link's target, the corrected build can reject that recorded operation during semantic verification.
+Erasing the source case can clear the private target identity and limit what replay can check.
+
+If your preview database contains such a removal, preserve the earlier database and its recovery
+records, including backups and trusted checkpoints. Start the corrected build with a fresh
+database. Both `verify` and `admit-restored-installation` replay retained history. Restore
+admission checks the full retained ledger even with an older trusted checkpoint. It stops on
+authoritative history divergence before advancing expiry or invalidating sessions. A successful
+restore admission still requires the separate projection checks in `verify`. Rebuild also checks
+authoritative history before it can repair projections. See
+[Backups and restore](#backups-and-restore).
+
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
