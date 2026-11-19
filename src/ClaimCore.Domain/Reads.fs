@@ -98,10 +98,13 @@ module CaseSearchText =
     [<Literal>]
     let MaximumCharacters = 100
 
+    let maximumBytes = PartyName.MaximumBytes
+    let formattingRanges = ScalarText.formattingRanges
+
     let value (CaseSearchText value) = value
 
     let parse raw =
-        ScalarText.parse (Some PartyName.MaximumBytes) MaximumCharacters raw
+        ScalarText.parse (Some maximumBytes) MaximumCharacters raw
         |> Result.bind (ScalarText.admit MaximumCharacters)
         |> Result.map (TextSearch.normalize >> CaseSearchText)
 
@@ -135,6 +138,11 @@ type CaseListFilter<'text> =
         Due: CaseDue option
         Dates: Map<CaseDateFilter, CalendarDate>
     }
+
+[<RequireQualifiedAccess>]
+type CaseSelectionIssue =
+    | Text of Violation
+    | ReversedRange of CaseDateFilter
 
 module CaseListFilter =
     /// Independent supplied filters intersect; members of one filter are alternatives.
@@ -190,9 +198,23 @@ module CaseListFilter =
         let text =
             match input.Text with
             | None -> Ok None
-            | Some raw -> CaseSearchText.parse raw |> Result.map Some
+            | Some raw ->
+                CaseSearchText.parse raw
+                |> Result.map Some
+                |> Result.mapError CaseSelectionIssue.Text
+
+        let reversed =
+            CaseDateFilter.ranges
+            |> List.tryPick (fun (lower, upper) ->
+                match Map.tryFind lower input.Dates, Map.tryFind upper input.Dates with
+                | Some start, Some finish when start > finish -> Some upper
+                | _ -> None)
 
         text
+        |> Result.bind (fun text ->
+            match reversed with
+            | Some upper -> Error(CaseSelectionIssue.ReversedRange upper)
+            | None -> Ok text)
         |> Result.map (fun text ->
             create
                 (input.Lifecycles |> List.distinct |> List.sort)

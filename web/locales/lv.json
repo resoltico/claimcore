@@ -7,6 +7,22 @@
     "text": "Sākt pārskatu no jauna",
     "source": "b4c20d320a54"
   },
+  "ui.caseSelectionInvalid": {
+    "text": "Šos lietu atlases nosacījumus nevar izmantot.",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "Labojiet vai notīriet lauku, lai izmantotu pārējos filtrus.",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionApply": {
+    "text": "Lietot labojumu",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "Notīrīt lauku",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "Pārskata datumi",
     "source": "274bd4f0d808"

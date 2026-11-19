@@ -438,8 +438,10 @@ module internal Queries =
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
                 CaseListFilter.admit request.Filter
-                |> Result.mapError (fun violation ->
-                    Refusal.invalidInput (InputTarget.Text, violation))
+                |> Result.mapError (function
+                    | CaseSelectionIssue.Text violation ->
+                        Refusal.invalidInput (InputTarget.Text, violation)
+                    | CaseSelectionIssue.ReversedRange upper -> Refusal.CaseDateRange upper)
                 |> Result.bind (fun filter ->
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->

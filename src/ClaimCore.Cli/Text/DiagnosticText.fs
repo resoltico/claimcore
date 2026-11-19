@@ -163,6 +163,15 @@ module internal DiagnosticText =
                         (DiagnosticCode.key "NOT_AUTHORIZED")
                         (Map.ofList [ "required", names ])
                 ]
+            | Refusal.CaseDateRange upper ->
+                let key = TaskInputPresentation.messageKey (TaskInputId.CaseDate upper) "label"
+
+                [
+                    MessageCatalogs.render
+                        rendering.Language
+                        (DiagnosticCode.key "CASE_DATE_RANGE")
+                        (Map.ofList [ "field", label rendering key ])
+                ]
             | Refusal.Case(CaseRefusal.NotOffered state) ->
                 [
                     MessageCatalogs.render

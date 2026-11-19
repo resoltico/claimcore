@@ -113,6 +113,7 @@ type Refusal =
     | OperationClockUnavailable of expiredBefore: DateTimeOffset * observedAt: DateTimeOffset
     | IdempotencyConflict
     | InvalidCursor
+    | CaseDateRange of upper: CaseDateFilter
     | RegisterMaintenance
 
 module Refusal =

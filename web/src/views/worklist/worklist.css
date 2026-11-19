@@ -278,3 +278,20 @@ details.summary-band {
   margin: 0;
   font-weight: 650;
 }
+
+.case-selection-repair {
+  margin-block: var(--space-4);
+  overflow-wrap: anywhere;
+}
+.case-selection-values {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+.case-selection-values label {
+  display: grid;
+  gap: var(--space-1);
+}
+.case-selection-values input {
+  min-inline-size: 0;
+}

@@ -7,6 +7,22 @@
     "text": "從頭檢視報告",
     "source": "b4c20d320a54"
   },
+  "ui.caseSelectionInvalid": {
+    "text": "無法使用此案件篩選條件。",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "請更正或清除該欄位，以使用其餘篩選條件。",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionApply": {
+    "text": "套用更正",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "清除欄位",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "報表日期",
     "source": "274bd4f0d808"

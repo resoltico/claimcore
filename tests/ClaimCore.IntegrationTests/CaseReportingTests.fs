@@ -193,15 +193,36 @@ let private monthReporting (database: PostgresFixture.Database) =
         let! none = read owner excluded CaseGrouping.RegisteredMonth
         Expect.equal none.Counts.Total 0L "The previous day excludes later registrations"
 
-        let! missing =
-            read
-                owner
-                { all with
-                    Dates = Map.ofList [ CaseDateFilter.ReceivedFrom, date "2026-10-01" ]
-                }
-                CaseGrouping.ReceivedMonth
+        let received =
+            { all with
+                Dates = Map.ofList [ CaseDateFilter.ReceivedFrom, date "2026-10-01" ]
+            }
 
+        let! missing = read owner received CaseGrouping.ReceivedMonth
         Expect.equal missing.Counts.Total 8L "A bounded received date excludes cases without a date"
+
+        let! datedList =
+            Service.list
+                owner
+                {
+                    Filter = received
+                    Page = { AfterCursor = None; Limit = 20 }
+                }
+                token
+
+        Expect.equal
+            ((success datedList).Items |> List.map (_.Reference >> CaseReference.format))
+            [
+                "REPORT-10"
+                "REPORT-11"
+                "REPORT-12"
+                "REPORT-13"
+                "REPORT-14"
+                "REPORT-15"
+                "REPORT-16"
+                "REPORT-17"
+            ]
+            "The fixed received lower bound includes dated cases and excludes the undated companions"
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "scoped-report-reader"

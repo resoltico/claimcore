@@ -41,6 +41,20 @@ module CaseDateFilter =
         | CaseDateFilter.ClosedThrough -> CaseReportDate.Closed, CaseDateBound.Through
         | CaseDateFilter.InactiveSince -> CaseReportDate.LastActivity, CaseDateBound.Through
 
+    let ranges =
+        all
+        |> List.groupBy (bound >> fst)
+        |> List.choose (fun (_, filters) ->
+            let find boundary =
+                filters |> List.tryFind (fun filter -> snd (bound filter) = boundary)
+
+            match find CaseDateBound.From, find CaseDateBound.Through with
+            | Some lower, Some upper -> Some(lower, upper)
+            | _ -> None)
+
+    let isUpperEndpoint filter =
+        ranges |> List.exists (fun (_, upper) -> filter = upper)
+
     let matches filter limit actual =
         limit
         |> Option.forall (fun limit ->

@@ -1,6 +1,10 @@
 {
   "ui.nextReportPage": "Next report page",
   "ui.restartReport": "Restart report",
+  "ui.caseSelectionInvalid": "This Cases selection cannot be used.",
+  "ui.caseSelectionRepairField": "Correct the field or clear it to use the remaining filters.",
+  "ui.caseSelectionApply": "Apply correction",
+  "ui.caseSelectionClear": "Clear field",
   "ui.reportingDates": "Reporting dates",
   "ui.about": "About",
   "ui.accent": "Accent colour",

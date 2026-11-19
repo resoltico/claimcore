@@ -1,8 +1,8 @@
-import type { CaseSelector, Link } from "@contracts/client";
+import { isCaseListSelection, type CaseSelector, type Link } from "@contracts/client";
 import { isObject } from "../protocol/client";
 import { isTerm } from "../presentation/terms";
 import { casePath, referencePath } from "./routes";
-import { parseWorklistQuery, worklistPath } from "./worklistQuery";
+import { worklistPath } from "./worklistQuery";
 import { parseReminderQuery, reminderPagePath } from "./reminderQuery";
 const targetInput = (link: Link): CaseSelector | undefined => {
   const { target } = link.input;
@@ -92,7 +92,10 @@ const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefine
       ? `/recovery/${encodeURIComponent(operation)}`
       : "/recovery/";
   },
-  "case.list": (link) => worklistPath(parseWorklistQuery(filterQuery(link.input))),
+  "case.list": ({ input }) => {
+    const { cursor: _cursor, limit: _limit, ...selection } = input;
+    return isCaseListSelection(selection) ? worklistPath(selection) : undefined;
+  },
   "reminder.list": (link) => {
     const target = targetInput(link);
     const { target: _target, cursor: _cursor, limit: _limit, ...filters } = link.input;

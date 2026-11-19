@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open System.Text.Json
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Wire
 
@@ -90,6 +91,19 @@ module ResponseDecoders =
                 quote (Api.id endpoint) + ":" + schemaDescriptor endpoint.OutputSchema)
             |> String.concat ","
 
+        let dateFields = CaseDateFilter.all |> List.map CaseDateFilter.token |> List.toArray
+
+        let dateRanges =
+            CaseDateFilter.ranges
+            |> List.map (fun (lower, upper) ->
+                [| CaseDateFilter.token lower; CaseDateFilter.token upper |])
+            |> List.toArray
+
+        let formattingRanges =
+            CaseSearchText.formattingRanges
+            |> List.map (fun (lo, hi) -> [| lo; hi |])
+            |> List.toArray
+
         "const responseDefinitions: Readonly<Record<string,ResponseSchema>> = {"
         + definitions
         + "};\n"
@@ -99,6 +113,19 @@ module ResponseDecoders =
         + "const exportFailureRoot:ResponseSchema = "
         + schemaDescriptor ExportTransport.failure.Schema
         + ";\n"
+        + "export const caseSelectionDateFields = "
+        + JsonSerializer.Serialize dateFields
+        + " as const;\n"
+        + "export const caseSelectionDateRanges = "
+        + JsonSerializer.Serialize dateRanges
+        + " as const;\n"
+        + "export const caseSelectionTextConstraints = {maximumCharacters:"
+        + number CaseSearchText.MaximumCharacters
+        + ",maximumBytes:"
+        + number CaseSearchText.maximumBytes
+        + ",formattingRanges:"
+        + JsonSerializer.Serialize formattingRanges
+        + "} as const;\n"
         + """
 // Structural admission for generator-produced descriptors preserves exact strings.
 // It is not an interpreter for arbitrary regexes; generation admits only BrowserPatterns syntax.
@@ -348,6 +375,16 @@ export const isResponseStructure = (
       return responseCompound(schema, value, admit, child);
   }
 };
+const caseSelectionName = "CaseListSelection";
+export const caseSelectionMember = (key: string): ResponseSchema | undefined => {
+  const schema = responseDefinitions[caseSelectionName];
+  if (schema?.[0] !== "object" || !Object.hasOwn(schema[1], key)) {
+    return undefined;
+  }
+  return schema[1][key];
+};
+export const isCaseListSelection = (value: unknown): value is CaseListSelection =>
+  isResponseStructure(["ref", caseSelectionName], value);
 export const isCsvExportFailure = (value:unknown):value is ExportFailureReply => isResponseStructure(exportFailureRoot,value);
 export const isEndpointResponse = <E extends EndpointId>(
   endpoint: E,

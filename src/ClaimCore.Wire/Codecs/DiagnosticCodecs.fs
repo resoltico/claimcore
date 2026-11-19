@@ -277,6 +277,20 @@ module DiagnosticCodecs =
                  |> field "issuedAt" fst instant
                  |> field "observedAt" snd instant)
             variant
+                "CASE_DATE_RANGE"
+                Refusal.CaseDateRange
+                (function
+                | Refusal.CaseDateRange upper -> Some upper
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.CorrectInput
+                 |> field
+                     "field"
+                     id
+                     (VocabularyCodec.select
+                         CaseDateFilter.isUpperEndpoint
+                         CaseDateFilter.vocabulary))
+            variant
                 "INVALID_INPUT"
                 Refusal.InvalidInput
                 (function

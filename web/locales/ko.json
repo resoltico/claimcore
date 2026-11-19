@@ -7,6 +7,22 @@
     "text": "보고서 처음부터 보기",
     "source": "b4c20d320a54"
   },
+  "ui.caseSelectionInvalid": {
+    "text": "이 사건 선택 조건은 사용할 수 없습니다.",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "나머지 필터를 사용하려면 필드를 수정하거나 지우세요.",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionApply": {
+    "text": "수정 적용",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "필드 지우기",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "보고 날짜",
     "source": "274bd4f0d808"

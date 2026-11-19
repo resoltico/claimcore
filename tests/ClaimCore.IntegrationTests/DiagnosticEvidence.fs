@@ -358,6 +358,31 @@ let internal queryEvidence actor =
                 })
                 (ct))
 
+        let range =
+            { CaseListFilter.empty<string> with
+                Dates =
+                    Map.ofList
+                        [
+                            CaseDateFilter.ReceivedFrom, CalendarDate.ofDate (DateOnly(2026, 2, 2))
+                            CaseDateFilter.ReceivedThrough,
+                            CalendarDate.ofDate (DateOnly(2026, 2, 1))
+                        ]
+            }
+
+        let! reversed =
+            Service.list
+                actor
+                {
+                    Filter = range
+                    Page = { AfterCursor = None; Limit = 1 }
+                }
+                ct
+
+        Expect.equal
+            reversed
+            (Outcome.Rejected(Refusal.CaseDateRange CaseDateFilter.ReceivedThrough))
+            "A Cases read reports the upper field on a reversed range"
+
         let evidence = ResizeArray<_>()
 
         for raw in [ ""; "x\u0000y"; " x"; "x\u0001y"; "x\u200by"; String('x', 101) ] do
@@ -371,7 +396,12 @@ let internal queryEvidence actor =
             evidence.Add(queryRefused reply)
 
         return
-            [ queryRefused limit; queryRefused cursor; queryRefused missing ]
+            [
+                queryRefused limit
+                queryRefused cursor
+                queryRefused missing
+                queryRefused reversed
+            ]
             @ List.ofSeq evidence
     }
 

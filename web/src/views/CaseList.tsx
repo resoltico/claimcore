@@ -10,7 +10,7 @@ import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import {} from "./worklist/worklist.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
 
@@ -29,6 +29,7 @@ import {
   listRequest,
   type WorklistQuery,
 } from "../routing/worklistQuery";
+import { CaseSelectionRecovery } from "./worklist/CaseSelectionRecovery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { PageTables } from "../ui/PageTables";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
@@ -63,10 +64,7 @@ const casePage = (response: ServiceResponse<typeof apiEndpoints.caseList>) => {
     disclosure: doc.disclosure,
   };
 };
-const useWorklist = () => {
-  const route = useContentRoute();
-  const search = route.screen === "cases" ? route.query : "";
-  const query = useMemo(() => parseWorklistQuery(search), [search]);
+const useWorklist = (query: WorklistQuery) => {
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
   const page = useEndpointPage<
     typeof apiEndpoints.caseList,
@@ -221,9 +219,10 @@ const ReadyCaseList = ({
   onSelect,
   onMutationLockChange = ignoreLock,
   disclosureAvailable = true,
-}: Props) => {
+  query,
+}: Props & { query: WorklistQuery }) => {
   const p = usePresentation();
-  const page = useWorklist();
+  const page = useWorklist(query);
   const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
   const close = () => {
     const id =
@@ -342,13 +341,24 @@ const AvailableCaseList = (props: Props) => {
   const context = useRequesterContext();
   const views = useWorkspaceViews().cases;
   const route = useContentRoute();
-  const query = useMemo(
-    () => parseWorklistQuery(route.screen === "cases" ? route.query : ""),
-    [route],
-  );
+  const search = route.screen === "cases" ? route.query : "";
+  const admission = useMemo(() => parseWorklistQuery(search), [search]);
+  const recovering = useRef(false);
+  useEffect(() => {
+    if (admission.kind === "invalid") {
+      recovering.current = true;
+    } else if (recovering.current && admission.selection.view !== undefined) {
+      recovering.current = false;
+      document.getElementById("case-list-title")?.focus();
+    }
+  }, [admission]);
   if (context === null) {
     return null;
   }
+  if (admission.kind === "invalid") {
+    return <CaseSelectionRecovery key={search} admission={admission} />;
+  }
+  const query = admission.selection;
   if (query.view === undefined) {
     const first = views.data?.items[0];
     if (first !== undefined) {
@@ -356,7 +366,7 @@ const AvailableCaseList = (props: Props) => {
     }
     return <WorkspaceViewsStatus area="cases" />;
   }
-  return <ReadyCaseList {...props} />;
+  return <ReadyCaseList {...props} query={query} />;
 };
 
 /** List selection and editors belong to one authenticated session. */

@@ -1,57 +1,174 @@
-import type { CaseListRequest } from "@contracts/client";
-import { isTerm } from "../presentation/terms";
-export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit">;
-export const reportDateFields = [
-  "registeredFrom",
-  "registeredThrough",
-  "receivedFrom",
-  "receivedThrough",
-  "closedFrom",
-  "closedThrough",
-  "inactiveSince",
-] as const;
-const unique = <T>(values: ReadonlyArray<T>): T[] => [...new Set(values)];
-const responsibilityQuery = (
-  assignment: string | null,
-  actor: string | null,
-): Pick<WorklistQuery, "assignment" | "responsibleActor"> => ({
-  ...(assignment === "MINE" || assignment === "UNASSIGNED" ? { assignment } : {}),
-  ...(actor === null || actor === "" ? {} : { responsibleActor: actor }),
-});
-const dueQuery = (due: string | null): Pick<WorklistQuery, "due"> =>
-  due !== null && isTerm("due", due) ? { due } : {};
-export const parseWorklistQuery = (query: string): WorklistQuery => {
-  const params = new URLSearchParams(query);
-  const rawView = params.get("view");
-  const view = rawView !== null && isTerm("caseView", rawView) ? rawView : undefined;
-  const lifecycle = unique(
-    params.getAll("lifecycle").filter((value) => isTerm("lifecycle", value)),
-  );
-  const status = unique(params.getAll("status").filter((value) => isTerm("status", value)));
-  const progress = unique(params.getAll("progress").filter((value) => isTerm("progress", value)));
-  const text = params.get("q") ?? "";
-  const rawOrder = params.get("order");
-  const order = rawOrder !== null && isTerm("caseOrder", rawOrder) ? rawOrder : undefined;
-  const assignment = params.get("assignment");
-  const rawDue = params.get("due");
+import {
+  caseSelectionDateFields,
+  caseSelectionDateRanges,
+  caseSelectionMember,
+  caseSelectionTextConstraints,
+  isCaseListSelection,
+  isResponseStructure,
+  type CaseListRequest,
+  type CaseListSelection,
+  type ResponseSchema,
+} from "@contracts/client";
 
-  return {
-    ...(view === undefined ? {} : { view }),
-    ...(lifecycle.length ? { lifecycle } : {}),
-    ...(status.length ? { status } : {}),
-    ...(progress.length ? { progress } : {}),
-    ...(text === "" ? {} : { text }),
-    ...(order === undefined ? {} : { order }),
-    ...responsibilityQuery(assignment, params.get("responsibleActor")),
-    ...dueQuery(rawDue),
-    ...Object.fromEntries(
-      reportDateFields.flatMap((field) => {
-        const value = params.get(field);
-        return value === null || !/^\d{4}-\d{2}-\d{2}$/u.test(value) ? [] : [[field, value]];
-      }),
-    ),
-  };
+export type WorklistQuery = CaseListSelection;
+export const reportDateFields = caseSelectionDateFields;
+
+type SelectionFragment = {
+  position: number;
+  raw: string;
+  key: string | undefined;
+  value: string | undefined;
 };
+export type SelectionIssue = {
+  fragments: ReadonlyArray<SelectionFragment>;
+  key?: string;
+  upper?: (typeof reportDateFields)[number];
+};
+export type WorklistAdmission =
+  | { kind: "valid"; selection: WorklistQuery }
+  | { kind: "invalid"; fragments: ReadonlyArray<SelectionFragment>; issues: SelectionIssue[] };
+
+const source = (query: string) => query.replace(/^\?/u, "");
+const decodePart = (value: string) => {
+  try {
+    return decodeURIComponent(value.replace(/\+/gu, " "));
+  } catch {
+    return undefined;
+  }
+};
+const parseFragment = (raw: string, position: number): SelectionFragment => {
+  const separator = raw.indexOf("=");
+  const key = decodePart(separator < 0 ? raw : raw.slice(0, separator));
+  const value = decodePart(separator < 0 ? "" : raw.slice(separator + 1));
+  return { raw, key, value, position };
+};
+
+const validText = (value: string) => {
+  const constraints = caseSelectionTextConstraints;
+  const scalars = Array.from(value);
+  return (
+    scalars.length <= constraints.maximumCharacters &&
+    new TextEncoder().encode(value).length <= constraints.maximumBytes &&
+    !/^\p{White_Space}|\p{White_Space}$|\p{Cc}/u.test(value) &&
+    !scalars.some((character) => {
+      const point = character.codePointAt(0) ?? 0;
+      return constraints.formattingRanges.some(([first, last]) => point >= first && point <= last);
+    })
+  );
+};
+
+const groupFragments = (fragments: ReadonlyArray<SelectionFragment>, issues: SelectionIssue[]) => {
+  const groups = new Map<string, SelectionFragment[]>();
+  for (const fragment of fragments) {
+    if (fragment.key === undefined) {
+      issues.push({ fragments: [fragment] });
+    } else {
+      const group = groups.get(fragment.key) ?? [];
+      group.push(fragment);
+      groups.set(fragment.key, group);
+    }
+  }
+  return groups;
+};
+
+const memberValue = (shape: ResponseSchema, group: ReadonlyArray<SelectionFragment>) => {
+  const values = group.map((fragment) => fragment.value);
+  if (!values.every((value) => value !== undefined)) {
+    return undefined;
+  }
+  if (shape[0] === "array") {
+    return values;
+  }
+  return values.length === 1 ? values[0] : undefined;
+};
+
+const allowsSearchText = (member: string, value: string | string[]) =>
+  member !== "text" || value === "" || (typeof value === "string" && validText(value));
+
+const admitMembers = (
+  groups: ReadonlyMap<string, SelectionFragment[]>,
+  issues: SelectionIssue[],
+) => {
+  const fields: [string, string | string[]][] = [];
+  for (const [key, group] of groups) {
+    const member = key === "q" ? "text" : key;
+    const shape = key === "text" ? undefined : caseSelectionMember(member);
+    if (shape === undefined) {
+      issues.push({ fragments: group });
+      continue;
+    }
+    const value = memberValue(shape, group);
+    if (
+      value === undefined ||
+      !isResponseStructure(shape, value) ||
+      !allowsSearchText(member, value)
+    ) {
+      issues.push({ fragments: group, key });
+    } else if (key !== "q" || value !== "") {
+      fields.push([member, value]);
+    }
+  }
+
+  const selection: unknown = Object.fromEntries(fields);
+  if (!isCaseListSelection(selection)) {
+    throw new Error("Cases URL members must form the declared selection.");
+  }
+  return selection;
+};
+
+const checkRanges = (
+  selection: WorklistQuery,
+  groups: ReadonlyMap<string, SelectionFragment[]>,
+  issues: SelectionIssue[],
+) => {
+  for (const [lower, upper] of caseSelectionDateRanges) {
+    const first = selection[lower];
+    const last = selection[upper];
+    const group = groups.get(upper);
+    if (first !== undefined && last !== undefined && first > last && group !== undefined) {
+      issues.push({ fragments: group, key: upper, upper });
+    }
+  }
+};
+
+const normalize = (selection: WorklistQuery): WorklistQuery => ({
+  ...selection,
+  ...(selection.lifecycle === undefined ? {} : { lifecycle: [...new Set(selection.lifecycle)] }),
+  ...(selection.status === undefined ? {} : { status: [...new Set(selection.status)] }),
+  ...(selection.progress === undefined ? {} : { progress: [...new Set(selection.progress)] }),
+});
+
+export const parseWorklistQuery = (query: string): WorklistAdmission => {
+  const raw = source(query);
+  const fragments = raw === "" ? [] : raw.split("&").map(parseFragment);
+  const issues: SelectionIssue[] = [];
+  const groups = groupFragments(fragments, issues);
+  const selection = admitMembers(groups, issues);
+  checkRanges(selection, groups, issues);
+  return issues.length === 0
+    ? { kind: "valid", selection: normalize(selection) }
+    : { kind: "invalid", fragments, issues };
+};
+
+export const repairWorklistQuery = (
+  fragments: ReadonlyArray<SelectionFragment>,
+  issue: SelectionIssue,
+  values: ReadonlyArray<string>,
+): string => {
+  const remaining = fragments
+    .filter((fragment) => !issue.fragments.includes(fragment))
+    .map((fragment) => fragment.raw);
+  const { key } = issue;
+  if (key !== undefined && values.length > 0) {
+    const replacement = new URLSearchParams();
+    for (const value of values) {
+      replacement.append(key, value);
+    }
+    remaining.push(replacement.toString());
+  }
+  return remaining.length === 0 ? "/cases" : `/cases?${remaining.join("&")}`;
+};
+
 export const worklistPath = (query: WorklistQuery): string => {
   const params = new URLSearchParams();
   if (query.view !== undefined) {

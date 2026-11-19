@@ -151,6 +151,14 @@ module Terms =
             }
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
+            {
+                Name = Vocabulary.name CaseDateFilter.vocabulary
+                Labels =
+                    CaseDateFilter.all
+                    |> List.map (fun field ->
+                        CaseDateFilter.token field,
+                        TaskInputPresentation.messageKey (TaskInputId.CaseDate field) "label")
+            }
             rendered CaseProgress.vocabulary
             rendered PaymentDirection.vocabulary
             rendered CaseStageKind.vocabulary

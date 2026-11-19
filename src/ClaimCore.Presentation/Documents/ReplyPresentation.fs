@@ -32,6 +32,7 @@ module Refusals =
     let action =
         function
         | Refusal.InvalidInput _
+        | Refusal.CaseDateRange _
         | Refusal.OperationIdOutOfWindow _ -> RecommendedAction.CorrectInput
         | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _) ->
             RecommendedAction.AskForAccess
