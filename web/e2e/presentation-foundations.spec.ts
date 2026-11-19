@@ -2729,6 +2729,7 @@ test("People uses core roles and state without row reads and forwards known-zero
   ]);
   expect(summaryInputs).toEqual([
     {
+      limit: 50,
       view: "ALL",
       status: ["OPENED"],
       lifecycle: ["ACTIVE"],
