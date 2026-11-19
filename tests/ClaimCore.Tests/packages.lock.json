@@ -274,7 +274,7 @@
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
           "FSharp.Core": "[11.0.101, )",
-          "Wcwidth": "[4.0.1, )"
+          "Wcwidth": "[5.0.2, )"
         }
       },
       "claimcore-server": {
@@ -546,9 +546,9 @@
       },
       "Wcwidth": {
         "type": "CentralTransitive",
-        "requested": "[4.0.1, )",
-        "resolved": "4.0.1",
-        "contentHash": "PMU8u3pGf9nUkee39KMrB8qqId7u7kyGWaZpOh9E4Mal3xChq+relS/hHQOicGAswyzi7F5DjXjac0mTnRBX8Q=="
+        "requested": "[5.0.2, )",
+        "resolved": "5.0.2",
+        "contentHash": "QdEuJpQoHlhHWaYjwlAaFerFcd4cmejvL41EV2ogQB7vIQxLrIKK9m37qN+24HlgyHw2ou+r/Y9rHoWxAsVBRQ=="
       }
     }
   }

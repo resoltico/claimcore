@@ -45,7 +45,7 @@
     {
       "file": "Wcwidth-MIT.txt",
       "sha256": "29f03aba55e0761c5cb75a266839cd5cd25f013514fbe034bfb5a9b7529e8cce",
-      "source": "https://github.com/spectreconsole/wcwidth/blob/64a3f523d5dc27124e04ff9079137ac2c5c72143/LICENSE.md"
+      "source": "https://github.com/spectreconsole/wcwidth/blob/1097dd9e3eb724a6cede8b4e0ad0a76154510bf6/LICENSE.md"
     },
     {
       "file": "MailKit-MIT.txt",
@@ -262,7 +262,7 @@
     },
     {
       "id": "Wcwidth",
-      "version": "4.0.1",
+      "version": "5.0.2",
       "repository": "https://github.com/spectreconsole/wcwidth",
       "texts": [
         "Wcwidth-MIT.txt"
@@ -270,8 +270,8 @@
       "assets": [
         "runtime:Wcwidth.dll"
       ],
-      "packageRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143",
-      "licenseRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143"
+      "packageRevision": "1097dd9e3eb724a6cede8b4e0ad0a76154510bf6",
+      "licenseRevision": "1097dd9e3eb724a6cede8b4e0ad0a76154510bf6"
     },
     {
       "id": "MailKit",
