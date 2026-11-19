@@ -282,14 +282,24 @@ const responseCompound = (
     case "array":
       return responseArray(schema, value, child);
     case "keyedArray": {
-      if (!Array.isArray(value) || !admit(schema[1], value)) return false;
+      if (!Array.isArray(value) || !admit(schema[1], value)) {
+        return false;
+      }
       const seen = new Set<string>();
       return value.every((item: unknown) => {
-        if (!responseObject(item)) return false;
+        if (!responseObject(item)) {
+          return false;
+        }
         const key = item[schema[2]];
-        if (typeof key !== "string") return false;
-        if (!schema[3].includes(key)) return true;
-        if (seen.has(key)) return false;
+        if (typeof key !== "string") {
+          return false;
+        }
+        if (!schema[3].includes(key)) {
+          return true;
+        }
+        if (seen.has(key)) {
+          return false;
+        }
         seen.add(key);
         return true;
       });

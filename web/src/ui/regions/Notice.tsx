@@ -12,15 +12,25 @@ export const Notice = ({
   timeZone: string;
 }) => {
   const p = usePresentation();
-  return content.notices.map((notice, index) => (
-    <div key={index} className="region-notice" data-tone={notice.tone} role="status">
-      <Icon name="check" />
-      <div>
-        <p>{renderCatalogKey(p, notice.messageId)}</p>
-        {notice.reason === undefined ? null : (
-          <PresentedValue value={notice.reason} timeZone={timeZone} />
-        )}
+  const occurrences = new Map<string, number>();
+  return content.notices.map((notice) => {
+    const occurrence = occurrences.get(notice.messageId) ?? 0;
+    occurrences.set(notice.messageId, occurrence + 1);
+    return (
+      <div
+        key={`${notice.messageId}:${occurrence}`}
+        className="region-notice"
+        data-tone={notice.tone}
+        role="status"
+      >
+        <Icon name="check" />
+        <div>
+          <p>{renderCatalogKey(p, notice.messageId)}</p>
+          {notice.reason === undefined ? null : (
+            <PresentedValue value={notice.reason} timeZone={timeZone} />
+          )}
+        </div>
       </div>
-    </div>
-  ));
+    );
+  });
 };
