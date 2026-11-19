@@ -241,14 +241,25 @@ type Fixture() =
         |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
         |> _.WaitForExit(bound)
 
-    member _.RestartWeb() =
-        task {
-            let current =
-                web
-                |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
+    member private _.CaptureWebLogs() =
+        let current =
+            web
+            |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
 
-            web <- None
-            (current :> IDisposable).Dispose()
+        web <- None
+        (current :> IDisposable).Dispose()
+
+    member this.StopAndCaptureWeb(bound) =
+        task {
+            this.RequestWebStop()
+            let! exitCode = this.WaitForWebExit bound
+            Expect.equal exitCode 0 "Published Web exits cleanly before log capture"
+            this.CaptureWebLogs()
+        }
+
+    member this.RestartWeb() =
+        task {
+            this.CaptureWebLogs()
             restarts <- restarts + 1
 
             let replacement =
