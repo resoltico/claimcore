@@ -160,11 +160,18 @@ test("renders and pages through PDFs inside the opaque viewer @engine", async ({
   await expect(previous).toBeDisabled();
   await page.keyboard.press(pagerTab(browserName));
   await expect(next).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(controls.status).toHaveText("Page 2 of 2");
-  await expect(next).toBeDisabled();
-  await expect(previous).toBeFocused();
-  expect(await centerPixel(frame)).toEqual([0, 0, 255, 255]);
+  await page.keyboard.down("Enter");
+  try {
+    await expect(controls.status).toHaveText("Page 2 of 2");
+    await expect(next).toBeDisabled();
+    await expect(previous).toBeFocused();
+    expect(await centerPixel(frame)).toEqual([0, 0, 255, 255]);
+    await page.keyboard.down("Enter");
+    await expect(previous).toBeFocused();
+    await expect(controls.status).toHaveText("Page 2 of 2");
+  } finally {
+    await page.keyboard.up("Enter");
+  }
   await page.keyboard.press("Enter");
   await expect(controls.status).toHaveText("Page 1 of 2");
   await expect(previous).toBeDisabled();
@@ -255,61 +262,77 @@ test("paints a filled PDF widget into the canvas without interactive elements @e
   ).toEqual(["canvas", "script"]);
 });
 
-test("discards invalid trapped-frame replies and deadlines preserve download", async ({ page }) => {
-  test.setTimeout(90_000);
-  await page.addInitScript((path) => {
-    if (location.pathname !== path) {
-      return;
-    }
-    window.addEventListener("message", (event: MessageEvent<unknown>) => {
-      const [port] = event.ports;
-      if (
-        event.source !== parent ||
-        event.data !== "claimcore-attachment-preview" ||
-        port === undefined
-      ) {
+for (const moveFocusOutside of [false, true]) {
+  test(`discards invalid trapped-frame replies and preserves download with focus ${moveFocusOutside ? "outside" : "inside"} the pager @engine`, async ({
+    page,
+    browserName,
+  }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript((path) => {
+      if (location.pathname !== path) {
         return;
       }
-      event.stopImmediatePropagation();
-      port.onmessage = ({ data }: MessageEvent<{ requestId: number; page: number }>) => {
-        if (data.page === 1) {
-          port.postMessage({ requestId: data.requestId, page: 1, pageCount: 2 });
-        } else if (data.page === 2) {
-          for (const reply of [
-            { requestId: data.requestId, page: 2, pageCount: 2.5 },
-            { requestId: data.requestId, page: 2, pageCount: 1 },
-            { requestId: data.requestId + 4, page: 2, pageCount: 2 },
-            { requestId: data.requestId, page: 2, pageCount: 2, extra: 0 },
-          ]) {
-            port.postMessage(reply);
-          }
-          document.documentElement.dataset["badRepliesSent"] = "true";
+      window.addEventListener("message", (event: MessageEvent<unknown>) => {
+        const [port] = event.ports;
+        if (
+          event.source !== parent ||
+          event.data !== "claimcore-attachment-preview" ||
+          port === undefined
+        ) {
+          return;
         }
-      };
+        event.stopImmediatePropagation();
+        port.onmessage = ({ data }: MessageEvent<{ requestId: number; page: number }>) => {
+          if (data.page === 1) {
+            port.postMessage({ requestId: data.requestId, page: 1, pageCount: 2 });
+          } else if (data.page === 2) {
+            for (const reply of [
+              { requestId: data.requestId, page: 2, pageCount: 2.5 },
+              { requestId: data.requestId, page: 2, pageCount: 1 },
+              { requestId: data.requestId + 4, page: 2, pageCount: 2 },
+              { requestId: data.requestId, page: 2, pageCount: 2, extra: 0 },
+            ]) {
+              port.postMessage(reply);
+            }
+            document.documentElement.dataset["badRepliesSent"] = "true";
+          }
+        };
+      });
+    }, viewerPath);
+    await openAuthenticated(page);
+    await openCase(page, `ATTACH-PDF-REPLY-${randomUUID()}`);
+    const bytes = syntheticPdf([redPage, bluePage]);
+    const { row } = await upload(
+      page,
+      documentPanel(page),
+      pdfName,
+      pdfName,
+      "application/pdf",
+      bytes,
+    );
+    const { status, iframe, close } = await previewDocument(row);
+    await expect(status).toHaveText("Page 1 of 2");
+    await page.keyboard.press(pagerTab(browserName));
+    await expect(row.getByRole("button", { name: "Next page", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(row.getByRole("button", { name: "Previous page", exact: true })).toBeFocused();
+    await expect(viewerFrame(page).locator("html")).toHaveAttribute(
+      "data-bad-replies-sent",
+      "true",
+    );
+    await expect(status).toHaveText("Page 1 of 2");
+    const downloadButton = row.getByRole("button", { name: "Download", exact: true });
+    if (moveFocusOutside) {
+      await downloadButton.focus();
+    }
+    await expect(row.getByRole("alert")).toHaveText("This attachment cannot be previewed.", {
+      timeout: 22_000,
     });
-  }, viewerPath);
-  await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-REPLY-${randomUUID()}`);
-  const bytes = syntheticPdf([redPage, bluePage]);
-  const { row } = await upload(
-    page,
-    documentPanel(page),
-    pdfName,
-    pdfName,
-    "application/pdf",
-    bytes,
-  );
-  const { status, iframe } = await previewDocument(row);
-  await expect(status).toHaveText("Page 1 of 2");
-  await row.getByRole("button", { name: "Next page", exact: true }).click();
-  await expect(viewerFrame(page).locator("html")).toHaveAttribute("data-bad-replies-sent", "true");
-  await expect(status).toHaveText("Page 1 of 2");
-  await expect(row.getByRole("alert")).toHaveText("This attachment cannot be previewed.", {
-    timeout: 22_000,
+    await expect(iframe).toHaveCount(0);
+    await expect(moveFocusOutside ? downloadButton : close).toBeFocused();
+    await download(page, row, pdfName, bytes);
   });
-  await expect(iframe).toHaveCount(0);
-  await download(page, row, pdfName, bytes);
-});
+}
 
 const navigateWhileRendering = (row: Locator, label: "Next page" | "Close") =>
   row.evaluate((element, command) => {

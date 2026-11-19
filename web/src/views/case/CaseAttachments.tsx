@@ -326,6 +326,7 @@ const AttachmentPreview = ({
           bytes={preview.bytes}
           title={renderCatalogKey(p, preview.labelId)}
           unavailable={unavailable}
+          closeButton={control}
         />
       );
     }

@@ -263,8 +263,7 @@ let private rootHydrationQueries (connection: Npgsql.NpgsqlConnection) =
                 """
                 SELECT coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger WHERE operation_id=ANY($1)'),0)::bigint,
                        coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_effects WHERE operation_sequence=ANY($1)%'),0)::bigint,
-                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_compartments WHERE operation_sequence=ANY($1)%'),0)::bigint,
-                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.attachment_blobs%'),0)::bigint
+                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_compartments WHERE operation_sequence=ANY($1)%'),0)::bigint
                 FROM public.pg_stat_statements
                 """
                 [||]
@@ -275,8 +274,7 @@ let private rootHydrationQueries (connection: Npgsql.NpgsqlConnection) =
         return
             DatabaseSession.value<int64> 0 row,
             DatabaseSession.value<int64> 1 row,
-            DatabaseSession.value<int64> 2 row,
-            DatabaseSession.value<int64> 3 row
+            DatabaseSession.value<int64> 2 row
     }
 
 let private read =
@@ -284,19 +282,55 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected authorized metadata: %A" other
 
-let private payloadQueries connection =
+let private listWithoutPayloadAccess (database: PostgresFixture.Database) =
     task {
-        let! rows =
-            DatabaseSession.rows
-                connection
+        let! actor = Attachments.setup database
+        let fixture = database.Fixture
+
+        let! added =
+            Attachments.upload actor (draft fixture 710 Attachments.bytes) Attachments.bytes
+
+        accepted added |> ignore
+
+        // This database belongs to this case. Keep column grants for metadata only.
+        do!
+            sql
+                database
                 """
-                SELECT coalesce(sum(calls), 0)::bigint FROM public.pg_stat_statements
-                WHERE query ILIKE '%SELECT payload FROM claimcore.attachment_blobs%'
+                REVOKE SELECT ON claimcore.attachment_blobs FROM claimcore_runtime;
+                GRANT SELECT (case_id, blob_id, operation_sequence, effect_index, length, digest)
+                    ON claimcore.attachment_blobs TO claimcore_runtime;
                 """
                 [||]
-                token
 
-        return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
+        use! connection = database.RuntimeSource.OpenConnectionAsync(token)
+
+        let! denied =
+            task {
+                try
+                    let! _ =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT payload FROM claimcore.attachment_blobs"
+                            [||]
+                            token
+
+                    return false
+                with :? Npgsql.PostgresException as error when
+                    error.SqlState = Npgsql.PostgresErrorCodes.InsufficientPrivilege ->
+                    return true
+            }
+
+        Expect.isTrue denied "The runtime role is denied a direct payload SELECT"
+        let! listed = Attachments.list actor
+
+        match listed with
+        | Outcome.Succeeded page ->
+            Expect.sequenceEqual
+                (page.Items |> List.map _.AttachmentId)
+                [ Attachments.attachmentGuid fixture 710 ]
+                "Listing still returns the seeded attachment"
+        | other -> failtestf "Listing must succeed without payload-column access: %A" other
     }
 
 let private measure sql action explanation =
@@ -305,10 +339,8 @@ let private measure sql action explanation =
             DatabaseSession.execute sql "SELECT public.pg_stat_statements_reset()" [||] token
 
         let! result = action ()
-        let! payloadReads = payloadQueries sql
-        Expect.equal payloadReads 0L "Metadata reads issue zero payload SELECTs"
         let! acquired = rootHydrationQueries sql
-        Expect.equal acquired (1L, 1L, 1L, 0L) explanation
+        Expect.equal acquired (1L, 1L, 1L) explanation
         return result
     }
 
@@ -331,23 +363,11 @@ let private metadataQueries (database: PostgresFixture.Database) =
         for number in 0..1 do
             do! add number
 
-        let! _ =
-            DatabaseSession.execute sql "SELECT public.pg_stat_statements_reset()" [||] token
-
-        let! content = Attachments.download actor (Attachments.attachmentGuid fixture 710)
-        read content |> ignore
-        let! payloadReads = payloadQueries sql
-
-        Expect.equal
-            payloadReads
-            1L
-            "The positive control reaches the payload SELECT, independently of its result"
-
         let! two =
             measure
                 sql
                 (fun () -> Attachments.list actor)
-                "Two current attachments acquire one root/effect/compartment batch without payload storage"
+                "Two current attachments acquire one root/effect/compartment batch"
 
         Expect.hasLength (read two).Items 2 "The smaller list actually hydrates both attachments"
 
@@ -438,6 +458,9 @@ let tests =
             testCaseAsync
                 "erased-row verification detects a malformed present digest"
                 (run malformedErasedDigest)
+            testCaseAsync
+                "attachment listing succeeds without payload-column access"
+                (run listWithoutPayloadAccess)
             testCaseAsync
                 "metadata hydration batches lists and a historical continuation"
                 (async {
