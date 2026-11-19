@@ -1,4 +1,5 @@
 import {
+  type JournalPublication,
   type RecoveryJournal,
   type RecoveryRecord,
   type RecoveryScope,
@@ -82,7 +83,11 @@ const transaction = async <T>(
     database.close();
   }
 };
-const publishAttempt = (store: IDBObjectStore, record: RecoveryRecord, complete: () => void) => {
+const publishAttempt = (
+  store: IDBObjectStore,
+  record: RecoveryRecord,
+  complete: (result: JournalPublication) => void,
+) => {
   if (!isRecoveryRecord(record)) {
     throw new Error("Invalid recovery identity.");
   }
@@ -91,9 +96,11 @@ const publishAttempt = (store: IDBObjectStore, record: RecoveryRecord, complete:
     const value: unknown = existing.result;
     if (value === undefined) {
       const writing = store.add(record, key(record));
-      writing.onsuccess = complete;
+      writing.onsuccess = () => {
+        complete("inserted");
+      };
     } else if (sameAttempt(value, record)) {
-      complete();
+      complete("existing");
     } else {
       store.transaction.abort();
     }
@@ -152,10 +159,8 @@ export const createIndexedJournal = (
   name = "claimcore.recovery",
 ): RecoveryJournal => ({
   put: (record) =>
-    transaction<void>(factory, name, "readwrite", (store, complete) => {
-      publishAttempt(store, record, () => {
-        complete(undefined);
-      });
+    transaction<JournalPublication>(factory, name, "readwrite", (store, complete) => {
+      publishAttempt(store, record, complete);
     }),
   remove: (record) =>
     transaction<void>(factory, name, "readwrite", (store, complete) => {
@@ -203,7 +208,11 @@ export const subscribeRecovery = (listener: () => void): (() => void) => {
   };
 };
 export const browserJournal: RecoveryJournal = {
-  put: (record) => createIndexedJournal(globalThis.indexedDB).put(record).then(publish),
+  put: async (record) => {
+    const publication = await createIndexedJournal(globalThis.indexedDB).put(record);
+    publish();
+    return publication;
+  },
   remove: (record) => createIndexedJournal(globalThis.indexedDB).remove(record).then(publish),
   list: (scope) => createIndexedJournal(globalThis.indexedDB).list(scope),
 };

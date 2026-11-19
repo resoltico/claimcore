@@ -2,6 +2,7 @@ import { expect, it, vi } from "vitest";
 import {
   journalBeforeSend,
   isRecoveryRecord,
+  type JournalPublication,
   type RecoveryJournal,
   type RecoveryRecord,
 } from "../../../src/protocol/recoveryJournal";
@@ -19,8 +20,10 @@ it("awaits journal commit before handoff and retains only the explicit identity 
   let commit!: () => void;
   const journal: RecoveryJournal = {
     put: () =>
-      new Promise<void>((resolve) => {
-        commit = resolve;
+      new Promise<JournalPublication>((resolve) => {
+        commit = () => {
+          resolve("inserted");
+        };
       }),
     remove: vi.fn(() => Promise.resolve()),
     list: vi.fn(() => Promise.resolve([])),
@@ -30,7 +33,7 @@ it("awaits journal commit before handoff and retains only the explicit identity 
   await Promise.resolve();
   expect(send).not.toHaveBeenCalled();
   commit();
-  expect(await pending).toEqual({ kind: "sent", value: "accepted" });
+  expect(await pending).toEqual({ kind: "sent", publication: "inserted", value: "accepted" });
   expect(send).toHaveBeenCalledTimes(1);
   expect(isRecoveryRecord(record)).toBe(true);
   expect(isRecoveryRecord({ ...record, caseReference: "private" })).toBe(false);
@@ -51,7 +54,7 @@ it("refuses storage failure and stale completion without a transport call", asyn
     ...refused,
     put: vi.fn(() => {
       current = false;
-      return Promise.resolve();
+      return Promise.resolve<JournalPublication>("inserted");
     }),
   };
   expect(await journalBeforeSend(changed, record, () => current, send)).toEqual({

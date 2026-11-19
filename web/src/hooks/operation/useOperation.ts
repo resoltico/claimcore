@@ -497,7 +497,12 @@ const executeOwnedAttempt = async (
     };
   }
   const action = prepared.value;
-  if (action.type === "RECORD" || action.type === "NOT_ACCEPTED") {
+  // An exact record already present can belong to a prior dispatch with no known outcome.
+  if (
+    action.type === "RECORD" ||
+    action.type === "NOT_ACCEPTED" ||
+    (prepared.publication === "inserted" && action.type === "REFUSE" && !action.uncertain)
+  ) {
     await journal.remove(owned).catch(() => undefined);
   }
   return action;

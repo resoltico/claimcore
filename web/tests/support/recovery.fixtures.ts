@@ -17,9 +17,12 @@ const changed = () => globalThis.dispatchEvent(new Event("claimcore-recovery-cha
 /** UI test port only; IndexedDB qualification uses the real adapter separately. */
 export const testJournal: RecoveryJournal = {
   put: (record) => {
+    if (records.has(key(record))) {
+      return Promise.resolve("existing");
+    }
     records.set(key(record), record);
     changed();
-    return Promise.resolve();
+    return Promise.resolve("inserted");
   },
   remove: (record) => {
     records.delete(key(record));

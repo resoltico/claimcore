@@ -22,6 +22,7 @@ import { expect, test, type Request } from "@playwright/test";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft, startOpen, recordReviewed, startAct } from "./case-workflow";
 import { fillBusinessField } from "./typed-entry";
+import { recoveryRecords } from "./recovery-storage";
 
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
@@ -761,6 +762,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   ).toBeVisible();
   await expect(conflict).toContainText("Your draft is kept.");
   await expect(conflict).toContainText("Changed by another session");
+  expect(await recoveryRecords(page)).toEqual([]);
   await expect(
     conflict.getByRole("button", {
       name: "Review against latest",
