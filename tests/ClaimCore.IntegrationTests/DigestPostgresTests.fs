@@ -17,6 +17,9 @@ open ClaimCore.Server
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
+open Microsoft.AspNetCore.TestHost
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
 
 let private recorded (database: PostgresFixture.Database) =
     task {
@@ -45,6 +48,68 @@ let private withDigestCalendar work =
             do! work database |> Async.AwaitTask
         finally
             database.Fixture.Dispose()
+    }
+
+let private assertDisabledHost
+    (database: PostgresFixture.Database)
+    runtime
+    (digest: DigestConfiguration)
+    smtpCounts
+    =
+    task {
+        let assets = Directory.CreateTempSubdirectory "claimcore-disabled-digest-"
+
+        try
+            use certificate = ProbeHttpsFixture.certificate ()
+
+            let configuration =
+                { TestServerFixture.configuration certificate with
+                    KeyRingDirectory = assets
+                }
+
+            let host configuration =
+                let builder =
+                    HostProgram.configuredBuilder
+                        assets.FullName
+                        configuration
+                        TestServerFixture.oidc
+                        runtime
+
+                builder.WebHost.UseTestServer() |> ignore
+                builder.Build()
+
+            let hasDigest (host: IHost) =
+                host.Services.GetServices<IHostedService>()
+                |> Seq.exists (fun service -> service :? DigestService)
+
+            use disabled = host configuration
+            do! disabled.StartAsync token
+
+            let lifetime = disabled.Services.GetRequiredService<IHostApplicationLifetime>()
+
+            Expect.isTrue
+                lifetime.ApplicationStarted.IsCancellationRequested
+                "The host starts with digest settings absent"
+
+            Expect.isFalse (hasDigest disabled) "Startup leaves the digest worker unregistered"
+
+            let! claims = recorded database
+            Expect.isEmpty claims "An otherwise eligible recipient has no digest claim"
+            let! sends = smtpCounts ()
+            Expect.equal sends (0L, 0L) "Mailpit records zero accepted and rejected deliveries"
+            do! disabled.StopAsync token
+
+            use configured =
+                host
+                    { configuration with
+                        Digest = Some digest
+                    }
+
+            Expect.isTrue
+                (hasDigest configured)
+                "The same builder registers the worker when configured"
+        finally
+            assets.Delete(true)
     }
 
 let private integration (database: PostgresFixture.Database) =
@@ -220,6 +285,21 @@ let private integration (database: PostgresFixture.Database) =
                 Language = "en"
             }
 
+        use http = new HttpClient(BaseAddress = mailpit.Api)
+
+        let smtpCounts () =
+            task {
+                let! response = http.GetStringAsync("info", token)
+                use info = JsonDocument.Parse response
+                let stats = info.RootElement.GetProperty "RuntimeStats"
+
+                return
+                    stats.GetProperty("SMTPAccepted").GetInt64(),
+                    stats.GetProperty("SMTPRejected").GetInt64()
+            }
+
+        do! assertDisabledHost database first config smtpCounts
+
         let origin = Uri "https://claims.example.test"
         let runFirst = DigestService.runDue sink origin first config
         let runSecond = DigestService.runDue sink origin second config
@@ -245,7 +325,6 @@ let private integration (database: PostgresFixture.Database) =
                 ])
             "The two hosts send once, skip the empty queue and exclude disabled or opted-out people"
 
-        use http = new HttpClient(BaseAddress = mailpit.Api)
         let! response = http.GetStringAsync "messages"
         use messages = JsonDocument.Parse response
         let items = messages.RootElement.GetProperty "messages"
@@ -282,14 +361,45 @@ let private integration (database: PostgresFixture.Database) =
 
         do! profile 921 worker "denied@example.test"
         do! runFirst (instant 18 5 10) token
+        let! beforeRefusal = smtpCounts ()
+        Expect.equal beforeRefusal (1L, 0L) "The successful day had one delivery"
+
         do! runFirst (instant 19 5 0) token
+        let! failedRows = recorded database
+
+        Expect.contains
+            failedRows
+            (workerId, "2026-11-19", Some "FAILED")
+            "SMTP refusal is recorded as FAILED"
+
+        let! firstRefusal = smtpCounts ()
+        Expect.equal firstRefusal (1L, 1L) "Mailpit counts one rejected delivery"
+
         do! runSecond (instant 19 5 10) token
+        let! repeatedRows = recorded database
+
+        Expect.equal
+            (Set.ofList repeatedRows)
+            (Set.ofList failedRows)
+            "The other host adds no claim on the same date"
+
+        let! repeatedRefusal = smtpCounts ()
+        Expect.equal repeatedRefusal (1L, 1L) "Mailpit counts no same-day retry"
+
+        do! runSecond (instant 20 5 0) token
+        let! nextDay = smtpCounts ()
+        Expect.equal nextDay (1L, 2L) "Mailpit counts a new attempt on the following business date"
         let! rows = recorded database
 
         Expect.equal
             (rows |> List.filter (fun (actor, _, _) -> actor = workerId) |> Set.ofList)
-            (set [ workerId, "2026-11-18", Some "SENT"; workerId, "2026-11-19", Some "FAILED" ])
-            "SMTP refusal is recorded once and the next business date obtains its own claim"
+            (set
+                [
+                    workerId, "2026-11-18", Some "SENT"
+                    workerId, "2026-11-19", Some "FAILED"
+                    workerId, "2026-11-20", Some "FAILED"
+                ])
+            "Both rejected attempts have distinct business-date claims"
 
         let deliveryLog = log.ToString()
         Expect.stringContains deliveryLog (workerId.ToString "D") "Logs identify the actor"
@@ -322,12 +432,12 @@ let private integration (database: PostgresFixture.Database) =
 
         let! erased = Service.executeSubmission owner erase token
         acceptedPeople erased
-        do! runFirst (instant 20 5 0) token
+        do! runFirst (instant 21 5 0) token
         let! rows = recorded database
 
         Expect.isFalse
             (rows
-             |> List.exists (fun (actor, date, _) -> actor = workerId && date = "2026-11-20"))
+             |> List.exists (fun (actor, date, _) -> actor = workerId && date = "2026-11-21"))
             "Erasing the profile removes opt-in"
 
         let! _ = verified database

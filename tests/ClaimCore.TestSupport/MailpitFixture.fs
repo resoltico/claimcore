@@ -61,6 +61,7 @@ type Mailpit(tls: DigestSmtpTls, allowedRecipients: string option) =
                 .WithEnvironment("MP_SMTP_TLS_CERT", "/server.pem")
                 .WithEnvironment("MP_SMTP_TLS_KEY", "/server.key")
                 .WithEnvironment(tlsRequirement, "true")
+                .WithEnvironment("MP_DISABLE_VERSION_CHECK", "true")
                 .WithResourceMapping(
                     Encoding.UTF8.GetBytes(certificate.ExportCertificatePem()),
                     FilePath.Of "/server.pem",
