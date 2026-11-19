@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "Šodienas turpmākās darbības",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "Nosūtīts",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "Neizdevās",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "Vēl neizpildīti termiņi, kuru izpildes datums ir pagājis.",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "Vēl neizpildīti termiņi, kas jāizpilda šodien.",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "Vēl neizpildīti termiņi, kas jāizpilda nākamajās septiņās dienās.",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "Vēl neveiktas turpmākās darbības, kuru izpildes datums ir pagājis.",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "Vēl neveiktas turpmākās darbības, kas jāveic šodien.",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "Pasta pārsūtīšanas serveris pieņēma dienas kopsavilkumu.",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "Dienas kopsavilkuma nosūtīšana neizdevās.",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "Tukšs",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "Dienas kopsavilkumā nebija iekļaujamu atgādinājumu.",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "Operators",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "Pilnvarojums, ar kuru datubāzes administrēšanas komandas reģistrē sākotnējo iestatīšanu un īpašnieka piekļuves atjaunošanu.",
+    "source": "ee88ee15dfdb"
   }
 }

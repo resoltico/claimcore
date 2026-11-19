@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "今天到期的跟进事项",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "已发送",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "发送失败",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "已过截止日期且尚未完成的事项。",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "今天截止且尚未完成的事项。",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "未来七天内截止且尚未完成的事项。",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "已过预定日期且尚未完成的跟进事项。",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "今天到期且尚未完成的跟进事项。",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "邮件中继服务器已接收每日摘要。",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "每日摘要发送失败。",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "无提醒",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "没有可纳入每日摘要的提醒。",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "运维人员",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "通过数据库管理命令记录初始化和所有者恢复的权限。",
+    "source": "ee88ee15dfdb"
   }
 }

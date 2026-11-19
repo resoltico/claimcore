@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "Seguimientos para hoy",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "Enviado",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "Fallido",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "Plazos pendientes cuya fecha límite ya pasó.",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "Plazos pendientes que vencen hoy.",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "Plazos pendientes que vencen en los próximos siete días.",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "Seguimientos pendientes cuya fecha prevista ya pasó.",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "Seguimientos pendientes para hoy.",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "El servidor de correo aceptó el resumen diario.",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "Falló el envío del resumen diario.",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "Vacío",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "No había recordatorios que incluir en el resumen diario.",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "Operador",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "La autoridad que registra la inicialización y la recuperación del propietario mediante comandos de administración de la base de datos.",
+    "source": "ee88ee15dfdb"
   }
 }

@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "오늘 예정된 후속 조치",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "발송됨",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "발송 실패",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "마감일이 지난 미완료 마감입니다.",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "오늘이 마감일인 미완료 마감입니다.",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "앞으로 7일 이내에 마감일이 도래하는 미완료 마감입니다.",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "예정일이 지난 미완료 후속 조치입니다.",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "오늘이 예정일인 미완료 후속 조치입니다.",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "메일 릴레이가 일일 요약을 수락했습니다.",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "일일 요약을 보내지 못했습니다.",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "비어 있음",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "일일 요약에 포함할 알림이 없었습니다.",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "운영자",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "데이터베이스 관리 명령을 통해 초기 설정과 소유자 복구를 기록하는 권한입니다.",
+    "source": "ee88ee15dfdb"
   }
 }

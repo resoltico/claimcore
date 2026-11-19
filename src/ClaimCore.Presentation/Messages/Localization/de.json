@@ -3866,5 +3866,57 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.short": {
     "text": "Heute fällige Folgemaßnahmen",
     "source": "e04e8b1f370c"
+  },
+  "digestOutcome.SENT.shortLabel": {
+    "text": "Gesendet",
+    "source": "c16bc82bf1f0"
+  },
+  "digestOutcome.FAILED.shortLabel": {
+    "text": "Fehlgeschlagen",
+    "source": "031a8f0f659d"
+  },
+  "digestCount.OVERDUE_DEADLINES.description": {
+    "text": "Offene Fristen, deren Fälligkeitstag verstrichen ist.",
+    "source": "130012281e15"
+  },
+  "digestCount.DEADLINES_DUE_TODAY.description": {
+    "text": "Offene Fristen, die heute fällig sind.",
+    "source": "f314b66407fe"
+  },
+  "digestCount.UPCOMING_DEADLINES.description": {
+    "text": "Offene Fristen, die in den nächsten sieben Tagen fällig sind.",
+    "source": "e56f4fbab1e7"
+  },
+  "digestCount.OVERDUE_FOLLOW_UPS.description": {
+    "text": "Offene Folgemaßnahmen, deren Termin verstrichen ist.",
+    "source": "6169d225f521"
+  },
+  "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
+    "text": "Offene Folgemaßnahmen, die heute fällig sind.",
+    "source": "2fdacdd03551"
+  },
+  "digestOutcome.SENT.description": {
+    "text": "Der Mailserver hat die tägliche Übersicht angenommen.",
+    "source": "a7e4ddb9f020"
+  },
+  "digestOutcome.FAILED.description": {
+    "text": "Der Versand der täglichen Übersicht ist fehlgeschlagen.",
+    "source": "d5f2b3e0e0f0"
+  },
+  "digestOutcome.SKIPPED_EMPTY.shortLabel": {
+    "text": "Leer",
+    "source": "c6c094bc0054"
+  },
+  "digestOutcome.SKIPPED_EMPTY.description": {
+    "text": "Es gab keine Erinnerungen für die tägliche Übersicht.",
+    "source": "16408fd9e5b8"
+  },
+  "label.installationOperator.shortLabel": {
+    "text": "Betreiber",
+    "source": "291101a07fe9"
+  },
+  "label.installationOperator.description": {
+    "text": "Die Befugnis, mit Datenbankverwaltungsbefehlen die Einrichtung und die Wiederherstellung des Eigentümerzugangs zu erfassen.",
+    "source": "ee88ee15dfdb"
   }
 }

@@ -44,7 +44,9 @@ and commands. **Actor** and **ActorId** remain the technical registered-identity
 and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the task
 identity in submissions, advice, receipts, history and CLI declarations.
 
-The new party, closure, deadline, digest and authority wording is AI-assisted and awaits fluent review.
+The translated party roles, payment directions, closure outcomes, reminder kinds, deadline outcomes,
+reporting dimensions, day bands, digest, and installation operator wording are AI-assisted and await
+fluent review in all eight translated languages.
 
 ## Account and sign-in identity
 
