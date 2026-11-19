@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-19
+
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.
 - Format 7 previews with links removed after target erasure can fail verification. Preserve the database and recovery records and [start fresh](docs/operating.md#install-a-fresh-register).
 - Regenerate clients for paged case summaries, grouped related-case rows, ordered HUMAN notices, historical exact-reference selectors and typed case-selection refusals.
@@ -41,6 +43,7 @@
 - Worklist filters, due/assignment classification and assignee eligibility share core plans across lists and counts; clearing private projections requires accepted erasure evidence.
 - Deploy the released Linux x64 server image by digest with the [production Compose setup](docs/operating.md#install-from-release-artifacts).
 - Releases include a source archive and CLI archives for Linux x64, Linux musl x64 and macOS arm64 with SHA-256 checksums.
+- Update terminal character widths and development tooling. Refresh the pinned PostgreSQL 18.7 image.
 
 ## [0.19.0] - 2026-11-17
 
