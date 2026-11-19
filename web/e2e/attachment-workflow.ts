@@ -1,9 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { ResponseFor } from "@contracts/client";
+import { retainResponseBodies } from "./response-bodies";
 import { observedAccess } from "./work-workflow";
 
 export const confirmAttachmentChange = async (page: Page, path: string) => {
+  await retainResponseBodies(page);
   const consent = page.getByRole("dialog").locator("button[data-confirm-operation]");
   await expect(consent).toBeEnabled();
   const reply = page.waitForResponse((response) => new URL(response.url()).pathname === path);
