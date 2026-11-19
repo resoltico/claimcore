@@ -14,6 +14,7 @@
     <Compile Include="TaskOffer.fs" />
     <Compile Include="PaymentPages.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="AttachmentReads.fs" />
     <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />

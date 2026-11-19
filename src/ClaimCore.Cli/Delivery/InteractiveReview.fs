@@ -27,6 +27,7 @@ type internal InteractiveDraft =
             Input: SubmissionEnvelope<int64 option, Guid option>
             Rendering: RenderingContext
             PreviewOnly: bool
+            Upload: byte array option
         }
 
     member this.Language = this.Rendering.Language
@@ -84,12 +85,13 @@ module internal InteractiveReview =
             | None -> Ok None
             | Some _ ->
                 Grammar.draft arguments
-                |> Result.map (fun (input, language, preview) ->
+                |> Result.map (fun (input, language, preview, upload) ->
                     Some
                         {
                             Input = input
                             Rendering = language
                             PreviewOnly = preview
+                            Upload = upload
                         })
 
     let private invocation (endpoint: Endpoint<'Input, 'Output>) input =
@@ -157,6 +159,8 @@ module internal InteractiveReview =
                         |> Result.defaultWith (fun _ ->
                             invalidOp "Reviewed scope must bind the request.")
 
+                    let execute = Frames.withUpload draft.Upload execute
+
                     let! accepted = transport.Exchange execute token
                     transport.Deliver execute accepted
                     do! WorkRefresh.run transport.Exchange transport.Deliver accepted token
@@ -195,6 +199,8 @@ module internal InteractiveReview =
             match draft.Input.Binding, raw with
             | OperationBinding.Case(_, _, Some expected, _),
               Some(OperationBinding.Case(_, _, Some actual, _)) -> expected = actual
+            | OperationBinding.Attachment(_, Some expected),
+              Some(OperationBinding.Attachment(_, Some actual))
             | OperationBinding.Note(_, Some expected), Some(OperationBinding.Note(_, Some actual))
             | OperationBinding.Link(_, Some expected), Some(OperationBinding.Link(_, Some actual)) ->
                 expected = actual
@@ -364,6 +370,18 @@ module internal InteractiveReview =
                         CaseNotesRequest.AfterCursor = Some cursor
                     })
                 token
+        | OperationBinding.Attachment _ ->
+            // An attachment binding needs no mutable metadata from a list offer.
+            // Preview also adjudicates the original operation when its row has since disappeared.
+            let submission =
+                { draft.Input with
+                    OperationId = draft.Input.OperationId |> Option.orElseWith (newId >> Some)
+                }
+                |> OperationSubmission.completeDraft
+                |> Option.defaultWith (fun () ->
+                    invalidOp "An admitted attachment binding is complete.")
+
+            review console transport draft submission installation token
         | OperationBinding.Reminder(target, Some(id, _)) ->
             readPages
                 newId

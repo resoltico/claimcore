@@ -91,8 +91,7 @@ let private commandExamples () =
     let captured =
         rows
         |> Array.map (fun row ->
-            let arguments =
-                row.Split(' ', System.StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+            let arguments = CliExamples.fromCapture row
 
             CommandGrammar.operations
             |> List.sortByDescending (CommandGrammar.words >> List.length)
@@ -112,8 +111,7 @@ let private commandExamples () =
     let mutable localRefusals = 0
 
     for row in rows do
-        let arguments =
-            row.Split(' ', System.StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+        let arguments = CliExamples.fromCapture row
 
         if noncanonicalPeopleExample arguments then
             localRefusals <- localRefusals + 1

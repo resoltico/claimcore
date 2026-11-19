@@ -1,6 +1,9 @@
 module ClaimCore.IntegrationTests.DiagnosticEntryEvidence
 
 open System
+open System.Globalization
+open System.Security.Cryptography
+open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
@@ -550,5 +553,86 @@ let authoredIdentityAndClosureEvidence () =
 
             witnesses.Add(refused rejected)
 
+        return List.ofSeq witnesses
+    }
+
+let attachmentEvidence () =
+    task {
+        let! _, fixture = fixture ()
+
+        use _owned =
+            { new IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
+        let! actor = caseWorker fixture
+        let reference = "ATTACHMENT-WITNESSES"
+        let target = CaseSelector.Reference reference
+        let! opened = Service.executeSubmission actor (openRequest fixture 8700 reference) ct
+        accepted opened |> ignore
+
+        let draft number name length digest =
+            Submissions.createRaw
+                "attachment.add"
+                (id fixture number)
+                (OperationBinding.Attachment(target, None))
+                (Map.ofList
+                    [
+                        Submissions.text (Submissions.input InputTarget.AttachmentName) name
+                        Submissions.text (Submissions.input InputTarget.AttachmentLength) length
+                        Submissions.text (Submissions.input InputTarget.AttachmentDigest) digest
+                    ])
+
+        let name = "evidence.bin"
+        let digest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        let valid number = draft number name "3" digest
+        let bytes = Encoding.UTF8.GetBytes "abc"
+
+        let upload request (body: byte array) =
+            Service.executeAttachmentUpload actor request (ReadOnlyMemory<byte> body) ct
+
+        let witnesses = ResizeArray<_>()
+
+        for invalid in
+            [
+                draft 8701 (String.replicate 4097 "x") "3" digest
+                draft 8702 name "3.1" digest
+                draft 8703 name "3" "bad-digest"
+                valid 8704
+                Submissions.createRaw
+                    "attachment.withdraw"
+                    (id fixture 8705)
+                    (OperationBinding.Attachment(target, Some Guid.Empty))
+                    Map.empty
+            ] do
+            let! rejected = Service.executeSubmission actor invalid ct
+            witnesses.Add(refused rejected)
+
+        let! mismatch = upload (valid 8706) (Encoding.UTF8.GetBytes "abd")
+        witnesses.Add(refused mismatch)
+
+        let! first = upload (valid 8707) bytes
+        accepted first |> ignore
+        let! duplicate = upload (valid 8708) bytes
+        witnesses.Add(refused duplicate)
+
+        let tinyFile number value =
+            let payload = [| value |]
+
+            let requested =
+                draft
+                    number
+                    name
+                    (payload.Length.ToString(CultureInfo.InvariantCulture))
+                    (SHA256.HashData(payload) |> Convert.ToHexStringLower)
+
+            upload requested payload
+
+        for value in 0..98 do
+            let! added = tinyFile (8710 + value) (byte value)
+            accepted added |> ignore
+
+        let! capacity = tinyFile 8809 99uy
+        witnesses.Add(refused capacity)
         return List.ofSeq witnesses
     }

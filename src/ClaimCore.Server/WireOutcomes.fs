@@ -1,6 +1,7 @@
 namespace ClaimCore.Server
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json
@@ -42,7 +43,7 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
                     )
 
                 cancellation.Token.ThrowIfCancellationRequested()
-                HttpHeaders.csv context
+                HttpHeaders.noTransform context
                 context.Response.StatusCode <- StatusCodes.Status200OK
                 context.Response.ContentType <- ExportTransport.mediaType
                 context.Response.ContentLength <- int64 bytes.Length
@@ -61,6 +62,34 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
             }
             :> Task
 
+[<Sealed>]
+type private CompleteAttachmentResult
+    (bytes: VerifiedAttachment, mediaType: string, disposition: string option, installation: Guid) =
+    interface IResult with
+        member _.ExecuteAsync context =
+            task {
+                let intent = VerifiedAttachment.intent bytes
+                let memory = VerifiedAttachment.memory bytes
+                HttpHeaders.noTransform context
+                context.Response.StatusCode <- StatusCodes.Status200OK
+                context.Response.ContentType <- mediaType
+                context.Response.ContentLength <- int64 memory.Length
+                context.Response.Headers.ContentEncoding <- "identity"
+
+                context.Response.Headers[AttachmentTransport.digestHeader] <-
+                    Microsoft.Extensions.Primitives.StringValues(
+                        AttachmentIntent.digest intent |> AttachmentTransport.contentDigest
+                    )
+
+                context.Response.Headers["ClaimCore-Installation"] <- installation.ToString("D")
+
+                disposition
+                |> Option.iter (fun value -> context.Response.Headers.ContentDisposition <- value)
+
+                do! context.Response.Body.WriteAsync(memory, context.RequestAborted)
+            }
+            :> Task
+
 module internal WebWire =
     let csv (bytes: byte array) filename installation =
         if
@@ -71,6 +100,21 @@ module internal WebWire =
             invalidArg "bytes" "A complete bounded CSV response requires declared metadata."
 
         CompleteCsvResult(bytes, filename, installation) :> IResult
+
+    let attachment transfer (content: AttachmentContent) installation =
+        let name = content.Bytes |> VerifiedAttachment.intent |> AttachmentIntent.name
+
+        let mediaType, disposition =
+            match transfer, content.Preview with
+            | AttachmentTransfer.Download, _ ->
+                AttachmentTransport.downloadMediaType, Some(AttachmentTransport.disposition name)
+            | AttachmentTransfer.Preview, Some AttachmentPreview.Png ->
+                AttachmentTransport.pngMediaType, None
+            | AttachmentTransfer.Preview, Some AttachmentPreview.Jpeg ->
+                AttachmentTransport.jpegMediaType, None
+            | _ -> invalidOp "An attachment response requires a confirmed transfer media type."
+
+        CompleteAttachmentResult(content.Bytes, mediaType, disposition, installation) :> IResult
 
     let result status bytes =
         EncodedJsonResult(bytes, status) :> IResult

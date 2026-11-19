@@ -10,9 +10,35 @@ open ClaimCore.Application.Verification.VerificationChecks
 
 /// Verification adds checkpoint/finding context to the single application fold.
 module internal Replay =
+    type AttachmentOrigin =
+        {
+            Position: EffectPosition
+            IntroducesBlob: bool
+            Descriptor: AttachmentDescriptor option
+        }
+
+    type AttachmentFamily =
+        {
+            Origins: Map<AttachmentId, AttachmentOrigin>
+            Current: Set<AttachmentId>
+            ActiveBlobs: Set<AttachmentId>
+            RetainedBlobCount: int64
+            KnownRetainedBytes: int64
+        }
+
+    let private emptyAttachments =
+        {
+            Origins = Map.empty
+            Current = Set.empty
+            ActiveBlobs = Set.empty
+            RetainedBlobCount = 0L
+            KnownRetainedBytes = 0L
+        }
+
     type Scan =
         {
             Fold: FoldState
+            Attachments: Map<CaseId, AttachmentFamily>
             ExpectedSeen: bool
         }
 
@@ -40,6 +66,7 @@ module internal Replay =
     let initial (expected: LedgerPosition option) =
         {
             Fold = Fold.initial
+            Attachments = Map.empty
             ExpectedSeen = expected |> Option.exists ((=) LedgerPosition.genesis)
         }
 
@@ -51,15 +78,165 @@ module internal Replay =
              && sequence = Sequence.successor state.Head.Sequence
              && previous = EntryHash.toBytes state.Head.EntryHash)
 
+    let private attachmentStep (families: Map<CaseId, AttachmentFamily>) (change: PartChange) =
+        let invalid =
+            Error(
+                divergence
+                    (Some(EffectPosition.sequence change.Stamp.Position))
+                    VerificationFinding.AttachmentReferences
+            )
+
+        match change.Aggregate, change.Value, change.Erases with
+        | AggregateReference.Family caseId, PartValue.Attachment effect, None ->
+            let current = Map.tryFind caseId families |> Option.defaultValue emptyAttachments
+            let id = change.PartId |> AttachmentId.create
+
+            let update id family = Ok(Map.add id family families)
+
+            match id, effect with
+            | Some id, AttachmentEffect.Added(introduces, descriptor) when
+                change.Revision = Revision.first
+                && id = AttachmentId.ofOperationId change.Stamp.OperationId
+                && not (Map.containsKey id current.Origins)
+                ->
+                let blobValid =
+                    match introduces, descriptor with
+                    | true, Some descriptor -> descriptor.Blob = id
+                    | false, Some descriptor ->
+                        Map.tryFind descriptor.Blob current.Origins
+                        |> Option.exists (fun origin ->
+                            origin.IntroducesBlob
+                            && (origin.Descriptor
+                                |> Option.exists (fun stored ->
+                                    AttachmentIntent.length stored.Intent =
+                                        AttachmentIntent.length descriptor.Intent
+                                    && AttachmentIntent.digest stored.Intent =
+                                        AttachmentIntent.digest descriptor.Intent
+                                    && stored.Preview = descriptor.Preview)))
+                    | true, None -> true
+                    | false, None ->
+                        current.Origins |> Map.exists (fun _ origin -> origin.IntroducesBlob)
+
+                let activeBlob = descriptor |> Option.map _.Blob
+                let length = descriptor |> Option.map (_.Intent >> AttachmentIntent.length)
+
+                let capacity =
+                    not introduces
+                    || AttachmentAdmission.canRetainNew
+                        current.RetainedBlobCount
+                        current.KnownRetainedBytes
+                        length
+
+                if
+                    not blobValid
+                    || not capacity
+                    || (activeBlob
+                        |> Option.exists (fun blob -> Set.contains blob current.ActiveBlobs))
+                then
+                    invalid
+                else
+                    update
+                        caseId
+                        {
+                            Origins =
+                                Map.add
+                                    id
+                                    {
+                                        Position = change.Stamp.Position
+                                        IntroducesBlob = introduces
+                                        Descriptor = descriptor
+                                    }
+                                    current.Origins
+                            Current = Set.add id current.Current
+                            RetainedBlobCount =
+                                if introduces then
+                                    current.RetainedBlobCount + 1L
+                                else
+                                    current.RetainedBlobCount
+                            KnownRetainedBytes =
+                                if introduces then
+                                    current.KnownRetainedBytes + Option.defaultValue 0L length
+                                else
+                                    current.KnownRetainedBytes
+                            ActiveBlobs =
+                                activeBlob
+                                |> Option.map (fun blob -> Set.add blob current.ActiveBlobs)
+                                |> Option.defaultValue current.ActiveBlobs
+                        }
+            | Some id, AttachmentEffect.Withdrawn when Set.contains id current.Current ->
+                let origin = Map.find id current.Origins
+
+                update
+                    caseId
+                    { current with
+                        Current = Set.remove id current.Current
+                        ActiveBlobs =
+                            origin.Descriptor
+                            |> Option.map (fun descriptor ->
+                                Set.remove descriptor.Blob current.ActiveBlobs)
+                            |> Option.defaultValue current.ActiveBlobs
+                    }
+            | _ -> invalid
+        | _, PartValue.Attachment _, _ -> invalid
+        | _, _, Some(CompartmentOwner.Family id) ->
+            Ok(
+                Map.change
+                    id
+                    (Option.map (fun family ->
+                        { family with
+                            Current = Set.empty
+                            ActiveBlobs = Set.empty
+                        }))
+                    families
+            )
+        | _ -> Ok families
+
     let append installation expected state record =
         Fold.append installation state.Fold record
         |> Result.mapError (fun problem ->
             divergence (Some record.Root.Header.Sequence) (finding problem))
-        |> Result.map (fun next ->
-            {
-                Fold = next
-                ExpectedSeen = state.ExpectedSeen || (expected |> Option.exists ((=) next.Head))
-            })
+        |> Result.bind (fun next ->
+            record.Changes
+            |> List.fold
+                (fun state change ->
+                    state |> Result.bind (fun families -> attachmentStep families change))
+                (Ok state.Attachments)
+            |> Result.map (fun attachments ->
+                {
+                    Fold = next
+                    Attachments = attachments
+                    ExpectedSeen =
+                        state.ExpectedSeen || (expected |> Option.exists ((=) next.Head))
+                }))
+
+    let private attachmentOrigins state =
+        state.Attachments
+        |> Map.toSeq
+        |> Seq.collect (fun (caseId, family) ->
+            family.Origins
+            |> Map.toSeq
+            |> Seq.map (fun (id, origin) -> (caseId, id), origin))
+
+    let attachmentReferences state =
+        attachmentOrigins state
+        |> Seq.map (fun (key, origin) ->
+            key, (origin.Position, origin.Descriptor |> Option.map _.Blob))
+        |> Map.ofSeq
+
+    let attachmentBlobs state =
+        attachmentOrigins state
+        |> Seq.choose (fun (key, origin) ->
+            if origin.IntroducesBlob then
+                Some(key, (origin.Position, origin.Descriptor))
+            else
+                None)
+        |> Map.ofSeq
+
+    let attachmentProjection state =
+        state.Attachments
+        |> Map.toSeq
+        |> Seq.collect (fun (caseId, family) -> family.Current |> Seq.map (fun id -> caseId, id))
+        |> Set.ofSeq
 
     let erasure state =
         Fold.complete state.Fold

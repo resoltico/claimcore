@@ -42,6 +42,12 @@ type NotePartDescription =
         Removed: ValueChange<bool> option
     }
 
+type AttachmentPartDescription =
+    {
+        Withdrawn: bool
+        Display: AttachmentDisplay option
+    }
+
 type PartyPartDescription =
     {
         Content: ValueChange<PartyContent>
@@ -74,6 +80,7 @@ type PartDescription =
     | Work of WorkPartDescription
     | Reminder of ReminderPartDescription
     | Note of NotePartDescription
+    | Attachment of AttachmentPartDescription
     | Party of PartyPartDescription
     | Link of ValueChange<RelatedCaseContent>
     | Person of PersonPartDescription
@@ -86,6 +93,7 @@ module PartDescription =
         | PartDescription.Work _ -> PartKind.Work
         | PartDescription.Reminder _ -> PartKind.Reminder
         | PartDescription.Note _ -> PartKind.Note
+        | PartDescription.Attachment _ -> PartKind.Attachment
         | PartDescription.Party _ -> PartKind.Party
         | PartDescription.Link _ -> PartKind.Link
         | PartDescription.Person _ -> PartKind.Person

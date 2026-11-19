@@ -375,8 +375,7 @@ let closedFlagsBeforeInput =
             File.ReadAllLines(
                 Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-commands.txt")
             )
-            |> Array.map (fun row ->
-                row.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> List.ofArray)
+            |> Array.map (fun row -> CliExamples.fromCapture row)
             |> Array.toList
 
         let host =
@@ -389,6 +388,14 @@ let closedFlagsBeforeInput =
                 [ "session" ]
                 [ "shell" ]
                 [ "configure" ]
+                [
+                    "attachment"
+                    "download"
+                    "R-1"
+                    "11111111-2222-7333-8444-555555555554"
+                    "--output"
+                    "sample.txt"
+                ]
             ]
 
         for index, arguments in List.indexed (captured @ host) do

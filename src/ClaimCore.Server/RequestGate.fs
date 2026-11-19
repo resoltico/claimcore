@@ -85,10 +85,10 @@ module RequestGate =
         | CredentialMode.Bearer -> bearerActor configuration context
         | CredentialMode.BrowserCookie -> oidcHuman configuration context
 
-    let private oneHeader name (context: HttpContext) =
+    let internal oneHeader name (context: HttpContext) =
         match context.Request.Headers.TryGetValue(name) with
-        | true, values when values.Count = 1 && not (String.IsNullOrWhiteSpace(values[0])) ->
-            Some values[0]
+        | true, values when values.Count = 1 ->
+            Option.ofObj values[0] |> Option.filter (not << String.IsNullOrWhiteSpace)
         | _ -> None
 
     let private exactHost (origin: Uri) (context: HttpContext) =
@@ -110,7 +110,7 @@ module RequestGate =
 
     let private sameOriginFetch (context: HttpContext) =
         match oneHeader "Sec-Fetch-Site" context with
-        | None -> true
+        | None -> not (context.Request.Headers.ContainsKey "Sec-Fetch-Site")
         | Some supplied ->
             String.Equals(supplied, "same-origin", StringComparison.OrdinalIgnoreCase)
 
@@ -123,14 +123,14 @@ module RequestGate =
 
             String.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase)
 
-    let postShape origin maximumBytes context =
+    let private postShapeWith acceptsMedia origin maximumBytes context =
         if not (trustedConnection origin context) then
             Error GateFailure.UntrustedConnection
         elif not (matchingOrigin origin context) then
             Error GateFailure.OriginRejected
         elif not (sameOriginFetch context) then
             Error GateFailure.FetchMetadataRejected
-        elif not (contentType context) then
+        elif not (acceptsMedia context) then
             Error GateFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
@@ -141,6 +141,9 @@ module RequestGate =
         else
             Ok()
 
+    let postShape origin maximumBytes context =
+        postShapeWith contentType origin maximumBytes context
+
     let validateAntiforgery (antiforgery: IAntiforgery) (context: HttpContext) =
         task {
             try
@@ -150,17 +153,12 @@ module RequestGate =
                 return Error GateFailure.AntiforgeryRejected
         }
 
-    let validatePost origin maximumBytes antiforgery context =
-        match postShape origin maximumBytes context with
-        | Error failure -> Task.FromResult(Error failure)
-        | Ok() -> validateAntiforgery antiforgery context
-
-    let private bearerShape origin maximumBytes (context: HttpContext) =
+    let private bearerShape acceptsMedia origin maximumBytes (context: HttpContext) =
         if not (trustedConnection origin context) || not context.Request.IsHttps then
             Error GateFailure.UntrustedConnection
         elif context.Request.Headers.ContainsKey("Origin") then
             Error GateFailure.OriginRejected
-        elif not (contentType context) then
+        elif not (acceptsMedia context) then
             Error GateFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
@@ -182,23 +180,63 @@ module RequestGate =
         else
             verifiedPrincipal configuration context
 
-    let private browserPost configuration origin maximumBytes antiforgery context =
+    let internal antiforgeryHeader = "X-ClaimCore-Antiforgery"
+
+    let private hasSingletonAntiforgery context =
+        oneHeader antiforgeryHeader context
+        |> Option.exists (fun value -> not (value.Contains ','))
+
+    let private browserPost
+        acceptsMedia
+        headerOnly
+        configuration
+        origin
+        maximumBytes
+        antiforgery
+        context
+        =
         task {
-            match! validatePost origin maximumBytes antiforgery context with
-            | Error failure -> return Error failure
-            | Ok() -> return! verifiedPrincipal configuration context
+            match postShapeWith acceptsMedia origin maximumBytes context with
+            | Error reason -> return Error reason
+            | Ok() when headerOnly && not (hasSingletonAntiforgery context) ->
+                return Error GateFailure.AntiforgeryRejected
+            | Ok() ->
+                match! validateAntiforgery antiforgery context with
+                | Error failure -> return Error failure
+                | Ok() -> return! verifiedPrincipal configuration context
         }
 
-    let actorPost configuration origin maximumBytes antiforgery (context: HttpContext) =
+    let private actorPostWith
+        acceptsMedia
+        headerOnly
+        configuration
+        origin
+        maximumBytes
+        antiforgery
+        (context: HttpContext)
+        =
         match credentialMode context with
         | CredentialMode.Missing
         | CredentialMode.Mixed -> Task.FromResult(Error GateFailure.SessionRejected)
         | CredentialMode.Bearer ->
-            match bearerShape origin maximumBytes context with
+            match bearerShape acceptsMedia origin maximumBytes context with
             | Error failure -> Task.FromResult(Error failure)
             | Ok() -> verifiedPrincipal configuration context
         | CredentialMode.BrowserCookie ->
             if not context.Request.IsHttps then
                 Task.FromResult(Error GateFailure.UntrustedConnection)
             else
-                browserPost configuration origin maximumBytes antiforgery context
+                browserPost
+                    acceptsMedia
+                    headerOnly
+                    configuration
+                    origin
+                    maximumBytes
+                    antiforgery
+                    context
+
+    let actorPost configuration origin maximumBytes antiforgery context =
+        actorPostWith contentType false configuration origin maximumBytes antiforgery context
+
+    let internal actorUpload acceptsMedia configuration origin maximumBytes antiforgery context =
+        actorPostWith acceptsMedia true configuration origin maximumBytes antiforgery context

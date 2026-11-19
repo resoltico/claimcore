@@ -16,6 +16,12 @@ type Violation =
     | ActorIdRequired
     | ReminderIdRequired
     | NoteIdRequired
+    | AttachmentIdRequired
+    | AttachmentNameInvalid
+    | AttachmentLengthInvalid
+    | AttachmentDigestInvalid
+    | AttachmentPayloadRequired
+    | AttachmentPayloadMismatch
     | PartyIdRequired
     | PartyRoleRequired
     | PartyContentRequired

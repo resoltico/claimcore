@@ -51,6 +51,24 @@ type CommandOptionGrammar =
     }
 
 module CommandGrammar =
+    let internal attachmentDownloadWords = [ "attachment"; "download" ]
+
+    let internal attachmentDownload arguments =
+        List.truncate 2 arguments = attachmentDownloadWords
+
+    let internal attachmentDownloadSynopsis =
+        "attachment download (CASE | --case-id UUID) ATTACHMENT-ID --output PATH [--language LANGUAGE] [--display-locale LOCALE]"
+
+    let private operationHas property operation =
+        TaskRouting.act operation
+        |> Option.exists (TaskRouting.operationDeclaration >> property)
+
+    let internal attachmentTransfer =
+        operationHas (fun declaration -> declaration.Target = ActSubject.Attachment)
+
+    let internal uploadsFile =
+        operationHas (fun declaration -> declaration.Execution = TaskExecution.AttachmentUpload)
+
     let operations = (TaskDeclarations.all |> List.map _.Id)
 
     let kebab (value: string) =
@@ -136,7 +154,11 @@ module CommandGrammar =
                     declaration.Source = InputSource.Authored
                     ->
                     CommandArgument.Operand
-                | TaskInputId.ActorId when required -> CommandArgument.Operand
+                | TaskInputId.ActorId
+                | TaskInputId.Target InputTarget.AttachmentId when required ->
+                    CommandArgument.Operand
+                | TaskInputId.Target(InputTarget.AttachmentName | InputTarget.AttachmentLength | InputTarget.AttachmentDigest) ->
+                    CommandArgument.Implicit
                 | _ -> CommandArgument.Named
 
             let atom =
@@ -245,6 +267,10 @@ module CommandGrammar =
             "--details", ""
             if TaskRouting.consequence operation = Consequence.Irreversible then
                 "--confirm", "TARGET"
+            if attachmentTransfer operation then
+                "--confirm", "yes"
+            if uploadsFile operation then
+                "--file", "PATH"
             if (TaskRouting.act operation).IsSome then
                 "--preview", ""
             if supportsAll operation then
@@ -331,7 +357,7 @@ module CommandGrammar =
 
         let positionalCaseAlternative =
             match positional with
-            | [ input ] ->
+            | input :: _ ->
                 input.Name = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
                 && selectsExistingCase operation
             | _ -> false
@@ -389,7 +415,10 @@ module CommandGrammar =
             |> List.map (fun (flag, value) ->
                 let text = flag + (if value = "" then "" else " " + value)
 
-                if flag = "--confirm" && not draft then
+                if
+                    flag = "--file"
+                    || (flag = "--confirm" && not draft && not (attachmentTransfer operation))
+                then
                     text
                 else
                     "[" + text + "]")
@@ -412,7 +441,8 @@ module CommandGrammar =
         let operands =
             match operands with
             | [] -> []
-            | [ _ ] when positionalCaseAlternative -> [ "(--case-id UUID | [--] CASE-REFERENCE)" ]
+            | _ :: rest when positionalCaseAlternative ->
+                "(--case-id UUID | [--] CASE-REFERENCE)" :: rest
             | values -> "[--]" :: values
 
         String.concat

@@ -246,6 +246,8 @@ let tests =
                                 "people.changeSignInIdentity"
                                 "people.eraseProfile"
                                 "work.update"
+                                "attachment.add"
+                                "attachment.withdraw"
                                 "note.add"
                                 "note.remove"
                                 "link.add"

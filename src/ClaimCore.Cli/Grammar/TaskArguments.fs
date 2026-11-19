@@ -19,6 +19,7 @@ module internal TaskArguments =
         incomplete
         allocate
         kind
+        (source: AttachmentSource option)
         (options: Dictionary<string, string option list>)
         operands
         (problems: ResizeArray<UsageError>)
@@ -28,21 +29,28 @@ module internal TaskArguments =
         let mutable remaining = operands
 
         let raw input =
-            match options.TryGetValue(flag input) with
-            | true, values -> values |> List.tryHead |> Option.flatten
-            | _ -> None
+            match source, input with
+            | Some source, TaskInputId.Target InputTarget.AttachmentName -> Some source.Name
+            | Some source, TaskInputId.Target InputTarget.AttachmentLength ->
+                Some(source.Bytes.Length.ToString(Globalization.CultureInfo.InvariantCulture))
+            | Some source, TaskInputId.Target InputTarget.AttachmentDigest ->
+                Some(AttachmentDigest.value source.Digest)
+            | _ ->
+                match options.TryGetValue(flag input) with
+                | true, values -> values |> List.tryHead |> Option.flatten
+                | _ -> None
 
         let acquire input =
             match input.Argument, remaining with
+            | CommandArgument.Operand, _ when
+                input.Name = target (InputTarget.Field BusinessField.CaseReference)
+                && CommandGrammar.selectsExistingCase task
+                && options.ContainsKey(flag TaskInputId.CaseId)
+                ->
+                None
             | CommandArgument.Operand, value :: rest ->
                 remaining <- rest
                 Some value
-            | CommandArgument.Operand, [] when
-                input.Name = target (InputTarget.Field BusinessField.CaseReference)
-                && CommandGrammar.selectsExistingCase task
-                && (raw TaskInputId.CaseId |> Option.isSome)
-                ->
-                None
             | CommandArgument.Operand, [] ->
                 problems.Add(
                     UsageError.MissingOperand(
@@ -160,16 +168,7 @@ module internal TaskArguments =
             | _ -> None
 
         let selection () =
-            let reference = text (target (InputTarget.Field BusinessField.CaseReference))
             uuid TaskInputId.CaseId |> ignore
-
-            if
-                reference.IsSome
-                && (raw TaskInputId.CaseId).IsSome
-                && CommandGrammar.selectsExistingCase task
-            then
-                problems.Add(UsageError.DuplicateOption "--case-id")
-
 
             SubmissionAssembly.caseSelection values
             |> Result.defaultWith (fun _ ->
@@ -382,6 +381,8 @@ module internal TaskArguments =
                        |> Option.toList))
             | OperationBinding.Work(target, revision) -> selected target :: version revision
             | OperationBinding.Note(target, note) -> selected target :: id "noteId" note
+            | OperationBinding.Attachment(target, attachment) ->
+                selected target :: id "attachmentId" attachment
             | OperationBinding.Party(target, current) ->
                 selected target
                 :: (current

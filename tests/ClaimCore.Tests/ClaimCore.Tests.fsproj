@@ -51,6 +51,7 @@
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Application/OperationReplayTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
+    <Compile Include="Domain/AttachmentPolicyTests.fs" />
     <Compile Include="Contract/FinancialStateCodecTests.fs" />
     <Compile Include="Cli/OutcomeTests.fs" />
     <Compile Include="Contract/InputIdentityTests.fs" />
@@ -225,6 +226,7 @@
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/ReviewedTransportTests.fs" />
+    <Compile Include="Cli/AttachmentClientTests.fs" />
     <Compile Include="Cli/CliArgumentBoundaryTests.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
     <Compile Include="Cli/TransportBodyScenarios.fs" />

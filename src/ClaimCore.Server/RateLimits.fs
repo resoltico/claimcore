@@ -183,6 +183,7 @@ module internal RateLimits =
 
     let configure (limits: RequestGateLimits) (services: IServiceCollection) =
         services.AddSingleton<DynamicIngress>() |> ignore
+        services.AddSingleton<AttachmentTransferAdmission>() |> ignore
 
         services.AddSingleton<AuthenticationAdmission>(fun provider ->
             new AuthenticationAdmission(

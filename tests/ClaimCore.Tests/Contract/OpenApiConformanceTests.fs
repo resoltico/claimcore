@@ -26,8 +26,10 @@ let private parser () =
 
     Expect.equal
         ((nonNull result.Document).Paths.Keys |> Set.ofSeq)
-        (ExportTransport.path :: (Api.all |> List.map Api.path) |> Set.ofList)
-        "Exactly the JSON registry and declared CSV media path are present"
+        ((ExportTransport.path :: (Api.all |> List.map Api.path))
+         @ (AttachmentTransport.all |> List.map AttachmentTransport.path)
+         |> Set.ofList)
+        "Exactly the JSON registry and dedicated media paths are present"
 
     let broken = OpenApiDocument.Parse("{\"openapi\":\"3.1.0\",\"paths\":{}}", "json")
 
@@ -240,6 +242,77 @@ let private sharedFailures () =
 
                 sharedResponse document reference |> ignore
 
+let private attachments () =
+    let document = JsonNode.Parse(emitted ()) |> nonNull
+
+    let operation path =
+        document |> child "paths" |> child path |> child "post"
+
+    let upload = operation "/api/attachment.upload"
+
+    let multipart =
+        upload |> child "requestBody" |> child "content" |> child "multipart/form-data"
+
+    Expect.sequenceEqual
+        ((multipart |> child "x-claimcore-part-order").AsArray()
+         |> Seq.map (fun item -> (nonNull item).GetValue<string>()))
+        [ "manifest"; "file" ]
+        "Multipart grammar orders the bounded manifest before the file."
+
+    let properties = multipart |> child "schema" |> child "properties"
+    let manifest = properties |> child "manifest"
+
+    let manifestContract =
+        (manifest |> child "allOf").AsArray()[1]
+        |> nonNull
+        |> child "properties"
+        |> child "task"
+        |> child "const"
+
+    Expect.equal
+        (manifestContract.GetValue<string>())
+        "attachment.add"
+        "Multipart execution is upload-only."
+
+    for path, expectedMedia in
+        [
+            "/api/attachment.download", [ "application/octet-stream" ]
+            "/api/attachment.preview", [ "image/png"; "image/jpeg" ]
+        ] do
+        let response = operation path |> child "responses" |> child "200"
+        let media = response |> child "content"
+
+        Expect.equal
+            (media.AsObject() |> Seq.map _.Key |> Set.ofSeq)
+            (Set.ofList ("application/json" :: expectedMedia))
+            "Each authorized transfer has a closed success media set and typed failure JSON."
+
+        let headers = response |> child "headers"
+        let required = headers |> child "ClaimCore-Installation" |> child "required"
+
+        Expect.isTrue
+            (required.GetValue<bool>())
+            "Failure and success both confirm the installation."
+
+        let root = JsonObject()
+        root["components"] <- (document |> child "components").DeepClone()
+
+        root["allOf"] <-
+            JsonArray((media |> child "application/json" |> child "schema").DeepClone())
+
+        let validator = Utf8SchemaValidation.build (root.ToJsonString())
+
+        use refused =
+            JsonDocument.Parse
+                """{"outcome":{"kind":"FAILED","fault":{"code":"CORE_STORE_UNAVAILABLE","action":"RETRY_SAFE","messageId":"fault.CORE_STORE_UNAVAILABLE"}}}"""
+
+        use success = JsonDocument.Parse """{"outcome":{"kind":"SUCCEEDED","data":[]}}"""
+        Expect.isTrue (evaluate validator refused.RootElement) "Typed faults remain bounded JSON."
+
+        Expect.isFalse
+            (evaluate validator success.RootElement)
+            "JSON cannot masquerade as binary success."
+
 [<Tests>]
 let tests =
     testList
@@ -254,6 +327,9 @@ let tests =
                 (corpus true "examples/responses.json")
             testCase "JSON Schema 2020-12 validator enforces negative controls" validatorControls
             testCase "HTTP failure schemas bind their declared status" responseStatuses
+            testCase
+                "attachment media contract distinguishes multipart, binary and JSON failures"
+                attachments
             testCase "host failures share structural response definitions" sharedFailures
             testCase
                 "OpenAPI security alternatives preserve cookie CSRF and bearer admission"

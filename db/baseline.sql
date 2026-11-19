@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 7),
+    installation_format smallint NOT NULL CHECK (installation_format = 8),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -68,7 +68,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=7),
+    installation_format smallint NOT NULL CHECK (installation_format=8),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
@@ -115,6 +115,38 @@ CREATE TABLE claimcore.ledger_compartments (
 ALTER TABLE claimcore.ledger_effects ADD CONSTRAINT effect_compartment
     FOREIGN KEY(operation_sequence,compartment) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal) DEFERRABLE INITIALLY DEFERRED;
 CREATE INDEX ledger_compartment_owner ON claimcore.ledger_compartments(owner_kind,owner_id,operation_sequence);
+
+-- Authoritative attachment payloads and their indexed accepting links. Neither depends on case
+-- projections. A family erasure clears the private columns and keeps the accepting identities.
+CREATE TABLE claimcore.attachment_blobs (
+    case_id uuid NOT NULL,
+    blob_id uuid NOT NULL,
+    operation_sequence bigint NOT NULL,
+    effect_index integer NOT NULL,
+    length bigint,
+    digest bytea,
+    payload bytea,
+    PRIMARY KEY(case_id,blob_id),
+    UNIQUE(operation_sequence,effect_index),
+    FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
+    CHECK ((length IS NULL AND digest IS NULL AND payload IS NULL)
+        OR (length IS NOT NULL AND digest IS NOT NULL AND payload IS NOT NULL
+            AND octet_length(payload)=length AND octet_length(digest)=32))
+);
+CREATE UNIQUE INDEX attachment_family_digest ON claimcore.attachment_blobs(case_id,digest) WHERE digest IS NOT NULL;
+
+CREATE TABLE claimcore.attachment_references (
+    case_id uuid NOT NULL,
+    attachment_id uuid NOT NULL,
+    operation_sequence bigint NOT NULL,
+    effect_index integer NOT NULL,
+    blob_id uuid,
+    PRIMARY KEY(case_id,attachment_id),
+    UNIQUE(operation_sequence,effect_index),
+    FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
+    FOREIGN KEY(case_id,blob_id) REFERENCES claimcore.attachment_blobs(case_id,blob_id)
+);
+CREATE INDEX attachment_blob_references ON claimcore.attachment_references(case_id,blob_id,operation_sequence DESC) WHERE blob_id IS NOT NULL;
 
 CREATE TABLE claimcore.ledger_head (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
@@ -189,6 +221,57 @@ $$;
 CREATE TRIGGER effects_insert_guard BEFORE INSERT ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
 CREATE TRIGGER compartments_insert_guard BEFORE INSERT ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
 
+CREATE TRIGGER attachment_blobs_insert_guard BEFORE INSERT ON claimcore.attachment_blobs FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
+CREATE TRIGGER attachment_references_insert_guard BEFORE INSERT ON claimcore.attachment_references FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
+
+CREATE FUNCTION claimcore.attachment_private_insert()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF EXISTS(SELECT 1 FROM claimcore.ledger_effects e
+              WHERE e.erases_kind='FAMILY' AND e.erases_id=NEW.case_id) THEN
+        RAISE EXCEPTION 'a cleared family cannot acquire attachment contents' USING ERRCODE='CC004';
+    END IF;
+    IF TG_TABLE_NAME='attachment_blobs' THEN
+        IF NEW.payload IS NULL OR sha256(NEW.payload) IS DISTINCT FROM NEW.digest THEN
+            RAISE EXCEPTION 'attachment payload must match its integrity value' USING ERRCODE='CC004';
+        END IF;
+    ELSIF NEW.blob_id IS NULL THEN
+        RAISE EXCEPTION 'an attachment requires a retained payload reference' USING ERRCODE='CC004';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER attachment_blobs_private_insert BEFORE INSERT ON claimcore.attachment_blobs FOR EACH ROW EXECUTE FUNCTION claimcore.attachment_private_insert();
+CREATE TRIGGER attachment_references_private_insert BEFORE INSERT ON claimcore.attachment_references FOR EACH ROW EXECUTE FUNCTION claimcore.attachment_private_insert();
+
+CREATE FUNCTION claimcore.attachment_payload_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF TG_OP<>'UPDATE' THEN
+        RAISE EXCEPTION 'attachment evidence rows are never removed' USING ERRCODE='CC003';
+    END IF;
+    IF (NEW.case_id,NEW.operation_sequence,NEW.effect_index) IS DISTINCT FROM
+       (OLD.case_id,OLD.operation_sequence,OLD.effect_index)
+       OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects e
+                     WHERE e.erases_kind='FAMILY' AND e.erases_id=OLD.case_id
+                       AND (e.operation_sequence,e.effect_index)>(OLD.operation_sequence,OLD.effect_index)) THEN
+        RAISE EXCEPTION 'attachment evidence clears only under a later accepted family erasure' USING ERRCODE='CC003';
+    END IF;
+    IF TG_TABLE_NAME='attachment_blobs' THEN
+        IF NEW.blob_id<>OLD.blob_id OR NEW.length IS NOT NULL OR NEW.digest IS NOT NULL OR NEW.payload IS NOT NULL THEN
+            RAISE EXCEPTION 'attachment payload may only be cleared' USING ERRCODE='CC003';
+        END IF;
+    ELSIF NEW.attachment_id<>OLD.attachment_id OR NEW.blob_id IS NOT NULL THEN
+        RAISE EXCEPTION 'attachment reference may only be cleared' USING ERRCODE='CC003';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER attachment_blobs_protect BEFORE UPDATE OR DELETE ON claimcore.attachment_blobs FOR EACH ROW EXECUTE FUNCTION claimcore.attachment_payload_guard();
+CREATE TRIGGER attachment_blobs_no_truncate BEFORE TRUNCATE ON claimcore.attachment_blobs FOR EACH STATEMENT EXECUTE FUNCTION claimcore.attachment_payload_guard();
+CREATE TRIGGER attachment_references_protect BEFORE UPDATE OR DELETE ON claimcore.attachment_references FOR EACH ROW EXECUTE FUNCTION claimcore.attachment_payload_guard();
+CREATE TRIGGER attachment_references_no_truncate BEFORE TRUNCATE ON claimcore.attachment_references FOR EACH STATEMENT EXECUTE FUNCTION claimcore.attachment_payload_guard();
+
 CREATE FUNCTION claimcore.part_revision_chain()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 DECLARE prior claimcore.ledger_effects%ROWTYPE;
@@ -228,6 +311,73 @@ $$;
 CREATE TRIGGER compartments_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.compartment_guard();
 CREATE TRIGGER compartments_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_compartments FOR EACH STATEMENT EXECUTE FUNCTION claimcore.compartment_guard();
 
+-- The codec owns the descriptor. Storage extracts only its payload reference and integrity values.
+CREATE FUNCTION claimcore.attachment_descriptor(payload bytea,effect_index integer)
+RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+    SELECT convert_from(payload,'UTF8')::jsonb->'values'->(effect_index::text)
+$$;
+
+CREATE FUNCTION claimcore.complete_attachment_effect(root_sequence bigint)
+RETURNS void LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE effect claimcore.ledger_effects%ROWTYPE; link claimcore.attachment_references%ROWTYPE; blob claimcore.attachment_blobs%ROWTYPE; descriptor jsonb; erased boolean; introduces boolean;
+BEGIN
+    FOR effect IN SELECT * FROM claimcore.ledger_effects
+        WHERE operation_sequence=root_sequence AND part_kind='ATTACHMENT'
+    LOOP
+        SELECT * INTO link FROM claimcore.attachment_references r
+          WHERE (r.operation_sequence,r.effect_index)=(effect.operation_sequence,effect.effect_index);
+        SELECT * INTO blob FROM claimcore.attachment_blobs b
+          WHERE (b.operation_sequence,b.effect_index)=(effect.operation_sequence,effect.effect_index);
+
+        introduces:=effect.retained->'introducesBlob'='true'::jsonb;
+        IF effect.retained->'withdrawn'='true'::jsonb THEN
+            IF link.attachment_id IS NOT NULL OR blob.blob_id IS NOT NULL THEN
+                RAISE EXCEPTION 'attachment withdrawal cannot acquire payload evidence' USING ERRCODE='CC004';
+            END IF;
+        ELSE
+            IF effect.aggregate_kind<>'FAMILY' OR introduces IS NULL OR effect.compartment IS NULL
+               OR link.attachment_id IS DISTINCT FROM effect.part_id OR link.case_id IS DISTINCT FROM effect.aggregate_id
+               OR introduces IS DISTINCT FROM (blob.blob_id IS NOT NULL)
+               OR (introduces AND (blob.case_id,blob.blob_id) IS DISTINCT FROM (effect.aggregate_id,effect.part_id)) THEN
+                RAISE EXCEPTION 'attachment evidence must bind to its accepting effect and family' USING ERRCODE='CC004';
+            END IF;
+
+            SELECT claimcore.attachment_descriptor(c.payload,effect.effect_index)
+              INTO descriptor FROM claimcore.ledger_compartments c
+              WHERE (c.operation_sequence,c.ordinal)=(root_sequence,effect.compartment);
+            SELECT EXISTS(SELECT 1 FROM claimcore.ledger_effects e
+                WHERE e.erases_kind='FAMILY' AND e.erases_id=effect.aggregate_id
+                  AND (e.operation_sequence,e.effect_index)>(effect.operation_sequence,effect.effect_index))
+              INTO erased;
+
+            IF erased THEN
+                IF link.blob_id IS NOT NULL OR descriptor IS NOT NULL OR (introduces AND blob.payload IS NOT NULL) THEN
+                    RAISE EXCEPTION 'erased attachment evidence retains private values' USING ERRCODE='CC003';
+                END IF;
+            ELSE
+                SELECT * INTO blob FROM claimcore.attachment_blobs b
+                  WHERE (b.case_id,b.blob_id)=(effect.aggregate_id,link.blob_id);
+                IF blob.payload IS NULL OR descriptor IS NULL
+                   OR blob.blob_id IS DISTINCT FROM (descriptor->>'blob')::uuid
+                   OR blob.length IS DISTINCT FROM (descriptor->>'length')::bigint
+                   OR blob.digest IS DISTINCT FROM decode(descriptor->>'digest','hex')
+                   OR (introduces AND (blob.operation_sequence,blob.effect_index) IS DISTINCT FROM (effect.operation_sequence,effect.effect_index))
+                   OR (NOT introduces AND (blob.operation_sequence,blob.effect_index)>=(effect.operation_sequence,effect.effect_index)) THEN
+                    RAISE EXCEPTION 'attachment reference must agree with its retained payload' USING ERRCODE='CC004';
+                END IF;
+            END IF;
+        END IF;
+    END LOOP;
+
+    IF EXISTS(SELECT 1 FROM claimcore.attachment_blobs b JOIN claimcore.ledger_effects e USING(operation_sequence,effect_index)
+              WHERE b.operation_sequence=root_sequence AND e.part_kind<>'ATTACHMENT')
+       OR EXISTS(SELECT 1 FROM claimcore.attachment_references r JOIN claimcore.ledger_effects e USING(operation_sequence,effect_index)
+                 WHERE r.operation_sequence=root_sequence AND e.part_kind<>'ATTACHMENT') THEN
+        RAISE EXCEPTION 'attachment evidence requires an attachment effect' USING ERRCODE='CC004';
+    END IF;
+END;
+$$;
+
 CREATE FUNCTION claimcore.complete_operation()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE root claimcore.ledger%ROWTYPE; root_sequence bigint; first_effect claimcore.ledger_effects%ROWTYPE; n integer; ordinals integer[];
@@ -259,20 +409,32 @@ BEGIN
               AND (e.erases_id<>first_effect.aggregate_id OR e.erases_kind<>CASE root.aggregate_kind WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END)) THEN
         RAISE EXCEPTION 'erasure owner does not bind to its aggregate' USING ERRCODE='CC004';
     END IF;
+    PERFORM claimcore.complete_attachment_effect(root_sequence);
     RETURN NULL;
 END;
 $$;
 CREATE CONSTRAINT TRIGGER complete_operation_root AFTER INSERT ON claimcore.ledger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
 CREATE CONSTRAINT TRIGGER complete_operation_effect AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
 CREATE CONSTRAINT TRIGGER complete_operation_compartment AFTER INSERT ON claimcore.ledger_compartments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
+CREATE CONSTRAINT TRIGGER complete_operation_attachment_blob AFTER INSERT ON claimcore.attachment_blobs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
+CREATE CONSTRAINT TRIGGER complete_operation_attachment_reference AFTER INSERT ON claimcore.attachment_references DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
 
-CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_aggregate_kind text,p_task text,p_structure jsonb,p_effects jsonb,p_compartments jsonb)
+-- Current list membership is rebuildable and carries no private descriptor.
+CREATE TABLE claimcore.case_attachments (
+    case_id uuid NOT NULL,
+    attachment_id uuid NOT NULL,
+    PRIMARY KEY(case_id,attachment_id),
+    FOREIGN KEY(case_id,attachment_id) REFERENCES claimcore.attachment_references(case_id,attachment_id)
+);
+
+CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_aggregate_kind text,p_task text,p_structure jsonb,p_effects jsonb,p_compartments jsonb,p_attachment_payload bytea DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
+        effect claimcore.ledger_effects%ROWTYPE; descriptor jsonb; blob_identity uuid; consumed_payload boolean:=false;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>7
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>8
        OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
        OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
@@ -306,6 +468,37 @@ BEGIN
         INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload)
         VALUES(p_sequence,(item->>'ordinal')::integer,item->'owner'->>'kind',(item->'owner'->>'id')::uuid,decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
     END LOOP;
+    FOR effect IN SELECT * FROM claimcore.ledger_effects
+        WHERE operation_sequence=p_sequence AND part_kind='ATTACHMENT' ORDER BY effect_index
+    LOOP
+        IF effect.retained->'withdrawn'='true'::jsonb THEN
+            DELETE FROM claimcore.case_attachments WHERE (case_id,attachment_id)=(effect.aggregate_id,effect.part_id);
+        ELSE
+            SELECT claimcore.attachment_descriptor(c.payload,effect.effect_index)
+              INTO descriptor FROM claimcore.ledger_compartments c
+              WHERE (c.operation_sequence,c.ordinal)=(p_sequence,effect.compartment);
+            blob_identity:=(descriptor->>'blob')::uuid;
+
+            IF blob_identity IS NULL THEN
+                RAISE EXCEPTION 'attachment addition requires a retained descriptor' USING ERRCODE='CC004';
+            END IF;
+            IF effect.retained->'introducesBlob'='true'::jsonb THEN
+                IF consumed_payload OR p_attachment_payload IS NULL THEN
+                    RAISE EXCEPTION 'attachment addition requires its exact payload' USING ERRCODE='CC004';
+                END IF;
+                INSERT INTO claimcore.attachment_blobs(case_id,blob_id,operation_sequence,effect_index,length,digest,payload)
+                  VALUES(effect.aggregate_id,effect.part_id,p_sequence,effect.effect_index,
+                         (descriptor->>'length')::bigint,decode(descriptor->>'digest','hex'),p_attachment_payload);
+                consumed_payload:=true;
+            END IF;
+            INSERT INTO claimcore.attachment_references(case_id,attachment_id,operation_sequence,effect_index,blob_id)
+              VALUES(effect.aggregate_id,effect.part_id,p_sequence,effect.effect_index,blob_identity);
+            INSERT INTO claimcore.case_attachments(case_id,attachment_id) VALUES(effect.aggregate_id,effect.part_id);
+        END IF;
+    END LOOP;
+    IF p_attachment_payload IS NOT NULL AND NOT consumed_payload THEN
+        RAISE EXCEPTION 'attachment payload requires an accepting effect' USING ERRCODE='CC004';
+    END IF;
     UPDATE claimcore.ledger_head SET sequence=p_sequence,entry_hash=p_hash WHERE singleton;
 END;
 $$;
@@ -322,6 +515,13 @@ BEGIN
       WHERE c.owner_kind=target_kind AND c.owner_id=target_id AND c.payload IS NOT NULL
         AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(frontier,erase_index);
     GET DIAGNOSTICS erased=ROW_COUNT;
+    IF target_kind='FAMILY' THEN
+        DELETE FROM claimcore.case_attachments WHERE case_id=target_id;
+        UPDATE claimcore.attachment_references r SET blob_id=NULL WHERE r.case_id=target_id
+          AND r.blob_id IS NOT NULL AND (r.operation_sequence,r.effect_index)<(frontier,erase_index);
+        UPDATE claimcore.attachment_blobs b SET length=NULL,digest=NULL,payload=NULL WHERE b.case_id=target_id
+          AND b.payload IS NOT NULL AND (b.operation_sequence,b.effect_index)<(frontier,erase_index);
+    END IF;
     RETURN erased;
 END;
 $$;
@@ -592,6 +792,13 @@ BEGIN
     IF TG_TABLE_NAME='ledger_effects' AND EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind='FAMILY' AND c.owner_id=family_id AND c.payload IS NOT NULL) THEN
         RAISE EXCEPTION 'accepted family erasure must clear retained private values atomically' USING ERRCODE='CC003';
     END IF;
+    IF TG_TABLE_NAME IN ('ledger_effects','case_attachments')
+       AND EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind='FAMILY' AND e.erases_id=family_id)
+       AND (EXISTS(SELECT 1 FROM claimcore.attachment_blobs b WHERE b.case_id=family_id AND b.payload IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.attachment_references r WHERE r.case_id=family_id AND r.blob_id IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_attachments a WHERE a.case_id=family_id)) THEN
+        RAISE EXCEPTION 'accepted family erasure must clear all attachment contents atomically' USING ERRCODE='CC003';
+    END IF;
     SELECT * INTO root FROM claimcore.cases WHERE case_id=family_id;
     IF NOT FOUND THEN RETURN NULL; END IF;
     SELECT EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind='FAMILY' AND e.erases_id=family_id) INTO erased;
@@ -633,6 +840,7 @@ CREATE CONSTRAINT TRIGGER reminders_erasure_integrity AFTER INSERT OR UPDATE ON 
 CREATE CONSTRAINT TRIGGER parties_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_parties DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER notes_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.notes DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 CREATE CONSTRAINT TRIGGER case_links_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_links DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
+CREATE CONSTRAINT TRIGGER case_attachments_erasure_integrity AFTER INSERT OR UPDATE ON claimcore.case_attachments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
 CREATE CONSTRAINT TRIGGER accepted_family_erasure_integrity AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.erases_kind='FAMILY') EXECUTE FUNCTION claimcore.projection_erasure_integrity();
 
@@ -701,8 +909,8 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
-GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
-GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb) TO claimcore_runtime;
+GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments,claimcore.attachment_blobs,claimcore.attachment_references,claimcore.case_attachments TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb,bytea) TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;

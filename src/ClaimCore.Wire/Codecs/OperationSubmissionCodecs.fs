@@ -124,6 +124,17 @@ module OperationSubmissionCodecs =
         | OperationBinding.Note(_, note) -> selected "Note selection required." note
         | _ -> invalidOp "Note binding required."
 
+    let private attachmentTarget =
+        function
+        | OperationBinding.Attachment(target, _) -> target
+        | _ -> invalidOp "Attachment binding required."
+
+    let private attachmentId =
+        function
+        | OperationBinding.Attachment(_, attachment) ->
+            selected "Attachment selection required." attachment
+        | _ -> invalidOp "Attachment binding required."
+
     let private linkTarget =
         function
         | OperationBinding.Link(target, _) -> target
@@ -232,6 +243,18 @@ module OperationSubmissionCodecs =
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> field "noteId" noteId uuid
                 |> build
+            | ActSubject.Attachment when declaration.Creates ->
+                record (fun target -> OperationBinding.Attachment(target, None))
+                |> fixedField "kind" "ATTACHMENT"
+                |> field "target" attachmentTarget RequestCodecs.caseSelector
+                |> build
+            | ActSubject.Attachment ->
+                record (fun target attachment ->
+                    OperationBinding.Attachment(target, Some attachment))
+                |> fixedField "kind" "ATTACHMENT"
+                |> field "target" attachmentTarget RequestCodecs.caseSelector
+                |> field "attachmentId" attachmentId uuid
+                |> build
             | ActSubject.Party when declaration.Creates ->
                 record (fun target -> OperationBinding.Party(target, None))
                 |> fixedField "kind" "PARTY"
@@ -314,6 +337,8 @@ module OperationSubmissionCodecs =
             | BindingShape.Reminder -> "REMINDER"
             | BindingShape.NoteNew -> "NOTE.new"
             | BindingShape.Note -> "NOTE"
+            | BindingShape.AttachmentNew -> "ATTACHMENT.new"
+            | BindingShape.Attachment -> "ATTACHMENT"
             | BindingShape.PartyNew -> "PARTY.new"
             | BindingShape.Party -> "PARTY"
             | BindingShape.LinkNew -> "LINK.new"

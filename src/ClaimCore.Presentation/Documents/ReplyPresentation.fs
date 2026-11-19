@@ -37,6 +37,8 @@ module Refusals =
         | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _) ->
             RecommendedAction.AskForAccess
         | Refusal.Case value -> caseAction value
+        | Refusal.AttachmentDuplicate _
+        | Refusal.AttachmentCapacityReached
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.OperationClockUnavailable _

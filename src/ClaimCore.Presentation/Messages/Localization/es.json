@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Eliminar permanentemente los detalles actuales y conservados, pagos, trabajo, recordatorios y notas de este expediente. Se conservan la referencia y el registro de cambios. No afecta a las copias guardadas en otros lugares.",
-    "source": "e9561f9fbf0b"
+    "text": "Borra de forma permanente los detalles actuales y conservados, pagos, trabajo, recordatorios, notas y adjuntos de este expediente. Se conservan la referencia y el registro de cambios. Las copias guardadas en otros lugares quedan fuera del borrado.",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "Suprimir perfil",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "La autoridad que registra la inicialización y la recuperación del propietario mediante comandos de administración de la base de datos.",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "Añadir adjunto",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "Añade un archivo a este expediente.",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "Sube este archivo al expediente. Si subes los mismos bytes de un adjunto retirado, estarán disponibles con un nuevo ID de adjunto.",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "Adjunto añadido.",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "Retirar adjunto",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "Retira este archivo del expediente.",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "El archivo dejará de estar disponible en el registro. Sus bytes seguirán contando para los límites de almacenamiento hasta que se borre el expediente.",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "Adjunto retirado.",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "Ver adjuntos",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "Consulta los adjuntos actuales de este expediente.",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "ID del adjunto",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "Elige un adjunto actual de este expediente.",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "Usa el UUID de la operación que aceptó el adjunto.",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "Nombre del archivo",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "Elige un archivo para revisar su nombre.",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "El nombre guardado es un nombre de archivo portable de hasta 120 bytes UTF-8.",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "Tamaño en bytes",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "El archivo seleccionado determina este tamaño.",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "Introduce un número entero entre 0 y 26214400, ambos incluidos.",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "Suma de verificación del archivo",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "La suma se calcula a partir del archivo seleccionado.",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "Usa los 64 dígitos hexadecimales de la suma SHA-256.",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "Usa el ID de un adjunto.",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "Elige un archivo con un nombre compatible.",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "El archivo no puede superar los 25 MiB.",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "Vuelve a seleccionar el archivo para calcular su suma de verificación.",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "Selecciona y sube el archivo para añadir un adjunto.",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "El archivo subido difiere del revisado. Selecciónalo de nuevo e inicia otra revisión.",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "El archivo ya está adjunto al expediente.",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "El expediente ha alcanzado el límite de adjuntos conservados.",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "Adjuntos",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "Adjunto",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "Adjunto",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "Adjuntos",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "Cambio de adjunto registrado.",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "Vista previa de imagen",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "Posición del registro del adjunto",
+    "source": "02ce853f42c9"
   }
 }

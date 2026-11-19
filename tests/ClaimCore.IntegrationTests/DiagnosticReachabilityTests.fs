@@ -42,8 +42,16 @@ let private completeVocabulary () =
         let! authored =
             DiagnosticEntryEvidence.authoredIdentityAndClosureEvidence () |> Async.AwaitTask
 
+        let! attachments = DiagnosticEntryEvidence.attachmentEvidence () |> Async.AwaitTask
+
         let evidence =
-            scalar @ List.ofSeq states @ boundaries @ entries @ associations @ authored
+            scalar
+            @ List.ofSeq states
+            @ boundaries
+            @ entries
+            @ associations
+            @ authored
+            @ attachments
             |> List.collect (fun items -> items)
             |> fun observed -> observed @ DiagnosticEntryEvidence.technicalCountEvidence ()
 

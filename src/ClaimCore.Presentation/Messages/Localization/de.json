@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Aktuelle und aufbewahrte Details, Zahlungen, Bearbeitung, Wiedervorlagen und Notizen dieses Falls dauerhaft entfernen. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
-    "source": "e9561f9fbf0b"
+    "text": "Aktuelle und aufbewahrte Details, Zahlungen, Bearbeitung, Wiedervorlagen, Notizen und Anhänge dieses Falls dauerhaft entfernen. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "Profil löschen",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "Die Befugnis, mit Datenbankverwaltungsbefehlen die Einrichtung und die Wiederherstellung des Eigentümerzugangs zu erfassen.",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "Anhang hinzufügen",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "Eine Datei zu diesem Fall hinzufügen.",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "Diese Datei zum Fall hochladen. Werden die exakten Bytes eines zurückgezogenen Anhangs hochgeladen, sind sie unter einer neuen Anhang-ID wieder verfügbar.",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "Anhang hinzugefügt.",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "Anhang zurückziehen",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "Diese Datei aus dem Fall zurückziehen.",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "Die Datei ist im Register anschließend nicht mehr verfügbar. Ihre Bytes zählen bis zur Löschung des Falls weiterhin zu dessen Speichergrenzen.",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "Anhang zurückgezogen.",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "Anhänge anzeigen",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "Die aktuellen Anhänge des Falls anzeigen.",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "Anhang-ID",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "Einen aktuellen Anhang dieses Falls auswählen.",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "Die UUID des Vorgangs verwenden, der den Anhang angenommen hat.",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "Dateiname",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "Eine Datei auswählen, um ihren Namen zu prüfen.",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "Der gespeicherte Name ist ein portabler Dateiname mit höchstens 120 UTF-8-Bytes.",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "Größe in Bytes",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "Die ausgewählte Datei bestimmt die Größe.",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "Eine ganze Zahl zwischen 0 und 26214400 einschließlich eingeben.",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "Dateiprüfsumme",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "Die Prüfsumme wird aus der ausgewählten Datei berechnet.",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "Die 64 hexadezimalen Stellen der SHA-256-Prüfsumme verwenden.",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "Eine Anhang-ID verwenden.",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "Eine Datei mit einem unterstützten Namen auswählen.",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "Die Datei darf höchstens 25 MiB groß sein.",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "Die Datei erneut auswählen, um ihre Prüfsumme zu berechnen.",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "Die Datei auswählen und hochladen, um einen Anhang hinzuzufügen.",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "Die hochgeladene Datei unterscheidet sich von der geprüften Datei. Erneut auswählen und eine neue Prüfung beginnen.",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "Diese Datei ist bereits an den Fall angehängt.",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "Der Fall hat die Grenze für gespeicherte Anhänge erreicht.",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "Anhänge",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "Anhang",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "Anhang",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "Anhänge",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "Änderung am Anhang erfasst.",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "Bildvorschau",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "Position des Anhangeintrags",
+    "source": "02ce853f42c9"
   }
 }

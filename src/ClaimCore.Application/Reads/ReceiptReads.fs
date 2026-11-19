@@ -442,6 +442,51 @@ module internal ReceiptReads =
                                                         }
                                                 )
                                         | _ -> return fault
+                                    | ActSubject.Attachment ->
+                                        match record.Changes |> List.tryExactlyOne with
+                                        | Some change ->
+                                            match
+                                                AttachmentId.create change.PartId, change.Value
+                                            with
+                                            | Some attachment, PartValue.Attachment historical ->
+                                                let! latest =
+                                                    if erased then
+                                                        System.Threading.Tasks.Task.FromResult None
+                                                    else
+                                                        AttachmentStorage.current tx id attachment
+
+                                                let shown =
+                                                    if erased then
+                                                        AttachmentDisclosure.Erased
+                                                    else
+                                                        latest
+                                                        |> Option.filter (fun latest ->
+                                                            canRead change.Revision latest.Revision)
+                                                        |> Option.bind (fun latest ->
+                                                            match latest.Value with
+                                                            | PartValue.Attachment value ->
+                                                                AttachmentEffect.disclose
+                                                                    (Some value)
+                                                                    historical
+                                                            | _ -> None)
+                                                        |> Option.map AttachmentDisclosure.Disclosed
+                                                        |> Option.defaultValue
+                                                            AttachmentDisclosure.Withheld
+
+                                                return
+                                                    Ok(
+                                                        ReceiptSubject.Attachment
+                                                            {
+                                                                CaseId = id
+                                                                Reference =
+                                                                    current.Snapshot.Reference
+                                                                AttachmentId = attachment
+                                                                Act = declaration.Id
+                                                                Snapshot = shown
+                                                            }
+                                                    )
+                                            | _ -> return fault
+                                        | None -> return fault
                                     | ActSubject.Note ->
                                         match record.Changes |> List.tryExactlyOne with
                                         | None -> return fault

@@ -63,6 +63,38 @@ module TaskAffordances =
             editable
             choices
 
+    let attachmentAdd id =
+        let task = ClientCompositions.attachmentEntry
+
+        offered
+            task
+            (Some(binding task (Some(CaseSelector.Id id)) None None None))
+            Map.empty
+            (authored task)
+            Map.empty
+
+    let attachmentWithdraw id (item: AttachmentRow) =
+        if item.CanWithdraw then
+            let task = ClientCompositions.attachmentWithdrawal
+
+            [
+                offered
+                    task
+                    (Some(
+                        binding
+                            task
+                            (Some(CaseSelector.Id id))
+                            None
+                            (Some(AttachmentId.value item.AttachmentId))
+                            None
+                    ))
+                    Map.empty
+                    []
+                    Map.empty
+            ]
+        else
+            []
+
     let noteAdd id =
         let task = ClientCompositions.noteEntry
 

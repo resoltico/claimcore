@@ -63,6 +63,7 @@ let private entry revision =
 let private page revision next =
     {
         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+        AttachmentDisclosure = Sequence.zero
         Basis = DomainInputs.workBasis
         CaseId = CliReplyFixtures.snapshot.CaseId
         Reference = CliReplyFixtures.snapshot.Reference
@@ -344,8 +345,8 @@ let tests =
                     if details then
                         Expect.equal
                             (text.Split(operationId).Length - 1)
-                            4
-                            "Both operation and part identities are supplied on each of the two pages")
+                            6
+                            "Operation, part and case identities are supplied on each of the two pages")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->

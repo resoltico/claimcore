@@ -20,17 +20,27 @@ type internal WriteTx(connection, installation, head: LedgerPosition, observedAt
     member _.NewPayloadNonce() =
         System.Security.Cryptography.RandomNumberGenerator.GetBytes 32
 
-    member _.Append(entry: RetainedOperation) =
+    member private _.AppendCore(entry: RetainedOperation, attachment: VerifiedAttachment option) =
         task {
             FailureDiagnostics.phase FailurePhase.Append
             let started = System.Diagnostics.Stopwatch.GetTimestamp()
 
             try
-                let! _ = OperationStorage.append connection entry.Root token
+                let! _ =
+                    match attachment with
+                    | Some payload ->
+                        OperationStorage.appendWithAttachment connection entry.Root payload token
+                    | None -> OperationStorage.append connection entry.Root token
+
                 return ()
             finally
                 ApplicationMetrics.appended (System.Diagnostics.Stopwatch.GetElapsedTime started)
         }
+
+    member this.Append(entry: RetainedOperation) = this.AppendCore(entry, None)
+
+    member this.Append(entry: RetainedOperation, attachment: VerifiedAttachment) =
+        this.AppendCore(entry, Some attachment)
 
     member _.ProjectFamily projection =
         FailureDiagnostics.phase FailurePhase.Projection

@@ -3,6 +3,8 @@ namespace ClaimCore.Application.Execution
 open System
 open System.Threading
 open ClaimCore.Domain
+open ClaimCore.Domain.Tasks
+open ClaimCore.Domain.Inputs
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Reads
@@ -100,12 +102,13 @@ module internal OperationService =
         operation
         binding
         inputs
+        verified
         =
         task {
             let! decisionContext = context services tx true
 
             let! proposed =
-                Engine.prepare tx tx.Head decisionContext selected operation binding inputs
+                Engine.prepare tx tx.Head decisionContext selected operation binding inputs verified
 
             match proposed with
             | Error(ExecutionStop.Refused refusal) ->
@@ -145,7 +148,7 @@ module internal OperationService =
             let! head = OperationStorage.position tx.Connection tx.CancellationToken
 
             let! proposed =
-                Engine.prepare tx head decisionContext selected operation binding inputs
+                Engine.prepare tx head decisionContext selected operation binding inputs None
 
             match proposed with
             | Error(ExecutionStop.Refused refusal) ->
@@ -221,9 +224,32 @@ module internal OperationService =
                 Error(Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired))
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
-    let executeSubmission
+    let private uploadRequired =
+        Refusal.invalidInput (InputTarget.AttachmentDigest, Violation.AttachmentPayloadRequired)
+
+    let private canonical selected (input: SubmittedOperation) =
+        match (Task.declaration selected).Execution with
+        | TaskExecution.Structured -> Ok(input, None)
+        | TaskExecution.AttachmentUpload ->
+            AttachmentInputs.intent input.Inputs
+            |> Result.map (fun intent ->
+                { input with
+                    Inputs = AttachmentInputs.canonicalInputs input.Inputs intent
+                },
+                Some intent)
+
+    let attachmentUploadIntent submission =
+        admitted submission
+        |> Result.bind (fun (selected, _, input) ->
+            canonical selected input
+            |> Result.bind (function
+                | _, Some intent -> Ok intent
+                | _ -> Error uploadRequired))
+
+    let private execute
         (services: ServiceContext)
         (submission: OperationSubmission)
+        (payload: ReadOnlyMemory<byte> option)
         (ct: CancellationToken)
         =
         task {
@@ -232,10 +258,31 @@ module internal OperationService =
                     if ct.IsCancellationRequested then
                         return ExecuteResult.Failed CoreFault.StoreUnavailable
                     else
+                        let prepared =
+                            admitted submission
+                            |> Result.bind (fun (selected, operation, input) ->
+                                canonical selected input
+                                |> Result.bind (fun (input, intent) ->
+                                    match intent, payload with
+                                    | None, None -> Ok(selected, operation, input, None)
+                                    | Some intent, Some payload ->
+                                        VerifiedAttachment.verify intent payload
+                                        |> Option.map (fun verified ->
+                                            Ok(selected, operation, input, Some verified))
+                                        |> Option.defaultValue (
+                                            Error(
+                                                Refusal.invalidInput (
+                                                    InputTarget.AttachmentDigest,
+                                                    Violation.AttachmentPayloadMismatch
+                                                )
+                                            )
+                                        )
+                                    | _ -> Error uploadRequired))
+
                         let! result =
-                            match admitted submission with
+                            match prepared with
                             | Error refusal -> RequestRefusals.write services ct refusal
-                            | Ok(selected, operation, input) ->
+                            | Ok(selected, operation, input, verified) ->
                                 services.Store.Write
                                     {
                                         CancellationToken = ct
@@ -248,6 +295,7 @@ module internal OperationService =
                                                     operation
                                                     input.Binding
                                                     input.Inputs
+                                                    verified
                                     }
 
                         return
@@ -263,6 +311,11 @@ module internal OperationService =
                 }
         }
 
+    let executeSubmission services submission ct = execute services submission None ct
+
+    let executeAttachmentUpload services submission bytes ct =
+        execute services submission (Some bytes) ct
+
     let previewSubmission
         (services: ServiceContext)
         (submission: OperationSubmission)
@@ -274,7 +327,13 @@ module internal OperationService =
                     if ct.IsCancellationRequested then
                         return Outcome.Failed CoreFault.StoreUnavailable
                     else
-                        match admitted submission with
+                        let prepared =
+                            admitted submission
+                            |> Result.bind (fun (selected, operation, input) ->
+                                canonical selected input
+                                |> Result.map (fun (input, _) -> selected, operation, input))
+
+                        match prepared with
                         | Error refusal -> return! RequestRefusals.read services ct refusal
                         | Ok(selected, operation, input) ->
                             let! result =
@@ -361,6 +420,7 @@ module internal OperationService =
                         operation
                         (Binding.PeopleNew Revision.zero)
                         inputs
+                        None
         }
 
     let internal provisionOwner services operationId profile roles token =
@@ -393,3 +453,4 @@ module internal OperationService =
             operation
             binding
             inputs
+            None

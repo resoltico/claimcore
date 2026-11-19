@@ -406,6 +406,13 @@ module Api =
             "CaseNotesReply"
             WorkReadCodecs.notes
 
+    let caseAttachments =
+        actorRead
+            QueryTaskId.CaseAttachments
+            RequestCodecs.caseGetRequest
+            "CaseAttachmentsReply"
+            AttachmentCodecs.page
+
     let reminders =
         actorRead
             QueryTaskId.ReminderList
@@ -629,6 +636,8 @@ module Api =
         function
         | (ActorEndpoint.Query QueryTaskId.CasePayments) -> EndpointDefinition.create casePayments
         | (ActorEndpoint.Query QueryTaskId.CaseNotes) -> EndpointDefinition.create caseNotes
+        | (ActorEndpoint.Query QueryTaskId.CaseAttachments) ->
+            EndpointDefinition.create caseAttachments
         | (ActorEndpoint.Query QueryTaskId.ReminderList) -> EndpointDefinition.create reminders
         | (ActorEndpoint.Query QueryTaskId.ReminderGet) -> EndpointDefinition.create reminder
         | (ActorEndpoint.Query QueryTaskId.CaseTimeline) -> EndpointDefinition.create caseTimeline

@@ -278,6 +278,7 @@ let private pageBounds () =
                     Outcome.Succeeded
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                            AttachmentDisclosure = Sequence.zero
                             Basis = DomainInputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId
                             Reference = ResponseExamples.snapshot.Reference

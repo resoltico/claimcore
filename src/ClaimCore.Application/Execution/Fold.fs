@@ -400,6 +400,30 @@ module internal Fold =
             expected
             record.Changes
 
+    let private acceptedAttachmentShape (record: RetainedOperation) expected =
+        match record.Changes, expected with
+        | [ accepted ], [ proposed ] ->
+            match accepted.Value, proposed.Value with
+            | PartValue.Attachment(AttachmentEffect.Added(introduces, retained)),
+              PartValue.Attachment(AttachmentEffect.Added(_, proposedDescriptor)) ->
+                let value =
+                    match retained, proposedDescriptor with
+                    | Some retained, Some proposed ->
+                        Some
+                            { proposed with
+                                Blob = retained.Blob
+                                Preview = retained.Preview
+                            }
+                    | _ -> proposedDescriptor
+
+                [
+                    { proposed with
+                        Value = PartValue.Attachment(AttachmentEffect.Added(introduces, value))
+                    }
+                ]
+            | _ -> expected
+        | _ -> expected
+
     /// Validates every accepted root, including executor and structural rules after private erasure.
     let append installation state (record: RetainedOperation) =
         let header = record.Root.Header
@@ -477,7 +501,11 @@ module internal Fold =
                                         record.Root.Structure.Retained
                                 |> Result.mapError rejected
                                 |> Result.bind (fun expected ->
-                                    if equalChanges record expected then
+                                    if
+                                        equalChanges
+                                            record
+                                            (acceptedAttachmentShape record expected)
+                                    then
                                         Ok()
                                     else
                                         Error FoldProblem.Decision))

@@ -10,6 +10,11 @@ type AggregateKind =
     | Family
     | Person
 
+[<RequireQualifiedAccess>]
+type TaskExecution =
+    | Structured
+    | AttachmentUpload
+
 /// Business declarations are owned by the task, independently of any client or transport.
 type TaskDeclaration =
     {
@@ -21,6 +26,7 @@ type TaskDeclaration =
         Family: ActFamily
         Consequence: Consequence
         ReviewsFamilySequence: bool
+        Execution: TaskExecution
         // Potential capability needs; input-dependent requirements stay with the task.
         Capabilities: Capability list
         Inputs: TaskInputDeclaration list
@@ -48,6 +54,8 @@ module TaskDeclaration =
         | ActSubject.Reminder, false -> BindingShape.Reminder
         | ActSubject.Note, true -> BindingShape.NoteNew
         | ActSubject.Note, false -> BindingShape.Note
+        | ActSubject.Attachment, true -> BindingShape.AttachmentNew
+        | ActSubject.Attachment, false -> BindingShape.Attachment
         | ActSubject.Party, true -> BindingShape.PartyNew
         | ActSubject.Party, false -> BindingShape.Party
         | ActSubject.Link, true -> BindingShape.LinkNew

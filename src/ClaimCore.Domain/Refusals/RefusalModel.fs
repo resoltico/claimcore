@@ -112,6 +112,8 @@ type Refusal =
     | OperationIdOutOfWindow of issuedAt: DateTimeOffset * observedAt: DateTimeOffset
     | OperationClockUnavailable of expiredBefore: DateTimeOffset * observedAt: DateTimeOffset
     | IdempotencyConflict
+    | AttachmentDuplicate of attachmentId: AttachmentId
+    | AttachmentCapacityReached
     | InvalidCursor
     | CaseDateRange of upper: CaseDateFilter
     | RegisterMaintenance

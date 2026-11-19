@@ -89,6 +89,7 @@ type PartValue =
     | Work of CaseWork option
     | Reminder of ReminderValue
     | Note of NoteValue
+    | Attachment of AttachmentEffect
     | Party of PartyValue
     | Link of LinkValue
     | Person of PersonValue
@@ -101,6 +102,7 @@ module PartValue =
         | PartValue.Work _ -> PartKind.Work
         | PartValue.Reminder _ -> PartKind.Reminder
         | PartValue.Note _ -> PartKind.Note
+        | PartValue.Attachment _ -> PartKind.Attachment
         | PartValue.Party _ -> PartKind.Party
         | PartValue.Link _ -> PartKind.Link
         | PartValue.Person _ -> PartKind.Person
@@ -119,6 +121,7 @@ module PartValue =
         | PartValue.Work _ -> PartValue.Work None
         | PartValue.Reminder value -> PartValue.Reminder(ReminderValue.Unavailable value.State)
         | PartValue.Note value -> PartValue.Note { value with Text = None }
+        | PartValue.Attachment value -> PartValue.Attachment(AttachmentEffect.clear value)
         | PartValue.Party value -> PartValue.Party { value with Content = None }
         | PartValue.Link value -> PartValue.Link { value with Content = None }
         | PartValue.Person value ->

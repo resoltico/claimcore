@@ -49,6 +49,7 @@ type Invocation =
             Target: ClaimCore.Wire.Route
             Input: JsonValue
             Bytes: byte array
+            Upload: byte array option
         }
 
 module Frames =
@@ -97,6 +98,10 @@ module Frames =
     let typedInput (invocation: Invocation) = invocation.Typed
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
 
+    let internal upload (invocation: Invocation) = invocation.Upload
+
+    let internal withUpload upload (invocation: Invocation) = { invocation with Upload = upload }
+
     let operationId invocation =
         EndpointValues.operationId invocation.Typed
 
@@ -120,6 +125,7 @@ module Frames =
                         Target = ClaimCore.Wire.Route.describe endpoint
                         Input = value
                         Bytes = bytes
+                        Upload = None
                     }
         with :? ArgumentException ->
             error "$.input" "invalid request format"
@@ -223,6 +229,7 @@ module Frames =
                                     Target = endpoint
                                     Input = input
                                     Bytes = prepared
+                                    Upload = None
                                 })
             | Error problem, _ -> Error problem
             | _ -> error "$.input" "missing input"

@@ -72,18 +72,17 @@ let private runtimeSettings (container: PostgreSqlContainer) =
 let internal runtimeConnectionString (database: Database) =
     (runtimeSettings database.Container).ConnectionString
 
-let private container () =
-    let value =
+let private container configure =
+    let builder =
         (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
             .WithLabel("claimcore.test", "ledger-store")
             .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
             .WithTmpfsMount("/var/lib/postgresql")
             .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
-            .Build()
 
-    value
+    (configure builder: PostgreSqlBuilder).Build()
 
-let internal empty () = container ()
+let internal empty () = container (fun builder -> builder)
 
 let private disposalSteps (container: PostgreSqlContainer) (sources: NpgsqlDataSource list) =
     [
@@ -140,9 +139,9 @@ let private admittedDatabase
         Fixture = fixture
     }
 
-let private createInZone owner timeZone poolCapacity =
+let private createInZone configure owner timeZone poolCapacity =
     task {
-        let container = container ()
+        let container = container configure
         let mutable sources: NpgsqlDataSource list = []
         let mutable stage = SetupStage.ContainerReadiness
         let mutable ownedId = "CREATED_EVENT_NOT_OBSERVED"
@@ -212,14 +211,48 @@ let private createInZone owner timeZone poolCapacity =
             return Unchecked.defaultof<Database>
     }
 
-let internal createFor principal = createInZone principal "Etc/UTC" None
+let private defaults builder = builder
 
-let internal createWithZone timeZone = createInZone owner timeZone None
+let internal createFor principal =
+    createInZone defaults principal "Etc/UTC" None
+
+let internal createWithZone timeZone =
+    createInZone defaults owner timeZone None
 
 let internal createForPool principal capacity =
-    createInZone principal "Etc/UTC" (Some capacity)
+    createInZone defaults principal "Etc/UTC" (Some capacity)
 
 let internal create () = createFor owner
+
+let internal createWithStatementCounts () =
+    let configure (builder: PostgreSqlBuilder) =
+        builder.WithCommand("-c", "shared_preload_libraries=pg_stat_statements")
+
+    createInZone configure owner "Etc/UTC" None
+
+/// The two additional ports belong to independent, promoted physical restores inside the
+/// owned fixture. The primary archives to an atomic, test-only sibling of its data directory.
+let internal createArchived () =
+    let configure (builder: PostgreSqlBuilder) =
+        builder
+            .WithPortBinding(5433, true)
+            .WithPortBinding(5434, true)
+            .WithCommand(
+                "-c",
+                "wal_level=replica",
+                "-c",
+                "fsync=on",
+                "-c",
+                "full_page_writes=on",
+                "-c",
+                "synchronous_commit=on",
+                "-c",
+                "archive_mode=on",
+                "-c",
+                "archive_command=mkdir -p /var/lib/postgresql/attachment-wal && cp %p /var/lib/postgresql/attachment-wal/%f.tmp && mv /var/lib/postgresql/attachment-wal/%f.tmp /var/lib/postgresql/attachment-wal/%f"
+            )
+
+    createInZone configure owner "Etc/UTC" None
 
 let internal fixture () =
     task { let! database = create () in return database.Fixture }

@@ -101,6 +101,11 @@ module internal TimelineQueries =
                                                                 Capability.ReadHistoryFull
                                                                 (Scope.Case parent.CaseId)
 
+                                                        let! attachmentDisclosure =
+                                                            AttachmentReads.disclosure
+                                                                tx
+                                                                parent.CaseId
+
                                                         let! items =
                                                             entries
                                                                 services
@@ -119,6 +124,8 @@ module internal TimelineQueries =
                                                                         HistoryDisclosure.ofAccess
                                                                             erased
                                                                             full
+                                                                    AttachmentDisclosure =
+                                                                        attachmentDisclosure
                                                                     Basis =
                                                                         ServiceContext.basis
                                                                             services

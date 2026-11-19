@@ -69,7 +69,7 @@ runtime connection, and the owner connection is mounted only by the administrati
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 7 and
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 8 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
 [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
@@ -401,6 +401,12 @@ Payment projections retain accepting IDs, parent IDs and effect positions. Erasu
 dates, amounts, directions, currencies, references and payees. Removal markers remain and
 rebuild restores them from retained payment effects. Closure outcomes and operation attribution
 remain ledger metadata. Closing notes, reopening reasons and decision bases are erasable.
+
+Case erasure clears all attachment bytes and private file descriptors, including withdrawn and
+reattached files. Verification checks retained attachment bytes against accepted commitments.
+Projection rebuild repairs the list and reports authoritative byte loss as a fault requiring trusted
+restore. Withdrawn files remain in the database and its backups until the applicable erasure and
+backup retention policies take effect.
 Verification compares available payment facts with accepted history and checks the cleared shape
 after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 
@@ -467,6 +473,20 @@ exposing connection values.
 
 Cancellation does not free a permit while provider cleanup still runs. An overload response does not
 settle an earlier uncertain change. Check that change separately.
+
+### Attachment transfer budgets
+
+The service reserves at most two simultaneous attachment transfers per process and one per
+principal. It refuses excess transfers immediately. The total host deadline is 180 seconds and the
+shipped clients allow 200 seconds. Uploads are buffered within those transfer slots before taking a
+database write permit. Downloads release their read snapshot before sending bytes to the client.
+
+The maximum upload body is 25 MiB plus the configured JSON cap plus 4,636 bytes for framing.
+The default maximum is 26,284,572 bytes. Multipart boundaries are limited to 70 ASCII characters.
+Run the configured proxy with at least those transfer sizes and deadlines. Preserve security
+headers, the original host and origin, and identity encoding. Forward downloads and previews
+without response transformations. The multipart reader tolerates bounded preamble, epilogue and
+delimiter whitespace within the aggregate limit.
 
 ## Browser preferences and assets
 

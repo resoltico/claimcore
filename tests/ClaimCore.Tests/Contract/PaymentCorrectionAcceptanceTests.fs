@@ -447,6 +447,7 @@ let tests =
                     let page =
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                            AttachmentDisclosure = Sequence.zero
                             Basis = receipt.Basis
                             CaseId = before.Id
                             Reference = before.Reference

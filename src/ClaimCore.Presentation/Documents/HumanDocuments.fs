@@ -389,6 +389,15 @@ module HumanCaseDocument =
                                  )
                              )
                      }
+                     {
+                         Relation = LinkRelation.Attachments
+                         LabelId = "section.attachments.label"
+                         Link =
+                             Link.CaseAttachments
+                                 {
+                                     Target = CaseSelector.Id value.Snapshot.CaseId
+                                 }
+                     }
                  ]
              else
                  [])
@@ -680,6 +689,22 @@ module HumanReadDocuments =
                  HumanDisclosure.Erased
              else
                  HumanDisclosure.Current)
+            None
+
+    let attachments (value: AttachmentPage) =
+        resource
+            value.Basis
+            (AttachmentsScreen.page value)
+            DocumentSubject.List
+            (if value.CanAdd then
+                 [ TaskAffordances.attachmentAdd value.CaseId ]
+             else
+                 [])
+            [
+                named "field.caseReference.label" LinkRelation.OpenCase (Link.caseById value.CaseId)
+            ]
+            None
+            HumanDisclosure.Current
             None
 
     let notes (value: CaseNotesPage) =

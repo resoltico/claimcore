@@ -161,6 +161,7 @@ let internal queryCodecs () =
             Outcome.Succeeded
                 {
                     Disclosure = HistoryDisclosure.Full
+                    AttachmentDisclosure = Sequence.zero
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference "WIRE"
                     Basis = DomainInputs.workBasis

@@ -15,6 +15,7 @@ open ClaimCore.Json
 type RouteBody =
     | Json of ClassifiedReply
     | Csv of bytes: byte array * filename: string * installation: System.Guid
+    | Attachment of AttachmentTransfer * AttachmentContent * installation: System.Guid
 
 /// Audit identity is taken from the confirmed use-case result, independently of representation.
 type RouteReply =
@@ -27,12 +28,14 @@ type RouteReply =
     member this.Wire =
         match this.Response with
         | RouteBody.Json value -> value.Wire
-        | RouteBody.Csv _ -> invalidOp "CSV has no JSON representation."
+        | RouteBody.Csv _
+        | RouteBody.Attachment _ -> invalidOp "Binary transfers have no JSON representation."
 
     member this.Class =
         match this.Response with
         | RouteBody.Json value -> value.Class
-        | RouteBody.Csv _ -> ReplyKind.Succeeded
+        | RouteBody.Csv _
+        | RouteBody.Attachment _ -> ReplyKind.Succeeded
 
 [<NoEquality; NoComparison>]
 type PreparedRoute =

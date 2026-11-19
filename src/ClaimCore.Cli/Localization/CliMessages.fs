@@ -31,6 +31,7 @@ type CliMessage =
     | [<MessageKey("cli.help.defaultValue")>] DefaultValue of value: string
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.note")>] NoteCommands
+    | [<MessageKey("cli.family.attachment")>] AttachmentCommands
     | [<MessageKey("cli.family.link")>] LinkCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
@@ -172,6 +173,9 @@ type CliMessage =
     | [<MessageKey("cli.shell.invalidLine")>] InvalidShellLine
     | [<MessageKey("cli.usage.shellInteractiveRequired")>] ShellInteractiveRequired
     | [<MessageKey("cli.usage.configureOptions")>] InvalidConfigureOptions
+    | [<MessageKey("cli.attachment.unresolved")>] AttachmentUnresolved of statusCommand: string
+    | [<MessageKey("cli.attachment.saved")>] AttachmentSaved
+    | [<MessageKey("cli.attachment.outputFailed")>] AttachmentOutputFailed
     | Failure of ClientFailure
 
 /// Rendering and publication inspect the same closed producers; no separate argument-name list exists.

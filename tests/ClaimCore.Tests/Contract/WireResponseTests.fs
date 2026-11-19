@@ -246,10 +246,20 @@ let private checkDiscriminators (root: JsonElement) =
         [
             "ReceiptSubject",
             "kind",
-            [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE"; "PARTY"; "LINK" ]
+            [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE"; "ATTACHMENT"; "PARTY"; "LINK" ]
             "PartDescription",
             "kind",
-            [ "CASE"; "PERSON"; "WORK"; "REMINDER"; "NOTE"; "PARTY"; "PAYMENT"; "LINK" ]
+            [
+                "CASE"
+                "PERSON"
+                "WORK"
+                "REMINDER"
+                "NOTE"
+                "ATTACHMENT"
+                "PARTY"
+                "PAYMENT"
+                "LINK"
+            ]
             "OperationSubmission",
             "task",
             (ClaimCore.Domain.Tasks.Registry.clientDeclarations
@@ -292,8 +302,10 @@ let private openApi () =
 
     Expect.equal
         (paths.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
-        (ExportTransport.path :: (Api.all |> List.map Api.path) |> Set.ofList)
-        "Exactly the published JSON registry and dedicated CSV paths are emitted"
+        ((ExportTransport.path :: (Api.all |> List.map Api.path))
+         @ (AttachmentTransport.all |> List.map AttachmentTransport.path)
+         |> Set.ofList)
+        "Exactly the published JSON registry and dedicated media paths are emitted"
 
     for endpoint in Api.all do
         let operation =

@@ -754,5 +754,25 @@
   "ui.rowNumber": {
     "text": "{number}. rinda",
     "source": "f8c78edd5258"
+  },
+  "ui.attachments.file": {
+    "text": "Izvēlēties failu",
+    "source": "3e10c3cd6e0d"
+  },
+  "ui.attachments.download": {
+    "text": "Lejupielādēt",
+    "source": "d6eafe823591"
+  },
+  "ui.attachments.preview": {
+    "text": "Priekšskatīt attēlu",
+    "source": "190571956ca0"
+  },
+  "ui.attachments.previewError": {
+    "text": "Attēlu nevarēja parādīt. Lejupielādējiet sākotnējo failu.",
+    "source": "c8b3a7434d30"
+  },
+  "ui.attachments.empty": {
+    "text": "Nav pašreizēju pielikumu.",
+    "source": "6d2a34c560f7"
   }
 }

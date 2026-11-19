@@ -72,6 +72,14 @@ module HumanReceiptDocument =
 
                 Some value.CaseId, disclosure, false
             | ReceiptSubject.Link value -> Some value.CaseId, HumanDisclosure.Current, false
+            | ReceiptSubject.Attachment value ->
+                let disclosure =
+                    match value.Snapshot with
+                    | AttachmentDisclosure.Disclosed _ -> HumanDisclosure.Current
+                    | AttachmentDisclosure.Withheld -> HumanDisclosure.Withheld
+                    | AttachmentDisclosure.Erased -> HumanDisclosure.Erased
+
+                Some value.CaseId, disclosure, false
             | ReceiptSubject.Note value ->
                 let disclosure =
                     match value.Snapshot with

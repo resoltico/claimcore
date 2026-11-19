@@ -297,6 +297,19 @@ let internal replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
+                Api.caseAttachments
+                HumanReadDocuments.attachments
+                (Outcome.Succeeded
+                    {
+                        Basis = basis
+                        CaseId = snapshot.CaseId
+                        Reference = snapshot.Reference
+                        Disclosure = Sequence.first
+                        Items = []
+                        CanAdd = false
+                    })
+        yield!
+            actorRead
                 Api.caseNotes
                 HumanReadDocuments.notes
                 (Outcome.Succeeded
@@ -373,6 +386,7 @@ let internal replies () : IEndpointOutput list =
                 (Outcome.Succeeded
                     {
                         Disclosure = HistoryDisclosure.Full
+                        AttachmentDisclosure = Sequence.zero
                         Basis = basis
                         CaseId = snapshot.CaseId
                         Reference = reference

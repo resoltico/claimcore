@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": "Case attachments",
+  "cli.attachment.unresolved": "Upload unconfirmed. Check the original operation with {statusCommand}. If you cannot recover the exact reviewed file, wait for a final absence before starting another upload.",
+  "cli.attachment.saved": "Attachment saved.",
+  "cli.attachment.outputFailed": "The attachment could not be saved at the selected destination.",
   "cli.help.defaultValue": "Defaults to {value}.",
   "cli.beforeDispatchFailure": "Unexpected failure before dispatch.",
   "cli.callbackAccepted": "Authentication response received. Return to the terminal.",

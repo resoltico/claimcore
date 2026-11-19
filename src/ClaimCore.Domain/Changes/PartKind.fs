@@ -9,6 +9,7 @@ type PartKind =
     | Work
     | Reminder
     | Note
+    | Attachment
     | Party
     | Link
     | Person

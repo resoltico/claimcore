@@ -12,6 +12,7 @@ type Link =
     | CaseList of CaseListRequest
     | CaseSummary of CaseSummaryRequest
     | CaseTimeline of CaseTimelineRequest
+    | CaseAttachments of CaseGetRequest
     | CaseNotes of CaseNotesRequest
     | CasePayments of CasePaymentsRequest
     | ReminderList of ReminderListRequest
@@ -33,6 +34,7 @@ module Link =
         | Link.CaseList _ -> QueryTaskId.CaseList
         | Link.CaseSummary _ -> QueryTaskId.CaseSummary
         | Link.CaseTimeline _ -> QueryTaskId.CaseTimeline
+        | Link.CaseAttachments _ -> QueryTaskId.CaseAttachments
         | Link.CaseNotes _ -> QueryTaskId.CaseNotes
         | Link.CasePayments _ -> QueryTaskId.CasePayments
         | Link.ReminderList _ -> QueryTaskId.ReminderList
@@ -76,6 +78,7 @@ module Link =
 type LinkRelation =
     | OpenCase
     | FollowUp
+    | Attachments
     | View
 
 module LinkRelation =

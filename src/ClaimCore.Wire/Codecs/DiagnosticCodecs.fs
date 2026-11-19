@@ -251,6 +251,15 @@ module DiagnosticCodecs =
     let private diagnosticVariants =
         [
             variant
+                "ATTACHMENT_DUPLICATE"
+                Refusal.AttachmentDuplicate
+                (function
+                | Refusal.AttachmentDuplicate id -> Some id
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.ReadCurrent
+                 |> field "attachmentId" id AttachmentCodecs.id)
+            variant
                 "OPERATION_CLOCK_UNAVAILABLE"
                 (fun (cutoff, observed) -> Refusal.OperationClockUnavailable(cutoff, observed))
                 (function

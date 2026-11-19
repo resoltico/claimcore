@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "永久刪除此案件目前及保留的詳情、付款、工作、提醒和備註。案件編號和變更記錄將保留。其他位置的副本不受影響。",
-    "source": "e9561f9fbf0b"
+    "text": "永久刪除此案件目前及保留的詳情、付款、工作、提醒、備註和附件。案件編號和變更記錄將保留。其他位置的副本不受影響。",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "永久刪除帳戶資料",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "透過資料庫管理命令記錄初始化和擁有者復原的權限。",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "新增附件",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "為此案件新增檔案。",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "將此檔案上傳到案件。如果上傳已撤回檔案的完全相同內容，該內容將以新的附件 ID 再次提供。",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "已新增附件。",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "撤回附件",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "從此案件撤回該檔案。",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "該檔案將無法再從登記冊取得。在案件被清除以前，檔案仍占用案件的儲存額度。",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "已撤回附件。",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "列出附件",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "查看此案件目前的附件。",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "附件 ID",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "選取此案件目前的一個附件。",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "使用接受此附件的作業 UUID。",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "檔案名稱",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "選取要核對名稱的檔案。",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "儲存的檔案名稱可跨平台使用，最多 120 個 UTF-8 位元組。",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "大小（位元組）",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "大小由選取的檔案決定。",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "輸入 0 至 26214400 之間的整數，包括兩端。",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "檔案總和檢查碼",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "總和檢查碼根據選取的檔案計算。",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "使用 SHA-256 總和檢查碼的 64 個十六進位數字。",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "使用附件的 ID。",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "請選取名稱受支援的檔案。",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "檔案大小不得超過 25 MiB。",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "請重新選取檔案以計算總和檢查碼。",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "選取並上傳檔案以新增附件。",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "上傳的檔案與已核對的檔案不同。請重新選取檔案並再次核對。",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "此案件已附有該檔案。",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "該案件已達到附件保留上限。",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "附件",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "附件",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "附件",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "附件",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "已記錄附件變更。",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "影像預覽",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "附件記錄位置",
+    "source": "02ce853f42c9"
   }
 }

@@ -40,7 +40,7 @@ let private actionCommand action =
 
     command
 
-let private prepare arguments =
+let private withAdmittedVerb arguments useVerb =
     let directory = Directory.CreateTempSubdirectory "claimcore-argument-boundary-"
 
     try
@@ -51,11 +51,14 @@ let private prepare arguments =
                 None
 
         match CliInvocations.admitConfiguredWith environment arguments |> required with
-        | CliInvocation.Verb admitted -> Grammar.prepare noAllocation admitted |> required
+        | CliInvocation.Verb admitted -> useVerb admitted
         | other ->
             failtestf "Literal values cannot become executable help or another command: %A" other
     finally
         directory.Delete(true)
+
+let private prepare arguments =
+    withAdmittedVerb arguments (Grammar.prepare noAllocation >> required)
 
 let private explicitOperation arguments =
     List.take 2 arguments
@@ -84,6 +87,63 @@ let tests =
     testList
         "CLI literal argument boundaries"
         [
+            testCase
+                "attachment withdrawal accepts either case selector and the copied hint"
+                (fun () ->
+                    let rawCase = "566ab687-46df-4d7e-9030-b1c31e3a122a"
+                    let rawAttachment = "018f785e-1b45-7cc4-b9c9-cebf5f897689"
+                    let caseId = CaseId.create (Guid.Parse rawCase) |> Option.get
+                    let attachment = AttachmentId.create (Guid.Parse rawAttachment) |> Option.get
+                    let byId = CaseSelector.Id caseId
+                    let byReference = CaseSelector.Reference "REFERENCE"
+
+                    let verb = [ "attachment"; "withdraw" ]
+
+                    let machine (arguments: string list) =
+                        let prepared =
+                            prepare (
+                                explicitOperation (
+                                    verb @ arguments @ [ "--confirm"; "yes"; "--dry-run" ]
+                                )
+                            )
+
+                        Frames.value Api.operationExecute prepared.Invocation |> Option.get
+
+                    let expectBinding target (value: OperationSubmission) =
+                        let input = value.Operation |> required
+
+                        Expect.equal
+                            input.Binding
+                            (Binding.Attachment(target, attachment))
+                            "Both tagged selectors retain the child ID"
+
+                    machine [ "--case-id"; rawCase; rawAttachment ] |> expectBinding byId
+                    machine [ "REFERENCE"; rawAttachment ] |> expectBinding byReference
+
+                    let action =
+                        TaskAffordances.offered
+                            ClientCompositions.attachmentWithdrawal
+                            (Some(Binding.Attachment(byId, attachment)))
+                            Map.empty
+                            []
+                            Map.empty
+
+                    actionCommand action |> words |> preview |> expectBinding byId
+
+                    for extras in [ [ "REFERENCE"; rawAttachment ]; [ rawAttachment; "extra" ] ] do
+                        let argv =
+                            explicitOperation (
+                                verb @ [ "--case-id"; rawCase ] @ extras @ [ "--preview" ]
+                            )
+
+                        Expect.isError
+                            (withAdmittedVerb argv (Grammar.prepare noAllocation))
+                            "Both selectors or extra operands refuse"
+
+                    Expect.stringContains
+                        (CommandGrammar.synopsis "attachment.withdraw")
+                        "(--case-id UUID | [--] CASE-REFERENCE) ATTACHMENT-ID"
+                        "Usage names both selectors and their common child operand")
             testCase
                 "named query hints round trip option-looking text and ordered repeated filters"
                 (fun () ->

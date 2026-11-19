@@ -19,6 +19,7 @@ import type { RecoveryJournal } from "../../../src/protocol/recoveryJournal";
 
 afterEach(() => vi.unstubAllGlobals());
 const record = recoveryRecord();
+const attachmentCaseId = "00000000-0000-4000-8000-000000000003";
 const receipt: HumanDocument = {
   screen: {
     regions: [
@@ -55,7 +56,7 @@ const receipt: HumanDocument = {
 };
 const View = () => {
   const recovery = useRecovery();
-  const cache = useEndpointCache();
+  const cache = useEndpointCache()!;
   const final = recovery.finals[record.attemptId];
   return (
     <>
@@ -78,7 +79,16 @@ const View = () => {
         Recheck identity
       </button>
       <output data-testid="cleanup">{final?.cleanup?.kind ?? ""}</output>
-      <button onClick={() => cache?.invalidate()}>Invalidate observations</button>
+      <output data-testid="attachment-disclosure">
+        {cache.attachmentDisclosure(attachmentCaseId)}
+      </output>
+      <button
+        onClick={() => {
+          cache.invalidate();
+        }}
+      >
+        Invalidate observations
+      </button>
     </>
   );
 };
@@ -140,6 +150,42 @@ it("retains the complete Core receipt and known acceptance when identity-only jo
     expect.objectContaining({ body: JSON.stringify({ operationId: record.operationId }) }),
   );
 });
+it("uses an accepted withdrawal's disclosure position in identity-only recovery", async () => {
+  const journal = setup("ACCEPTED", {
+    ...receipt,
+    screen: {
+      regions: [
+        ...receipt.screen.regions,
+        {
+          role: "DETAILS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "attachmentCaseId",
+                labelId: "input.caseId.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: attachmentCaseId },
+              },
+              {
+                key: "attachmentDisclosure",
+                labelId: "label.attachmentDisclosure",
+                prominence: "DETAIL",
+                value: { kind: "COUNT", value: 19 },
+              },
+            ],
+          },
+        },
+      ],
+    },
+    disclosure: "WITHHELD",
+  });
+
+  await screen.findByText("Core people outcome Ω");
+  expect(screen.getByTestId("attachment-disclosure")).toHaveTextContent("19");
+  expect(journal.remove).toHaveBeenCalledWith(record);
+});
+
 it("masks a recovered receipt synchronously when the disclosure generation is invalidated", async () => {
   setup();
   await screen.findByText("Core people outcome Ω");

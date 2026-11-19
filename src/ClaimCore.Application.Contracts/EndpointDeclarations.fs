@@ -119,6 +119,7 @@ module EndpointDeclarations =
                 (caseTarget :: optional TaskInputId.TimelineFilter :: page)
                 ordinaryPage
                 true
+            query QueryTaskId.CaseAttachments [ caseTarget ] None false
             query
                 QueryTaskId.CaseNotes
                 (caseTarget :: page)

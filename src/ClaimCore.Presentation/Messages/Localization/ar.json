@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "احذف نهائيًا التفاصيل والمدفوعات والأعمال والتذكيرات والملاحظات الحالية والمحفوظة لهذا الملف. يبقى المرجع وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
-    "source": "e9561f9fbf0b"
+    "text": "امحُ نهائيًا تفاصيل هذا الملف ومدفوعاتها وأعمالها وتذكيراتها وملاحظاتها ومرفقاتها الحالية والمحتفَظ بها. يبقى مرجع الملف وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "محو الملف الشخصي",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "الجهة التي تسجّل الإعداد الأولي واستعادة وصول المالك من خلال أوامر إدارة قاعدة البيانات.",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "إضافة مرفق",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "أضف ملفًا إلى هذا الملف.",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "ارفع هذا الملف إلى الملف. يؤدي رفع محتوى ملف مسحوب مطابق تمامًا إلى إتاحته مجددًا بمعرّف مرفق جديد.",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "تمت إضافة المرفق.",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "سحب المرفق",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "اسحب هذا الملف من الملف.",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "لن يكون هذا الملف متاحًا في السجل بعد الآن. ويظل حجمه محسوبًا ضمن حدود تخزين الملف حتى محوها.",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "تم سحب المرفق.",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "عرض المرفقات",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "اطّلع على المرفقات الحالية لهذا الملف.",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "معرّف المرفق",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "اختر مرفقًا حاليًا من هذا الملف.",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "استخدم UUID العملية التي قُبل بها المرفق.",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "اسم الملف",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "اختر ملفًا لمراجعة اسمه.",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "الاسم المحفوظ هو اسم ملف قابل للنقل لا يتجاوز 120 بايت بترميز UTF-8.",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "الحجم بالبايت",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "يحدد الملف المختار هذا الحجم.",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "أدخل عددًا صحيحًا من 0 إلى 26214400 شاملًا الطرفين.",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "المجموع الاختباري للملف",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "يُحسب المجموع الاختباري للملف المختار.",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "استخدم الأرقام السداسية العشرية الـ64 للمجموع الاختباري SHA-256.",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "استخدم معرّف مرفق.",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "اختر ملفًا باسم مدعوم.",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "يجب ألا يتجاوز حجم الملف 25 ميبيبايت.",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "اختر الملف مجددًا لحساب مجموعه الاختباري.",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "اختر الملف وارفعه لإضافة مرفق.",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "يختلف الملف المرفوع عن الملف الذي راجعته. اختره مجددًا وابدأ مراجعة جديدة.",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "هذا الملف مرفق بالفعل بالملف.",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "بلغت الملف الحد الأقصى للمرفقات المحتفَظ بها.",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "المرفقات",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "مرفق",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "مرفق",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "المرفقات",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "تم تسجيل تغيير في المرفق.",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "معاينة الصورة",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "موضع سجل المرفقات",
+    "source": "02ce853f42c9"
   }
 }

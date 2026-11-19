@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "この案件の現在および保持されている詳細、支払、作業、リマインダー、メモを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
-    "source": "e9561f9fbf0b"
+    "text": "この案件の現在および保持されている詳細、支払、作業、リマインダー、メモ、添付ファイルを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "プロフィールを消去",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "データベースの管理コマンドを通じて初期設定と所有者の復旧を記録する権限です。",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "添付ファイルを追加",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "この案件にファイルを追加します。",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "案件にファイルをアップロードします。取り下げたファイルと完全に同じデータをアップロードすると、新しい添付ファイル ID で再び利用できるようになります。",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "添付ファイルを追加しました。",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "添付ファイルを取り下げる",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "このファイルを案件から取り下げます。",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "このファイルは台帳から利用できなくなります。案件が消去されるまで、ファイルのデータは案件の保存容量制限に含まれます。",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "添付ファイルを取り下げました。",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "添付ファイルを一覧表示",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "この案件の現在の添付ファイルを確認します。",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "添付ファイル ID",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "この案件の現在の添付ファイルを選択してください。",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "添付ファイルを受け付けた操作の UUID を使用してください。",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "ファイル名",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "ファイルを選択して名前を確認してください。",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "保存名は最大 120 UTF-8 バイトの移植可能なファイル名です。",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "サイズ（バイト）",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "選択したファイルのサイズが表示されます。",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "0 以上 26214400 以下の整数を入力してください。",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "ファイルのチェックサム",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "選択したファイルからチェックサムを計算します。",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "SHA-256 チェックサムの 64 桁の 16 進数を指定してください。",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "添付ファイルの ID を使用してください。",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "対応する名前のファイルを選択してください。",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "ファイルサイズは 25 MiB 以下にしてください。",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "ファイルを選び直してチェックサムを計算してください。",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "ファイルを選択してアップロードしてください。",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "アップロードしたファイルが確認したファイルと異なります。ファイルを選び直し、確認をやり直してください。",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "このファイルはすでに案件に添付されています。",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "案件の添付ファイル保存上限に達しました。",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "添付ファイル",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "添付ファイル",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "添付ファイル",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "添付ファイル",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "添付ファイルの変更を記録しました。",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "画像プレビュー",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "添付ファイル記録の位置",
+    "source": "02ce853f42c9"
   }
 }

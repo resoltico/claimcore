@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "案件の添付ファイル",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "既定値は {value} です。",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "ローカルで復旧するには {setting} にディレクトリの絶対パスを指定してください。",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "アップロードは未確認です。{statusCommand} で元の操作を確認してください。確認したものと同じファイルを用意できない場合は、元の操作が受け付けられていないと確定してから再度アップロードしてください。",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "添付ファイルを保存しました。",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "指定した場所に添付ファイルを保存できませんでした。",
+    "source": "915060f3dc90"
   }
 }

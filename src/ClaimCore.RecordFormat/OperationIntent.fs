@@ -31,6 +31,8 @@ module OperationIntent =
         | Binding.Work(selector, revision) -> Binding.Work(target resolve selector, revision)
         | Binding.NoteNew selector -> Binding.NoteNew(target resolve selector)
         | Binding.Note(selector, id) -> Binding.Note(target resolve selector, id)
+        | Binding.AttachmentNew selector -> Binding.AttachmentNew(target resolve selector)
+        | Binding.Attachment(selector, id) -> Binding.Attachment(target resolve selector, id)
         | Binding.PartyNew selector -> Binding.PartyNew(target resolve selector)
         | Binding.Party(selector, id, revision) ->
             Binding.Party(target resolve selector, id, revision)

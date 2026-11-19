@@ -24,6 +24,7 @@ type internal DecisionPlan =
         Changes: PartChange list
         Descriptions: DescribedPart list
         After: AggregateState
+        AttachmentPayload: VerifiedAttachment option
     }
 
 /// One decision path for previews and commits, independent of receipt and document transport.
@@ -89,6 +90,53 @@ module internal Engine =
             return fun target -> Map.tryFind (selectorKey target) resolved |> Option.flatten
         }
 
+    let private admitAttachment (tx: ReadTx) verified changes =
+        task {
+            match verified, changes with
+            | None, _ -> return Ok(changes, None)
+            | Some verified, [ change ] ->
+                match change.Aggregate, change.Value with
+                | AggregateReference.Family caseId,
+                  PartValue.Attachment(AttachmentEffect.Added(true, Some descriptor)) ->
+                    let! matched = AttachmentStorage.findMatch tx caseId verified
+
+                    let! count, bytes =
+                        match matched with
+                        | Some _ -> System.Threading.Tasks.Task.FromResult(0L, 0L)
+                        | None -> AttachmentStorage.usage tx caseId
+
+                    let admit introduces blob payload =
+                        let preview = AttachmentPreview.classify (VerifiedAttachment.bytes verified)
+
+                        let descriptor =
+                            { descriptor with
+                                Blob = blob
+                                Preview = preview
+                            }
+
+                        let accepted =
+                            { change with
+                                Value =
+                                    PartValue.Attachment(
+                                        AttachmentEffect.Added(introduces, Some descriptor)
+                                    )
+                            }
+
+                        Ok([ accepted ], payload)
+
+                    return
+                        match AttachmentAdmission.decide verified count bytes matched with
+                        | AttachmentAdmission.Duplicate id ->
+                            Error(ExecutionStop.Refused(Refusal.AttachmentDuplicate id))
+                        | AttachmentAdmission.RetainedCapacityReached ->
+                            Error(ExecutionStop.Refused Refusal.AttachmentCapacityReached)
+                        | AttachmentAdmission.RetainNew ->
+                            admit true descriptor.Blob (Some verified)
+                        | AttachmentAdmission.Reattach blob -> admit false blob None
+                | _ -> return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
+            | _ -> return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
+        }
+
     let prepare
         (tx: ReadTx)
         (head: LedgerPosition)
@@ -97,6 +145,7 @@ module internal Engine =
         operation
         binding
         inputs
+        verified
         =
         task {
             let declaration = Task.declaration selected
@@ -243,28 +292,34 @@ module internal Engine =
                                     match (snapshot.Availability resolvedBinding).Blocked with
                                     | Some refusal -> return Error(ExecutionStop.Refused refusal)
                                     | None ->
-                                        match
-                                            DecisionSnapshot.apply snapshot changes,
-                                            snapshot.Describe changes
-                                        with
-                                        | Ok after, Ok descriptions ->
-                                            return
-                                                Ok
-                                                    {
-                                                        Snapshot = snapshot
-                                                        Header = header
-                                                        Binding = resolvedBinding
-                                                        Inputs = inputs
-                                                        Changes = changes
-                                                        Descriptions = descriptions
-                                                        After = after
-                                                    }
-                                        | _ ->
-                                            return
-                                                Error(
-                                                    ExecutionStop.Failed
-                                                        CoreFault.StoreIntegrityError
-                                                )
+                                        let! admitted = admitAttachment tx verified changes
+
+                                        match admitted with
+                                        | Error stop -> return Error stop
+                                        | Ok(changes, payload) ->
+                                            match
+                                                DecisionSnapshot.apply snapshot changes,
+                                                snapshot.Describe changes
+                                            with
+                                            | Ok after, Ok descriptions ->
+                                                return
+                                                    Ok
+                                                        {
+                                                            Snapshot = snapshot
+                                                            Header = header
+                                                            Binding = resolvedBinding
+                                                            Inputs = inputs
+                                                            Changes = changes
+                                                            Descriptions = descriptions
+                                                            After = after
+                                                            AttachmentPayload = payload
+                                                        }
+                                            | _ ->
+                                                return
+                                                    Error(
+                                                        ExecutionStop.Failed
+                                                            CoreFault.StoreIntegrityError
+                                                    )
         }
 
     let commit (tx: WriteTx) plan =
@@ -287,7 +342,9 @@ module internal Engine =
                 with
                 | Error _ -> return Error CoreFault.StoreIntegrityError
                 | Ok record ->
-                    do! tx.Append record
+                    match plan.AttachmentPayload with
+                    | Some payload -> do! tx.Append(record, payload)
+                    | None -> do! tx.Append record
 
                     match plan.After with
                     | AggregateState.Person(Some person) ->

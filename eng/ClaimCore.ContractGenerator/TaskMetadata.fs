@@ -49,7 +49,19 @@ module TaskMetadata =
             | InputValue.Boolean value -> box value
             | InputValue.Null -> null
 
-        let definition id kind subject endpoint consequence creates paged csv inputs collections =
+        let definition
+            (ledger: TaskDeclaration option)
+            id
+            kind
+            subject
+            endpoint
+            consequence
+            creates
+            paged
+            csv
+            inputs
+            collections
+            =
             let prefix = if kind = "OPERATION" then "task." else "endpoint."
 
             {|
@@ -63,11 +75,14 @@ module TaskMetadata =
                 creates = creates
                 paged = paged
                 csv = csv
+                execution =
+                    ledger
+                    |> Option.map (fun declaration ->
+                        match declaration.Execution with
+                        | TaskExecution.Structured -> "JSON"
+                        | TaskExecution.AttachmentUpload -> "ATTACHMENT_UPLOAD")
                 binding =
-                    (if kind = "OPERATION" then
-                         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral id)
-                     else
-                         None)
+                    ledger
                     |> Option.map (fun declaration ->
                         let plan = SubmissionDeclarations.binding declaration
 
@@ -93,10 +108,7 @@ module TaskMetadata =
                             family = plan.Family |> Option.map revision
                         |})
                 defaults =
-                    (if kind = "OPERATION" then
-                         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral id)
-                     else
-                         None)
+                    ledger
                     |> Option.map SubmissionAssembly.defaults
                     |> Option.defaultValue Map.empty
                     |> Map.toList
@@ -136,6 +148,7 @@ module TaskMetadata =
             ClaimCore.Domain.Tasks.Registry.clientDeclarations
             |> List.map (fun declaration ->
                 definition
+                    (Some declaration)
                     (TaskId.token declaration.Id)
                     "OPERATION"
                     (Some(ActSubject.token declaration.Target))
@@ -151,6 +164,7 @@ module TaskMetadata =
             EndpointDeclarations.all
             |> List.map (fun declaration ->
                 definition
+                    None
                     declaration.Id
                     (match declaration.Kind with
                      | EndpointKind.Query -> "QUERY"
@@ -196,6 +210,8 @@ module TaskMetadata =
                     accountRegistration = TaskId.token ClientCompositions.accountRegistration
                     admission = TaskId.token ClientCompositions.admission
                     noteEntry = TaskId.token ClientCompositions.noteEntry
+                    attachmentEntry = TaskId.token ClientCompositions.attachmentEntry
+                    attachmentWithdrawal = TaskId.token ClientCompositions.attachmentWithdrawal
                     assignment = TaskId.token ClientCompositions.assignment
                     reminderCreation = TaskId.token ClientCompositions.reminderCreation
                 |}

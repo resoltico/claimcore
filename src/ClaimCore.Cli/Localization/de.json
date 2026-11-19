@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "Fallanhänge",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "Der Standardwert ist {value}.",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "Setzen Sie {setting} auf einen absoluten Verzeichnispfad, um die lokale Wiederherstellung zu verwenden.",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "Der Upload ist unbestätigt. Den ursprünglichen Vorgang mit {statusCommand} prüfen. Ist die exakt geprüfte Datei nicht mehr verfügbar, vor einem neuen Upload warten, bis feststeht, dass der ursprüngliche Vorgang nicht angenommen wurde.",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "Anhang gespeichert.",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "Der Anhang konnte am gewählten Ziel nicht gespeichert werden.",
+    "source": "915060f3dc90"
   }
 }

@@ -19,10 +19,23 @@ let tests =
 
                     Expect.hasLength
                         document.Links
-                        1
-                        "Readable case supplies its scoped reminder navigation"
+                        2
+                        "Readable case supplies its scoped reminder and attachment navigation"
 
-                    let navigation = document.Links |> List.exactlyOne
+                    let attachments =
+                        document.Links
+                        |> List.find (fun link -> link.Relation = LinkRelation.Attachments)
+
+                    Expect.equal
+                        attachments.Link
+                        (Link.CaseAttachments
+                            {
+                                Target = CaseSelector.Id source.Snapshot.CaseId
+                            })
+                        "Attachment navigation identifies the same case by its canonical ID"
+
+                    let navigation =
+                        document.Links |> List.find (fun link -> link.Relation = LinkRelation.View)
 
                     Expect.equal
                         navigation.LabelId

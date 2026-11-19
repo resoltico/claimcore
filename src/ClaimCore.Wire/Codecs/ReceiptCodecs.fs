@@ -205,6 +205,37 @@ module ReceiptCodecs =
         |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Work)
         |> field "snapshot" _.Snapshot workDisclosure
 
+    let private attachmentDisclosure =
+        tagged
+            "AttachmentDisclosure"
+            [
+                variant
+                    "DISCLOSED"
+                    AttachmentDisclosure.Disclosed
+                    (function
+                    | AttachmentDisclosure.Disclosed value -> Some value
+                    | _ -> None)
+                    (record id |> field "view" id AttachmentCodecs.display)
+                unitVariant "WITHHELD" AttachmentDisclosure.Withheld
+                unitVariant "ERASED" AttachmentDisclosure.Erased
+            ]
+
+    let private attachmentReceiptFields =
+        (record (fun parent reference id act snapshot ->
+            {
+                AttachmentReceipt.CaseId = parent
+                Reference = reference
+                AttachmentId = id
+                Act = act
+                Snapshot = snapshot
+            })
+        : Fields<AttachmentReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "attachmentId" _.AttachmentId AttachmentCodecs.id
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Attachment)
+        |> field "snapshot" _.Snapshot attachmentDisclosure
+
     let private noteDisclosure =
         tagged
             "NoteDisclosure"
@@ -310,6 +341,13 @@ module ReceiptCodecs =
                     | _ -> None)
                     workReceiptFields
                 variant
+                    "ATTACHMENT"
+                    ReceiptSubject.Attachment
+                    (function
+                    | ReceiptSubject.Attachment value -> Some value
+                    | _ -> None)
+                    attachmentReceiptFields
+                variant
                     "NOTE"
                     ReceiptSubject.Note
                     (function
@@ -387,6 +425,16 @@ module ReceiptCodecs =
             | WorkDisclosure.Disclosed work ->
                 work.CaseId = value.CaseId && work.Revision = value.Revision
             | _ -> true
+        | ReceiptSubject.Attachment value ->
+            let creates =
+                (ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get).Creates
+
+            if creates then
+                value.AttachmentId = AttachmentId.ofOperationId receipt.OperationId
+            else
+                match value.Snapshot with
+                | AttachmentDisclosure.Disclosed _ -> false
+                | _ -> true
         | ReceiptSubject.Note value ->
             let creates =
                 (ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get).Creates

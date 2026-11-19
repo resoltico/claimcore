@@ -237,6 +237,8 @@ module Discovery =
                 + "\n  "
                 + String.concat "\n  " globals
                 + "\n")
+        | None when words = CommandGrammar.attachmentDownloadWords ->
+            Some(CliIdentity.programName + " " + CommandGrammar.attachmentDownloadSynopsis + "\n")
         | None when matches.IsEmpty -> None
         | None ->
             matches
@@ -247,6 +249,11 @@ module Discovery =
                     rendering.Language
                     (TaskRouting.labelId operation)
                     Map.empty)
+            |> fun operations ->
+                if words = [ "attachment" ] then
+                    operations @ [ CommandGrammar.attachmentDownloadSynopsis ]
+                else
+                    operations
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
 

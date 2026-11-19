@@ -26,6 +26,18 @@ module internal ApiRoutes =
             return result
         }
 
+    let internal executionActor (reply: ExecuteReply) =
+        match reply.Outcome with
+        | ExecuteResult.Accepted receipt ->
+            receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
+        | _ -> None
+
+    let internal representation (context: HttpContext) =
+        match context.Request.Headers.TryGetValue Representation.HeaderName with
+        | true, values -> Some(values |> Seq.map string |> Seq.toList)
+        | _ -> None
+        |> Representation.select
+
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
     let route =
         function
@@ -33,6 +45,12 @@ module internal ApiRoutes =
             Route.representedRead Api.casePayments HumanReadDocuments.payments Service.payments
         | ActorEndpoint.Query QueryTaskId.CaseNotes ->
             Route.representedRead Api.caseNotes HumanReadDocuments.notes Service.notes
+        | ActorEndpoint.Query QueryTaskId.CaseAttachments ->
+            Route.representedRead
+                Api.caseAttachments
+                HumanReadDocuments.attachments
+                (fun services (request: CaseGetRequest) token ->
+                    Service.caseAttachments services request.Target token)
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->
             Route.representedRead Api.reminder HumanReadDocuments.reminder Service.reminder
         | ActorEndpoint.Query QueryTaskId.ReminderList ->
@@ -108,11 +126,7 @@ module internal ApiRoutes =
                 Api.operationExecute
                 Api.operationExecuteUnavailable
                 (fun _ reply -> HumanReplies.execute reply)
-                (fun reply ->
-                    match reply.Outcome with
-                    | ExecuteResult.Accepted receipt ->
-                        receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
-                    | _ -> None)
+                executionActor
                 (fun _ -> false)
                 Service.executeSubmission
 
@@ -124,7 +138,9 @@ module internal ApiRoutes =
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             if
-                Option.ofObj context.Request.Path.Value = Some ExportTransport.path
+                (Option.ofObj context.Request.Path.Value
+                 |> Option.exists (fun path ->
+                     path = ExportTransport.path || (AttachmentTransport.tryPath path).IsSome))
                 && context.Request.Method <> "POST"
             then
                 do!
@@ -144,7 +160,12 @@ module internal ApiRoutes =
                 | _ -> do! next.Invoke context
         }
 
-    let internal admit (configuration: WebConfiguration) (context: HttpContext) =
+    let internal admitPost
+        verify
+        maximumBytes
+        (configuration: WebConfiguration)
+        (context: HttpContext)
+        =
         task {
             let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
@@ -157,10 +178,10 @@ module internal ApiRoutes =
                             | None -> return Error GateFailure.SessionRejected
                             | Some oidc ->
                                 return!
-                                    RequestGate.actorPost
+                                    verify
                                         oidc
                                         configuration.Binding
-                                        configuration.RequestGate.MaximumJsonBytes
+                                        maximumBytes
                                         (context.RequestServices.GetRequiredService<IAntiforgery>())
                                         context
                         }
@@ -168,6 +189,13 @@ module internal ApiRoutes =
 
             return admitted |> Option.defaultValue (Error GateFailure.AdmissionRejected)
         }
+
+    let internal admit (configuration: WebConfiguration) context =
+        admitPost
+            RequestGate.actorPost
+            configuration.RequestGate.MaximumJsonBytes
+            configuration
+            context
 
     let private workload endpoint =
         if Api.effect endpoint = EndpointEffect.Read then
@@ -220,11 +248,7 @@ module internal ApiRoutes =
         task {
             HttpHeaders.noStore context
 
-            let selection =
-                match context.Request.Headers.TryGetValue Representation.HeaderName with
-                | true, values -> Some(values |> Seq.map string |> Seq.toList)
-                | _ -> None
-                |> Representation.select
+            let selection = representation context
 
             if not (handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch

@@ -113,6 +113,37 @@ module internal Verification =
                 |> Result.bind (Replay.head state)
         }
 
+    let private attachments connection state token =
+        task {
+            let! references =
+                task {
+                    try
+                        return!
+                            AttachmentStorage.checkReferences
+                                connection
+                                (Replay.attachmentReferences state)
+                                token
+                    with :? RecordCorruptException ->
+                        return false
+                }
+
+            if not references then
+                return Error(divergence None VerificationFinding.AttachmentReferences)
+            else
+                try
+                    let! payloads =
+                        AttachmentStorage.checkBlobs connection (Replay.attachmentBlobs state) token
+
+                    return require None VerificationFinding.AttachmentPayloads payloads
+                with :? RecordCorruptException ->
+                    return Error(divergence None VerificationFinding.AttachmentPayloads)
+        }
+
+    let private erasureAndAttachments connection state token =
+        match Replay.erasure state with
+        | Error error -> System.Threading.Tasks.Task.FromResult(Error error)
+        | Ok() -> attachments connection state token
+
     /// Authoritative scan for maintenance; projection divergence must not prevent repair.
     let authoritative connection installationId expected token =
         task {
@@ -121,7 +152,9 @@ module internal Verification =
             match scanned with
             | Error finding -> return Error finding
             | Ok state ->
-                match Replay.erasure state with
+                let! evidence = erasureAndAttachments connection state token
+
+                match evidence with
                 | Error finding -> return Error finding
                 | Ok() ->
                     let! checkedHead = head connection state token
@@ -177,6 +210,20 @@ module internal Verification =
                 return Error(divergence None VerificationFinding.CasePaymentTotalsProjection)
         }
 
+    let private attachmentProjection connection state token =
+        task {
+            try
+                let! matches =
+                    AttachmentStorage.checkProjection
+                        connection
+                        (Replay.attachmentProjection state)
+                        token
+
+                return require None VerificationFinding.CaseAttachmentsProjection matches
+            with :? RecordCorruptException ->
+                return Error(divergence None VerificationFinding.CaseAttachmentsProjection)
+        }
+
     let projections connection installationId (state: Replay.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state token
@@ -198,7 +245,12 @@ module internal Verification =
 
                         match payments with
                         | Error finding -> return Error finding
-                        | Ok() -> return! paymentTotals connection state token
+                        | Ok() ->
+                            let! totals = paymentTotals connection state token
+
+                            match totals with
+                            | Error finding -> return Error finding
+                            | Ok() -> return! attachmentProjection connection state token
         }
 
     let private finish
@@ -209,7 +261,9 @@ module internal Verification =
         token
         =
         task {
-            match Replay.erasure state with
+            let! evidence = erasureAndAttachments connection state token
+
+            match evidence with
             | Error error -> return VerificationResult.Diverged error
             | Ok() ->
                 let! projections = projections connection installationId state token

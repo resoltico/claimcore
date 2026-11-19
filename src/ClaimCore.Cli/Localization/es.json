@@ -1,4 +1,8 @@
 {
+  "cli.family.attachment": {
+    "text": "Archivos adjuntos del caso",
+    "source": "5c371fd9e78a"
+  },
   "cli.help.defaultValue": {
     "text": "El valor predeterminado es {value}.",
     "source": "9756d5de7f5b"
@@ -482,5 +486,17 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "Configura {setting} con una ruta de directorio absoluta para usar la recuperación local.",
     "source": "5c168d61cfd3"
+  },
+  "cli.attachment.unresolved": {
+    "text": "La subida está sin confirmar. Consulta la operación original con {statusCommand}. Si no puedes recuperar el archivo exacto que revisaste, espera a que se confirme que la operación no se aceptó antes de iniciar otra subida.",
+    "source": "7870875bce87"
+  },
+  "cli.attachment.saved": {
+    "text": "Adjunto guardado.",
+    "source": "866af90b0880"
+  },
+  "cli.attachment.outputFailed": {
+    "text": "No se pudo guardar el adjunto en el destino seleccionado.",
+    "source": "915060f3dc90"
   }
 }

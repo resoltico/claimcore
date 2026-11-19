@@ -141,6 +141,43 @@ claimcore help note remove
 
 Notes are independent changes and do not require a case or work revision.
 
+## Add, download and withdraw attachments
+
+Open **Attachments** in the case workspace. Anyone who can read the case can list and download
+current files. A human case handler can add and withdraw files on open and closed cases while
+writes are available. Voided cases retain readable files.
+
+Select a local file and review its saved filename before confirming. The register preserves the
+exact bytes and stores one copy of identical bytes per case. Each file can be up to 25 MiB,
+including empty files. Each case can retain up to 100 distinct files and 256 MiB in total.
+Preview is available for supported static PNG and JPEG files. Use **Download** for the original file.
+
+Withdrawal records who acted and when. It hides the selected attachment's details in current
+reads, earlier receipts and history. Its bytes still count against the case's limits. Uploading the
+exact bytes again requires a new review and creates a new attachment ID that can be read. The
+earlier ID remains withdrawn. Whole-case erasure removes the retained files and private details.
+
+```sh
+claimcore case attachments CASE-REFERENCE --details
+claimcore attachment add CASE-REFERENCE --file ./evidence.jpg
+claimcore attachment download CASE-REFERENCE ATTACHMENT-ID --output ./evidence-copy.jpg
+claimcore attachment withdraw CASE-REFERENCE ATTACHMENT-ID
+```
+
+Use `--details` to find the attachment ID in the list. The CLI verifies the complete download before
+opening the destination. It normally publishes atomically from a private staging directory in the
+system temporary area. When the destination is on a different filesystem or the filesystem rejects
+hard links as unsupported, the CLI creates the destination exclusively and writes the verified bytes
+there. Both methods refuse existing entries, including symlinks, and request owner-only permissions.
+On filesystems such as FAT and ExFAT, the volume's mount policy controls permissions. An abrupt stop
+can leave a private staging file or an incomplete destination. Direct creation opens the requested
+path once with no overwrite. For failure cleanup, the CLI holds the parent directory open separately
+and only attempts removal when it can match the directory entry to the file it created and the
+directory is protected against replacement by another user. In the shell, Ctrl-C before publication
+cancels the save. A save that completes while Ctrl-C arrives reports success. Review any remaining
+file before retrying. Downloaded copies remain under the recipient's
+control after withdrawal or erasure.
+
 ## Work attention and queues
 
 Open **Reminders** for actions across readable cases. Standard views select pending, overdue, today,
@@ -182,7 +219,7 @@ accepted reason remains attached to its own receipt and full history entry, incl
 changes; current rights and case erasure control disclosure.
 
 Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
-notes, parties and source links. Every reference remains reserved. Read the consequence and type the shown reference to confirm.
+notes, attachments, parties and source links. Every reference remains reserved. Read the consequence and type the shown reference to confirm.
 Erasure also freezes the reviewed case-family sequence. Changes to any owned work, note, reminder or
 payment invalidate that review even when the case fact version stays unchanged. Review again explicitly
 before another attempt. Unrelated cases and account changes do not change this family sequence;

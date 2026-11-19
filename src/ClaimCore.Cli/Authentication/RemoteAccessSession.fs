@@ -53,6 +53,7 @@ module private RemoteTokenRequest =
 type RemoteAccessSession
     private (configuration: RemoteConfiguration, oidcTrust: RemoteTls, serviceTrust: RemoteTls) =
     let serviceClient = new HttpClient(serviceTrust.Handler, false)
+    let transferClient = new HttpClient(serviceTrust.Handler, false)
 
     let credentials =
         new MemoryTokenSession(
@@ -60,10 +61,13 @@ type RemoteAccessSession
             OAuthRefresh.run TimeProvider.System oidcTrust.Handler configuration.ClientId
         )
 
-    do serviceClient.Timeout <- TimeSpan.FromSeconds 20.
+    do
+        serviceClient.Timeout <- TimeSpan.FromSeconds 20.
+        transferClient.Timeout <- AttachmentTransport.transferDeadline
 
     member _.Configuration = configuration
     member _.Client = serviceClient
+    member internal _.TransferClient = transferClient
     member _.Token(cancelled: CancellationToken) = credentials.Token cancelled
     member internal _.IsCurrent(token: AccessToken) = credentials.IsCurrent token
     member internal _.DiscardTokens(cancelled: CancellationToken) = credentials.Discard cancelled
@@ -72,6 +76,7 @@ type RemoteAccessSession
         member _.Dispose() =
             (credentials :> IDisposable).Dispose()
             serviceClient.Dispose()
+            transferClient.Dispose()
             (oidcTrust :> IDisposable).Dispose()
             (serviceTrust :> IDisposable).Dispose()
 

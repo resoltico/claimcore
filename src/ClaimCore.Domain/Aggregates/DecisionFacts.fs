@@ -21,6 +21,7 @@ type FamilyFactScope =
         Payments: Set<OperationId>
         Reminders: Set<ReminderId>
         Notes: Set<NoteId>
+        Attachments: Set<AttachmentId>
         Parties: Set<PartyId>
         Operation: OperationId option
     }
@@ -47,6 +48,7 @@ type DecisionFacts =
     member this.Work = this.Parts.Work
     member this.Reminders = this.Parts.Reminders
     member this.Notes = this.Parts.Notes
+    member this.Attachments = this.Parts.Attachments
     member this.Parties = this.Parts.Parties
     member this.Links = this.Parts.Links
     member this.Sequence = this.Parts.Sequence
@@ -95,6 +97,7 @@ module DecisionFacts =
                       |> List.forall (fun change ->
                           match change.Value with
                           | PartValue.Note value -> value.Removed || value.Text.IsSome
+                          | PartValue.Attachment(AttachmentEffect.Added(_, None)) -> false
                           | PartValue.Party value -> value.Content.IsSome
                           | PartValue.Link value -> value.Removed <> value.Content.IsSome
                           | _ -> true))))
@@ -122,6 +125,9 @@ module DecisionFacts =
                     | PartKind.Reminder ->
                         ReminderId.create part.PartId
                         |> Option.exists (fun id -> Set.contains id scope.Reminders)
+                    | PartKind.Attachment ->
+                        AttachmentId.create part.PartId
+                        |> Option.exists (fun id -> Set.contains id scope.Attachments)
                     | PartKind.Note ->
                         NoteId.create part.PartId
                         |> Option.exists (fun id -> Set.contains id scope.Notes)
@@ -173,6 +179,7 @@ module DecisionFacts =
                 | Binding.CasePayment(_, _, id) -> Set.contains id scope.Payments
                 | Binding.Reminder(_, id, _) -> Set.contains id scope.Reminders
                 | Binding.Note(_, id) -> Set.contains id scope.Notes
+                | Binding.Attachment(_, id) -> Set.contains id scope.Attachments
                 | Binding.Party(_, id, _) ->
                     Set.contains id scope.Parties
                     || (Map.tryFind id facts.Parts.Parties
@@ -273,6 +280,8 @@ module DecisionFacts =
                                             Payments = parts.Payments |> Map.keys |> Set.ofSeq
                                             Reminders = parts.Reminders |> Map.keys |> Set.ofSeq
                                             Notes = parts.Notes |> Map.keys |> Set.ofSeq
+                                            Attachments =
+                                                parts.Attachments |> Map.keys |> Set.ofSeq
                                             Parties = parts.Parties |> Map.keys |> Set.ofSeq
                                             Operation = None
                                         }

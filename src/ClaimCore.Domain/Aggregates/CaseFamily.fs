@@ -35,6 +35,7 @@ type internal FamilyParts =
         WorkValue: AcceptedPart<CaseWork option> option
         RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
         NotesValue: Map<NoteId, AcceptedPart<NoteState>>
+        AttachmentsValue: Map<AttachmentId, AcceptedPart<AttachmentEffect>>
         PartiesValue: Map<PartyId, AcceptedPart<PartyValue>>
         PartyOrigins: Map<PartyId, EffectPosition>
         LinksValue: Map<LinkId, AcceptedPart<LinkValue>>
@@ -48,6 +49,7 @@ type internal FamilyParts =
     member this.Work = this.WorkValue
     member this.Reminders = this.RemindersValue
     member this.Notes = this.NotesValue
+    member this.Attachments = this.AttachmentsValue
     member this.Parties = this.PartiesValue
     member this.Links = this.LinksValue
     member this.Sequence = this.SequenceValue
@@ -66,6 +68,7 @@ type CaseFamily =
     member this.Work = this.Value.Work
     member this.Reminders = this.Value.Reminders
     member this.Notes = this.Value.Notes
+    member this.Attachments = this.Value.Attachments
     member this.Parties = this.Value.Parties
     member this.Links = this.Value.Links
     member this.Sequence = this.Value.Sequence
@@ -154,6 +157,12 @@ module internal FamilyParts =
                             Handling = Handling.clearNote state.Case.Value.Handling
                         }
                 }
+            AttachmentsValue =
+                state.Attachments
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = AttachmentEffect.clear part.Value
+                    })
             PaymentsValue =
                 state.Payments
                 |> Map.map (fun _ part ->
@@ -217,6 +226,7 @@ module internal FamilyParts =
                             WorkValue = None
                             RemindersValue = Map.empty
                             NotesValue = Map.empty
+                            AttachmentsValue = Map.empty
                             PartiesValue = Map.empty
                             PartyOrigins = Map.empty
                             LinksValue = Map.empty
@@ -387,6 +397,21 @@ module internal FamilyParts =
                             invalid
                     | Some _ -> Error RecordViolation.InvalidRevisionSequence
                     | None -> invalid
+                | Some before, PartValue.Attachment value ->
+                    match AttachmentId.create change.PartId with
+                    | Some id when version (Map.tryFind id before.Attachments) change ->
+                        let prior = Map.tryFind id before.Attachments |> Option.map _.Value
+
+                        if AttachmentEffect.canFollow id change.Stamp.OperationId prior value then
+                            Ok
+                                { before with
+                                    AttachmentsValue =
+                                        Map.add id (accepted change value) before.Attachments
+                                }
+                        else
+                            invalid
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
                 | Some before, PartValue.Note value ->
                     match NoteId.create change.PartId with
                     | Some note when version (Map.tryFind note before.Notes) change ->
@@ -518,6 +543,7 @@ module internal FamilyParts =
                         |> List.exists (fun change ->
                             match change.Value with
                             | PartValue.Note value -> not value.Removed && value.Text.IsNone
+                            | PartValue.Attachment(AttachmentEffect.Added(_, None)) -> true
                             | PartValue.Party value -> value.Content.IsNone
                             | PartValue.Reminder value -> value.Plan.IsNone
                             | _ -> false))
@@ -564,6 +590,7 @@ module internal FamilyParts =
                         | PartKind.Payment
                         | PartKind.Reminder
                         | PartKind.Note
+                        | PartKind.Attachment
                         | PartKind.Link -> change.PartId = OperationId.value origin.OperationId
                         | PartKind.Party ->
                             let caseOrigin = Map.tryFind (PartKind.Case, CaseId.value id) origins
@@ -629,6 +656,15 @@ module internal FamilyParts =
                         | _ -> None)
                     |> Map.ofList
 
+                let attachments =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, AttachmentId.create change.PartId with
+                        | PartValue.Attachment value, Some attachment ->
+                            Some(attachment, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
                 let parties =
                     parts
                     |> List.choose (fun change ->
@@ -654,6 +690,7 @@ module internal FamilyParts =
                         WorkValue = work
                         RemindersValue = reminders
                         NotesValue = notes
+                        AttachmentsValue = attachments
                         PartiesValue = parties
                         PartyOrigins =
                             parties

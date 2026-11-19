@@ -94,12 +94,23 @@ module internal OperationStorage =
             box compartments
         |]
 
-    let append connection root token =
+    let private appendWithPayload connection root (payload: VerifiedAttachment option) token =
+        let binary =
+            match payload with
+            | Some attachment -> box ((VerifiedAttachment.bytes attachment).ToArray())
+            | None -> DatabaseSession.nullValue
+
         DatabaseSession.execute
             connection
-            "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7::uuid,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
-            (parameters root)
+            "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7::uuid,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb,$15::bytea)"
+            (Array.append (parameters root) [| binary |])
             token
+
+    let append connection root token =
+        appendWithPayload connection root None token
+
+    let appendWithAttachment connection root attachment token =
+        appendWithPayload connection root (Some attachment) token
 
     let private corrupt () =
         raise (RecordCorruptException "Invalid retained operation structure or contents.")
@@ -128,83 +139,98 @@ module internal OperationStorage =
             (DatabaseSession.optional<byte array> 5 row)
         |> admitted
 
+    let private rootColumns =
+        "sequence,previous_hash,entry_hash,installation_format,actor_id,recorded_at,"
+        + DatabaseSession.dateExpression "business_date"
+        + ",structure::text,task"
+
+    let private effectColumns =
+        "effect_index,(jsonb_build_object('aggregate',jsonb_build_object('kind',aggregate_kind,'id',aggregate_id),'part',jsonb_build_object('kind',part_kind,'id',part_id),'revision',revision,'naturalKey',natural_key,'retained',retained,'erases',CASE WHEN erases_kind IS NOT NULL THEN jsonb_build_object('kind',erases_kind,'id',erases_id) END,'compartment',compartment) - array_remove(ARRAY[CASE WHEN natural_key IS NULL THEN 'naturalKey' END,CASE WHEN retained IS NULL THEN 'retained' END,CASE WHEN erases_kind IS NULL THEN 'erases' END,CASE WHEN compartment IS NULL THEN 'compartment' END],NULL))::text"
+
+    let private contentColumns includePrivate =
+        if includePrivate then
+            "ordinal,owner_kind,owner_id,commitment,nonce,payload"
+        else
+            "ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea"
+
+    let private restoreRecord installation operation row effectRows contentRows =
+        if DatabaseSession.value<int16> 3 row <> int16 InstallationFormat.Current then
+            corrupt ()
+
+        let header =
+            {
+                OperationHeader.InstallationId = installation
+                Sequence =
+                    DatabaseSession.value<int64> 0 row |> DatabaseSession.admitted Sequence.create
+                PreviousHash =
+                    DatabaseSession.value<byte array> 1 row
+                    |> EntryHash.ofBytes
+                    |> Option.defaultWith corrupt
+                OperationId = operation
+                Authority =
+                    DatabaseSession.optional<Guid> 4 row
+                    |> Option.map (DatabaseSession.admitted ActorId.create)
+                    |> Authority.ofActorId
+                RecordedAt = DatabaseSession.instant 5 row
+                BusinessDate = DatabaseSession.optionalCalendarDate 6 row
+            }
+
+        let effects =
+            effectRows
+            |> List.map (fun row ->
+                DatabaseSession.value<int> 0 row,
+                Encoding.UTF8.GetBytes(DatabaseSession.value<string> 1 row))
+
+        let hash =
+            DatabaseSession.value<byte array> 2 row
+            |> EntryHash.ofBytes
+            |> Option.defaultWith corrupt
+
+        OperationRoot.restore
+            header
+            (DatabaseSession.value<string> 8 row)
+            (Encoding.UTF8.GetBytes(DatabaseSession.value<string> 7 row))
+            effects
+            (List.map compartment contentRows)
+            hash
+        |> admitted
+        |> RetainedOperation.restore
+        |> admitted
+
     let private read includePrivate connection installation operation token =
         task {
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ("SELECT sequence,previous_hash,entry_hash,installation_format,actor_id,recorded_at,"
-                     + DatabaseSession.dateExpression "business_date"
-                     + ",structure::text,task FROM claimcore.ledger WHERE operation_id=$1")
+                    ("SELECT " + rootColumns + " FROM claimcore.ledger WHERE operation_id=$1")
                     [| box (OperationId.value operation) |]
                     token
 
             match rows with
             | [] -> return None
             | [ row ] ->
-                if DatabaseSession.value<int16> 3 row <> int16 InstallationFormat.Current then
-                    corrupt ()
+                let sequence = DatabaseSession.value<int64> 0 row
+                let parameters = [| box sequence |]
 
-                let header =
-                    {
-                        OperationHeader.InstallationId = installation
-                        Sequence =
-                            DatabaseSession.value<int64> 0 row
-                            |> DatabaseSession.admitted Sequence.create
-                        PreviousHash =
-                            DatabaseSession.value<byte array> 1 row
-                            |> EntryHash.ofBytes
-                            |> Option.defaultWith corrupt
-                        OperationId = operation
-                        Authority =
-                            DatabaseSession.optional<Guid> 4 row
-                            |> Option.map (DatabaseSession.admitted ActorId.create)
-                            |> Authority.ofActorId
-                        RecordedAt = DatabaseSession.instant 5 row
-                        BusinessDate = DatabaseSession.optionalCalendarDate 6 row
-                    }
-
-                let! effectRows =
+                let! effects =
                     DatabaseSession.rows
                         connection
-                        "SELECT effect_index,(jsonb_build_object('aggregate',jsonb_build_object('kind',aggregate_kind,'id',aggregate_id),'part',jsonb_build_object('kind',part_kind,'id',part_id),'revision',revision,'naturalKey',natural_key,'retained',retained,'erases',CASE WHEN erases_kind IS NOT NULL THEN jsonb_build_object('kind',erases_kind,'id',erases_id) END,'compartment',compartment) - array_remove(ARRAY[CASE WHEN natural_key IS NULL THEN 'naturalKey' END,CASE WHEN retained IS NULL THEN 'retained' END,CASE WHEN erases_kind IS NULL THEN 'erases' END,CASE WHEN compartment IS NULL THEN 'compartment' END],NULL))::text FROM claimcore.ledger_effects WHERE operation_sequence=$1 ORDER BY effect_index"
-                        [| box (Sequence.value header.Sequence) |]
+                        ("SELECT "
+                         + effectColumns
+                         + " FROM claimcore.ledger_effects WHERE operation_sequence=$1 ORDER BY effect_index")
+                        parameters
                         token
 
-                let! contentRows =
+                let! contents =
                     DatabaseSession.rows
                         connection
-                        (if includePrivate then
-                             "SELECT ordinal,owner_kind,owner_id,commitment,nonce,payload FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal"
-                         else
-                             "SELECT ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal")
-                        [| box (Sequence.value header.Sequence) |]
+                        ("SELECT "
+                         + contentColumns includePrivate
+                         + " FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal")
+                        parameters
                         token
 
-                let effects =
-                    effectRows
-                    |> List.map (fun row ->
-                        DatabaseSession.value<int> 0 row,
-                        Encoding.UTF8.GetBytes(DatabaseSession.value<string> 1 row))
-
-                let contents = contentRows |> List.map compartment
-
-                let hash =
-                    DatabaseSession.value<byte array> 2 row
-                    |> EntryHash.ofBytes
-                    |> Option.defaultWith corrupt
-
-                let root =
-                    OperationRoot.restore
-                        header
-                        (DatabaseSession.value<string> 8 row)
-                        (Encoding.UTF8.GetBytes(DatabaseSession.value<string> 7 row))
-                        effects
-                        contents
-                        hash
-                    |> admitted
-
-                return Some(RetainedOperation.restore root |> admitted)
+                return Some(restoreRecord installation operation row effects contents)
             | _ -> return corrupt ()
         }
 
@@ -214,6 +240,85 @@ module internal OperationStorage =
     /// Commitments authenticate public structure without acquiring private compartment bytes.
     let findStructure connection installation operation token =
         read false connection installation operation token
+
+    /// A selected metadata page hydrates full authenticated records in a fixed number of
+    /// queries. Attachment binary payloads belong to a separate store and are not acquired here.
+    let findMany connection installation (operations: OperationId list) token =
+        task {
+            let identities =
+                operations |> List.distinct |> List.map OperationId.value |> List.toArray
+
+            if identities.Length = 0 then
+                return Map.empty
+            elif identities.Length > 128 then
+                return
+                    invalidArg
+                        (nameof operations)
+                        "Operation hydration exceeds the bounded metadata batch."
+            else
+                let! roots =
+                    DatabaseSession.rows
+                        connection
+                        ("SELECT "
+                         + rootColumns
+                         + ",operation_id FROM claimcore.ledger WHERE operation_id=ANY($1)")
+                        [| box identities |]
+                        token
+
+                let scope = roots |> List.map (DatabaseSession.value<int64> 0) |> List.toArray
+
+                if scope.Length = 0 then
+                    return Map.empty
+                else
+                    let parameters = [| box scope |]
+
+                    let! effects =
+                        DatabaseSession.rows
+                            connection
+                            ("SELECT "
+                             + effectColumns
+                             + ",operation_sequence FROM claimcore.ledger_effects WHERE operation_sequence=ANY($1) ORDER BY operation_sequence,effect_index")
+                            parameters
+                            token
+
+                    let! contents =
+                        DatabaseSession.rows
+                            connection
+                            ("SELECT "
+                             + contentColumns true
+                             + ",operation_sequence FROM claimcore.ledger_compartments WHERE operation_sequence=ANY($1) ORDER BY operation_sequence,ordinal")
+                            parameters
+                            token
+
+                    let group ordinal =
+                        List.groupBy (DatabaseSession.value<int64> ordinal) >> Map.ofList
+
+                    let effectsBySequence = group 2 effects
+                    let contentsBySequence = group 6 contents
+
+                    let records =
+                        roots
+                        |> List.map (fun root ->
+                            let operation =
+                                DatabaseSession.value<Guid> 9 root
+                                |> DatabaseSession.admitted OperationId.create
+
+                            let sequence = DatabaseSession.value<int64> 0 root
+
+                            let rows =
+                                Map.tryFind sequence effectsBySequence |> Option.defaultValue []
+
+                            let compartments =
+                                Map.tryFind sequence contentsBySequence |> Option.defaultValue []
+
+                            operation, restoreRecord installation operation root rows compartments)
+                        |> Map.ofList
+
+                    if records.Count <> roots.Length then
+                        return corrupt ()
+                    else
+                        return records
+        }
 
     let previous connection installation (change: PartChange) token =
         task {

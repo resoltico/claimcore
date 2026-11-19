@@ -75,6 +75,28 @@ module internal TimelineHistory =
                 | None -> raise (RecordCorruptException "Timeline author is absent.")
                 | Some person -> authors <- Map.add id (Actor.currentReference person.Actor) authors
 
+            let attachmentIds =
+                if full && not erased then
+                    page.Items
+                    |> List.choose (fun entry ->
+                        if entry.Change.Kind = PartKind.Attachment then
+                            AttachmentId.create entry.Change.PartId
+                        else
+                            None)
+                    |> List.distinct
+                else
+                    []
+
+            let! currentAttachments =
+                match page.Items with
+                | first :: _ ->
+                    match first.Change.Aggregate with
+                    | AggregateReference.Family id ->
+                        AttachmentStorage.currentMany tx id attachmentIds
+                    | AggregateReference.Person _ ->
+                        invalidOp "Case timeline contains a person event."
+                | _ -> System.Threading.Tasks.Task.FromResult Map.empty
+
             let mutable roots = Map.empty
             let result = ResizeArray<CaseTimelineEntry>()
 
@@ -84,6 +106,17 @@ module internal TimelineHistory =
                         if erased then
                             return Ok TimelineChanges.Erased
                         elif not full then
+                            return Ok TimelineChanges.Withheld
+                        elif
+                            entry.Change.Kind = PartKind.Attachment
+                            && (AttachmentId.create entry.Change.PartId
+                                |> Option.bind (fun id -> Map.tryFind id currentAttachments)
+                                |> Option.forall (fun change ->
+                                    match change.Value with
+                                    | PartValue.Attachment(AttachmentEffect.Added(_, Some _)) ->
+                                        false
+                                    | _ -> true))
+                        then
                             return Ok TimelineChanges.Withheld
                         elif StoredEffect.privateUnavailable entry then
                             return Error CoreFault.StoreIntegrityError

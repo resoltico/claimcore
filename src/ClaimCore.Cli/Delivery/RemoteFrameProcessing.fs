@@ -62,6 +62,7 @@ module private FrameInvocation =
         | _ -> false
 
     let rec prepared
+        transferClient
         (access: AuthenticatedFrameAccess)
         (token: AccessToken)
         frame
@@ -130,11 +131,21 @@ module private FrameInvocation =
                                     (fun () -> beforeSend bound)
                                     cancelled
                         | EndpointEffect.LedgerExecution ->
-                            return! handoff access token target context bound beforeSend cancelled
+                            return!
+                                handoff
+                                    transferClient
+                                    access
+                                    token
+                                    target
+                                    context
+                                    bound
+                                    beforeSend
+                                    cancelled
 
         }
 
     and private handoff
+        transferClient
         (access: AuthenticatedFrameAccess)
         (token: AccessToken)
         (target: RemoteServiceCall.Access)
@@ -187,9 +198,15 @@ module private FrameInvocation =
                         CliReply.local ClientFailure.Cancelled
                         |> CliReply.forAttempt frame DeliveryState.NotSent
                 | Ok directory ->
+                    let client =
+                        if (Frames.upload frame).IsSome then
+                            transferClient
+                        else
+                            access.Client
+
                     let! reply =
                         RemoteServiceCall.send
-                            access.Client
+                            client
                             { target with
                                 InstallationId = Some context.InstallationId
                             }
@@ -220,51 +237,84 @@ module private FrameInvocation =
                     return reply
         }
 
-    let invoke
+    let private authenticated
         (holder: RemoteSessionHolder)
-        frame
-        beforeSend
-        consent
         (cancelled: CancellationToken)
+        reject
+        run
         =
         task {
             if cancelled.IsCancellationRequested then
-                return CliReply.local ClientFailure.Cancelled
+                return reject ClientFailure.Cancelled
             elif not CliIdentity.supportsRemote then
-                return CliReply.local ClientFailure.Configuration
+                return reject ClientFailure.Configuration
             else
                 match holder.Acquire() with
-                | Error failure -> return CliReply.local failure
+                | Error failure -> return reject failure
                 | Ok access ->
                     match! access.Token cancelled with
                     | Error _ when cancelled.IsCancellationRequested ->
-                        return CliReply.local ClientFailure.Cancelled
+                        return reject ClientFailure.Cancelled
                     | Error AccessFailure.OidcCredentialUnavailable ->
                         return
-                            CliReply.local (
+                            reject (
                                 ClientFailure.ConfigurationIssue(
                                     CliSetting.SecretFile,
                                     ConfigurationIssue.PrivateInputRefused
                                 )
                             )
                     | Error AccessFailure.OidcInteractionTimeout ->
-                        return CliReply.local ClientFailure.AuthenticationTimeout
-                    | Error _ -> return CliReply.local ClientFailure.Authentication
-                    | Ok token ->
-                        let transport =
-                            {
-                                Configuration = access.Configuration
-                                Client = access.Client
-                                IsCurrent = access.IsCurrent
-                                Clock = TimeProvider.System
-                                JournalDirectory =
-                                    fun () ->
-                                        RecoveryJournal.location (fun name ->
-                                            Environment.GetEnvironmentVariable name |> Option.ofObj)
-                            }
-
-                        return! prepared transport token frame beforeSend consent cancelled
+                        return reject ClientFailure.AuthenticationTimeout
+                    | Error _ -> return reject ClientFailure.Authentication
+                    | Ok token -> return! run access token
         }
+
+    let invoke holder frame beforeSend consent cancelled =
+        authenticated holder cancelled CliReply.local (fun access token ->
+            let transport =
+                {
+                    Configuration = access.Configuration
+                    Client = access.Client
+                    IsCurrent = access.IsCurrent
+                    Clock = TimeProvider.System
+                    JournalDirectory =
+                        fun () ->
+                            RecoveryJournal.location (fun name ->
+                                Environment.GetEnvironmentVariable name |> Option.ofObj)
+                }
+
+            prepared access.TransferClient transport token frame beforeSend consent cancelled)
+
+    let download holder selection (cancelled: CancellationToken) =
+        let local = AttachmentDownloadFailure.Local >> Error
+
+        authenticated holder cancelled local (fun access token ->
+            task {
+                let target: RemoteServiceCall.Access =
+                    {
+                        Service = access.Configuration.Service
+                        InstallationId = None
+                        Authorization = token.Authorization
+                    }
+
+                let current () =
+                    not cancelled.IsCancellationRequested && access.IsCurrent token
+
+                match! RemoteServiceCall.context access.Client target cancelled with
+                | Error reply -> return Error(AttachmentDownloadFailure.Access reply)
+                | Ok _ when not (current ()) -> return local ClientFailure.Cancelled
+                | Ok context ->
+                    let! result =
+                        AttachmentBinaryCall.download
+                            access.TransferClient
+                            { target with
+                                InstallationId = Some context.InstallationId
+                            }
+                            selection
+                            cancelled
+
+                    return if current () then result else local ClientFailure.Cancelled
+            })
 
 [<NoEquality; NoComparison>]
 type internal RemoteStreams =
@@ -283,6 +333,10 @@ type private RemoteTransport =
                 -> (RemoteClientMode -> ActorContext -> bool) option
                 -> CancellationToken
                 -> Task<CliReply>
+        Download:
+            AttachmentReadRequest
+                -> CancellationToken
+                -> Task<Result<byte array, AttachmentDownloadFailure>>
         Discard: CancellationToken -> Task<unit>
         Owned: IDisposable
     }
@@ -293,6 +347,7 @@ module private RemoteTransport =
 
         {
             Invoke = FrameInvocation.invoke holder
+            Download = FrameInvocation.download holder
             Discard = holder.Discard
             Owned = holder
         }
@@ -359,17 +414,23 @@ type RemoteFrameProcessor
         )
 
     new(input: Stream, output: Stream, errors: Stream, language: string) =
-        new RemoteFrameProcessor(input, output, errors, language, (fun reply -> reply.Bytes))
+        new RemoteFrameProcessor(
+            input,
+            output,
+            errors,
+            language,
+            (fun (reply: CliReply) -> reply.Bytes)
+        )
 
     static member internal ForShell(streams, configuration) =
         new RemoteFrameProcessor(
             streams,
             "en",
-            (fun reply -> reply.Bytes),
+            (fun (reply: CliReply) -> reply.Bytes),
             RemoteTransport.create (Some configuration)
         )
 
-    static member internal ForTest(input, output, errors, invoke, discard) =
+    static member internal ForTest(input, output, errors, invoke, discard, ?download) =
         new RemoteFrameProcessor(
             {
                 Input = input
@@ -377,7 +438,7 @@ type RemoteFrameProcessor
                 Errors = errors
             },
             "en",
-            (fun reply -> reply.Bytes),
+            (fun (reply: CliReply) -> reply.Bytes),
             {
                 Invoke =
                     fun frame beforeSend consent token ->
@@ -388,6 +449,11 @@ type RemoteFrameProcessor
                                 CliReply.local ClientFailure.Configuration
                                 |> CliReply.forAttempt frame DeliveryState.NotSent
                             )
+                Download =
+                    defaultArg download (fun _ _ ->
+                        Task.FromResult(
+                            Error(AttachmentDownloadFailure.Local ClientFailure.Configuration)
+                        ))
                 Discard = discard
                 Owned =
                     { new IDisposable with
@@ -402,11 +468,23 @@ type RemoteFrameProcessor
         new RemoteFrameProcessor(
             streams,
             "en",
-            (fun reply -> reply.Bytes),
+            (fun (reply: CliReply) -> reply.Bytes),
             {
                 Invoke =
                     fun frame beforeSend consent cancelled ->
-                        FrameInvocation.prepared access token frame beforeSend consent cancelled
+                        FrameInvocation.prepared
+                            access.Client
+                            access
+                            token
+                            frame
+                            beforeSend
+                            consent
+                            cancelled
+                Download =
+                    fun _ _ ->
+                        Task.FromResult(
+                            Error(AttachmentDownloadFailure.Local ClientFailure.Configuration)
+                        )
                 Discard = fun _ -> Task.FromResult()
                 Owned =
                     { new IDisposable with
@@ -426,6 +504,8 @@ type RemoteFrameProcessor
     member internal _.ExchangePrepared(frame, stopped) =
         delivery.BeginFrame()
         exchangePrepared frame None stopped
+
+    member internal _.Download(selection, cancelled) = transport.Download selection cancelled
 
     member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
     member internal _.Failure(error) = delivery.Failure error

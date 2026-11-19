@@ -74,3 +74,6 @@ party update R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-part
 party remove R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --operation-id 11111111-2222-7333-8444-555555555555
 people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --expected-revision 1 --issuer https://new.example/ --subject new-sub --operation-id 11111111-2222-7333-8444-555555555555
 case summary --group-by received-month --format csv
+case attachments R-1
+attachment add R-1 --file tests/fixtures/attachment-original.txt --operation-id 11111111-2222-7333-8444-555555555555
+attachment withdraw R-1 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555

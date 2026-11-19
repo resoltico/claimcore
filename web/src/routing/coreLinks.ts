@@ -63,10 +63,15 @@ const filterQuery = (input: Link["input"]) => {
   return params.toString();
 };
 /** Core chooses the endpoint and input; this table adapts them to local routes. */
+export const attachmentFragment = "case-attachments";
 const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefined>> = {
   "case.get": (link) => {
     const target = targetInput(link);
     return target === undefined ? undefined : caseTargetPath(target);
+  },
+  "case.attachments": (link) => {
+    const target = targetInput(link);
+    return target === undefined ? undefined : `${caseTargetPath(target)}#${attachmentFragment}`;
   },
   "reminder.get": (link) => {
     const selected = reminderLinkTarget(link);

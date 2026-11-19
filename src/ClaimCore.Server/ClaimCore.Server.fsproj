@@ -43,6 +43,7 @@
     <Compile Include="PublicAssets.fs" />
     <Compile Include="CatalogRoutes.fs" />
     <Compile Include="RequestGate.fs" />
+    <Compile Include="AttachmentMultipart.fs" />
     <Compile Include="RequestLog.fs" />
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="Routes.fs" />
@@ -51,6 +52,7 @@
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="CsvExport.fs" />
     <Compile Include="ExportRoutes.fs" />
+    <Compile Include="AttachmentRoutes.fs" />
     <Compile Include="Readiness.fs" />
     <Compile Include="HostRoutes.fs" />
     <Compile Include="WebProbeTransport.fs" />

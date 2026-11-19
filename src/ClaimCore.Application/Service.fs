@@ -59,6 +59,11 @@ module Service =
 
     let executeSubmission = OperationService.executeSubmission
     let previewSubmission = OperationService.previewSubmission
+    let attachmentUploadIntent = OperationService.attachmentUploadIntent
+    let executeAttachmentUpload = OperationService.executeAttachmentUpload
+    let caseAttachments = AttachmentReads.page
+    let downloadAttachment = AttachmentReads.content false
+    let previewAttachment = AttachmentReads.content true
 
     let matchesInstallation (services: ServiceContext) installation =
         services.InstallationId = installation

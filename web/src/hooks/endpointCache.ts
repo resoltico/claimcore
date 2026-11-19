@@ -1,7 +1,13 @@
-import type { EndpointId, Representation } from "@contracts/client";
-import type { ApiResult, EndpointOutcome, ServiceResponse } from "../protocol/types";
+import type { EndpointId, HumanDocument, Representation } from "@contracts/client";
+import {
+  linkedCaseReceipt,
+  type ApiResult,
+  type EndpointOutcome,
+  type ServiceResponse,
+} from "../protocol/types";
 import { localNotice } from "../protocol/notices";
 import { isDisclosureRefused } from "../api/outcomes";
+import { attachmentDisclosureOf, attachmentReceiptFields } from "../api/attachmentDisclosure";
 export type CacheSnapshot = Readonly<{
   result: ApiResult<EndpointOutcome> | null;
   previous: EndpointOutcome | null;
@@ -27,6 +33,36 @@ const previousOutcome = (result: ApiResult<EndpointOutcome>, previous: EndpointO
     return result.value;
   }
   return isDisclosureRefused(result) ? null : previous;
+};
+type AttachmentInvalidation = { caseId: string; sequence: number | undefined };
+
+const admittedRead = (reply: EndpointOutcome | null): HumanDocument | null => {
+  if (reply === null || !("representation" in reply) || reply.representation !== "HUMAN") {
+    return null;
+  }
+  const { outcome } = reply;
+  return outcome.kind === "SUCCEEDED" && "document" in outcome ? outcome.document : null;
+};
+
+const retainsStaleAttachments = (
+  previous: EndpointOutcome | null,
+  withdrawal: AttachmentInvalidation,
+) => {
+  const document = admittedRead(previous);
+  const basis = document === null ? null : attachmentDisclosureOf(document);
+  return (
+    basis?.caseId === withdrawal.caseId &&
+    (withdrawal.sequence === undefined || basis.sequence < withdrawal.sequence)
+  );
+};
+
+const isErasedCaseRead = (result: ApiResult<EndpointOutcome> | null, caseId: string) => {
+  const document = admittedRead(result?.kind === "outcome" ? result.value : null);
+  return (
+    document?.subject.kind === "CASE" &&
+    document.subject.caseId === caseId &&
+    document.disclosure === "ERASED"
+  );
 };
 const canonicalInput = (value: unknown): string => {
   if (Array.isArray(value)) {
@@ -75,6 +111,85 @@ export function typedResult<K extends EndpointId>(
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();
   private generation = 0;
+  private readonly attachmentDisclosures = new Map<string, number>();
+  private readonly erasedAttachmentCases = new Set<string>();
+  attachmentsErased = (caseId: string): boolean => this.erasedAttachmentCases.has(caseId);
+  observeAttachmentErasure = (caseId: string): boolean => {
+    if (this.attachmentsErased(caseId)) {
+      return false;
+    }
+    this.erasedAttachmentCases.add(caseId);
+    this.invalidateSnapshots({ caseId, sequence: undefined });
+    return true;
+  };
+  observeCaseErasure = (document: HumanDocument): void => {
+    if (document.subject.kind === "CASE" && document.disclosure === "ERASED") {
+      this.observeAttachmentErasure(document.subject.caseId);
+    }
+  };
+  permitsAttachmentReceipt = (receipt: HumanDocument): boolean => {
+    const fields = attachmentReceiptFields(receipt);
+    return (
+      fields === null || receipt.disclosure === "ERASED" || !this.attachmentsErased(fields.caseId)
+    );
+  };
+  observeAttachmentReceipt = (receipt: HumanDocument): boolean => {
+    const fields = attachmentReceiptFields(receipt);
+    if (receipt.subject.kind === "RECEIPT" && receipt.disclosure === "ERASED") {
+      const caseId = fields?.caseId ?? linkedCaseReceipt(receipt)?.caseId;
+      if (caseId !== undefined) {
+        this.observeAttachmentErasure(caseId);
+      }
+      return true;
+    }
+    if (fields === null) {
+      return true;
+    }
+    const { caseId, sequence } = fields;
+    if (this.attachmentsErased(caseId)) {
+      return false;
+    }
+    if (sequence !== undefined) {
+      this.confirmAttachmentWithdrawal(caseId, sequence);
+    }
+    return true;
+  };
+  private readonly confirmedWithdrawals = new Map<string, number>();
+  attachmentDisclosure = (caseId: string): number | undefined =>
+    this.attachmentDisclosures.get(caseId);
+  observeAttachmentDisclosure = (caseId: string, sequence: number): boolean => {
+    if (this.attachmentsErased(caseId)) {
+      return false;
+    }
+    const last = this.attachmentDisclosure(caseId);
+    if (last === undefined || sequence > last) {
+      this.attachmentDisclosures.set(caseId, sequence);
+      if (last !== undefined) {
+        this.invalidate();
+      }
+      return true;
+    }
+    return sequence === last;
+  };
+  confirmAttachmentWithdrawal = (caseId: string, sequence?: number): void => {
+    if (this.attachmentsErased(caseId)) {
+      return;
+    }
+    if (sequence !== undefined) {
+      const confirmed = this.confirmedWithdrawals.get(caseId);
+      if (confirmed !== undefined && sequence <= confirmed) {
+        return;
+      }
+      this.confirmedWithdrawals.set(caseId, sequence);
+      this.attachmentDisclosures.set(
+        caseId,
+        Math.max(sequence, this.attachmentDisclosure(caseId) ?? 0),
+      );
+    }
+    // Even if the list already observed this sequence, a receipt may still be displayed
+    // elsewhere from before the withdrawal.
+    this.invalidateSnapshots({ caseId, sequence });
+  };
   private readonly invalidationListeners = new Set<() => void>();
   invalidation = (): number => this.generation;
   subscribeInvalidation = (listener: () => void) => {
@@ -150,14 +265,32 @@ export class EndpointCache {
     }
   };
   invalidate = (): void => {
+    this.invalidateSnapshots();
+  };
+  private invalidateSnapshots(withdrawal?: AttachmentInvalidation): void {
     this.generation += 1;
     for (const entry of this.entries.values()) {
+      if (
+        withdrawal !== undefined &&
+        this.attachmentsErased(withdrawal.caseId) &&
+        isErasedCaseRead(entry.snapshot.result, withdrawal.caseId)
+      ) {
+        continue;
+      }
       entry.controller?.abort();
       entry.pending = null;
-      this.publish(entry, { result: null, previous: entry.snapshot.previous, loading: true });
+      const { previous } = entry.snapshot;
+      this.publish(entry, {
+        result: null,
+        previous:
+          withdrawal !== undefined && retainsStaleAttachments(previous, withdrawal)
+            ? null
+            : previous,
+        loading: true,
+      });
     }
     this.invalidationListeners.forEach((listener) => {
       listener();
     });
-  };
+  }
 }

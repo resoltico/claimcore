@@ -106,6 +106,7 @@ let tests =
                 (TimelineCsv.csvRows
                     {
                         Disclosure = HistoryDisclosure.Full
+                        AttachmentDisclosure = Sequence.zero
                         Basis = DomainInputs.workBasis
                         CaseId = CaseFixtures.caseId raw
                         Reference = DomainInputs.reference "CASE-PROOF"
@@ -437,6 +438,7 @@ let completeByteGoldens =
                     (TimelineCsv.csvRows
                         {
                             Disclosure = HistoryDisclosure.Full
+                            AttachmentDisclosure = Sequence.zero
                             Basis = basis
                             CaseId = CaseFixtures.caseId raw
                             Reference = reference

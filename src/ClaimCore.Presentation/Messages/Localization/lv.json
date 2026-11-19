@@ -88,8 +88,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Neatgriezeniski dzēst šīs lietas pašreizējos un saglabātos datus, maksājumus, darbu, atgādinājumus un piezīmes. Atsauce un izmaiņu reģistrs paliek. Citur glabātās kopijas netiek skartas.",
-    "source": "e9561f9fbf0b"
+    "text": "Neatgriezeniski noņemiet šīs lietas pašreizējos un glabātos datus, maksājumus, darbu, atgādinājumus, piezīmes un pielikumus. Atsauce un izmaiņu ieraksti paliek. Citur glabātās kopijas netiek ietekmētas.",
+    "source": "8bf54b53220a"
   },
   "task.people.eraseProfile.label": {
     "text": "Dzēst profilu",
@@ -3922,5 +3922,153 @@
   "label.installationOperator.description": {
     "text": "Pilnvarojums, ar kuru datubāzes administrēšanas komandas reģistrē sākotnējo iestatīšanu un īpašnieka piekļuves atjaunošanu.",
     "source": "ee88ee15dfdb"
+  },
+  "task.attachment.add.label": {
+    "text": "Pievienot pielikumu",
+    "source": "ebda695e767a"
+  },
+  "task.attachment.add.meaning": {
+    "text": "Pievienojiet failu šai lietai.",
+    "source": "8a784b5270e1"
+  },
+  "task.attachment.add.consequence": {
+    "text": "Augšupielādējiet šo failu lietā. Atkārtoti augšupielādējot atsaukta faila precīzu saturu, tas būs pieejams ar jaunu pielikuma ID.",
+    "source": "0b2968896980"
+  },
+  "task.attachment.add.done": {
+    "text": "Pielikums pievienots.",
+    "source": "b7d1991663aa"
+  },
+  "task.attachment.withdraw.label": {
+    "text": "Atsaukt pielikumu",
+    "source": "affdecbd0abd"
+  },
+  "task.attachment.withdraw.meaning": {
+    "text": "Atsauciet šo failu no lietas.",
+    "source": "04df59792174"
+  },
+  "task.attachment.withdraw.consequence": {
+    "text": "Šis fails vairs nebūs pieejams reģistrā. Tā baiti joprojām tiks ieskaitīti lietas krātuves ierobežojumos līdz lietas dzēšanai.",
+    "source": "801fa748ec70"
+  },
+  "task.attachment.withdraw.done": {
+    "text": "Pielikums atsaukts.",
+    "source": "2db4eb3ab7f7"
+  },
+  "endpoint.case.attachments.label": {
+    "text": "Skatīt pielikumus",
+    "source": "6f47c1b68cd1"
+  },
+  "endpoint.case.attachments.meaning": {
+    "text": "Skatiet šīs lietas pašreizējos pielikumus.",
+    "source": "e4556254958a"
+  },
+  "field.attachmentId.label": {
+    "text": "Pielikuma ID",
+    "source": "b949685bdf56"
+  },
+  "field.attachmentId.hint": {
+    "text": "Izvēlieties pašreizēju šīs lietas pielikumu.",
+    "source": "3f81eb25a627"
+  },
+  "field.attachmentId.rule": {
+    "text": "Norādiet pielikuma pieņemšanas darbības UUID.",
+    "source": "6e62bbf793e6"
+  },
+  "field.attachmentName.label": {
+    "text": "Faila nosaukums",
+    "source": "971b974235a8"
+  },
+  "field.attachmentName.hint": {
+    "text": "Izvēlieties failu, lai pārskatītu tā nosaukumu.",
+    "source": "409d7e835262"
+  },
+  "field.attachmentName.rule": {
+    "text": "Saglabātais nosaukums ir pārnesams faila nosaukums ar ne vairāk kā 120 UTF-8 baitiem.",
+    "source": "6c22f387ff73"
+  },
+  "field.attachmentLength.label": {
+    "text": "Lielums baitos",
+    "source": "4e160c3973fd"
+  },
+  "field.attachmentLength.hint": {
+    "text": "Lielumu nosaka izvēlētais fails.",
+    "source": "867cebdd6372"
+  },
+  "field.attachmentLength.rule": {
+    "text": "Ievadiet veselu skaitli no 0 līdz 26214400 ieskaitot.",
+    "source": "392a49e3b678"
+  },
+  "field.attachmentDigest.label": {
+    "text": "Faila kontrolsumma",
+    "source": "0ce38f748792"
+  },
+  "field.attachmentDigest.hint": {
+    "text": "Kontrolsumma tiek aprēķināta izvēlētajam failam.",
+    "source": "cdd4753f6424"
+  },
+  "field.attachmentDigest.rule": {
+    "text": "Norādiet SHA-256 kontrolsummas 64 heksadecimālos ciparus.",
+    "source": "f657af02235d"
+  },
+  "diagnostic.ATTACHMENT_ID_REQUIRED": {
+    "text": "Norādiet pielikuma ID.",
+    "source": "42983125cb88"
+  },
+  "diagnostic.ATTACHMENT_NAME_INVALID": {
+    "text": "Izvēlieties failu ar atbalstītu nosaukumu.",
+    "source": "f1d655317805"
+  },
+  "diagnostic.ATTACHMENT_LENGTH_INVALID": {
+    "text": "Faila lielums nedrīkst pārsniegt 25 MiB.",
+    "source": "8b03ed678e72"
+  },
+  "diagnostic.ATTACHMENT_DIGEST_INVALID": {
+    "text": "Vēlreiz izvēlieties failu, lai aprēķinātu tā kontrolsummu.",
+    "source": "398a8c14aa19"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": {
+    "text": "Izvēlieties un augšupielādējiet failu, lai pievienotu pielikumu.",
+    "source": "4b3fbe47932c"
+  },
+  "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": {
+    "text": "Augšupielādētais fails atšķiras no pārskatītā. Izvēlieties to vēlreiz un sāciet jaunu pārskatīšanu.",
+    "source": "f11297a14f39"
+  },
+  "diagnostic.ATTACHMENT_DUPLICATE": {
+    "text": "Šis fails jau ir pievienots lietai.",
+    "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
+    "text": "Ir sasniegts lietas glabāto pielikumu ierobežojums.",
+    "source": "35e2ca915e42"
+  },
+  "section.attachments.label": {
+    "text": "Pielikumi",
+    "source": "634de1147750"
+  },
+  "subject.ATTACHMENT.label": {
+    "text": "Pielikums",
+    "source": "040d2b3689dd"
+  },
+  "timelineKind.ATTACHMENT.label": {
+    "text": "Pielikums",
+    "source": "040d2b3689dd"
+  },
+  "timelineFilter.ATTACHMENTS.label": {
+    "text": "Pielikumi",
+    "source": "634de1147750"
+  },
+  "change.ATTACHMENT.recorded": {
+    "text": "Reģistrētas pielikuma izmaiņas.",
+    "source": "9c5ab3a2b28f"
+  },
+  "label.attachmentPreview": {
+    "text": "Attēla priekšskatījums",
+    "source": "f09247433bef"
+  },
+  "label.attachmentDisclosure": {
+    "text": "Pielikumu ieraksta pozīcija",
+    "source": "02ce853f42c9"
   }
 }

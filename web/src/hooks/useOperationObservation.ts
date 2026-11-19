@@ -1,7 +1,19 @@
+import type { HumanDocument } from "@contracts/client";
 import { apiEndpoints } from "../api/service";
 import { useRequesterContext } from "./useRequesterContext";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
+import { useEndpointCache } from "./EndpointProvider";
 import { useEndpoint } from "./useEndpoint";
+const useObservedAttachmentReceipt = (receipt: HumanDocument | null) => {
+  const cache = useEndpointCache();
+  useLayoutEffect(() => {
+    if (receipt !== null) {
+      cache?.observeAttachmentReceipt(receipt);
+    }
+  }, [cache, receipt]);
+  return receipt !== null && cache?.permitsAttachmentReceipt(receipt) !== false ? receipt : null;
+};
+
 export const useOperationObservation = (initialOperationId = "") => {
   const [operationId, setOperationId] = useState(initialOperationId);
   const [submitted, setSubmitted] = useState<string | null>(
@@ -15,6 +27,11 @@ export const useOperationObservation = (initialOperationId = "") => {
     submitted !== null && installationId !== undefined,
     JSON.stringify([installationId, requester?.subject.actorId]),
     installationId,
+  );
+  const receipt = useObservedAttachmentReceipt(
+    submitted !== null && query.value?.outcome.kind === "ACCEPTED"
+      ? query.value.outcome.document
+      : null,
   );
   const changeOperationId = (value: string): void => {
     setOperationId(value);
@@ -33,10 +50,7 @@ export const useOperationObservation = (initialOperationId = "") => {
   return {
     operationId,
     setOperationId: changeOperationId,
-    receipt:
-      submitted !== null && query.value?.outcome.kind === "ACCEPTED"
-        ? query.value.outcome.document
-        : null,
+    receipt,
     message: submitted === null ? null : query.message,
     loading: submitted !== null && query.loading,
     observe,

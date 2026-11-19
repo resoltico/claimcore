@@ -74,6 +74,43 @@ module RemoteServiceCall =
                     | _ -> return invalid frame
         }
 
+    let internal singleton (header: string) (headers: HttpHeaders) =
+        match headers.TryGetValues header with
+        | true, values ->
+            match List.ofSeq (nonNull values) with
+            | [ value ] -> Some value
+            | _ -> None
+        | _ -> None
+
+    let internal confirms (installation: Guid) (response: HttpResponseMessage) =
+        singleton "ClaimCore-Installation" response.Headers = Some(installation.ToString("D"))
+
+    let private multipart frame bytes =
+        let content = new MultipartFormDataContent()
+
+        let part media name file bytes =
+            let body = new ByteArrayContent(bytes: byte array)
+            body.Headers.ContentType <- MediaTypeHeaderValue media
+
+            body.Headers.ContentDisposition <-
+                ContentDispositionHeaderValue("form-data", Name = name, FileName = file)
+
+            content.Add body
+
+        part
+            AttachmentTransport.manifestMediaType
+            AttachmentTransport.manifestPartName
+            AttachmentTransport.manifestFileName
+            (Frames.inputBytes frame)
+
+        part
+            AttachmentTransport.downloadMediaType
+            AttachmentTransport.filePartName
+            AttachmentTransport.fileName
+            bytes
+
+        content
+
     let private sendBound
         (client: HttpClient)
         (access: Access)
@@ -85,10 +122,15 @@ module RemoteServiceCall =
             let service = access.Service
             let authorization = access.Authorization
             let endpoint = Frames.endpoint frame
+            let upload = Frames.upload frame
             use deadline = HttpRequestDeadline.link client cancelled
 
-            use request =
-                new HttpRequestMessage(Api.method endpoint, Uri(service, "/api/" + Api.id endpoint))
+            let path =
+                match upload with
+                | Some _ -> AttachmentTransport.uploadPath
+                | None -> "/api/" + Api.id endpoint
+
+            use request = new HttpRequestMessage(Api.method endpoint, Uri(service, path))
 
             access.InstallationId
             |> Option.iter (fun id ->
@@ -104,10 +146,13 @@ module RemoteServiceCall =
                     Representation.token (Frames.representation frame)
                 )
 
-            if Api.method endpoint = HttpMethod.Post then
+            match upload with
+            | Some bytes -> request.Content <- multipart frame bytes
+            | None when Api.method endpoint = HttpMethod.Post ->
                 let content = new ByteArrayContent(Frames.inputBytes frame)
                 content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
                 request.Content <- content
+            | None -> ()
 
             deadline.Token.ThrowIfCancellationRequested()
             beforeSend ()
@@ -120,7 +165,14 @@ module RemoteServiceCall =
                         deadline.Token
                     )
 
-                return! readResponse frame response deadline.Token
+                if
+                    upload.IsSome
+                    && response.StatusCode = HttpStatusCode.OK
+                    && not (access.InstallationId |> Option.exists (fun id -> confirms id response))
+                then
+                    return invalid frame
+                else
+                    return! readResponse frame response deadline.Token
             with
             | :? HttpRequestException
             | :? OperationCanceledException

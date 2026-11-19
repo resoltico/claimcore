@@ -61,6 +61,9 @@ module internal RouteSupport =
             | RouteBody.Csv(bytes, filename, installation) ->
                 RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
                 WebWire.csv bytes filename installation
+            | RouteBody.Attachment(transfer, content, installation) ->
+                RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
+                WebWire.attachment transfer content installation
 
         if result.ExpireBrowserSession then
             { new IResult with

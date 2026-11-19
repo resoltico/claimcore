@@ -340,5 +340,17 @@
     "de": "Installationsbetreiber",
     "es": "operador de la instalación",
     "forbidden": {}
+  },
+  "attachment": {
+    "en": "attachment",
+    "lv": "pielikums",
+    "ar": "مرفق",
+    "ko": "첨부 파일",
+    "zh-Hans": "附件",
+    "zh-Hant": "附件",
+    "ja": "添付ファイル",
+    "es": "adjunto",
+    "de": "Anhang",
+    "forbidden": {}
   }
 }

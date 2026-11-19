@@ -69,7 +69,8 @@ module internal ShellReviewOutput =
         write, take
 
 type internal ShellSession
-    (clock: TimeProvider, console: ShellConsole, processor: RemoteFrameProcessor) =
+    (clock: TimeProvider, console: ShellConsole, processor: RemoteFrameProcessor, ?saveAttachment) =
+    let saveAttachment = defaultArg saveAttachment AttachmentFiles.save
     let gate = obj ()
     let mutable active: CancellationTokenSource option = None
     let mutable stopping = false
@@ -110,25 +111,30 @@ type internal ShellSession
         task {
             token.ThrowIfCancellationRequested()
 
+            let unsupported issue =
+                CliDiscovery.unsupported
+                    console.Errors
+                    (CliInvocations.usageLanguage words)
+                    words
+                    issue
+                |> VerbCompletion.Completed
+
             match admitted with
             | Ok(CliInvocation.Verb arguments) ->
-                return! VerbRunner.run verbConsole processor arguments token
+                return!
+                    VerbRunner.runWithCompletion
+                        saveAttachment
+                        verbConsole
+                        processor
+                        arguments
+                        token
             | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
-                return
-                    CliDiscovery.unsupported
-                        console.Errors
-                        (CliInvocations.usageLanguage words)
-                        words
-                        (UsageError.NotApplicable("command", "shell"))
+                return unsupported (UsageError.NotApplicable("command", "shell"))
             | Ok invocation ->
-                return CliDiscovery.discovery console.Output console.Errors invocation
-            | Error issue ->
                 return
-                    CliDiscovery.unsupported
-                        console.Errors
-                        (CliInvocations.usageLanguage words)
-                        words
-                        issue
+                    CliDiscovery.discovery console.Output console.Errors invocation
+                    |> VerbCompletion.Completed
+            | Error issue -> return unsupported issue
         }
 
     let execute words =
@@ -158,13 +164,13 @@ type internal ShellSession
 
             try
                 try
-                    let! code = dispatch words admitted cancellation.Token
+                    let! completion = dispatch words admitted cancellation.Token
 
-                    if cancellation.IsCancellationRequested then
+                    match completion with
+                    | VerbCompletion.Completed _ when cancellation.IsCancellationRequested ->
                         return
                             (interruptionCode |> Option.defaultWith processor.Interrupt), language
-                    else
-                        return code, language
+                    | _ -> return VerbCompletion.exitCode completion, language
                 with error ->
                     return processor.Failure error, language
             finally

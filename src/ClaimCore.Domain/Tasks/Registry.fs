@@ -40,6 +40,8 @@ module Registry =
             ClaimCore.Domain.Tasks.Party.PartyTasks.remove
             ClaimCore.Domain.Tasks.Note.Add.task
             ClaimCore.Domain.Tasks.Note.Remove.task
+            AttachmentTasks.add
+            AttachmentTasks.withdraw
             ClaimCore.Domain.Tasks.Link.Add.task
             ClaimCore.Domain.Tasks.Link.Remove.task
             ClaimCore.Domain.Tasks.Reminder.Create.task

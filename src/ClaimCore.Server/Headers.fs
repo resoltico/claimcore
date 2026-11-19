@@ -7,8 +7,8 @@ open Microsoft.AspNetCore.Http
 module HttpHeaders =
     let private publicAssetKey = obj ()
     let private catalogKey = obj ()
-    let private csvKey = obj ()
-    let internal csv (context: HttpContext) = context.Items[csvKey] <- box true
+    let private binaryKey = obj ()
+    let internal noTransform (context: HttpContext) = context.Items[binaryKey] <- box true
     let internal catalog (context: HttpContext) = context.Items[catalogKey] <- box true
 
     let internal publicAsset (context: HttpContext) =
@@ -16,7 +16,7 @@ module HttpHeaders =
 
     let private contentSecurityPolicy =
         "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; "
-        + "img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; "
+        + "img-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; "
         + "base-uri 'none'; frame-ancestors 'none'; frame-src 'none'; form-action 'self'; "
         + "manifest-src 'self'; media-src 'none'; worker-src 'none'"
 
@@ -62,7 +62,7 @@ module HttpHeaders =
                 else
                     noStore context
 
-                    if context.Items.ContainsKey csvKey then
+                    if context.Items.ContainsKey binaryKey then
                         context.Response.Headers.CacheControl <-
                             "no-store, no-transform, max-age=0"
 

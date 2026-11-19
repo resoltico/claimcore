@@ -1,6 +1,8 @@
 module ClaimCore.Tests.CliExamples
 
 open ClaimCore.CommandLine
+open System
+open System.IO
 
 open ClaimCore.Application.Contracts
 open Expecto
@@ -9,6 +11,16 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.TestSupport
+
+let fromCapture (row: string) =
+    let rec paths =
+        function
+        | "--file" :: path :: remaining ->
+            "--file" :: Path.Combine(RepositoryRoot.find (), path) :: paths remaining
+        | word :: remaining -> word :: paths remaining
+        | [] -> []
+
+    row.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> List.ofArray |> paths
 
 let registrationArguments input =
     RegistrationInput.values input

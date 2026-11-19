@@ -13,6 +13,8 @@ module ClientCompositions =
 
     let accountRegistration = declared "people.register"
     let admission = declared "people.admit"
+    let attachmentEntry = declared "attachment.add"
+    let attachmentWithdrawal = declared "attachment.withdraw"
     let noteEntry = declared "note.add"
     let linkEntry = declared "link.add"
     let linkRemoval = declared "link.remove"

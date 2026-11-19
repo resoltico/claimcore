@@ -43,7 +43,7 @@ connection; use the recovery procedure below.
 
 ## Read
 
-Choose a read by the question you need answered: a case, a work view, reminders, notes, payments,
+Choose a read by the question you need answered: a case, a work view, reminders, notes, attachments, payments,
 people, access history or the status of an operation. Read the catalog and command help for available
 filters and choices.
 
@@ -205,6 +205,28 @@ Reopen takes a reason. Observation-time case summaries support business date fil
 signed net-paid totals with contributing-case counts. Reminder kinds and deadline completion outcomes
 are available through list and export contracts. Use the published shape for stage values and
 operator or actor attribution rather than inferring it from a display name.
+
+### Case attachment transfers
+
+Use `case.attachments` to obtain current metadata and available controls. Its disclosure sequence
+and the timeline's attachment disclosure sequence let clients discard older list, receipt and history
+views after a newer attachment change. A file always belongs to the selected case.
+
+Review `attachment.add` with the normal preview endpoint. Its input includes the operation ID,
+tagged case selector, filename candidate, decimal byte count and SHA-256. Present the returned
+portable name and reattachment consequence before confirmation. Freeze the selected file across
+review and delivery. The protected multipart endpoint `attachment.upload` accepts the operation
+envelope as `manifest.json` in the `manifest` part followed by exact bytes as `payload.bin` in the
+`file` part. The standard JSON execution path refuses attachment addition. Use standard review
+and execution for `attachment.withdraw`. If delivery is uncertain, use `operation.get` with the
+original operation ID.
+
+Binary delivery uses protected POST endpoints `attachment.download` and `attachment.preview` with
+a tagged case selector and attachment ID. Verify the installation, media type, full byte count and
+SHA-256 in `Content-Digest` before giving the file to the caller. Downloads use
+`application/octet-stream` with an attachment disposition. Eligible previews use the actual static
+PNG or JPEG media type. Refusals use JSON. Use the generated OpenAPI contract for the complete
+request and response grammar.
 
 ## Post a command
 

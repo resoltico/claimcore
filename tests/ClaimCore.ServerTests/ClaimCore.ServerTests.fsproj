@@ -16,6 +16,7 @@
     <Compile Include="OidcStartupCancellationTests.fs" />
     <Compile Include="RequestGateEdgeTests.fs" />
     <Compile Include="RequestGateActorTests.fs" />
+    <Compile Include="AttachmentTransportTests.fs" />
     <Compile Include="OriginConfigurationTests.fs" />
     <Compile Include="BindingGateTests.fs" />
     <Compile Include="ProbeTransportTests.fs" />
