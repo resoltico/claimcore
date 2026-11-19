@@ -182,6 +182,89 @@ const assertReportTail = async (
   expect(continued.outcome.document.nextCursor).toBeNull();
 };
 
+const summaryRoute = "**/api/case.summary";
+const nextSummaryRequest = (page: Page) =>
+  page.waitForRequest((request) => new URL(request.url()).pathname === "/api/case.summary");
+
+const verifyReportDisclosure = async (page: Page) => {
+  const report = page.getByRole("region", { name: "Show summary totals" });
+  const download = report.getByRole("button", { name: "Download CSV" });
+  const alert = report.getByRole("alert");
+  const retry = alert.getByRole("button", { name: "Try again" });
+  let attempts = 0;
+  let release: () => void = () => undefined;
+  const hold = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(summaryRoute, async (route) => {
+    attempts += 1;
+    if (attempts === 1) {
+      await route.fulfill({
+        status: 200,
+        json: {
+          representation: "HUMAN",
+          outcome: {
+            kind: "REJECTED",
+            rejection: {
+              kind: "REFUSED",
+              advice: {
+                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                action: "ASK_FOR_ACCESS",
+              },
+            },
+          },
+        },
+      });
+    } else if (attempts === 2) {
+      await hold;
+      await route.fulfill({
+        status: 429,
+        json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+      });
+    } else {
+      await route.continue();
+    }
+  });
+  const [denied] = await Promise.all([
+    nextSummaryRequest(page),
+    report.getByRole("button", { name: "Next report page" }).click(),
+  ]);
+  const position = denied.postDataJSON() as RequestByEndpoint["case.summary"];
+  expect(position.cursor).toEqual(expect.any(String));
+  await expect(retry).toBeVisible();
+  await expect(download).toBeDisabled();
+
+  try {
+    const [retried] = await Promise.all([nextSummaryRequest(page), retry.click()]);
+    expect(retried.postDataJSON()).toEqual(position);
+    await expect(report.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    await expect(download).toBeDisabled();
+  } finally {
+    release();
+  }
+  await expect(retry).toBeVisible();
+  await expect(download).toBeDisabled();
+  const [revalidated] = await Promise.all([nextSummaryRequest(page), retry.click()]);
+  expect(revalidated.postDataJSON()).toEqual(position);
+  await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 2");
+  await expect(download).toBeEnabled();
+  await page.unroute(summaryRoute);
+
+  await page.route(summaryRoute, (route) =>
+    route.fulfill({
+      status: 401,
+      json: { hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } },
+    }),
+  );
+  await report.getByRole("button", { name: "Restart report" }).click();
+  await expect(retry).toBeVisible();
+  await expect(download).toBeDisabled();
+  await page.unroute(summaryRoute);
+  await retry.click();
+  await expect(report.getByRole("button", { name: "Next report page" })).toBeVisible();
+  await expect(download).toBeEnabled();
+};
+
 const finishBrowserReport = async (page: Page, prefix: string) => {
   await page.route("**/api/case.list", (route) =>
     route.fulfill({
@@ -246,7 +329,7 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 1");
   await expect(next).toBeVisible();
 
-  await page.route("**/api/case.summary", (route) => {
+  await page.route(summaryRoute, (route) => {
     const request = route.request().postDataJSON() as RequestByEndpoint["case.summary"];
     return request.cursor === undefined
       ? route.continue()
@@ -254,8 +337,26 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   });
   await next.focus();
   await page.keyboard.press("Enter");
-  await expect(report.getByRole("alert")).toContainText("This page link is no longer valid");
+  const alert = report.getByRole("alert");
+  await expect(alert).toContainText("This page link is no longer valid");
+  await expect(alert.getByRole("button", { name: "Try again" })).toHaveCount(0);
+  await expect(restart).toHaveCount(1);
   await exportCsv();
+  const [restarted] = await Promise.all([
+    nextSummaryRequest(page),
+    alert.getByRole("button", { name: "Restart report" }).press("Enter"),
+  ]);
+  expect(restarted.postDataJSON()).toEqual({
+    view: "ALL",
+    text: prefix,
+    groupBy: "RECEIVED_MONTH",
+    limit: 50,
+  });
+  await expect(heading).toBeFocused();
+  await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 1");
+  await expect(next).toBeVisible();
+  await page.unroute(summaryRoute);
+  await verifyReportDisclosure(page);
 };
 
 test("traverses the live 51-month report and complete CSV with independent page bounds", async ({

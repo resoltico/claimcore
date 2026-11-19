@@ -247,10 +247,83 @@ it("allows cursorless export after a continuation refusal and blocks a real acce
   await user.click(screen.getByRole("option", { name: "Received month" }));
   await user.click(await screen.findByRole("button", { name: "Next report page" }));
   await screen.findByText(/this page link is no longer valid/iu);
+  expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
   const download = screen.getByRole("button", { name: "Download CSV" });
   expect(download).toBeEnabled();
   await user.click(screen.getByRole("button", { name: "Restart report" }));
   await waitFor(() => {
     expect(download).toBeDisabled();
   });
+});
+
+it("blocks export across a held disclosure retry and reopens it only after success", async () => {
+  const denied = () =>
+    endpointResponse("case.summary", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            action: "ASK_FOR_ACCESS",
+          },
+        },
+      },
+    });
+  let finishRetry: (reply: Response) => void = () => undefined;
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(denied())
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishRetry = resolve;
+        }),
+    )
+    .mockResolvedValueOnce(response("case.summary", summary));
+  vi.stubGlobal("fetch", fetch);
+  render(<SummaryBand filter={{ view: "ALL" }} />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await screen.findByRole("alert");
+  const download = screen.getByRole("button", { name: "Download CSV" });
+  expect(download).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Try again" }));
+  await screen.findByRole("status");
+  expect(download).toBeDisabled();
+  act(() => {
+    finishRetry(
+      new Response(
+        JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  });
+  await screen.findByRole("alert");
+  expect(download).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Try again" }));
+  await screen.findByText("2", { exact: true });
+  expect(download).toBeEnabled();
+});
+
+it("blocks export on a host session refusal", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  vi.stubGlobal("fetch", fetch);
+  render(<SummaryBand filter={{ view: "ALL" }} />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await screen.findByRole("alert");
+  expect(screen.getByRole("button", { name: "Download CSV" })).toBeDisabled();
 });

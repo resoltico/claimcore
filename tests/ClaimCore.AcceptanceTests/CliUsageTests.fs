@@ -50,12 +50,22 @@ let smoke =
                     "Only the intended stream"
 
             let recover arguments =
-                ProcessRunner.dotnet
-                    8_000
-                    cli
-                    ("recovery" :: arguments)
-                    (Dictionary<string, string>())
-                    None
+                let apphost =
+                    if OperatingSystem.IsWindows() then
+                        Path.ChangeExtension(cli, ".exe")
+                    else
+                        Path.ChangeExtension(cli, null)
+
+                let start =
+                    PublishedProcesses.start
+                        apphost
+                        ("recovery" :: arguments)
+                        (Dictionary<string, string>())
+
+                CliProcessEnvironment.isolateProfile start (Path.GetDirectoryName cli |> nonNull)
+                start.Environment["CLAIMCORE_LANGUAGE"] <- "en"
+                start.Environment["NO_COLOR"] <- "1"
+                PublishedProcesses.run 8_000 start None
 
             let invalidRecovery arguments text synopsis =
                 let result = recover arguments
@@ -73,6 +83,10 @@ let smoke =
                 Expect.isFalse
                     (diagnostic.Contains "accepts no options or operands")
                     "Recovery admits options"
+
+                Expect.isFalse
+                    (diagnostic.Contains "Unknown option")
+                    "A recognized recovery option retains its identity"
 
                 diagnostic
 
@@ -94,9 +108,34 @@ let smoke =
                 "claimcore recovery list"
             |> ignore
 
+            for flag, value in
+                [ "--language", "synthetic-language"; "--format", "synthetic-format" ] do
+                for arguments in [ [ flag; value ]; [ flag + "=" + value ] ] do
+                    invalidRecovery
+                        ("list" :: arguments)
+                        ("Invalid value " + value + " for " + flag)
+                        "claimcore recovery list"
+                    |> ignore
+
+                let nextOption =
+                    if flag = "--language" then
+                        "--format=json"
+                    else
+                        "--language=en"
+
+                for arguments in [ [ flag ]; [ flag; nextOption ] ] do
+                    invalidRecovery
+                        ("list" :: arguments)
+                        ("Missing value for " + flag + ".")
+                        "claimcore recovery list"
+                    |> ignore
+
             for arguments in [ [ "list" ]; [ "check"; "70000000-0000-4000-8000-000000000001" ] ] do
                 let result =
-                    recover (arguments @ [ "--display-locale"; "en-US"; "--format"; "json" ])
+                    recover (
+                        arguments
+                        @ [ "--display-locale"; "en-US"; "--language"; "en"; "--format=json" ]
+                    )
 
                 Expect.equal
                     result.ExitCode
