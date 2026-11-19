@@ -109,7 +109,7 @@ export const WorkOperation = ({
       (input) =>
         Object.hasOwn(model.values, input.id) &&
         ((Object.hasOwn(acquiredSeeds, input.id) &&
-          model.affordance?.editable.includes(input.id) === false) ||
+          model.affordance?.editable.some((id) => id === input.id) === false) ||
           Object.hasOwn(prefill ?? {}, input.id)),
     );
   useEffect(() => {

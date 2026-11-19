@@ -7,6 +7,7 @@
 - Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
 - Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
 - Regenerate clients for typed attachment controls and disclosure facts, new refusals and the `filename*`-only download disposition.
+- Regenerate clients for affordance `editable` types restricted to each task's declared editable inputs.
 
 ## [0.20.0] - 2026-11-19
 

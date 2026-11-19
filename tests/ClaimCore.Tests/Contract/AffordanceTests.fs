@@ -151,6 +151,89 @@ let tests =
                 Expect.isError
                     (PresentationCodecs.affordance.Read "$" malformed)
                     "Collection values are not scalar seeds")
+            testCase "editable inputs exclude fixed and foreign declarations" (fun () ->
+                let reference = TaskAffordances.field BusinessField.CaseReference
+                let closingNote = TaskAffordances.field BusinessField.ClosingNote
+
+                let control =
+                    { action () with
+                        Seeds = Map.ofList [ reference, InputValue.Text "CASE-1" ]
+                        Editable = [ closingNote ]
+                    }
+
+                let codec = PresentationCodecs.affordance
+                let encoded = codec.Write control
+
+                Expect.equal
+                    (codec.Read "$" encoded)
+                    (Ok control)
+                    "The authored subset and fixed seed round-trip"
+
+                for input, token in
+                    [
+                        reference, "field:caseReference"
+                        TaskAffordances.field BusinessField.HandlingSummary,
+                        "field:handlingSummary"
+                    ] do
+                    let changed = { control with Editable = [ input ] }
+
+                    Expect.isFalse
+                        (Affordance.valid changed)
+                        "Only authored inputs for this task may be edited"
+
+                    let malformed =
+                        match encoded with
+                        | JsonValue.Object fields ->
+                            fields
+                            |> List.map (fun (key, value) ->
+                                if key = "editable" then
+                                    key, JsonValue.Array [ JsonValue.String token ]
+                                else
+                                    key, value)
+                            |> JsonValue.Object
+                        | _ -> failtest "An affordance must be an object"
+
+                    Expect.isError
+                        (codec.Read "$" malformed)
+                        "The wire contract rejects the same invalid input")
+            testCase "editable schemas describe task-specific choices and empty arrays" (fun () ->
+                let editable task =
+                    PresentationCodecs.affordance.Definitions["Affordance." + task]
+                    |> SchemaJson.value "#/components/schemas/"
+                    |> JsonValue.tryMember "properties"
+                    |> Option.bind (JsonValue.tryMember "editable")
+                    |> Option.defaultWith (fun () -> failtest "The editable schema is required.")
+
+                let close = editable "case.close"
+
+                Expect.equal
+                    (JsonValue.tryMember "items" close |> Option.bind (JsonValue.tryMember "enum"))
+                    (Some(
+                        JsonValue.Array
+                            [
+                                JsonValue.String "field:outcome"
+                                JsonValue.String "field:closingNote"
+                            ]
+                    ))
+                    "The case close schema admits only the outcome and closing note"
+
+                Expect.equal
+                    (JsonValue.tryMember "maxItems" close)
+                    (Some(JsonValue.Integer 2L))
+                    "Exact maximum"
+
+                for task in [ "case.removePayment"; "people.requests.dismiss" ] do
+                    let empty = editable task
+
+                    Expect.equal
+                        (JsonValue.tryMember "items" empty)
+                        (Some(JsonValue.Boolean false))
+                        "No item is admissible"
+
+                    Expect.equal
+                        (JsonValue.tryMember "maxItems" empty)
+                        (Some(JsonValue.Integer 0L))
+                        "Only the empty array is admissible")
             testCase "duplicate rows and undeclared document or regional controls refuse" (fun () ->
                 Expect.throws
                     (fun () -> Screen.create [ region [ row "same" []; row "same" [] ] ] |> ignore)

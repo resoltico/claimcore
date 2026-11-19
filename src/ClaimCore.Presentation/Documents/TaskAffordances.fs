@@ -32,17 +32,8 @@ module TaskAffordances =
         ]
         |> Map.ofList
 
-    let private definition task =
-        TaskDeclarations.describe (TaskId.token task)
-
     let authored task =
-        let declaration = definition task
-
-        (declaration.Inputs
-         |> List.filter (fun input -> input.Source = InputSource.Authored)
-         |> List.map _.Input)
-        @ (declaration.Collections
-           |> List.map (fun collection -> TaskCollectionId.input collection.Collection))
+        (TaskDeclarations.describe (TaskId.token task)).EditableInputs
 
     let offered task binding seeds editable choices =
         Affordance.create task binding seeds editable choices None

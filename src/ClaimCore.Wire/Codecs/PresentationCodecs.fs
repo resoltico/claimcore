@@ -543,9 +543,8 @@ module PresentationCodecs =
     let MaximumLinks = 34
 
     let affordance =
-        let inputs =
+        let inputVocabulary =
             Vocabulary.define TaskInputId.vocabularyName TaskInputId.all TaskInputId.token
-            |> VocabularyCodec.create
 
         let binding (declaration: ClientTaskDeclaration) =
             match declaration.Kind with
@@ -611,6 +610,13 @@ module PresentationCodecs =
 
         let fields (declaration: ClientTaskDeclaration) =
             let task = TaskId.ofLiteral declaration.Id
+            let editableInputs = declaration.EditableInputs
+
+            let editable =
+                inputVocabulary
+                |> VocabularyCodec.select (fun input -> List.contains input editableInputs)
+                |> list editableInputs.Length
+
             let emptyMap: Codec<Map<TaskInputId, InputValue>> = record Map.empty |> build
             let emptyChoices: Codec<Map<TaskInputId, string list>> = record Map.empty |> build
 
@@ -634,15 +640,7 @@ module PresentationCodecs =
                      emptyMap
                  else
                      seeds)
-            |> field
-                "editable"
-                _.Editable
-                (list
-                    (if declaration.Kind = ClientTaskKind.Command then
-                         0
-                     else
-                         TaskInputId.all.Length)
-                    inputs)
+            |> field "editable" _.Editable editable
             |> field
                 "choices"
                 _.Choices

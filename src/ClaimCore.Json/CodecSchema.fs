@@ -91,8 +91,13 @@ module internal CodecSchema =
             objectSchema prefix writer properties optionalMembers
         | Schema.Array(items, minimum, maximum) ->
             WriterProfile.writeMember writer "type" "array"
-            writer.WritePropertyName "items"
-            writeSchema prefix writer items
+
+            if maximum = 0 then
+                writer.WriteBoolean("items", false)
+            else
+                writer.WritePropertyName "items"
+                writeSchema prefix writer items
+
             writer.WriteNumber("minItems", minimum)
             writer.WriteNumber("maxItems", maximum)
         | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->

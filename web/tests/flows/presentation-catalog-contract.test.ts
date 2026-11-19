@@ -1,10 +1,26 @@
-import { taskDefinitions, taskInputDefinitions } from "@contracts/client";
-import { expect, it } from "vitest";
+import {
+  taskDefinitions,
+  taskInputDefinitions,
+  type Affordance_attachment_withdraw,
+  type Affordance_work_update,
+} from "@contracts/client";
+import { expect, expectTypeOf, it } from "vitest";
 import { definition } from "../support/service-ui.fixtures";
 import { renderCatalogKey } from "../../src/presentation/messages";
 import { defaults } from "../../src/presentation/preferences";
 import { createPresenter } from "../../src/presentation/presenter";
 const { catalog } = definition;
+it("types affordance editable inputs by task", () => {
+  type WorkEditable = Affordance_work_update["editable"];
+  expectTypeOf<WorkEditable[number]>().toEqualTypeOf<
+    "field:responsibleActor" | "field:handlingSummary"
+  >();
+  expectTypeOf<Affordance_attachment_withdraw["editable"][number]>().toEqualTypeOf<never>();
+  // @ts-expect-error The attachment name belongs to attachment.add.
+  const foreign: WorkEditable = ["input:attachmentName"];
+  expectTypeOf(foreign).toEqualTypeOf<WorkEditable>();
+});
+
 it("preserves independent English diagnostics and parameter formatting", () => {
   expect(renderCatalogKey(defaults, "diagnostic.TOO_LONG", { maximumCharacters: "200" })).toBe(
     "Use at most 200 characters.",

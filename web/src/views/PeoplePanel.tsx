@@ -614,7 +614,7 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
           const issuer = action.seeds["input:principal.issuer"];
           const subject = action.seeds["input:principal.subject"];
           const fixed =
-            !action.editable.includes("input:principal.subject") &&
+            !action.editable.some((input) => input === "input:principal.subject") &&
             (kind === "HUMAN" || kind === "SERVICE") &&
             typeof issuer === "string" &&
             typeof subject === "string";

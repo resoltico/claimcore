@@ -128,8 +128,12 @@ export const useCaseWorkPanels = ({
   const work = disclosureAvailable ? (
     <>
       <CaseWork
-        canAssign={workAction?.editable.includes("field:responsibleActor") === true}
-        canUpdateSummary={workAction?.editable.includes("field:handlingSummary") === true}
+        canAssign={
+          workAction?.editable.some((input) => input === "field:responsibleActor") === true
+        }
+        canUpdateSummary={
+          workAction?.editable.some((input) => input === "field:handlingSummary") === true
+        }
         timeZone={current.basis.observation.timeZone}
         {...(current.screen.regions.find((region) => region.role === "WORK") === undefined
           ? {}

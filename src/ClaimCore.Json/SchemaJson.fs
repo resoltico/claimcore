@@ -135,7 +135,11 @@ module SchemaJson =
             JsonValue.Object
                 [
                     "type", text "array"
-                    "items", value prefix items
+                    "items",
+                    (if maximum = 0 then
+                         JsonValue.Boolean false
+                     else
+                         value prefix items)
                     "minItems", number minimum
                     "maxItems", number maximum
                 ]

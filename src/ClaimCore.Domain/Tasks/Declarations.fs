@@ -113,18 +113,11 @@ module internal Declarations =
                         ]
                 })
 
-    let authored declaration =
-        (declaration.Inputs
-         |> List.filter (fun input -> input.Source = InputSource.Authored)
-         |> List.map _.Input)
-        @ (declaration.Collections
-           |> List.map (fun collection -> TaskCollectionId.input collection.Collection))
-
     let availability declaration blocked =
         {
             Seeds = Map.empty
             Selections = Set.empty
-            Editable = authored declaration
+            Editable = TaskDeclaration.editableInputs declaration
             Choices = Map.empty
             Blocked = blocked
             Recommendation = None

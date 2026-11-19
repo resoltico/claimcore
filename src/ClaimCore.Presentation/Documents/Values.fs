@@ -135,6 +135,7 @@ module Affordance =
                 |> Map.ofList
 
             let inputs = Set.union scalarKeys (collections |> Map.keys |> Set.ofSeq)
+            let editable = declaration.EditableInputs
 
             let seedsValid =
                 value.Seeds
@@ -155,7 +156,7 @@ module Affordance =
             matches
             && seedsValid
             && List.distinct value.Editable = value.Editable
-            && (value.Editable |> List.forall (fun input -> Set.contains input inputs))
+            && (value.Editable |> List.forall (fun input -> List.contains input editable))
             && (value.Choices
                 |> Map.forall (fun input choices ->
                     Set.contains input inputs
