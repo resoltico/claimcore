@@ -2,9 +2,9 @@
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="QueryFields.fs" />
+    <Compile Include="Paging.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="ChangeReferences.fs" />
-    <Compile Include="Paging.fs" />
     <Compile Include="Faults.fs" />
     <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />

@@ -192,7 +192,8 @@ let internal lifecycle fixture =
         let totals = read totals
 
         Expect.equal
-            (totals.NetPaid
+            (totals.Rows
+             |> List.choose _.NetPaid
              |> List.map (fun total ->
                  Currency.format total.Currency, DecimalTotal.format total.Amount))
             [ "EUR", "60.25"; "USD", "5" ]
@@ -267,7 +268,8 @@ let internal lifecycle fixture =
                 token
 
         Expect.equal
-            ((read after).NetPaid
+            ((read after).Rows
+             |> List.choose _.NetPaid
              |> List.map (fun total ->
                  Currency.format total.Currency, DecimalTotal.format total.Amount))
             [ "USD", "5" ]

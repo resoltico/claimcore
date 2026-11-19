@@ -1,4 +1,12 @@
 {
+  "ui.nextReportPage": {
+    "text": "صفحة التقرير التالية",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "ابدأ التقرير من جديد",
+    "source": "b4c20d320a54"
+  },
   "ui.reportingDates": {
     "text": "تواريخ التقرير",
     "source": "274bd4f0d808"

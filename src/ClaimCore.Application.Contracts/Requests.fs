@@ -42,14 +42,28 @@ type CaseListRequest =
         Filter: CaseListFilter<string>
     }
 
-type CaseSummaryRequest =
+type CaseSummarySelection =
     {
         Filter: CaseListFilter<string>
         GroupBy: CaseGrouping option
     }
 
+type CaseSummaryRequest =
+    {
+        Selection: CaseSummarySelection
+        Page: PageRequest
+    }
+
 module CaseSummaryRequest =
-    let ungrouped filter = { Filter = filter; GroupBy = None }
+    let ungrouped filter =
+        {
+            Selection = { Filter = filter; GroupBy = None }
+            Page =
+                {
+                    AfterCursor = None
+                    Limit = Paging.DefaultPageSize
+                }
+        }
 
 type AssigneeRequest =
     {

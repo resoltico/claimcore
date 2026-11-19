@@ -106,7 +106,14 @@ module EndpointDeclarations =
                     Paging.MaximumPageSize
                     Paging.DefaultPageSize)
                 true
-            query QueryTaskId.CaseSummary (worklist @ [ optional TaskInputId.GroupBy ]) None true
+            query
+                QueryTaskId.CaseSummary
+                (worklist @ [ optional TaskInputId.GroupBy ] @ page)
+                (paging
+                    Paging.MaximumCaseCursorCharacters
+                    Paging.MaximumPageSize
+                    Paging.DefaultPageSize)
+                true
             query
                 QueryTaskId.CaseTimeline
                 (caseTarget :: optional TaskInputId.TimelineFilter :: page)

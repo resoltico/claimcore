@@ -331,11 +331,19 @@ let internal replies () : IEndpointOutput list =
                 (Outcome.Succeeded
                     {
                         Basis = basis
-                        Claimed = []
-                        Payable = []
-                        NetPaid = []
                         GroupBy = None
-                        Groups = []
+                        Rows =
+                            [
+                                {
+                                    Group = None
+                                    Count = 0L
+                                    Currency = None
+                                    Claimed = None
+                                    Payable = None
+                                    NetPaid = None
+                                }
+                            ]
+                        NextCursor = None
                         Counts =
                             {
                                 Total = 0L

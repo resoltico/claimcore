@@ -1,4 +1,12 @@
 {
+  "ui.nextReportPage": {
+    "text": "下一頁報告",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "從頭檢視報告",
+    "source": "b4c20d320a54"
+  },
   "ui.reportingDates": {
     "text": "報表日期",
     "source": "274bd4f0d808"

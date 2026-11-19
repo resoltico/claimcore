@@ -1,4 +1,12 @@
 {
+  "ui.nextReportPage": {
+    "text": "Nākamā pārskata lapa",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "Sākt pārskatu no jauna",
+    "source": "b4c20d320a54"
+  },
   "ui.reportingDates": {
     "text": "Pārskata datumi",
     "source": "274bd4f0d808"

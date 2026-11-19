@@ -1,4 +1,6 @@
 {
+  "ui.nextReportPage": "Next report page",
+  "ui.restartReport": "Restart report",
   "ui.reportingDates": "Reporting dates",
   "ui.about": "About",
   "ui.accent": "Accent colour",

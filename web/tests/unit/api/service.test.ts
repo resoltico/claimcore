@@ -223,7 +223,7 @@ it("dispatches independent reads immediately and cancels an obsolete fetch", asy
     caller.signal,
   );
   const second = new AbortController();
-  const summary = requestEndpoint("case.summary", "csrf", {}, second.signal);
+  const summary = requestEndpoint("case.summary", "csrf", { limit: 50 }, second.signal);
   const third = new AbortController();
   const views = requestEndpoint("work.views", "csrf", {}, third.signal);
   expect(fetch).toHaveBeenCalledTimes(3);

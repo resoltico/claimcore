@@ -618,7 +618,7 @@ module HumanReadDocuments =
         listPage value.Basis (AssigneesScreen.view value) value.NextCursor
 
     let summary (value: CaseWorklistSummary) =
-        listPage value.Basis (CaseTotalsScreen.view value) None
+        listPage value.Basis (CaseTotalsScreen.view value) value.NextCursor
 
     let views (value: WorkViews) =
         let links =

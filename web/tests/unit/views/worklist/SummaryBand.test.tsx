@@ -64,7 +64,7 @@ it("renders independent maximum totals without rounding or single-amount bounds"
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
     expect.objectContaining({
-      body: JSON.stringify({ assignment: "MINE", order: "RECEIVED", text: "needle" }),
+      body: JSON.stringify({ assignment: "MINE", order: "RECEIVED", text: "needle", limit: 50 }),
     }),
   );
 });
@@ -127,7 +127,7 @@ it("forwards the core responsibility descriptor filter unchanged to the actual s
   await screen.findByText("2", { exact: true });
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
-    expect.objectContaining({ body: JSON.stringify({ view: "ALL", responsibleActor }) }),
+    expect.objectContaining({ body: JSON.stringify({ view: "ALL", responsibleActor, limit: 50 }) }),
   );
 });
 
@@ -150,7 +150,7 @@ it("offers an explicit retry for read pressure without changing its query", asyn
   expect(fetch).toHaveBeenCalledTimes(2);
   for (const [path, request] of fetch.mock.calls) {
     expect(path).toBe("/api/case.summary");
-    expect(request?.body).toBe(JSON.stringify({ view: "ALL", text: "same query" }));
+    expect(request?.body).toBe(JSON.stringify({ view: "ALL", text: "same query", limit: 50 }));
   }
 });
 
@@ -175,9 +175,52 @@ it("submits the selected grouping with the existing dates and offers its CSV", a
           registeredFrom: "2026-11-01",
           registeredThrough: "2026-11-30",
           groupBy: "RECEIVED_MONTH",
+          limit: 50,
         }),
       }),
     );
   });
   expect(await screen.findByRole("button", { name: "Download CSV" })).toBeVisible();
+});
+
+it("starts a new selection at page one and keeps grouped export after temporary page failure", async () => {
+  let completeOld: (value: Response) => void = () => undefined;
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", { ...summary, nextCursor: "old-next" }))
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeOld = resolve;
+        }),
+    )
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  vi.stubGlobal("fetch", fetch);
+  const view = render(<SummaryBand filter={{ text: "old" }} />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Next report page" }));
+  expect(fetch).toHaveBeenLastCalledWith(
+    "/api/case.summary",
+    expect.objectContaining({
+      body: JSON.stringify({ text: "old", limit: 50, cursor: "old-next" }),
+    }),
+  );
+  view.rerender(<SummaryBand filter={{ text: "new" }} />);
+  expect(fetch).toHaveBeenLastCalledWith(
+    "/api/case.summary",
+    expect.objectContaining({ body: JSON.stringify({ text: "new", limit: 50 }) }),
+  );
+  await act(() => {
+    completeOld(response("case.summary", { ...summary, nextCursor: "ignored" }));
+  });
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await screen.findByRole("alert");
+  expect(screen.getByRole("button", { name: "Download CSV" })).toBeEnabled();
 });

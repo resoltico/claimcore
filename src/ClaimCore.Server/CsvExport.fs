@@ -143,10 +143,27 @@ module internal CsvExport =
             {
                 Header = CaseSummaryCsv.header
                 Read =
-                    fun _ token ->
+                    fun cursor token ->
                         task {
-                            let! result = Service.caseSummary services selection token
-                            return page CaseSummaryCsv.chunks (fun _ -> 1) (fun _ -> None) result
+                            let! result =
+                                Service.caseSummary
+                                    services
+                                    {
+                                        Selection = selection
+                                        Page =
+                                            {
+                                                AfterCursor = cursor
+                                                Limit = Paging.MaximumPageSize
+                                            }
+                                    }
+                                    token
+
+                            return
+                                page
+                                    CaseSummaryCsv.chunks
+                                    (fun result -> result.Rows.Length)
+                                    _.NextCursor
+                                    result
                         }
             }
         | ExportSelection.Timeline selection ->

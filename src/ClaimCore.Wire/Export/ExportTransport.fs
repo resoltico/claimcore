@@ -9,7 +9,7 @@ open ClaimCore.Json
 [<RequireQualifiedAccess>]
 type ExportSelection =
     | Cases of CaseListFilter<string>
-    | CaseSummary of CaseSummaryRequest
+    | CaseSummary of CaseSummarySelection
     | Timeline of CaseTimelineRequest
     | Reminders of ReminderListRequest
     | PeopleHistory of PeopleHistoryRequest
@@ -48,7 +48,7 @@ module ExportTransport =
                     (function
                     | ExportSelection.CaseSummary value -> Some value
                     | _ -> None)
-                    (record id |> field "selection" id RequestCodecs.caseSummaryRequest)
+                    (record id |> field "selection" id RequestCodecs.caseSummarySelection)
                 variant
                     "case.timeline"
                     ExportSelection.Timeline

@@ -1,4 +1,12 @@
 {
+  "ui.nextReportPage": {
+    "text": "次のレポートページ",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "レポートを最初から表示",
+    "source": "b4c20d320a54"
+  },
   "ui.reportingDates": {
     "text": "集計対象の日付",
     "source": "274bd4f0d808"

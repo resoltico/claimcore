@@ -1044,6 +1044,7 @@ export type MessageArgs = {
   "ui.moreRoles": Readonly<Record<string, never>>;
   "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
+  "ui.nextReportPage": Readonly<Record<string, never>>;
   "ui.noAccessibleHistory": Readonly<Record<string, never>>;
   "ui.noViews": Readonly<Record<string, never>>;
   "ui.notePlaceholder": Readonly<Record<string, never>>;
@@ -1088,6 +1089,7 @@ export type MessageArgs = {
   "ui.requests.more": Readonly<Record<string, never>>;
   "ui.requests.refresh": Readonly<Record<string, never>>;
   "ui.resourceUnavailable": Readonly<Record<string, never>>;
+  "ui.restartReport": Readonly<Record<string, never>>;
   "ui.retryExact": Readonly<Record<string, never>>;
   "ui.retryExactDescription": Readonly<Record<string, never>>;
   "ui.retryLanguage": Readonly<Record<string, never>>;

@@ -1,4 +1,12 @@
 {
+  "ui.nextReportPage": {
+    "text": "다음 보고서 페이지",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "보고서 처음부터 보기",
+    "source": "b4c20d320a54"
+  },
   "ui.reportingDates": {
     "text": "보고 날짜",
     "source": "274bd4f0d808"

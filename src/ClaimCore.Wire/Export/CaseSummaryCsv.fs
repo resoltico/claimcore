@@ -27,38 +27,19 @@ module CaseSummaryCsv =
         | Some value -> [ CsvValue.ExactTotal value.Amount; CsvValue.Text(count value.Cases) ]
         | None -> [ CsvValue.Text ""; CsvValue.Text "" ]
 
-    let private groupRows label total claimed payable netPaid =
-        CaseMoneyRow.rows claimed payable netPaid
+    let chunks (summary: CaseWorklistSummary) =
+        summary.Rows
         |> Seq.map (fun row ->
             let labels =
                 [
-                    label
-                    count total
+                    row.Group |> Option.map CaseGroupKey.token |> Option.defaultValue "ALL_CASES"
+                    count row.Count
                     row.Currency |> Option.map Currency.format |> Option.defaultValue ""
                 ]
                 |> List.map CsvValue.Text
 
             labels @ money row.Claimed @ money row.Payable @ money row.NetPaid
             |> Csv.typedRow)
-
-    let chunks (summary: CaseWorklistSummary) =
-        match summary.GroupBy with
-        | None ->
-            groupRows
-                "ALL_CASES"
-                summary.Counts.Total
-                summary.Claimed
-                summary.Payable
-                summary.NetPaid
-        | Some _ ->
-            summary.Groups
-            |> Seq.collect (fun group ->
-                groupRows
-                    (CaseGroupKey.token group.Group)
-                    group.Count
-                    group.Claimed
-                    group.Payable
-                    group.NetPaid)
 
     let rows summary =
         chunks summary |> Seq.toArray |> Array.concat
