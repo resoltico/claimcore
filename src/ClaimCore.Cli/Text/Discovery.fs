@@ -52,6 +52,12 @@ module Discovery =
         |> List.map (fun operation ->
             let inputs = CommandGrammar.inputs operation
 
+            let defaults =
+                (TaskDeclarations.describe operation).Inputs
+                |> List.choose (fun input ->
+                    input.DefaultText |> Option.map (fun value -> input.Input, value))
+                |> Map.ofList
+
             let message key =
                 MessageCatalogs.renderWithNumber
                     (ReplyTextFormat.number rendering)
@@ -98,10 +104,25 @@ module Discovery =
                                ReplyTextFormat.number rendering count
                            | GuidanceArgument.Code code -> code)
 
+                   let defaultValue =
+                       Map.tryFind input.Name defaults
+                       |> Option.map (fun value ->
+                           let displayed =
+                               match input.Atom with
+                               | CommandAtom.Choice _ -> CommandGrammar.kebab value
+                               | _ -> value
+
+                           " "
+                           + MessageCatalogs.renderCli
+                               rendering.Language
+                               (CliMessage.DefaultValue displayed))
+                       |> Option.defaultValue ""
+
                    message input.LabelId
                    + ": "
                    + MessageCatalogs.render rendering.Language guidance.Key arguments
-                   + allowed))
+                   + allowed
+                   + defaultValue))
             @ (CommandGrammar.collections operation
                |> List.map (fun definition ->
                    let binding = definition

@@ -761,6 +761,39 @@ let reportCursor =
                     (Error Refusal.InvalidCursor)
                     "An altered scope must restart"
 
+            let relative =
+                { filter with
+                    Due = Some CaseDue.Overdue
+                }
+
+            let bands = Some CaseGrouping.DaysOpen
+
+            let relativePosition =
+                {
+                    GroupOrder = "1"
+                    CurrencyOrder = "EUR"
+                }
+
+            let relativeCursor =
+                Cursors.encodeCaseReport
+                    installation
+                    requester
+                    date
+                    relative
+                    bands
+                    relativePosition
+
+            Expect.equal
+                (Cursors.decodeCaseReport
+                    installation
+                    requester
+                    nextDay
+                    relative
+                    bands
+                    relativeCursor)
+                (Error Refusal.InvalidCursor)
+                "Relative due filters and day bands restart when the business date rolls over"
+
             Expect.isFalse
                 (CaseReportPosition.admits grouping { position with GroupOrder = "2022-13" })
                 "The cursor validates its typed group"

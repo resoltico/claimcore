@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "القيمة الافتراضية هي {value}.",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "حدث فشل غير متوقع قبل الإرسال.",
     "source": "dfb0a6878428"

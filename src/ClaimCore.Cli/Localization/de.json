@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "Der Standardwert ist {value}.",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "Unerwarteter Fehler vor dem Versand.",
     "source": "dfb0a6878428"

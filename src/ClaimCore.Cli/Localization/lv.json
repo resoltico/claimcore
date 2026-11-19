@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "Noklusējuma vērtība ir {value}.",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "Negaidīta kļūme pirms nosūtīšanas.",
     "source": "dfb0a6878428"

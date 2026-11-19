@@ -15397,7 +15397,7 @@
           "exactReference": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/CaseRef"
+                "$ref": "#/components/schemas/ExactCaseReference"
               },
               {
                 "type": "null"
@@ -15854,6 +15854,9 @@
             "$ref": "#/components/schemas/DataRejection.OPERATION_ID_OUT_OF_WINDOW"
           },
           {
+            "$ref": "#/components/schemas/DataRejection.CASE_DATE_RANGE"
+          },
+          {
             "$ref": "#/components/schemas/DataRejection.INVALID_INPUT"
           },
           {
@@ -15898,6 +15901,7 @@
           "mapping": {
             "OPERATION_CLOCK_UNAVAILABLE": "#/components/schemas/DataRejection.OPERATION_CLOCK_UNAVAILABLE",
             "OPERATION_ID_OUT_OF_WINDOW": "#/components/schemas/DataRejection.OPERATION_ID_OUT_OF_WINDOW",
+            "CASE_DATE_RANGE": "#/components/schemas/DataRejection.CASE_DATE_RANGE",
             "INVALID_INPUT": "#/components/schemas/DataRejection.INVALID_INPUT",
             "REVISION_CONFLICT": "#/components/schemas/DataRejection.REVISION_CONFLICT",
             "WORK_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
@@ -15969,6 +15973,30 @@
         "required": [
           "code",
           "action"
+        ]
+      },
+      "DataRejection.CASE_DATE_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CASE_DATE_RANGE"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "field": {
+            "enum": [
+              "registeredThrough",
+              "receivedThrough",
+              "closedThrough"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "field"
         ]
       },
       "DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE": {
@@ -16801,6 +16829,39 @@
         "required": [
           "before",
           "after"
+        ]
+      },
+      "ExactCaseReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "matchedReference": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "caseId",
+          "caseReference",
+          "matchedReference"
         ]
       },
       "ExecuteReply": {

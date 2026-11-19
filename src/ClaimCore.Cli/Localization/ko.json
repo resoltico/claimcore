@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "기본값은 {value}입니다.",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "전송 전에 예기치 않은 오류가 발생했습니다.",
     "source": "dfb0a6878428"

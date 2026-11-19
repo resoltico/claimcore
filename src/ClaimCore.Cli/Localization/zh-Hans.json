@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "默认值为 {value}。",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "发送前发生意外错误。",
     "source": "dfb0a6878428"

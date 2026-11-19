@@ -94,9 +94,9 @@ test("case inspection restores the live work query, selected row focus and scrol
     .click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "ALL");
   await page.waitForLoadState("networkidle");
-  const rows = page.locator(".table-view tbody > tr");
-  expect(await rows.count()).toBeGreaterThan(1);
-  const selected = rows.last().getByRole("link");
+  const links = page.locator('a[id^="case-"][href^="/cases/id/"]');
+  expect(await links.count()).toBeGreaterThan(1);
+  const selected = links.last();
   await selected.scrollIntoViewIfNeeded();
   const position = await page.evaluate(() => scrollY);
   expect(position).toBeGreaterThan(0);

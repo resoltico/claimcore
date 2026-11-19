@@ -99,7 +99,7 @@ test("reversed ranges use the same declared diagnostic on Cases reads and both C
     const reply = await browserRequest(page, path, {
       method: "POST",
       headers,
-      body: JSON.stringify(path === caseListPath ? { ...selection, limit: 10 } : selection),
+      body: JSON.stringify({ ...selection, limit: 10 }),
     });
     expect(reply.status).toBe(200);
     expect(reply.payload).toMatchObject({

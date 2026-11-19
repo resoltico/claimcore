@@ -266,6 +266,150 @@ let private links database =
         return ()
     }
 
+let private boundedGroups (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = caseWorker fixture
+        let hub = "FIELD-LINK-HUB"
+        let limb index = $"FIELD-LINK-{index}"
+
+        let openCase number reference =
+            task {
+                let! result =
+                    Service.executeSubmission
+                        owner
+                        (request fixture number reference 0L "case.open" Map.empty)
+                        token
+
+                accepted result |> ignore
+            }
+
+        let link number source target =
+            task {
+                let! result =
+                    Service.executeSubmission
+                        owner
+                        (Submissions.createRaw
+                            "link.add"
+                            (id fixture number)
+                            (OperationBinding.Link(CaseSelector.Reference source, None))
+                            (Map.ofList
+                                [
+                                    Submissions.input InputTarget.LinkTargetReference,
+                                    SubmissionValue.Text target
+                                ]))
+                        token
+
+                accepted result |> ignore
+            }
+
+        do! openCase 100 hub
+
+        for index in 1..21 do
+            do! openCase (100 + index) (limb index)
+            do! link (140 + index) (limb index) hub
+
+            if index <= 20 then
+                do! link (180 + index) hub (limb index)
+
+        let read reader =
+            Service.get reader { Target = CaseSelector.Reference hub } token
+
+        let! record = read owner
+        let record = succeeded record
+
+        let incoming (record: CaseReadModel) =
+            record.RelatedCases.Incoming
+            |> List.choose _.Case
+            |> List.map (_.Reference >> CaseReference.format)
+
+        Expect.equal
+            (incoming record)
+            ([ 21..-1..2 ] |> List.map limb)
+            "The 20 newest sources are shown"
+
+        Expect.equal
+            record.RelatedCases.IncomingCount
+            21L
+            "One readable source is outside the display bound"
+
+        let view = ClaimCore.Presentation.CaseScreen.view record
+
+        let tables =
+            view.Regions
+            |> List.choose (fun region ->
+                match region.Role, region.Content with
+                | ClaimCore.Presentation.RegionRole.RelatedCases,
+                  ClaimCore.Presentation.RegionContent.Table table -> Some table
+                | _ -> None)
+
+        let table = List.exactlyOne tables
+        Expect.equal table.Rows.Length 40 "Both directions fit one bounded table"
+
+        Expect.equal
+            (table.Groups |> List.map (fun group -> group.Count, group.RowKeys.Length))
+            [ 20L, 20; 21L, 20 ]
+            "Groups carry independent totals and displayed row membership"
+
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "field-scoped-link-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! input =
+            personSubmission
+                fixture.Store
+                (id fixture 220)
+                principal
+                None
+                "people.register"
+                (Submissions.profile DomainInputs.actorProfile)
+
+        let! created = Service.executeSubmission owner input token
+        acceptedPeople created
+
+        let grantAt number target operation =
+            task {
+                let! changed =
+                    grant
+                        owner
+                        (id fixture number)
+                        principal
+                        {
+                            Role = Role.CaseReader
+                            Scope = GrantTarget.CaseReference target
+                        }
+                        operation
+
+                acceptedPeople changed
+            }
+
+        do! grantAt 221 hub true
+        do! grantAt 222 (limb 20) true
+        do! grantAt 223 (limb 21) true
+        let reader = core fixture principal
+        let! before = read reader
+        let before = succeeded before
+
+        Expect.equal
+            (incoming before, before.RelatedCases.IncomingCount)
+            ([ limb 21; limb 20 ], 2L)
+            "Selection uses current scoped access"
+
+        do! grantAt 224 (limb 21) false
+        let! after = read reader
+        let after = succeeded after
+
+        Expect.equal
+            (incoming after, after.RelatedCases.IncomingCount)
+            ([ limb 20 ], 1L)
+            "Revocation tightens both count and visible membership"
+    }
+
 [<Tests>]
 let tests =
-    testCaseAsync "related-case links use current read access in both directions" (run links)
+    testList
+        "related-case links"
+        [
+            testCaseAsync "use current read access in both directions" (run links)
+            testCaseAsync "group both directions at the display bound" (run boundedGroups)
+        ]

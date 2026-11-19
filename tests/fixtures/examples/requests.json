@@ -99,7 +99,9 @@
       "endpoint": "case.summary",
       "direction": "request",
       "valid": true,
-      "value": {}
+      "value": {
+        "limit": 50
+      }
     },
     {
       "id": "case.timeline-default",
@@ -584,6 +586,7 @@
       "direction": "request",
       "valid": true,
       "value": {
+        "limit": 50,
         "groupBy": "RECEIVED_MONTH",
         "registeredFrom": "2026-01-01",
         "registeredThrough": "2026-01-31"

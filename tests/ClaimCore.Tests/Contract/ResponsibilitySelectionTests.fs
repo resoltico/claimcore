@@ -89,7 +89,7 @@ let tests =
                         if verb = "list" then
                             (Frames.value Api.caseList frame |> Option.get).Filter
                         else
-                            (Frames.value Api.caseSummary frame |> Option.get).Filter
+                            (Frames.value Api.caseSummary frame |> Option.get).Selection.Filter
 
                     Expect.equal
                         filter.ResponsibleActor

@@ -1,4 +1,8 @@
 {
+  "cli.help.defaultValue": {
+    "text": "既定値は {value} です。",
+    "source": "9756d5de7f5b"
+  },
   "cli.beforeDispatchFailure": {
     "text": "送信前に予期しないエラーが発生しました。",
     "source": "dfb0a6878428"

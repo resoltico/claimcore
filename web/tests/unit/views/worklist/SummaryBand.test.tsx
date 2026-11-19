@@ -216,7 +216,7 @@ it("starts a new selection at page one and keeps grouped export after temporary 
     "/api/case.summary",
     expect.objectContaining({ body: JSON.stringify({ text: "new", limit: 50 }) }),
   );
-  await act(() => {
+  act(() => {
     completeOld(response("case.summary", { ...summary, nextCursor: "ignored" }));
   });
   await user.click(screen.getByRole("combobox", { name: "Group by" }));

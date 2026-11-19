@@ -470,6 +470,26 @@ let private traversal (database: PostgresFixture.Database) =
             (Outcome.Rejected Refusal.InvalidCursor)
             "Malformed positions are refused"
 
+        let empty =
+            { selection with
+                Filter =
+                    { selection.Filter with
+                        Text = Some "UNMATCHED-FIELD-REPORT"
+                    }
+            }
+
+        let! groupedEmpty = read empty None
+        let groupedEmpty = success groupedEmpty
+        Expect.equal groupedEmpty.Counts.Total 0L "The empty selection has zero cases"
+        Expect.isEmpty groupedEmpty.Rows "An empty grouped report has no data rows"
+        let! overallEmpty = read { empty with GroupBy = None } None
+        let overallEmpty = success overallEmpty
+
+        Expect.equal
+            (Encoding.UTF8.GetString(CaseSummaryCsv.rows overallEmpty))
+            "ALL_CASES,0,,,,,,,\r\n"
+            "The ungrouped empty scope retains exactly one blank-currency row"
+
         let! exported =
             ClaimCore.Server.CsvExport.traversal owner (ExportSelection.CaseSummary selection)
             |> ClaimCore.Server.CsvExport.materialize 65536 token

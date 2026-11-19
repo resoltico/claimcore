@@ -31,6 +31,31 @@ const Report = ({
   );
   const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
 
+  const next = summary?.nextCursor ?? null;
+  const content = () => {
+    if (query.loading) {
+      return (
+        <p className="summary-band" role="status" aria-busy="true">
+          {p.text("ui.loading")}
+        </p>
+      );
+    }
+    if (query.message !== null) {
+      return (
+        <div className="summary-band" role="alert">
+          <NoticeView value={query.message} />
+          <button type="button" onClick={query.reload}>
+            {p.text("ui.tryAgain")}
+          </button>
+        </div>
+      );
+    }
+    if (summary?.basis.kind !== "SNAPSHOT" || summary.screen === null) {
+      return null;
+    }
+    return <ScreenView view={summary.screen} timeZone={summary.basis.observation.timeZone} />;
+  };
+
   return (
     <>
       {selection.groupBy === undefined ? null : (
@@ -39,22 +64,7 @@ const Report = ({
           available={exportAvailable && query.value?.outcome.kind !== "REJECTED"}
         />
       )}
-      {query.loading ? (
-        <p className="summary-band" role="status" aria-busy="true">
-          {p.text("ui.loading")}
-        </p>
-      ) : null}
-      {query.message === null ? null : (
-        <div className="summary-band" role="alert">
-          <NoticeView value={query.message} />
-          <button type="button" onClick={query.reload}>
-            {p.text("ui.tryAgain")}
-          </button>
-        </div>
-      )}
-      {summary?.basis.kind === "SNAPSHOT" && summary.screen !== null && !query.loading ? (
-        <ScreenView view={summary.screen} timeZone={summary.basis.observation.timeZone} />
-      ) : null}
+      {content()}
       {cursor === undefined ? null : (
         <button
           type="button"
@@ -66,11 +76,11 @@ const Report = ({
           {p.text("ui.restartReport")}
         </button>
       )}
-      {summary?.nextCursor == null || query.loading ? null : (
+      {next === null || query.loading ? null : (
         <button
           type="button"
           onClick={() => {
-            setCursor(summary.nextCursor ?? undefined);
+            setCursor(next);
           }}
         >
           {p.text("ui.nextReportPage")}

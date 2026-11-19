@@ -14,10 +14,16 @@ let private historicalReference (fixture: PublishedFixture.Fixture) environment 
     let current = "CLI-CURRENT-" + id ()
 
     let opened =
-        verb fixture environment [ "case"; "open"; "--operation-id"; id (); "--"; earlier ] 0
+        invoke
+            fixture
+            environment
+            [ "case"; "open"; "--operation-id"; id (); "--format"; "json"; "--"; earlier ]
+            Array.empty
+            0
+        |> parse 0
         |> require "ACCEPTED"
 
-    verb
+    invoke
         fixture
         environment
         [
@@ -29,10 +35,14 @@ let private historicalReference (fixture: PublishedFixture.Fixture) environment 
             "1"
             "--new-reference"
             current
+            "--format"
+            "json"
             "--"
             earlier
         ]
+        Array.empty
         0
+    |> parse 0
     |> require "ACCEPTED"
     |> ignore
 

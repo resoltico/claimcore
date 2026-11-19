@@ -337,10 +337,24 @@ HUMAN task controls now form a closed, task-discriminated union. Each operation 
 shape; each command carries its complete validated request and empty seeds/editable/choices. Dismissal
 retains distinct HUMAN/SERVICE principals with bounded issuer/subject fields and fallible decoding.
 Mismatched task/command bindings fail structural admission instead of reaching a seed-map cast.
+
+### Case reports
+
+The [OpenAPI contract](../contracts/openapi.json) defines the `case.summary` selection and page
+fields. Each DATA page returns the observation, whole-selection counts, report rows and a
+continuation. Grouped pages contain one row per group and currency, with a blank-currency row for
+groups without money. Clear grouping to page through the overall currency breakdown. Each page
+reflects current read access and facts. Same-day changes can move results between pages. A
+continuation binds the requester, installation, selection and business date. Restart after a
+change to any of those inputs.
+
+Use `claimcore case summary --format=csv` for the current report page. Add `--all` to stream
+its continuation pages with one header. HTTP offers a bounded complete download.
+
 ### Bounded CSV download
 
 `POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
-`case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
+`case.summary`, `case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
 without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
 authentication/origin/antiforgery and installation headers. CSV is not a representation token.
 
