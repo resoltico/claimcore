@@ -8,7 +8,7 @@
 - Open a case with a reference. Clear unknown registration facts, record multiple parties, and search their names or contact details.
 - Record payments and returns in their own currencies at any point in handling. Correct entries atomically and review overpayments or negative net totals.
 - Record a decision basis, choose a closure outcome, and give a reason on reopening. The tracker shows the current closure outcome.
-- Change a case reference while keeping earlier references reserved. Link related cases with disclosure governed by current read access.
+- Change case references while keeping earlier references reserved. Read related cases with case-scoped access. Add or remove links when both cases are readable and the target has not been erased.
 - Track deadlines, record completion dates and filter reminders by kind and deadline outcome. Configure optional daily digest prompts.
 - Filter and group reports by business dates, current outcome, responsibility and days open. Export grouped counts, totals and contributing cases to CSV.
 - Change a person's sign-in identity with roles and responsibilities intact. Use `recover-owner` to restore owner access through the owner connection.

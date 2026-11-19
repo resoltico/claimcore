@@ -75,8 +75,8 @@ let decide context (environment: FamilyEnvironment) (state: DecisionFacts option
         FamilyRules.admit context environment state binding capability gate
         |> Result.bind (fun () -> RelatedCaseInput.selector inputs)
         |> Result.bind (fun target ->
-            match environment.RelatedCase target with
-            | Some(id, lifecycle) when lifecycle <> Lifecycle.Erased ->
+            match environment.RelatedCase target |> RelatedCase.availableTarget with
+            | Some id ->
                 if id = state.Id then
                     Error(Refusal.Case CaseRefusal.SelfLink)
                 elif
@@ -87,7 +87,7 @@ let decide context (environment: FamilyEnvironment) (state: DecisionFacts option
                     Error(Refusal.Case CaseRefusal.DuplicateLink)
                 else
                     Ok id
-            | _ -> Error FamilyRules.unavailable)
+            | None -> Error FamilyRules.unavailable)
         |> Result.bind (fun target ->
             note inputs
             |> Result.bind (fun note ->

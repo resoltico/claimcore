@@ -32,8 +32,9 @@ module internal CaseLinkReads =
         task {
             let principal = services.Principal
             let target = CaseSelector.Id record.CaseId
+            let! visibilityActor = AccessReads.access tx principal None
 
-            match Access.visibility principal view.Actor, view.Actor.Actor with
+            match Access.visibility principal visibilityActor, view.Actor.Actor with
             | Some visibility, Some actor ->
                 let! incoming, count =
                     CaseLinkStorage.incoming

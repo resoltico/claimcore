@@ -68,4 +68,25 @@ let tests =
 
                     add 2 state target (fun _ -> Some(target, Lifecycle.Erased))
                     |> expectRefusal refusal)
+            testCase
+                "removal is unavailable when the related case is unreadable or erased"
+                (fun () ->
+                    let initial = family ()
+                    let related = CaseId.ofOperationId (operation 99)
+                    let state = add 2 initial related live |> accepted |> apply initial
+                    let binding = Binding.Link(target state, LinkId.ofOperationId (operation 2))
+                    let facts = Some(DecisionFacts.fromReplay state)
+                    let refusal = Refusal.Access AccessRefusal.ResourceUnavailable
+
+                    match Remove.task with
+                    | ClaimCore.Domain.Tasks.Task.Family remove ->
+                        for resolved in [ None; Some(related, Lifecycle.Erased) ] do
+                            let attempt =
+                                { environment with
+                                    RelatedCase = fun _ -> resolved
+                                }
+
+                            remove.Decide (context 3) attempt facts binding (inputs [])
+                            |> expectRefusal refusal
+                    | _ -> failtest "Link removal requires a case family")
         ]
