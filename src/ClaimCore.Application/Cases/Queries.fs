@@ -438,8 +438,10 @@ module internal Queries =
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
                 CaseListFilter.admit request.Filter
-                |> Result.mapError (fun violation ->
-                    Refusal.invalidInput (InputTarget.Text, violation))
+                |> Result.mapError (function
+                    | CaseSelectionIssue.Text violation ->
+                        Refusal.invalidInput (InputTarget.Text, violation)
+                    | CaseSelectionIssue.ReversedRange upper -> Refusal.CaseDateRange upper)
                 |> Result.bind (fun filter ->
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
@@ -577,28 +579,37 @@ module internal Queries =
             match text |> Option.bind (CaseReference.parse >> Result.toOption) with
             | None -> return None
             | Some reference ->
-                let! record = FamilyReads.findCaseByReference tx (CaseReference.format reference)
+                let text = CaseReference.format reference
+                let! record = FamilyReads.findCaseByReference tx text
 
                 match record with
                 | None -> return None
                 | Some record ->
                     let! actor = AccessReads.access tx services.Principal (Some record.CaseId)
 
-                    return
-                        if
-                            CaseRecords.authorize
-                                services.Principal
-                                actor
-                                Capability.ReadCase
-                                (Some record)
-                        then
+                    if
+                        CaseRecords.authorize
+                            services.Principal
+                            actor
+                            Capability.ReadCase
+                            (Some record)
+                    then
+                        let! matched =
+                            CaseIdentityReads.matchedEarlier
+                                tx
+                                record.CaseId
+                                record.Snapshot.Reference
+                                (CaseSelector.Reference text)
+
+                        return
                             Some
                                 {
-                                    CaseRef.CaseId = record.CaseId
+                                    ExactCaseReference.CaseId = record.CaseId
                                     CaseReference = record.Snapshot.Reference
+                                    MatchedReference = matched
                                 }
-                        else
-                            None
+                    else
+                        return None
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
@@ -685,42 +696,84 @@ module internal Queries =
 
     let caseSummary (services: ServiceContext) (summary: CaseSummaryRequest) token =
         task {
-            let! result =
-                services.Store.Read
-                    {
-                        Work =
-                            fun tx ->
-                                task {
-                                    let! actor = AccessReads.access tx (services.Principal) (None)
+            if not (validLimit summary.Page.Limit) then
+                return! RequestRefusals.invalidLimit services token
+            else
+                let! result =
+                    services.Store.Read
+                        {
+                            Work =
+                                fun tx ->
+                                    task {
+                                        let! actor = AccessReads.access tx services.Principal None
+                                        let basis = ServiceContext.basis services tx.ObservedAt
 
-                                    let request =
-                                        {
-                                            CaseListRequest.Page = { Limit = 1; AfterCursor = None }
-                                            Filter = summary.Filter
-                                        }
+                                        let request =
+                                            {
+                                                CaseListRequest.Page =
+                                                    {
+                                                        Limit = summary.Page.Limit
+                                                        AfterCursor = None
+                                                    }
+                                                Filter = summary.Selection.Filter
+                                            }
 
-                                    match
-                                        selectCases
-                                            services.InstallationId
-                                            services.Principal
-                                            (ServiceContext.basis services tx.ObservedAt)
-                                            request
-                                            actor
-                                    with
-                                    | Error refusal -> return Outcome.Rejected refusal
-                                    | Ok selection ->
-                                        let! summary =
-                                            FamilyReads.caseSummary
-                                                tx
-                                                selection.Selection
-                                                summary.GroupBy
+                                        match
+                                            selectCases
+                                                services.InstallationId
+                                                services.Principal
+                                                basis
+                                                request
+                                                actor
+                                        with
+                                        | Error refusal -> return Outcome.Rejected refusal
+                                        | Ok selected ->
+                                            let selection = selected.Selection
+                                            let grouping = summary.Selection.GroupBy
+                                            let date = CalendarDate.ofDate basis.BusinessDate
 
-                                        return Outcome.Succeeded summary
-                                }
-                        CancellationToken = token
-                    }
+                                            let scope =
+                                                Cursors.decodeCaseReport
+                                                    services.InstallationId
+                                                    selection.ActorId
+                                                    date
+                                                    selection.Filter
+                                                    grouping
 
-            return readResult result
+                                            match cursor scope summary.Page.AfterCursor with
+                                            | Error refusal -> return Outcome.Rejected refusal
+                                            | Ok position ->
+                                                let! counts, rows, next =
+                                                    FamilyReads.caseSummary
+                                                        tx
+                                                        selection
+                                                        grouping
+                                                        position
+                                                        summary.Page.Limit
+
+                                                return
+                                                    Outcome.Succeeded
+                                                        {
+                                                            Basis = basis
+                                                            Counts = counts
+                                                            GroupBy = grouping
+                                                            Rows = rows
+                                                            NextCursor =
+                                                                next
+                                                                |> Option.map (
+                                                                    Cursors.encodeCaseReport
+                                                                        services.InstallationId
+                                                                        selection.ActorId
+                                                                        date
+                                                                        selection.Filter
+                                                                        grouping
+                                                                )
+                                                        }
+                                    }
+                            CancellationToken = token
+                        }
+
+                return readResult result
         }
 
     let selectActors = PeopleQueries.selectActors

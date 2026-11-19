@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "تقرير الحالات",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "صفحة التقرير {page}",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "صفحة التقرير التالية",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "ابدأ التقرير من جديد",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "لا يمكن استخدام تحديد المطالبات هذا.",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "صحّح الحقل أو امسحه لاستخدام عوامل التصفية المتبقية.",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "اختر قيمة واحدة للاحتفاظ بها. عدّلها إذا لزم الأمر، ثم طبّق التصحيح.",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "تطبيق التصحيح",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "مسح الحقل",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "تواريخ التقرير",
     "source": "274bd4f0d808"

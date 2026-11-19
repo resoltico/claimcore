@@ -715,7 +715,8 @@ let internal dueFiltersAndOrder fixture =
         Expect.equal summary.Counts.Total 4L "Reminder fanout cannot duplicate cases"
 
         Expect.equal
-            (summary.Claimed
+            (summary.Rows
+             |> List.choose _.Claimed
              |> List.map (fun total ->
                  Currency.format total.Currency, DecimalTotal.format total.Amount))
             [ ("EUR", "3500") ]

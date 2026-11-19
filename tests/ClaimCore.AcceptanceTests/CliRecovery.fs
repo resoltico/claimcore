@@ -69,8 +69,78 @@ let private acceptedEvidence (fixture: PublishedFixture.Fixture) operation =
 
     Expect.isTrue found "The real backend accepted while its reply remained withheld"
 
+let private relativeRoot (fixture: PublishedFixture.Fixture) =
+    let source, _, _ = submitted fixture
+    let privatePath = "private-relative-recovery-canary"
+
+    let environment =
+        System.Collections.Generic.Dictionary<string, string>(fixture.Environment)
+
+    environment["XDG_STATE_HOME"] <- privatePath
+
+    let failed = 3
+
+    let verify (result: ProcessRunner.Result) =
+        let frame = parse failed result
+
+        Expect.equal
+            (frame.GetProperty("delivery").GetString())
+            "NOT_SENT"
+            "An invalid location cannot dispatch a write"
+
+        let failure = frame.GetProperty("result").GetProperty("localFailure")
+
+        Expect.equal
+            (failure.GetProperty("code").GetString())
+            "RECOVERY_ROOT_NOT_ABSOLUTE"
+            "Location is not a storage failure"
+
+        Expect.equal
+            (failure.GetProperty("setting").GetString())
+            "XDG_STATE_HOME"
+            "Only the effective setting name is reported"
+
+        Expect.isFalse
+            (frame.GetRawText().Contains privatePath)
+            "The frame does not expose the configured path"
+
+    invoke fixture environment [ "call" ] source failed |> verify
+
+    invoke fixture environment [ "recovery"; "list"; "--format"; "json" ] Array.empty failed
+    |> verify
+
+    let text =
+        invoke
+            fixture
+            environment
+            [ "recovery"; "list"; "--format"; "text"; "--language"; "en" ]
+            Array.empty
+            failed
+
+    let wording = Encoding.UTF8.GetString text.StandardOutput
+    Expect.stringContains wording "absolute directory path" "Recovery guidance describes the remedy"
+    Expect.stringContains wording "XDG_STATE_HOME" "Recovery guidance identifies the setting"
+    Expect.isFalse (wording.Contains privatePath) "Text does not expose the configured path"
+
+    let blockedRoot =
+        FixtureFiles.text fixture.Directory "recovery-root-not-a-directory" "Synthetic"
+
+    environment["XDG_STATE_HOME"] <- blockedRoot
+    let blocked = invoke fixture environment [ "call" ] source failed |> parse failed
+
+    Expect.equal
+        (blocked.GetProperty("delivery").GetString())
+        "NOT_SENT"
+        "Storage refusal cannot dispatch a write"
+
+    Expect.equal
+        (blocked.GetProperty("result").GetProperty("localFailure").GetProperty("code").GetString())
+        "RECOVERY_UNAVAILABLE"
+        "A real storage failure keeps its storage remedy"
+
 /// Two actual processes share an operation UUID. Only the still-pending attempt survives a replay.
 let qualify (fixture: PublishedFixture.Fixture) =
+    relativeRoot fixture
     let source, operation, reference = submitted fixture
 
     JsonSerializer.Serialize

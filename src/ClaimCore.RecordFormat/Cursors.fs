@@ -29,6 +29,47 @@ module CaseListPosition =
             CaseListPosition.Received(receivedOn, CaseReference.key reference)
         | CaseListOrder.FollowUp -> CaseListPosition.FollowUp(followUp, CaseReference.key reference)
 
+type CaseReportPosition =
+    {
+        GroupOrder: string
+        CurrencyOrder: string
+    }
+
+module CaseReportPosition =
+    let missing = "~"
+
+    let rank value values =
+        values |> List.findIndex ((=) value) |> (+) 1 |> string
+
+    let ranked order values =
+        values |> List.tryFind (fun value -> rank value values = order)
+
+    let admits grouping position =
+        let grouped =
+            match grouping with
+            | None -> position.GroupOrder = ""
+            | Some grouping when position.GroupOrder = missing ->
+                MissingCaseGroup.forGrouping grouping |> Option.isSome
+            | Some CaseGrouping.RegisteredMonth
+            | Some CaseGrouping.ReceivedMonth
+            | Some CaseGrouping.ClosedMonth -> CaseMonth.parse position.GroupOrder |> Result.isOk
+            | Some CaseGrouping.Responsible ->
+                match Guid.TryParseExact(position.GroupOrder, "D") with
+                | true, id ->
+                    ActorId.create id
+                    |> Option.exists (fun actor -> ActorId.format actor = position.GroupOrder)
+                | _ -> false
+            | Some CaseGrouping.Outcome ->
+                ranked position.GroupOrder (Vocabulary.all ClosureOutcome.vocabulary)
+                |> Option.isSome
+            | Some CaseGrouping.DaysOpen ->
+                ranked position.GroupOrder (Vocabulary.all DaysOpenBand.vocabulary)
+                |> Option.isSome
+
+        grouped
+        && (position.CurrencyOrder = ""
+            || Currency.parse position.CurrencyOrder |> Result.isOk)
+
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
 type TimelinePosition =
@@ -157,6 +198,54 @@ module Cursors =
                 for KeyValue(kind, date) in filter.Dates do
                     CaseDateFilter.token kind, JsonValue.String(CalendarDate.format date)
             ]
+
+    let private reportScope requester date filter grouping =
+        JsonValue.Object
+            [
+                "requester", JsonValue.String(ActorId.format requester)
+                "businessDate", JsonValue.String(CalendarDate.format date)
+                "filter", caseFilters filter
+                "groupBy",
+                grouping
+                |> Option.map (Vocabulary.token CaseGrouping.vocabulary >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
+            ]
+        |> CanonicalWriter.bytes
+        |> System.Security.Cryptography.SHA256.HashData
+        |> base64
+
+    let encodeCaseReport installation requester date filter grouping position =
+        if not (CaseReportPosition.admits grouping position) then
+            invalidArg (nameof position) "Invalid report position."
+
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_REPORT"
+                "scope", JsonValue.String(reportScope requester date filter grouping)
+                "group", JsonValue.String position.GroupOrder
+                "currency", JsonValue.String position.CurrencyOrder
+            ]
+
+    let decodeCaseReport installation requester date filter grouping =
+        let scope = reportScope requester date filter grouping
+
+        decode installation MaximumTokenCharacters (function
+            | JsonValue.Object [ "currency", JsonValue.String currency
+                                 "group", JsonValue.String group
+                                 "kind", JsonValue.String "CASE_REPORT"
+                                 "scope", JsonValue.String actual ] when actual = scope ->
+                let position =
+                    {
+                        GroupOrder = group
+                        CurrencyOrder = currency
+                    }
+
+                if CaseReportPosition.admits grouping position then
+                    Some position
+                else
+                    None
+            | _ -> None)
 
     let private instant (value: string) =
         match

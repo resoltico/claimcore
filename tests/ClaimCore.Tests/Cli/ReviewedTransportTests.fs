@@ -204,7 +204,7 @@ let tests =
                                 JournalDirectory =
                                     fun () ->
                                         journals <- journals + 1
-                                        Error()
+                                        Error ClientFailure.RecoveryUnavailable
                             }
 
                         use processor =
@@ -986,7 +986,7 @@ let tests =
                             JournalDirectory =
                                 fun () ->
                                     journals <- journals + 1
-                                    Error()
+                                    Error ClientFailure.RecoveryUnavailable
                         }
 
                     use processor =

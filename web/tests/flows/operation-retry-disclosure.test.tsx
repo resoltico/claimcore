@@ -138,7 +138,10 @@ const replay = () => {
           regions: [
             {
               role: "NOTICE",
-              content: { kind: "NOTICE", tone: "INFO", messageId: "label.detailsWithheld" },
+              content: {
+                kind: "NOTICE",
+                notices: [{ tone: "INFO", messageId: "label.detailsWithheld" }],
+              },
             },
           ],
         },

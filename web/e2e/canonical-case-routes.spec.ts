@@ -5,6 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { openCase } from "./case-workflow";
 import { browserRequest, openAuthenticated, sessionToken } from "./session-helpers";
 import { casePath, referencePath } from "../src/routing/routes";
+import { workRequest } from "./work-workflow";
+import { operationId } from "../src/operation/operationId";
 const readCase = async (page: Page, target: CaseSelector) => {
   const response = await browserRequest(page, "/api/case.get", {
     method: "POST",
@@ -92,9 +94,9 @@ test("case inspection restores the live work query, selected row focus and scrol
     .click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "ALL");
   await page.waitForLoadState("networkidle");
-  const rows = page.locator(".table-view tbody > tr");
-  expect(await rows.count()).toBeGreaterThan(1);
-  const selected = rows.last().getByRole("link");
+  const links = page.locator('a[id^="case-"][href^="/cases/id/"]');
+  expect(await links.count()).toBeGreaterThan(1);
+  const selected = links.last();
   await selected.scrollIntoViewIfNeeded();
   const position = await page.evaluate(() => scrollY);
   expect(position).toBeGreaterThan(0);
@@ -119,4 +121,51 @@ test("case inspection restores the live work query, selected row focus and scrol
       key: expect.any(String),
     },
   });
+});
+test("historical exact search follows the encoded selector and restores its link focus", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const earlier = `OLD-${randomUUID()}+:/?#`;
+  const current = `NEW-${randomUUID()}`;
+  await openCase(page, earlier);
+  const changed = await workRequest(page, "operation.execute", {
+    operationId: operationId(),
+    task: "case.changeReference",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: earlier },
+      expectedRevision: 1,
+    },
+    inputs: { "input:newReference": current },
+  });
+  expect(changed.outcome.kind).toBe("ACCEPTED");
+  const expectedHref = `/cases/reference/${earlier.slice(0, -5)}%2B%3A%2F%3F%23`;
+  await page.goto(expectedHref, { waitUntil: "commit" });
+  const changedFrom = page.locator('[data-entry="matchedReference"]');
+  await expect(page.locator("#case-detail-title")).toHaveText(current);
+  await expect(changedFrom).toContainText(earlier);
+
+  await goToView(page, "cases");
+  const search = page.getByRole("searchbox", { name: "Filter this view", exact: true });
+  await search.fill(earlier);
+  await search.press("Enter");
+  const exact = page.getByRole("group", { name: "Exact reference match", exact: true });
+  await expect(exact).toContainText(earlier);
+  const link = exact.getByRole("link", { name: current, exact: true });
+  await expect(link).toHaveAttribute("href", expectedHref);
+  const before = page.url();
+  const selected = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/case.get",
+  );
+  await link.click();
+  expect((await selected).postDataJSON()).toEqual({
+    target: { kind: "REFERENCE", caseReference: earlier },
+  });
+  await expect(page.locator("#case-detail-title")).toHaveText(current);
+  await expect(changedFrom).toContainText(earlier);
+
+  await page.goBack();
+  await expect(page).toHaveURL(before);
+  await expect(link).toBeFocused();
 });

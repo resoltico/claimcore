@@ -44,13 +44,20 @@ type CaseRef =
         CaseReference: CaseReference
     }
 
+type ExactCaseReference =
+    {
+        CaseId: CaseId
+        CaseReference: CaseReference
+        MatchedReference: CaseReference option
+    }
+
 type CaseSummaryPage =
     {
         Basis: WorkDateBasis
         Items: CaseSummary list
         Offers: InstallationOffer list
         NextCursor: string option
-        ExactReference: CaseRef option
+        ExactReference: ExactCaseReference option
     }
 
 type AssigneePage =

@@ -731,6 +731,20 @@ module ResponseCodecs =
         |> build
         |> named "CaseRef"
 
+    let private exactCaseReference =
+        (record (fun id reference matched ->
+            {
+                ExactCaseReference.CaseId = id
+                CaseReference = reference
+                MatchedReference = matched
+            })
+        : Fields<ExactCaseReference, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.CaseReference caseReference
+        |> field "matchedReference" _.MatchedReference (nullable caseReference)
+        |> build
+        |> named "ExactCaseReference"
+
     let casesPage =
         (record (fun items next offers basis exact ->
             {
@@ -748,7 +762,7 @@ module ResponseCodecs =
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
-        |> field "exactReference" _.ExactReference (nullable caseRef)
+        |> field "exactReference" _.ExactReference (nullable exactCaseReference)
         |> build
         |> named "CasesPage"
 

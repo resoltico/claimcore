@@ -1,4 +1,8 @@
 {
+  "diagnostic.CASE_DATE_RANGE": {
+    "text": "Indica en {field} una fecha igual o posterior a la fecha inicial.",
+    "source": "ba65df5311c2"
+  },
   "task.people.changeSignInIdentity.label": {
     "text": "Cambiar la identidad de inicio de sesión",
     "source": "d6e69a570915"

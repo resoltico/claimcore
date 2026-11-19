@@ -117,20 +117,27 @@ module internal ScalarText =
         parse None 0 value
         |> Result.bind (fun text -> if matches grammar text then Ok text else Error violation)
 
+    let formattingRanges =
+        [
+            0x00AD, 0x00AD
+            0x061C, 0x061C
+            0x200B, 0x200B
+            0x3164, 0x3164
+            0xFEFF, 0xFEFF
+            0xFFA0, 0xFFA0
+            0x115F, 0x1160
+            0x17B4, 0x17B5
+            0x200E, 0x200F
+            0x2028, 0x202E
+            0x2060, 0x2064
+            0x2066, 0x2069
+            0xFFF9, 0xFFFB
+            0xE0000, 0xE007F
+        ]
+
     let private formatting scalar =
-        List.contains scalar [ 0x00AD; 0x061C; 0x200B; 0x3164; 0xFEFF; 0xFFA0 ]
-        || List.exists
-            (fun (first, last) -> scalar >= first && scalar <= last)
-            [
-                0x115F, 0x1160
-                0x17B4, 0x17B5
-                0x200E, 0x200F
-                0x2028, 0x202E
-                0x2060, 0x2064
-                0x2066, 0x2069
-                0xFFF9, 0xFFFB
-                0xE0000, 0xE007F
-            ]
+        formattingRanges
+        |> List.exists (fun (first, last) -> scalar >= first && scalar <= last)
 
     let admitPlain maximum allowsLineFeed (value: string) =
         if String.IsNullOrWhiteSpace value then

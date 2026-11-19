@@ -48,6 +48,116 @@ let smoke =
                      else
                          result.StandardOutput)
                     "Only the intended stream"
+
+            let recover arguments =
+                let apphost =
+                    if OperatingSystem.IsWindows() then
+                        Path.ChangeExtension(cli, ".exe")
+                    else
+                        Path.ChangeExtension(cli, null)
+
+                let start =
+                    PublishedProcesses.start
+                        apphost
+                        ("recovery" :: arguments)
+                        (Dictionary<string, string>())
+
+                CliProcessEnvironment.isolateProfile start (Path.GetDirectoryName cli |> nonNull)
+                start.Environment["CLAIMCORE_LANGUAGE"] <- "en"
+                start.Environment["NO_COLOR"] <- "1"
+                PublishedProcesses.run 8_000 start None
+
+            let invalidRecovery arguments text synopsis =
+                let result = recover arguments
+                let diagnostic = Encoding.UTF8.GetString result.StandardError
+                Expect.equal result.ExitCode 64 "Malformed recovery input fails as usage"
+                Expect.isEmpty result.StandardOutput "Recovery usage diagnostics stay on stderr"
+
+                Expect.stringContains
+                    diagnostic
+                    text
+                    "The typed recovery diagnostic survives admission"
+
+                Expect.stringContains diagnostic synopsis "Use the recovery synopsis"
+
+                Expect.isFalse
+                    (diagnostic.Contains "accepts no options or operands")
+                    "Recovery admits options"
+
+                Expect.isFalse
+                    (diagnostic.Contains "Unknown option")
+                    "A recognized recovery option retains its identity"
+
+                diagnostic
+
+            let invalidAttempt = "private-malformed-attempt"
+
+            let uuid =
+                invalidRecovery
+                    [ "check"; invalidAttempt; "--format"; "json"; "--language"; "en" ]
+                    "Use a UUID in hyphenated form for ATTEMPT_ID."
+                    "claimcore recovery check ATTEMPT_ID"
+
+            Expect.isFalse
+                (uuid.Contains invalidAttempt)
+                "A malformed attempt identifier is redacted"
+
+            invalidRecovery
+                [ "list"; "--display-locale"; "invalid-locale"; "--language"; "en" ]
+                "Invalid value invalid-locale for --display-locale"
+                "claimcore recovery list"
+            |> ignore
+
+            for flag, value in
+                [ "--language", "synthetic-language"; "--format", "synthetic-format" ] do
+                for arguments in [ [ flag; value ]; [ flag + "=" + value ] ] do
+                    invalidRecovery
+                        ("list" :: arguments)
+                        ("Invalid value " + value + " for " + flag)
+                        "claimcore recovery list"
+                    |> ignore
+
+                let nextOption =
+                    if flag = "--language" then
+                        "--format=json"
+                    else
+                        "--language=en"
+
+                for arguments in [ [ flag ]; [ flag; nextOption ] ] do
+                    invalidRecovery
+                        ("list" :: arguments)
+                        ("Missing value for " + flag + ".")
+                        "claimcore recovery list"
+                    |> ignore
+
+            for arguments in [ [ "list" ]; [ "check"; "70000000-0000-4000-8000-000000000001" ] ] do
+                let result =
+                    recover (
+                        arguments
+                        @ [ "--display-locale"; "en-US"; "--language"; "en"; "--format=json" ]
+                    )
+
+                Expect.equal
+                    result.ExitCode
+                    3
+                    "Admitted recovery reaches the isolated configuration boundary"
+
+                Expect.isEmpty result.StandardError "An admitted JSON recovery uses stdout"
+                use reply = Text.Json.JsonDocument.Parse result.StandardOutput
+
+                Expect.equal
+                    (reply.RootElement.GetProperty("delivery").GetString())
+                    "NOT_SENT"
+                    "No service configured"
+
+                Expect.equal
+                    (reply.RootElement
+                        .GetProperty("result")
+                        .GetProperty("localFailure")
+                        .GetProperty("code")
+                        .GetString())
+                    "CONFIGURATION_INVALID"
+                    "The valid recovery grammar reaches missing service configuration"
         finally
             directory.Delete true)
 

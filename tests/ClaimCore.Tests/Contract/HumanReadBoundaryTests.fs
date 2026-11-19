@@ -150,10 +150,7 @@ let tests =
 
                     let document =
                         { document with
-                            Screen =
-                                { document.Screen with
-                                    Regions = regions
-                                }
+                            Screen = Screen.withRegions regions document.Screen
                         }
 
                     let rendered =

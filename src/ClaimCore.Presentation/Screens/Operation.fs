@@ -13,11 +13,13 @@ module OperationScreen =
                     RegionRole.Notice
                     None
                     (RegionContent.Notice
-                        {
-                            MessageId = "label.operationPending"
-                            Reason = Some(PresentedValue.Instant finalAt)
-                            Tone = NoticeTone.Info
-                        })
+                        [
+                            {
+                                MessageId = "label.operationPending"
+                                Reason = Some(PresentedValue.Instant finalAt)
+                                Tone = NoticeTone.Info
+                            }
+                        ])
             ]
 
     let notAccepted () =
@@ -27,9 +29,11 @@ module OperationScreen =
                     RegionRole.Notice
                     None
                     (RegionContent.Notice
-                        {
-                            MessageId = "label.operationNotAccepted"
-                            Reason = None
-                            Tone = NoticeTone.Final
-                        })
+                        [
+                            {
+                                MessageId = "label.operationNotAccepted"
+                                Reason = None
+                                Tone = NoticeTone.Final
+                            }
+                        ])
             ]

@@ -1,16 +1,15 @@
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
-import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
+import { caseLinkTarget, caseTargetPath } from "../routing/coreLinks";
 import type { RegionRow, CaseSelector } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
-import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import {} from "./worklist/worklist.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
 
@@ -29,11 +28,13 @@ import {
   listRequest,
   type WorklistQuery,
 } from "../routing/worklistQuery";
+import { CaseSelectionRecovery } from "./worklist/CaseSelectionRecovery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { PageTables } from "../ui/PageTables";
+import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
-  onSelect: (target: CaseSelector) => void;
+  onSelect: (target: CaseSelector, originId?: string) => void;
   onMutationLockChange?: MutationLockChange;
   disclosureAvailable?: boolean;
 };
@@ -51,11 +52,9 @@ const casePage = (response: ServiceResponse<typeof apiEndpoints.caseList>) => {
     items: doc.screen.regions.flatMap((region) =>
       region.content.kind === "TABLE" ? region.content.rows : [],
     ),
-    exactCaseId:
+    exactTarget:
       doc.links.flatMap((named) =>
-        named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
-          ? [caseLinkId(named.link)!]
-          : [],
+        named.rel === "OPEN_CASE" ? (caseLinkTarget(named.link) ?? []) : [],
       )[0] ?? null,
     nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
@@ -63,10 +62,7 @@ const casePage = (response: ServiceResponse<typeof apiEndpoints.caseList>) => {
     disclosure: doc.disclosure,
   };
 };
-const useWorklist = () => {
-  const route = useContentRoute();
-  const search = route.screen === "cases" ? route.query : "";
-  const query = useMemo(() => parseWorklistQuery(search), [search]);
+const useWorklist = (query: WorklistQuery) => {
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
   const page = useEndpointPage<
     typeof apiEndpoints.caseList,
@@ -162,12 +158,15 @@ const WorklistResults = ({
   editing: boolean;
 }) => {
   const p = usePresentation();
-  const exact = page.page?.exactCaseId ?? null;
+  const current = page.page;
+  const exact = current?.exactTarget ?? null;
+  const exactOrigin = "case-exact-match";
   return (
     <>
       {page.items.length === 0 && exact === null ? null : (
         <PageTables
           views={page.views}
+          roles={["RESULTS"]}
           actionPresentation={(action) => {
             if (action.binding.kind !== "WORK" || action.binding.target.kind !== "ID") {
               return {};
@@ -190,14 +189,22 @@ const WorklistResults = ({
               reassign(action);
             }
           }}
+        />
+      )}
+      {current === null || !current.screen.regions.some(({ role }) => role === "FACTS") ? null : (
+        <ScreenView
+          view={current.screen}
+          timeZone={current.basis.timeZone}
+          roles={["FACTS"]}
           {...(exact === null
             ? {}
             : {
                 sectionLink: {
                   column: "exactReference",
-                  href: casePath(exact),
+                  id: exactOrigin,
+                  href: caseTargetPath(exact),
                   follow: () => {
-                    onSelect({ kind: "ID", caseId: exact });
+                    onSelect(exact, exactOrigin);
                   },
                 },
               })}
@@ -221,9 +228,10 @@ const ReadyCaseList = ({
   onSelect,
   onMutationLockChange = ignoreLock,
   disclosureAvailable = true,
-}: Props) => {
+  query,
+}: Props & { query: WorklistQuery }) => {
   const p = usePresentation();
-  const page = useWorklist();
+  const page = useWorklist(query);
   const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
   const close = () => {
     const id =
@@ -302,7 +310,7 @@ const ReadyCaseList = ({
             setSelection({ row, readId: crypto.randomUUID() });
           }}
         />
-        <SummaryBand filter={page.query} />
+        <SummaryBand filter={page.query} exportAvailable={disclosureAvailable} />
         <WorklistFeedback page={page} />
       </ViewTabs>
       {selection === null ? null : (
@@ -339,13 +347,24 @@ const AvailableCaseList = (props: Props) => {
   const context = useRequesterContext();
   const views = useWorkspaceViews().cases;
   const route = useContentRoute();
-  const query = useMemo(
-    () => parseWorklistQuery(route.screen === "cases" ? route.query : ""),
-    [route],
-  );
+  const search = route.screen === "cases" ? route.query : "";
+  const admission = useMemo(() => parseWorklistQuery(search), [search]);
+  const recovering = useRef(false);
+  useEffect(() => {
+    if (admission.kind === "invalid") {
+      recovering.current = true;
+    } else if (recovering.current && admission.selection.view !== undefined) {
+      recovering.current = false;
+      document.getElementById("case-list-title")?.focus();
+    }
+  }, [admission]);
   if (context === null) {
     return null;
   }
+  if (admission.kind === "invalid") {
+    return <CaseSelectionRecovery key={search} admission={admission} />;
+  }
+  const query = admission.selection;
   if (query.view === undefined) {
     const first = views.data?.items[0];
     if (first !== undefined) {
@@ -353,7 +372,7 @@ const AvailableCaseList = (props: Props) => {
     }
     return <WorkspaceViewsStatus area="cases" />;
   }
-  return <ReadyCaseList {...props} />;
+  return <ReadyCaseList {...props} query={query} />;
 };
 
 /** List selection and editors belong to one authenticated session. */

@@ -133,6 +133,7 @@ const fixture = (lost = false, putFails = false, panel = false) => {
           throw new Error("journal failure");
         }
         records.push(record);
+        return "inserted" as const;
       }),
     ),
     remove: vi.fn((record: RecoveryRecord) =>

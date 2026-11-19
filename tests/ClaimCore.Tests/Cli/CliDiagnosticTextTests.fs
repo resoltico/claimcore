@@ -164,6 +164,28 @@ let tests =
                 remainingTargets
             testCase "cursor refusal uses its localized Core message" (fun () ->
                 assertOptionalTarget Refusal.InvalidCursor None "INVALID_CURSOR")
+            testCase "reversed report date identifies the localized upper bound" (fun () ->
+                let refusal = Refusal.CaseDateRange CaseDateFilter.ReceivedThrough
+                let wire = Frames.encode (frame refusal)
+
+                Expect.equal
+                    (Frames.decode wire |> Result.map CliReplies.frameFacts)
+                    (Ok(CliReplies.frameFacts (frame refusal)))
+                    "The refusal and field cross the native transport"
+
+                for language, expected in
+                    [
+                        "en", "Set Received through to a date on or after its start date."
+                        "ar", "اضبط تاريخ الاستلام حتى على تاريخ يوافق تاريخ البداية أو يأتي بعده."
+                    ] do
+                    let rendered =
+                        ReplyText.bytes (RenderingContext.forLanguage language) (frame refusal)
+                        |> Encoding.UTF8.GetString
+
+                    Expect.equal
+                        (rendered.Split('\n')[0])
+                        expected
+                        "The localized field is part of the core sentence")
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget
                     (Refusal.Access AccessRefusal.ResourceUnavailable)

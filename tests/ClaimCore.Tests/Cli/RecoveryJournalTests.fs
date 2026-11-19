@@ -146,10 +146,33 @@ let tests =
             testCase
                 "unsafe state paths and failed publication refuse without an exposed record"
                 (fun () ->
-                    Expect.isError
-                        (RecoveryJournal.location (fun name ->
-                            if name = "XDG_STATE_HOME" then Some "relative" else None))
-                        "Relative state roots refuse"
+                    let location state home =
+                        RecoveryJournal.location (function
+                            | "XDG_STATE_HOME" -> state
+                            | "HOME" -> home
+                            | _ -> None)
+
+                    Expect.equal
+                        (location (Some "relative") (Some "/absolute"))
+                        (Error(
+                            ClientFailure.RecoveryRootNotAbsolute RecoveryRootSetting.XdgStateHome
+                        ))
+                        "An explicit relative state root refuses even with an absolute HOME"
+
+                    Expect.equal
+                        (location (Some "") (Some "relative"))
+                        (Error(ClientFailure.RecoveryRootNotAbsolute RecoveryRootSetting.Home))
+                        "The HOME fallback identifies its own setting"
+
+                    Expect.equal
+                        (location None (Some "/absolute"))
+                        (Ok "/absolute/.local/state/claimcore")
+                        "The absent state root uses the absolute HOME fallback"
+
+                    Expect.equal
+                        (location (Some "/explicit") (Some "/fallback"))
+                        (Ok "/explicit/claimcore")
+                        "An absolute explicit root takes precedence"
 
                     let root = Directory.CreateTempSubdirectory "claimcore-recovery-refusal-"
 

@@ -7,10 +7,12 @@ import type {
 } from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { useEndpointCache } from "../../../../src/hooks/EndpointProvider";
+import { service } from "../../../../src/api/service";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import { render } from "../../../support/presentation-test-support";
 import { activeRequester } from "../../../support/human-requester.fixtures";
+import { pendingLookup } from "../../../support/operation-lookup.fixtures";
 import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
@@ -117,7 +119,15 @@ const receipt: HumanDocument = {
   basis,
   disclosure: "CURRENT",
 };
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+type ExecuteReply = (operationId: string) => Response;
+const humanReply = (operationId: string, outcome: unknown) =>
+  Response.json({ representation: "HUMAN", operationId, outcome });
+const notStarted: ExecuteReply = () =>
+  Response.json({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }, { status: 429 });
 const fixture = async (
   lost = false,
   holdJournal = false,
@@ -126,6 +136,7 @@ const fixture = async (
 ) => {
   const records: RecoveryRecord[] = [];
   const bodies: string[] = [];
+  const lookups: string[] = [];
   let finishJournal: () => void = () => {
     throw new Error("No journal write pending");
   };
@@ -137,9 +148,11 @@ const fixture = async (
           finishJournal = resolve;
         });
       }
-      if (!records.includes(record)) {
-        records.push(record);
+      if (records.includes(record)) {
+        return "existing";
       }
+      records.push(record);
+      return "inserted";
     }),
     remove: vi.fn((record: RecoveryRecord) =>
       Promise.try(() => {
@@ -150,7 +163,7 @@ const fixture = async (
       }),
     ),
   };
-  let complete: () => void = () => {
+  let complete: (reply?: ExecuteReply) => void = () => {
     throw new Error("No delivery pending");
   };
   let executions = 0;
@@ -161,6 +174,7 @@ const fixture = async (
         const input: unknown = JSON.parse(requestText(options?.body));
         if (requestAddress(url).endsWith("operation.get") && status !== undefined) {
           const operationGetRequest = input as RequestByEndpoint["operation.get"];
+          lookups.push(operationGetRequest.operationId);
           return new Response(
             JSON.stringify({
               representation: "HUMAN",
@@ -178,19 +192,7 @@ const fixture = async (
         bodies.push(requestText(options?.body));
         const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
         const response = (outcome: unknown) =>
-          new Response(
-            JSON.stringify({
-              representation: "HUMAN",
-              operationId: operationExecuteRequest.operationId,
-              outcome,
-            }),
-            {
-              status: 200,
-              headers: {
-                "Content-Type": "application/json",
-              },
-            },
-          );
+          humanReply(operationExecuteRequest.operationId, outcome);
         if (!requestAddress(url).endsWith("preview")) {
           executions += 1;
           if (lost && executions === 1) {
@@ -203,12 +205,13 @@ const fixture = async (
               review,
             })
           : new Promise<Response>((resolve) => {
-              complete = () => {
+              complete = (reply) => {
                 resolve(
-                  response({
-                    kind: "ACCEPTED",
-                    document: receipt,
-                  }),
+                  reply?.(operationExecuteRequest.operationId) ??
+                    response({
+                      kind: "ACCEPTED",
+                      document: receipt,
+                    }),
                 );
               };
             });
@@ -237,8 +240,8 @@ const fixture = async (
     });
     return null;
   };
-  const ui = (available: boolean, credential = "token", epoch = 0) => (
-    <RequesterContext value={available ? activeRequester : null}>
+  const ui = (available: boolean, credential = "token", epoch = 0, requester = activeRequester) => (
+    <RequesterContext value={available ? requester : null}>
       <Harness credential={credential} epoch={epoch} />
     </RequesterContext>
   );
@@ -273,8 +276,8 @@ const fixture = async (
     get,
     view,
     ui,
-    complete: () => {
-      complete();
+    complete: (reply?: ExecuteReply) => {
+      complete(reply);
     },
     completeJournal: () => {
       finishJournal();
@@ -284,10 +287,95 @@ const fixture = async (
     },
     records,
     bodies,
+    lookups,
     journal,
     recorded,
   };
 };
+it.each<{ description: string; reply: ExecuteReply; notice: string }>([
+  { description: "explicit non-start", reply: notStarted, notice: "diagnostic" },
+  {
+    description: "a typed refusal",
+    notice: "human",
+    reply: (id) =>
+      humanReply(id, {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "diagnostic.NO_CHANGES", arguments: [] },
+            action: "NONE_REQUIRED",
+          },
+        },
+      }),
+  },
+  {
+    description: "a null delivery phase",
+    notice: "diagnostic",
+    reply: () =>
+      Response.json({ hostFailure: { code: "RESPONSE_FAILED", phase: null } }, { status: 500 }),
+  },
+  {
+    description: "an unknown delivery phase",
+    notice: "invalidHttp",
+    reply: () =>
+      Response.json({ hostFailure: { code: "RATE_LIMITED", phase: "UNKNOWN" } }, { status: 429 }),
+  },
+  {
+    description: "a success correlated to another operation",
+    notice: "invalidHttp",
+    reply: () =>
+      humanReply("10000000-0000-4000-8000-000000000099", { kind: "ACCEPTED", document: receipt }),
+  },
+  {
+    description: "a structurally malformed success",
+    notice: "invalidHttp",
+    reply: (id) => humanReply(id, { kind: "ACCEPTED", document: {} }),
+  },
+])(
+  "retains the original uncertain attempt after retry gives $description",
+  async ({ reply, notice }) => {
+    const lookup = vi.spyOn(service, "operationGet");
+    const f = await fixture(true, false, false, pendingLookup(caseId).value.outcome);
+    const [original] = f.records;
+    expect(original).toBeDefined();
+    await act(() => f.get().execute());
+    await waitFor(() => {
+      expect(f.get().busy).toBe(true);
+    });
+    await act(() =>
+      Promise.try(() => {
+        f.complete(reply);
+      }),
+    );
+    await waitFor(() => {
+      expect(f.get().busy).toBe(false);
+    });
+    expect(f.get().phase).toBe("UNRESOLVED");
+    expect(f.get().notice?.kind).toBe(notice);
+    expect(f.records).toEqual([original]);
+    expect(f.journal.remove).not.toHaveBeenCalled();
+    expect(f.bodies).toHaveLength(3);
+    expect(new Set(f.bodies).size).toBe(1);
+    await act(() =>
+      Promise.try(() => {
+        f.get().checkOperation();
+      }),
+    );
+    await waitFor(() => {
+      expect(f.lookups).toEqual([original?.operationId]);
+      expect(f.get().busy).toBe(false);
+    });
+    const [observed] = lookup.mock.results;
+    await expect(observed?.value).resolves.toMatchObject({
+      kind: "outcome",
+      value: { operationId: original?.operationId, outcome: { kind: "PENDING" } },
+    });
+    expect(f.get().phase).toBe("UNRESOLVED");
+    expect(f.records).toEqual([original]);
+    expect(f.journal.remove).not.toHaveBeenCalled();
+  },
+);
 it("settles acceptance under the original journal owner after requester/display invalidation without publishing private output", async () => {
   const f = await fixture();
   const original = f.get().prepared;
@@ -383,6 +471,90 @@ it("does not send if disclosure changes while the original journal write is pend
   expect(f.get().phase).toBe("EDITING");
   expect(f.records).toHaveLength(1);
   expect(f.recorded).not.toHaveBeenCalled();
+});
+it.each(["actorId", "installationId", "epoch"] as const)(
+  "a changed %s prevents handoff after a durable save and retains the original record",
+  async (change) => {
+    const f = await fixture(false, true);
+    await waitFor(() => {
+      expect(f.journal.put).toHaveBeenCalledTimes(1);
+    });
+    const original = vi.mocked(f.journal.put).mock.calls[0]?.[0];
+    const requester =
+      change === "epoch"
+        ? activeRequester
+        : {
+            ...activeRequester,
+            subject: {
+              ...activeRequester.subject,
+              [change]: "10000000-0000-4000-8000-000000000099",
+            },
+          };
+    f.view.rerender(f.ui(true, "token", change === "epoch" ? 1 : 0, requester));
+    await act(() =>
+      Promise.try(() => {
+        f.completeJournal();
+      }),
+    );
+    expect(f.get().ownerVerified).toBe(false);
+    expect(f.get().receipt).toBeNull();
+    expect(f.get().notice).toBeNull();
+    expect(f.records).toEqual([original]);
+    expect(f.journal.remove).not.toHaveBeenCalled();
+    expect(f.bodies).toHaveLength(1);
+  },
+);
+it("a late original refusal settles only the original record after an owner change", async () => {
+  const f = await fixture();
+  const [original] = f.records;
+  if (original === undefined) {
+    throw new Error("Expected the original owner's durable record");
+  }
+  const nextOwner = {
+    ...activeRequester,
+    subject: {
+      ...activeRequester.subject,
+      actorId: "10000000-0000-4000-8000-000000000099",
+      installationId: "90000000-0000-4000-8000-000000000099",
+    },
+  };
+  const otherRecord = {
+    ...original,
+    actorId: nextOwner.subject.actorId,
+    installationId: nextOwner.subject.installationId,
+  };
+  f.records.push(otherRecord);
+  f.view.rerender(f.ui(true, "token", 1, nextOwner));
+  await act(() =>
+    Promise.try(() => {
+      f.complete(notStarted);
+    }),
+  );
+  await waitFor(() => {
+    expect(f.journal.remove).toHaveBeenCalledExactlyOnceWith(original);
+  });
+  expect(f.records).toEqual([otherRecord]);
+  expect(f.get().notice).toBeNull();
+  expect(f.get().receipt).toBeNull();
+  expect(f.recorded).not.toHaveBeenCalled();
+});
+it("retains the record and original diagnostic when known-refusal cleanup fails", async () => {
+  const f = await fixture(false, false, true);
+  const [original] = f.records;
+  await act(() =>
+    Promise.try(() => {
+      f.complete(notStarted);
+    }),
+  );
+  await waitFor(() => {
+    expect(f.get().notice).toEqual({
+      kind: "diagnostic",
+      diagnostic: { code: "RATE_LIMITED", phase: "NOT_STARTED" },
+    });
+  });
+  expect(f.journal.remove).toHaveBeenCalledExactlyOnceWith(original);
+  expect(f.records).toEqual([original]);
+  expect(f.get().phase).toBe("EDITING");
 });
 it("keeps confirmed acceptance and its recovery identity when original-owner cleanup fails", async () => {
   const f = await fixture(false, false, true);

@@ -51,11 +51,15 @@ type TaskInputDeclaration =
         ChoicesWhen: TaskInputChoicesWhen list
     }
 
+[<RequireQualifiedAccess>]
+type TaskRowConstraint = AtLeastOne of members: TaskInputId list * missing: Violation
+
 type TaskCollectionDeclaration =
     {
         Collection: TaskCollectionId
         MinimumRows: int
         Inputs: TaskInputDeclaration list
+        RowConstraints: TaskRowConstraint list
     }
 
 module TaskInputDeclaration =

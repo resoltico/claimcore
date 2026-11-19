@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "案件報告",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "報告第 {page} 頁",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "下一頁報告",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "從頭檢視報告",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "無法使用此案件篩選條件。",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "請更正或清除該欄位，以使用其餘篩選條件。",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "請選擇要保留的一個值。如有需要，請先編輯該值，再套用更正。",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "套用更正",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "清除欄位",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "報表日期",
     "source": "274bd4f0d808"

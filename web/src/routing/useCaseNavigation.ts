@@ -1,7 +1,6 @@
 import type { Link, CaseSelector } from "@contracts/client";
-import { coreLinkPath, reminderLinkTarget } from "./coreLinks";
+import { caseTargetPath, coreLinkPath, reminderLinkTarget } from "./coreLinks";
 import { useState } from "react";
-import { casePath, referencePath } from "./routes";
 import { navigate } from "./navigation";
 /** Return context belongs only to this verified case workspace, never browser history or a journal. */
 export const useCaseNavigation = (owner: object | null) => {
@@ -39,11 +38,12 @@ export const useCaseNavigation = (owner: object | null) => {
         },
       };
     },
-    selectCase: (target: CaseSelector) => {
-      remember(target.kind === "ID" ? `case-${target.caseId}` : "case-lookup");
-      navigate(
-        target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference),
-      );
+    selectCase: (target: CaseSelector, originId?: string) => {
+      if (originId !== undefined) {
+        document.getElementById(originId)?.focus({ preventScroll: true });
+      }
+      remember(originId ?? (target.kind === "ID" ? `case-${target.caseId}` : "case-lookup"));
+      navigate(caseTargetPath(target));
     },
     openCase: () => {
       remember("open-case");

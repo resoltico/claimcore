@@ -407,29 +407,23 @@ module ReceiptScreen =
                 Entries = List.map markEntry section.Entries
             }
 
-        let regions =
-            screen.Regions
-            |> List.map (fun region ->
-                let content =
-                    match region.Content with
-                    | RegionContent.Entries values ->
-                        RegionContent.Entries(List.map markEntry values)
-                    | RegionContent.Table table ->
-                        RegionContent.Table
-                            { table with
-                                Columns =
-                                    table.Columns
-                                    |> List.map (fun column ->
-                                        { column with
-                                            Recorded = isRecorded column.LabelId
-                                        })
-                                Sections = List.map markSection table.Sections
-                            }
-                    | content -> content
-
-                { region with Content = content })
-
-        { screen with Regions = regions }
+        Screen.mapContent
+            (fun _ content ->
+                match content with
+                | RegionContent.Entries values -> RegionContent.Entries(List.map markEntry values)
+                | RegionContent.Table table ->
+                    RegionContent.Table
+                        { table with
+                            Columns =
+                                table.Columns
+                                |> List.map (fun column ->
+                                    { column with
+                                        Recorded = isRecorded column.LabelId
+                                    })
+                            Sections = List.map markSection table.Sections
+                        }
+                | content -> content)
+            screen
 
     let view (receipt: OperationReceipt) =
         let source = sections receipt
@@ -549,11 +543,13 @@ module ReceiptScreen =
                     RegionRole.Notice
                     None
                     (RegionContent.Notice
-                        {
-                            MessageId = message
-                            Reason = None
-                            Tone = NoticeTone.Info
-                        })
+                        [
+                            {
+                                MessageId = message
+                                Reason = None
+                                Tone = NoticeTone.Info
+                            }
+                        ])
             ]
             @ [ entryRegion RegionRole.Identity (Some "label.recordedChange") identity ]
             @ factRegions facts

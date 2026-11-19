@@ -52,6 +52,8 @@ module CliReply =
             match failure with
             | ClientFailure.InstallationMismatch -> CliFailure.InstallationMismatch
             | ClientFailure.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
+            | ClientFailure.RecoveryRootNotAbsolute setting ->
+                CliFailure.RecoveryRootNotAbsolute setting
             | ClientFailure.Configuration -> CliFailure.ConfigurationInvalid
             | ClientFailure.ConfigurationIssue(setting, issue) ->
                 CliFailure.ConfigurationIssue(setting, issue)

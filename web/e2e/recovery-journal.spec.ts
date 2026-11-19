@@ -20,6 +20,7 @@ import {
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startClose } from "./case-workflow";
 import { isHostFailure } from "../src/protocol/client";
+import { recoveryRecords } from "./recovery-storage";
 
 /** A not-started admission refusal is not the pending/final lookup observation. */
 const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
@@ -146,9 +147,13 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     target.evaluate(async (inputRecord) => {
       const path = "/__claimcore_qa__/recovery/indexedJournal.js";
       const module = (await import(path)) as typeof IndexedJournalModule;
-      await module.createIndexedJournal(indexedDB).put(inputRecord);
+      return module.createIndexedJournal(indexedDB).put(inputRecord);
     }, record);
-  await Promise.all([put(page, firstRecord), put(second, secondRecord)]);
+  expect(await Promise.all([put(page, firstRecord), put(second, secondRecord)])).toEqual([
+    "inserted",
+    "inserted",
+  ]);
+  expect(await put(second, firstRecord)).toBe("existing");
   expect((await records(page, scope)).map((record) => record.attemptId).sort()).toEqual(
     [firstRecord.attemptId, secondRecord.attemptId].sort(),
   );
@@ -245,6 +250,34 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   await (await completed).json();
   await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
+});
+test("a first explicit non-start keeps the draft and leaves no unconfirmed record @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const reference = `JOURNAL-REFUSED-${randomUUID()}`;
+  await startOpen(page, reference);
+  const { operationId } = await reviewDraft(page);
+  let intercepted = 0;
+  await page.route("**/api/operation.execute", async (route) => {
+    intercepted += 1;
+    expect(route.request().postDataJSON()).toMatchObject({ operationId });
+    const saved = await recoveryRecords(page);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ operationId, format: 2 });
+    await route.fulfill({
+      status: 429,
+      json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+    });
+  });
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  await expect(
+    page.getByText("ClaimCore is busy. Try again in a moment.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('input[data-field-name="caseReference"]')).toHaveValue(reference);
+  expect(intercepted).toBe(1);
+  expect(await recoveryRecords(page)).toEqual([]);
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
 });
 test("tab loss after transaction commit and before notification leaves identity for final resolution @engine", async ({
   page,
@@ -354,8 +387,12 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   const identity = await reviewDraft(page);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   let executions = 0;
+  context.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/operation.execute") {
+      executions += 1;
+    }
+  });
   await page.route("**/api/operation.execute", async (route) => {
-    executions += 1;
     const saved = await records(page, scope);
     expect(saved).toHaveLength(1);
     expect(saved[0]?.operationId).toBe(identity.operationId);
@@ -363,7 +400,11 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     const accepted = await route.fetch({
       maxRedirects: 0,
     });
-    await accepted.json();
+    expect(accepted.status()).toBe(200);
+    expect(await accepted.json()).toMatchObject({
+      operationId: identity.operationId,
+      outcome: { kind: "ACCEPTED" },
+    });
     await route.abort("connectionfailed");
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
@@ -398,7 +439,10 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openAuthenticated(replacement);
   await adapter(replacement);
   // Bootstrap checks the journal; keep its original reply alive through body consumption.
-  await resolved;
+  expect(await resolved).toMatchObject({
+    operationId: identity.operationId,
+    outcome: { kind: "ACCEPTED", byRequester: true },
+  });
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   await goToView(replacement, "recovery");
   const cards = replacement.locator(".unconfirmed-list");

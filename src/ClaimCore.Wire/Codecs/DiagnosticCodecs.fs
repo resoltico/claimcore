@@ -277,6 +277,20 @@ module DiagnosticCodecs =
                  |> field "issuedAt" fst instant
                  |> field "observedAt" snd instant)
             variant
+                "CASE_DATE_RANGE"
+                Refusal.CaseDateRange
+                (function
+                | Refusal.CaseDateRange upper -> Some upper
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.CorrectInput
+                 |> field
+                     "field"
+                     id
+                     (VocabularyCodec.select
+                         CaseDateFilter.isUpperEndpoint
+                         CaseDateFilter.vocabulary))
+            variant
                 "INVALID_INPUT"
                 Refusal.InvalidInput
                 (function
@@ -374,6 +388,7 @@ module DiagnosticCodecs =
         | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
 
     let describeIssue issue = inputIssue.Write issue |> described
+    let describeViolation value = violation.Write value |> described
 
     let describe refusal =
         match refusal with

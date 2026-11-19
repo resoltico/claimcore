@@ -245,12 +245,12 @@ let internal exactTotals fixture =
             "Both retained decisions count"
 
         Expect.equal
-            (totals all.Claimed)
+            (totals (all.Rows |> List.choose _.Claimed))
             [ "EUR", "1999999999999999999.9998"; "USD", "0.0001" ]
             "Exact per-currency sums retain voided amounts and exclude erased amounts"
 
         Expect.equal
-            (totals all.Payable)
+            (totals (all.Rows |> List.choose _.Payable))
             [ "EUR", "1999999999999999999.9998" ]
             "No decimal overflow or currency conversion"
 
@@ -264,7 +264,7 @@ let internal exactTotals fixture =
         Expect.equal active.Counts.Total 2L "Counts apply the current filter"
 
         Expect.equal
-            (totals active.Claimed)
+            (totals (active.Rows |> List.choose _.Claimed))
             [ "EUR", maximum; "USD", "0.0001" ]
             "Facets are not self-excluding"
 
@@ -278,7 +278,7 @@ let internal exactTotals fixture =
         Expect.equal assigned.Counts.Total 2L "Mine filters the two explicitly assigned cases"
 
         Expect.equal
-            (totals assigned.Payable)
+            (totals (assigned.Rows |> List.choose _.Payable))
             [ "EUR", maximum ]
             "Factual responsibility filters payable totals"
 
@@ -485,7 +485,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
             "A forbidden role excludes that case despite another valid grant"
 
         Expect.equal
-            (totals filtered.Claimed)
+            (totals (filtered.Rows |> List.choose _.Claimed))
             [ "USD", "0.0001" ]
             "Only the valid opened case contributes"
 

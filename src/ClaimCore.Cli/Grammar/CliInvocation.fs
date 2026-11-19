@@ -45,50 +45,49 @@ type CliInvocation =
     | Verb of string list
 
 module CliInvocations =
+    let private hostChoices =
+        Map.ofList
+            [
+                "--format", [ "json"; "text" ]
+                "--language", LocalizationPolicy.languages
+                "--display-locale", LocalizationPolicy.displayLocales
+            ]
+
     let private options arguments =
-        let rec collect operands format language =
+        let rec collect operands admitted =
             function
-            | [] -> Ok(List.rev operands, format, language)
-            | "--format" :: value :: tail when
-                format = None && List.contains value [ "json"; "text" ]
+            | [] ->
+                Ok(
+                    List.rev operands,
+                    Map.tryFind "--format" admitted,
+                    Map.tryFind "--language" admitted
+                )
+            | VerbOptions.Argument.Operand value :: _ when
+                value.StartsWith("-", System.StringComparison.Ordinal)
                 ->
-                collect operands (Some value) language tail
-            | "--language" :: value :: tail when
-                language = None && List.contains value LocalizationPolicy.languages
-                ->
-                collect operands format (Some value) tail
-            | "--display-locale" :: value :: tail ->
-                if List.contains value LocalizationPolicy.displayLocales then
-                    collect operands format language tail
-                else
-                    Error(
-                        UsageError.InvalidChoice(
-                            "--display-locale",
-                            value,
-                            LocalizationPolicy.displayLocales
-                        )
-                    )
-            | [ "--display-locale" ] -> Error(UsageError.MissingValue "--display-locale")
-            | value :: _ when value.StartsWith("-", System.StringComparison.Ordinal) ->
                 Error(UsageError.UnknownOption(value, None))
-            | value :: tail -> collect (value :: operands) format language tail
+            | VerbOptions.Argument.Operand value :: tail ->
+                collect (value :: operands) admitted tail
+            | VerbOptions.Argument.Option(name, input) :: tail ->
+                match Map.tryFind name hostChoices with
+                | None -> Error(UsageError.UnknownOption(name, None))
+                | Some _ when Map.containsKey name admitted ->
+                    Error(UsageError.DuplicateOption name)
+                | Some choices ->
+                    match input with
+                    | VerbOptions.OptionValue.Assigned value
+                    | VerbOptions.OptionValue.Supplied value ->
+                        if List.contains value choices then
+                            collect operands (Map.add name value admitted) tail
+                        else
+                            Error(UsageError.InvalidChoice(name, value, choices))
+                    | VerbOptions.OptionValue.Missing
+                    | VerbOptions.OptionValue.Switch -> Error(UsageError.MissingValue name)
 
-        let normalized =
-            arguments
-            |> List.collect (fun (argument: string) ->
-                if argument.StartsWith("--language=", System.StringComparison.Ordinal) then
-                    [ "--language"; argument.Substring(11) ]
-                elif argument.StartsWith("--display-locale=", System.StringComparison.Ordinal) then
-                    [ "--display-locale"; argument.Substring(17) ]
-                elif argument.StartsWith("--format=", System.StringComparison.Ordinal) then
-                    [ "--format"; argument.Substring(9) ]
-                else
-                    [ argument ])
-
-        if (normalized |> List.filter ((=) "--display-locale") |> List.length) > 1 then
-            Error(UsageError.DuplicateOption "--display-locale")
+        if List.contains "--" arguments then
+            Error(UsageError.UnknownOption("--", None))
         else
-            collect [] None None normalized
+            collect [] Map.empty (VerbOptions.classify [] arguments)
 
     let private help topic language json =
         CliTopic.parse topic
@@ -173,7 +172,7 @@ module CliInvocations =
                 match System.Guid.TryParseExact(raw, "D") with
                 | true, attempt when attempt <> System.Guid.Empty ->
                     admitted (RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt))
-                | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
+                | _ -> Error(UsageError.InvalidUuid "ATTEMPT_ID")
             | _ -> Error(UsageError.MissingOperand "list | check ATTEMPT_ID"))
 
     let private admitCommand command tail =

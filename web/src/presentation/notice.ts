@@ -44,12 +44,12 @@ export const renderNotice = (
       return notice.screen.regions
         .flatMap((region) =>
           region.content.kind === "NOTICE"
-            ? [
-                renderCatalogKey(preferences, region.content.messageId),
-                ...(region.content.reason?.kind === "INSTANT"
-                  ? [recordedTime(region.content.reason.value, "UTC", preferences.displayLocale)]
+            ? region.content.notices.flatMap((item) => [
+                renderCatalogKey(preferences, item.messageId),
+                ...(item.reason?.kind === "INSTANT"
+                  ? [recordedTime(item.reason.value, "UTC", preferences.displayLocale)]
                   : []),
-              ]
+              ])
             : [],
         )
         .join(" ");

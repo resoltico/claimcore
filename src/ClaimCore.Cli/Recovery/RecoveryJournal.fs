@@ -85,18 +85,24 @@ module internal RecoveryJournal =
 
 
     let location read =
-        let root =
-            match read "XDG_STATE_HOME" with
-            | Some value when not (String.IsNullOrEmpty value) -> value
-            | _ ->
-                read "HOME"
-                |> Option.map (fun home -> Path.Combine(home, ".local", "state"))
-                |> Option.defaultValue ""
+        let configured setting =
+            read (RecoveryRootSetting.token setting)
+            |> Option.filter (String.IsNullOrEmpty >> not)
+            |> Option.map (fun path -> setting, path)
 
-        if OperatingSystem.IsWindows() || not (Path.IsPathFullyQualified root) then
-            Error()
-        else
-            Ok(Path.Combine(root, "claimcore"))
+        let root =
+            configured RecoveryRootSetting.XdgStateHome
+            |> Option.orElseWith (fun () ->
+                configured RecoveryRootSetting.Home
+                |> Option.map (fun (setting, home) ->
+                    setting, Path.Combine(home, ".local", "state")))
+
+        match root with
+        | _ when OperatingSystem.IsWindows() -> Error ClientFailure.RecoveryUnavailable
+        | None -> Error ClientFailure.RecoveryUnavailable
+        | Some(setting, path) when not (Path.IsPathFullyQualified path) ->
+            Error(ClientFailure.RecoveryRootNotAbsolute setting)
+        | Some(_, path) -> Ok(Path.Combine(path, "claimcore"))
 
     let private originKey origin =
         Encoding.UTF8.GetBytes(origin: string)

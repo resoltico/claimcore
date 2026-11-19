@@ -285,3 +285,20 @@ describe("generated finite structural interpreter", () => {
     }
   });
 });
+
+it("admits interleaved FACTS and refuses competing singleton screen placements", () => {
+  const region = (role: string) => ({ role, content: { kind: "ENTRIES", entries: [] } });
+  const facts = region("FACTS");
+  const results = region("RESULTS");
+  const notice = region("NOTICE");
+  const screen: ResponseSchema = ["ref", "Screen"];
+  expect(admits(screen, { regions: [facts, results, facts, notice] })).toBe(true);
+  for (const singleton of [results, notice]) {
+    expect(admits(screen, { regions: [singleton, facts, singleton] })).toBe(false);
+  }
+  expect(specification.components.schemas.Screen.properties.regions.allOf).toContainEqual({
+    contains: { type: "object", required: ["role"], properties: { role: { const: "RESULTS" } } },
+    minContains: 0,
+    maxContains: 1,
+  });
+});

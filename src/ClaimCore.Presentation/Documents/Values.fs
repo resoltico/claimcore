@@ -326,6 +326,10 @@ type RegionNotice =
         Tone: NoticeTone
     }
 
+module RegionNotice =
+    let maximum = 8
+    let single notice = [ notice ]
+
 type RegionTimelineEntry =
     {
         Key: string
@@ -344,7 +348,7 @@ type RegionContent =
     | Table of RegionTable
     | Stages of RegionStages
     | Codes of vocabulary: string * tokens: string list
-    | Notice of RegionNotice
+    | Notice of RegionNotice list
     | Timeline of RegionTimelineEntry list
 
 type Region =
@@ -361,10 +365,14 @@ type CurrentInputGroup =
     { Group: RecordGroup; Section: Section }
 
 type Screen =
-    {
-        Regions: Region list
-        CurrentGroups: CurrentInputGroup list
-    }
+    private
+        {
+            Placed: Region list
+            Groups: CurrentInputGroup list
+        }
+
+    member this.Regions = this.Placed
+    member this.CurrentGroups = this.Groups
 
 module Screen =
     let regionAffordances (region: Region) =
@@ -378,9 +386,12 @@ module Screen =
     let affordances (screen: Screen) =
         screen.Regions |> List.collect regionAffordances
 
+    let singletonRoles =
+        RegionRole.vocabulary |> Vocabulary.all |> List.filter ((<>) RegionRole.Facts)
+
     let valid regions =
         regions
-        |> List.filter (fun region -> region.Role <> RegionRole.Facts)
+        |> List.filter (fun region -> List.contains region.Role singletonRoles)
         |> List.countBy _.Role
         |> List.forall (fun (_, count) -> count = 1)
 
@@ -416,14 +427,17 @@ module Screen =
                     invalidArg
                         (nameof regions)
                         "Tables require unique keys, matching widths and disjoint covering groups."
+            | RegionContent.Notice notices when
+                notices.IsEmpty || notices.Length > RegionNotice.maximum
+                ->
+                invalidArg
+                    (nameof regions)
+                    "A notice region requires a bounded, nonempty notice list."
             | _ -> ()
 
-        {
-            Regions = regions
-            CurrentGroups = []
-        }
+        { Placed = regions; Groups = [] }
 
-    let withCurrentGroups groups screen =
+    let withCurrentGroups groups (screen: Screen) =
         let keys = groups |> List.map (fun (item: CurrentInputGroup) -> item.Group)
 
         if List.distinct keys <> keys || keys |> List.exists ((=) RecordGroup.Payment) then
@@ -431,7 +445,18 @@ module Screen =
                 (nameof groups)
                 "Current correction groups must be unique registration or decision groups."
 
-        { screen with CurrentGroups = groups }
+        { screen with Groups = groups }
+
+    let withRegions regions (screen: Screen) =
+        create regions |> withCurrentGroups screen.CurrentGroups
+
+    let mapContent transform (screen: Screen) =
+        screen.Regions
+        |> List.map (fun region ->
+            { region with
+                Content = transform region.Role region.Content
+            })
+        |> fun regions -> withRegions regions screen
 
 type Presented<'data> = { Data: 'data; View: Screen }
 

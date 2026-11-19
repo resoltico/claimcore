@@ -704,3 +704,100 @@ let durableCursor =
             (Cursors.decodeCases installation filter expected)
             (Ok position)
             "Reviewed reference position")
+
+[<Tests>]
+let reportCursor =
+    testCase
+        "report positions bind the requester installation grouping filter and business date"
+        (fun () ->
+            let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+            let requester = CaseFixtures.actorId actor
+
+            let otherRequester =
+                CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000002")
+
+            let date = CalendarDate.ofDate (DateOnly(2026, 11, 19))
+            let nextDay = CalendarDate.ofDate (DateOnly(2026, 11, 20))
+            let grouping = Some CaseGrouping.ReceivedMonth
+
+            let position =
+                {
+                    GroupOrder = "2022-02"
+                    CurrencyOrder = "EUR"
+                }
+
+            let encoded =
+                Cursors.encodeCaseReport installation requester date filter grouping position
+
+            Expect.equal
+                (Cursors.decodeCaseReport installation requester date filter grouping encoded)
+                (Ok position)
+                "The same scope admits the positional key"
+
+            let mismatched =
+                [
+                    Cursors.decodeCaseReport installation otherRequester date filter grouping
+                    Cursors.decodeCaseReport actor requester date filter grouping
+                    Cursors.decodeCaseReport installation requester nextDay filter grouping
+                    Cursors.decodeCaseReport
+                        installation
+                        requester
+                        date
+                        filter
+                        (Some CaseGrouping.ClosedMonth)
+                    Cursors.decodeCaseReport
+                        installation
+                        requester
+                        date
+                        { filter with
+                            Assignment = Some CaseAssignment.Mine
+                        }
+                        grouping
+                ]
+
+            for decode in mismatched do
+                Expect.equal
+                    (decode encoded)
+                    (Error Refusal.InvalidCursor)
+                    "An altered scope must restart"
+
+            let relative =
+                { filter with
+                    Due = Some CaseDue.Overdue
+                }
+
+            let bands = Some CaseGrouping.DaysOpen
+
+            let relativePosition =
+                {
+                    GroupOrder = "1"
+                    CurrencyOrder = "EUR"
+                }
+
+            let relativeCursor =
+                Cursors.encodeCaseReport
+                    installation
+                    requester
+                    date
+                    relative
+                    bands
+                    relativePosition
+
+            Expect.equal
+                (Cursors.decodeCaseReport
+                    installation
+                    requester
+                    nextDay
+                    relative
+                    bands
+                    relativeCursor)
+                (Error Refusal.InvalidCursor)
+                "Relative due filters and day bands restart when the business date rolls over"
+
+            Expect.isFalse
+                (CaseReportPosition.admits grouping { position with GroupOrder = "2022-13" })
+                "The cursor validates its typed group"
+
+            Expect.isFalse
+                (CaseReportPosition.admits grouping { position with CurrencyOrder = "AAAA" })
+                "The cursor validates its currency")

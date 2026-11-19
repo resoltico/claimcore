@@ -455,3 +455,177 @@ let publishedOutput =
     testCaseAsync
         "published CLI output preserves supplied screens and terminal safety"
         (async { do! run () |> Async.AwaitTask })
+
+let summaryCsv (fixture: PublishedFixture.Fixture) =
+    let prefix = "CSVFIELD-" + id ()
+    let reference index = prefix + "-" + string index
+    let start = DateOnly(2018, 1, 1)
+
+    for index in 0..50 do
+        let received =
+            start
+                .AddMonths(index)
+                .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
+
+        automation
+            fixture
+            "operation.execute"
+            {|
+                operationId = id ()
+                task = "case.open"
+                binding =
+                    {|
+                        kind = "CASE"
+                        expectedRevision = 0
+                    |}
+                inputs =
+                    dict
+                        [
+                            "field:caseReference", reference index
+                            "field:receivedDate", received
+                            "field:claimedAmount", "1"
+                            "field:claimedCurrency", "EUR"
+                        ]
+            |}
+            0
+        |> require "ACCEPTED"
+        |> ignore
+
+    let header =
+        "group,count,currency,claimed,claimedCases,payable,payableCases,netPaid,netPaidCases"
+
+    let runSummary filter flags =
+        let result =
+            invoke
+                fixture
+                fixture.Environment
+                ([ "case"; "summary"; "--format"; "csv"; "--text"; filter ] @ flags)
+                Array.empty
+                0
+
+        Expect.equal result.ExitCode 0 "Published summary CSV succeeds"
+
+        Expect.isFalse
+            (Encoding.UTF8.GetString(result.StandardError).Contains("INTERNAL"))
+            "No local dispatch failure"
+
+        let rows =
+            Encoding.UTF8
+                .GetString(result.StandardOutput)
+                .Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
+
+        Expect.equal rows[0] header "One canonical CSV header"
+        rows
+
+    Expect.equal
+        (runSummary (reference 50) [])
+        [| header; "ALL_CASES,1,EUR,1,1,,,," |]
+        "One healthy ungrouped row"
+
+    Expect.equal
+        (runSummary (reference 50) [ "--group-by"; "received-month" ])
+        [| header; "2022-03,1,EUR,1,1,,,," |]
+        "Grouped CSV matches the HTTP row independently"
+
+    let page = runSummary prefix [ "--group-by"; "received-month" ]
+    Expect.equal page.Length 51 "Without --all only the first 50 data rows are emitted"
+    Expect.equal (Array.last page) "2022-02,1,EUR,1,1,,,," "The first-page boundary"
+
+    let all = runSummary prefix [ "--group-by"; "received-month"; "--all" ]
+    Expect.equal all.Length 52 "The established paging option emits all 51 rows"
+    Expect.equal all[1] "2018-01,1,EUR,1,1,,,," "The first HTTP-equivalent record"
+    Expect.equal (Array.last all) "2022-03,1,EUR,1,1,,,," "The final HTTP-equivalent record"
+
+let publishedRelatedDirections =
+    testCaseAsync
+        "published CLI renders outgoing incoming and combined related directions"
+        (async {
+            let check () =
+                task {
+                    use fixture = new PublishedFixture.Fixture()
+                    do! fixture.Start()
+                    setup fixture
+                    let prefix = "NATIVELINK"
+                    let a, b, c = prefix + "-A", prefix + "-B", prefix + "-C"
+
+                    for reference in [ a; b; c ] do
+                        automation
+                            fixture
+                            "operation.execute"
+                            {|
+                                operationId = id ()
+                                task = "case.open"
+                                binding =
+                                    {|
+                                        kind = "CASE"
+                                        expectedRevision = 0
+                                    |}
+                                inputs = dict [ "field:caseReference", reference ]
+                            |}
+                            0
+                        |> require "ACCEPTED"
+                        |> ignore
+
+                    let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
+
+                    let link source target =
+                        let request =
+                            frame
+                                "operation.execute"
+                                {|
+                                    operationId = id ()
+                                    task = "link.add"
+                                    binding =
+                                        {|
+                                            kind = "LINK"
+                                            target =
+                                                {|
+                                                    kind = "REFERENCE"
+                                                    caseReference = source
+                                                |}
+                                        |}
+                                    inputs = dict [ "input:relatedCaseReference", target ]
+                                |}
+
+                        CliCalls.run fixture owner request 0 |> require "ACCEPTED" |> ignore
+
+
+                    let read reference =
+                        let result =
+                            invoke
+                                fixture
+                                owner
+                                [ "case"; "get"; "--format"; "text"; "--language"; "en"; reference ]
+                                Array.empty
+                                0
+
+                        Expect.equal
+                            result.ExitCode
+                            0
+                            "The published CLI admits this HUMAN response"
+
+                        Encoding.UTF8.GetString result.StandardOutput
+
+                    link a b
+                    let outgoing = read a
+                    Expect.stringContains outgoing "Links from this case" "Outgoing group heading"
+                    Expect.stringContains outgoing b "Outgoing target is rendered"
+                    let incoming = read b
+                    Expect.stringContains incoming "Links to this case" "Incoming group heading"
+                    Expect.stringContains incoming a "The incoming source is rendered"
+
+                    Expect.isFalse
+                        (incoming.Contains("Links from this case", StringComparison.Ordinal))
+                        "Adding an available action does not invent an outgoing group"
+
+                    link b c
+                    let both = read b
+                    Expect.stringContains both "Links from this case" "Outgoing heading remains"
+                    Expect.stringContains both "Links to this case" "Incoming heading remains"
+                    Expect.stringContains both c "New target is visible"
+                    Expect.stringContains both a "Incoming source remains visible"
+                    fixture.Complete()
+                }
+
+            do! check () |> Async.AwaitTask
+        })

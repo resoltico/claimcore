@@ -191,42 +191,61 @@ module CaseScreen =
                     ])
                 rows
 
-        [
-            if reply.RelatedCases.CanAdd || not reply.RelatedCases.Outgoing.IsEmpty then
-                let outgoing =
-                    region
-                        RegionRole.RelatedCases
-                        (Some "section.relatedCases.outgoing")
-                        (RegionContent.Table(table reply.RelatedCases.Outgoing))
+        let links = reply.RelatedCases
+        let outgoing = table links.Outgoing
+        let incoming = table links.Incoming
 
-                yield
+        [
+            if links.CanAdd || not outgoing.Rows.IsEmpty || not incoming.Rows.IsEmpty then
+                let group title count (table: RegionTable) =
+                    {
+                        TitleId = title
+                        Count = count
+                        RowKeys = List.map (fun (row: RegionRow) -> row.Key) table.Rows
+                    }
+
+                let content =
                     { outgoing with
-                        Actions =
+                        Rows = outgoing.Rows @ incoming.Rows
+                        Sections =
                             [
-                                if reply.RelatedCases.CanAdd then
-                                    yield
-                                        action ClientCompositions.linkEntry (Binding.LinkNew source)
+                                if links.IncomingCount > int64 incoming.Rows.Length then
+                                    section
+                                        "section.relatedCases.incoming"
+                                        [
+                                            value
+                                                "shown"
+                                                "label.shown"
+                                                Prominence.Secondary
+                                                (PresentedValue.Count(int64 incoming.Rows.Length))
+                                        ]
+                            ]
+                        Groups =
+                            [
+                                if not outgoing.Rows.IsEmpty then
+                                    group
+                                        "section.relatedCases.outgoing"
+                                        (int64 outgoing.Rows.Length)
+                                        outgoing
+                                if not incoming.Rows.IsEmpty then
+                                    group
+                                        "section.relatedCases.incoming"
+                                        links.IncomingCount
+                                        incoming
                             ]
                     }
 
-            if not reply.RelatedCases.Incoming.IsEmpty then
-                let incoming = table reply.RelatedCases.Incoming
-
-                let count =
-                    value
-                        "readableLinks"
-                        "label.readableIncomingLinks"
-                        Prominence.Secondary
-                        (PresentedValue.Count reply.RelatedCases.IncomingCount)
-
                 yield
-                    region
-                        RegionRole.RelatedCases
-                        (Some "section.relatedCases.incoming")
-                        (RegionContent.Table
-                            { incoming with
-                                Sections = [ section "section.relatedCases.label" [ count ] ]
-                            })
+                    { region
+                          RegionRole.RelatedCases
+                          (Some "section.relatedCases.label")
+                          (RegionContent.Table content) with
+                        Actions =
+                            [
+                                if links.CanAdd then
+                                    action ClientCompositions.linkEntry (Binding.LinkNew source)
+                            ]
+                    }
         ]
 
     let view (reply: CaseReadModel) =
@@ -422,7 +441,10 @@ module CaseScreen =
                 yield!
                     notice
                     |> Option.map (fun notice ->
-                        region RegionRole.Notice None (RegionContent.Notice notice))
+                        region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice(RegionNotice.single notice)))
                     |> Option.toList
                 if live then
                     yield

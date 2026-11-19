@@ -1,4 +1,8 @@
 {
+  "diagnostic.CASE_DATE_RANGE": {
+    "text": "請將{field}設為開始日期當天或之後的日期。",
+    "source": "ba65df5311c2"
+  },
   "task.people.changeSignInIdentity.label": {
     "text": "變更登入身分",
     "source": "d6e69a570915"

@@ -157,6 +157,7 @@ let private expectExact operationId (value: CaseSummaryPage) =
             {
                 CaseId = CaseFixtures.caseId (operationId 4)
                 CaseReference = CaseReference.parse "Match-1" |> accepted
+                MatchedReference = None
             })
         "Original authored reference and creation identity"
 

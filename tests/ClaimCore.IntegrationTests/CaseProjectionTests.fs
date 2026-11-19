@@ -536,6 +536,44 @@ let private referenceOwnership database =
                         SubmissionValue.Text reference
                     ])
 
+        let search requester text =
+            task {
+                let! result =
+                    Service.list
+                        requester
+                        {
+                            Page = { AfterCursor = None; Limit = 1 }
+                            Filter =
+                                CaseListFilter.create
+                                    []
+                                    [ CaseStatus.Closed ]
+                                    []
+                                    (Some text)
+                                    CaseListOrder.Reference
+                        }
+                        VerificationSupport.token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    Expect.isEmpty page.Items "The selected filter excludes the exact result"
+                    return page.ExactReference
+                | other -> return failtestf "Expected an authorized search: %A" other
+            }
+
+        let exact caseId requester selector current matched =
+            task {
+                let! result = search requester selector
+
+                Expect.equal
+                    (result
+                     |> Option.map (fun item ->
+                         item.CaseId,
+                         CaseReference.format item.CaseReference,
+                         Option.map CaseReference.format item.MatchedReference))
+                    (Some(caseId, current, matched))
+                    "Exact search carries the retained selector and current reference independently"
+            }
+
         let! introduced = change 50 "synthetic-a" 1L "REF-ALIAS"
         StoreFixtures.accepted introduced |> ignore
         let! current = get "REF-ALIAS"
@@ -555,6 +593,66 @@ let private referenceOwnership database =
             (matched.MatchedReference |> Option.map CaseReference.format)
             (Some "synthetic-a")
             "Reads report the earlier matched reference"
+
+        let caseId = current.Snapshot.CaseId
+        do! exact caseId actor "synthetic-a" "REF-ALIAS" (Some "synthetic-a")
+        do! exact caseId actor "REF-ALIAS" "REF-ALIAS" None
+
+        let scopedPrincipal =
+            PrincipalKey.human "https://issuer.example/" "reference-discovery-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registration =
+            StoreFixtures.personSubmission
+                actor.Store
+                (StoreFixtures.id database.Fixture 920001)
+                scopedPrincipal
+                None
+                "people.register"
+                (Submissions.profile DomainInputs.actorProfile)
+
+        let! registered =
+            Service.executeSubmission actor registration VerificationSupport.token
+
+        StoreFixtures.acceptedPeople registered
+
+        let! decoy = run 920002 "REF-DECOY" 0L "case.open" Map.empty
+        let decoyId = (StoreFixtures.accepted decoy |> StoreFixtures.caseReceipt).CaseId
+
+        let grant number id active =
+            StoreFixtures.grant
+                actor
+                (StoreFixtures.id database.Fixture number)
+                scopedPrincipal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseId id
+                }
+                active
+
+        let! decoyGrant = grant 920003 decoyId true
+        StoreFixtures.acceptedPeople decoyGrant
+        let! recordedGrant = grant 920004 caseId true
+        StoreFixtures.acceptedPeople recordedGrant
+        let scoped = StoreFixtures.core database.Fixture scopedPrincipal
+        do! exact caseId scoped "synthetic-a" "REF-ALIAS" (Some "synthetic-a")
+
+        let! revoked = grant 920005 caseId false
+        StoreFixtures.acceptedPeople revoked
+        let! hidden = search scoped "synthetic-a"
+        Expect.isNone hidden "Revocation hides both current and historical identity in search"
+
+        let! unavailable =
+            Service.get
+                scoped
+                {
+                    Target = CaseSelector.Reference "synthetic-a"
+                }
+                VerificationSupport.token
+
+        match unavailable with
+        | Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable) -> ()
+        | result -> failtestf "Opening the earlier selector rechecks access: %A" result
 
         for index, reference in [ 51, "synthetic-a"; 52, "SYNTHETIC-A" ] do
             let! duplicate =
@@ -593,6 +691,9 @@ let private referenceOwnership database =
             "SYNTHETIC-A"
             "Current casing is preserved"
 
+        do! exact caseId actor "synthetic-a" "SYNTHETIC-A" (Some "synthetic-a")
+        do! exact caseId actor "Synthetic-A" "SYNTHETIC-A" None
+
         let! steward =
             StoreFixtures.grant
                 actor
@@ -621,6 +722,8 @@ let private referenceOwnership database =
         StoreFixtures.accepted voided |> ignore
         let! erased = run 56 "REF-ALIAS" 5L "case.erase" Map.empty
         StoreFixtures.accepted erased |> ignore
+
+        do! exact caseId actor "REF-ALIAS" "SYNTHETIC-A" (Some "REF-ALIAS")
 
         for index, reference in [ 57, "REF-ALIAS"; 58, "synthetic-a" ] do
             let! read = get reference

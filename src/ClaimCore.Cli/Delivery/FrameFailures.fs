@@ -20,9 +20,25 @@ module InvalidFrameReason =
             None
 
 
+[<RequireQualifiedAccess>]
+type RecoveryRootSetting =
+    | XdgStateHome
+    | Home
+
+module RecoveryRootSetting =
+    let tokens =
+        [
+            RecoveryRootSetting.XdgStateHome, "XDG_STATE_HOME"
+            RecoveryRootSetting.Home, "HOME"
+        ]
+
+    let token setting =
+        tokens |> List.find (fst >> (=) setting) |> snd
+
 type ClientFailure =
     | InstallationMismatch
     | RecoveryUnavailable
+    | RecoveryRootNotAbsolute of RecoveryRootSetting
     | Configuration
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | Authentication
@@ -38,6 +54,7 @@ type ClientFailure =
 type CliFailure =
     | InstallationMismatch
     | RecoveryUnavailable
+    | RecoveryRootNotAbsolute of RecoveryRootSetting
     | ConfigurationInvalid
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | AuthenticationFailed
@@ -53,6 +70,7 @@ type CliFailure =
 type CliFailureCode =
     | InstallationMismatch
     | RecoveryUnavailable
+    | RecoveryRootNotAbsolute
     | ConfigurationInvalid
     | AuthenticationFailed
     | AuthenticationTimeout
@@ -75,6 +93,7 @@ module CliFailureCode =
         function
         | CliFailure.InstallationMismatch -> CliFailureCode.InstallationMismatch
         | CliFailure.RecoveryUnavailable -> CliFailureCode.RecoveryUnavailable
+        | CliFailure.RecoveryRootNotAbsolute _ -> CliFailureCode.RecoveryRootNotAbsolute
         | CliFailure.ConfigurationInvalid
         | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
         | CliFailure.AuthenticationTimeout -> CliFailureCode.AuthenticationTimeout
@@ -86,25 +105,28 @@ module CliFailureCode =
         | CliFailure.InvalidResponse -> CliFailureCode.InvalidResponse
         | CliFailure.ContractMismatch -> CliFailureCode.ContractMismatch
 
-    let toFailure =
-        function
-        | CliFailureCode.InstallationMismatch -> CliFailure.InstallationMismatch
-        | CliFailureCode.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
-        | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
-        | CliFailureCode.AuthenticationTimeout -> CliFailure.AuthenticationTimeout
-        | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
-        | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
-        | CliFailureCode.Cancelled -> CliFailure.Cancelled
-        | CliFailureCode.Internal -> CliFailure.Internal
-        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame InvalidFrameReason.Schema
-        | CliFailureCode.InvalidResponse -> CliFailure.InvalidResponse
-        | CliFailureCode.ContractMismatch -> CliFailure.ContractMismatch
+    let simple =
+        [
+            CliFailure.InstallationMismatch
+            CliFailure.RecoveryUnavailable
+            CliFailure.ConfigurationInvalid
+            CliFailure.AuthenticationFailed
+            CliFailure.AuthenticationTimeout
+            CliFailure.ServiceUnavailable
+            CliFailure.Cancelled
+            CliFailure.Internal
+            CliFailure.InvalidResponse
+            CliFailure.ContractMismatch
+        ]
+        |> List.map (fun failure -> failure, token (ofFailure failure))
 
 module ClientFailure =
     let ofFrame =
         function
         | CliFailure.InstallationMismatch -> ClientFailure.InstallationMismatch
         | CliFailure.RecoveryUnavailable -> ClientFailure.RecoveryUnavailable
+        | CliFailure.RecoveryRootNotAbsolute setting ->
+            ClientFailure.RecoveryRootNotAbsolute setting
         | CliFailure.ConfigurationInvalid -> ClientFailure.Configuration
         | CliFailure.ConfigurationIssue(setting, issue) ->
             ClientFailure.ConfigurationIssue(setting, issue)

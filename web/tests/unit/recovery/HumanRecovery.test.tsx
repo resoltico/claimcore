@@ -89,7 +89,7 @@ const setup = (
 ) => {
   const journal: RecoveryJournal = {
     list: vi.fn().mockResolvedValue([record]),
-    put: vi.fn().mockResolvedValue(undefined),
+    put: vi.fn().mockResolvedValue("inserted"),
     remove: vi.fn().mockRejectedValue(new Error("owned cleanup failure")),
   };
   vi.stubGlobal(
@@ -204,7 +204,7 @@ it("keeps an in-flight identity lookup through an unverified same-session reques
   let records = [record];
   const journal: RecoveryJournal = {
     list: vi.fn().mockImplementation(() => Promise.resolve(records)),
-    put: vi.fn().mockResolvedValue(undefined),
+    put: vi.fn().mockResolvedValue("inserted"),
     remove: vi.fn().mockImplementation(() => {
       records = [];
       return Promise.resolve();

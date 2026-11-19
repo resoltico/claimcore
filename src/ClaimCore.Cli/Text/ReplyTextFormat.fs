@@ -45,6 +45,19 @@ module internal ReplyTextFormat =
     let label (rendering: RenderingContext) key =
         MessageCatalogs.renderWithNumber (number rendering) rendering.Language key Map.empty
 
+    let diagnostic (rendering: RenderingContext) code parameters =
+        let arguments =
+            parameters
+            |> List.map (fun (name, value) ->
+                name,
+                match value with
+                | JsonValue.Integer value -> number rendering value
+                | JsonValue.String value -> value
+                | _ -> invalidOp "Diagnostic arguments are declared scalars.")
+            |> Map.ofList
+
+        MessageCatalogs.render rendering.Language (DiagnosticCode.key code) arguments
+
     let actorName (rendering: RenderingContext) actor =
         ActorPresentation.displayName (MessageCatalogs.render rendering.Language) actor
 

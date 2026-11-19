@@ -37,6 +37,13 @@ module HumanReplies =
                         Access.rolesFor required |> List.map Role.token
                     ))
                     message.Arguments
+            | Refusal.CaseDateRange upper ->
+                Map.add
+                    "field"
+                    (PresentedValue.Message(
+                        TaskInputPresentation.messageKey (TaskInputId.CaseDate upper) "label"
+                    ))
+                    message.Arguments
             | Refusal.Case(CaseRefusal.NotOffered state) ->
                 Map.add "state" (PresentedValue.State state) message.Arguments
             | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) ->

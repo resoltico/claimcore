@@ -131,8 +131,11 @@ module internal ViewText =
                             |> List.map (fun token -> text (PresentedValue.Code(vocabulary, token)))
                             |> String.concat ", "
                         ]
-                | RegionContent.Notice notice ->
-                    [ label notice.MessageId ] @ (notice.Reason |> Option.map text |> Option.toList)
+                | RegionContent.Notice notices ->
+                    notices
+                    |> List.collect (fun notice ->
+                        [ label notice.MessageId ]
+                        @ (notice.Reason |> Option.map text |> Option.toList))
                 | RegionContent.Timeline entries ->
                     entries
                     |> List.collect (fun entry ->
@@ -189,11 +192,9 @@ module internal ViewText =
             | ObservationBasis.Unavailable -> "UTC"
 
         let screen =
-            { document.Screen with
-                Regions =
-                    document.Screen.Regions
-                    |> List.filter (fun region -> region.Role <> RegionRole.Context)
-            }
+            document.Screen.Regions
+            |> List.filter (fun region -> region.Role <> RegionRole.Context)
+            |> fun regions -> Screen.withRegions regions document.Screen
 
         let body =
             renderWithHeader zone includeHeader includeDetails options rendering screen

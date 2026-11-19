@@ -123,9 +123,6 @@ module HumanDocument =
         if not (List.forall Affordance.valid actions) then
             invalidArg (nameof actions) "A document requires valid declared input controls."
 
-        let screen =
-            Screen.create screen.Regions |> Screen.withCurrentGroups screen.CurrentGroups
-
         match subject with
         | DocumentSubject.Requester identity when identity.State = RequesterKind.Active ->
             if
@@ -601,10 +598,16 @@ module HumanReadDocuments =
         let links =
             value.ExactReference
             |> Option.map (fun value ->
-                named
-                    "field.caseReference.label"
-                    LinkRelation.OpenCase
-                    (Link.caseById value.CaseId))
+                let destination =
+                    match value.MatchedReference with
+                    | Some matched ->
+                        Link.CaseGet
+                            {
+                                Target = CaseSelector.Reference(CaseReference.format matched)
+                            }
+                    | None -> Link.caseById value.CaseId
+
+                named "field.caseReference.label" LinkRelation.OpenCase destination)
             |> Option.toList
 
         resource
@@ -621,7 +624,7 @@ module HumanReadDocuments =
         listPage value.Basis (AssigneesScreen.view value) value.NextCursor
 
     let summary (value: CaseWorklistSummary) =
-        listPage value.Basis (CaseTotalsScreen.view value) None
+        listPage value.Basis (CaseTotalsScreen.view value) value.NextCursor
 
     let views (value: WorkViews) =
         let links =
@@ -773,11 +776,13 @@ module HumanReadDocuments =
                             RegionRole.Notice
                             None
                             (RegionContent.Notice
-                                {
-                                    MessageId = "label.sessionsTerminated"
-                                    Reason = None
-                                    Tone = NoticeTone.Info
-                                })
+                                [
+                                    {
+                                        MessageId = "label.sessionsTerminated"
+                                        Reason = None
+                                        Tone = NoticeTone.Info
+                                    }
+                                ])
                         ScreenEntries.entryRegion
                             RegionRole.Details
                             None
@@ -800,11 +805,13 @@ module HumanReadDocuments =
                             RegionRole.Notice
                             None
                             (RegionContent.Notice
-                                {
-                                    MessageId = "label.sessionTerminationUnknown"
-                                    Reason = None
-                                    Tone = NoticeTone.Warning
-                                })
+                                [
+                                    {
+                                        MessageId = "label.sessionTerminationUnknown"
+                                        Reason = None
+                                        Tone = NoticeTone.Warning
+                                    }
+                                ])
                     ]
         }
 

@@ -176,7 +176,8 @@ let private reminderRevisionAdmission () =
 
     let targeted =
         function
-        | Error [ UsageError.InvalidValue("--expected-reminder-revision", "0") ] -> ()
+        | Error [ UsageError.InvalidRange("--expected-reminder-revision", "0", 1L, 9007199254740991L) ] ->
+            ()
         | other -> failtestf "Expected targeted reminder option refusal: %A" other
 
     Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "0")

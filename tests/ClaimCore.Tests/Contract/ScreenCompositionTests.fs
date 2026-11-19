@@ -273,8 +273,10 @@ let tests =
                             (PresentedValue.Count 0L)
                             "Known zero count"
                     | _ -> failtest "Financial summary table required")
-            matches "case totals" [ RegionRole.Notice; RegionRole.Totals ] (fun () ->
-                data Api.caseSummary |> CaseTotalsScreen.view)
+            matches
+                "case totals"
+                [ RegionRole.Notice; RegionRole.Totals; RegionRole.Results ]
+                (fun () -> data Api.caseSummary |> CaseTotalsScreen.view)
             matches
                 "reminder"
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]

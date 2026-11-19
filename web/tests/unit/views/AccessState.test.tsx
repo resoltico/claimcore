@@ -26,9 +26,13 @@ const inactive: ReadonlyArray<RequesterDocument> = [
           role: "NOTICE",
           content: {
             kind: "NOTICE",
-            messageId: "label.accessRequested",
-            tone: "INFO",
-            reason: { kind: "TEXT", value: "PRIVATE_NOTICE_CANARY" },
+            notices: [
+              {
+                messageId: "label.accessRequested",
+                tone: "INFO",
+                reason: { kind: "TEXT", value: "PRIVATE_NOTICE_CANARY" },
+              },
+            ],
           },
         },
         {

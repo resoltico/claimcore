@@ -114,7 +114,9 @@ See [erasure limits](operating.md#erasure-limits) for backups and copies outside
 
 Open **Access history**, or run `claimcore people history`, to see who changed access and what was
 recorded. Actor names reflect current profiles, including profile erasure. Follow each continuation to
-review more history. A case-specific role does not provide access-history access.
+review more history. A case-specific role does not provide access-history access. **Download CSV**
+starts at the first page of the current actor selection and applies the same disclosure rules
+on every page.
 
 If a change cannot be confirmed, keep its identifier and use [delivery recovery](integrating.md#recover-an-uncertain-change).
 Checking a result does not record it again. Retrying an in-memory reviewed change sends its identical
@@ -144,5 +146,3 @@ claimcore people terminate-sessions ACTOR-ID --dry-run
 
 These examples prepare without sending. Omit `--dry-run` to execute a deliberate request. The commands
 have no preview endpoint, ledger operation ID or recovery lookup.
-The people-history view offers **Download CSV** for the current actor selection. The download starts
-at the first page and retains the existing history disclosure rules on every page.

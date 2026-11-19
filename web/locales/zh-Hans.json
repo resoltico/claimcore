@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "案件报告",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "报告第 {page} 页",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "下一页报告",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "从头查看报告",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "无法使用此案件筛选条件。",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "请更正或清除该字段，以使用其余筛选条件。",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "请选择要保留的一个值。如有需要，请先编辑该值，再应用更正。",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "应用更正",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "清除字段",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "报告日期",
     "source": "274bd4f0d808"

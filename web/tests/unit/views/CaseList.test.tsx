@@ -100,7 +100,8 @@ it("opens the core-supplied exact reference without inferring it from the query 
               },
             },
             {
-              role: "NOTICE",
+              role: "FACTS",
+              titleId: "label.exactReference",
               content: {
                 kind: "ENTRIES",
                 entries: [
@@ -132,10 +133,13 @@ it("opens the core-supplied exact reference without inferring it from the query 
   const select = vi.fn();
   render(<CaseList onSelect={select} />);
   fireEvent.click(await screen.findByRole("link", { name: "ADVISED-CASE" }));
-  expect(select).toHaveBeenCalledWith({
-    kind: "ID",
-    caseId: "20000000-0000-4000-8000-000000000001",
-  });
+  expect(select).toHaveBeenCalledWith(
+    {
+      kind: "ID",
+      caseId: "20000000-0000-4000-8000-000000000001",
+    },
+    "case-exact-match",
+  );
 });
 it("does not infer an exact match from a matching visible row when the core supplies null", async () => {
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(page(false, null)));

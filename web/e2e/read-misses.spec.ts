@@ -108,9 +108,13 @@ for (const language of ["ar", "en-XA"] as const) {
     const supplied = document.screen.regions.find((region) => region.content.kind === "NOTICE");
     expect(supplied?.content).toEqual({
       kind: "NOTICE",
-      messageId: "label.operationPending",
-      tone: "INFO",
-      reason: { kind: "INSTANT", value: finalAt },
+      notices: [
+        {
+          messageId: "label.operationPending",
+          tone: "INFO",
+          reason: { kind: "INSTANT", value: finalAt },
+        },
+      ],
     });
     const meaning =
       language === "ar"

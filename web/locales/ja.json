@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "案件レポート",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "レポートのページ {page}",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "次のレポートページ",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "レポートを最初から表示",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "この案件の絞り込み条件は使用できません。",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "残りの絞り込み条件を使うには、項目を修正するかクリアしてください。",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "残す値を一つ選択してください。必要に応じて編集し、修正を適用してください。",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "修正を適用",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "項目をクリア",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "集計対象の日付",
     "source": "274bd4f0d808"

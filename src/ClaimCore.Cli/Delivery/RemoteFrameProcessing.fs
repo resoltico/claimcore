@@ -47,7 +47,7 @@ type internal AuthenticatedFrameAccess =
         Client: System.Net.Http.HttpClient
         IsCurrent: AccessToken -> bool
         Clock: TimeProvider
-        JournalDirectory: unit -> Result<string, unit>
+        JournalDirectory: unit -> Result<string, ClientFailure>
     }
 
 module private FrameInvocation =
@@ -176,12 +176,12 @@ module private FrameInvocation =
                 match
                     directory
                     |> Result.bind (fun directory ->
-                        RecoveryJournal.save directory identity |> Result.map (fun () -> directory))
+                        RecoveryJournal.save directory identity
+                        |> Result.map (fun () -> directory)
+                        |> Result.mapError (fun () -> ClientFailure.RecoveryUnavailable))
                 with
-                | Error() ->
-                    return
-                        CliReply.local ClientFailure.RecoveryUnavailable
-                        |> CliReply.forAttempt frame DeliveryState.NotSent
+                | Error problem ->
+                    return CliReply.local problem |> CliReply.forAttempt frame DeliveryState.NotSent
                 | Ok _ when not (current ()) ->
                     return
                         CliReply.local ClientFailure.Cancelled

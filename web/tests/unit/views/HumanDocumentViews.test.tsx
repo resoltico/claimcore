@@ -115,6 +115,6 @@ it("renders supplied aggregate precision and opaque totals content from a HUMAN 
   expect(screen.getByText("1,999,999,999,999,999,999.9998 EUR")).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
-    expect.objectContaining({ body: JSON.stringify({ text: "authored filter" }) }),
+    expect.objectContaining({ body: JSON.stringify({ text: "authored filter", limit: 50 }) }),
   );
 });

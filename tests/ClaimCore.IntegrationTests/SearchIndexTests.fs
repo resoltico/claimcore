@@ -347,7 +347,8 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         Expect.equal totals.Counts.Total 2L "Search selects each financial parent once"
 
         Expect.equal
-            (totals.Claimed
+            (totals.Rows
+             |> List.choose _.Claimed
              |> List.map (fun value ->
                  Currency.format value.Currency, DecimalTotal.format value.Amount))
             [ "EUR", "1000" ]

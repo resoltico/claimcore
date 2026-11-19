@@ -92,7 +92,7 @@ claimcore_firefox="$(cd web && node --input-type=module -e 'import { firefox } f
 
 ### Chrome or Chromium
 
-In a browser with the modern [Chrome Certificate Manager](https://github.com/chromium/chromium/blob/main/net/data/ssl/chrome_root_store/faq.md#whats-the-chrome-certificate-manager),
+In a browser with [Chrome Certificate Manager](https://github.com/chromium/chromium/blob/main/net/data/ssl/chrome_root_store/faq.md#whats-the-chrome-certificate-manager),
 open `chrome://certificate-manager`, select **Local certificates**, then **Installed by you**.
 Under **Trusted Certificates**, choose **Import** and select this installation's
 `$claimcore_config/ca.pem`. Import the public CA certificate, not `ca.key` or `server.pfx`.

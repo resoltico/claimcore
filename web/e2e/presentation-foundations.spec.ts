@@ -513,22 +513,6 @@ test("renders core view ordering, counts and row semantics without reconstructin
               role: "RESULTS",
               content: {
                 kind: "TABLE",
-                sections: [
-                  {
-                    titleId: "label.exactReferenceMatch",
-                    entries: [
-                      {
-                        key: "exactReference",
-                        labelId: "field.caseReference.label",
-                        prominence: "PRIMARY",
-                        value: {
-                          kind: "REFERENCE",
-                          value: "VISIBLE-MATCH",
-                        },
-                      },
-                    ],
-                  },
-                ],
                 columns: [
                   {
                     key: "caseReference",
@@ -588,6 +572,21 @@ test("renders core view ordering, counts and row semantics without reconstructin
                         }),
                       },
                     ],
+                  },
+                ],
+              },
+            },
+            {
+              role: "FACTS",
+              titleId: "label.exactReferenceMatch",
+              content: {
+                kind: "ENTRIES",
+                entries: [
+                  {
+                    key: "exactReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "REFERENCE", value: "VISIBLE-MATCH" },
                   },
                 ],
               },
@@ -2730,6 +2729,7 @@ test("People uses core roles and state without row reads and forwards known-zero
   ]);
   expect(summaryInputs).toEqual([
     {
+      limit: 50,
       view: "ALL",
       status: ["OPENED"],
       lifecycle: ["ACTIVE"],

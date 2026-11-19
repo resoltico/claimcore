@@ -57,40 +57,33 @@ module internal CaseSummaryQuery =
 
         {
             CaseCountGroup.Responsibility =
-                DatabaseSession.optional<string> 8 row
+                DatabaseSession.optional<string> 4 row
                 |> Option.map (fun value ->
                     Vocabulary.tryParse CaseAssignment.vocabulary value
                     |> Option.defaultWith (fun () ->
                         raise (RecordCorruptException "Invalid responsibility aggregate.")))
             Due =
-                Vocabulary.tryParse CaseDue.vocabulary (DatabaseSession.value<string> 9 row)
+                Vocabulary.tryParse CaseDue.vocabulary (DatabaseSession.value<string> 5 row)
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid due aggregate."))
             Lifecycle = lifecycle
             Status = status
             Progress = progress
             Count = count
-            Claimed =
-                total
-                    false
-                    count
-                    (DatabaseSession.optional<string> 4 row)
-                    (DatabaseSession.optional<string> 5 row)
-            Payable =
-                total
-                    false
-                    count
-                    (DatabaseSession.optional<string> 6 row)
-                    (DatabaseSession.optional<string> 7 row)
+
         }
 
     let private grouping =
         function
-        | None -> "NULL::text", [||]
+        | None -> "''::text", [||]
         | Some CaseGrouping.RegisteredMonth -> "to_char(c.registered_on,'YYYY-MM')", [||]
         | Some CaseGrouping.ReceivedMonth -> "to_char(c.received_on,'YYYY-MM')", [||]
         | Some CaseGrouping.ClosedMonth -> "to_char(c.closed_on,'YYYY-MM')", [||]
-        | Some CaseGrouping.Outcome -> "c.outcome", [||]
+        | Some CaseGrouping.Outcome ->
+            let parameter = CaseSelectionSql.suffix 1
+
+            $"array_position({parameter}::text[],c.outcome)::text",
+            [| box (Vocabulary.tokens ClosureOutcome.vocabulary |> List.toArray) |]
         | Some CaseGrouping.Responsible -> "c.responsible_actor::text", [||]
         | Some CaseGrouping.DaysOpen ->
             let bounds = DaysOpenBand.bounds |> List.map snd |> List.toArray
@@ -99,10 +92,10 @@ module internal CaseSummaryQuery =
             let cases =
                 DaysOpenBand.bounds
                 |> List.mapi (fun index _ ->
-                    $"WHEN (COALESCE(c.closed_on,$6::date)-c.registered_on) <= ({parameter}::integer[])[{index + 1}] THEN '{index}'")
+                    $"WHEN (COALESCE(c.closed_on,$6::date)-c.registered_on) <= ({parameter}::integer[])[{index + 1}] THEN '{index + 1}'")
                 |> String.concat " "
 
-            $"CASE {cases} ELSE '{bounds.Length}' END", [| box bounds |]
+            $"CASE {cases} ELSE '{bounds.Length + 1}' END", [| box bounds |]
 
     let private invalid message = raise (RecordCorruptException message)
 
@@ -117,7 +110,10 @@ module internal CaseSummaryQuery =
                 return Map.empty
             else
                 let ids =
-                    keys |> List.choose (fst >> Option.map actorId >> Option.map ActorId.value)
+                    keys
+                    |> List.filter ((<>) CaseReportPosition.missing)
+                    |> List.distinct
+                    |> List.map (actorId >> ActorId.value)
 
                 if ids.IsEmpty then
                     return Map.empty
@@ -144,7 +140,7 @@ module internal CaseSummaryQuery =
         | (CaseGrouping.RegisteredMonth | CaseGrouping.ReceivedMonth | CaseGrouping.ClosedMonth),
           Some value -> month value
         | CaseGrouping.Outcome, Some value ->
-            Vocabulary.tryParse ClosureOutcome.vocabulary value
+            CaseReportPosition.ranked value (Vocabulary.all ClosureOutcome.vocabulary)
             |> Option.map CaseGroupKey.Outcome
             |> Option.defaultWith (fun () -> invalid "Invalid reporting outcome.")
         | CaseGrouping.Responsible, Some value ->
@@ -152,104 +148,154 @@ module internal CaseSummaryQuery =
             |> Option.map CaseGroupKey.Responsible
             |> Option.defaultWith (fun () -> invalid "Missing reporting account.")
         | CaseGrouping.DaysOpen, Some value ->
-            match
-                System.Int32.TryParse(
-                    value,
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture
-                )
-            with
-            | true, index ->
-                Vocabulary.all DaysOpenBand.vocabulary
-                |> List.tryItem index
-                |> Option.map CaseGroupKey.DaysOpen
-                |> Option.defaultWith (fun () -> invalid "Invalid number-of-days group.")
-            | _ -> invalid "Invalid number-of-days group."
+            CaseReportPosition.ranked value (Vocabulary.all DaysOpenBand.vocabulary)
+            |> Option.map CaseGroupKey.DaysOpen
+            |> Option.defaultWith (fun () -> invalid "Invalid number-of-days group.")
         | _, None ->
             MissingCaseGroup.forGrouping grouping
             |> Option.map CaseGroupKey.Missing
             |> Option.defaultWith (fun () -> invalid "Missing required report grouping key.")
 
-    let read connection selection groupBy token =
+    let read connection selection groupBy (after: CaseReportPosition option) limit token =
         task {
             let expression, groupParameters = grouping groupBy
 
+            let parameter offset =
+                CaseSelectionSql.suffix (groupParameters.Length + offset)
+
+            let afterGroup, afterCurrency, fetch, overall =
+                parameter 1, parameter 2, parameter 3, parameter 4
+
+            let missing = parameter 5
+
             let parameters =
-                Array.append (CaseSelectionSql.parameters selection) groupParameters
+                Array.concat
+                    [
+                        CaseSelectionSql.parameters selection
+                        groupParameters
+                        [|
+                            DatabaseSession.parameter (after |> Option.map _.GroupOrder)
+                            DatabaseSession.parameter (after |> Option.map _.CurrencyOrder)
+                            box (limit + 1)
+                            box groupBy.IsNone
+                            box CaseReportPosition.missing
+                        |]
+                    ]
 
             let predicate = CaseSelectionSql.predicate selection
+            // Form scope once. Each contribution joins at its own grain before summation.
+            let sql =
+                $"""
+WITH selected AS MATERIALIZED (
+    SELECT c.case_id,c.state,c.status,c.progress,c.claimed_currency,c.claimed_amount,
+           c.payable_currency,c.payable_amount,
+           ({CaseSelectionSql.responsibility}) AS responsibility,({CaseSelectionSql.due}) AS due,
+           COALESCE(({expression}),{missing}::text) AS group_key
+    FROM claimcore.cases c WHERE {predicate}
+), facets AS (
+    SELECT state,status,progress,count(*) AS cases,responsibility,due
+    FROM selected GROUP BY state,status,progress,responsibility,due
+), contributions AS (
+    SELECT group_key,claimed_currency AS currency,claimed_amount AS claimed,NULL::numeric AS payable,NULL::numeric AS net
+    FROM selected WHERE claimed_currency IS NOT NULL
+    UNION ALL
+    SELECT group_key,payable_currency,NULL,payable_amount,NULL FROM selected WHERE payable_currency IS NOT NULL
+    UNION ALL
+    SELECT s.group_key,p.currency,NULL,NULL,p.paid-p.returned
+    FROM selected s JOIN claimcore.case_payment_totals p ON p.case_id=s.case_id
+), amounts AS (
+    SELECT group_key,currency,sum(claimed)::text AS claimed,count(claimed) AS claimed_cases,
+           sum(payable)::text AS payable,count(payable) AS payable_cases,
+           sum(net)::text AS net,count(net) AS net_cases
+    FROM contributions GROUP BY group_key,currency
+), group_counts AS (
+    SELECT group_key,count(*) AS cases FROM selected GROUP BY group_key
+    UNION ALL
+    SELECT '',0 WHERE {overall}::boolean AND NOT EXISTS (SELECT 1 FROM selected)
+), report_page AS (
+    SELECT g.group_key,COALESCE(a.currency,'') AS currency,g.cases,
+           a.claimed,a.claimed_cases,a.payable,a.payable_cases,a.net,a.net_cases
+    FROM group_counts g LEFT JOIN amounts a USING(group_key)
+    WHERE {afterGroup}::text IS NULL OR
+        (g.group_key COLLATE "C",COALESCE(a.currency,'') COLLATE "C") >
+        ({afterGroup}::text COLLATE "C",{afterCurrency}::text COLLATE "C")
+    ORDER BY g.group_key COLLATE "C",COALESCE(a.currency,'') COLLATE "C" LIMIT {fetch}
+)
+SELECT * FROM (
+    SELECT state,status,progress,cases,responsibility,due,
+           NULL::text AS group_key,NULL::text AS currency,
+           NULL::text AS claimed,NULL::bigint AS claimed_cases,
+           NULL::text AS payable,NULL::bigint AS payable_cases,NULL::text AS net,NULL::bigint AS net_cases
+    FROM facets
+    UNION ALL
+    SELECT NULL,NULL,NULL,cases,NULL,NULL,group_key,currency,claimed,claimed_cases,payable,payable_cases,net,net_cases
+    FROM report_page
+) combined
+ORDER BY group_key COLLATE "C" NULLS FIRST,currency COLLATE "C" NULLS FIRST
+"""
 
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}),({expression}) FROM claimcore.cases c WHERE {predicate} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10,11")
-                    parameters
-                    token
+            let! rows = DatabaseSession.rows connection sql parameters token
 
-            let! netRows =
-                DatabaseSession.rows
-                    connection
-                    ($"SELECT p.currency,sum(p.paid-p.returned)::text,count(*),({expression}) FROM claimcore.cases c JOIN claimcore.case_payment_totals p ON p.case_id=c.case_id WHERE {predicate} GROUP BY p.currency,4")
-                    parameters
-                    token
+            let facets, reports =
+                rows |> List.partition (DatabaseSession.optional<string> 6 >> Option.isNone)
 
-            let payments =
-                netRows
-                |> List.map (fun row ->
-                    DatabaseSession.optional<string> 3 row,
-                    total
-                        true
-                        (DatabaseSession.value<int64> 2 row)
-                        (Some(DatabaseSession.value<string> 0 row))
-                        (Some(DatabaseSession.value<string> 1 row))
-                    |> Option.get)
+            if reports.Length > limit + 1 then
+                invalid "Report rows exceeded the PostgreSQL page bound."
 
-            let byGroup column =
-                List.groupBy (DatabaseSession.optional<string> column)
+            let visible = reports |> List.truncate limit
+            let keys = visible |> List.map (DatabaseSession.value<string> 6)
+            let! names = actorNames connection groupBy keys token
 
-            let counted = byGroup 10 rows
+            let position row =
+                {
+                    GroupOrder = DatabaseSession.value<string> 6 row
+                    CurrencyOrder = DatabaseSession.value<string> 7 row
+                }
 
-            let netByGroup =
-                payments
-                |> List.groupBy fst
-                |> List.map (fun (key, values) -> key, List.map snd values)
-                |> Map.ofList
+            let data row =
+                let key = position row
 
-            let combine payments =
-                CaseWorklistSummary.combineTotals payments
-                |> Result.defaultWith (fun _ -> invalid "Invalid exact currency totals.")
+                let currency =
+                    if key.CurrencyOrder = "" then
+                        None
+                    else
+                        Some key.CurrencyOrder
 
-            let summary payments cases =
-                cases
-                |> List.map group
-                |> CaseWorklistSummary.fromGroups selection.DateBasis (combine payments)
-                |> Result.defaultWith (fun _ -> invalid "Invalid case totals or counts.")
+                let amount column signed =
+                    match DatabaseSession.optional<string> column row with
+                    | Some value ->
+                        total
+                            signed
+                            (DatabaseSession.value<int64> (column + 1) row)
+                            currency
+                            (Some value)
+                    | None -> None
 
-            let overall = summary (payments |> List.map snd) rows
+                {
+                    Group =
+                        groupBy
+                        |> Option.map (fun grouping ->
+                            groupKey
+                                grouping
+                                names
+                                (if key.GroupOrder = CaseReportPosition.missing then
+                                     None
+                                 else
+                                     Some key.GroupOrder))
+                    Count = DatabaseSession.value<int64> 3 row
+                    Currency = currency |> Option.map (Currency.parse >> admitted)
+                    Claimed = amount 8 false
+                    Payable = amount 10 false
+                    NetPaid = amount 12 true
+                }
 
-            match groupBy with
-            | None -> return overall
-            | Some grouping ->
-                let! names = actorNames connection groupBy counted token
+            let counts = facets |> List.map group |> CaseWorklistCounts.fromGroups |> admitted
 
-                let groups =
-                    counted
-                    |> List.map (fun (key, cases) ->
-                        let paid = Map.tryFind key netByGroup |> Option.defaultValue []
-                        let calculated = summary paid cases
+            let next =
+                if reports.Length > limit then
+                    visible |> List.tryLast |> Option.map position
+                else
+                    None
 
-                        {
-                            CaseMoneyGroup.Group = groupKey grouping names key
-                            Count = calculated.Counts.Total
-                            Claimed = calculated.Claimed
-                            Payable = calculated.Payable
-                            NetPaid = calculated.NetPaid
-                        })
-                    |> List.sortBy _.Group
-
-                return
-                    { overall with
-                        GroupBy = groupBy
-                        Groups = groups
-                    }
+            return counts, List.map data visible, next
         }

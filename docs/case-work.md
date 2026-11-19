@@ -12,8 +12,15 @@ Cases opens at **Needs attention**. Use the view pills, search and filters to na
 A case with several attention reasons counts once.
 
 Search matches the current reference, policy numbers, insurer claim references, party names and
-contact details, and current narratives. Exact reference lookup also accepts earlier references. Percent, underscore and backslash are literal text. An exact readable reference has an open
-link even outside the selected view. Unreadable cases remain undisclosed.
+contact details, and current narratives. Percent, underscore and backslash are literal text.
+An exact readable reference has an **Open** link even outside the selected view. That includes
+reserved earlier references. The destination identifies the spelling you matched and shows the
+case's current reference. Unreadable cases remain undisclosed.
+
+When search text is incomplete or invalid, Cases keeps your draft and the last valid selection.
+Submit the draft to see the correction needed. For a malformed bookmark, correct or clear the listed
+filter before loading results. For a repeated single-value filter, choose the value to keep, edit
+it if needed and apply it. Other filters stay in place.
 
 Open a row for its workspace, or use **Reassign** to hand it over directly. Totals use the same selection
 and remain separate by currency. **Load more** loads another page; concurrent work can change counts.
@@ -215,13 +222,20 @@ inclusive. Inactivity uses the latest case-family activity on or before the sele
 date falls outside a date filter. These reports describe current facts at the observation time.
 
 Choose a summary group for registered, received or closed month, outcome, responsible person or
-days open. The summary shows case counts and claimed, payable and net-paid totals by currency,
-with each total's contributing-case count. A group can contain cases with no recorded money.
-In the CLI use `claimcore case summary --group-by received-month`.
+days open. Each report page shows the whole selection's case counts and a page of its groups and
+currency breakdowns. Claimed, payable and net-paid totals include counts of the cases that
+contribute them. A group can contain cases with no recorded money. In the CLI use
+`claimcore case summary --group-by received-month`.
 
-**Download CSV** exports the selected case list, grouped summary, timeline or reminder queue.
-The reminder export includes kind, completion date and deadline outcome. A refusal or resource
-limit returns an explanation before an incomplete export can be accepted.
+Use **Next report page** to continue and **Restart report** to return to page 1. When a page link
+becomes invalid, restart the report to refresh the selection. For a temporary read failure,
+**Try again** reloads the requested page.
+
+**Download CSV** exports the full selected case list, grouped summary, timeline or reminder queue
+from its first page. A grouped report's CSV is independent of the page you are viewing. A
+disclosure refusal blocks its download until the report confirms access again. The reminder
+export includes kind, completion date and deadline outcome. A denied or oversized export returns
+an explanation in place of a file.
 
 ## Daily reminder digest
 

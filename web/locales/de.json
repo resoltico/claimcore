@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "Fallbericht",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "Berichtsseite {page}",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "Nächste Berichtsseite",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "Bericht neu starten",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "Diese Fallauswahl kann nicht verwendet werden.",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "Korrigieren oder leeren Sie das Feld, um die übrigen Filter zu verwenden.",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "Wählen Sie einen Wert aus. Bearbeiten Sie ihn bei Bedarf und wenden Sie die Korrektur an.",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "Korrektur anwenden",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "Feld leeren",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "Berichtszeitraum",
     "source": "274bd4f0d808"

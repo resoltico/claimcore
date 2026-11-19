@@ -293,7 +293,10 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
         regions: [
           {
             role: "NOTICE",
-            content: { kind: "NOTICE", messageId: "task.case.erase.meaning", tone: "FINAL" },
+            content: {
+              kind: "NOTICE",
+              notices: [{ messageId: "task.case.erase.meaning", tone: "FINAL" }],
+            },
           },
         ],
       },

@@ -107,6 +107,52 @@ let tests =
     testList
         "human list navigation"
         [
+            testCase
+                "the exact case document links to the recorded earlier selector only when supplied"
+                (fun () ->
+                    for matched, target in
+                        [
+                            None, CaseSelector.Id parent
+                            Some(DomainInputs.reference "-CASE:+OLD"),
+                            CaseSelector.Reference "-CASE:+OLD"
+                        ] do
+                        let value =
+                            HumanReadDocuments.cases
+                                {
+                                    Basis = DomainInputs.workBasis
+                                    Items = []
+                                    Offers = []
+                                    NextCursor = None
+                                    ExactReference =
+                                        Some
+                                            {
+                                                CaseId = parent
+                                                CaseReference = case.Reference
+                                                MatchedReference = matched
+                                            }
+                                }
+
+                        Expect.equal
+                            (value.Links |> List.map (fun named -> named.Relation, named.Link))
+                            [ LinkRelation.OpenCase, Link.CaseGet { Target = target } ]
+                            "Core publishes the admitted exact target"
+
+                        let facts =
+                            value.Screen.Regions
+                            |> List.choose (fun region ->
+                                match region.Role, region.Content with
+                                | RegionRole.Facts, RegionContent.Entries entries -> Some entries
+                                | _ -> None)
+                            |> List.exactlyOne
+
+                        Expect.equal
+                            (facts |> List.map (fun item -> item.Key, item.Value))
+                            ([ "exactReference", PresentedValue.Reference case.Reference ]
+                             @ (matched
+                                |> Option.map (fun reference ->
+                                    "matchedReference", PresentedValue.Reference reference)
+                                |> Option.toList))
+                            "The exact presentation shows the current and supplied historical references")
             testCase "typed row destinations travel with their captions and cursor" (fun () ->
                 let values = documents ()
 

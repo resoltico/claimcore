@@ -31,7 +31,7 @@ module internal VerbRunner =
                 (Some frame)
                 reply.Frame
 
-    let private pages (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
+    let private readOutput (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
         let pageIO =
             {
                 Exchange = fun frame token -> processor.Exchange(frame, token)
@@ -47,7 +47,7 @@ module internal VerbRunner =
                         io.Errors.Flush()
             }
 
-        PageCommand.run pageIO prepared token
+        ReadCommand.run pageIO prepared token
 
     let private syntax invocation =
         [
@@ -185,7 +185,7 @@ module internal VerbRunner =
 
                 return ExitCode.value ExitCode.Usage
             | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
-                return! pages io processor prepared token
+                return! readOutput io processor prepared token
             | Ok(prepared, None) when CliConfirmation.needsReferencePreview prepared.Invocation ->
                 match! confirmationReference processor prepared token with
                 | Error exit -> return exit

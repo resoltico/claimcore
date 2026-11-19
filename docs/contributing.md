@@ -225,15 +225,15 @@ Deployment, schema and database-host changes also run `bash eng/compose-restart-
 Locale goldens keep exact dates, times, offsets and surrounding wording while admitting only verified
 locale-data variants. Full ICU data can still vary by version: [ICU 77](https://github.com/unicode-org/icu/blob/release-77-1/icu4c/source/i18n/dtfmtsym.cpp#L2228)
 loads Korean wide day periods (`오전`/`오후`), while [ICU 78](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/dtfmtsym.cpp#L2331)
-loads the abbreviated set (`AM`/`PM`). The pinned Alpine SDK image already includes full ICU data;
-adding the same package does not change that distinction. Do not normalize output or alter production
+loads the abbreviated set (`AM`/`PM`). The pinned Alpine SDK image supplies full ICU data. Do not normalize output or alter production
 formatting to hide a locale-data difference; keep wrong-locale and wrong-date negative controls.
 
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
 published service/client integration runs on Linux x64.
-Docs-only PRs run configuration, lint and unit. All changed paths must be under `docs/` or be Markdown
-outside `src/`, `web/` and `tests/`; `LICENSE`, `PROJECT-NOTICE.md` and `LICENSE-COMMERCIAL.md` always
-require the full PR set. Main pushes, merge groups and manual dispatch always run the full set.
+Docs-only PRs run configuration, lint, unit and a release artifact build without publication.
+All changed paths must be under `docs/` or be Markdown outside `src/`, `web/` and `tests/`.
+`LICENSE`, `PROJECT-NOTICE.md` and `LICENSE-COMMERCIAL.md` always require the full PR set.
+Main pushes, merge groups and manual dispatch run the full set.
 Offline CLI usage, help, schema and dry-run checks run in-process in unit; acceptance keeps one
 published smoke for each category.
 
@@ -297,9 +297,9 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
-The Playwright version in [web/package.json](../web/package.json) is constrained by the
-[Firefox accessible-name regression](https://github.com/microsoft/playwright/issues/43967). Verify
-that accessible-name references work across execution worlds before changing that pin.
+The [Playwright pin](../web/package.json) must support Firefox accessible names across execution
+worlds. Use the Firefox acceptance checks when evaluating a bump. See the
+[upstream accessible-name issue](https://github.com/microsoft/playwright/issues/43967).
 Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and disclosure controls intact.
 
 ## Releases
@@ -328,7 +328,10 @@ gh workflow run release.yml --ref main -f tag="$claimcore_release_tag" -f expect
 
 Publication checks the annotated tag, expected SHA, main-branch CI evidence and all offered translations.
 Confirm the workflow succeeded and the public release contains the dated changelog section, the
-archive checksums and the server image digest. Keep public reports free of private inputs.
+archive checksums and the server image digest. For a new GHCR package, set visibility to Public
+after publication. Verify an anonymous pull of the recorded digest with an empty Docker client
+configuration. [GitHub personal-account package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account).
+Keep public reports free of private inputs.
 
 ## Licensing and contributions
 

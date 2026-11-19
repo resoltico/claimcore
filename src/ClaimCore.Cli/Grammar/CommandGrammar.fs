@@ -38,6 +38,8 @@ type CommandCollection =
         LabelId: string
         MinimumItems: int
         MaximumItems: int
+        Members: TaskInputDeclaration list
+        RowConstraints: TaskRowConstraint list
     }
 
 type CommandOptionGrammar =
@@ -101,6 +103,9 @@ module CommandGrammar =
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
+    let needsValue (input: TaskInputDeclaration) =
+        input.Mode = TaskInputMode.Required && input.DefaultText.IsNone
+
     let private declaredInputs operation =
         (TaskDeclarations.describe operation).Inputs
         |> List.map (fun declaration ->
@@ -111,7 +116,7 @@ module CommandGrammar =
                 && TaskRouting.creates operation
 
             let required =
-                declaration.Mode = TaskInputMode.Required
+                needsValue declaration
                 && not (
                     declaration.Source = InputSource.OperationIdentity
                     && (TaskRouting.act operation).IsSome
@@ -205,6 +210,8 @@ module CommandGrammar =
                 LabelId = TaskInputPresentation.messageKey input "label"
                 MinimumItems = item.MinimumRows
                 MaximumItems = TaskCollectionId.maximumRows item.Collection
+                Members = item.Inputs
+                RowConstraints = item.RowConstraints
             })
 
     let collectionFlag (definition: CommandCollection) =

@@ -1,4 +1,8 @@
 {
+  "diagnostic.CASE_DATE_RANGE": {
+    "text": "Laukā {field} norādiet sākuma datumu vai vēlāku datumu.",
+    "source": "ba65df5311c2"
+  },
   "task.people.changeSignInIdentity.label": {
     "text": "Mainīt pierakstīšanās identitāti",
     "source": "d6e69a570915"

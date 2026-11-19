@@ -662,7 +662,8 @@
             },
             "exactReference": {
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "CASE-001"
+              "caseReference": "CASE-001",
+              "matchedReference": null
             }
           }
         },
@@ -750,26 +751,28 @@
                 }
               ]
             },
-            "claimed": [
-              {
-                "currency": "EUR",
-                "amount": "1999999999999999999.9998",
-                "cases": 2
-              }
-            ],
-            "payable": [
-              {
-                "currency": "EUR",
-                "amount": "999999999999999999.9999",
-                "cases": 1
-              }
-            ],
             "basis": {
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             },
-            "netPaid": []
+            "rows": [
+              {
+                "count": 2,
+                "currency": "EUR",
+                "claimed": {
+                  "currency": "EUR",
+                  "amount": "1999999999999999999.9998",
+                  "cases": 2
+                },
+                "payable": {
+                  "currency": "EUR",
+                  "amount": "999999999999999999.9999",
+                  "cases": 1
+                }
+              }
+            ],
+            "nextCursor": null
           }
         },
         "representation": "DATA"
@@ -3069,67 +3072,46 @@
                 }
               ]
             },
-            "claimed": [
-              {
-                "currency": "EUR",
-                "amount": "1999999999999999999.9998",
-                "cases": 2
-              }
-            ],
-            "payable": [
-              {
-                "currency": "EUR",
-                "amount": "999999999999999999.9999",
-                "cases": 1
-              }
-            ],
-            "netPaid": [],
             "basis": {
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             },
             "groupBy": "RECEIVED_MONTH",
-            "groups": [
+            "rows": [
               {
+                "count": 1,
                 "group": {
                   "kind": "MONTH",
                   "value": "2026-01"
                 },
-                "count": 1,
-                "claimed": [
-                  {
-                    "currency": "EUR",
-                    "amount": "999999999999999999.9999",
-                    "cases": 1
-                  }
-                ],
-                "payable": [],
-                "netPaid": []
+                "currency": "EUR",
+                "claimed": {
+                  "currency": "EUR",
+                  "amount": "999999999999999999.9999",
+                  "cases": 1
+                }
               },
               {
+                "count": 1,
                 "group": {
                   "kind": "MISSING",
                   "value": "NOT_RECORDED"
                 },
-                "count": 1,
-                "claimed": [
-                  {
-                    "currency": "EUR",
-                    "amount": "999999999999999999.9999",
-                    "cases": 1
-                  }
-                ],
-                "payable": [
-                  {
-                    "currency": "EUR",
-                    "amount": "999999999999999999.9999",
-                    "cases": 1
-                  }
-                ],
-                "netPaid": []
+                "currency": "EUR",
+                "claimed": {
+                  "currency": "EUR",
+                  "amount": "999999999999999999.9999",
+                  "cases": 1
+                },
+                "payable": {
+                  "currency": "EUR",
+                  "amount": "999999999999999999.9999",
+                  "cases": 1
+                }
               }
-            ]
+            ],
+            "nextCursor": null
           }
         },
         "representation": "DATA"

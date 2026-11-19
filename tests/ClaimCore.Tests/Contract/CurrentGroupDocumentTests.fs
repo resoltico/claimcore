@@ -91,25 +91,23 @@ let tests =
                     let opaque =
                         { original with
                             Screen =
-                                { original.Screen with
-                                    CurrentGroups =
-                                        original.Screen.CurrentGroups
-                                        |> List.map (fun group ->
-                                            { group with
-                                                Section =
-                                                    { group.Section with
-                                                        Entries =
-                                                            [
-                                                                ScreenEntries.value
-                                                                    "opaque-before"
-                                                                    "label.details"
-                                                                    Prominence.Primary
-                                                                    (PresentedValue.Text
-                                                                        "core-before-caption Ω")
-                                                            ]
-                                                    }
-                                            })
-                                }
+                                original.Screen.CurrentGroups
+                                |> List.map (fun group ->
+                                    { group with
+                                        Section =
+                                            { group.Section with
+                                                Entries =
+                                                    [
+                                                        ScreenEntries.value
+                                                            "opaque-before"
+                                                            "label.details"
+                                                            Prominence.Primary
+                                                            (PresentedValue.Text
+                                                                "core-before-caption Ω")
+                                                    ]
+                                            }
+                                    })
+                                |> fun groups -> Screen.withCurrentGroups groups original.Screen
                         }
 
                     let bytes = Codec.encode HumanDocumentCodecs.document opaque

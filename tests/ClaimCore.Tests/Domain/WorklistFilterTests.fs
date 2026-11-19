@@ -104,6 +104,36 @@ let tests =
                         (CaseSearchText.parse "ＲĪＧＡ" |> admitted |> CaseSearchText.value)
                         "rīga"
                         "Full-width Latin and Latvian case normalize independently of current culture")
+            testCase "range admission identifies each upper field" (fun () ->
+                let date raw = CalendarDate.parse raw |> admitted
+
+                let early = date "2026-02-01"
+                let late = date "2026-02-02"
+
+                let admit dates =
+                    { CaseListFilter.empty<string> with
+                        Dates = Map.ofList dates
+                    }
+                    |> CaseListFilter.admit
+
+                for lower, upper in
+                    [
+                        CaseDateFilter.RegisteredFrom, CaseDateFilter.RegisteredThrough
+                        CaseDateFilter.ReceivedFrom, CaseDateFilter.ReceivedThrough
+                        CaseDateFilter.ClosedFrom, CaseDateFilter.ClosedThrough
+                    ] do
+                    Expect.equal
+                        (admit [ lower, late; upper, early ])
+                        (Error(CaseSelectionIssue.ReversedRange upper))
+                        "A reversed pair identifies its upper field"
+
+                    for dates in
+                        [ [ lower, early; upper, early ]; [ lower, late ]; [ upper, early ] ] do
+                        Expect.isOk (admit dates) "Both equal and single-sided bounds admit"
+
+                Expect.isOk
+                    (admit [ CaseDateFilter.InactiveSince, early ])
+                    "Inactive-since has no other endpoint")
             testCase "facet lists act as normalized sets and combine conjunctively" (fun () ->
                 let filter =
                     CaseListFilter.create

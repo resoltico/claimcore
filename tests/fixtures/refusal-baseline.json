@@ -795,6 +795,11 @@
       "target": null
     },
     {
+      "code": "CASE_DATE_RANGE",
+      "action": "CorrectInput",
+      "target": null
+    },
+    {
       "code": "SELF_LINK",
       "action": "CorrectInput",
       "target": null

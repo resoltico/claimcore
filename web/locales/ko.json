@@ -1,4 +1,40 @@
 {
+  "ui.caseReport": {
+    "text": "사건 보고서",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "보고서 {page}페이지",
+    "source": "497f79fdfa97"
+  },
+  "ui.nextReportPage": {
+    "text": "다음 보고서 페이지",
+    "source": "576ab2a77ae7"
+  },
+  "ui.restartReport": {
+    "text": "보고서 처음부터 보기",
+    "source": "b4c20d320a54"
+  },
+  "ui.caseSelectionInvalid": {
+    "text": "이 사건 선택 조건은 사용할 수 없습니다.",
+    "source": "e0237f2d710a"
+  },
+  "ui.caseSelectionRepairField": {
+    "text": "나머지 필터를 사용하려면 필드를 수정하거나 지우세요.",
+    "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "유지할 값 하나를 선택하세요. 필요한 경우 값을 수정한 뒤 적용하세요.",
+    "source": "0924b744bc6b"
+  },
+  "ui.caseSelectionApply": {
+    "text": "수정 적용",
+    "source": "deb2eb9c3eb2"
+  },
+  "ui.caseSelectionClear": {
+    "text": "필드 지우기",
+    "source": "bbb79ede605b"
+  },
   "ui.reportingDates": {
     "text": "보고 날짜",
     "source": "274bd4f0d808"

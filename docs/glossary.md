@@ -44,10 +44,6 @@ and commands. **Actor** and **ActorId** remain the technical registered-identity
 and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the task
 identity in submissions, advice, receipts, history and CLI declarations.
 
-The translated party roles, payment directions, closure outcomes, reminder kinds, deadline outcomes,
-reporting dimensions, day bands, digest, and installation operator wording are AI-assisted and await
-fluent review in all eight translated languages.
-
 ## Account and sign-in identity
 
 A person uses a human account; automation uses a service account. In wire types, a principal is the exact
@@ -88,9 +84,9 @@ combines identity, profile, enablement and role assignments.
 
 ## Party and related case
 
-A party belongs to one case and has a role with an optional name and contact details. Current
-party summaries use creation order. A case link has a source and target. Readers can see incoming
-links only from cases they can read.
+A party belongs to one case and has a role and at least one of a name or contact details. Party
+summaries use creation order. A case link has a source and target. Readers can see incoming links
+from source cases they can read.
 
 ## Closure and net paid
 
@@ -156,19 +152,9 @@ Public outcomes distinguish success, refusal and failure. Execution distinguishe
 and unknown delivery. A failure does not disprove a prior uncertain commit. A ledger position is a
 sequence and 32-byte entry hash; an independently retained checkpoint supplies external comparison evidence.
 
-The new payment-correction wording is agent-translated in all offered languages and awaits fluent
-review. Moving the existing assignment label to shared Presentation preserves its prior translations.
-
-CLI display-locale guidance and operational delivery wording were agent-translated in all offered
-languages and await fluent review.
 ## ClaimCore browser session
 
 A ClaimCore browser session is one protected browser authentication ticket stored by ClaimCore. Its
-canonical principal includes kind, issuer and subject, independently of registration/profile hints.
-Ending these sessions removes the selected principal's tickets; it does not revoke identity-provider
-sessions, credentials or independent bearer tokens. The new session-termination wording in all eight
-translated languages is agent-produced and awaits fluent review.
-The bounded CSV resource advice and browser download chrome are agent-translated in all offered languages;
-these additions await fluent review.
-
-The case-targeted reminder captions and case-restriction reset control are agent-translated in all offered languages and await fluent review.
+canonical principal includes kind, issuer and subject, independently of registration and profile
+hints. Ending these sessions removes the selected principal's tickets. The identity provider manages
+its sessions, credentials and bearer tokens. See [End browser sessions](people-and-access.md#end-browser-sessions).

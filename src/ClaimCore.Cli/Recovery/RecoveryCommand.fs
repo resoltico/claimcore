@@ -101,7 +101,7 @@ module internal RecoveryCommand =
                     RecoveryJournal.location (fun name ->
                         Environment.GetEnvironmentVariable name |> Option.ofObj)
                 with
-                | Error() -> return failure options ClientFailure.RecoveryUnavailable
+                | Error problem -> return failure options problem
                 | Ok directory ->
                     match RecoveryJournal.list directory scope with
                     | Error() -> return failure options ClientFailure.RecoveryUnavailable

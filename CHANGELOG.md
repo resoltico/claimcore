@@ -2,8 +2,11 @@
 
 ## [Unreleased]
 
-- Use a fresh installation for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.
+## [0.20.0] - 2026-11-19
+
+- Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.
 - Format 7 previews with links removed after target erasure can fail verification. Preserve the database and recovery records and [start fresh](docs/operating.md#install-a-fresh-register).
+- Regenerate clients for paged case summaries, grouped related-case rows, ordered HUMAN notices, historical exact-reference selectors and typed case-selection refusals.
 - Regenerate clients for optional registration, Received dates, party and link parts, typed closure and authority, signed payment totals and reminder completion dates.
 - Case receipts carry ordered `payments` differences. Payment-page consumers use supplied `actions` in place of `canRemove`.
 - Open a case with a reference. Clear unknown registration facts, record multiple parties, and search their names or contact details.
@@ -11,7 +14,12 @@
 - Record a decision basis, choose a closure outcome, and give a reason on reopening. The tracker shows the current closure outcome.
 - Change case references while keeping earlier references reserved. Read related cases with case-scoped access. Add or remove links when both cases are readable and the target has not been erased.
 - Track deadlines, record completion dates and filter reminders by kind and deadline outcome. Configure optional daily digest prompts.
-- Filter and group reports by business dates, current outcome, responsibility and days open. Export grouped counts, totals and contributing cases to CSV.
+- Page grouped and overall reports with whole-selection counts. Restart an expired report page from the beginning. Download the complete authorized selection as bounded CSV over HTTP.
+- Group case reports by Registered, Received or Closed month, closure outcome, responsible account or days open.
+- Use CLI `--format csv` for declared snapshot exports and `--all` to stream pages from paged reports.
+- Repair malformed Cases filters in place. Opening a historical exact-reference result retains the earlier spelling and rechecks access.
+- Keep the browser draft after a confirmed first refusal. Earlier uncertain attempts remain available for recovery after a refused retry.
+- CLI help describes party rows and payment defaults. Invalid recovery options and nonabsolute recovery paths give field-specific remedies.
 - Change a person's sign-in identity with roles and responsibilities intact. Use `recover-owner` to restore owner access through the owner connection.
 - Regenerate reminder query clients for explicit ANY state selection; omitted ordinary state remains Pending, and explicit inactive-parent false survives links and filters.
 - CLI hints preserve option-looking values with assigned options; `--` protects reference operands, and lookup hints show required input placeholders.
@@ -33,7 +41,9 @@
 - CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
 - The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.
 - Worklist filters, due/assignment classification and assignee eligibility share core plans across lists and counts; clearing private projections requires accepted erasure evidence.
-- Releases include a server image by digest and CLI archives with checksums. See the [production Compose setup](docs/operating.md#install-from-release-artifacts).
+- Deploy the released Linux x64 server image by digest with the [production Compose setup](docs/operating.md#install-from-release-artifacts).
+- Releases include a source archive and CLI archives for Linux x64, Linux musl x64 and macOS arm64 with SHA-256 checksums.
+- Update terminal character widths and development tooling. Refresh the pinned PostgreSQL 18.7 image.
 
 ## [0.19.0] - 2026-11-17
 

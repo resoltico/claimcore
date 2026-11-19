@@ -604,6 +604,7 @@ let private qualify () =
         supplementary fixture
         stewardship fixture
         DifferentClient.qualify fixture
+        CliNativeOutput.summaryCsv fixture
         fixture.Complete()
     }
 
@@ -619,3 +620,6 @@ let receiptContentGuards = ReceiptObservations.contentGuards
 
 [<Tests>]
 let nativeOutput = CliNativeOutput.publishedOutput
+
+[<Tests>]
+let nativeRelatedDirections = CliNativeOutput.publishedRelatedDirections

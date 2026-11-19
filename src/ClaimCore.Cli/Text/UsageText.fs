@@ -31,7 +31,24 @@ module UsageText =
         | UsageError.MissingOperand operand -> message language (CliMessage.MissingOperand operand)
         | UsageError.ExtraOperand operand -> message language (CliMessage.ExtraOperand operand)
         | UsageError.InvalidValue(flag, value) ->
+            message language (CliMessage.InvalidValue(flag, value))
+        | UsageError.InvalidInteger(flag, value) ->
             message language (CliMessage.InvalidInteger(flag, value))
+        | UsageError.InvalidUuid flag -> message language (CliMessage.InvalidUuid flag)
+        | UsageError.InvalidBoolean flag -> message language (CliMessage.InvalidBoolean flag)
+        | UsageError.InvalidCollection(flag, problem) ->
+            match problem with
+            | CollectionProblem.MalformedJson -> CliMessage.InvalidCollectionJson flag
+            | CollectionProblem.DuplicateMember -> CliMessage.CollectionDuplicateMember flag
+            | CollectionProblem.ExpectedObject -> CliMessage.CollectionExpectedObject flag
+            | CollectionProblem.UnknownMember -> CliMessage.CollectionUnknownMember flag
+            | CollectionProblem.InvalidMember -> CliMessage.CollectionInvalidMember flag
+            | CollectionProblem.TooLarge -> CliMessage.CollectionTooLarge flag
+            |> message language
+        | UsageError.InvalidCollectionCount(flag, minimum, maximum) ->
+            message
+                language
+                (CliMessage.InvalidCollectionCount(flag, string minimum, string maximum))
         | UsageError.InvalidRange(flag, value, minimum, maximum) ->
             message language (CliMessage.InvalidRange(flag, value, string minimum, string maximum))
         | UsageError.InvalidChoice(flag, value, allowed) -> choice language flag value allowed
@@ -128,17 +145,22 @@ module UsageText =
                 [ TerminalText.data (line language issue) ]
             | _ -> []
 
-        String.concat "\n" (TerminalText.data (message language problem) :: (details @ hints))
-        + "\n"
+        let diagnosis =
+            match command with
+            | Some CliCommand.Recovery -> line language issue
+            | _ -> message language problem
+
+        String.concat "\n" (TerminalText.data diagnosis :: (details @ hints)) + "\n"
 
     let renderHost language arguments issue =
-        match issue with
-        | UsageError.UnknownCommand _ when List.tryHead arguments = Some "schema" ->
+        match List.tryHead arguments |> Option.bind CliCommand.parse, issue with
+        | Some CliCommand.Recovery, _ -> host language arguments issue
+        | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
             render language arguments [ issue ]
             + message language (CliMessage.Suggestion(CliIdentity.programName + " help schema"))
             + "\n"
-        | UsageError.UnknownCommand _
-        | UsageError.UnknownOption _ -> render language arguments [ issue ]
-        | UsageError.UnknownTopic topic ->
+        | _, (UsageError.UnknownCommand _ | UsageError.UnknownOption _) ->
+            render language arguments [ issue ]
+        | _, UsageError.UnknownTopic topic ->
             render language arguments [ UsageError.UnknownCommand(topic, []) ]
         | _ -> host language arguments issue

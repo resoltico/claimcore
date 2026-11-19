@@ -25,9 +25,11 @@ read. It checks neither ownership nor ACLs and does not freeze concurrent change
 separately and back it up with the database. Database-backed session sharing is qualified under the documented
 clock conditions; arbitrary multi-host deployment is outside that evidence.
 
-Compose supplies an evaluation environment. Operators own identity restrictions, TLS, deployment, monitoring,
-backup/restore, retention and incident response. There is no multi-tenancy or production qualification. Identify
-the affected revision in reports; no security-fix commitment is made for unmaintained revisions.
+ClaimCore supplies separate Compose templates for evaluation and operator-managed hosting. Operators
+own identity restrictions, TLS, deployment qualification, monitoring, backups, retention and incident
+response. Each register trusts its operators and has no tenancy isolation. Identify the affected
+revision in reports. Unmaintained revisions carry no security-fix commitment.
+See [production hosting](docs/operating.md#install-from-release-artifacts).
 
 Dependency/image declarations are pinned in source and lockfiles. Image or dependency changes need review and
 verification. ClaimCore ships no PostgreSQL image. See the [database declaration](db/postgresql-baseline.json)

@@ -146,45 +146,43 @@ module CaseTotalsCodecs =
                      |> field "value" id (VocabularyCodec.create MissingCaseGroup.vocabulary))
             ]
 
-    let private group =
-        (record (fun key count claimed payable netPaid ->
+    let private row =
+        (record (fun group count currency claimed payable netPaid ->
             {
-                CaseMoneyGroup.Group = key
+                CaseMoneyRow.Group = group
                 Count = count
+                Currency = currency
                 Claimed = claimed
                 Payable = payable
                 NetPaid = netPaid
             })
-        : Fields<CaseMoneyGroup, _>)
-        |> field "group" _.Group key
+        : Fields<CaseMoneyRow, _>)
+        |> optionalField "group" _.Group key
         |> field "count" _.Count (integer 0L JsonValue.MaximumInteger)
-        |> field "claimed" _.Claimed (list 17576 (currencyTotal false))
-        |> field "payable" _.Payable (list 17576 (currencyTotal false))
-        |> field "netPaid" _.NetPaid (list 17576 (currencyTotal true))
+        |> optionalField "currency" _.Currency currency
+        |> optionalField "claimed" _.Claimed (currencyTotal false)
+        |> optionalField "payable" _.Payable (currencyTotal false)
+        |> optionalField "netPaid" _.NetPaid (currencyTotal true)
         |> build
-        |> named "CaseMoneyGroup"
+        |> named "CaseMoneyRow"
 
     let summary =
-        (record (fun counts claimed payable netPaid basis groupBy groups ->
+        (record (fun counts basis groupBy rows cursor ->
             {
                 CaseWorklistSummary.Basis = basis
                 Counts = counts
-                Claimed = claimed
-                Payable = payable
-                NetPaid = netPaid
                 GroupBy = groupBy
-                Groups = defaultArg groups []
+                Rows = rows
+                NextCursor = cursor
             })
         : Fields<CaseWorklistSummary, _>)
         |> field "counts" _.Counts counts
-        |> field "claimed" _.Claimed (list 17576 (currencyTotal false))
-        |> field "payable" _.Payable (list 17576 (currencyTotal false))
-        |> field "netPaid" _.NetPaid (list 17576 (currencyTotal true))
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> optionalField "groupBy" _.GroupBy (VocabularyCodec.create CaseGrouping.vocabulary)
-        |> optionalField
-            "groups"
-            (fun summary -> if summary.GroupBy.IsSome then Some summary.Groups else None)
-            (list System.Int32.MaxValue group)
+        |> field "rows" _.Rows (list Paging.MaximumPageSize row)
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> build
         |> named "CaseWorklistSummary"

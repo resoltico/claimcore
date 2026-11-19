@@ -10,8 +10,9 @@ export type RecoveryRecord = RecoveryScope & {
   readonly subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "PARTY" | "LINK";
   readonly act: string;
 };
+export type JournalPublication = "inserted" | "existing";
 export type RecoveryJournal = {
-  readonly put: (record: RecoveryRecord) => Promise<void>;
+  readonly put: (record: RecoveryRecord) => Promise<JournalPublication>;
   readonly remove: (record: RecoveryRecord) => Promise<void>;
   readonly list: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
 };
@@ -47,7 +48,7 @@ export const sameRecoveryScope = (left: RecoveryScope, right: RecoveryScope): bo
   left.installationId === right.installationId &&
   left.actorId === right.actorId;
 export type PreparedDispatch<T> =
-  | { readonly kind: "sent"; readonly value: T }
+  | { readonly kind: "sent"; readonly publication: JournalPublication; readonly value: T }
   | { readonly kind: "notSent"; readonly reason: "storage" | "stale" };
 /** The journal port resolves only after durable publication/transaction completion. */
 export const journalBeforeSend = async <T>(
@@ -59,11 +60,12 @@ export const journalBeforeSend = async <T>(
   if (!current()) {
     return { kind: "notSent", reason: "stale" };
   }
+  let publication: JournalPublication;
   try {
     if (!isRecoveryRecord(record)) {
       return { kind: "notSent", reason: "storage" };
     }
-    await journal.put(record);
+    publication = await journal.put(record);
   } catch {
     return { kind: "notSent", reason: "storage" };
   }
@@ -71,5 +73,5 @@ export const journalBeforeSend = async <T>(
     // A changed actor/installation cannot clear the earlier scope's conservative record.
     return { kind: "notSent", reason: "stale" };
   }
-  return { kind: "sent", value: await send() };
+  return { kind: "sent", publication, value: await send() };
 };

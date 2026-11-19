@@ -260,15 +260,32 @@ module RequestCodecs =
 
     let caseFilter = filterFields |> finishRead "CaseListSelection"
 
-    let caseSummaryRequest =
+    let private caseSummaryFields =
         (record (fun filter groupBy ->
             {
-                CaseSummaryRequest.Filter = filter
+                CaseSummarySelection.Filter = filter
                 GroupBy = groupBy
             })
-        : Fields<CaseSummaryRequest, _>)
+        : Fields<CaseSummarySelection, _>)
         |> flatten _.Filter filterFields
         |> optionalField "groupBy" _.GroupBy (VocabularyCodec.create CaseGrouping.vocabulary)
+
+    let caseSummarySelection = caseSummaryFields |> finishRead "CaseSummarySelection"
+
+    let caseSummaryRequest =
+        let paging =
+            (record (fun after limit -> { AfterCursor = after; Limit = limit })
+            : Fields<PageRequest, _>)
+            |> pageWith Paging.MaximumCaseCursorCharacters _.AfterCursor _.Limit
+
+        (record (fun selection page ->
+            {
+                CaseSummaryRequest.Selection = selection
+                Page = page
+            })
+        : Fields<CaseSummaryRequest, _>)
+        |> flatten _.Selection caseSummaryFields
+        |> flatten _.Page paging
         |> finishRead RequestSchemas.CaseSummaryRequest
 
     /// Shared selection fields omit traversal state; export and page requests consume this owner.

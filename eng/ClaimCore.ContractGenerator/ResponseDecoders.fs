@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open System.Text.Json
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Wire
 
@@ -23,6 +24,15 @@ module ResponseDecoders =
                 |> String.concat ","
 
             array [ quote "object"; "{" + fields + "}"; optional |> List.map quote |> array ]
+        | Schema.KeyedArray((Schema.Array _ as shape), key, values) ->
+            array
+                [
+                    quote "keyedArray"
+                    schemaDescriptor shape
+                    quote key
+                    values |> List.map quote |> array
+                ]
+        | Schema.KeyedArray _ -> invalidArg "shape" "Keyed cardinality requires an array."
         | Schema.Array(item, minimum, maximum) ->
             array [ quote "array"; schemaDescriptor item; number minimum; number maximum ]
         | Schema.String(pattern, format, minimum, maximum, bytes) ->
@@ -81,6 +91,19 @@ module ResponseDecoders =
                 quote (Api.id endpoint) + ":" + schemaDescriptor endpoint.OutputSchema)
             |> String.concat ","
 
+        let dateFields = CaseDateFilter.all |> List.map CaseDateFilter.token |> List.toArray
+
+        let dateRanges =
+            CaseDateFilter.ranges
+            |> List.map (fun (lower, upper) ->
+                [| CaseDateFilter.token lower; CaseDateFilter.token upper |])
+            |> List.toArray
+
+        let formattingRanges =
+            CaseSearchText.formattingRanges
+            |> List.map (fun (lo, hi) -> [| lo; hi |])
+            |> List.toArray
+
         "const responseDefinitions: Readonly<Record<string,ResponseSchema>> = {"
         + definitions
         + "};\n"
@@ -90,6 +113,19 @@ module ResponseDecoders =
         + "const exportFailureRoot:ResponseSchema = "
         + schemaDescriptor ExportTransport.failure.Schema
         + ";\n"
+        + "export const caseSelectionDateFields = "
+        + JsonSerializer.Serialize dateFields
+        + " as const;\n"
+        + "export const caseSelectionDateRanges = "
+        + JsonSerializer.Serialize dateRanges
+        + " as const;\n"
+        + "export const caseSelectionTextConstraints = {maximumCharacters:"
+        + number CaseSearchText.MaximumCharacters
+        + ",maximumBytes:"
+        + number CaseSearchText.maximumBytes
+        + ",formattingRanges:"
+        + JsonSerializer.Serialize formattingRanges
+        + "} as const;\n"
         + """
 // Structural admission for generator-produced descriptors preserves exact strings.
 // It is not an interpreter for arbitrary regexes; generation admits only BrowserPatterns syntax.
@@ -104,6 +140,7 @@ export type ResponseSchema =
       ReadonlyArray<string>,
     ]
   | readonly ["array", ResponseSchema, number, number]
+  | readonly ["keyedArray", ResponseSchema, string, ReadonlyArray<string>]
   | readonly [
       "string",
       string | null,
@@ -271,6 +308,29 @@ const responseCompound = (
       return responseMembers(schema, value, child);
     case "array":
       return responseArray(schema, value, child);
+    case "keyedArray": {
+      if (!Array.isArray(value) || !admit(schema[1], value)) {
+        return false;
+      }
+      const seen = new Set<string>();
+      return value.every((item: unknown) => {
+        if (!responseObject(item)) {
+          return false;
+        }
+        const key = item[schema[2]];
+        if (typeof key !== "string") {
+          return false;
+        }
+        if (!schema[3].includes(key)) {
+          return true;
+        }
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+    }
     case "oneOf":
       return schema[1].filter((shape) => admit(shape, value)).length === 1;
     case "ref":
@@ -315,6 +375,16 @@ export const isResponseStructure = (
       return responseCompound(schema, value, admit, child);
   }
 };
+const caseSelectionName = "CaseListSelection";
+export const caseSelectionMember = (key: string): ResponseSchema | undefined => {
+  const schema = responseDefinitions[caseSelectionName];
+  if (schema?.[0] !== "object" || !Object.hasOwn(schema[1], key)) {
+    return undefined;
+  }
+  return schema[1][key];
+};
+export const isCaseListSelection = (value: unknown): value is CaseListSelection =>
+  isResponseStructure(["ref", caseSelectionName], value);
 export const isCsvExportFailure = (value:unknown):value is ExportFailureReply => isResponseStructure(exportFailureRoot,value);
 export const isEndpointResponse = <E extends EndpointId>(
   endpoint: E,

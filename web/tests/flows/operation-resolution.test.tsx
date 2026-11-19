@@ -14,7 +14,7 @@ import {
   recoveryScope,
   testJournal,
 } from "../support/recovery.fixtures";
-import type { RecoveryJournal } from "../../src/protocol/recoveryJournal";
+import type { JournalPublication, RecoveryJournal } from "../../src/protocol/recoveryJournal";
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -63,6 +63,31 @@ const reviewClose = async (view: ReturnType<typeof closeOperation>) => {
     view.result.current.confirm(true);
   });
 };
+it("a first canonical not-started refusal settles its own record only", async () => {
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
+  const view = closeOperation();
+  await reviewClose(view);
+  const firstId = view.result.current.prepared!.input.operationId;
+  const anotherTab = { ...recoveryRecord(), operationId: firstId };
+  await testJournal.put(anotherTab);
+  const before = view.result.current.values;
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "hostFailure",
+    status: 429,
+    failure: { code: "RATE_LIMITED", phase: "NOT_STARTED" },
+  });
+  await act(() => view.result.current.execute());
+  await waitFor(() => {
+    expect(view.result.current.notice).toEqual({
+      kind: "diagnostic",
+      diagnostic: { code: "RATE_LIMITED", phase: "NOT_STARTED" },
+    });
+  });
+  expect(view.result.current.values).toEqual(before);
+  expect(view.result.current.priorUncertain).toBe(false);
+  expect(await testJournal.list(recoveryScope)).toEqual([anotherTab]);
+  expect(execute).toHaveBeenCalledTimes(1);
+});
 it("preserves the exact reviewed ID and bytes at first dispatch after the eligibility window advances", async () => {
   const now = Date.now();
   const clock = vi.spyOn(Date, "now").mockReturnValue(now - 10 * 60_000);
@@ -157,7 +182,7 @@ it("the journal commits before a pending submission can be handed off", async ()
   const journal: RecoveryJournal = {
     ...testJournal,
     put: (record) =>
-      new Promise<void>((resolve) => {
+      new Promise<JournalPublication>((resolve) => {
         commit = () => testJournal.put(record).then(resolve);
       }),
   };
@@ -211,7 +236,7 @@ it("storage denial is NOT_SENT and a context change during persistence cannot se
   const paused: RecoveryJournal = {
     ...testJournal,
     put: (record) =>
-      new Promise<void>((resolve) => {
+      new Promise<JournalPublication>((resolve) => {
         commit = () => testJournal.put(record).then(resolve);
       }),
   };
@@ -262,7 +287,7 @@ it.each(["switchback", "unmount"] as const)(
     const journal: RecoveryJournal = {
       ...testJournal,
       put: (record) =>
-        new Promise<void>((resolve) => {
+        new Promise<JournalPublication>((resolve) => {
           commit = () => testJournal.put(record).then(resolve);
         }),
     };
