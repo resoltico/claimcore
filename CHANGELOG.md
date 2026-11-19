@@ -13,6 +13,7 @@
 - Change case references while keeping earlier references reserved. Read related cases with case-scoped access. Add or remove links when both cases are readable and the target has not been erased.
 - Track deadlines, record completion dates and filter reminders by kind and deadline outcome. Configure optional daily digest prompts.
 - Page grouped and overall reports with whole-selection counts. Restart an expired report page from the beginning. Download the complete authorized selection as bounded CSV over HTTP.
+- Group case reports by Registered, Received or Closed month, closure outcome, responsible account or days open.
 - Use CLI `--format csv` for declared snapshot exports and `--all` to stream pages from paged reports.
 - Repair malformed Cases filters in place. Opening a historical exact-reference result retains the earlier spelling and rechecks access.
 - Keep the browser draft after a confirmed first refusal. Earlier uncertain attempts remain available for recovery after a refused retry.
@@ -38,7 +39,8 @@
 - CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
 - The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.
 - Worklist filters, due/assignment classification and assignee eligibility share core plans across lists and counts; clearing private projections requires accepted erasure evidence.
-- Releases include a server image by digest, Linux and macOS CLI archives, and SHA-256 checksums. See the [production Compose setup](docs/operating.md#install-from-release-artifacts).
+- Deploy the released Linux x64 server image by digest with the [production Compose setup](docs/operating.md#install-from-release-artifacts).
+- Releases include a source archive and CLI archives for Linux x64, Linux musl x64 and macOS arm64 with SHA-256 checksums.
 
 ## [0.19.0] - 2026-11-17
 
