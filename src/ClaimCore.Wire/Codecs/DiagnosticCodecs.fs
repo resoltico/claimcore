@@ -388,6 +388,7 @@ module DiagnosticCodecs =
         | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
 
     let describeIssue issue = inputIssue.Write issue |> described
+    let describeViolation value = violation.Write value |> described
 
     let describe refusal =
         match refusal with

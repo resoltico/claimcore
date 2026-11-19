@@ -315,6 +315,38 @@ let private authoredHelp () =
     for token in [ "input:partyRole"; "[input:partyName]"; "[input:partyDetails]"; "CLAIMANT" ] do
         Expect.stringContains helpText token "Text help exposes the same grammar"
 
+    let required = rows.GetProperty("rowConstraints").EnumerateArray() |> Seq.toList
+    Expect.hasLength required 1 "The party row has one joint constraint"
+    let constraint' = required.Head
+
+    Expect.equal
+        (constraint'.GetProperty("kind").GetString())
+        "AT_LEAST_ONE"
+        "Closed constraint kind"
+
+    Expect.equal
+        (constraint'.GetProperty("members").EnumerateArray()
+         |> Seq.map _.GetString()
+         |> Seq.toList)
+        [ "input:partyName"; "input:partyDetails" ]
+        "Either individually optional member satisfies the joint requirement"
+
+    Expect.equal
+        (constraint'.GetProperty("messageId").GetString())
+        "diagnostic.PARTY_CONTENT_REQUIRED"
+        "Structured help references the Core refusal wording"
+
+    Expect.stringContains
+        helpText
+        "Enter a name or details."
+        "English help states the joint requirement"
+
+    let arabic =
+        Discovery.commandHelp (RenderingContext.forLanguage "ar") [ "case"; "open" ]
+        |> Option.get
+
+    Expect.stringContains arabic "أدخل اسمًا أو تفاصيل." "Arabic help renders Core wording"
+
     let row = rows.GetProperty("example").GetString() |> nonNull
 
     let result =

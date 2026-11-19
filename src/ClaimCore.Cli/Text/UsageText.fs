@@ -145,17 +145,22 @@ module UsageText =
                 [ TerminalText.data (line language issue) ]
             | _ -> []
 
-        String.concat "\n" (TerminalText.data (message language problem) :: (details @ hints))
-        + "\n"
+        let diagnosis =
+            match command with
+            | Some CliCommand.Recovery -> line language issue
+            | _ -> message language problem
+
+        String.concat "\n" (TerminalText.data diagnosis :: (details @ hints)) + "\n"
 
     let renderHost language arguments issue =
-        match issue with
-        | UsageError.UnknownCommand _ when List.tryHead arguments = Some "schema" ->
+        match List.tryHead arguments |> Option.bind CliCommand.parse, issue with
+        | Some CliCommand.Recovery, _ -> host language arguments issue
+        | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
             render language arguments [ issue ]
             + message language (CliMessage.Suggestion(CliIdentity.programName + " help schema"))
             + "\n"
-        | UsageError.UnknownCommand _
-        | UsageError.UnknownOption _ -> render language arguments [ issue ]
-        | UsageError.UnknownTopic topic ->
+        | _, (UsageError.UnknownCommand _ | UsageError.UnknownOption _) ->
+            render language arguments [ issue ]
+        | _, UsageError.UnknownTopic topic ->
             render language arguments [ UsageError.UnknownCommand(topic, []) ]
         | _ -> host language arguments issue

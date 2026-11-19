@@ -1,9 +1,9 @@
 import { apiEndpoints } from "../../api/service";
 import { ScreenView } from "../../ui/ScreenView";
-import { limits, type CaseSummarySelection } from "@contracts/client";
+import { limits, type CaseSummarySelection, type HumanRejection } from "@contracts/client";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CsvExportButton } from "../../components/CsvExportButton";
 import { Select } from "../../ui/Select";
 import { queryInput } from "../../protocol/taskCatalog";
@@ -13,6 +13,14 @@ import { NoticeView } from "../../presentation/Message";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useSessionContext } from "../../session/SessionContext";
 
+const blocksReportExport = (rejection: HumanRejection | null, cursor: string | undefined) =>
+  rejection !== null &&
+  !(
+    cursor !== undefined &&
+    rejection.kind === "REFUSED" &&
+    rejection.advice.message.messageId === "diagnostic.INVALID_CURSOR"
+  );
+
 const Report = ({
   selection,
   exportAvailable,
@@ -21,8 +29,13 @@ const Report = ({
   exportAvailable: boolean;
 }) => {
   const p = usePresentation();
-  const [cursor, setCursor] = useState<string>();
-  const [restart, setRestart] = useState(0);
+  const title = useRef<HTMLHeadingElement>(null);
+  const [position, setPosition] = useState<{
+    cursor?: string;
+    page: number;
+    restart: number;
+  }>({ page: 1, restart: 0 });
+  const { cursor, page, restart } = position;
   const query = useEndpoint(
     apiEndpoints.caseSummary,
     { ...selection, limit: limits.maximumPageSize, ...(cursor === undefined ? {} : { cursor }) },
@@ -30,8 +43,27 @@ const Report = ({
     String(restart),
   );
   const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
+  const outcome = query.value?.outcome;
+  const exportBlocked = blocksReportExport(
+    outcome?.kind === "REJECTED" ? outcome.rejection : null,
+    cursor,
+  );
 
   const next = summary?.nextCursor ?? null;
+  const move = (button: HTMLButtonElement, nextCursor?: string) => {
+    if (document.activeElement === button) {
+      title.current?.focus({ preventScroll: true });
+    }
+    setPosition((current) =>
+      nextCursor === undefined
+        ? { page: 1, restart: current.restart + 1 }
+        : { cursor: nextCursor, page: current.page + 1, restart: current.restart },
+    );
+  };
+  const announcement = () =>
+    (page > 1 || restart > 0) && summary !== null && !query.loading
+      ? p.text("ui.reportPage", { page: p.integer(page) })
+      : "";
   const content = () => {
     if (query.loading) {
       return (
@@ -56,21 +88,13 @@ const Report = ({
     return <ScreenView view={summary.screen} timeZone={summary.basis.observation.timeZone} />;
   };
 
-  return (
+  const navigation = () => (
     <>
-      {selection.groupBy === undefined ? null : (
-        <CsvExportButton
-          selection={{ query: apiEndpoints.caseSummary, selection }}
-          available={exportAvailable && query.value?.outcome.kind !== "REJECTED"}
-        />
-      )}
-      {content()}
       {cursor === undefined ? null : (
         <button
           type="button"
-          onClick={() => {
-            setCursor(undefined);
-            setRestart((count) => count + 1);
+          onClick={(event) => {
+            move(event.currentTarget);
           }}
         >
           {p.text("ui.restartReport")}
@@ -79,13 +103,32 @@ const Report = ({
       {next === null || query.loading ? null : (
         <button
           type="button"
-          onClick={() => {
-            setCursor(next);
+          onClick={(event) => {
+            move(event.currentTarget, next);
           }}
         >
           {p.text("ui.nextReportPage")}
         </button>
       )}
+    </>
+  );
+
+  return (
+    <>
+      <h2 ref={title} tabIndex={-1}>
+        {p.text("ui.caseReport")}
+      </h2>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement()}
+      </p>
+      {selection.groupBy === undefined ? null : (
+        <CsvExportButton
+          selection={{ query: apiEndpoints.caseSummary, selection }}
+          available={exportAvailable && !exportBlocked}
+        />
+      )}
+      {content()}
+      {navigation()}
     </>
   );
 };

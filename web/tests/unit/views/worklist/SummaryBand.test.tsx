@@ -224,3 +224,33 @@ it("starts a new selection at page one and keeps grouped export after temporary 
   await screen.findByRole("alert");
   expect(screen.getByRole("button", { name: "Download CSV" })).toBeEnabled();
 });
+
+it("allows cursorless export after a continuation refusal and blocks a real access refusal", async () => {
+  const refusal = (messageId: string, action: "READ_CURRENT" | "ASK_FOR_ACCESS") =>
+    endpointResponse("case.summary", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: { kind: "REFUSED", advice: { message: { messageId, arguments: [] }, action } },
+      },
+    });
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(response("case.summary", { ...summary, nextCursor: "page-2" }))
+    .mockResolvedValueOnce(refusal("diagnostic.INVALID_CURSOR", "READ_CURRENT"))
+    .mockResolvedValueOnce(refusal("diagnostic.RESOURCE_UNAVAILABLE", "ASK_FOR_ACCESS"));
+  vi.stubGlobal("fetch", fetch);
+  render(<SummaryBand filter={{ view: "ALL" }} />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await user.click(await screen.findByRole("button", { name: "Next report page" }));
+  await screen.findByText(/this page link is no longer valid/iu);
+  const download = screen.getByRole("button", { name: "Download CSV" });
+  expect(download).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Restart report" }));
+  await waitFor(() => {
+    expect(download).toBeDisabled();
+  });
+});

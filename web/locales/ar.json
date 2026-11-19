@@ -1,4 +1,12 @@
 {
+  "ui.caseReport": {
+    "text": "تقرير الحالات",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "صفحة التقرير {page}",
+    "source": "497f79fdfa97"
+  },
   "ui.nextReportPage": {
     "text": "صفحة التقرير التالية",
     "source": "576ab2a77ae7"
@@ -14,6 +22,10 @@
   "ui.caseSelectionRepairField": {
     "text": "صحّح الحقل أو امسحه لاستخدام عوامل التصفية المتبقية.",
     "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "اختر قيمة واحدة للاحتفاظ بها. عدّلها إذا لزم الأمر، ثم طبّق التصحيح.",
+    "source": "0924b744bc6b"
   },
   "ui.caseSelectionApply": {
     "text": "تطبيق التصحيح",

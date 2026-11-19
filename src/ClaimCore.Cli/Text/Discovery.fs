@@ -30,10 +30,15 @@ module Discovery =
         |> Option.defaultValue []
 
     let private partyExample (collection: CommandCollection) =
-        let required, optional =
-            collection.Members |> List.partition CommandGrammar.needsValue
+        let examples =
+            collection.RowConstraints
+            |> List.choose (function
+                | TaskRowConstraint.AtLeastOne(members, _) -> List.tryHead members)
+            |> Set.ofList
 
-        required @ List.truncate 1 optional
+        collection.Members
+        |> List.filter (fun value ->
+            CommandGrammar.needsValue value || Set.contains value.Input examples)
         |> List.map (fun memberInput ->
             let value =
                 match choices memberInput.Input, memberInput.Atom with
@@ -46,6 +51,25 @@ module Discovery =
         |> JsonValue.Object
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
+
+    let private rowConstraintText rendering =
+        function
+        | TaskRowConstraint.AtLeastOne(_, missing) ->
+            let code, parameters = DiagnosticCodecs.describeViolation missing
+            ReplyTextFormat.diagnostic rendering code parameters
+
+    let private rowConstraintJson =
+        function
+        | TaskRowConstraint.AtLeastOne(members, missing) ->
+            let code, _ = DiagnosticCodecs.describeViolation missing
+
+            JsonValue.Object
+                [
+                    "kind", JsonValue.String "AT_LEAST_ONE"
+                    "members",
+                    JsonValue.Array(members |> List.map (TaskInputId.token >> JsonValue.String))
+                    "messageId", JsonValue.String(DiagnosticCode.key code)
+                ]
 
     let private operationText (rendering: RenderingContext) operations =
         operations
@@ -171,6 +195,10 @@ module Discovery =
 
                           "\n  "
                           + String.concat "\n  " members
+                          + (definition.RowConstraints
+                             |> List.map (fun constraint' ->
+                                 "\n  " + rowConstraintText rendering constraint')
+                             |> String.concat "")
                           + "\n  "
                           + CommandGrammar.collectionFlag definition
                           + " "
@@ -263,6 +291,8 @@ module Discovery =
                             |> List.map (fun value ->
                                 input (CommandGrammar.needsValue value) value)
                             |> JsonValue.Array
+                            "rowConstraints",
+                            JsonValue.Array(List.map rowConstraintJson item.RowConstraints)
                             if item.Collection = TaskCollectionId.Parties then
                                 "example", JsonValue.String(partyExample item)
                         ])

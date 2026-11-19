@@ -59,10 +59,18 @@ let rows (values: InputMap) =
     |> Option.defaultValue []
 
 let collection =
+    let members, missing = PartyContent.requiredContent
+
+    let input =
+        function
+        | PartyContentMember.Name -> target name
+        | PartyContentMember.Details -> target details
+
     {
         Collection = TaskCollectionId.Parties
         MinimumRows = 0
         Inputs = fields
+        RowConstraints = [ TaskRowConstraint.AtLeastOne(List.map input members, missing) ]
     }
 
 let parseRows retained values =

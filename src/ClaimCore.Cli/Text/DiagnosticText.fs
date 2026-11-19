@@ -131,19 +131,6 @@ module internal DiagnosticText =
         | _ -> []
 
     let refusalLinesWithView details view (rendering: RenderingContext) reference refusal =
-        let render code parameters =
-            let arguments =
-                parameters
-                |> List.map (fun (name, value) ->
-                    name,
-                    match value with
-                    | JsonValue.Integer value -> number rendering value
-                    | JsonValue.String value -> value
-                    | _ -> invalidOp "Diagnostic arguments are declared scalars.")
-                |> Map.ofList
-
-            MessageCatalogs.render rendering.Language (DiagnosticCode.key code) arguments
-
         let messages =
             match refusal with
             | Refusal.InvalidInput issues ->
@@ -153,7 +140,7 @@ module internal DiagnosticText =
 
                     label rendering (diagnosticTargetIdentity issue.Target)
                     + ": "
-                    + render code parameters)
+                    + diagnostic rendering code parameters)
             | Refusal.Access(AccessRefusal.NotAuthorized required) ->
                 let names = requiredRoles rendering required
 
@@ -188,7 +175,7 @@ module internal DiagnosticText =
                 ]
             | refusal ->
                 let code, parameters = DiagnosticCodecs.describe refusal
-                let message = render code parameters
+                let message = diagnostic rendering code parameters
 
                 match refusal with
                 | Refusal.InvalidCursor ->

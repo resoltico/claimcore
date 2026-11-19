@@ -25,6 +25,7 @@ let declaration =
                   Collection = TaskCollectionId.PeopleGrants
                   MinimumRows = 0
                   Inputs = grantAdmission
+                  RowConstraints = []
               }
           ] with
         Exposure = TaskExposure.Operator

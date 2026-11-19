@@ -24,6 +24,10 @@
   background: var(--bg-surface);
   color: var(--text-primary);
 }
+.worklist-search-correction {
+  flex-basis: 100%;
+  margin: 0;
+}
 .worklist-filters details {
   position: relative;
 }
@@ -293,5 +297,19 @@ details.summary-band {
   gap: var(--space-1);
 }
 .case-selection-values input {
+  min-inline-size: 0;
+}
+
+.case-selection-choices {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.case-selection-choices label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.case-selection-choices label bdi {
   min-inline-size: 0;
 }

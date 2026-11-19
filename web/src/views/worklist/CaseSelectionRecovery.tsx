@@ -3,12 +3,79 @@ import { usePresentation } from "../../presentation/context";
 import { isTerm } from "../../presentation/terms";
 import { navigate } from "../../routing/navigation";
 import {
+  admitsWorklistScalar,
   repairWorklistQuery,
   type SelectionIssue,
   type WorklistAdmission,
 } from "../../routing/worklistQuery";
 
 type InvalidSelection = Extract<WorklistAdmission, { kind: "invalid" }>;
+
+type AuthoredValue = { position: number; value: string };
+
+const authoredValue = (fragment: SelectionIssue["fragments"][number]): AuthoredValue => ({
+  position: fragment.position,
+  value: fragment.value ?? fragment.raw.slice(fragment.raw.indexOf("=") + 1),
+});
+
+const DuplicateChoices = ({
+  id,
+  label,
+  issue,
+  chosen,
+  onChoose,
+}: {
+  id: string;
+  label: string;
+  issue: SelectionIssue;
+  chosen: number | null;
+  onChoose: (position: number) => void;
+}) => {
+  const p = usePresentation();
+  return (
+    <fieldset className="case-selection-choices" aria-describedby={id}>
+      <legend>{label}</legend>
+      {issue.fragments.map((fragment) => {
+        const { position, value } = authoredValue(fragment);
+        return (
+          <label key={position}>
+            <input
+              type="radio"
+              name={id}
+              checked={chosen === position}
+              onChange={() => {
+                onChoose(position);
+              }}
+            />
+            <bdi>{value === "" ? p.text("label.notRecorded") : value}</bdi>
+          </label>
+        );
+      })}
+    </fieldset>
+  );
+};
+
+const SelectionRemedy = ({
+  id,
+  label,
+  issue,
+}: {
+  id: string;
+  label: string;
+  issue: SelectionIssue;
+}) => {
+  const p = usePresentation();
+  if (issue.duplicateScalar === true) {
+    return <p id={id}>{p.text("ui.caseSelectionChooseValue")}</p>;
+  }
+  return (
+    <p id={id}>
+      {issue.upper === undefined
+        ? p.text("ui.caseSelectionRepairField")
+        : p.text("diagnostic.CASE_DATE_RANGE", { field: label })}
+    </p>
+  );
+};
 
 const SelectionRepair = ({
   admission,
@@ -24,12 +91,13 @@ const SelectionRepair = ({
     field !== undefined && isTerm("caseDateFilter", field)
       ? p.term("caseDateFilter", field)
       : (field ?? "");
-  const [values, setValues] = useState(() =>
-    issue.fragments.map((fragment) => ({
-      position: fragment.position,
-      value: fragment.value ?? fragment.raw.slice(fragment.raw.indexOf("=") + 1),
-    })),
-  );
+  const [values, setValues] = useState(() => issue.fragments.map(authoredValue));
+  const [chosen, setChosen] = useState<number | null>(null);
+  const duplicate = issue.duplicateScalar === true;
+  const workingValues = duplicate ? values.filter(({ position }) => position === chosen) : values;
+  const canApply =
+    field !== undefined &&
+    (!duplicate || workingValues.some(({ value }) => admitsWorklistScalar(field, value)));
   const submit = (next: ReadonlyArray<string>) => {
     navigate(repairWorklistQuery(admission.fragments, issue, next));
   };
@@ -38,14 +106,21 @@ const SelectionRepair = ({
       className="case-selection-repair"
       onSubmit={(event) => {
         event.preventDefault();
-        submit(values.map(({ value }) => value));
+        if (canApply) {
+          submit(workingValues.map(({ value }) => value));
+        }
       }}
     >
-      <p id={id}>
-        {issue.upper === undefined
-          ? p.text("ui.caseSelectionRepairField")
-          : p.text("diagnostic.CASE_DATE_RANGE", { field: label })}
-      </p>
+      <SelectionRemedy id={id} label={label} issue={issue} />
+      {duplicate ? (
+        <DuplicateChoices
+          id={id}
+          label={label}
+          issue={issue}
+          chosen={chosen}
+          onChoose={setChosen}
+        />
+      ) : null}
       {field === undefined ? (
         <ul>
           {issue.fragments.map((fragment) => (
@@ -56,12 +131,12 @@ const SelectionRepair = ({
         </ul>
       ) : (
         <div className="case-selection-values">
-          {values.map(({ position, value }) => (
+          {workingValues.map(({ position, value }) => (
             <label key={position}>
               <bdi>{label}</bdi>
               <input
                 dir="auto"
-                aria-invalid="true"
+                aria-invalid={duplicate ? !canApply : true}
                 aria-describedby={id}
                 value={value}
                 onChange={(event) => {
@@ -79,7 +154,9 @@ const SelectionRepair = ({
       )}
       <div className="worklist-filters">
         {field === undefined ? null : (
-          <button type="submit">{p.text("ui.caseSelectionApply")}</button>
+          <button type="submit" disabled={!canApply}>
+            {p.text("ui.caseSelectionApply")}
+          </button>
         )}
         <button
           type="button"

@@ -73,13 +73,28 @@ type PartyContent =
     member this.Name = this.NameValue
     member this.Details = this.DetailsValue
 
+[<RequireQualifiedAccess>]
+type PartyContentMember =
+    | Name
+    | Details
+
 module PartyContent =
     [<Literal>]
     let MaximumCurrent = 20
 
+    let requiredContent =
+        [ PartyContentMember.Name; PartyContentMember.Details ], Violation.PartyContentRequired
+
     let create role name details =
-        if Option.isNone name && Option.isNone details then
-            Error Violation.PartyContentRequired
+        let members, violation = requiredContent
+
+        let supplied =
+            function
+            | PartyContentMember.Name -> Option.isSome name
+            | PartyContentMember.Details -> Option.isSome details
+
+        if not (List.exists supplied members) then
+            Error violation
         else
             Ok
                 {

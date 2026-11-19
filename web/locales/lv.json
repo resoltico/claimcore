@@ -1,4 +1,12 @@
 {
+  "ui.caseReport": {
+    "text": "Lietu pārskats",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "Pārskata {page}. lapa",
+    "source": "497f79fdfa97"
+  },
   "ui.nextReportPage": {
     "text": "Nākamā pārskata lapa",
     "source": "576ab2a77ae7"
@@ -14,6 +22,10 @@
   "ui.caseSelectionRepairField": {
     "text": "Labojiet vai notīriet lauku, lai izmantotu pārējos filtrus.",
     "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "Izvēlieties vienu vērtību, ko paturēt. Ja nepieciešams, rediģējiet to un lietojiet labojumu.",
+    "source": "0924b744bc6b"
   },
   "ui.caseSelectionApply": {
     "text": "Lietot labojumu",

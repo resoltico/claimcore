@@ -1,4 +1,12 @@
 {
+  "ui.caseReport": {
+    "text": "Informe de casos",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "Página {page} del informe",
+    "source": "497f79fdfa97"
+  },
   "ui.nextReportPage": {
     "text": "Página siguiente del informe",
     "source": "576ab2a77ae7"
@@ -14,6 +22,10 @@
   "ui.caseSelectionRepairField": {
     "text": "Corrige o borra el campo para usar los filtros restantes.",
     "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "Elige un valor para conservar. Edítalo si hace falta y aplica la corrección.",
+    "source": "0924b744bc6b"
   },
   "ui.caseSelectionApply": {
     "text": "Aplicar corrección",

@@ -138,3 +138,108 @@ test("reversed ranges use the same declared diagnostic on Cases reads and both C
     });
   }
 });
+
+test("keeps a paused search draft and commits it after the next word", async ({ page }) => {
+  await openAuthenticated(page);
+  await selectLanguage(page, "en");
+  const original = "/cases?view=ALL&status=OPENED";
+  await page.goto(original, { waitUntil: "networkidle" });
+  const search = page.getByRole("searchbox", { name: "Filter this view" });
+  await expect(search).toBeVisible();
+  await page.clock.install();
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (paths.has(path)) {
+      reads.push(path);
+    }
+  });
+
+  await search.fill("North ");
+  await page.clock.runFor(700);
+  await expect(page).toHaveURL((url) => url.pathname + url.search === original);
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("North ");
+  const correction = page.getByText("Remove spaces at the start or end.", { exact: true });
+  await expect(correction).toHaveCount(0);
+  expect(reads).toEqual([]);
+
+  await search.press("Enter");
+  await expect(correction).toBeVisible();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveAttribute("aria-invalid", "true");
+  expect(reads).toEqual([]);
+
+  const submitted = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === caseListPath,
+  );
+  const summarized = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === summaryPath,
+  );
+  await search.pressSequentially("Star");
+  await page.clock.runFor(700);
+  for (const request of await Promise.all([submitted, summarized])) {
+    expect(request.postDataJSON()).toMatchObject({
+      view: "ALL",
+      status: ["OPENED"],
+      text: "North Star",
+    });
+  }
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("North Star");
+  await expect(correction).toHaveCount(0);
+
+  const beforeBookmark = reads.length;
+  await page.goto(`${original}&q=North+`, { waitUntil: "networkidle" });
+  await expect(
+    page.getByText("This Cases selection cannot be used.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("#case-list-title")).toBeFocused();
+  expect(reads.slice(beforeBookmark)).toEqual([]);
+});
+
+test("repairs exactly one duplicate scalar and restores the original choices on Back", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await selectLanguage(page, "en");
+  const original = "/cases?view=ALL&status=OPENED&receivedFrom=2026-09-02&receivedFrom=2026-09-04";
+  await page.goto(original, { waitUntil: "networkidle" });
+  const earlier = page.getByRole("radio", { name: "2026-09-02" });
+  const later = page.getByRole("radio", { name: "2026-09-04" });
+  const invalid = page.getByText("This Cases selection cannot be used.", { exact: true });
+  const apply = page.getByRole("button", { name: "Apply correction" });
+  await expect(invalid).toBeVisible();
+  await expect(earlier).not.toBeChecked();
+  await expect(later).not.toBeChecked();
+  await expect(apply).toBeDisabled();
+
+  await later.focus();
+  await later.press("Space");
+  await expect(later).toBeChecked();
+  const choice = page.getByRole("textbox", { name: "Received from" });
+  await expect(choice).toHaveValue("2026-09-04");
+  await choice.fill("");
+  await expect(apply).toBeDisabled();
+
+  const selected = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === caseListPath,
+  );
+  await choice.fill("2026-09-03");
+  await apply.click();
+  await expect(page).toHaveURL(/receivedFrom=2026-09-03$/u);
+  expect((await selected).postDataJSON()).toMatchObject({
+    view: "ALL",
+    status: ["OPENED"],
+    receivedFrom: "2026-09-03",
+  });
+  expect(new URL(page.url()).searchParams.getAll("receivedFrom")).toEqual(["2026-09-03"]);
+
+  await page.goBack({ waitUntil: "commit" });
+  await expect(page).toHaveURL(new URL(original, page.url()).href);
+  await expect(invalid).toBeVisible();
+  await expect(page.locator("#case-list-title")).toBeFocused();
+  await expect(earlier).not.toBeChecked();
+  await expect(later).not.toBeChecked();
+  await expect(apply).toBeDisabled();
+});

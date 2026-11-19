@@ -182,6 +182,82 @@ const assertReportTail = async (
   expect(continued.outcome.document.nextCursor).toBeNull();
 };
 
+const finishBrowserReport = async (page: Page, prefix: string) => {
+  await page.route("**/api/case.list", (route) =>
+    route.fulfill({
+      status: 429,
+      json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+    }),
+  );
+  await page.goto(`/cases?view=ALL&q=${encodeURIComponent(prefix)}`);
+  const report = page.getByRole("region", { name: "Show summary totals" });
+  await expect(report.locator('[data-region="RESULTS"]')).toBeVisible();
+  const grouping = report.getByRole("combobox", { name: "Group by" });
+  await grouping.scrollIntoViewIfNeeded();
+  // Open after scrolling has settled so nonmodal popup dismissal keeps its normal behavior.
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            done();
+          });
+        });
+      }),
+  );
+  await grouping.press("Home");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Received month" })).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const heading = report.getByRole("heading", { name: "Case report" });
+  const next = report.getByRole("button", { name: "Next report page" });
+  const restart = report.getByRole("button", { name: "Restart report" });
+  const download = report.getByRole("button", { name: "Download CSV" });
+  const exportCsv = async () => {
+    const completed = page.waitForResponse(
+      (reply) => new URL(reply.url()).pathname === "/api/export",
+    );
+    await expect(download).toBeEnabled();
+    await download.click();
+    const reply = await completed;
+    expect(reply.status()).toBe(200);
+    expect(reply.request().postDataJSON()).toEqual({
+      query: "case.summary",
+      selection: { view: "ALL", text: prefix, groupBy: "RECEIVED_MONTH" },
+    });
+    expect((await reply.text()).trimEnd().split("\r\n")).toHaveLength(52);
+  };
+
+  await expect(next).toBeVisible();
+  await exportCsv();
+
+  await next.focus();
+  await page.keyboard.press("Enter");
+  await expect(heading).toBeFocused();
+  await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 2");
+  await expect(next).toHaveCount(0);
+
+  await restart.focus();
+  await page.keyboard.press("Enter");
+  await expect(heading).toBeFocused();
+  await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 1");
+  await expect(next).toBeVisible();
+
+  await page.route("**/api/case.summary", (route) => {
+    const request = route.request().postDataJSON() as RequestByEndpoint["case.summary"];
+    return request.cursor === undefined
+      ? route.continue()
+      : route.continue({ postData: JSON.stringify({ ...request, cursor: "bad!" }) });
+  });
+  await next.focus();
+  await page.keyboard.press("Enter");
+  await expect(report.getByRole("alert")).toContainText("This page link is no longer valid");
+  await exportCsv();
+};
+
 test("traverses the live 51-month report and complete CSV with independent page bounds", async ({
   page,
 }) => {
@@ -237,4 +313,5 @@ test("traverses the live 51-month report and complete CSV with independent page 
   );
   expect(lines[1]).toBe("2018-01,1,EUR,1,1,,,,");
   expect(lines[51]).toBe("2022-03,1,EUR,1,1,,,,");
+  await finishBrowserReport(page, prefix);
 });

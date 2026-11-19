@@ -310,10 +310,7 @@ const ReadyCaseList = ({
             setSelection({ row, readId: crypto.randomUUID() });
           }}
         />
-        <SummaryBand
-          filter={page.query}
-          exportAvailable={disclosureAvailable && page.page !== null}
-        />
+        <SummaryBand filter={page.query} exportAvailable={disclosureAvailable} />
         <WorklistFeedback page={page} />
       </ViewTabs>
       {selection === null ? null : (

@@ -22,6 +22,7 @@ let declaration =
                 Collection = TaskCollectionId.PeopleGrants
                 MinimumRows = PeopleAdmission.MinimumGrants
                 Inputs = grantAdmission
+                RowConstraints = []
             }
         ]
 

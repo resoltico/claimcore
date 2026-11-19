@@ -1,4 +1,12 @@
 {
+  "ui.caseReport": {
+    "text": "사건 보고서",
+    "source": "de231f61cd50"
+  },
+  "ui.reportPage": {
+    "text": "보고서 {page}페이지",
+    "source": "497f79fdfa97"
+  },
   "ui.nextReportPage": {
     "text": "다음 보고서 페이지",
     "source": "576ab2a77ae7"
@@ -14,6 +22,10 @@
   "ui.caseSelectionRepairField": {
     "text": "나머지 필터를 사용하려면 필드를 수정하거나 지우세요.",
     "source": "88617dde254e"
+  },
+  "ui.caseSelectionChooseValue": {
+    "text": "유지할 값 하나를 선택하세요. 필요한 경우 값을 수정한 뒤 적용하세요.",
+    "source": "0924b744bc6b"
   },
   "ui.caseSelectionApply": {
     "text": "수정 적용",

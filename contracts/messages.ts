@@ -976,7 +976,9 @@ export type MessageArgs = {
   "ui.before": { readonly "value": string };
   "ui.calendar": Readonly<Record<string, never>>;
   "ui.canonicalCopyHint": Readonly<Record<string, never>>;
+  "ui.caseReport": Readonly<Record<string, never>>;
   "ui.caseSelectionApply": Readonly<Record<string, never>>;
+  "ui.caseSelectionChooseValue": Readonly<Record<string, never>>;
   "ui.caseSelectionClear": Readonly<Record<string, never>>;
   "ui.caseSelectionInvalid": Readonly<Record<string, never>>;
   "ui.caseSelectionRepairField": Readonly<Record<string, never>>;
@@ -1090,6 +1092,7 @@ export type MessageArgs = {
   "ui.reloadRoles": Readonly<Record<string, never>>;
   "ui.removeRole": Readonly<Record<string, never>>;
   "ui.removeRow": Readonly<Record<string, never>>;
+  "ui.reportPage": { readonly "page": string };
   "ui.reportingDates": Readonly<Record<string, never>>;
   "ui.requests.more": Readonly<Record<string, never>>;
   "ui.requests.refresh": Readonly<Record<string, never>>;

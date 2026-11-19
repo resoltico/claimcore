@@ -39,6 +39,7 @@ type CommandCollection =
         MinimumItems: int
         MaximumItems: int
         Members: TaskInputDeclaration list
+        RowConstraints: TaskRowConstraint list
     }
 
 type CommandOptionGrammar =
@@ -210,6 +211,7 @@ module CommandGrammar =
                 MinimumItems = item.MinimumRows
                 MaximumItems = TaskCollectionId.maximumRows item.Collection
                 Members = item.Inputs
+                RowConstraints = item.RowConstraints
             })
 
     let collectionFlag (definition: CommandCollection) =

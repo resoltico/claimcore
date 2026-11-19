@@ -5,6 +5,7 @@ import {
   caseSelectionTextConstraints,
   isCaseListSelection,
   isResponseStructure,
+  isRepresentable,
   type CaseListRequest,
   type CaseListSelection,
   type ResponseSchema,
@@ -23,6 +24,7 @@ export type SelectionIssue = {
   fragments: ReadonlyArray<SelectionFragment>;
   key?: string;
   upper?: (typeof reportDateFields)[number];
+  duplicateScalar?: true;
 };
 export type WorklistAdmission =
   | { kind: "valid"; selection: WorklistQuery }
@@ -43,18 +45,37 @@ const parseFragment = (raw: string, position: number): SelectionFragment => {
   return { raw, key, value, position };
 };
 
-const validText = (value: string) => {
+export const worklistSearchMaximum = caseSelectionTextConstraints.maximumCharacters;
+
+export const worklistSearchIssue = (value: string) => {
+  if (value === "") {
+    return undefined;
+  }
+  if (!isRepresentable(value)) {
+    return "diagnostic.MALFORMED_UNICODE";
+  }
   const constraints = caseSelectionTextConstraints;
+  if (new TextEncoder().encode(value).length > constraints.maximumBytes) {
+    return "diagnostic.TOO_LONG";
+  }
+  if (/^\p{White_Space}+$/u.test(value)) {
+    return "diagnostic.TEXT_REQUIRED";
+  }
+  if (/^\p{White_Space}|\p{White_Space}$/u.test(value)) {
+    return "diagnostic.SURROUNDING_WHITESPACE";
+  }
   const scalars = Array.from(value);
-  return (
-    scalars.length <= constraints.maximumCharacters &&
-    new TextEncoder().encode(value).length <= constraints.maximumBytes &&
-    !/^\p{White_Space}|\p{White_Space}$|\p{Cc}/u.test(value) &&
-    !scalars.some((character) => {
-      const point = character.codePointAt(0) ?? 0;
-      return constraints.formattingRanges.some(([first, last]) => point >= first && point <= last);
-    })
-  );
+  if (scalars.length > constraints.maximumCharacters) {
+    return "diagnostic.TOO_LONG";
+  }
+  if (/\p{Cc}/u.test(value)) {
+    return "diagnostic.CONTROL_CHARACTERS";
+  }
+  const formatting = scalars.some((character) => {
+    const point = character.codePointAt(0) ?? 0;
+    return constraints.formattingRanges.some(([first, last]) => point >= first && point <= last);
+  });
+  return formatting ? "diagnostic.FORMATTING_CHARACTER" : undefined;
 };
 
 const groupFragments = (fragments: ReadonlyArray<SelectionFragment>, issues: SelectionIssue[]) => {
@@ -79,11 +100,21 @@ const memberValue = (shape: ResponseSchema, group: ReadonlyArray<SelectionFragme
   if (shape[0] === "array") {
     return values;
   }
-  return values.length === 1 ? values[0] : undefined;
+  return values[0];
 };
 
-const allowsSearchText = (member: string, value: string | string[]) =>
-  member !== "text" || value === "" || (typeof value === "string" && validText(value));
+const wireMember = (key: string) => (key === "q" ? "text" : key);
+const urlMemberShape = (key: string) =>
+  key === "text" ? undefined : caseSelectionMember(wireMember(key));
+
+const admitsMember = (key: string, shape: ResponseSchema, value: string | string[]) =>
+  isResponseStructure(shape, value) &&
+  (key !== "q" || (typeof value === "string" && worklistSearchIssue(value) === undefined));
+
+export const admitsWorklistScalar = (key: string, value: string): boolean => {
+  const shape = urlMemberShape(key);
+  return shape !== undefined && shape[0] !== "array" && admitsMember(key, shape, value);
+};
 
 const admitMembers = (
   groups: ReadonlyMap<string, SelectionFragment[]>,
@@ -91,21 +122,20 @@ const admitMembers = (
 ) => {
   const fields: [string, string | string[]][] = [];
   for (const [key, group] of groups) {
-    const member = key === "q" ? "text" : key;
-    const shape = key === "text" ? undefined : caseSelectionMember(member);
+    const shape = urlMemberShape(key);
     if (shape === undefined) {
       issues.push({ fragments: group });
       continue;
     }
+    if (shape[0] !== "array" && group.length > 1) {
+      issues.push({ fragments: group, key, duplicateScalar: true });
+      continue;
+    }
     const value = memberValue(shape, group);
-    if (
-      value === undefined ||
-      !isResponseStructure(shape, value) ||
-      !allowsSearchText(member, value)
-    ) {
+    if (value === undefined || !admitsMember(key, shape, value)) {
       issues.push({ fragments: group, key });
     } else if (key !== "q" || value !== "") {
-      fields.push([member, value]);
+      fields.push([wireMember(key), value]);
     }
   }
 

@@ -1,7 +1,11 @@
 import { ReferenceSummary } from "../../components/ReferenceSummary";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePresentation } from "../../presentation/context";
-import { type WorklistQuery } from "../../routing/worklistQuery";
+import {
+  worklistSearchIssue,
+  worklistSearchMaximum,
+  type WorklistQuery,
+} from "../../routing/worklistQuery";
 import { WorklistFilters } from "./WorklistFilters";
 type Props = {
   query: WorklistQuery;
@@ -12,19 +16,28 @@ type Props = {
   loading: boolean;
   onReload: () => void;
 };
-const useSearchCommit = (text: string, query: WorklistQuery, onChange: Props["onChange"]) => {
+const searchSelection = (query: WorklistQuery, text: string): WorklistQuery => {
+  const { text: _text, ...filters } = query;
+  return text === "" ? filters : { ...filters, text };
+};
+
+const useSearchCommit = (
+  text: string,
+  admissible: boolean,
+  query: WorklistQuery,
+  onChange: Props["onChange"],
+) => {
   useEffect(() => {
-    if (text === (query.text ?? "")) {
+    if (!admissible || text === (query.text ?? "")) {
       return;
     }
     const timer = window.setTimeout(() => {
-      const { text: _text, ...manual } = query;
-      onChange({ ...manual, ...(text === "" ? {} : { text }) });
+      onChange(searchSelection(query, text));
     }, 300);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [text, query, onChange]);
+  }, [text, admissible, query, onChange]);
 };
 const WorklistSearch = ({
   query,
@@ -33,12 +46,11 @@ const WorklistSearch = ({
   onSearch,
 }: Pick<Props, "query" | "onChange" | "search" | "onSearch">) => {
   const p = usePresentation();
-  const text = search;
-  const commit = (value: string) => {
-    const { text: _text, ...manual } = query;
-    onChange({ ...manual, ...(value === "" ? {} : { text: value }) });
-  };
-  useSearchCommit(text, query, onChange);
+  const input = useRef<HTMLInputElement>(null);
+  const [submittedDraft, setSubmittedDraft] = useState<string | null>(null);
+  const issue = worklistSearchIssue(search);
+  const correction = submittedDraft === search ? issue : undefined;
+  useSearchCommit(search, issue === undefined, query, onChange);
   return (
     <form
       role="search"
@@ -46,7 +58,12 @@ const WorklistSearch = ({
       className="worklist-search"
       onSubmit={(event) => {
         event.preventDefault();
-        commit(text);
+        if (issue !== undefined) {
+          setSubmittedDraft(search);
+          input.current?.focus();
+        } else if (search !== (query.text ?? "")) {
+          onChange(searchSelection(query, search));
+        }
       }}
     >
       <label className="sr-only" htmlFor="worklist-search">
@@ -55,8 +72,12 @@ const WorklistSearch = ({
       <input
         id="worklist-search"
         type="search"
-        value={text}
+        ref={input}
+        value={search}
+        aria-invalid={correction === undefined ? undefined : true}
+        aria-describedby={correction === undefined ? undefined : "worklist-search-correction"}
         onChange={(event) => {
+          setSubmittedDraft(null);
           onSearch(event.target.value);
         }}
         placeholder={p.text("ui.worklistSearch")}
@@ -64,6 +85,13 @@ const WorklistSearch = ({
         dir="auto"
       />
       <button type="submit">{p.text("ui.search")}</button>
+      {correction === undefined ? null : (
+        <p id="worklist-search-correction" className="worklist-search-correction" role="alert">
+          {correction === "diagnostic.TOO_LONG"
+            ? p.text(correction, { maximumCharacters: p.integer(worklistSearchMaximum) })
+            : p.text(correction)}
+        </p>
+      )}
     </form>
   );
 };
