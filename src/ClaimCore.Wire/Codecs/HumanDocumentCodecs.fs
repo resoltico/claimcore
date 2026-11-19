@@ -120,8 +120,29 @@ module HumanDocumentCodecs =
 
     let private subject = tagged "DocumentSubject" subjectVariants
 
+    let private attachmentObservation =
+        (record (fun caseId sequence -> { CaseId = caseId; Sequence = sequence })
+        : Fields<AttachmentObservation, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "sequence" _.Sequence AttachmentCodecs.sequence
+        |> build
+        |> named "AttachmentObservation"
+
+    let private admitDocument value =
+        { HumanDocument.create
+              value.Subject
+              value.Screen
+              value.Actions
+              value.Links
+              value.NextCursor
+              value.Basis
+              value.Disclosure
+              value.History with
+            AttachmentObservation = value.AttachmentObservation
+        }
+
     let document =
-        record (fun subject screen actions links cursor basis disclosure history ->
+        record (fun subject screen actions links cursor basis disclosure history observation ->
             {
                 HumanDocument.Subject = subject
                 Screen = screen
@@ -131,6 +152,7 @@ module HumanDocumentCodecs =
                 Basis = basis
                 Disclosure = disclosure
                 History = history
+                AttachmentObservation = observation
             })
         |> field "subject" _.Subject subject
         |> field "screen" _.Screen PresentationCodecs.view
@@ -149,37 +171,19 @@ module HumanDocumentCodecs =
                 Vocabulary.ofUnion<HistoryAccess> "historyAccess" TokenCasing.ScreamingSnake None
                 |> VocabularyCodec.create
             ))
+        |> optionalField "attachmentObservation" _.AttachmentObservation attachmentObservation
         |> build
         |> interpret
             (fun path value ->
                 try
-                    Ok(
-                        HumanDocument.create
-                            value.Subject
-                            value.Screen
-                            value.Actions
-                            value.Links
-                            value.NextCursor
-                            value.Basis
-                            value.Disclosure
-                            value.History
-                    )
+                    Ok(admitDocument value)
                 with :? System.ArgumentException ->
                     Error
                         {
                             Path = path
                             Reason = "Invalid document construction."
                         })
-            (fun value ->
-                HumanDocument.create
-                    value.Subject
-                    value.Screen
-                    value.Actions
-                    value.Links
-                    value.NextCursor
-                    value.Basis
-                    value.Disclosure
-                    value.History)
+            admitDocument
         |> named "HumanDocument"
 
     let receiptDocument = document

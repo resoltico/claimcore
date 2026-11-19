@@ -40,6 +40,8 @@ type DocumentSubject =
     | Receipt of OperationId
     | Operation of System.Guid
 
+type AttachmentObservation = { CaseId: CaseId; Sequence: Sequence }
+
 type HumanDocument =
     {
         Subject: DocumentSubject
@@ -50,6 +52,7 @@ type HumanDocument =
         Basis: ObservationBasis
         Disclosure: HumanDisclosure
         History: HistoryAccess option
+        AttachmentObservation: AttachmentObservation option
     }
 
 type HumanReview =
@@ -162,6 +165,12 @@ module HumanDocument =
             Basis = basis
             Disclosure = disclosure
             History = history
+            AttachmentObservation = None
+        }
+
+    let observeAttachments caseId sequence document =
+        { document with
+            AttachmentObservation = Some { CaseId = caseId; Sequence = sequence }
         }
 
     let empty disclosure =
@@ -676,6 +685,7 @@ module HumanReadDocuments =
             value.NextCursor
             disclosure
             None
+        |> HumanDocument.observeAttachments value.CaseId value.AttachmentDisclosure
 
     let payments (value: CasePaymentPage) =
         resource
@@ -706,6 +716,7 @@ module HumanReadDocuments =
             None
             HumanDisclosure.Current
             None
+        |> HumanDocument.observeAttachments value.CaseId value.Disclosure
 
     let notes (value: CaseNotesPage) =
         resource

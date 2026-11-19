@@ -114,6 +114,7 @@ type Refusal =
     | IdempotencyConflict
     | AttachmentDuplicate of attachmentId: AttachmentId
     | AttachmentCapacityReached
+    | AttachmentPreviewUnavailable
     | InvalidCursor
     | CaseDateRange of upper: CaseDateFilter
     | RegisterMaintenance

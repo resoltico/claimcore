@@ -249,7 +249,14 @@ module ScreenEntries =
 
     let factScreen sections = Screen.create (factRegions sections)
 
-    let tableWithControls key describe (definitions: EntryDefinition<'row> list) controls rows =
+    let tableWithTransfers
+        key
+        describe
+        (definitions: EntryDefinition<'row> list)
+        controls
+        transfers
+        rows
+        =
         {
             RegionTable.Columns =
                 definitions
@@ -272,11 +279,15 @@ module ScreenEntries =
                         Detail = describe row
                         Link = link
                         Actions = actions
+                        Transfers = transfers row
                     })
             Groups = []
             Sections = []
             Meter = None
         }
+
+    let tableWithControls key describe definitions controls rows =
+        tableWithTransfers key describe definitions controls (fun _ -> []) rows
 
     let table key describe definitions rows =
         tableWithControls key describe definitions (fun _ -> None, []) rows

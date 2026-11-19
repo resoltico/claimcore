@@ -1,5 +1,4 @@
 import { CsvExportButton } from "../../components/CsvExportButton";
-import { attachmentDisclosureOf } from "../../api/attachmentDisclosure";
 import { useEndpointCache } from "../../hooks/EndpointProvider";
 import type { PresentedPage } from "../../protocol/types";
 import type { EndpointCache } from "../../hooks/endpointCache";
@@ -43,7 +42,7 @@ const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.caseTimeline]
     nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     disclosure: doc.disclosure,
-    attachmentDisclosure: attachmentDisclosureOf(doc),
+    attachmentDisclosure: doc.attachmentObservation,
   };
 };
 type TimelinePage = NonNullable<ReturnType<typeof select>>;

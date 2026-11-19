@@ -142,6 +142,14 @@ module HumanReceiptDocument =
             (ObservationBasis.Snapshot receipt.Basis)
             disclosure
             None
+        |> fun document ->
+            match receipt.Subject with
+            | ReceiptSubject.Attachment attachment ->
+                HumanDocument.observeAttachments
+                    attachment.CaseId
+                    receipt.Position.Sequence
+                    document
+            | _ -> document
 
 module HumanOperationReply =
     let classifyPreview (reply: HumanOperationReply<HumanPreviewResult>) =

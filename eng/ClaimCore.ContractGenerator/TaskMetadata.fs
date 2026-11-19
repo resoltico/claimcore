@@ -53,6 +53,7 @@ module TaskMetadata =
             (ledger: TaskDeclaration option)
             id
             kind
+            (labelId, meaningId)
             subject
             endpoint
             consequence
@@ -62,15 +63,13 @@ module TaskMetadata =
             inputs
             collections
             =
-            let prefix = if kind = "OPERATION" then "task." else "endpoint."
-
             {|
                 id = id
                 kind = kind
                 subject = subject
                 endpoint = endpoint
-                labelId = prefix + id + ".label"
-                meaningId = prefix + id + ".meaning"
+                labelId = labelId
+                meaningId = meaningId
                 consequence = consequence
                 creates = creates
                 paged = paged
@@ -147,10 +146,13 @@ module TaskMetadata =
         let operations =
             ClaimCore.Domain.Tasks.Registry.clientDeclarations
             |> List.map (fun declaration ->
+                let id = TaskId.token declaration.Id
+
                 definition
                     (Some declaration)
-                    (TaskId.token declaration.Id)
+                    id
                     "OPERATION"
+                    ("task." + id + ".label", "task." + id + ".meaning")
                     (Some(ActSubject.token declaration.Target))
                     (ActorEndpoint.token (ActorEndpoint.Operation OperationEndpoint.Execute))
                     (Some(Vocabulary.token Consequence.vocabulary declaration.Consequence))
@@ -168,7 +170,9 @@ module TaskMetadata =
                     declaration.Id
                     (match declaration.Kind with
                      | EndpointKind.Query -> "QUERY"
-                     | EndpointKind.Command -> "COMMAND")
+                     | EndpointKind.Command -> "COMMAND"
+                     | EndpointKind.Binary -> "BINARY")
+                    (declaration.LabelId, declaration.MeaningId)
                     None
                     declaration.Id
                     None

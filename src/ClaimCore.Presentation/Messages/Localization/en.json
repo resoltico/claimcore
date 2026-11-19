@@ -1004,17 +1004,21 @@
   "field.attachmentDigest.rule": "Use the 64 hexadecimal digits of the SHA-256 checksum.",
   "diagnostic.ATTACHMENT_ID_REQUIRED": "Use the ID of an attachment.",
   "diagnostic.ATTACHMENT_NAME_INVALID": "Choose a file with a supported name.",
+  "diagnostic.ATTACHMENT_TYPE_REFUSED": "Files of this type can run programs and cannot be attached. Put the file in an archive if the case needs it.",
   "diagnostic.ATTACHMENT_LENGTH_INVALID": "The file must be 25 MiB or smaller.",
   "diagnostic.ATTACHMENT_DIGEST_INVALID": "Select the file again to calculate its checksum.",
   "diagnostic.ATTACHMENT_PAYLOAD_REQUIRED": "Select and upload the file to add an attachment.",
   "diagnostic.ATTACHMENT_PAYLOAD_MISMATCH": "The uploaded file differs from the reviewed file. Select it again and start a new review.",
   "diagnostic.ATTACHMENT_DUPLICATE": "This file is already attached to the case.",
+  "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE": "This attachment cannot be previewed.",
   "diagnostic.ATTACHMENT_CAPACITY_REACHED": "The case has reached its retained attachment limit.",
   "section.attachments.label": "Attachments",
   "subject.ATTACHMENT.label": "Attachment",
   "timelineKind.ATTACHMENT.label": "Attachment",
   "timelineFilter.ATTACHMENTS.label": "Attachments",
   "change.ATTACHMENT.recorded": "Attachment change recorded.",
-  "label.attachmentPreview": "Image preview",
-  "label.attachmentDisclosure": "Attachment record position"
+  "endpoint.attachment.download.label": "Download",
+  "endpoint.attachment.download.meaning": "Save the current attachment to a file.",
+  "endpoint.attachment.preview.label": "Preview",
+  "endpoint.attachment.preview.meaning": "View the current attachment inside the workspace."
 }

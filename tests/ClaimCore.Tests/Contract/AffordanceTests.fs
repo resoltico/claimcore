@@ -25,6 +25,7 @@ let private action () =
 let private row key actions =
     {
         RegionRow.Key = key
+        Transfers = []
         Values = []
         Detail = None
         Link = None

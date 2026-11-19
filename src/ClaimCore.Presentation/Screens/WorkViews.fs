@@ -51,6 +51,7 @@ module WorkViewsScreen =
             |> List.map (fun item ->
                 {
                     RegionRow.Key = caseKey item.View
+                    Transfers = []
                     Link =
                         Some(
                             Link.CaseList
@@ -80,6 +81,7 @@ module WorkViewsScreen =
             |> List.map (fun item ->
                 {
                     RegionRow.Key = reminderKey item.View
+                    Transfers = []
                     Link =
                         Some(
                             Link.ReminderList

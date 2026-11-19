@@ -5,8 +5,10 @@ import {
   isHostFailure,
   strictByteProfile,
   type AttachmentReadRequest,
+  type AttachmentTransferControl,
   type AttachmentTransferFailureReply,
 } from "@contracts/client";
+import previewResources from "virtual:attachment-preview-resources";
 import { sameOwnerScope, type OwnerScope } from "../protocol/ownerScope";
 import { localNotice, type Notice } from "../protocol/notices";
 import { admitBytes } from "../protocol/schema";
@@ -14,9 +16,9 @@ import type { ApiResult } from "../protocol/types";
 import { isDisclosureRefused } from "./outcomes";
 import { exactResponseBytes, responseBytes } from "./responseBytes";
 import { withinResponseDeadline } from "./responseDeadline";
-import { sendHttp } from "./transport";
+import { getAttachmentPreviewResourceHttp, sendHttp } from "./transport";
 
-type TransferKind = "download" | "preview";
+type TransferKind = AttachmentTransferControl["kind"];
 export type AttachmentBinary = {
   readonly bytes: Uint8Array<ArrayBuffer>;
   readonly mediaType: string;
@@ -33,10 +35,11 @@ const expired = {
   notice: localNotice("cancelled"),
 } as const;
 const admittedMedia = (kind: TransferKind, mediaType: string) =>
-  kind === "download"
+  kind === "DOWNLOAD"
     ? mediaType === attachmentTransport.downloadMediaType
     : mediaType === attachmentTransport.pngMediaType ||
-      mediaType === attachmentTransport.jpegMediaType;
+      mediaType === attachmentTransport.jpegMediaType ||
+      mediaType === attachmentTransport.pdfMediaType;
 const admittedLength = (header: string | null): number | null => {
   if (header === null || !/^(0|[1-9][0-9]{0,7})$/u.test(header)) {
     return null;
@@ -44,20 +47,8 @@ const admittedLength = (header: string | null): number | null => {
   const length = Number(header);
   return length <= attachmentTransport.maximumFileBytes ? length : null;
 };
-const admittedName = (disposition: string | null, name: string): boolean => {
-  const filename =
-    /^attachment; filename="[A-Za-z0-9._-]{1,120}"; filename\*=UTF-8''([A-Za-z0-9_.~%-]+)$/u.exec(
-      disposition ?? "",
-    );
-  if (filename === null) {
-    return false;
-  }
-  try {
-    return decodeURIComponent(filename[1]!) === name;
-  } catch {
-    return false;
-  }
-};
+const admittedName = (disposition: string | null, name: string): boolean =>
+  disposition === `${attachmentTransport.dispositionPrefix}${encodeURIComponent(name)}`;
 const uncached = (headers: Headers): boolean => {
   const directives = (headers.get("cache-control") ?? "")
     .toLowerCase()
@@ -80,7 +71,7 @@ const admission = (response: Response, kind: TransferKind, name: string, owner: 
     headers.get("ClaimCore-Installation") !== owner.installationId ||
     headers.get("content-encoding") !== "identity" ||
     !uncached(headers) ||
-    (kind === "download" && !admittedName(headers.get("content-disposition"), name))
+    (kind === "DOWNLOAD" && !admittedName(headers.get("content-disposition"), name))
   ) {
     return null;
   }
@@ -172,11 +163,11 @@ export const requestAttachment = (
       }
       try {
         const path =
-          kind === "download" ? attachmentTransport.downloadPath : attachmentTransport.previewPath;
+          kind === "DOWNLOAD" ? attachmentTransport.downloadPath : attachmentTransport.previewPath;
         const media =
-          kind === "download"
+          kind === "DOWNLOAD"
             ? attachmentTransport.downloadMediaType
-            : `${attachmentTransport.pngMediaType}, ${attachmentTransport.jpegMediaType}`;
+            : `${attachmentTransport.pngMediaType}, ${attachmentTransport.jpegMediaType}, ${attachmentTransport.pdfMediaType}`;
         const response = await sendHttp(
           { path, method: "POST" },
           {
@@ -229,6 +220,20 @@ export const attachmentNotice = (result: ApiResult<TransferOutcome>): Notice | n
       action: outcome.fault.action,
     },
   };
+};
+
+/** Resolve only assets identified by the viewer build. The frame supplies neither a URL nor credentials. */
+export const readAttachmentPreviewResource = async (
+  type: keyof typeof previewResources,
+  name: string,
+  signal: AbortSignal,
+): Promise<ArrayBuffer | null> => {
+  const resources = previewResources[type];
+  if (!Object.hasOwn(resources, name)) {
+    return null;
+  }
+  const response = await getAttachmentPreviewResourceHttp(resources[name]!, signal);
+  return response.ok ? response.arrayBuffer() : null;
 };
 
 export const captureAttachment = async (file: File) => {

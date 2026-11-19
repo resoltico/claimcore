@@ -656,18 +656,30 @@ module OperationSubmission =
             |> Result.toOption
         | _ -> None
 
-    let syntax (submission: OperationSubmission) =
+    let private submissionSyntax check (submission: OperationSubmission) =
         let authored =
             match submission.Operation with
             | Error refusal -> Error(SubmissionProblem.Rejected refusal)
             | Ok operation ->
                 declared submission.Task
-                |> bind (fun declaration -> checkInputs declaration operation.Inputs)
+                |> bind (fun declaration -> check declaration operation.Inputs)
 
         collect [ operationIdentity (Some submission.OperationId); authored ]
         |> syntaxResult
         |> Result.toOption
         |> Option.flatten
+
+    let syntax = submissionSyntax checkInputs
+
+    /// Transfer framing checks syntax; the authorized task decision checks the attachment type.
+    let deliverySyntax =
+        submissionSyntax (fun declaration inputs ->
+            match declaration.Execution with
+            | TaskExecution.Structured -> checkInputs declaration inputs
+            | TaskExecution.AttachmentUpload ->
+                ClaimCore.Domain.Inputs.AttachmentInputs.intent inputs
+                |> Result.map ignore
+                |> Result.mapError SubmissionProblem.Rejected)
 
 /// Pure draft acquisition policy shared by native interfaces and generated browser assembly.
 module SubmissionAssembly =

@@ -31,19 +31,12 @@ module internal AttachmentBinaryCall =
             Some length
         | _ -> None
 
-    let private disposition (value: string) =
-        let separator = "; filename*=UTF-8''"
-        let index = value.IndexOf(separator, StringComparison.Ordinal)
-
-        if index < 0 then
-            false
-        else
-            let name = Uri.UnescapeDataString(value.Substring(index + separator.Length))
-
-            AttachmentName.parse name
-            |> Option.exists (fun admitted -> value = AttachmentTransport.disposition admitted)
-
-    let internal receive installation (response: HttpResponseMessage) (token: CancellationToken) =
+    let internal receive
+        installation
+        name
+        (response: HttpResponseMessage)
+        (token: CancellationToken)
+        =
         task {
             let headers = response.Content.Headers
             let media = headers.ContentType |> Option.ofObj |> Option.map _.MediaType
@@ -83,7 +76,7 @@ module internal AttachmentBinaryCall =
                 || RemoteServiceCall.singleton "Content-Encoding" headers <> Some "identity"
                 || not (
                     RemoteServiceCall.singleton "Content-Disposition" headers
-                    |> Option.exists disposition
+                    |> Option.exists ((=) (AttachmentTransport.disposition name))
                 )
             then
                 return invalid
@@ -119,6 +112,7 @@ module internal AttachmentBinaryCall =
         (client: HttpClient)
         (access: RemoteServiceCall.Access)
         (selection: AttachmentReadRequest)
+        (name: AttachmentName)
         (cancelled: CancellationToken)
         =
         task {
@@ -159,7 +153,7 @@ module internal AttachmentBinaryCall =
                             deadline.Token
                         )
 
-                    return! receive installation response deadline.Token
+                    return! receive installation name response deadline.Token
                 with
                 | :? OperationCanceledException when cancelled.IsCancellationRequested ->
                     return Error(AttachmentDownloadFailure.Local ClientFailure.Cancelled)

@@ -408,12 +408,7 @@ module internal Fold =
               PartValue.Attachment(AttachmentEffect.Added(_, proposedDescriptor)) ->
                 let value =
                     match retained, proposedDescriptor with
-                    | Some retained, Some proposed ->
-                        Some
-                            { proposed with
-                                Blob = retained.Blob
-                                Preview = retained.Preview
-                            }
+                    | Some retained, Some proposed -> Some { proposed with Blob = retained.Blob }
                     | _ -> proposedDescriptor
 
                 [

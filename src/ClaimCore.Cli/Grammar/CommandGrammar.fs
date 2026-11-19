@@ -51,14 +51,6 @@ type CommandOptionGrammar =
     }
 
 module CommandGrammar =
-    let internal attachmentDownloadWords = [ "attachment"; "download" ]
-
-    let internal attachmentDownload arguments =
-        List.truncate 2 arguments = attachmentDownloadWords
-
-    let internal attachmentDownloadSynopsis =
-        "attachment download (CASE | --case-id UUID) ATTACHMENT-ID --output PATH [--language LANGUAGE] [--display-locale LOCALE]"
-
     let private operationHas property operation =
         TaskRouting.act operation
         |> Option.exists (TaskRouting.operationDeclaration >> property)
@@ -69,7 +61,15 @@ module CommandGrammar =
     let internal uploadsFile =
         operationHas (fun declaration -> declaration.Execution = TaskExecution.AttachmentUpload)
 
-    let operations = (TaskDeclarations.all |> List.map _.Id)
+    let private binaryOperations =
+        [ (EndpointDeclarations.attachmentRead AttachmentRead.Download).Id ]
+
+    let operations =
+        TaskDeclarations.all
+        |> List.filter (fun declaration -> declaration.Kind <> ClientTaskKind.Binary)
+        |> List.map _.Id
+
+    let verbs = operations @ binaryOperations
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
@@ -102,6 +102,12 @@ module CommandGrammar =
 
     let words (entry: string) =
         entry.Split('.') |> Array.map kebab |> List.ofArray
+
+    let tryBinaryRead arguments =
+        binaryOperations
+        |> List.tryFind (fun operation ->
+            let path = words operation
+            List.truncate path.Length arguments = path)
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
@@ -192,7 +198,9 @@ module CommandGrammar =
         declaration.Inputs
         |> List.exists (fun input ->
             input.Input = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
-            && (input.Source = InputSource.Binding || declaration.Kind = ClientTaskKind.Query))
+            && (input.Source = InputSource.Binding
+                || declaration.Kind = ClientTaskKind.Query
+                || declaration.Kind = ClientTaskKind.Binary))
 
     let inputs operation =
         let inputs = declaredInputs operation
@@ -259,22 +267,33 @@ module CommandGrammar =
             [ "text"; "json" ]
 
     let globalOptions operation =
+        let binary = List.contains operation binaryOperations
+
         [
-            "--format", String.concat "|" (formats operation)
+            if not binary then
+                "--format", String.concat "|" (formats operation)
             "--language", String.concat "|" LocalizationPolicy.languages
             "--display-locale", String.concat "|" LocalizationPolicy.displayLocales
-            "--dry-run", ""
-            "--details", ""
-            if TaskRouting.consequence operation = Consequence.Irreversible then
-                "--confirm", "TARGET"
-            if attachmentTransfer operation then
-                "--confirm", "yes"
-            if uploadsFile operation then
-                "--file", "PATH"
-            if (TaskRouting.act operation).IsSome then
-                "--preview", ""
-            if supportsAll operation then
-                "--all", ""
+            if binary then
+                "--output", "PATH"
+            else
+                "--dry-run", ""
+                "--details", ""
+
+                if TaskRouting.consequence operation = Consequence.Irreversible then
+                    "--confirm", "TARGET"
+
+                if attachmentTransfer operation then
+                    "--confirm", "yes"
+
+                if uploadsFile operation then
+                    "--file", "PATH"
+
+                if (TaskRouting.act operation).IsSome then
+                    "--preview", ""
+
+                if supportsAll operation then
+                    "--all", ""
         ]
 
     let globalFlags =
@@ -417,6 +436,7 @@ module CommandGrammar =
 
                 if
                     flag = "--file"
+                    || flag = "--output"
                     || (flag = "--confirm" && not draft && not (attachmentTransfer operation))
                 then
                     text

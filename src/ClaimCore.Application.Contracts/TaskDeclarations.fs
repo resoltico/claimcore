@@ -140,6 +140,7 @@ type ClientTaskKind =
     | Operation
     | Query
     | Command
+    | Binary
 
 /// A derived client view of the separate ledger and endpoint declarations.
 type ClientTaskDeclaration =
@@ -187,10 +188,10 @@ module TaskDeclarations =
                {
                    IdValue = declaration.Id
                    KindValue =
-                       (if declaration.Kind = EndpointKind.Query then
-                            ClientTaskKind.Query
-                        else
-                            ClientTaskKind.Command)
+                       (match declaration.Kind with
+                        | EndpointKind.Query -> ClientTaskKind.Query
+                        | EndpointKind.Command -> ClientTaskKind.Command
+                        | EndpointKind.Binary -> ClientTaskKind.Binary)
                    InputsValue = declaration.Inputs
                    CollectionsValue = []
                    LedgerValue = None

@@ -4019,6 +4019,10 @@
     "text": "اختر ملفًا باسم مدعوم.",
     "source": "f1d655317805"
   },
+  "diagnostic.ATTACHMENT_TYPE_REFUSED": {
+    "text": "يمكن للملفات من هذا النوع تشغيل برامج، ولذلك لا يمكن إرفاقها. ضع الملف في أرشيف إذا كان الملف بحاجة إليه.",
+    "source": "20ba6ec4e964"
+  },
   "diagnostic.ATTACHMENT_LENGTH_INVALID": {
     "text": "يجب ألا يتجاوز حجم الملف 25 ميبيبايت.",
     "source": "8b03ed678e72"
@@ -4038,6 +4042,10 @@
   "diagnostic.ATTACHMENT_DUPLICATE": {
     "text": "هذا الملف مرفق بالفعل بالملف.",
     "source": "7c0f59f6f6f0"
+  },
+  "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE": {
+    "text": "لا يمكن معاينة هذا المرفق.",
+    "source": "a75175457556"
   },
   "diagnostic.ATTACHMENT_CAPACITY_REACHED": {
     "text": "بلغت الملف الحد الأقصى للمرفقات المحتفَظ بها.",
@@ -4063,12 +4071,20 @@
     "text": "تم تسجيل تغيير في المرفق.",
     "source": "9c5ab3a2b28f"
   },
-  "label.attachmentPreview": {
-    "text": "معاينة الصورة",
-    "source": "f09247433bef"
+  "endpoint.attachment.download.label": {
+    "text": "تنزيل",
+    "source": "d6eafe823591"
   },
-  "label.attachmentDisclosure": {
-    "text": "موضع سجل المرفقات",
-    "source": "02ce853f42c9"
+  "endpoint.attachment.download.meaning": {
+    "text": "احفظ المرفق الحالي في ملف.",
+    "source": "6ff0b4d23f78"
+  },
+  "endpoint.attachment.preview.label": {
+    "text": "معاينة",
+    "source": "324b134f57c7"
+  },
+  "endpoint.attachment.preview.meaning": {
+    "text": "اعرض المرفق الحالي داخل مساحة العمل.",
+    "source": "5e943e102857"
   }
 }

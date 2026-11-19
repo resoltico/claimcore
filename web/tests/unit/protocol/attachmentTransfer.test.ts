@@ -23,7 +23,7 @@ const response = (headers: Readonly<Record<string, string>> = {}, body = "abc") 
       "content-type": "application/octet-stream",
       "content-length": "3",
       "content-encoding": "identity",
-      "content-disposition": "attachment; filename=\"evidence.bin\"; filename*=UTF-8''evidence.bin",
+      "content-disposition": "attachment; filename*=UTF-8''evidence.j%C5%9Bs",
       "ClaimCore-Installation": installation,
       "cache-control": "no-store, no-transform",
       "Content-Digest": "sha-256=:ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=:",
@@ -32,9 +32,9 @@ const response = (headers: Readonly<Record<string, string>> = {}, body = "abc") 
   });
 const request = (currentOwner: () => OwnerScope | null = () => owner) =>
   requestAttachment(
-    "download",
+    "DOWNLOAD",
     selector,
-    "evidence.bin",
+    "evidence.jśs",
     "cookie-token",
     owner,
     currentOwner,
@@ -77,6 +77,19 @@ test.each([
   ["truncation", {}, "ab"],
   ["long result", {}, "abcd"],
   ["unexpected encoding", { "Content-Encoding": "gzip" }, "abc"],
+  [
+    "different filename",
+    { "Content-Disposition": "attachment; filename*=UTF-8''other.txt" },
+    "abc",
+  ],
+  [
+    "extra filename parameter",
+    {
+      "Content-Disposition":
+        "attachment; filename=\"evidence.js\"; filename*=UTF-8''evidence.j%C5%9Bs",
+    },
+    "abc",
+  ],
 ] as const)("rejects %s without delivering a document", async (_label, headers, body) => {
   vi.stubGlobal("crypto", {
     subtle: { digest: () => Promise.resolve(independentlyHashed.buffer) },
@@ -104,7 +117,7 @@ test("drops data after hashing if its owner changes", async () => {
 
 test("cancels a response body with a malformed extended filename", async () => {
   const malformed = response({
-    "content-disposition": "attachment; filename=\"evidence.bin\"; filename*=UTF-8''bad%ZZ",
+    "content-disposition": "attachment; filename*=UTF-8''bad%ZZ",
   });
   const cancel = vi.spyOn(malformed.body!, "cancel");
   vi.stubGlobal("fetch", () => Promise.resolve(malformed));

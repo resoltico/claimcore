@@ -433,12 +433,65 @@ let private failedStatusRetainsUncertainty () =
             "The exact frozen retry frame survives status failure"
     }
 
+let private downloadPreviewRefusal () =
+    task {
+        let directory = Directory.CreateTempSubdirectory "claimcore-shell-preview-refusal-"
+
+        try
+            let path = Path.Combine(directory.FullName, "attachment.pdf")
+
+            let command =
+                "attachment download REF 10000000-0000-7000-8000-000000000001 --output "
+                + CommandGrammar.quoteArgument path
+
+            use terminal = new Terminal([ ShellLine.Text command; ShellLine.Text "exit" ])
+
+            let download _ _ =
+                Refusal.AttachmentPreviewUnavailable
+                |> HumanReplies.rejection
+                |> AttachmentTransferFailure.Rejected
+                |> AttachmentDownloadFailure.Refused
+                |> Error
+                |> Task.FromResult
+
+            use processor =
+                RemoteFrameProcessor.ForTest(
+                    Stream.Null,
+                    terminal.Output,
+                    terminal.Errors,
+                    (fun _ _ _ -> failtest "A binary read cannot use framed JSON execution."),
+                    noDiscard,
+                    download = download
+                )
+
+            let shell = ShellSession(Clock(), terminal.Console, processor)
+            let! _ = shell.Run()
+            let errors = text terminal.Errors
+
+            Expect.stringContains
+                errors
+                "This attachment cannot be previewed."
+                "Core refusal wording"
+
+            Expect.stringContains
+                errors
+                "Exit code: 2"
+                "Binary refusal uses the ordinary rejection exit"
+
+            Expect.isFalse (File.Exists path) "A rejected transfer never publishes bytes"
+        finally
+            directory.Delete true
+    }
+
 [<Tests>]
 let tests =
     testList
         "interactive shell session"
         [
             testCase "queries share sign-in and exit or EOF discard it" runSignInAndExit
+            testTask "a typed attachment preview refusal maps to shell rejection without output" {
+                do! downloadPreviewRefusal ()
+            }
             testTask "uncertain delivery preserves retry and the shell continues" {
                 do! uncertainContinues ()
             }

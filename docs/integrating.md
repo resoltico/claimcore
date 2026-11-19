@@ -208,25 +208,30 @@ operator or actor attribution rather than inferring it from a display name.
 
 ### Case attachment transfers
 
-Use `case.attachments` to obtain current metadata and available controls. Its disclosure sequence
-and the timeline's attachment disclosure sequence let clients discard older list, receipt and history
-views after a newer attachment change. A file always belongs to the selected case.
+Use `case.attachments` to obtain current metadata and typed transfer controls with their Core labels,
+request inputs and expected filenames. The HUMAN list, attachment receipts and timeline expose an
+`attachmentObservation` with the case ID and sequence. Use it to discard older list, receipt and
+history views after a newer attachment change. A file always belongs to the selected case.
 
 Review `attachment.add` with the normal preview endpoint. Its input includes the operation ID,
 tagged case selector, filename candidate, decimal byte count and SHA-256. Present the returned
-portable name and reattachment consequence before confirmation. Freeze the selected file across
-review and delivery. The protected multipart endpoint `attachment.upload` accepts the operation
-envelope as `manifest.json` in the `manifest` part followed by exact bytes as `payload.bin` in the
-`file` part. The standard JSON execution path refuses attachment addition. Use standard review
+portable name and reattachment consequence before confirmation. A blocked suffix produces an
+`ATTACHMENT_TYPE_REFUSED` violation on the attachment name at review and execution. Freeze the
+selected file across review and delivery. The protected multipart endpoint `attachment.upload`
+accepts the operation envelope as `manifest.json` in the `manifest` part, then the exact bytes as
+`payload.bin` in the `file` part. The standard JSON execution path refuses attachment addition. Use standard review
 and execution for `attachment.withdraw`. If delivery is uncertain, use `operation.get` with the
 original operation ID.
 
-Binary delivery uses protected POST endpoints `attachment.download` and `attachment.preview` with
-a tagged case selector and attachment ID. Verify the installation, media type, full byte count and
-SHA-256 in `Content-Digest` before giving the file to the caller. Downloads use
-`application/octet-stream` with an attachment disposition. Eligible previews use the actual static
-PNG or JPEG media type. Refusals use JSON. Use the generated OpenAPI contract for the complete
-request and response grammar.
+Core declares the binary `attachment.download` and `attachment.preview` actions. Their protected
+POST endpoints take a tagged case selector and attachment ID. Verify the installation, media type,
+full byte count and SHA-256 in `Content-Digest` before giving the file to the caller. Downloads use
+`application/octet-stream` and `Content-Disposition: attachment; filename*=UTF-8''<encoded>`.
+Compare the decoded name with the expected canonical name from the authorized attachment list.
+Eligible previews use `image/png`, `image/jpeg` or `application/pdf` according to the verified bytes.
+If an accessible file lacks a supported preview, the endpoint returns the typed
+`ATTACHMENT_PREVIEW_UNAVAILABLE` refusal in JSON. The file remains available for download. Use the
+generated OpenAPI contract for the complete request and response grammar.
 
 ## Post a command
 

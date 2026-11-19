@@ -1,9 +1,20 @@
 namespace ClaimCore.Domain
 
 open System
+open System.Collections.Generic
 open System.Globalization
 open System.Security.Cryptography
 open System.Text
+
+module AttachmentLimits =
+    [<Literal>]
+    let FileBytes = 26_214_400
+
+    [<Literal>]
+    let RetainedFiles = 100L
+
+    [<Literal>]
+    let RetainedBytes = 268_435_456L
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type AttachmentId = private AttachmentId of Guid
@@ -103,7 +114,7 @@ module AttachmentName =
         else
             safeStem (truncate (budget - 1) shortened) + extension
 
-    let private clean asciiOnly (candidate: string) =
+    let private clean (candidate: string) =
         let basename = candidate.Substring(candidate.LastIndexOfAny([| '/'; '\\' |]) + 1)
         let result = StringBuilder()
         let mutable whitespace = false
@@ -122,15 +133,14 @@ module AttachmentName =
                 whitespace <- false
 
                 if
-                    (not asciiOnly || rune.IsAscii)
-                    && (Rune.IsLetter rune
-                        || Rune.IsDigit rune
-                        || category = UnicodeCategory.NonSpacingMark
-                        || category = UnicodeCategory.SpacingCombiningMark
-                        || category = UnicodeCategory.EnclosingMark
-                        || rune.Value = int '.'
-                        || rune.Value = int '_'
-                        || rune.Value = int '-')
+                    Rune.IsLetter rune
+                    || Rune.IsDigit rune
+                    || category = UnicodeCategory.NonSpacingMark
+                    || category = UnicodeCategory.SpacingCombiningMark
+                    || category = UnicodeCategory.EnclosingMark
+                    || rune.Value = int '.'
+                    || rune.Value = int '_'
+                    || rune.Value = int '-'
                 then
                     result.Append(rune.ToString()) |> ignore
 
@@ -156,12 +166,180 @@ module AttachmentName =
                 if utf8.GetByteCount input > MaximumCandidateBytes then
                     None
                 else
-                    Some(AttachmentName(clean false input))
+                    Some(AttachmentName(clean input))
             with :? EncoderFallbackException ->
                 None
 
     let value (AttachmentName value) = value
-    let asciiFallback (AttachmentName value) = clean true value
+
+    let internal suffix (AttachmentName value) =
+        match value.LastIndexOf '.' with
+        | -1 -> None
+        | index -> Some(value.Substring(index + 1))
+
+module AttachmentType =
+    // Microsoft Outlook's Level 1 list, retrieved 2026-11-19, plus platform launchers and installers.
+    // https://support.microsoft.com/en-us/outlook/blocked-attachments-in-outlook
+    let private blocked =
+        HashSet<string>(
+            [
+                "ade"
+                "adp"
+                "apk"
+                "app"
+                "appcontent-ms"
+                "application"
+                "appref-ms"
+                "appx"
+                "asp"
+                "aspx"
+                "asx"
+                "bas"
+                "bat"
+                "bgi"
+                "cab"
+                "cdxml"
+                "cer"
+                "chm"
+                "cmd"
+                "cnt"
+                "com"
+                "cpl"
+                "crt"
+                "csh"
+                "der"
+                "diagcab"
+                "exe"
+                "fxp"
+                "gadget"
+                "grp"
+                "hlp"
+                "hpj"
+                "hta"
+                "htc"
+                "img"
+                "inf"
+                "ins"
+                "iso"
+                "isp"
+                "its"
+                "jar"
+                "jnlp"
+                "js"
+                "jse"
+                "ksh"
+                "library-ms"
+                "lnk"
+                "mad"
+                "maf"
+                "mag"
+                "mam"
+                "maq"
+                "mar"
+                "mas"
+                "mat"
+                "mau"
+                "mav"
+                "maw"
+                "mcf"
+                "mda"
+                "mdb"
+                "mde"
+                "mdt"
+                "mdw"
+                "mdz"
+                "msc"
+                "mht"
+                "mhtml"
+                "msh"
+                "msh1"
+                "msh2"
+                "mshxml"
+                "msh1xml"
+                "msh2xml"
+                "msi"
+                "msp"
+                "mst"
+                "msu"
+                "ops"
+                "osd"
+                "pcd"
+                "pif"
+                "pl"
+                "plg"
+                "prf"
+                "prg"
+                "printerexport"
+                "ps1"
+                "ps1xml"
+                "ps2"
+                "ps2xml"
+                "psc1"
+                "psc2"
+                "psd1"
+                "psdm1"
+                "pssc"
+                "pst"
+                "py"
+                "pyc"
+                "pyo"
+                "pyw"
+                "pyz"
+                "pyzw"
+                "reg"
+                "scf"
+                "scr"
+                "sct"
+                "search-ms"
+                "settingcontent-ms"
+                "shb"
+                "shs"
+                "theme"
+                "tmp"
+                "udl"
+                "url"
+                "vb"
+                "vbe"
+                "vbp"
+                "vbs"
+                "vhd"
+                "vhdx"
+                "vsmacros"
+                "vsw"
+                "webpnp"
+                "website"
+                "ws"
+                "wsb"
+                "wsc"
+                "wsf"
+                "wsh"
+                "xbap"
+                "xll"
+                "xnk"
+                "msix"
+                "msixbundle"
+                "appxbundle"
+                "appinstaller"
+                "sh"
+                "bash"
+                "zsh"
+                "command"
+                "tool"
+                "terminal"
+                "desktop"
+                "appimage"
+                "run"
+                "deb"
+                "rpm"
+                "pkg"
+                "mpkg"
+                "dmg"
+            ],
+            StringComparer.OrdinalIgnoreCase
+        )
+
+    let refused name =
+        AttachmentName.suffix name |> Option.exists blocked.Contains
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type AttachmentDigest = private AttachmentDigest of string
@@ -232,7 +410,6 @@ type AttachmentDescriptor =
     {
         Blob: AttachmentId
         Intent: AttachmentIntent
-        Preview: AttachmentPreview option
     }
 
 module AttachmentDescriptor =

@@ -3,9 +3,10 @@
 ## [Unreleased]
 
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 8. Earlier formats are refused.
-- Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) through the Web workspace or CLI. Preview supported static PNG and JPEG files in the browser.
+- Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) in Web or CLI. Archive refused file types before attaching them.
+- Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
 - Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
-- Regenerate clients for attachment list and transfer contracts and the attachment disclosure sequence on timeline pages.
+- Regenerate clients for typed attachment controls and disclosure facts, new refusals and the `filename*`-only download disposition.
 
 ## [0.20.0] - 2026-11-19
 

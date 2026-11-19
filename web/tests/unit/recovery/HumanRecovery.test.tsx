@@ -14,8 +14,10 @@ import { recoveryRecord } from "../../support/recovery.fixtures";
 import { RecoveryProvider, useRecovery } from "../../../src/recovery/RecoveryContext";
 import { JournalContext } from "../../../src/recovery/JournalContext";
 import { useEndpointCache } from "../../../src/hooks/EndpointProvider";
+import { EndpointCache } from "../../../src/hooks/endpointCache";
 import { ScreenView } from "../../../src/ui/ScreenView";
 import type { RecoveryJournal } from "../../../src/protocol/recoveryJournal";
+import { humanReadReply } from "../../support/human-read-reply.fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 const record = recoveryRecord();
@@ -153,31 +155,7 @@ it("retains the complete Core receipt and known acceptance when identity-only jo
 it("uses an accepted withdrawal's disclosure position in identity-only recovery", async () => {
   const journal = setup("ACCEPTED", {
     ...receipt,
-    screen: {
-      regions: [
-        ...receipt.screen.regions,
-        {
-          role: "DETAILS",
-          content: {
-            kind: "ENTRIES",
-            entries: [
-              {
-                key: "attachmentCaseId",
-                labelId: "input.caseId.label",
-                prominence: "DETAIL",
-                value: { kind: "IDENTIFIER", value: attachmentCaseId },
-              },
-              {
-                key: "attachmentDisclosure",
-                labelId: "label.attachmentDisclosure",
-                prominence: "DETAIL",
-                value: { kind: "COUNT", value: 19 },
-              },
-            ],
-          },
-        },
-      ],
-    },
+    attachmentObservation: { caseId: attachmentCaseId, sequence: 19 },
     disclosure: "WITHHELD",
   });
 
@@ -185,6 +163,39 @@ it("uses an accepted withdrawal's disclosure position in identity-only recovery"
   expect(screen.getByTestId("attachment-disclosure")).toHaveTextContent("19");
   expect(journal.remove).toHaveBeenCalledWith(record);
 });
+
+it.each(["receipt", "timeline"] as const)(
+  "clears only the older attachment list when a newer %s supplies a sequence",
+  async (source) => {
+    const cache = new EndpointCache();
+    const read = (sequence: number) =>
+      Promise.resolve({
+        kind: "outcome",
+        status: 200,
+        value: humanReadReply("case.attachments", {
+          ...receipt,
+          subject: { kind: "LIST" },
+          attachmentObservation: { caseId: attachmentCaseId, sequence },
+        }),
+      } as const);
+    await cache.fetch("older", () => read(18));
+    cache.observeAttachmentDisclosure(attachmentCaseId, 18);
+    await cache.fetch("current", () => read(19));
+
+    const observation = { caseId: attachmentCaseId, sequence: 19 };
+    const observe = () =>
+      source === "receipt"
+        ? cache.observeAttachmentReceipt({ ...receipt, attachmentObservation: observation })
+        : cache.observeAttachmentDisclosure(observation.caseId, observation.sequence);
+    expect(observe()).toBe(true);
+    expect(cache.snapshot("older").previous).toBeNull();
+    expect(cache.snapshot("current").previous).not.toBeNull();
+
+    const invalidated = cache.invalidation();
+    expect(observe()).toBe(true);
+    expect(cache.invalidation()).toBe(invalidated);
+  },
+);
 
 it("masks a recovered receipt synchronously when the disclosure generation is invalidated", async () => {
   setup();

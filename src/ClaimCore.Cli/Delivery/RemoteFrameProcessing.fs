@@ -285,7 +285,41 @@ module private FrameInvocation =
 
             prepared access.TransferClient transport token frame beforeSend consent cancelled)
 
-    let download holder selection (cancelled: CancellationToken) =
+    let private expectedAttachment (selection: AttachmentReadRequest) (listed: CliReply) =
+        match listed.Frame.Result with
+        | FrameResult.Reply reply ->
+            match ServiceReply.value Api.caseAttachments reply with
+            | Some(RepresentationReply.Data(Outcome.Succeeded page)) ->
+                let caseMatches =
+                    match selection.Target with
+                    | CaseSelector.Id caseId -> caseId = page.CaseId
+                    | CaseSelector.Reference _ -> true
+
+                if not caseMatches then
+                    Error(AttachmentDownloadFailure.Local ClientFailure.InvalidResponse)
+                else
+                    match
+                        page.Items
+                        |> List.tryFind (fun row -> row.AttachmentId = selection.AttachmentId)
+                    with
+                    | Some row ->
+                        let exact =
+                            { selection with
+                                Target = CaseSelector.Id page.CaseId
+                            }
+
+                        Ok(exact, row.Name)
+                    | None ->
+                        Refusal.Access AccessRefusal.ResourceUnavailable
+                        |> HumanReplies.rejection
+                        |> AttachmentTransferFailure.Rejected
+                        |> AttachmentDownloadFailure.Refused
+                        |> Error
+            | Some(RepresentationReply.Data _) -> Error(AttachmentDownloadFailure.Access listed)
+            | _ -> Error(AttachmentDownloadFailure.Local ClientFailure.InvalidResponse)
+        | _ -> Error(AttachmentDownloadFailure.Access listed)
+
+    let download holder (selection: AttachmentReadRequest) (cancelled: CancellationToken) =
         let local = AttachmentDownloadFailure.Local >> Error
 
         authenticated holder cancelled local (fun access token ->
@@ -304,16 +338,32 @@ module private FrameInvocation =
                 | Error reply -> return Error(AttachmentDownloadFailure.Access reply)
                 | Ok _ when not (current ()) -> return local ClientFailure.Cancelled
                 | Ok context ->
-                    let! result =
-                        AttachmentBinaryCall.download
-                            access.TransferClient
-                            { target with
-                                InstallationId = Some context.InstallationId
-                            }
-                            selection
-                            cancelled
+                    let bound =
+                        { target with
+                            InstallationId = Some context.InstallationId
+                        }
 
-                    return if current () then result else local ClientFailure.Cancelled
+                    match Frames.create Api.caseAttachments { Target = selection.Target } with
+                    | Error _ -> return local ClientFailure.InvalidFrame
+                    | Ok request ->
+                        let! listed =
+                            RemoteServiceCall.send access.Client bound request ignore cancelled
+
+                        if not (current ()) then
+                            return local ClientFailure.Cancelled
+                        else
+                            match expectedAttachment selection listed with
+                            | Error refusal -> return Error refusal
+                            | Ok(exact, name) ->
+                                let! result =
+                                    AttachmentBinaryCall.download
+                                        access.TransferClient
+                                        bound
+                                        exact
+                                        name
+                                        cancelled
+
+                                return if current () then result else local ClientFailure.Cancelled
             })
 
 [<NoEquality; NoComparison>]

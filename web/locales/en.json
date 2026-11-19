@@ -189,8 +189,8 @@
   "ui.removeRow": "Remove row",
   "ui.rowNumber": "Row {number}",
   "ui.attachments.file": "Choose a file",
-  "ui.attachments.download": "Download",
-  "ui.attachments.preview": "Preview image",
-  "ui.attachments.previewError": "The image could not be displayed. Download the original file.",
-  "ui.attachments.empty": "No current attachments."
+  "ui.attachments.empty": "No current attachments.",
+  "ui.previousPage": "Previous page",
+  "ui.nextPage": "Next page",
+  "ui.documentPage": "Page {page} of {count}"
 }

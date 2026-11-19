@@ -147,8 +147,39 @@ module HostRoutes =
                         context
         }
 
+    let private attachmentViewer
+        (viewer: PublicAssets.Viewer)
+        (context: HttpContext)
+        (next: RequestDelegate)
+        : Task =
+        task {
+            if context.Request.Path.Value <> AttachmentTransport.viewerPath then
+                do! next.Invoke context
+            elif
+                HttpMethods.IsGet context.Request.Method
+                || HttpMethods.IsHead context.Request.Method
+            then
+                HttpHeaders.viewer viewer.ScriptHash viewer.StyleHash context
+                context.Response.ContentType <- "text/html; charset=utf-8"
+                context.Response.ContentLength <- Nullable(int64 viewer.Bytes.Length)
+
+                if HttpMethods.IsGet context.Request.Method then
+                    do!
+                        context.Response.Body
+                            .WriteAsync(viewer.Bytes, context.RequestAborted)
+                            .AsTask()
+            else
+                context.Response.StatusCode <- StatusCodes.Status405MethodNotAllowed
+                context.Response.Headers.Allow <- "GET, HEAD"
+        }
+
     let internal publicAssets assets (application: WebApplication) =
         let publicFiles = PublicAssets.Inventory assets
+
+        application.Use(
+            Func<HttpContext, RequestDelegate, Task>(attachmentViewer publicFiles.Viewer)
+        )
+        |> ignore
 
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->

@@ -449,24 +449,4 @@ module TimelineScreen =
             [ region RegionRole.Activity None (RegionContent.Timeline(List.map item rows)) ]
 
     let view (reply: CaseTimelinePage) =
-        let screen = rows reply.Items
-
-        let details =
-            entryRegion
-                RegionRole.Details
-                (Some "label.recordDetails")
-                [
-                    value
-                        "attachmentCaseId"
-                        "input.caseId.label"
-                        Prominence.Detail
-                        (PresentedValue.Identifier(CaseId.format reply.CaseId))
-                    value
-                        "attachmentDisclosure"
-                        "label.attachmentDisclosure"
-                        Prominence.Detail
-                        (PresentedValue.Count(Sequence.value reply.AttachmentDisclosure))
-                ]
-
-        Screen.create (screen.Regions @ [ details ])
-        |> page reply.Basis reply.Items.Length reply.NextCursor
+        rows reply.Items |> page reply.Basis reply.Items.Length reply.NextCursor

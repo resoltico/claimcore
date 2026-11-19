@@ -101,7 +101,7 @@ type Host
         ?handlers: ActorEndpoint -> ClaimCore.Server.Route
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
-    do File.WriteAllText(Path.Combine(assets, "public-assets.json"), "{\"schema\":1,\"assets\":[]}")
+    do TestServerFixture.publishedInventory assets []
 
     let builder =
         stage "host builder"
@@ -122,7 +122,7 @@ type Host
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->
                 context.Connection.RemoteIpAddress <- IPAddress.Loopback
-                HttpHeaders.register context
+                HttpHeaders.register origin context
                 next.Invoke context)
         )
         |> ignore

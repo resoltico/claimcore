@@ -313,10 +313,17 @@ let private delivery () =
 
         application.Run(
             RequestDelegate(fun context ->
-                HttpHeaders.register context
+                HttpHeaders.register (Uri "https://localhost:5443") context
 
-                (WebWire.attachment AttachmentTransfer.Download content installation).ExecuteAsync
-                    context)
+                let transfer, kind =
+                    match context.Request.Path.Value with
+                    | "/png" -> AttachmentTransfer.Preview, Some AttachmentPreview.Png
+                    | "/jpeg" -> AttachmentTransfer.Preview, Some AttachmentPreview.Jpeg
+                    | "/pdf" -> AttachmentTransfer.Preview, Some AttachmentPreview.Pdf
+                    | _ -> AttachmentTransfer.Download, None
+
+                WebWire.attachment transfer { content with Preview = kind } installation
+                |> fun response -> response.ExecuteAsync context)
         )
 
         do! application.StartAsync()
@@ -340,8 +347,8 @@ let private delivery () =
 
         Expect.equal
             ((nonNull response.Content.Headers.ContentDisposition).ToString())
-            "attachment; filename=\"Rsum.pdf\"; filename*=UTF-8''R%C3%A9sum%C3%A9.pdf"
-            "Safe ASCII fallback plus Unicode filename"
+            "attachment; filename*=UTF-8''R%C3%A9sum%C3%A9.pdf"
+            "Only the encoded canonical Unicode filename is sent"
 
         let header name =
             response.Headers.GetValues name |> Seq.exactlyOne
@@ -362,6 +369,49 @@ let private delivery () =
 
         Expect.equal (header "X-Content-Type-Options") "nosniff" "Binary response is not sniffed"
         Expect.sequenceEqual bytes [ 97uy; 98uy; 99uy ] "Bytes reach the socket unchanged"
+
+        for path, mediaType in
+            [ "/png", "image/png"; "/jpeg", "image/jpeg"; "/pdf", "application/pdf" ] do
+            use! preview = client.PostAsync(path, null)
+            let! payload = preview.Content.ReadAsByteArrayAsync()
+            Expect.equal preview.StatusCode HttpStatusCode.OK "Complete preview response"
+
+            Expect.equal
+                (nonNull preview.Content.Headers.ContentType).MediaType
+                mediaType
+                "Preview media follows the Core kind"
+
+            Expect.isNull
+                preview.Content.Headers.ContentDisposition
+                "Preview is delivered without a save name"
+
+            Expect.equal
+                preview.Content.Headers.ContentLength
+                (Nullable 3L)
+                "Preview has an exact length"
+
+            Expect.equal
+                (preview.Headers.GetValues("Content-Digest") |> Seq.exactlyOne)
+                (header "Content-Digest")
+                "Preview has the verified digest"
+
+            Expect.equal
+                (preview.Headers.GetValues("ClaimCore-Installation") |> Seq.exactlyOne)
+                (header "ClaimCore-Installation")
+                "Preview has its installation"
+
+            Expect.sequenceEqual
+                preview.Content.Headers.ContentEncoding
+                [ "identity" ]
+                "Preview is untransformed"
+
+            let previewCache = nonNull preview.Headers.CacheControl
+
+            Expect.isTrue
+                (previewCache.NoStore && previewCache.NoTransform)
+                "Preview keeps binary cache controls"
+
+            Expect.sequenceEqual payload bytes "Preview retains exact verified bytes"
     }
 
 let private headerCookies (response: HttpResponseMessage) =
@@ -1016,22 +1066,47 @@ let private hostTransfer () =
             HttpStatusCode.OK
             "A complete transfer with a wrong digest returns a typed refusal"
 
-        let decode bytes =
+        let decode expectedOperation bytes =
             match Codec.decode Limits.MaximumResponseBytes Api.operationExecute.Output bytes with
             | Ok(RepresentationReply.Data reply) ->
                 Expect.equal
                     reply.OperationId
-                    operation
+                    expectedOperation
                     "Multipart shares the operation identity echo"
 
                 reply.Outcome
             | _ -> failtest "Expected a represented execute reply."
 
-        match decode mismatchBytes with
+        match decode operation mismatchBytes with
         | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
         | result -> failtestf "Digest mismatch was not rejected: %A" result
 
         Expect.equal database.EntryCount before "A refused transfer cannot append"
+
+        let blockedOperation = Guid.CreateVersion7()
+
+        let blockedManifest =
+            (uploadOperation blockedOperation).Replace("Arrival Photo.jpg", "Arrival.exe")
+
+        let blockedFrame =
+            manifest blockedManifest + file "abc" + final |> Encoding.UTF8.GetBytes
+
+        let! blockedStatus, blockedBytes =
+            transmit database.InstallationId (new ChunkedBody(blockedFrame)) CancellationToken.None
+
+        Expect.equal
+            blockedStatus
+            HttpStatusCode.OK
+            "Filename policy is not a multipart framing failure"
+
+        Expect.equal
+            (decode blockedOperation blockedBytes)
+            (ExecuteResult.Rejected(
+                Refusal.invalidInput (InputTarget.AttachmentName, Violation.AttachmentTypeRefused)
+            ))
+            "A blocked name reaches the authorized execution decision"
+
+        Expect.equal database.EntryCount before "A blocked filename cannot append"
 
         let release =
             TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -1061,13 +1136,13 @@ let private hostTransfer () =
             HttpStatusCode.OK
             "Complete authenticated multipart is admitted within its own deadline"
 
-        match decode bytes with
+        match decode operation bytes with
         | ExecuteResult.Accepted _ -> ()
         | result -> failtestf "Expected upload acceptance: %A" result
 
         let! _, replay = upload operation "abc" database.InstallationId
 
-        match decode replay with
+        match decode operation replay with
         | ExecuteResult.AlreadyAccepted _ -> ()
         | result -> failtestf "Expected repeat upload to replay: %A" result
 
@@ -1098,11 +1173,15 @@ let private hostTransfer () =
         Expect.equal
             ((nonNull preview.Content.Headers.ContentType).MediaType)
             "application/json"
-            "Non-image preview remains a typed refusal"
+            "Unavailable preview remains a typed refusal"
 
         match Codec.decode Limits.MaximumResponseBytes AttachmentTransport.failure previewBytes with
-        | Ok(AttachmentTransferFailure.Rejected _) -> ()
-        | other -> failtestf "Expected non-image preview refusal: %A" other
+        | Ok(AttachmentTransferFailure.Rejected(ClaimCore.Presentation.HumanRejection.Refused advice)) ->
+            Expect.equal
+                advice.Message.MessageId
+                "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE"
+                "Preview refusal has its own Core wording"
+        | other -> failtestf "Expected preview-unavailable refusal: %A" other
     }
 
 [<Tests>]

@@ -3,8 +3,7 @@ import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import { clientCompositions, type TaskId, type OperationBinding } from "@contracts/client";
-import { attachmentReceiptFields } from "../../api/attachmentDisclosure";
+import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 
 import type { FormValues } from "../../protocol/forms";
@@ -60,17 +59,14 @@ export const WorkOperation = ({
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
   const accepted = useCallback(
-    (receipt: OperationReceipt, operationId: string, task: TaskId) => {
+    (receipt: OperationReceipt, operationId: string) => {
       if (recorded.current !== operationId) {
         recorded.current = operationId;
-        const fields = attachmentReceiptFields(receipt);
         if (
-          fields?.caseId === caseId &&
-          (receipt.disclosure === "ERASED" || fields.sequence !== undefined)
+          receipt.subject.kind === "RECEIPT" &&
+          receipt.attachmentObservation?.caseId === caseId
         ) {
           cache?.observeAttachmentReceipt(receipt);
-        } else if (task === clientCompositions.attachmentWithdrawal) {
-          cache?.confirmAttachmentWithdrawal(caseId);
         } else {
           cache?.invalidate();
         }
@@ -145,7 +141,7 @@ export const WorkOperation = ({
       model.prepared !== null
     ) {
       navigation.committed();
-      accepted(model.receipt, model.prepared.input.operationId, model.prepared.input.task);
+      accepted(model.receipt, model.prepared.input.operationId);
     }
   }, [model.receipt, model.prepared, model.ownerVerified, subject, navigation, accepted]);
   return (

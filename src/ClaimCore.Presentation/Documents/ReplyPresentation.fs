@@ -43,6 +43,7 @@ module Refusals =
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.OperationClockUnavailable _
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
+        | Refusal.AttachmentPreviewUnavailable
         | Refusal.Reminder ReminderRuleRefusal.NoChanges
         | Refusal.People PeopleRefusal.NoChanges -> RecommendedAction.NoneRequired
         | Refusal.People(PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable | PeopleRefusal.IdentityReserved) ->

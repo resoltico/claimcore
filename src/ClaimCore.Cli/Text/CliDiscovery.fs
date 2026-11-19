@@ -58,7 +58,7 @@ let discovery output errors =
                     topic = CliTopic.Help HelpTopic.Overview
                     || topic = CliTopic.Help HelpTopic.Verbs
                 then
-                    CommandGrammar.operations
+                    CommandGrammar.verbs
                 else
                     []
 

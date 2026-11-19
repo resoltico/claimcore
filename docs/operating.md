@@ -488,6 +488,11 @@ headers, the original host and origin, and identity encoding. Forward downloads 
 without response transformations. The multipart reader tolerates bounded preamble, epilogue and
 delimiter whitespace within the aggregate limit.
 
+Attachment intake applies the blocked-suffix list to the canonical saved name. The list is a
+decision rule used during replay. Before 1.0, changing it requires a fresh installation. Malware
+scanning is the deployment operator's responsibility. Recipients control when and how they open
+downloads.
+
 ## Browser preferences and assets
 
 Settings owns language, regional format, green/blue accent and light/dark/system preferences, including
@@ -502,6 +507,14 @@ Only verified assets without Set-Cookie receive immutable public caching. Runtim
 refusals and fallback routes remain no-store; business data and recovery identities are not service-worker cached.
 Failed language activation keeps the working language. Protect an unconfirmed change's identity before reload;
 reloading cannot reconstruct a discarded request body.
+
+The PDF viewer at `/attachment-preview/viewer` serves a startup-verified document with its own
+Content Security Policy (CSP). Proxies must forward the viewer and workspace CSP headers unchanged.
+Each preview runs in a fresh opaque-origin sandbox with access to the selected PDF and the renderer
+resources relayed by the workspace. The viewer's CSP permits its in-frame worker and WebAssembly
+image decoders. A compromised viewer could navigate its own frame and send data to an external host.
+The workspace transfers the file over a private message port, and a navigated frame receives no
+further data.
 
 ## Verification and reconstruction
 

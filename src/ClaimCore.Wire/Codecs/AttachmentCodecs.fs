@@ -23,6 +23,18 @@ module AttachmentCodecs =
                 ))
             AttachmentId.value
 
+    let request =
+        (record (fun target id ->
+            {
+                AttachmentReadRequest.Target = target
+                AttachmentId = id
+            })
+        : Fields<AttachmentReadRequest, _>)
+        |> field "target" _.Target RequestCodecs.caseSelector
+        |> field "attachmentId" _.AttachmentId id
+        |> build
+        |> named "AttachmentReadRequest"
+
     let length = integer 0L (int64 AttachmentLimits.FileBytes)
 
     let name =
@@ -56,7 +68,7 @@ module AttachmentCodecs =
         |> map (Sequence.create >> Option.get) Sequence.value
 
     let row =
-        (record (fun attachment name length recordedAt recordedBy canWithdraw canPreview ->
+        (record (fun attachment name length recordedAt recordedBy canWithdraw previewCandidate ->
             {
                 AttachmentRow.AttachmentId = attachment
                 Name = name
@@ -64,7 +76,7 @@ module AttachmentCodecs =
                 RecordedAt = recordedAt
                 RecordedBy = recordedBy
                 CanWithdraw = canWithdraw
-                CanPreview = canPreview
+                CanPreview = previewCandidate
             })
         : Fields<AttachmentRow, _>)
         |> field "attachmentId" _.AttachmentId id
@@ -73,7 +85,7 @@ module AttachmentCodecs =
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "canWithdraw" _.CanWithdraw boolean
-        |> field "canPreview" _.CanPreview boolean
+        |> field "previewCandidate" _.CanPreview boolean
         |> build
         |> named "AttachmentRow"
 
