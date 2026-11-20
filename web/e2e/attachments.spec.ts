@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { deflateSync } from "node:zlib";
 import {
   errors,
@@ -469,6 +470,74 @@ test("a delayed PDF preview preserves deliberately moved keyboard focus @engine"
   await expect(frame).toHaveCount(0);
   await expect(preview).toBeFocused();
 });
+
+for (const transfer of ["preview", "download"] as const) {
+  test(`keyboard focus survives a held attachment ${transfer} @engine`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await openAuthenticated(page);
+    await openCase(page, `ATTACH-TRANSFER-FOCUS-${randomUUID()}`);
+    const name = "unsupported-preview.png";
+    const bytes = Buffer.from("synthetic bytes outside the PNG profile");
+    const panel = documentPanel(page);
+    const { row } = await upload(page, panel, name, name, "image/png", bytes);
+    const trigger = row.getByRole("button", {
+      name: transfer === "preview" ? "Preview" : "Download",
+      exact: true,
+    });
+    const path = `/api/attachment.${transfer}`;
+    const held = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    await page.route(
+      `**${path}`,
+      async (route) => {
+        const response = await route.fetch({ maxRedirects: 0 });
+        held.resolve();
+        await release.promise;
+        await route.fulfill({ response });
+      },
+      { times: 1 },
+    );
+
+    const delivery = transfer === "download" ? page.waitForEvent("download") : null;
+    await trigger.focus();
+    try {
+      await page.keyboard.press("Enter");
+      await held.promise;
+      await expect(trigger).toBeFocused();
+      await expect(trigger).toHaveAttribute("aria-disabled", "true");
+      await expect(trigger).not.toHaveAttribute("disabled");
+      await expect(trigger).toHaveCSS("cursor", "not-allowed");
+      const repeated = page
+        .waitForRequest((request) => new URL(request.url()).pathname === path, {
+          timeout: 750,
+        })
+        .then(
+          () => true,
+          (error: unknown) => {
+            if (error instanceof errors.TimeoutError) {
+              return false;
+            }
+            throw error;
+          },
+        );
+      await page.keyboard.press("Enter");
+      expect(await repeated).toBe(false);
+    } finally {
+      release.resolve();
+    }
+
+    if (delivery === null) {
+      await expect(panel.getByRole("alert")).toHaveText("This attachment cannot be previewed.");
+    } else {
+      const downloaded = await delivery;
+      expect(downloaded.suggestedFilename()).toBe(name);
+      expect(await readFile(await downloaded.path())).toEqual(bytes);
+    }
+    await expect(trigger).toBeEnabled();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveCSS("cursor", "pointer");
+  });
+}
 
 test("held Enter closes a PDF preview once before a separate press can reopen it @engine", async ({
   page,

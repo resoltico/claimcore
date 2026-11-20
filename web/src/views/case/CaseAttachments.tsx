@@ -393,7 +393,7 @@ const AttachmentControls = ({
         <Button
           key={transfer.kind}
           variant="secondary"
-          isDisabled={busy}
+          isPending={busy}
           onPress={({ target }) => {
             void interaction.receive(transfer, target);
           }}
