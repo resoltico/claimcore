@@ -22,7 +22,7 @@ module internal LedgerAdministration =
     let head source cancellationToken =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
-                ServerSupport.require connection.PostgreSqlVersion
+                do! DatabaseProfile.require connection cancellationToken
                 let! installation, _ = Baseline.require connection cancellationToken
                 return! CheckpointEvidence.read connection installation cancellationToken
             })
@@ -102,7 +102,7 @@ module internal LedgerAdministration =
             token
             (fun connection transaction ->
                 task {
-                    ServerSupport.require connection.PostgreSqlVersion
+                    do! DatabaseProfile.require connection token
                     let! installationId, timeZone = Baseline.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token
@@ -188,6 +188,7 @@ module internal AdministrationFailures =
         function
         | RuntimeOpenFault.InvalidTransport -> OperatorFault.UnsafeTransport
         | RuntimeOpenFault.UnsupportedServer -> OperatorFault.UnsupportedServer
+        | RuntimeOpenFault.UnsupportedDatabase -> OperatorFault.UnsupportedDatabase
         | RuntimeOpenFault.UnsafeRole -> OperatorFault.PermissionDenied
         | RuntimeOpenFault.SchemaMismatch -> OperatorFault.SchemaMismatch
         | RuntimeOpenFault.InstallationInvalid -> OperatorFault.InstallationInvalid

@@ -29,10 +29,6 @@ module internal InstallationCheck =
             if settings.SslMode <> SslMode.VerifyFull then
                 raise (InstallationRefusal RuntimeOpenFault.InvalidTransport)
 
-    let internal serverVersion value =
-        if not (ServerSupport.supports value) then
-            raise (InstallationRefusal RuntimeOpenFault.UnsupportedServer)
-
     let private role connection token =
         task {
             let! rows =
@@ -81,7 +77,7 @@ module internal InstallationCheck =
             return!
                 DatabaseSession.read source token (fun connection ->
                     task {
-                        serverVersion connection.PostgreSqlVersion
+                        do! DatabaseProfile.require connection token
 
                         do! role connection token
                         let! id, zone = Baseline.require connection token

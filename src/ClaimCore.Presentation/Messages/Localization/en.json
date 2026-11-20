@@ -1,4 +1,5 @@
 {
+  "notice.unsupportedDatabaseProfile": "Use UTF8 encoding, the built-in C.UTF-8 locale, and a PostgreSQL cluster with data checksums enabled.",
   "diagnostic.CASE_DATE_RANGE": "Set {field} to a date on or after its start date.",
   "task.people.changeSignInIdentity.label": "Change sign-in identity",
   "task.people.changeSignInIdentity.meaning": "Bind this account to a new issuer and subject. The account keeps its roles and recorded work.",

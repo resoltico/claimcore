@@ -132,6 +132,7 @@ module WebStartupDiagnostics =
                 (match fault with
                  | RuntimeOpenFault.InvalidTransport -> "RUNTIME_INVALID_TRANSPORT"
                  | RuntimeOpenFault.UnsupportedServer -> "RUNTIME_UNSUPPORTED_SERVER"
+                 | RuntimeOpenFault.UnsupportedDatabase -> "RUNTIME_UNSUPPORTED_DATABASE"
                  | RuntimeOpenFault.UnsafeRole -> "RUNTIME_UNSAFE_ROLE"
                  | RuntimeOpenFault.SchemaMismatch -> "RUNTIME_SCHEMA_MISMATCH"
                  | RuntimeOpenFault.InstallationInvalid -> "RUNTIME_INSTALLATION_INVALID"

@@ -51,6 +51,8 @@ let tests =
                             OperatorFault.AlreadyInitialized
                             OperatorFaultException OperatorFault.FormatMismatch,
                             OperatorFault.FormatMismatch
+                            OperatorFaultException OperatorFault.UnsupportedDatabase,
+                            OperatorFault.UnsupportedDatabase
                             MaintenanceRequiredException(), OperatorFault.MaintenanceRequired
                         ]
 
@@ -71,8 +73,6 @@ let tests =
                         [
                             (fun () -> Baseline.zone "private-invalid-zone" |> ignore),
                             OperatorFault.TimeZoneInvalid
-                            (fun () -> ServerSupport.require (System.Version(17, 0))),
-                            OperatorFault.UnsupportedServer
                         ] do
                         let mutable actual = None
 

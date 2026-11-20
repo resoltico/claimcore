@@ -1,4 +1,8 @@
 {
+  "notice.unsupportedDatabaseProfile": {
+    "text": "Use la codificación UTF8, la configuración regional integrada C.UTF-8 y un clúster de PostgreSQL con las sumas de comprobación de datos habilitadas.",
+    "source": "65d336cc3bee"
+  },
   "diagnostic.CASE_DATE_RANGE": {
     "text": "Indica en {field} una fecha igual o posterior a la fecha inicial.",
     "source": "ba65df5311c2"

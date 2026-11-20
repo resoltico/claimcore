@@ -107,7 +107,7 @@ CREATE TABLE claimcore.ledger_compartments (
     owner_id uuid NOT NULL CHECK (owner_id<>'00000000-0000-0000-0000-000000000000'),
     commitment bytea NOT NULL CHECK (octet_length(commitment)=32),
     nonce bytea UNIQUE,
-    payload bytea,
+    payload bytea STORAGE EXTERNAL,
     PRIMARY KEY(operation_sequence,ordinal),
     UNIQUE(operation_sequence,owner_kind,owner_id),
     CHECK ((nonce IS NULL AND payload IS NULL) OR (nonce IS NOT NULL AND payload IS NOT NULL AND octet_length(nonce)=32 AND octet_length(payload) BETWEEN 1 AND 32768))
@@ -125,7 +125,7 @@ CREATE TABLE claimcore.attachment_blobs (
     effect_index integer NOT NULL,
     length bigint,
     digest bytea,
-    payload bytea,
+    payload bytea STORAGE EXTERNAL,
     PRIMARY KEY(case_id,blob_id),
     UNIQUE(operation_sequence,effect_index),
     FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),

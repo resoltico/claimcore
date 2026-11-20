@@ -13,6 +13,7 @@ open ClaimCore.RecordFormat
 type RuntimeOpenFault =
     | InvalidTransport
     | UnsupportedServer
+    | UnsupportedDatabase
     | UnsafeRole
     | SchemaMismatch
     | InstallationInvalid

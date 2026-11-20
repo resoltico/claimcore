@@ -15,8 +15,9 @@ open Npgsql
 open Testcontainers.PostgreSql
 open Expecto
 
-let private database (image: string) runId =
+let private database (image: string) initdbArguments runId =
     (new PostgreSqlBuilder(image))
+        .WithEnvironment("POSTGRES_INITDB_ARGS", initdbArguments)
         .WithName("claimcore-acceptance-db-" + runId)
         .WithLabel("claimcore.test", "acceptance")
         .WithLabel("claimcore.test-run", runId)
@@ -190,11 +191,11 @@ let private initialize
     }
 
 type Fixture() =
-    let postgresImage = ClaimCore.TestSupport.PostgresBaseline.image ()
+    let postgresImage, initdbArguments = PostgresBaseline.configuration ()
     let ownedDirectory = FixtureCleanup.OwnedDirectory()
     let directory = ownedDirectory.Path
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-    let postgres = database postgresImage (Guid.NewGuid().ToString("N"))
+    let postgres = database postgresImage initdbArguments (Guid.NewGuid().ToString("N"))
     let origin = "https://localhost:" + string (FixtureFiles.port ())
     let backend = "https://localhost:" + string (FixtureFiles.port ())
 

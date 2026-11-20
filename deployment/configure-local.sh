@@ -19,6 +19,17 @@ done
 for tool in openssl docker node; do
   command -v "${tool}" >/dev/null || { printf 'Required tool is unavailable: %s\n' "${tool}" >&2; exit 2; }
 done
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+postgres_image="$(node --input-type=module - "${root}/db/postgresql-baseline.json" <<'JAVASCRIPT'
+import { readFileSync } from "node:fs";
+const { supportedMajors } = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const image = supportedMajors?.length === 1 && supportedMajors[0].containerImage;
+if (typeof image !== "string" || !/^postgres:[1-9][0-9]*\.[0-9]+@sha256:[0-9a-f]{64}$/u.test(image)) {
+  throw new Error("The PostgreSQL baseline must contain one digest-pinned image.");
+}
+process.stdout.write(image);
+JAVASCRIPT
+)"
 uuid() {
   local hex
   hex="$(openssl rand -hex 16)"
@@ -131,7 +142,7 @@ printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "${claimcore_uid}" "${claimcore_gi
 mount_configuration="${configuration//\"/\"\"}"
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
   --network none --read-only --mount "type=bind,\"source=${mount_configuration}\",target=/config" \
-  --user 0 --entrypoint /bin/sh postgres:18.7@sha256:e754b839f447639b7004895f4d8a4bfcb4e9dbe3a1bc035f27f646562a16fd61 \
+  --user 0 --entrypoint /bin/sh "${postgres_image}" \
   -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
 unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"

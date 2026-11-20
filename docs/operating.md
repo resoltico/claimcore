@@ -91,6 +91,19 @@ image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json). Fr
 distributions require the .NET runtime matching the SDK baseline in [global.json](../global.json);
 the supplied application images include their pinned runtime.
 
+### PostgreSQL database profile
+
+Use PostgreSQL 19. Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
+The PostgreSQL cluster must have data checksums enabled. The Compose files initialize this profile.
+On a self-managed server, create an empty database with:
+
+```sql
+CREATE DATABASE claimcore TEMPLATE template0 ENCODING 'UTF8'
+  LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8';
+```
+
+### Initialize the register
+
 Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
@@ -152,6 +165,7 @@ an output reply. Stdout remains one JSON reply; storage diagnostics use stderr.
 | `PERMISSION_DENIED` | Use credentials with the privileges required by the owner command. |
 | `TIME_ZONE_INVALID`, `INITIAL_OWNER_INVALID`, `INVOCATION_INVALID` | Check the command's help, canonical IANA zone, owner principal/profile and supported roles. |
 | `ALREADY_INITIALIZED` | Inspect status; initialization does not adopt or upgrade an existing schema. |
+| `UNSUPPORTED_DATABASE` | Use UTF8 encoding, the built-in C.UTF-8 locale, and a cluster with data checksums enabled. The owner command exits with code 2. Web startup reports `RUNTIME_UNSUPPORTED_DATABASE`. |
 | `UNSUPPORTED_SERVER`, `SCHEMA_MISMATCH`, `FORMAT_MISMATCH`, `INSTALLATION_INVALID` | Check the supported PostgreSQL version and matching build/installation; format changes require fresh installation. |
 | `CHECKPOINT_FILE_REFUSED`, `CHECKPOINT_INVALID` | Check the absolute private path, permissions and closed checkpoint JSON. |
 | `MAINTENANCE_REQUIRED` | Isolate traffic as required and enter register maintenance. |
@@ -323,8 +337,8 @@ Take PostgreSQL physical base backups with continuous WAL archiving. Configure a
 archiving before the first base backup. Retain each usable base backup and its continuous WAL
 sequence from the start of the backup through the intended recovery point. Protect the archive
 and retain PostgreSQL configuration, identity state and the key ring with the recovery material.
-See the PostgreSQL documentation on [base backups](https://www.postgresql.org/docs/18/app-pgbasebackup.html)
-and [continuous archiving](https://www.postgresql.org/docs/18/continuous-archiving.html).
+See the PostgreSQL documentation on [base backups](https://www.postgresql.org/docs/19/app-pgbasebackup.html)
+and [continuous archiving](https://www.postgresql.org/docs/19/continuous-archiving.html).
 
 Capture trusted ClaimCore checkpoints before a loss and retain them independently of PostgreSQL
 and its backups. `head` emits the JSON object accepted by `--checkpoint FILE`. Save it in an
@@ -342,8 +356,9 @@ Observations newer than every independently retained trusted checkpoint cannot b
 that evidence.
 
 Restore the base backup and replay archived WAL into an isolated PostgreSQL cluster with the
-matching PostgreSQL version and the `pg_trgm` extension available. Restore requires the current
-ClaimCore installation format. Keep application servers and all client traffic isolated, including
+matching PostgreSQL major and `pg_trgm` 1.6 available. A PostgreSQL 18 physical backup must stay
+with its matching build and cluster. Start with a fresh PostgreSQL 19 installation for this baseline.
+Restore requires the current ClaimCore installation format. Keep application servers and all client traffic isolated, including
 browser, bearer/CLI and automation traffic, throughout restore admission and verification.
 
 With traffic still isolated, use the independently retained checkpoint to admit and verify the restored

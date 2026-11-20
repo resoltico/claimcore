@@ -390,21 +390,5 @@ let tests =
                             (CaseFixtures.sequence 4L)
                             "Owner root and two grants precede exactly one admitted transaction"
                     }))
-            testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
-                InstallationCheck.serverVersion (System.Version(18, 7))
-
-                for version in
-                    [ System.Version(18, 6); System.Version(17, 9); System.Version(19, 0) ] do
-                    let mutable result = None
-
-                    try
-                        InstallationCheck.serverVersion version
-                    with InstallationRefusal fault ->
-                        result <- Some fault
-
-                    Expect.equal
-                        result
-                        (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
-                        "One admission vocabulary")
             testCaseAsync "plain cursor positions survive runtime lifetimes" (run runtimeCursors)
         ]

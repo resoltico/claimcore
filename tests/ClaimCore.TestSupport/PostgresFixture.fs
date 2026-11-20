@@ -73,8 +73,11 @@ let internal runtimeConnectionString (database: Database) =
     (runtimeSettings database.Container).ConnectionString
 
 let private container configure =
+    let image, initdbArguments = PostgresBaseline.configuration ()
+
     let builder =
-        (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
+        (new PostgreSqlBuilder(image))
+            .WithEnvironment("POSTGRES_INITDB_ARGS", initdbArguments)
             .WithLabel("claimcore.test", "ledger-store")
             .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
             .WithTmpfsMount("/var/lib/postgresql")

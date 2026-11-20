@@ -267,9 +267,14 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         let needle = "needle%_\\[.*]***="
         let authored = "ＮＥＥＤＬＥ%_\\[.*]***="
 
+        let localized = "Rīgas مطالبة 東京事故"
+
         for operation, reference, claimant, description in
             [
-                100, "GIN-FACTS", "Financial claimant", Some("Incident " + authored + "\nالعربية")
+                100,
+                "GIN-FACTS",
+                "Financial claimant",
+                Some("Incident " + authored + "\n" + localized)
                 101, "GIN-WORK", "Work claimant", None
                 102, "GIN-PLAIN", "Ordinary claimant", None
             ] do
@@ -313,7 +318,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
                         {
-                            Summary = WorkValue.Set("Handling " + authored)
+                            Summary = WorkValue.Set("Handling " + authored + " " + localized)
                             Responsible = WorkValue.Keep
                         }
                     )))
@@ -341,6 +346,49 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             (read before |> references)
             [ "GIN-FACTS"; "GIN-WORK" ]
             "Both independent text owners match literal normalized input; the plain case does not"
+
+        for term in [ "RĪGAS"; "مطالبة"; "東京事故" ] do
+            let! localizedPage =
+                Service.list
+                    actor
+                    { pageRequest with
+                        Filter = { filter with Text = Some term }
+                    }
+                    token
+
+            Expect.equal
+                (read localizedPage |> references)
+                [ "GIN-FACTS"; "GIN-WORK" ]
+                "Case facts and work summaries both match the authored text"
+
+        let! plan =
+            DatabaseSession.transaction
+                database.OwnerSource
+                Data.IsolationLevel.ReadCommitted
+                token
+                (fun connection _ ->
+                    task {
+                        let! _ =
+                            DatabaseSession.execute
+                                connection
+                                "SET LOCAL enable_seqscan=off"
+                                [||]
+                                token
+
+                        return!
+                            DatabaseSession.rows
+                                connection
+                                "EXPLAIN SELECT case_id FROM claimcore.cases WHERE search_text LIKE $1"
+                                [| box "%東京事故%" |]
+                                token
+                    })
+
+        let lines = plan |> List.map (DatabaseSession.value<string> 0) |> String.concat "\n"
+
+        Expect.stringContains
+            lines
+            "cases_search"
+            "The case search predicate can use the trigram index"
 
         let! totals = Service.caseSummary actor (CaseSummaryRequest.ungrouped filter) token
         let totals = read totals

@@ -20,6 +20,7 @@ type OperatorFault =
     | OwnerRecoveryIdentityReserved
     | AlreadyInitialized
     | UnsupportedServer
+    | UnsupportedDatabase
     | SchemaMismatch
     | FormatMismatch
     | InstallationInvalid

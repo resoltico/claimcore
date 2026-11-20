@@ -1,4 +1,8 @@
 {
+  "notice.unsupportedDatabaseProfile": {
+    "text": "استخدم ترميز UTF8 والإعدادات المحلية المضمّنة C.UTF-8، ومجموعة PostgreSQL مع تفعيل المجاميع الاختبارية للبيانات.",
+    "source": "65d336cc3bee"
+  },
   "diagnostic.CASE_DATE_RANGE": {
     "text": "اضبط {field} على تاريخ يوافق تاريخ البداية أو يأتي بعده.",
     "source": "ba65df5311c2"

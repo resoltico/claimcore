@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 8. Earlier formats are refused.
+- Format 8 requires a [fresh installation](docs/operating.md#install-a-fresh-register) on PostgreSQL 19 with UTF8, built-in C.UTF-8 and data checksums.
 - Preserve databases from the unreleased format-8 build in PR #178 with that build and use a [fresh installation](docs/operating.md#install-a-fresh-register) for this build.
 - Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) in Web or CLI. Archive refused file types before attaching them.
 - Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
