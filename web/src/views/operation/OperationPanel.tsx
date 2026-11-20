@@ -148,6 +148,7 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
   }
   return (
     <Dialog
+      navigationGuard
       title={p.text("ui.changeActTitle")}
       closeLabel={p.text("ui.keepEditing")}
       description={p.text(description)}

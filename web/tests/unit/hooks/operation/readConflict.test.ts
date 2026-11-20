@@ -53,6 +53,7 @@ const effectFor = (
     identity,
     conflictId: identity.id,
     source,
+    target: { kind: "ID", caseId: current.subject.caseId },
     minimumRevision: 5,
   };
 };
@@ -83,7 +84,7 @@ it("uses the current work revision separately from the case fact revision", asyn
   expect(reads.size).toBe(0);
 });
 it("reads the selected reminder revision rather than either case or work revision", async () => {
-  mockEndpoint("case.get").mockResolvedValue(succeeded(caseValue()));
+  const parent = mockEndpoint("case.get").mockResolvedValue(succeeded(caseValue()));
   const reminderId = "30000000-0000-4000-8000-000000000003";
   const get = mockEndpoint("reminder.get").mockResolvedValue(
     succeeded({
@@ -129,8 +130,11 @@ it("reads the selected reminder revision rather than either case or work revisio
     throw new Error("Expected refreshed reminder.");
   }
   expect(result.value.revision).toBe(9);
+  expect(parent.mock.calls[0]?.[1]).toEqual({
+    target: { kind: "ID", caseId: current.subject.caseId },
+  });
   expect(get.mock.calls[0]?.[1]).toEqual({
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    target: { kind: "ID", caseId: current.subject.caseId },
     reminderId,
   });
 });
@@ -166,4 +170,30 @@ it("retains an erased current-case status without inventing editable facts or a 
   expect(result.value.revision).toBeNull();
   expect(result.value.current.disclosure).toBe("ERASED");
   expect(get).not.toHaveBeenCalled();
+});
+
+it("rejects a different returned case without reading the reminder", async () => {
+  mockEndpoint("case.get").mockResolvedValue(
+    succeeded({
+      ...caseValue(),
+      subject: { ...caseValue().subject, caseId: "90000000-0000-4000-8000-000000000004" },
+    }),
+  );
+  const reminder = mockEndpoint("reminder.get");
+  const result = await readConflict(
+    effectFor({
+      ...root,
+      task: "reminder.cancel",
+      binding: {
+        kind: "REMINDER",
+        target: root.target,
+        reminderId: "30000000-0000-4000-8000-000000000003",
+        expectedRevision: 1,
+      },
+      inputs: {},
+    }),
+    new Map(),
+  );
+  expect(result.type).toBe("CONFLICT_READ_FAILED");
+  expect(reminder).not.toHaveBeenCalled();
 });

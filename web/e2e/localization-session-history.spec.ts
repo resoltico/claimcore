@@ -21,9 +21,10 @@ test("updates supplied records without refetching while receipt disclosure refre
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
-  const history = page.locator(".case-timeline-panel .region-timeline > li").filter({
-    hasText: opening.operationId,
-  });
+  const history = page
+    .locator(`.case-timeline-panel .region-timeline > li[data-effect$=".${opening.operationId}"]`)
+    .filter({ has: page.locator('[data-change-label="field.claimedAmount.label"]') });
+  await expect(history.locator(".timeline-changed-fields")).toContainText("Claimed amount");
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
   await selectFormat(page, "ar-EG");
@@ -62,7 +63,9 @@ test("updates supplied records without refetching while receipt disclosure refre
     });
     await history.locator("details > summary").click();
     await expect(history).toContainText("١٬٢٠٠٫٥٠");
-    await expect(history).toContainText("Synthetic claimant");
+    await expect(
+      history.locator('[data-change-label="field.claimedAmount.label"] [data-side="after"]'),
+    ).toContainText("١٬٢٠٠٫٥٠");
     await history.locator("details > summary").click();
   }
   expect(requests.filter((request) => request !== "POST /api/operation.get")).toEqual([]);
@@ -135,7 +138,7 @@ test("preserves language and independent display preferences through real logout
     language: "ar",
     displayLocale: "lv-LV",
     mode: "system",
-    accent: "green" as const,
+    accent: "blue" as const,
   });
   await selectLanguage(page, "en");
   await logout(page);
@@ -189,12 +192,12 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
   await expect(row).toContainText("07/09/2026");
   expect(
     await row
-      .locator('[data-section="field.incidentDescription.label"] [data-entry$=".before"] bdi')
+      .locator('[data-change-label="field.incidentDescription.label"] [data-side="before"] bdi')
       .textContent(),
   ).toBe("Earlier browser history\nOriginal exact paragraph");
   expect(
     await row
-      .locator('[data-section="field.incidentDescription.label"] [data-entry$=".after"] bdi')
+      .locator('[data-change-label="field.incidentDescription.label"] [data-side="after"] bdi')
       .textContent(),
   ).toBe("Distinctive browser history\nSecond exact paragraph");
 });

@@ -6,6 +6,15 @@ open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module TimelineScreen =
+    let changedFieldLabels comparisons facts =
+        [
+            for (change: PresentedChange) in comparisons do
+                if change.Before <> change.After then
+                    change.LabelId
+            yield! facts
+        ]
+        |> List.distinct
+
     let difference key label format (change: ValueChange<'value>) =
         {
             TitleId = label
@@ -409,7 +418,19 @@ module TimelineScreen =
             }
 
 
-    let item (entry: CaseTimelineEntry) =
+    let private compareSection (section: Section) =
+        match section.Entries with
+        | [ before; after ] when before.LabelId = "label.before" && after.LabelId = "label.after" ->
+            Some
+                {
+                    PresentedChange.Key = before.Key
+                    LabelId = section.TitleId
+                    Before = before.Value
+                    After = after.Value
+                }
+        | _ -> None
+
+    let private project target link (entry: CaseTimelineEntry) =
         let detail = timelineDetail entry |> Option.get
 
         let summary =
@@ -431,22 +452,71 @@ module TimelineScreen =
                     section)
             |> List.filter (fun section -> not section.Entries.IsEmpty)
 
+        let comparisons, other = changes |> List.partition (compareSection >> Option.isSome)
+        let comparisons = comparisons |> List.choose compareSection
+
+        let changedFields =
+            match entry.Changes with
+            | TimelineChanges.Disclosed _ ->
+                changedFieldLabels comparisons (other |> List.skip 1 |> List.map _.TitleId)
+            | _ -> []
+
+        let highlights =
+            match entry.Changes with
+            | TimelineChanges.Disclosed _ ->
+                [
+                    section
+                        "label.changes"
+                        [
+                            value
+                                "changes"
+                                "label.changes"
+                                Prominence.Secondary
+                                (PresentedValue.Count(int64 (comparisons.Length + other.Length - 1)))
+                        ]
+                ]
+            | _ -> other |> List.skip 1
+
         {
-            RegionTimelineEntry.Key = EffectPosition.format entry.Position
-            Link = None
+            RegionTimelineEntry.Key =
+                EffectPosition.format entry.Position
+                + "."
+                + OperationId.format entry.OperationId
+            Target = target
+            Changes = comparisons
+            ChangedFields = changedFields
+            Link = link
             Actions = []
             When = entry.RecordedAt
             Who = PresentedValue.Actor entry.RecordedBy
             Summary = summary
-            Highlights = detail.Highlights
+            Highlights = highlights
             Details =
-                changes
-                |> List.filter (fun section -> not (List.contains section detail.Highlights))
+                if
+                    entry.Changes = TimelineChanges.Withheld
+                    || entry.Changes = TimelineChanges.Erased
+                then
+                    List.truncate 1 other
+                else
+                    other
         }
 
-    let rows rows =
+    let item entry = project None None entry
+
+    let private rowsFor target link entries =
         Screen.create
-            [ region RegionRole.Activity None (RegionContent.Timeline(List.map item rows)) ]
+            [
+                region
+                    RegionRole.Activity
+                    None
+                    (RegionContent.Timeline(List.map (project target link) entries))
+            ]
+
+    let rows entries = rowsFor None None entries
 
     let view (reply: CaseTimelinePage) =
-        rows reply.Items |> page reply.Basis reply.Items.Length reply.NextCursor
+        rowsFor
+            (Some(PresentedValue.Reference reply.Reference))
+            (Some(Link.caseById reply.CaseId))
+            reply.Items
+        |> page reply.Basis reply.Items.Length reply.NextCursor

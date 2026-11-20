@@ -22,6 +22,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   placement?: "center" | "bottom" | "end";
   className?: string;
+  navigationGuard?: boolean;
   anchorRef?: RefObject<HTMLElement | null>;
 };
 
@@ -64,12 +65,16 @@ export const Dialog = ({
   onOpenChange,
   placement = "center",
   className = "",
+  navigationGuard,
   anchorRef,
 }: Props) => {
   const titleId = useId();
   const scrollableBody = placement === "end" || anchorRef !== undefined;
   const contents = (
-    <AriaDialog aria-labelledby={titleId}>
+    <AriaDialog
+      aria-labelledby={titleId}
+      data-navigation-guard={navigationGuard === true ? "" : undefined}
+    >
       {({ close }) => (
         <>
           <header className="ui-dialog-header">

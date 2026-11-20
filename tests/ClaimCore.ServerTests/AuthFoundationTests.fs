@@ -5,17 +5,24 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 
 open System
+open System.IO
 open System.Text
 open System.Security.Claims
+open System.Net
 open System.Net.Http
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Authentication.OpenIdConnect
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.TestHost
+open Microsoft.AspNetCore.WebUtilities
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
+open Microsoft.IdentityModel.Protocols.OpenIdConnect
 open Expecto
 open ClaimCore.Server
 
@@ -162,6 +169,121 @@ let private middlewarePolicy () =
                 (ServiceCollection()))
         "Production middleware refuses a loopback HTTP issuer"
 
+let private pushedLanguage () =
+    task {
+        let configuration = middlewareConfiguration ()
+        let authorization = configuration.Issuer.AbsoluteUri + "/auth"
+        let pushed = configuration.Issuer.AbsoluteUri + "/par"
+        let reference = "urn:ietf:params:oauth:request_uri:synthetic"
+        let observed = ResizeArray<string option>()
+
+        use backchannel =
+            { new HttpMessageHandler() with
+                override _.SendAsync(request, cancellation) =
+                    task {
+                        Expect.equal
+                            request.Method
+                            HttpMethod.Post
+                            "Authorization is pushed by POST"
+
+                        Expect.equal
+                            (nonNull request.RequestUri).AbsoluteUri
+                            pushed
+                            "The configured PAR endpoint"
+
+                        let! body = (nonNull request.Content).ReadAsStringAsync cancellation
+                        let fields = QueryHelpers.ParseQuery body
+
+                        // Retain only the allowlisted language observation. PAR also carries private parameters.
+                        match fields.TryGetValue "ui_locales" with
+                        | false, _ -> observed.Add None
+                        | true, value when value.Count = 1 && value.ToString() = "ar" ->
+                            observed.Add(Some "ar")
+                        | _ -> failtest "The pushed language was not the single expected value."
+
+                        return
+                            new HttpResponseMessage(
+                                HttpStatusCode.Created,
+                                Content =
+                                    new StringContent(
+                                        $"""{{"request_uri":"{reference}","expires_in":60}}""",
+                                        Encoding.UTF8,
+                                        "application/json"
+                                    )
+                            )
+                    }
+            }
+
+        let builder = WebApplication.CreateBuilder()
+        builder.WebHost.UseTestServer() |> ignore
+        let keys = Directory.CreateTempSubdirectory("claimcore-par-keys-")
+
+        use _cleanup =
+            { new IDisposable with
+                member _.Dispose() = keys.Delete true
+            }
+
+        builder.Services.AddDataProtection().PersistKeysToFileSystem(keys) |> ignore
+
+        AuthMiddleware.configure configuration (TimeSpan.FromHours 8.) builder.Services
+
+        builder.Services.Configure<OpenIdConnectOptions>(
+            OpenIdConnectDefaults.AuthenticationScheme,
+            fun (options: OpenIdConnectOptions) ->
+                options.Configuration <-
+                    OpenIdConnectConfiguration(
+                        Issuer = configuration.Issuer.AbsoluteUri,
+                        AuthorizationEndpoint = authorization,
+                        PushedAuthorizationRequestEndpoint = pushed
+                    )
+
+                options.BackchannelHttpHandler <- backchannel
+        )
+        |> ignore
+
+        use application = builder.Build()
+        application.UseAuthentication() |> ignore
+
+        application.MapGet(
+            "/challenge",
+            Func<HttpContext, Task>(fun context ->
+                let properties = AuthenticationProperties()
+
+                if context.Request.Query.ContainsKey "arabic" then
+                    properties.Items["ui_locales"] <- "ar"
+
+                context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, properties))
+        )
+        |> ignore
+
+        do! application.StartAsync()
+        use browser = application.GetTestClient()
+        browser.BaseAddress <- Uri "https://claimcore.example.test"
+
+        for path in [ "/challenge"; "/challenge?arabic" ] do
+            use! response = browser.GetAsync path
+
+            Expect.equal
+                response.StatusCode
+                HttpStatusCode.Redirect
+                "The browser receives a redirect"
+
+            let query = QueryHelpers.ParseQuery((nonNull response.Headers.Location).Query)
+
+            Expect.isFalse
+                (query.ContainsKey "ui_locales")
+                "The browser hop only carries the request reference"
+
+            Expect.isTrue
+                (query.ContainsKey "request_uri" && query["request_uri"].ToString() = reference)
+                "The browser follows the synthetic pushed request reference"
+
+        Expect.sequenceEqual
+            observed
+            [ None; Some "ar" ]
+            "The backchannel omits absent language and carries Arabic exactly once"
+    }
+
 let private exclusiveCredentialMode () =
     let context = DefaultHttpContext()
     Expect.equal (RequestGate.credentialMode context) CredentialMode.Missing "No credential"
@@ -189,5 +311,6 @@ let tests =
             testCase "metadata pins issuer and secure endpoints" metadataValidation
             testCase "bearer principal uses explicit client classification" accessTokenIdentity
             testCase "middleware pins OIDC and JWT validation policy" middlewarePolicy
+            testCaseTask "PAR sends the checked language on the private backchannel" pushedLanguage
             testCase "browser and bearer credentials never mix" exclusiveCredentialMode
         ]

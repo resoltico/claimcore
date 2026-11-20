@@ -276,8 +276,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "Inicia sesión con la cuenta de tu organización.",
-    "source": "2d954a0e8a31"
+    "text": "Continúa con tu proveedor de inicio de sesión para introducir las credenciales de tu organización.",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "No se pudo completar el inicio de sesión.",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "Reiniciar el inicio de sesión",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "Consultando…",
@@ -531,10 +539,6 @@
     "text": "Registrando…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "Mostrar los totales del resumen",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "Tema",
     "source": "efb52e7172b7"
@@ -578,10 +582,6 @@
   "ui.workDateBasis": {
     "text": "Fecha operativa {date} ({zone}).",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "Cola de trabajo",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "Filtrar esta vista",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "Página {page} de {count}",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "Exportar lista de expedientes en CSV",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "Exportar informe en CSV",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "Sesión actual del navegador",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "Sesiones de ClaimCore en navegadores",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "Aplicar filtros",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "Cancelar",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "Historial de acceso de la cuenta",
+    "source": "ed6a3714adfd"
   }
 }

@@ -498,5 +498,13 @@
   "cli.attachment.outputFailed": {
     "text": "선택한 위치에 첨부 파일을 저장할 수 없습니다.",
     "source": "915060f3dc90"
+  },
+  "cli.contractIdentities": {
+    "text": "CLI 계약: {local}. 서비스 계약: {host}.",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "운영 체제의 터미널에서 {command} 명령을 실행하세요.",
+    "source": "278514d04b5d"
   }
 }

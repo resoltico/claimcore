@@ -135,7 +135,7 @@ module internal PageCommand =
                         running <- false
                 | None ->
                     if prepared.Format = VerbFormat.Csv then
-                        ReplyText.bytesFor prepared.Rendering (Some frame) response.Frame
+                        ReplyText.bytesForReply false prepared.Rendering (Some frame) response
                         |> io.Errors
                     else
                         io.Deliver frame response
@@ -167,7 +167,7 @@ module internal ReadCommand =
             let cancelled = ExitCode.value ExitCode.Cancelled
 
             let renderFailure (reply: CliReply) =
-                ReplyText.bytesFor prepared.Rendering (Some frame) reply.Frame |> io.Errors
+                ReplyText.bytesForReply false prepared.Rendering (Some frame) reply |> io.Errors
                 reply.ExitCode
 
             if token.IsCancellationRequested then

@@ -19,7 +19,10 @@ let private entry index task changes =
         OperationHash = EntryHash.zero
         RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = AuthorityRef.Actor ResponseExamples.caseRead.RecordedBy
-        Target = ResponseExamples.caseRead.RecordedBy
+        Target =
+            DomainInputs.namedActorReference
+                (CaseFixtures.actorId (System.Guid.Parse "20000000-0000-4000-8000-000000000009"))
+                "Affected account"
         Task = TaskId.ofLiteral task
         Changes = changes
         PrivateAvailable = true
@@ -42,78 +45,93 @@ let private entry index task changes =
 
 [<Tests>]
 let tests =
-    testCase "people history destinations bind only the authorized scoped effects" (fun () ->
-        let document =
-            HumanReadDocuments.history
-                {
-                    Basis = DomainInputs.workBasis
-                    Entries =
-                        [
-                            entry
-                                0
-                                "people.grant"
-                                {
-                                    PersonPartDescription.Profiles =
-                                        { Before = None; After = None }
-                                    Principal = None
-                                    Enabled = None
-                                    ProfilePresent = None
-                                    DisplayName = None
-                                    DigestEmail = None
-                                    Contact = None
-                                    Grants =
-                                        [
-                                            {
-                                                Grant =
-                                                    {
-                                                        Role = Role.CaseReader
-                                                        Scope = Scope.Case parent
-                                                    }
-                                                Before = false
-                                                After = true
-                                            }
-                                        ]
-                                }
-                            entry
-                                1
-                                "people.enable"
-                                {
-                                    PersonPartDescription.Profiles =
-                                        { Before = None; After = None }
-                                    Principal = None
-                                    Enabled =
-                                        Some
-                                            {
-                                                Before = Some false
-                                                After = Some true
-                                            }
-                                    ProfilePresent = None
-                                    DisplayName = None
-                                    DigestEmail = None
-                                    Contact = None
-                                    Grants = []
-                                }
-                        ]
-                    NextCursor = Some "history-next"
-                }
+    testCase
+        "people history links the affected account independently of scoped grant changes"
+        (fun () ->
+            let document =
+                HumanReadDocuments.history
+                    {
+                        Basis = DomainInputs.workBasis
+                        Entries =
+                            [
+                                entry
+                                    0
+                                    "people.grant"
+                                    {
+                                        PersonPartDescription.Profiles =
+                                            { Before = None; After = None }
+                                        Principal = None
+                                        Enabled = None
+                                        ProfilePresent = None
+                                        DisplayName = None
+                                        DigestEmail = None
+                                        Contact = None
+                                        Grants =
+                                            [
+                                                {
+                                                    Grant =
+                                                        {
+                                                            Role = Role.CaseReader
+                                                            Scope = Scope.Case parent
+                                                        }
+                                                    Before = false
+                                                    After = true
+                                                }
+                                            ]
+                                    }
+                                entry
+                                    1
+                                    "people.enable"
+                                    {
+                                        PersonPartDescription.Profiles =
+                                            { Before = None; After = None }
+                                        Principal = None
+                                        Enabled =
+                                            Some
+                                                {
+                                                    Before = Some false
+                                                    After = Some true
+                                                }
+                                        ProfilePresent = None
+                                        DisplayName = None
+                                        DigestEmail = None
+                                        Contact = None
+                                        Grants = []
+                                    }
+                            ]
+                        NextCursor = Some "history-next"
+                    }
 
-        let rows =
-            document.Screen.Regions
-            |> List.collect (fun region ->
-                match region.Content with
-                | RegionContent.Timeline entries -> entries
-                | _ -> [])
+            let rows =
+                document.Screen.Regions
+                |> List.collect (fun region ->
+                    match region.Content with
+                    | RegionContent.Timeline entries -> entries
+                    | _ -> [])
 
-        Expect.equal (rows |> List.map _.Key) [ "1/0"; "1/1" ] "Actual effect positions"
+            let operation = OperationId.format ResponseExamples.receipt.OperationId
 
-        Expect.equal
-            (rows |> List.map _.Link)
-            [ Some(Link.caseById parent); None ]
-            "Only a scoped effect has a destination"
+            Expect.equal
+                (rows |> List.map _.Key)
+                [ "1/0." + operation; "1/1." + operation ]
+                "Both effects of one operation have independent row identities"
 
-        Expect.equal document.NextCursor (Some "history-next") "Cursor belongs to the document"
+            Expect.equal
+                (rows |> List.map _.Link)
+                (List.replicate
+                    2
+                    (Some(
+                        Link.person (
+                            CaseFixtures.actorId (
+                                System.Guid.Parse "20000000-0000-4000-8000-000000000009"
+                            )
+                        )
+                    )))
+                "Both rows refer to the affected account independently of the grant scope"
 
-        Expect.isOk
-            (Codec.encode HumanDocumentCodecs.document document
-             |> Codec.decode 65536 HumanDocumentCodecs.document)
-            "Actual native boundary")
+            Expect.equal document.NextCursor (Some "history-next") "Cursor belongs to the document"
+
+            Expect.isOk
+                (Codec.encode HumanDocumentCodecs.document document
+                 |> Codec.decode 65536 HumanDocumentCodecs.document)
+                "Actual native boundary")

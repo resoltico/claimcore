@@ -368,9 +368,6 @@
     grid-column: 1;
     grid-row: 3;
   }
-  .workspace-header .shell-search {
-    display: none;
-  }
   .workspace-shell:has(.case-detail) .shell-business-date {
     padding: 0;
     margin-block-start: var(--space-1);
@@ -448,5 +445,21 @@
   }
   .ui-dialog-overlay--end .ui-dialog-body {
     overflow: visible;
+  }
+}
+
+.filter-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  grid-auto-rows: max-content;
+  align-items: end;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+@media (width < 40rem) {
+  .timeline-comparison > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
   }
 }

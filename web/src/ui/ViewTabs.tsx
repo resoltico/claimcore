@@ -20,31 +20,39 @@ export const ViewTabs = ({
   children: ReactNode;
   controls: ReactNode;
 }) => (
-  <Tabs
-    selectedKey={selected}
-    keyboardActivation="manual"
-    onSelectionChange={(key) => {
-      if (typeof key === "string" && items.some((item) => item.id === key)) {
-        onSelect(key);
-      }
-    }}
-  >
-    <TabList className="view-tabs" aria-label={label} aria-busy={loading} items={items}>
-      {(item) => (
-        <Tab id={item.id} className="view-tab">
-          {item.label} <span className="view-count">{loading ? "…" : item.count}</span>
-        </Tab>
-      )}
-    </TabList>
-    {items.map((item) => (
-      <TabPanel key={item.id} id={item.id} aria-label={label} className="view-tab-panel">
-        {selected === item.id ? (
-          <>
-            {controls}
-            {children}
-          </>
-        ) : null}
-      </TabPanel>
-    ))}
-  </Tabs>
+  <>
+    <Tabs
+      selectedKey={selected}
+      keyboardActivation="manual"
+      onSelectionChange={(key) => {
+        if (typeof key === "string" && items.some((item) => item.id === key)) {
+          onSelect(key);
+        }
+      }}
+    >
+      <TabList className="view-tabs" aria-label={label} aria-busy={loading} items={items}>
+        {(item) => (
+          <Tab id={item.id} className="view-tab">
+            {item.label} <span className="view-count">{loading ? "…" : item.count}</span>
+          </Tab>
+        )}
+      </TabList>
+      {items.map((item) => (
+        <TabPanel key={item.id} id={item.id} aria-label={label} className="view-tab-panel">
+          {selected === item.id ? (
+            <>
+              {controls}
+              {children}
+            </>
+          ) : null}
+        </TabPanel>
+      ))}
+    </Tabs>
+    {selected === "" ? (
+      <div className="view-tab-panel">
+        {controls}
+        {children}
+      </div>
+    ) : null}
+  </>
 );

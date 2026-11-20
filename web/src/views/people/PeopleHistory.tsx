@@ -46,14 +46,9 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
   );
   return (
     <section className="people-history" aria-labelledby="people-history-title">
-      <h1 id="people-history-title">{p.text("endpoint.people.history.label")}</h1>
-      <CsvExportButton
-        selection={{
-          query: apiEndpoints.peopleHistory,
-          selection: actorId === "" ? {} : { actorId },
-        }}
-        available={page.page !== null && !page.loading}
-      />
+      <h1 id="people-history-title" tabIndex={-1}>
+        {p.text(actorId === "" ? "endpoint.people.history.label" : "ui.accountAccessHistory")}
+      </h1>
       {page.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
       {page.message === null ? null : (
         <p role="alert">
@@ -63,26 +58,37 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
       <h2 className="sr-only">{p.text("ui.timeline.title")}</h2>
       <PageTables views={page.views} />
 
-      <button
-        type="button"
-        disabled={page.loading}
-        onClick={() => {
-          void page.load(null);
-        }}
-      >
-        {p.text("ui.reloadHistory")}
-      </button>
-      {page.cursor === null ? null : (
+      <div className="worklist-actions" role="group" aria-label={p.text("label.peopleHistory")}>
+        <CsvExportButton
+          selection={{
+            query: apiEndpoints.peopleHistory,
+            selection: actorId === "" ? {} : { actorId },
+          }}
+          available={page.page !== null && !page.loading}
+        />
         <button
           type="button"
           disabled={page.loading}
           onClick={() => {
-            void page.load(page.cursor);
+            document.getElementById("people-history-title")?.focus({ preventScroll: true });
+            void page.load(null);
           }}
         >
-          {p.text("ui.moreHistory")}
+          {p.text("ui.reloadHistory")}
         </button>
-      )}
+        {page.cursor === null ? null : (
+          <button
+            type="button"
+            disabled={page.loading}
+            onClick={() => {
+              document.getElementById("people-history-title")?.focus({ preventScroll: true });
+              void page.load(page.cursor);
+            }}
+          >
+            {p.text("ui.moreHistory")}
+          </button>
+        )}
+      </div>
     </section>
   );
 };

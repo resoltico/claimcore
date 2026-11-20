@@ -35,6 +35,7 @@ type Traversal = {
   replayDispatched: boolean;
   origin: Entry;
   target: Entry;
+  position: DeparturePosition | null;
   phase: "RESTORING" | "AWAITING" | "APPROVED" | "REPLAYING" | "CANCELLED";
 };
 const stateKey = "claimcoreNavigation";
@@ -93,7 +94,10 @@ export const setNavigationBlocker = (
   };
 };
 type FocusRequest = { id: string | null; scrollY: number | null };
+type DeparturePosition = { key: string; epoch: number; focus: FocusRequest };
 let requestedFocus: FocusRequest | null = null;
+let focusActivation = { id: null as string | null, revision: 0 };
+let routeRevision = 0;
 const positions = new Map<string, FocusRequest>();
 let focusOwner: string | null = null;
 /** Return focus is ephemeral and never crosses a verified workspace owner. */
@@ -106,13 +110,23 @@ export const setRouteFocusOwner = (owner: string | null) => {
     cancelPendingNavigation(true);
   }
 };
-const rememberPosition = () => {
-  if (active !== null && focusOwner !== null) {
-    const element = document.activeElement;
-    positions.set(active.key, {
+const capturePosition = (): DeparturePosition | null => {
+  if (active === null || focusOwner === null) {
+    return null;
+  }
+  const element = document.activeElement;
+  return {
+    key: active.key,
+    epoch: departureEpoch,
+    focus: {
       id: element instanceof HTMLElement && element.id !== "" ? element.id : null,
       scrollY: window.scrollY,
-    });
+    },
+  };
+};
+const rememberPosition = (position: DeparturePosition | null) => {
+  if (position !== null && position.key === active?.key && position.epoch === departureEpoch) {
+    positions.set(position.key, position.focus);
   }
 };
 export const takeRouteFocus = (): FocusRequest | null => {
@@ -124,7 +138,11 @@ let current =
   typeof window === "undefined" ? "/cases" : window.location.pathname + window.location.search;
 const publish = () => {
   active = entry();
-  current = window.location.pathname + window.location.search;
+  const path = window.location.pathname + window.location.search;
+  if (path !== current) {
+    routeRevision += 1;
+    current = path;
+  }
   listeners.forEach((listener) => {
     listener();
   });
@@ -170,6 +188,7 @@ const settleTraversal = (transition: Traversal, target: Entry | null) => {
     pending = null;
     publishTraversal();
   } else if (transition.phase === "REPLAYING" && target.key === transition.target.key) {
+    rememberPosition(transition.position);
     pending = null;
     publishTraversal();
   } else if (target.key === transition.origin.key) {
@@ -202,9 +221,10 @@ if (typeof window !== "undefined") {
       settleTraversal(pending, target);
       return;
     }
-    rememberPosition();
+    const position = capturePosition();
     // Unknown entries have no provable delta. Never repair or truncate their history.
     if (active === null || target?.group !== active.group || target.key === active.key) {
+      rememberPosition(position);
       publishTraversal();
       return;
     }
@@ -212,6 +232,7 @@ if (typeof window !== "undefined") {
       replayDispatched: false,
       origin: active,
       target,
+      position,
       phase: "RESTORING",
     };
     if (
@@ -220,6 +241,7 @@ if (typeof window !== "undefined") {
         replay(transition);
       }, path)
     ) {
+      rememberPosition(position);
       publishTraversal();
       return;
     }
@@ -237,6 +259,8 @@ export const subscribeRoute = (listener: () => void) => {
   };
 };
 export const routeSnapshot = () => current;
+export const routeRevisionSnapshot = () => routeRevision;
+export const focusActivationSnapshot = () => focusActivation;
 export const acquireNavigationLock = (): (() => void) => {
   const lease = {};
   navigationLocks.add(lease);
@@ -254,23 +278,28 @@ export const navigate = (
   if (target.origin !== window.location.origin) {
     return false;
   }
-  if (target.pathname + target.search === current) {
+  const destination = target.pathname + target.search;
+  if (destination === current && focusId === undefined) {
     return true;
   }
+  const position = capturePosition();
   return guardedDeparture(() => {
-    rememberPosition();
     requestedFocus = { id: focusId ?? null, scrollY: scrollY ?? null };
+    if (focusId !== undefined) {
+      focusActivation = { id: focusId, revision: focusActivation.revision + 1 };
+    }
+    if (destination === current) {
+      publish();
+      return;
+    }
+    rememberPosition(position);
     const origin = entry() ?? initialEntry();
     const next = replace
       ? origin
       : { ...origin, index: origin.index + 1, key: crypto.randomUUID() };
-    window.history[replace ? "replaceState" : "pushState"](
-      stamp(next),
-      "",
-      target.pathname + target.search,
-    );
+    window.history[replace ? "replaceState" : "pushState"](stamp(next), "", destination);
     publish();
-  }, target.pathname + target.search);
+  }, destination);
 };
 /** A disclosure replacement retains the current entry identity and unrelated state. */
 export const replaceDisclosureRoute = (path: string): void => {

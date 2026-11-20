@@ -40,7 +40,7 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   const anonymous = await renderState({ kind: "anonymous", token: null, message: null, epoch: 2 });
   expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
-    "/auth/login",
+    "/auth/login?language=en",
   );
   anonymous.unmount();
   const rejected = await renderState({
@@ -54,7 +54,7 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   );
   expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
-    "/auth/login",
+    "/auth/login?language=en",
   );
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });

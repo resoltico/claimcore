@@ -219,6 +219,14 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         Expect.equal (DatabaseSession.value<int64> 0 blobs.Head) 0L "Refusal stores no blob"
 
+        for contender in [ first; second ] do
+            let! review = Service.previewSubmission owner contender token
+
+            match review.Outcome with
+            | Outcome.Succeeded(Previewed.Reviewed _) -> ()
+            | other ->
+                failtestf "Both competing intents must receive review before either write: %A" other
+
         let! raced = Task.WhenAll [| upload owner first bytes; upload owner second bytes |]
 
         let acceptedReply =
@@ -994,10 +1002,6 @@ let private sameRequester _ owner = Task.FromResult owner
 
 let private caseHandler fixture owner =
     task {
-        // The revoked requester must not receive even an otherwise valid duplicate result.
-        let! seed = upload owner (add fixture 85 "initial-file.txt") bytes
-        accepted seed |> ignore
-
         let principal =
             PrincipalKey.human "https://issuer.example/" "attachment-handler"
             |> Result.defaultWith (string >> invalidOp)
@@ -1033,6 +1037,10 @@ let private caseHandler fixture owner =
 
 let private revoke (database: PostgresFixture.Database) owner (writer: ServiceContext) =
     task {
+        // Another writer can attach the same bytes after this review and before locked admission.
+        let! seed = upload owner (add database.Fixture 85 "initial-file.txt") bytes
+        accepted seed |> ignore
+
         let! reply =
             grant
                 owner

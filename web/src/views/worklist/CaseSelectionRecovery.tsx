@@ -80,8 +80,10 @@ const SelectionRemedy = ({
 const SelectionRepair = ({
   admission,
   issue,
+  path,
 }: {
   admission: InvalidSelection;
+  path: string;
   issue: SelectionIssue;
 }) => {
   const p = usePresentation();
@@ -99,7 +101,7 @@ const SelectionRepair = ({
     field !== undefined &&
     (!duplicate || workingValues.some(({ value }) => admitsWorklistScalar(field, value)));
   const submit = (next: ReadonlyArray<string>) => {
-    navigate(repairWorklistQuery(admission.fragments, issue, next));
+    navigate(repairWorklistQuery(admission.fragments, issue, next, path));
   };
   return (
     <form
@@ -171,7 +173,13 @@ const SelectionRepair = ({
   );
 };
 
-export const CaseSelectionRecovery = ({ admission }: { admission: InvalidSelection }) => {
+export const CaseSelectionRecovery = ({
+  admission,
+  report = false,
+}: {
+  admission: InvalidSelection;
+  report?: boolean;
+}) => {
   const p = usePresentation();
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -180,11 +188,16 @@ export const CaseSelectionRecovery = ({ admission }: { admission: InvalidSelecti
   return (
     <section aria-labelledby="case-list-title" className="worklist">
       <h1 id="case-list-title" tabIndex={-1} ref={title}>
-        {p.text("label.cases")}
+        {p.text(report ? "ui.caseReport" : "label.cases")}
       </h1>
       <p role="alert">{p.text("ui.caseSelectionInvalid")}</p>
       {admission.issues.map((issue) => (
-        <SelectionRepair key={issue.fragments[0]?.position} admission={admission} issue={issue} />
+        <SelectionRepair
+          key={issue.fragments[0]?.position}
+          admission={admission}
+          issue={issue}
+          path={report ? "/cases/report" : "/cases"}
+        />
       ))}
     </section>
   );

@@ -254,7 +254,16 @@ module HostRoutes =
                 "/auth/login",
                 Func<HttpContext, Task>(fun context ->
                     HttpHeaders.noStore context
-                    context.ChallengeAsync("OpenIdConnect", loginReturnProperties ()))
+                    let properties = loginReturnProperties ()
+                    let language = context.Request.Query["language"]
+
+                    if
+                        language.Count = 1
+                        && List.contains language[0] LocalizationPolicy.languages
+                    then
+                        properties.Items["ui_locales"] <- language[0]
+
+                    context.ChallengeAsync("OpenIdConnect", properties))
             )
             .RequireRateLimiting("login")
         |> ignore

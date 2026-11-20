@@ -131,8 +131,26 @@ module internal ReplyText =
                 line rendering (CliMessages.key CliMessage.CodeLabel) code
             ]
 
-    let bytesForWithDetails details (rendering: RenderingContext) request (frame: FrameReply) =
-        let lines = resultLinesWithDetails details rendering request frame.Result
+    let contractIdentityLines (rendering: RenderingContext) =
+        function
+        | Some host ->
+            [
+                MessageCatalogs.renderCli
+                    rendering.Language
+                    (CliMessage.ContractIdentities(ContractIdentity.value, host))
+            ]
+        | None -> []
+
+    let bytesWithHostIdentity
+        details
+        (rendering: RenderingContext)
+        request
+        (frame: FrameReply)
+        hostIdentity
+        =
+        let lines =
+            resultLinesWithDetails details rendering request frame.Result
+            @ contractIdentityLines rendering hostIdentity
 
         let sessionCommand =
             match frame.Endpoint with
@@ -163,6 +181,12 @@ module internal ReplyText =
                 lines
 
         lines |> String.concat "\n" |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
+
+    let bytesForReply details rendering request (reply: CliReply) =
+        bytesWithHostIdentity details rendering request reply.Frame reply.HostContractIdentity
+
+    let bytesForWithDetails details rendering request frame =
+        bytesWithHostIdentity details rendering request frame None
 
     let resultLines (rendering: RenderingContext) request value =
         resultLinesWithDetails false rendering request value

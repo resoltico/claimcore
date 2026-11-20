@@ -370,7 +370,6 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
           views={["case.list"]}
           tasks={[]}
           locked={false}
-          openCase={vi.fn()}
         />
       </WorkspaceViewsProvider>
     </RecoveryProvider>,

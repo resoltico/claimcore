@@ -117,7 +117,7 @@ it.each(["NOT_REGISTERED", "NO_ROLES"] as const)(
     gate.resolve(succeeded());
     expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
       "href",
-      "/auth/login",
+      "/auth/login?language=en",
     );
     expect(screen.queryByRole("button", { name: label })).toBeNull();
     expect(transport).toHaveBeenCalledOnce();

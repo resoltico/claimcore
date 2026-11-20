@@ -320,10 +320,12 @@ type RevisionConflictInfo =
         {
             CurrentRevision: Revision
             History: ConflictChanges option
+            ReadableCase: CaseId option
         }
 
     member this.ActualRevision = this.CurrentRevision
     member this.Changes = this.History
+    member this.ReadCaseId = this.ReadableCase
 
 module RevisionConflictInfo =
     [<Literal>]
@@ -334,7 +336,10 @@ module RevisionConflictInfo =
         {
             CurrentRevision = revision
             History = None
+            ReadableCase = None
         }
+
+    let offerCaseRead caseId conflict = { conflict with ReadableCase = caseId }
 
     let explain changes conflict =
         match changes with

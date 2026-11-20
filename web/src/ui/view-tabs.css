@@ -30,7 +30,9 @@
 }
 .view-count {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+}
+.view-tab:not([data-selected]) .view-count {
+  color: var(--text-secondary);
 }
 .view-count:empty {
   display: none;

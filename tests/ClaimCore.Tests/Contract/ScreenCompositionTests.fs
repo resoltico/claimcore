@@ -214,7 +214,12 @@ let tests =
                         (PresentedValue.Identifier "1")
                         "The recorded version is retained"
 
-                    Expect.isEmpty item.Highlights "Withheld changes never become highlights")
+                    Expect.isEmpty item.Changes "Withheld comparisons carry no business values"
+
+                    Expect.equal
+                        (item.Highlights |> List.collect _.Entries |> List.map _.Value)
+                        [ PresentedValue.Absent "label.changesWithheld" ]
+                        "The compact row discloses only the withheld state")
             matches
                 "case workspace"
                 [

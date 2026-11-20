@@ -308,8 +308,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "Piesakieties ar savas organizācijas kontu.",
-    "source": "2d954a0e8a31"
+    "text": "Atveriet savu pierakstīšanās pakalpojumu, lai ievadītu organizācijas konta datus.",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "Neizdevās pabeigt pierakstīšanos.",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "Sākt pierakstīšanos no jauna",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "Meklē…",
@@ -587,10 +595,6 @@
     "text": "Reģistrē…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "Rādīt kopsummas",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "Izskats",
     "source": "efb52e7172b7"
@@ -654,10 +658,6 @@
   "ui.workDateBasis": {
     "text": "Darba datums {date} ({zone}).",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "Darba saraksts",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "Filtrēt šo skatu",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "{page}. lapa no {count}",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "Eksportēt lietu sarakstu CSV formātā",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "Eksportēt pārskatu CSV formātā",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "Pašreizējā pārlūka sesija",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "ClaimCore pārlūka sesijas",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "Lietot filtrus",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "Atcelt",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "Konta piekļuves vēsture",
+    "source": "ed6a3714adfd"
   }
 }

@@ -186,14 +186,9 @@ export const CaseTimeline = ({
       aria-busy={result.loading}
     >
       <div className="section-heading">
-        <h2 id="timeline-title">{p.text("ui.timeline.title")}</h2>
-        <TimelineCsvExport
-          target={target}
-          filter={filter}
-          page={result.page}
-          suppressed={suppressed}
-          loading={result.loading}
-        />
+        <h2 id="timeline-title" tabIndex={-1}>
+          {p.text("ui.timeline.title")}
+        </h2>
       </div>
       <ViewTabs
         items={[
@@ -231,16 +226,35 @@ export const CaseTimeline = ({
         {result.page !== null && result.items.length === 0 && !result.loading ? (
           <p>{p.text("ui.timeline.empty")}</p>
         ) : null}
-        {result.message === null ? null : (
-          <Button isDisabled={result.loading} onPress={() => void result.load(null)}>
-            {p.text("ui.tryAgain")}
+        <div className="worklist-actions" role="group" aria-label={p.text("ui.timeline.title")}>
+          <TimelineCsvExport
+            target={target}
+            filter={filter}
+            page={result.page}
+            suppressed={suppressed}
+            loading={result.loading}
+          />
+          <Button
+            isDisabled={result.loading}
+            onPress={() => {
+              document.getElementById("timeline-title")?.focus({ preventScroll: true });
+              void result.load(null);
+            }}
+          >
+            {p.text(result.message === null ? "ui.reloadHistory" : "ui.tryAgain")}
           </Button>
-        )}
-        {result.cursor === null ? null : (
-          <Button isDisabled={result.loading} onPress={() => void result.load(result.cursor)}>
-            {p.text("ui.timeline.more")}
-          </Button>
-        )}
+          {result.cursor === null ? null : (
+            <Button
+              isDisabled={result.loading}
+              onPress={() => {
+                document.getElementById("timeline-title")?.focus({ preventScroll: true });
+                void result.load(result.cursor);
+              }}
+            >
+              {p.text("ui.timeline.more")}
+            </Button>
+          )}
+        </div>
       </ViewTabs>
     </section>
   );

@@ -183,7 +183,6 @@
   --meter-track: light-dark(var(--neutral-200), var(--neutral-800));
   --gutter: var(--space-4);
 }
-:root,
 :root[data-accent="green"] {
   --accent-50: var(--green-50);
   --accent-100: var(--green-100);
@@ -197,6 +196,7 @@
   --accent-900: var(--green-900);
   --accent-950: var(--green-950);
 }
+:root,
 :root[data-accent="blue"] {
   --accent-50: var(--blue-50);
   --accent-100: var(--blue-100);

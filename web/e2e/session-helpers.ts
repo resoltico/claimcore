@@ -1,4 +1,8 @@
-import { type ResponseFor, consumerContractIdentity } from "@contracts/client";
+import {
+  type ResponseFor,
+  consumerContractIdentity,
+  presentationLanguageOptions,
+} from "@contracts/client";
 import { showAccountActions } from "./workspace-navigation";
 import {
   loginNavigationTimeout,
@@ -368,10 +372,16 @@ const awaitLoginAdmission = async (page: Page, signIn: string, applicationOrigin
     throw new Error("E2E_LOGIN_LINK_MISSING");
   }
   const address = new URL(href, applicationOrigin);
+  const parameters = [...address.searchParams];
+  const language = parameters[0]?.[1];
+  const validHint =
+    parameters.length === 1 &&
+    parameters[0]?.[0] === "language" &&
+    presentationLanguageOptions.some((option) => option.value === language);
   if (
     address.origin !== applicationOrigin ||
     address.pathname !== "/auth/login" ||
-    address.search !== "" ||
+    (address.search !== "" && !validHint) ||
     address.hash !== ""
   ) {
     throw new Error("E2E_LOGIN_LINK_INVALID");
@@ -408,7 +418,7 @@ export const login = async (
           level: 1,
         });
   try {
-    await authenticated.or(page.locator(".login-card h1")).first().waitFor({
+    await authenticated.or(page.locator(".login-card h1, #sign-in-incomplete")).first().waitFor({
       timeout: 5_000,
     });
   } catch {

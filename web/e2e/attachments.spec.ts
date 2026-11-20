@@ -75,6 +75,42 @@ const centerPixel = (frame: Frame) =>
 const pagerTab = (browserName: string) =>
   browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
 
+test("refuses retained attachment metadata before confirmation or upload @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-DUPLICATE-${randomUUID()}`);
+  const attachments = documentPanel(page);
+  await upload(page, attachments, "initial.txt", "initial.txt", "text/plain", evidence);
+  const uploads: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/attachment.upload") {
+      uploads.push(path);
+    }
+  });
+  const preview = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/operation.preview",
+  );
+  await attachments.getByLabel("Choose a file", { exact: true }).setInputFiles({
+    name: "another-name.txt",
+    mimeType: "text/plain",
+    buffer: evidence,
+  });
+  const result: unknown = await (await preview).json();
+  expect(result).toMatchObject({
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        advice: { message: { messageId: "diagnostic.ATTACHMENT_DUPLICATE" } },
+      },
+    },
+  });
+  await expect(page.getByRole("dialog").locator("[data-confirm-operation]")).toHaveCount(0);
+  expect(uploads).toEqual([]);
+  await expect(attachments.locator(".attachment-list > li")).toHaveCount(1);
+});
+
 test("renders and pages through PDFs inside the opaque viewer @engine", async ({
   page,
   browserName,

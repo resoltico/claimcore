@@ -341,11 +341,22 @@ module RegionNotice =
     let maximum = 8
     let single notice = [ notice ]
 
+type PresentedChange =
+    {
+        Key: string
+        LabelId: string
+        Before: PresentedValue
+        After: PresentedValue
+    }
+
 type RegionTimelineEntry =
     {
         Key: string
         When: DateTimeOffset
         Who: PresentedValue
+        Target: PresentedValue option
+        Changes: PresentedChange list
+        ChangedFields: string list
         Summary: PresentedMessage
         Highlights: Section list
         Details: Section list
@@ -486,14 +497,6 @@ type EntryDefinition<'reply> =
         Prominence: Prominence
         IsMoney: bool
         Read: 'reply -> PresentedValue
-    }
-
-type PresentedChange =
-    {
-        Key: string
-        LabelId: string
-        Before: PresentedValue
-        After: PresentedValue
     }
 
 type ReviewDescription =

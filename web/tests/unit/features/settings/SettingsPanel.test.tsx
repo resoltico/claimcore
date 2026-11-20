@@ -38,12 +38,14 @@ it("applies accent and mode immediately, persists them, and announces only user 
   render(<SettingsPanel />);
   const status = document.querySelector('[aria-live="polite"]');
   expect(status?.textContent).toBe("");
-  await user.click(screen.getByRole("radio", { name: "Blue" }));
+  expect(screen.getByRole("radio", { name: /Blue/u })).toBeChecked();
   expect(document.documentElement).toHaveAttribute("data-accent", "blue");
-  expect(status).toHaveTextContent("Accent set to Blue.");
+  await user.click(screen.getByRole("radio", { name: "Green" }));
+  expect(document.documentElement).toHaveAttribute("data-accent", "green");
+  expect(status).toHaveTextContent("Accent set to Green.");
   await user.click(screen.getByRole("radio", { name: "Dark" }));
   expect(document.documentElement).toHaveAttribute("data-mode", "dark");
-  expect(loadPreferences()).toEqual({ ...defaults, accent: "blue", mode: "dark" });
+  expect(loadPreferences()).toEqual({ ...defaults, accent: "green", mode: "dark" });
 });
 it("does not announce the automatic first-visit language load", async () => {
   vi.spyOn(navigator, "languages", "get").mockReturnValue(["ar-EG"]);

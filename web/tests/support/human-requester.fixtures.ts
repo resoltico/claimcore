@@ -21,7 +21,7 @@ export const activeRequester: ActiveRequester = {
     {
       rel: "VIEW",
       labelId: "view.CASES.label",
-      link: { endpoint: "case.list", input: { limit: 20 } },
+      link: { endpoint: "case.list", input: { limit: 20, view: "NEEDS_ATTENTION" } },
     },
     {
       rel: "VIEW",

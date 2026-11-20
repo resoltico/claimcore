@@ -227,6 +227,7 @@ const NoteDeparture = ({ state, draft }: { state: State; draft: Draft | null }) 
   };
   return (
     <Dialog
+      navigationGuard
       title={p.text("ui.changeActTitle")}
       closeLabel={p.text("ui.keepEditing")}
       description={p.text("ui.leaveDraftDescription")}

@@ -258,7 +258,9 @@ are followed without rewriting the history stack.
 
 ## Report on current case facts
 
-Use registered, received and closed date ranges and the inactivity filter in Cases. Date ranges are
+Open **Case report** from Cases to report on the current selection. The Cases queue itself loads the case list.
+Use **Filters** to enter both ends of a registered, received or closed date range, then apply them together.
+Date ranges are
 inclusive. Inactivity uses the latest case-family activity on or before the selected date. A missing
 date falls outside a date filter. These reports describe current facts at the observation time.
 
@@ -272,8 +274,8 @@ Use **Next report page** to continue and **Restart report** to return to page 1.
 becomes invalid, restart the report to refresh the selection. For a temporary read failure,
 **Try again** reloads the requested page.
 
-**Download CSV** exports the full selected case list, grouped summary, timeline or reminder queue
-from its first page. A grouped report's CSV is independent of the page you are viewing. A
+**Export case list CSV** and **Export report CSV** export the complete selected list or grouped report.
+Activity and reminders retain **Download CSV** for their own selections. A grouped report's CSV is independent of the page you are viewing. A
 disclosure refusal blocks its download until the report confirms access again. The reminder
 export includes kind, completion date and deadline outcome. A denied or oversized export returns
 an explanation in place of a file.

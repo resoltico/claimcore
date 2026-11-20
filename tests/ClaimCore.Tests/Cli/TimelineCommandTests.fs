@@ -45,7 +45,8 @@ let private actor =
 
 let private entry revision =
     {
-        CaseTimelineEntry.OperationId = CaseFixtures.operationId CliReplyFixtures.id
+        CaseTimelineEntry.OperationId =
+            CaseFixtures.operationId (Guid.Parse "10000000-0000-7000-8000-000000000009")
         Position = EffectPosition.create (CaseFixtures.sequence revision) 0 |> Option.get
         OperationHash = CliReplyFixtures.receipt.Position.EntryHash
         Subject =
@@ -345,8 +346,8 @@ let tests =
                     if details then
                         Expect.equal
                             (text.Split(operationId).Length - 1)
-                            4
-                            "Operation and part identities appear on each page")
+                            2
+                            "The distinct operation identity appears once in each event’s details")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->

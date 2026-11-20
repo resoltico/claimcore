@@ -99,8 +99,13 @@ for (const [name, item] of Object.entries(tokens.semantic)) {
   );
 }
 lines.push("  --gutter: var(--space-4);", "}");
-for (const [index, accent] of configuration.accents.entries()) {
-  lines.push(`${index === 0 ? ":root, " : ""}:root[data-accent="${accent}"] {`);
+if (!configuration.accents.includes(configuration.defaultAccent)) {
+  throw new Error("Unknown default accent.");
+}
+for (const accent of configuration.accents) {
+  lines.push(
+    `${accent === configuration.defaultAccent ? ":root, " : ""}:root[data-accent="${accent}"] {`,
+  );
   for (const step of steps) {
     lines.push(`  --accent-${step}: var(--${accent}-${step});`);
   }

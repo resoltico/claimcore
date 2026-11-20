@@ -43,6 +43,7 @@ export type ConflictObservation = {
 export type RevisionConflictSnapshot = {
   readonly identity: EffectIdentity;
   readonly source: ConflictSource;
+  readonly target: Extract<CaseSelector, { kind: "ID" }>;
   readonly minimumRevision: number;
   readonly diagnostic: HumanRejection_CONFLICT | null;
   readonly latest: ConflictObservation | null;
@@ -84,6 +85,7 @@ export type OperationEffect =
       identity: EffectIdentity;
       conflictId: string;
       source: ConflictSource;
+      target: RevisionConflictSnapshot["target"];
       minimumRevision: number;
     }
   | { kind: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }

@@ -34,7 +34,7 @@ it("accepts exactly bounded settings and refuses valid JSON beyond its storage b
     language: "en",
     displayLocale: "en-GB",
     mode: "system" as const,
-    accent: "green" as const,
+    accent: "blue" as const,
   });
 });
 it("resets version-one settings and accepts only the current stored record", () => {

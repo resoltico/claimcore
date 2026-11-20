@@ -37,11 +37,7 @@ module internal VerbRunner =
         if prepared.Format = VerbFormat.Json then
             reply.Bytes
         else
-            ReplyText.bytesForWithDetails
-                prepared.Details
-                prepared.Rendering
-                (Some frame)
-                reply.Frame
+            ReplyText.bytesForReply prepared.Details prepared.Rendering (Some frame) reply
 
     let private readOutput (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
         let pageIO =
@@ -123,6 +119,7 @@ module internal VerbRunner =
             CliReply.Frame = frame
             Bytes = Frames.encode frame
             ExitCode = Frames.exitCode frame
+            HostContractIdentity = None
         }
 
     let private confirmationReference (processor: RemoteFrameProcessor) prepared token =
@@ -480,11 +477,12 @@ module internal VerbRunner =
                             fun frame reply ->
                                 processor.Deliver(
                                     (fun response ->
-                                        ReplyText.bytesForWithDetails
+                                        ReplyText.bytesWithHostIdentity
                                             (VerbOptions.hasOption "--details" arguments)
                                             draft.Rendering
                                             (Some frame)
-                                            response.Frame),
+                                            response.Frame
+                                            response.HostContractIdentity),
                                     reply
                                 )
                     }
@@ -530,14 +528,27 @@ module internal VerbRunner =
                         write io.Errors CliMessage.AttachmentOutputFailed
                         return VerbCompletion.Completed(ExitCode.value ExitCode.Failed)
                 | Error(AttachmentDownloadFailure.Access reply) ->
-                    errors (ReplyText.resultLines rendering None reply.Frame.Result)
+                    errors (
+                        ReplyText.resultLines rendering None reply.Frame.Result
+                        @ ReplyText.contractIdentityLines rendering reply.HostContractIdentity
+                    )
+
                     return VerbCompletion.Completed reply.ExitCode
                 | Error(AttachmentDownloadFailure.Local reason) ->
                     let reply = CliReply.local reason
-                    errors (ReplyText.resultLines rendering None reply.Frame.Result)
+
+                    errors (
+                        ReplyText.resultLines rendering None reply.Frame.Result
+                        @ ReplyText.contractIdentityLines rendering reply.HostContractIdentity
+                    )
+
                     return VerbCompletion.Completed reply.ExitCode
-                | Error(AttachmentDownloadFailure.Host failure) ->
-                    errors (ReplyText.resultLines rendering None (FrameResult.HostFailure failure))
+                | Error(AttachmentDownloadFailure.Host(failure, identity)) ->
+                    errors (
+                        ReplyText.resultLines rendering None (FrameResult.HostFailure failure)
+                        @ ReplyText.contractIdentityLines rendering identity
+                    )
+
                     return VerbCompletion.Completed(ExitCode.value ExitCode.Failed)
                 | Error(AttachmentDownloadFailure.Refused(AttachmentTransferFailure.Rejected rejection)) ->
                     errors (HumanText.rejection false rendering rejection)

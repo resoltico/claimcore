@@ -65,7 +65,8 @@ module internal TextTable =
                 if Console.IsOutputRedirected then
                     100
                 else
-                    max 1 Console.WindowWidth
+                    let width = Console.WindowWidth
+                    if width > 0 then width else 100
             with :? IO.IOException ->
                 100
 

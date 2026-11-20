@@ -25,6 +25,10 @@ module internal RouteSupport =
         if reason = HostFailureReason.RateLimited then
             context.Response.Headers.RetryAfter <- "1"
 
+        if reason = HostFailureReason.ContractMismatch then
+            context.Response.Headers[HostFailureReason.ContractIdentityHeader] <-
+                ContractIdentity.value
+
         RequestLog.hostFailure context
         WebWire.hostFailure reason
 

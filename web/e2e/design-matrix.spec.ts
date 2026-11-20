@@ -45,33 +45,24 @@ const recordFrame = async (run: Run, frame: string) => {
   await captureFrame(run.page, run.info, run.dimension, frame);
 };
 const expandedFilters = async (run: Run) => {
-  const compact = run.dimension.width / (run.dimension.reflowScale ?? 1) < 640;
   await settledWorkspaceHeader(run.page);
-  const trigger = run.page.locator('.worklist-toolbar > button[aria-haspopup="dialog"]');
-  const viewport = await run.page.evaluate(() => ({
-    width: innerWidth,
-    compact: matchMedia("(width < 40rem)").matches,
-  }));
-  await expect(
-    trigger,
-    JSON.stringify({ requested: run.dimension.width, actual: viewport }),
-  ).toHaveCount(compact ? 1 : 0);
-  if (compact) {
-    await trigger.click();
+  const grid = run.page.locator(".worklist-toolbar .filter-field-grid");
+  const trigger = grid.locator('button[aria-haspopup="dialog"]');
+  await expect(trigger).toHaveCount(1);
+  await expect(grid.locator('[role="combobox"][value="RECENT"]')).toHaveCount(1);
+  await trigger.focus();
+  await trigger.press("Enter");
+  const panel = run.page.getByRole("dialog");
+  await expect(panel.locator(".report-date-fields")).toBeVisible();
+  const groups = panel.locator(".worklist-filters details > summary");
+  await expect(groups).toHaveCount(3);
+  for (const group of await groups.all()) {
+    await group.click();
   }
-  const summaries = run.page.locator(".worklist-filters details > summary");
-  await expect(summaries).toHaveCount(4);
-  for (const summary of await summaries.all()) {
-    await summary.click();
-  }
-  await expect(run.page.locator(".worklist-filters input:checked")).toHaveCount(3);
-  await expect(run.page.locator('.worklist-filters [role="combobox"][value="RECENT"]')).toHaveCount(
-    1,
-  );
+  await expect(panel.locator(".worklist-filters input:checked")).toHaveCount(3);
   await recordFrame(run, "cases-filter-panel");
-  if (compact) {
-    await run.page.keyboard.press("Escape");
-  }
+  await run.page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
 };
 const paidCorrectionReview = async (run: Run) => {
   await chooseChoice(run.page, "group:decision", "UPDATE");

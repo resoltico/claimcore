@@ -1,5 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ExportRequest } from "@contracts/client";
+import { routeRevisionSnapshot, subscribeRoute } from "../routing/navigation";
+import { useSettingsDetour } from "../hooks/SettingsDetourContext";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useSessionContext } from "../session/SessionContext";
 import { requestCsvExport, csvExportNotice, saveCsvDownload } from "../api/csvExport";
@@ -8,27 +10,38 @@ import { localNotice, type Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 
+const exportOwner = (
+  state: ReturnType<typeof useSessionContext>["state"],
+  requester: ReturnType<typeof useRequesterContext>,
+): OwnerScope | null =>
+  state.kind === "authenticated" && requester !== null
+    ? {
+        serviceOrigin: window.location.origin,
+        installationId: requester.subject.installationId,
+        actorId: requester.subject.actorId,
+        sessionEpoch: state.epoch,
+      }
+    : null;
+
 export const CsvExportButton = ({
   selection,
   available = true,
+  label = "label.exportCsv",
 }: {
   selection: ExportRequest;
   available?: boolean;
+  label?: "label.exportCsv" | "ui.exportCasesCsv" | "ui.exportReportCsv";
 }) => {
   const p = usePresentation();
   const requester = useRequesterContext();
   const { state } = useSessionContext();
-  const owner: OwnerScope | null =
-    state.kind === "authenticated" && requester !== null
-      ? {
-          serviceOrigin: window.location.origin,
-          installationId: requester.subject.installationId,
-          actorId: requester.subject.actorId,
-          sessionEpoch: state.epoch,
-        }
-      : null;
+  const owner = exportOwner(state, requester);
+  const routeRevision = useSyncExternalStore(subscribeRoute, routeRevisionSnapshot);
+  const detour = useSettingsDetour();
+  const offered = available && detour?.paused !== true;
+  const admitted = offered && owner !== null;
   const credential = state.kind === "authenticated" ? state.token : "";
-  const scope = JSON.stringify([owner, selection, available]);
+  const scope = JSON.stringify([owner, credential, selection, offered, routeRevision]);
   const current = useRef({ owner, scope });
   const active = useRef<{ scope: string; controller: AbortController } | null>(null);
   const downloadUrl = useRef<{ scope: string; dispose: () => void } | null>(null);
@@ -40,7 +53,7 @@ export const CsvExportButton = ({
   useLayoutEffect(() => {
     current.current = { owner, scope };
   });
-  useEffect(
+  useLayoutEffect(
     () => () => {
       if (active.current?.scope === scope) {
         active.current.controller.abort();
@@ -77,10 +90,13 @@ export const CsvExportButton = ({
       active.current.controller.abort();
       active.current = null;
     }
-    if (owner === null || !available || active.current !== null) {
+    if (!admitted || active.current !== null) {
       return;
     }
-    const currentOwner = () => (current.current.scope === scope ? current.current.owner : null);
+    const currentOwner = () =>
+      routeRevisionSnapshot() === routeRevision && current.current.scope === scope
+        ? current.current.owner
+        : null;
     const request = { scope, controller: new AbortController() };
     active.current = request;
     setView({ scope, busy: true, notice: null });
@@ -104,12 +120,12 @@ export const CsvExportButton = ({
     <div className="csv-export">
       <button
         type="button"
-        disabled={!available || owner === null || (view.scope === scope && view.busy)}
+        disabled={!admitted || (view.scope === scope && view.busy)}
         onClick={() => {
           void download();
         }}
       >
-        {p.text("label.exportCsv")}
+        {p.text(label)}
       </button>
       {view.scope === scope && view.notice !== null ? (
         <p role="alert">

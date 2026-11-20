@@ -218,9 +218,13 @@ let tests =
                     let screen = AccessHistoryScreen.rows [ history ]
 
                     let details =
-                        entries screen
-                        |> List.filter (fst >> (=) RegionRole.Details)
-                        |> List.choose (snd >> _.Value >> identifier)
+                        screen.Regions
+                        |> List.collect (fun region ->
+                            match region.Content with
+                            | RegionContent.Timeline entries -> entries |> List.collect _.Details
+                            | _ -> [])
+                        |> List.collect _.Entries
+                        |> List.choose (_.Value >> identifier)
 
                     Expect.contains
                         details

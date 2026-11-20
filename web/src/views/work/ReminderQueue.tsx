@@ -6,6 +6,7 @@ import { ViewTabs } from "../../ui/ViewTabs";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
+import { Dialog } from "../../ui/Dialog";
 import { usePresentation } from "../../presentation/context";
 import { queryInput } from "../../protocol/taskCatalog";
 import { renderCatalogKey, renderIsolatedValues } from "../../presentation/messages";
@@ -122,6 +123,110 @@ const ReminderCaseTarget = ({
 };
 type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boolean };
 const noLockChange = () => undefined;
+const ReminderAdvancedFilters = ({
+  query,
+  change,
+}: {
+  query: ReminderQuery;
+  change: (value: ReminderQuery) => void;
+}) => {
+  const p = usePresentation();
+  const [draft, setDraft] = useState<Pick<ReminderQuery, "kind" | "deadlineOutcome"> | null>(null);
+  const { kind, deadlineOutcome, ...other } = query;
+  const count =
+    Number(kind !== undefined && kind !== "ANY") + Number(deadlineOutcome !== undefined);
+  return (
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => {
+          setDraft({
+            ...(kind === undefined ? {} : { kind }),
+            ...(deadlineOutcome === undefined ? {} : { deadlineOutcome }),
+          });
+        }}
+      >
+        {p.text("ui.filters")}
+        {count === 0 ? "" : ` (${p.integer(count)})`}
+      </button>
+      <Dialog
+        title={p.text("ui.filters")}
+        closeLabel={p.text("ui.close")}
+        className="filter-sheet"
+        isOpen={draft !== null}
+        isDismissable
+        onOpenChange={(open) => {
+          if (!open) {
+            setDraft(null);
+          }
+        }}
+      >
+        {draft === null ? null : (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              change({ ...other, ...draft });
+              setDraft(null);
+            }}
+          >
+            <div className="filter-field-grid">
+              <Select
+                label={renderCatalogKey(p, kindChoice.labelId)}
+                value={draft.kind ?? "ANY"}
+                options={kindChoice.choices
+                  .filter((value) => isTerm("reminderKindSelection", value))
+                  .map((value) => ({ value, label: p.term("reminderKindSelection", value) }))}
+                onChange={(value) => {
+                  if (isTerm("reminderKindSelection", value)) {
+                    setDraft({ ...draft, kind: value });
+                  }
+                }}
+              />
+              <Select
+                label={renderCatalogKey(p, deadlineOutcomeChoice.labelId)}
+                value={draft.deadlineOutcome ?? ""}
+                options={[
+                  { value: "", label: p.text("ui.anyFilter") },
+                  ...deadlineOutcomeChoice.choices
+                    .filter((value) => isTerm("deadlineOutcome", value))
+                    .map((value) => ({ value, label: p.term("deadlineOutcome", value) })),
+                ]}
+                onChange={(value) => {
+                  const { deadlineOutcome: _outcome, ...rest } = draft;
+                  if (value === "") {
+                    setDraft(rest);
+                  } else if (isTerm("deadlineOutcome", value)) {
+                    setDraft({ ...rest, deadlineOutcome: value });
+                  }
+                }}
+              />
+            </div>
+            <div className="worklist-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft({});
+                }}
+              >
+                {p.text("ui.clearFilters")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(null);
+                }}
+              >
+                {p.text("ui.cancelChanges")}
+              </button>
+              <button type="submit">{p.text("ui.applyFilters")}</button>
+            </div>
+          </form>
+        )}
+      </Dialog>
+    </>
+  );
+};
 const ReminderFilters = ({
   query,
   change,
@@ -136,7 +241,7 @@ const ReminderFilters = ({
   const p = usePresentation();
   const effective = effectiveReminderSelection(query);
   return (
-    <div className="work-queue-filters">
+    <div className="work-queue-filters filter-field-grid">
       <Select
         label={renderCatalogKey(p, stateChoice.labelId)}
         value={effective.state}
@@ -146,36 +251,6 @@ const ReminderFilters = ({
         onChange={(value) => {
           if (isTerm("reminderStateSelection", value)) {
             change({ ...query, state: value });
-          }
-        }}
-      />
-      <Select
-        label={renderCatalogKey(p, kindChoice.labelId)}
-        value={query.kind ?? "ANY"}
-        options={kindChoice.choices
-          .filter((value) => isTerm("reminderKindSelection", value))
-          .map((value) => ({ value, label: p.term("reminderKindSelection", value) }))}
-        onChange={(value) => {
-          if (isTerm("reminderKindSelection", value)) {
-            change({ ...query, kind: value });
-          }
-        }}
-      />
-      <Select
-        label={renderCatalogKey(p, deadlineOutcomeChoice.labelId)}
-        value={query.deadlineOutcome ?? ""}
-        options={[
-          { value: "", label: p.text("ui.anyFilter") },
-          ...deadlineOutcomeChoice.choices
-            .filter((value) => isTerm("deadlineOutcome", value))
-            .map((value) => ({ value, label: p.term("deadlineOutcome", value) })),
-        ]}
-        onChange={(value) => {
-          const { deadlineOutcome: _outcome, ...rest } = query;
-          if (value === "") {
-            change(rest);
-          } else if (isTerm("deadlineOutcome", value)) {
-            change({ ...rest, deadlineOutcome: value });
           }
         }}
       />
@@ -218,6 +293,7 @@ const ReminderFilters = ({
           }
         }}
       />
+      <ReminderAdvancedFilters query={query} change={change} />
       <label className="field-toggle">
         <input
           type="checkbox"

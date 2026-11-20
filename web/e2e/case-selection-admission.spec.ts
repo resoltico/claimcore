@@ -51,14 +51,11 @@ test("admits a complete Cases URL before dispatch and reconstructs invalid and r
   const selecting = page.waitForRequest(
     (request) => new URL(request.url()).pathname === caseListPath,
   );
-  const summarizing = page.waitForRequest(
-    (request) => new URL(request.url()).pathname === summaryPath,
-  );
   await page.locator(".case-selection-repair input").fill("2026-02-02");
   await page.getByRole("button", { name: "تطبيق التصحيح" }).click();
   await expect(page).toHaveURL(/receivedThrough=2026-02-02$/u);
   await expect(title).toBeFocused();
-  const requests = await Promise.all([selecting, summarizing]);
+  const requests = [await selecting];
   const selection = {
     view: "ALL",
     status: ["OPENED", "CLOSED"],
@@ -139,12 +136,12 @@ test("reversed ranges use the same declared diagnostic on Cases reads and both C
   }
 });
 
-test("keeps a paused search draft and commits it after the next word", async ({ page }) => {
+test("keeps a paused search draft and commits it on explicit submission", async ({ page }) => {
   await openAuthenticated(page);
   await selectLanguage(page, "en");
   const original = "/cases?view=ALL&status=OPENED";
   await page.goto(original, { waitUntil: "networkidle" });
-  const search = page.getByRole("searchbox", { name: "Filter this view" });
+  const search = page.getByRole("searchbox", { name: /Filter this view/u });
   await expect(search).toBeVisible();
   await page.clock.install();
   const reads: string[] = [];
@@ -173,12 +170,11 @@ test("keeps a paused search draft and commits it after the next word", async ({ 
   const submitted = page.waitForRequest(
     (request) => new URL(request.url()).pathname === caseListPath,
   );
-  const summarized = page.waitForRequest(
-    (request) => new URL(request.url()).pathname === summaryPath,
-  );
   await search.pressSequentially("Star");
   await page.clock.runFor(700);
-  for (const request of await Promise.all([submitted, summarized])) {
+  expect(reads).toEqual([]);
+  await search.press("Enter");
+  for (const request of [await submitted]) {
     expect(request.postDataJSON()).toMatchObject({
       view: "ALL",
       status: ["OPENED"],

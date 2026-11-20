@@ -172,7 +172,7 @@ export const observe = async (
 export const seed = async (
   page: Page,
   options: {
-    language?: "en" | "lv" | "ar";
+    language?: "en" | "lv" | "ar" | "de";
     displayLocale?: DisplayLocale;
     mode?: "system" | "light" | "dark";
     accent?: "green" | "blue";
@@ -205,7 +205,9 @@ export const seed = async (
         language: selected.language ?? "en",
         displayLocale:
           selected.displayLocale ??
-          ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG" } as const)[selected.language ?? "en"],
+          ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", de: "de-DE" } as const)[
+            selected.language ?? "en"
+          ],
         mode: selected.mode ?? "system",
         accent: selected.accent ?? "green",
       }),

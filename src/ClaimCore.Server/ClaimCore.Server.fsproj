@@ -38,8 +38,8 @@
     <Compile Include="Configuration.fs" />
     <Compile Include="OidcStartup.fs" />
     <Compile Include="HttpBody.fs" />
-    <Compile Include="AuthMiddleware.fs" />
     <Compile Include="Headers.fs" />
+    <Compile Include="AuthMiddleware.fs" />
     <Compile Include="PublicAssets.fs" />
     <Compile Include="CatalogRoutes.fs" />
     <Compile Include="RequestGate.fs" />

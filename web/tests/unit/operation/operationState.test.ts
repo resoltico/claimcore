@@ -350,7 +350,21 @@ it("keeps refused disclosure masked after transient read and conflict failures u
         action: "REVIEW_LATEST",
       },
       actualRevision: 5,
-      document: closeReview.document,
+      document: {
+        ...closeReview.document,
+        links: [
+          {
+            rel: "OPEN_CASE",
+            labelId: "field.caseReference.label",
+            link: {
+              endpoint: "case.get",
+              input: {
+                target: { kind: "ID", caseId: initial().disclosed.caseObservation!.subject.caseId },
+              },
+            },
+          },
+        ],
+      },
     },
     uncertain: false,
     disclosure: false,

@@ -180,10 +180,10 @@ it("submits the selected grouping with the existing dates and offers its CSV", a
       }),
     );
   });
-  expect(await screen.findByRole("button", { name: "Download CSV" })).toBeVisible();
+  expect(await screen.findByRole("button", { name: "Export report CSV" })).toBeVisible();
 });
 
-it("starts a new selection at page one and keeps grouped export after temporary page failure", async () => {
+it("starts a new selection at page one and requires a successful result for its export", async () => {
   let completeOld: (value: Response) => void = () => undefined;
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -222,7 +222,7 @@ it("starts a new selection at page one and keeps grouped export after temporary 
   await user.click(screen.getByRole("combobox", { name: "Group by" }));
   await user.click(screen.getByRole("option", { name: "Received month" }));
   await screen.findByRole("alert");
-  expect(screen.getByRole("button", { name: "Download CSV" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Export report CSV" })).toBeDisabled();
 });
 
 it("allows cursorless export after a continuation refusal and blocks a real access refusal", async () => {
@@ -248,7 +248,7 @@ it("allows cursorless export after a continuation refusal and blocks a real acce
   await user.click(await screen.findByRole("button", { name: "Next report page" }));
   await screen.findByText(/this page link is no longer valid/iu);
   expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
-  const download = screen.getByRole("button", { name: "Download CSV" });
+  const download = screen.getByRole("button", { name: "Export report CSV" });
   expect(download).toBeEnabled();
   await user.click(screen.getByRole("button", { name: "Restart report" }));
   await waitFor(() => {
@@ -289,7 +289,7 @@ it("blocks export across a held disclosure retry and reopens it only after succe
   await user.click(screen.getByRole("combobox", { name: "Group by" }));
   await user.click(screen.getByRole("option", { name: "Received month" }));
   await screen.findByRole("alert");
-  const download = screen.getByRole("button", { name: "Download CSV" });
+  const download = screen.getByRole("button", { name: "Export report CSV" });
   expect(download).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByRole("status");
@@ -325,5 +325,5 @@ it("blocks export on a host session refusal", async () => {
   await user.click(screen.getByRole("combobox", { name: "Group by" }));
   await user.click(screen.getByRole("option", { name: "Received month" }));
   await screen.findByRole("alert");
-  expect(screen.getByRole("button", { name: "Download CSV" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Export report CSV" })).toBeDisabled();
 });

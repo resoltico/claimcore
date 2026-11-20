@@ -65,6 +65,7 @@ const input = {
   inputs: { "field:outcome": "OTHER" },
 } as const;
 const snapshot: RevisionConflictSnapshot = {
+  target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
   minimumRevision: 5,
   identity: {
     id: "conflict",
@@ -150,7 +151,7 @@ it("uses the supplied conflict document and replaces full history with a tighten
   await screen.findByText("Core replacement summary Ψ");
   expect(screen.queryByText("Core original full history Ω")).not.toBeInTheDocument();
   expect(JSON.parse(requestText(fetch.mock.calls[0]![1]?.body))).toEqual({
-    target: input.binding.target,
+    target: snapshot.target,
     cursor: "issued",
     limit: 50,
   });

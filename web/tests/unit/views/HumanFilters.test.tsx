@@ -11,12 +11,15 @@ it("renders semantic worklist sets as independent Core-labelled checkboxes", asy
   render(
     <WorklistFilters query={{ lifecycle: ["ACTIVE"], progress: ["DECIDED"] }} onChange={change} />,
   );
+  await userEvent.click(screen.getByRole("button", { name: /^Filters/u }));
+  await userEvent.click(screen.getByText("Lifecycle (1)", { selector: "summary" }));
   const active = screen.getByRole("checkbox", { name: "Active" });
   expect(active).toBeChecked();
   await userEvent.click(active);
-  expect(change).toHaveBeenCalledWith({ lifecycle: [], progress: ["DECIDED"] });
   await userEvent.click(screen.getByRole("checkbox", { name: "Voided" }));
-  expect(change).toHaveBeenCalledWith({ lifecycle: ["ACTIVE", "VOIDED"], progress: ["DECIDED"] });
+  expect(change).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+  expect(change).toHaveBeenCalledExactlyOnceWith({ lifecycle: ["VOIDED"], progress: ["DECIDED"] });
 });
 it("takes role choices from the semantic people query and sends only authored filters", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() =>

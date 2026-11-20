@@ -1,5 +1,5 @@
 import { ReferenceSummary } from "../../components/ReferenceSummary";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { usePresentation } from "../../presentation/context";
 import {
   worklistSearchIssue,
@@ -13,32 +13,12 @@ type Props = {
   onSearch: (value: string) => void;
   onChange: (query: WorklistQuery) => void;
   onSelect: (reference: string) => void;
-  loading: boolean;
-  onReload: () => void;
 };
 const searchSelection = (query: WorklistQuery, text: string): WorklistQuery => {
   const { text: _text, ...filters } = query;
   return text === "" ? filters : { ...filters, text };
 };
 
-const useSearchCommit = (
-  text: string,
-  admissible: boolean,
-  query: WorklistQuery,
-  onChange: Props["onChange"],
-) => {
-  useEffect(() => {
-    if (!admissible || text === (query.text ?? "")) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      onChange(searchSelection(query, text));
-    }, 300);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [text, admissible, query, onChange]);
-};
 const WorklistSearch = ({
   query,
   onChange,
@@ -50,7 +30,7 @@ const WorklistSearch = ({
   const [submittedDraft, setSubmittedDraft] = useState<string | null>(null);
   const issue = worklistSearchIssue(search);
   const correction = submittedDraft === search ? issue : undefined;
-  useSearchCommit(search, issue === undefined, query, onChange);
+
   return (
     <form
       role="search"
@@ -66,8 +46,9 @@ const WorklistSearch = ({
         }
       }}
     >
-      <label className="sr-only" htmlFor="worklist-search">
-        {p.text("ui.worklistSearch")}
+      <label htmlFor="worklist-search" className="worklist-search-scope">
+        {p.text("ui.worklistSearch")} ·{" "}
+        {query.view === undefined ? p.term("caseView", "ALL") : p.term("caseView", query.view)}
       </label>
       <input
         id="worklist-search"
@@ -137,23 +118,17 @@ const ExactLookup = ({ onSelect }: Pick<Props, "onSelect">) => {
     </details>
   );
 };
-export const WorklistToolbar = (props: Props) => {
-  const p = usePresentation();
-  return (
-    <>
-      <div className="worklist-toolbar">
-        <WorklistSearch
-          query={props.query}
-          onChange={props.onChange}
-          search={props.search}
-          onSearch={props.onSearch}
-        />
-        <WorklistFilters query={props.query} onChange={props.onChange} />
-        <button type="button" disabled={props.loading} onClick={props.onReload}>
-          {props.loading ? p.text("ui.loading") : p.text("ui.reloadCases")}
-        </button>
-      </div>
-      <ExactLookup onSelect={props.onSelect} />
-    </>
-  );
-};
+export const WorklistToolbar = (props: Props) => (
+  <>
+    <div className="worklist-toolbar">
+      <WorklistSearch
+        query={props.query}
+        onChange={props.onChange}
+        search={props.search}
+        onSearch={props.onSearch}
+      />
+      <WorklistFilters query={props.query} onChange={props.onChange} />
+    </div>
+    <ExactLookup onSelect={props.onSelect} />
+  </>
+);

@@ -2,12 +2,15 @@ import { apiEndpoints } from "../../api/service";
 import { Select } from "../../ui/Select";
 import { Dialog } from "../../ui/Dialog";
 import { useState } from "react";
-import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm, isVocabulary } from "../../presentation/terms";
 import { queryInput } from "../../protocol/taskCatalog";
-import { reportDateFields, type WorklistQuery } from "../../routing/worklistQuery";
+import {
+  invalidCaseDateEnd,
+  reportDateFields,
+  type WorklistQuery,
+} from "../../routing/worklistQuery";
 type Props = { query: WorklistQuery; onChange: (query: WorklistQuery) => void };
 const selectSet = (
   query: WorklistQuery,
@@ -134,21 +137,28 @@ const OrderControl = ({ query, onChange }: Props) => {
     />
   );
 };
-const ReportDates = ({ query, onChange }: Props) => {
+const ReportDates = ({
+  query,
+  onChange,
+  invalid,
+}: Props & {
+  invalid: ReturnType<typeof invalidCaseDateEnd>;
+}) => {
   const p = usePresentation();
   return (
-    <details>
-      <summary>{p.text("ui.reportingDates")}</summary>
-      <fieldset>
-        <legend className="sr-only">{p.text("ui.reportingDates")}</legend>
-        {reportDateFields.map((field) => {
-          const input = queryInput(apiEndpoints.caseList, `input:${field}`);
-          return (
-            <label key={field}>
+    <fieldset className="report-date-fields">
+      <legend>{p.text("ui.reportingDates")}</legend>
+      {reportDateFields.map((field) => {
+        const input = queryInput(apiEndpoints.caseList, `input:${field}`);
+        return (
+          <div key={field}>
+            <label>
               {renderCatalogKey(p, input.labelId)}
               <input
                 type="date"
                 value={query[field] ?? ""}
+                aria-invalid={invalid === field || undefined}
+                aria-describedby={invalid === field ? "report-date-range-error" : undefined}
                 onChange={(event) => {
                   const { [field]: _previous, ...manual } = query;
                   const { value } = event.target;
@@ -156,54 +166,117 @@ const ReportDates = ({ query, onChange }: Props) => {
                 }}
               />
             </label>
-          );
-        })}
-      </fieldset>
-    </details>
+            {invalid === field ? (
+              <span id="report-date-range-error" role="alert">
+                {p.text("diagnostic.CASE_DATE_RANGE", {
+                  field: renderCatalogKey(p, input.labelId),
+                })}
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </fieldset>
   );
 };
-const FilterControls = (props: Props) => (
-  <div className="worklist-filters">
-    {inputs.map((input) => (
-      <span key={input.key}>
-        <FilterSet input={input} {...props} />
-        <WorkChoice input={input} {...props} />
-      </span>
-    ))}
-    <ReportDates {...props} />
-    <OrderControl {...props} />
-  </div>
-);
-export const WorklistFilters = (props: Props) => {
+const advancedKeys = ["lifecycle", "status", "progress", ...reportDateFields] as const;
+
+export const WorklistFilters = ({ query, onChange }: Props) => {
   const p = usePresentation();
-  const compact = useCompact();
-  const [open, setOpen] = useState(false);
-  if (!compact) {
-    return <FilterControls {...props} />;
-  }
+  const [draft, setDraft] = useState<WorklistQuery | null>(null);
+  const [invalid, setInvalid] = useState<ReturnType<typeof invalidCaseDateEnd>>();
+  const active = advancedKeys.reduce((count, key) => {
+    const value = query[key];
+    if (Array.isArray(value)) {
+      return count + value.length;
+    }
+    return value === undefined ? count : count + 1;
+  }, 0);
+  const changeDraft = (next: WorklistQuery) => {
+    setInvalid(undefined);
+    setDraft(next);
+  };
+  const replaceAdvanced = (next: WorklistQuery): WorklistQuery => ({
+    ...Object.fromEntries(
+      Object.entries(query).filter(([key]) => !advancedKeys.some((candidate) => candidate === key)),
+    ),
+    ...Object.fromEntries(
+      Object.entries(next).filter(([key]) => advancedKeys.some((candidate) => candidate === key)),
+    ),
+  });
   return (
-    <>
+    <div className="filter-field-grid">
+      {inputs
+        .filter(({ key }) => key === "due" || key === "assignment")
+        .map((input) => (
+          <WorkChoice key={input.key} input={input} query={query} onChange={onChange} />
+        ))}
+      <OrderControl query={query} onChange={onChange} />
       <button
         type="button"
         aria-haspopup="dialog"
-        aria-expanded={open}
         onClick={() => {
-          setOpen(true);
+          changeDraft(query);
         }}
       >
         {p.text("ui.filters")}
+        {active === 0 ? "" : ` (${p.integer(active)})`}
       </button>
       <Dialog
         title={p.text("ui.filters")}
         closeLabel={p.text("ui.close")}
         className="filter-sheet"
-        placement="bottom"
-        isOpen={open}
+        isOpen={draft !== null}
         isDismissable
-        onOpenChange={setOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDraft(null);
+          }
+        }}
       >
-        <FilterControls {...props} />
+        {draft === null ? null : (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const end = invalidCaseDateEnd(draft);
+              if (end !== undefined) {
+                setInvalid(end);
+                return;
+              }
+              onChange(replaceAdvanced(draft));
+              setDraft(null);
+            }}
+          >
+            <div className="worklist-filters">
+              {inputs
+                .filter(({ key }) => key !== "due" && key !== "assignment")
+                .map((input) => (
+                  <FilterSet key={input.key} input={input} query={draft} onChange={changeDraft} />
+                ))}
+            </div>
+            <ReportDates query={draft} onChange={changeDraft} invalid={invalid} />
+            <div className="worklist-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  changeDraft({});
+                }}
+              >
+                {p.text("ui.clearFilters")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(null);
+                }}
+              >
+                {p.text("ui.cancelChanges")}
+              </button>
+              <button type="submit">{p.text("ui.applyFilters")}</button>
+            </div>
+          </form>
+        )}
       </Dialog>
-    </>
+    </div>
   );
 };

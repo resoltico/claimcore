@@ -11,8 +11,7 @@ import {
 
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import type { ComponentProps } from "react";
-import { expect, it, vi } from "vitest";
-import { within } from "@testing-library/react";
+import { expect, it } from "vitest";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { workBasis } from "../../support/inputs";
 
@@ -59,7 +58,6 @@ it("shows only supplied own role facts and keeps navigation independent from raw
       views={[]}
       tasks={[]}
       locked={false}
-      openCase={vi.fn()}
     />
   );
   const view = render(<RequesterContext value={requester}>{header}</RequesterContext>);
@@ -73,26 +71,22 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   expect(document.body).not.toHaveTextContent("Owner");
 });
 
-it("keeps the shell search an explicitly secondary, labelled submit and preserves its lock", () => {
+it("offers named global search from other screens with a clean All selection", () => {
   const header = (locked: boolean) => (
     <WorkspaceHeader
-      route={{ screen: "cases", query: "" }}
-      active="cases"
+      route={{ screen: "reminders", query: "" }}
+      active="reminders"
       views={["case.list"]}
       tasks={[]}
       locked={locked}
-      openCase={vi.fn()}
     />
   );
   const view = render(header(false));
-  const search = screen.getByRole("search", { name: "Search cases" });
-  const submit = within(search).getByRole("button", { name: "Search" });
-  expect(submit).toHaveAttribute("type", "submit");
-  expect(submit.classList.contains("ui-button--secondary")).toBe(true);
-  expect(submit).not.toBeDisabled();
+  const link = screen.getByRole("link", { name: "Search cases" });
+  expect(link).toHaveAttribute("href", "/cases?view=ALL");
+  expect(link).not.toHaveAttribute("aria-disabled");
   view.rerender(header(true));
-  expect(submit).toBeDisabled();
-  expect(within(search).getByRole("searchbox", { name: "Search cases" })).toBeDisabled();
+  expect(link).toHaveAttribute("aria-disabled", "true");
 });
 
 it("keeps compact sidebar links named when their visual tooltip captions are hidden", () => {
@@ -103,7 +97,6 @@ it("keeps compact sidebar links named when their visual tooltip captions are hid
       views={["case.list"]}
       tasks={[]}
       locked={false}
-      openCase={vi.fn()}
     />,
   );
   const link = document.querySelector<HTMLAnchorElement>(

@@ -6,6 +6,10 @@ The [catalog](../contracts/catalog.json) supplies meanings and choices. `claimco
 current verbs and flags from task declarations; use these sources instead of copying field lists.
 
 Use matching server, browser and CLI builds. Regenerate integrations when the contract identity changes.
+`claimcore version --json` includes `contractIdentity`, the lowercase SHA-256 identity used in
+the CLI's HTTPS requests. A typed HTTP 409 `CONTRACT_MISMATCH` can include
+`ClaimCore-Host-Contract` with the responding host's identity, including before account admission.
+The CLI reports both identities in human diagnostics when it admits that header.
 The generated [TypeScript client](../contracts/client.ts) provides types, endpoint/task metadata and
 transport constants and structural response guards derived from Wire schemas. Invoke them after strict
 byte admission; interpretation, ownership and operation correlation remain consumer checks. They preserve

@@ -276,8 +276,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "请使用您组织的账户登录。",
-    "source": "2d954a0e8a31"
+    "text": "请前往登录服务提供方，输入组织账号的凭据。",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "未能完成登录。",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "重新开始登录",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "正在查询…",
@@ -531,10 +539,6 @@
     "text": "正在记录…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "显示汇总数据",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "主题",
     "source": "efb52e7172b7"
@@ -578,10 +582,6 @@
   "ui.workDateBasis": {
     "text": "业务日期 {date}（{zone}）。",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "工作队列",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "筛选此视图",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "第 {page} 页，共 {count} 页",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "导出案件列表 CSV",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "导出报告 CSV",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "当前浏览器会话",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "ClaimCore 浏览器会话",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "应用筛选条件",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "取消",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "账户访问历史",
+    "source": "ed6a3714adfd"
   }
 }

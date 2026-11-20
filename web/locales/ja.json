@@ -276,8 +276,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "組織のアカウントでサインインしてください。",
-    "source": "2d954a0e8a31"
+    "text": "サインインプロバイダーに進み、組織の認証情報を入力してください。",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "サインインを完了できませんでした。",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "サインインをやり直す",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "照会中…",
@@ -531,10 +539,6 @@
     "text": "記録中…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "集計を表示",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "テーマ",
     "source": "efb52e7172b7"
@@ -578,10 +582,6 @@
   "ui.workDateBasis": {
     "text": "業務日{date}（{zone}）。",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "業務一覧",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "このビューを絞り込む",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "{count} ページ中 {page} ページ目",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "案件一覧をCSVでエクスポート",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "レポートをCSVでエクスポート",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "現在のブラウザーセッション",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "ClaimCore ブラウザーセッション",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "フィルターを適用",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "キャンセル",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "アカウントのアクセス履歴",
+    "source": "ed6a3714adfd"
   }
 }

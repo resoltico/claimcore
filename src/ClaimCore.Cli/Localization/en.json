@@ -123,5 +123,7 @@
   "cli.usage.collectionInvalidMember": "Use the member types and choices listed in help for {flag}.",
   "cli.usage.collectionTooLarge": "The {flag} row exceeds the size limit.",
   "cli.usage.collectionCount": "Supply between {minimum} and {maximum} rows for {flag}.",
-  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": "Set {setting} to an absolute directory path to use local recovery."
+  "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": "Set {setting} to an absolute directory path to use local recovery.",
+  "cli.contractIdentities": "CLI contract: {local}. Service contract: {host}.",
+  "cli.usage.configureShowFromShell": "Run {command} from your operating system’s terminal."
 }

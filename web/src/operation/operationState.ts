@@ -203,6 +203,7 @@ const readConflict = (
       identity: action.identity,
       conflictId: snapshot.identity.id,
       source: snapshot.source,
+      target: snapshot.target,
       minimumRevision: snapshot.minimumRevision,
     },
   );
@@ -240,7 +241,13 @@ const reviewLatest = (
   ) {
     return state;
   }
-  if (!sameConflictTarget(snapshot.source.prepared.input, action.source.prepared.input)) {
+  if (
+    !sameConflictTarget(
+      snapshot.source.prepared.input,
+      action.source.prepared.input,
+      snapshot.target,
+    )
+  ) {
     return state;
   }
   const { source } = action;
@@ -321,8 +328,13 @@ const refusalFeedback = (
       : {},
     rejection: publish ? (action.rejection ?? null) : null,
     conflict: publish
-      ? (conflictFromRefusal(action, source, operationEntry(state.draft.entry), sticky) ??
-        state.disclosed.conflict)
+      ? (conflictFromRefusal(
+          action,
+          source,
+          operationEntry(state.draft.entry),
+          sticky,
+          state.disclosed.caseObservation?.subject.caseId,
+        ) ?? state.disclosed.conflict)
       : null,
   };
 };

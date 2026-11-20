@@ -1,7 +1,7 @@
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
-import { caseLinkTarget, caseTargetPath } from "../routing/coreLinks";
+import { caseLinkTarget, caseLinkView, caseTargetPath } from "../routing/coreLinks";
 import type { RegionRow, CaseSelector } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
@@ -13,13 +13,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
 
-import { useRequesterContext } from "../hooks/useRequesterContext";
-import { SummaryBand } from "./worklist/SummaryBand";
+import { useRequesterContext, useCaseCreationControl } from "../hooks/useRequesterContext";
+import { operationTask } from "../protocol/taskCatalog";
+import { renderCatalogKey } from "../presentation/messages";
+import { followLink } from "../routing/followLink";
 import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 
 import { useEndpointPage } from "../hooks/useEndpointPage";
+import { useFocusActivation } from "../routing/useRoute";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { navigate } from "../routing/navigation";
 import {
@@ -34,6 +37,7 @@ import { PageTables } from "../ui/PageTables";
 import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
+  onOpenCase?: () => void;
   onSelect: (target: CaseSelector, originId?: string) => void;
   onMutationLockChange?: MutationLockChange;
   disclosureAvailable?: boolean;
@@ -70,7 +74,8 @@ const useWorklist = (query: WorklistQuery) => {
     NonNullable<ReturnType<typeof casePage>>
   >(apiEndpoints.caseList, input, casePage);
   const change = useCallback((next: WorklistQuery) => {
-    navigate(worklistPath(next), true);
+    const path = worklistPath(next);
+    navigate(path === "/cases" ? worklistPath({ view: "ALL" }) : path);
   }, []);
   return {
     ...page,
@@ -224,8 +229,58 @@ const WorklistResults = ({
     </>
   );
 };
+const CaseListHeading = ({
+  onOpenCase,
+  available,
+}: {
+  onOpenCase: Props["onOpenCase"];
+  available: boolean;
+}) => {
+  const p = usePresentation();
+  const creation = useCaseCreationControl();
+  return (
+    <div className="section-heading">
+      <div>
+        <h1 id="case-list-title" tabIndex={-1}>
+          {p.text("label.cases")}
+        </h1>
+        <p className="page-description">{p.text("label.queueDescription")}</p>
+      </div>
+      {creation === undefined || onOpenCase === undefined ? null : (
+        <a
+          id="open-case"
+          className="shell-open-case"
+          href="/cases/new"
+          aria-disabled={!available || undefined}
+          onClick={(event) => {
+            followLink(event, () => {
+              if (available) {
+                onOpenCase();
+              }
+            });
+          }}
+        >
+          {renderCatalogKey(p, operationTask(creation.task).labelId)}
+        </a>
+      )}
+    </div>
+  );
+};
+const useSearchDraft = (source: string) => {
+  const activation = useFocusActivation();
+  const [search, setSearch] = useState({ source, value: source, revision: activation.revision });
+  if (search.source !== source || search.revision !== activation.revision) {
+    const reset = search.source !== source || activation.id === "worklist-search";
+    setSearch({ source, value: reset ? source : search.value, revision: activation.revision });
+  }
+  const change = (value: string) => {
+    setSearch({ ...search, value });
+  };
+  return [search.value, change] as const;
+};
 const ReadyCaseList = ({
   onSelect,
+  onOpenCase,
   onMutationLockChange = ignoreLock,
   disclosureAvailable = true,
   query,
@@ -246,36 +301,22 @@ const ReadyCaseList = ({
   };
 
   const views = useWorkspaceViews().cases;
+  const quickViews = views.data?.items ?? [];
+  const activeView = quickViews.find(({ view }) => view === page.query.view)?.view ?? "";
   const source = page.query.text ?? "";
-  const [search, setSearch] = useState({ source, value: source });
-  if (search.source !== source) {
-    setSearch({ source, value: source });
-  }
+  const [search, setSearch] = useSearchDraft(source);
   return (
     <section aria-labelledby="case-list-title" className="worklist" aria-busy={page.loading}>
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">{p.text("ui.workQueue")}</p>
-          <h1 id="case-list-title" tabIndex={-1}>
-            {p.text("label.cases")}
-          </h1>
-          <p className="page-description">{p.text("label.queueDescription")}</p>
-        </div>
-      </div>
+      <CaseListHeading onOpenCase={onOpenCase} available={disclosureAvailable} />
       <WorkspaceViewsStatus area="cases" />
-      <CsvExportButton
-        selection={{ query: apiEndpoints.caseList, selection: page.query }}
-        available={!page.loading && page.page !== null}
-      />
+
       <ViewTabs
-        items={
-          views.data?.items.map(({ view, label, count }) => ({
-            id: view,
-            label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
-            count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
-          })) ?? []
-        }
-        selected={page.query.view ?? ""}
+        items={quickViews.map(({ view, label, count }) => ({
+          id: view,
+          label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
+          count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
+        }))}
+        selected={activeView}
         label={p.text("input.caseView.label")}
         loading={views.loading}
         onSelect={(view) => {
@@ -286,21 +327,41 @@ const ReadyCaseList = ({
         controls={
           <WorklistToolbar
             query={page.query}
-            search={search.value}
-            onSearch={(value) => {
-              setSearch({ source, value });
-            }}
+            search={search}
+            onSearch={setSearch}
             onChange={page.change}
             onSelect={(caseReference) => {
               onSelect({ kind: "REFERENCE", caseReference });
             }}
-            loading={page.loading}
-            onReload={() => {
-              void page.load(null);
-            }}
           />
         }
       >
+        <div className="worklist-actions">
+          <a
+            href={worklistPath(page.query, "/cases/report")}
+            onClick={(event) => {
+              followLink(event, () => {
+                navigate(worklistPath(page.query, "/cases/report"));
+              });
+            }}
+          >
+            {p.text("ui.caseReport")}
+          </a>
+          <button
+            type="button"
+            disabled={page.loading}
+            onClick={() => {
+              void page.load(null);
+            }}
+          >
+            {p.text("ui.reloadCases")}
+          </button>
+          <CsvExportButton
+            selection={{ query: apiEndpoints.caseList, selection: page.query }}
+            available={disclosureAvailable && !page.loading && page.page !== null}
+            label="ui.exportCasesCsv"
+          />
+        </div>
         <WorklistLoading page={page} />
         <WorklistResults
           page={page}
@@ -310,7 +371,6 @@ const ReadyCaseList = ({
             setSelection({ row, readId: crypto.randomUUID() });
           }}
         />
-        <SummaryBand filter={page.query} exportAvailable={disclosureAvailable} />
         <WorklistFeedback page={page} />
       </ViewTabs>
       {selection === null ? null : (
@@ -345,7 +405,6 @@ const DefaultCaseView = ({
 };
 const AvailableCaseList = (props: Props) => {
   const context = useRequesterContext();
-  const views = useWorkspaceViews().cases;
   const route = useContentRoute();
   const search = route.screen === "cases" ? route.query : "";
   const admission = useMemo(() => parseWorklistQuery(search), [search]);
@@ -365,12 +424,14 @@ const AvailableCaseList = (props: Props) => {
     return <CaseSelectionRecovery key={search} admission={admission} />;
   }
   const query = admission.selection;
-  if (query.view === undefined) {
-    const first = views.data?.items[0];
-    if (first !== undefined) {
-      return <DefaultCaseView query={query} view={first.view} />;
+  if (Object.keys(query).length === 0) {
+    const cases = context.links.find(
+      (named) => named.rel === "VIEW" && named.link.endpoint === apiEndpoints.caseList,
+    );
+    const view = cases === undefined ? undefined : caseLinkView(cases.link);
+    if (view !== undefined) {
+      return <DefaultCaseView query={query} view={view} />;
     }
-    return <WorkspaceViewsStatus area="cases" />;
   }
   return <ReadyCaseList {...props} query={query} />;
 };

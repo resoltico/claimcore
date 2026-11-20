@@ -40,7 +40,7 @@
   text-decoration: none;
   overflow-wrap: anywhere;
 }
-:is(.workspace-sidebar, .workspace-mobile-tabs) a[aria-current="page"] {
+:is(.workspace-sidebar, .workspace-mobile-tabs) a[data-active-area] {
   background: var(--accent-soft-bg);
   color: var(--accent-text);
   font-weight: 700;
@@ -107,19 +107,6 @@
   min-inline-size: 0;
   flex: 1 1 16rem;
 }
-.shell-search input {
-  min-inline-size: 0;
-  inline-size: min(100%, 30rem);
-}
-.shell-search button {
-  flex-shrink: 0;
-}
-.shell-search button.ui-button--secondary[type="submit"],
-.shell-search button.ui-button--secondary[type="submit"]:hover {
-  background: var(--button-bg);
-  color: var(--button-text);
-  box-shadow: none;
-}
 .shell-open-case {
   display: inline-flex;
   align-items: center;
@@ -185,7 +172,7 @@
   padding-block: var(--space-2);
   font-size: var(--text-sm);
 }
-:is(.workspace-sidebar, .workspace-mobile-tabs) a[aria-current="page"] {
+:is(.workspace-sidebar, .workspace-mobile-tabs) a[data-active-area] {
   color: var(--accent-soft-text);
 }
 .shell-admin {
@@ -253,4 +240,35 @@
 }
 .account-menu-items {
   max-inline-size: min(24rem, calc(100vw - 6rem));
+}
+
+.compact-navigation {
+  flex: 1;
+  min-inline-size: 0;
+  position: relative;
+}
+.compact-navigation > summary {
+  display: grid;
+  place-items: center;
+  min-block-size: var(--shell-bottom-height);
+  padding: var(--space-2);
+  overflow-wrap: anywhere;
+  font-size: var(--text-xs);
+  text-align: center;
+  cursor: pointer;
+}
+.compact-navigation-links {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 100%;
+  inline-size: min(19rem, 100vw);
+  max-block-size: 60dvh;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-sm);
+}
+.compact-navigation-links a {
+  min-block-size: var(--target-primary);
+  overflow-wrap: anywhere;
 }

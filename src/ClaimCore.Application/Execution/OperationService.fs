@@ -3,6 +3,7 @@ namespace ClaimCore.Application.Execution
 open System
 open System.Threading
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Inputs
 open ClaimCore.Application
@@ -72,10 +73,12 @@ module internal OperationService =
                     | Binding.Case(target, expected)
                     | Binding.CasePayment(target, expected, _)
                     | Binding.CaseErase(target, expected, _) ->
-                        Some(target, ChangeEntity.Case, expected)
-                    | Binding.Work(target, expected) -> Some(target, ChangeEntity.Work, expected)
+                        Some(target, Some ChangeEntity.Case, expected)
+                    | Binding.Work(target, expected) ->
+                        Some(target, Some ChangeEntity.Work, expected)
                     | Binding.Reminder(target, id, expected) ->
-                        Some(target, ChangeEntity.Reminder id, expected)
+                        Some(target, Some(ChangeEntity.Reminder id), expected)
+                    | Binding.Party(target, _, expected) -> Some(target, None, expected)
                     | _ -> None
 
                 match selected with
@@ -135,6 +138,14 @@ module internal OperationService =
                     return receipt |> Result.map Verdict.Proceed |> Result.defaultWith Verdict.Fail
         }
 
+    let private duplicateReview tx (plan: DecisionPlan) =
+        match plan.Changes with
+        | [ {
+                Aggregate = AggregateReference.Family caseId
+                Value = PartValue.Attachment(AttachmentEffect.Added(true, Some descriptor))
+            } ] -> AttachmentStorage.findMetadataMatch tx caseId descriptor.Intent
+        | _ -> System.Threading.Tasks.Task.FromResult None
+
     let private inSnapshot
         (services: ServiceContext)
         (tx: ReadTx)
@@ -163,46 +174,52 @@ module internal OperationService =
                     |> Result.map (Previewed.AlreadyAccepted >> Outcome.Succeeded)
                     |> Result.defaultWith Outcome.Failed
             | Ok plan ->
-                let target =
-                    match plan.Snapshot.State, plan.After with
-                    | _, AggregateState.Family(Some family) ->
-                        ReviewTarget.Case(family.Id, family.Reference)
-                    | AggregateState.Person before, AggregateState.Person _ ->
-                        ReviewTarget.Person(
-                            before |> Option.map (fun person -> Actor.currentReference person.Actor)
+                let! duplicate = duplicateReview tx plan
+
+                match duplicate with
+                | Some(RetainedAttachmentMetadataMatch id) ->
+                    return Outcome.Rejected(Refusal.AttachmentDuplicate id)
+                | None ->
+                    let target =
+                        match plan.Snapshot.State, plan.After with
+                        | _, AggregateState.Family(Some family) ->
+                            ReviewTarget.Case(family.Id, family.Reference)
+                        | AggregateState.Person before, AggregateState.Person _ ->
+                            ReviewTarget.Person(
+                                before
+                                |> Option.map (fun person -> Actor.currentReference person.Actor)
+                            )
+                        | _ -> invalidOp "An admitted decision has no resulting aggregate."
+
+                    let! references =
+                        ChangeReferenceReads.read tx plan.Changes.Head.Aggregate plan.Descriptions
+
+                    let changesOwnSignInIdentity =
+                        plan.Snapshot.Requester.Actor
+                        |> Option.exists (fun actor ->
+                            plan.Descriptions
+                            |> List.exists (fun part ->
+                                match part.Description with
+                                | ClaimCore.Domain.Changes.PartDescription.Person description ->
+                                    part.PartId = ActorId.value actor.ActorId
+                                    && ClaimCore.Domain.Changes
+                                        .PersonDescription.changesSignInIdentity
+                                        description
+                                | _ -> false))
+
+                    return
+                        Outcome.Succeeded(
+                            Previewed.Reviewed
+                                {
+                                    OperationReview.Task = plan.Snapshot.Declaration.Id
+                                    Target = target
+                                    References = references
+                                    Binding = plan.Binding
+                                    Changes = plan.Descriptions
+                                    ChangesOwnSignInIdentity = changesOwnSignInIdentity
+                                    Context = ServiceContext.runtime services tx.ObservedAt
+                                }
                         )
-                    | _ -> invalidOp "An admitted decision has no resulting aggregate."
-
-                let! references =
-                    ChangeReferenceReads.read tx plan.Changes.Head.Aggregate plan.Descriptions
-
-                let changesOwnSignInIdentity =
-                    plan.Snapshot.Requester.Actor
-                    |> Option.exists (fun actor ->
-                        plan.Descriptions
-                        |> List.exists (fun part ->
-                            match part.Description with
-                            | ClaimCore.Domain.Changes.PartDescription.Person description ->
-                                part.PartId = ActorId.value actor.ActorId
-                                && ClaimCore.Domain.Changes
-                                    .PersonDescription.changesSignInIdentity
-                                    description
-                            | _ -> false))
-
-                return
-                    Outcome.Succeeded(
-                        Previewed.Reviewed
-                            {
-                                OperationReview.Task = plan.Snapshot.Declaration.Id
-                                Target = target
-                                References = references
-                                Binding = plan.Binding
-                                Changes = plan.Descriptions
-                                ChangesOwnSignInIdentity = changesOwnSignInIdentity
-                                Context = ServiceContext.runtime services tx.ObservedAt
-                            }
-                    )
-
         }
 
     let private admitted (submission: OperationSubmission) =

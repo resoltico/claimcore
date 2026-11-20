@@ -262,6 +262,8 @@ test("preserves historical profile contact and distinguishes global and case rol
   await expect(scoped).toContainText("One case");
   await expect(scoped).toContainText(reference);
   await page.goto("/people-history");
+  const historyLink = page.getByRole("link", { name: "Access history", exact: true });
+  await expect(historyLink).toHaveAttribute("aria-current", "page");
   const historical = page.locator(".people-history .region-timeline > li").filter({
     hasText: "historical-browser-only@example.test",
   });
@@ -270,16 +272,23 @@ test("preserves historical profile contact and distinguishes global and case rol
     "historical-browser-only@example.test",
     "historical-browser-only@example.test",
   ]);
-  const details = page.locator('.people-history details[data-region="DETAILS"]');
-  await details.locator(":scope > summary").click();
-  const issuer = details.locator('[data-entry$=".principal.issuer.after"]').filter({
+  const registered = page.locator(".people-history .region-timeline > li").filter({
     hasText: "https://historical-issuer.example/",
   });
-  await expect(issuer).toHaveCount(1);
-  const key = await issuer.getAttribute("data-entry");
-  const subjectKey = key?.replace(/issuer\.after$/u, "subject.after");
-  if (subjectKey === undefined) {
-    throw Error("Historical principal requires its part identity");
-  }
-  await expect(details.locator(`[data-entry="${subjectKey}"]`)).toContainText(subject);
+  await expect(registered).toHaveCount(1);
+  await registered.locator("summary").click();
+  const comparison = registered.locator(".timeline-comparison");
+  await expect(
+    comparison.locator('[data-change-label="field.principal.issuer.label"] [data-side="after"]'),
+  ).toContainText("https://historical-issuer.example/");
+  await expect(
+    comparison.locator('[data-change-label="field.principal.subject.label"] [data-side="after"]'),
+  ).toContainText(subject);
+  await page.goto(`/people-history?actorId=${actorId}`);
+  await expect(
+    page.getByRole("heading", { name: "Account access history", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".people-history")).toContainText(subject);
+  await expect(historyLink).not.toHaveAttribute("aria-current");
+  await expect(historyLink).toHaveAttribute("data-active-area", "true");
 });

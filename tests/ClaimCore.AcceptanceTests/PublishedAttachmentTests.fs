@@ -81,6 +81,16 @@ let private qualify () =
         Expect.isFalse (uploaded.GetRawText().Contains sourcePath) "Local path stays private"
         machine addArguments 0 "ALREADY_ACCEPTED" "DELIVERED" |> ignore
 
+        let duplicateArguments =
+            (addArguments |> List.take (addArguments.Length - 1)) @ [ id () ]
+
+        let duplicate = machine duplicateArguments 2 "REJECTED" "NOT_SENT"
+
+        Expect.stringContains
+            (duplicate.GetRawText())
+            "ATTACHMENT_DUPLICATE"
+            "Review refuses before upload"
+
         let blockedPath = Path.Combine(fixture.Directory, "blocked evidence.exe")
         let blockedId = id ()
         File.WriteAllText(blockedPath, "Synthetic attachment for testing filename policy.")

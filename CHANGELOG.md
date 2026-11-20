@@ -11,6 +11,14 @@
 - Regenerate clients for affordance `editable` types restricted to each task's declared editable inputs.
 - The non-root Web container can read public assets in images built from checkouts with private file permissions.
 - Web startup failures appear as complete JSON lines in Compose log tails.
+- Regenerate HUMAN clients for typed history targets and field comparisons. CLI `version --json` now includes the consumer contract identity.
+- Fresh Web preferences and the evaluation sign-in provider use Blue. Refused browser callbacks offer a fresh sign-in and preserve the original return path.
+- Search within a Cases view or across all readable cases. Apply report date pairs together. Case report refreshes after Settings and retains its selection when returning to Cases.
+- Scan Activity and Access history by event, target and changed fields. Open Details for before-and-after values and technical records.
+- Compact navigation includes Access history and Unconfirmed changes. Back restores the link or focuses the heading if access removed the link, even while Cases is loading.
+- Settings separate current-session sign-out from ending all ClaimCore browser sessions.
+- Stale case and party reviews offer an authorized case-ID read and fresh review. Attachment review refuses a retained duplicate before upload.
+- CLI details retain full notes and pair full related references with exact read commands. Text and CSV contract mismatch diagnostics can identify both builds.
 
 ## [0.20.0] - 2026-11-19
 

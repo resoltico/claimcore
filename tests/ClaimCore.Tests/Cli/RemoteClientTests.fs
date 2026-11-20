@@ -460,11 +460,80 @@ let private callbackMessages () =
 
     check (LoopbackTransport.response "200 OK" "Sintētisks — العربية") "Sintētisks — العربية"
 
+let private mismatchIdentity () =
+    task {
+        let digest = String.replicate 64 "a"
+        let bad = String.replicate 64 "A"
+
+        let frame =
+            Frames.create Api.context ()
+            |> Result.defaultWith (fun _ -> failtest "Context is admissible")
+
+        let read status code (headers: string list) =
+            task {
+                use response = new HttpResponseMessage(status)
+
+                response.Content <-
+                    new StringContent(
+                        $"""{{"hostFailure":{{"code":"{code}","phase":"NOT_STARTED"}}}}""",
+                        Encoding.UTF8,
+                        "application/json"
+                    )
+
+                if not (List.isEmpty headers) then
+                    Expect.isTrue
+                        (response.Headers.TryAddWithoutValidation(
+                            "ClaimCore-Host-Contract",
+                            headers
+                        ))
+                        "The fixture presents its header as authored"
+
+                return! RemoteServiceCall.readResponse frame response CancellationToken.None
+            }
+
+        let! accepted = read HttpStatusCode.Conflict "CONTRACT_MISMATCH" [ digest ]
+
+        Expect.equal
+            accepted.HostContractIdentity
+            (Some digest)
+            "The typed 409 admits exactly one canonical digest"
+
+        let attempted = CliReply.forAttempt frame DeliveryState.NotSent accepted
+
+        Expect.equal
+            attempted.HostContractIdentity
+            (Some digest)
+            "Context wrapping preserves human diagnostic metadata"
+
+        Expect.isFalse
+            ((Encoding.UTF8.GetString attempted.Bytes).Contains digest)
+            "Machine frames contain only their existing typed failure"
+
+        for status, code, headers in
+            [
+                HttpStatusCode.Conflict, "CONTRACT_MISMATCH", []
+                HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ digest; digest ]
+                HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ digest + "," + digest ]
+                HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ digest + " " ]
+                HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ bad ]
+                HttpStatusCode.Forbidden, "CONTRACT_MISMATCH", [ digest ]
+                HttpStatusCode.Conflict, "INSTALLATION_MISMATCH", [ digest ]
+            ] do
+            let! reply = read status code headers
+
+            Expect.isNone
+                reply.HostContractIdentity
+                "Mismatched status, code, or header never display a host identity"
+    }
+
 [<Tests>]
 let tests =
     testList
         "CLI maintained authentication"
         [
+            testTask "admits one contract fingerprint only on the typed mismatch" {
+                do! mismatchIdentity ()
+            }
             testCase
                 "loopback response renders generated core messages as framed UTF-8"
                 callbackMessages

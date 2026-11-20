@@ -274,7 +274,7 @@ let private directoryDetails fixture reference =
         invoke
             fixture
             environment
-            [ "people"; "history"; "--limit"; "50"; "--format"; "text" ]
+            [ "people"; "history"; "--limit"; "50"; "--format"; "text"; "--details" ]
             Array.empty
             0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput
@@ -295,7 +295,7 @@ let private qualify fixture =
         invoke
             fixture
             fixture.Environment
-            [ "case"; "timeline"; reference; "--format"; "text" ]
+            [ "case"; "timeline"; reference; "--format"; "text"; "--details" ]
             Array.empty
             0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput

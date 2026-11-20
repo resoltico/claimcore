@@ -498,5 +498,13 @@
   "cli.attachment.outputFailed": {
     "text": "无法将附件保存到选定位置。",
     "source": "915060f3dc90"
+  },
+  "cli.contractIdentities": {
+    "text": "CLI 契约：{local}。服务契约：{host}。",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "请在操作系统的终端中运行 {command}。",
+    "source": "278514d04b5d"
   }
 }

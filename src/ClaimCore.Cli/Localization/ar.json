@@ -498,5 +498,13 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "اضبط {setting} على مسار مجلد مطلق لاستخدام الاستعادة المحلية.",
     "source": "5c168d61cfd3"
+  },
+  "cli.contractIdentities": {
+    "text": "عقد واجهة سطر الأوامر: {local}. عقد الخدمة: {host}.",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "نفّذ {command} من طرفية نظام التشغيل.",
+    "source": "278514d04b5d"
   }
 }
