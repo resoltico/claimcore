@@ -81,6 +81,6 @@ require_log '"kind":"INITIALIZED"'
 
 "${compose[@]}" down --timeout 20
 start
-require_log "Existing installation found; initialization skipped."
+require_log '"kind":"INITIALIZATION_SKIPPED"'
 
 echo "Compose restart smoke passed: the installation survived down and up."

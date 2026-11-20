@@ -268,15 +268,25 @@ let tests =
                                 database
                                 "DROP SCHEMA claimcore CASCADE; CREATE SCHEMA claimcore; CREATE TABLE claimcore.foreign_marker(value int); INSERT INTO claimcore.foreign_marker VALUES (17)"
 
-                        do!
-                            refused
-                                (fun () ->
-                                    administration.Initialize(
-                                        "Etc/UTC",
-                                        initialOwner database,
-                                        token
-                                    ))
-                                "Initializer refuses foreign schema"
+                        let! skipFault =
+                            task {
+                                try
+                                    let! _ =
+                                        administration.InitializeIfMissing(
+                                            "Etc/UTC",
+                                            initialOwner database,
+                                            token
+                                        )
+
+                                    return None
+                                with :? OperatorFaultException as error ->
+                                    return Some error.Fault
+                            }
+
+                        Expect.equal
+                            skipFault
+                            (Some OperatorFault.SchemaMismatch)
+                            "Skip-existing refuses a foreign schema"
 
                         do!
                             refused

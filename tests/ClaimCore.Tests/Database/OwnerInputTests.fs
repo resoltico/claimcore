@@ -58,7 +58,7 @@ let tests =
                             ]
                         )
                     with
-                    | Ok(Initialize(zone, owner)) ->
+                    | Ok(Initialize(zone, owner, false)) ->
                         Expect.equal zone "Etc/UTC" "Explicit business zone"
 
                         Expect.equal

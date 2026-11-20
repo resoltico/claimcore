@@ -8,7 +8,9 @@ For a separate synthetic installation, see [Getting started](getting-started.md)
 subcommands; it requires a subcommand and returns usage status 64 when none is supplied. Use
 `claimcore-server help` for administration and `claimcore-server serve --help` for host settings.
 Owner credentials belong only in the administration environment. The runtime image contains the
-server and its assets; the human CLI is distributed separately.
+server and its assets and uses the ASP.NET chiseled Ubuntu 26.04 base with ICU and time-zone data.
+The image contains no shell. Run the server's administration commands directly and inspect container
+files with `docker cp`. The human CLI is distributed separately.
 
 ## Install from release artifacts
 
@@ -92,6 +94,10 @@ the supplied application images include their pinned runtime.
 Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
+
+Pass `--skip-existing` to keep a readable installation of this build and return
+`INITIALIZATION_SKIPPED` with its installation ID. An empty database is initialized. Connection
+and installation faults still fail the command. The local evaluation Compose file uses this option.
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
 human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles

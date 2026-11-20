@@ -19,6 +19,7 @@
 - Settings separate current-session sign-out from ending all ClaimCore browser sessions.
 - Stale case and party reviews offer an authorized case-ID read and fresh review. Attachment review refuses a retained duplicate before upload.
 - CLI details retain full notes and pair full related references with exact read commands. Text and CSV contract mismatch diagnostics can identify both builds.
+- The server image uses chiseled Ubuntu 26.04 with no shell. Local Compose initializes or skips an existing installation through the server command.
 
 ## [0.20.0] - 2026-11-19
 
