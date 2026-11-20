@@ -21,9 +21,12 @@ FROM sdk AS build
 WORKDIR /source
 COPY --from=source /source/ ./
 COPY --from=frontend /source/web/dist ./web/dist
+# Public assets can inherit checkout modes. Package them for non-root readers.
 RUN --mount=type=cache,target=/root/.nuget/packages \
     dotnet restore ClaimCore.slnx --locked-mode \
-    && dotnet publish src/ClaimCore.Server/ClaimCore.Server.fsproj --configuration Release --no-restore --output /published/server
+    && dotnet publish src/ClaimCore.Server/ClaimCore.Server.fsproj --configuration Release --no-restore --output /published/server \
+    && find /published/server/wwwroot -type d -exec chmod 0755 {} + \
+    && find /published/server/wwwroot -type f -exec chmod 0644 {} +
 
 FROM mcr.microsoft.com/dotnet/aspnet:11.0.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS runtime
 WORKDIR /app

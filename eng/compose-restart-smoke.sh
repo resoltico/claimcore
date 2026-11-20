@@ -8,8 +8,9 @@ web_port="${CLAIMCORE_SMOKE_WEB_PORT:-17443}"
 identity_port="${CLAIMCORE_SMOKE_IDENTITY_PORT:-17444}"
 work="$(mktemp -d)"
 config="${work}/config"
+build_source="${work}/source"
 
-compose=(docker compose --env-file "${config}/compose.env" -f "${root}/deployment/compose.yaml")
+compose=(docker compose --env-file "${config}/compose.env" -f "${build_source}/deployment/compose.yaml")
 
 cleanup() {
   if [[ -f "${config}/compose.env" ]]; then
@@ -67,9 +68,13 @@ require_log() {
   fi
 }
 
-cd "${root}"
-bash deployment/configure-local.sh "${config}" "Smoke owner" Etc/UTC "${web_port}" "${identity_port}"
-bash eng/source-archive.sh SOURCE.tar.gz
+# A copied locale retains its source mode before packaging. Stage a private-mode locale for the non-root start.
+bash "${root}/eng/source-archive.sh" "${work}/source.tar.gz"
+mkdir "${build_source}"
+tar -xzf "${work}/source.tar.gz" -C "${build_source}"
+chmod 0600 "${build_source}/web/locales/ar.json"
+bash "${build_source}/eng/source-archive.sh" "${build_source}/SOURCE.tar.gz"
+bash "${build_source}/deployment/configure-local.sh" "${config}" "Smoke owner" Etc/UTC "${web_port}" "${identity_port}"
 
 start --build
 require_log '"kind":"INITIALIZED"'

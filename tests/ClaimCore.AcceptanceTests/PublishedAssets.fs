@@ -10,6 +10,12 @@ let private refusesAssets (fixture: PublishedFixture.Fixture) reason =
         ProcessRunner.dotnet 60_000 fixture.WebBinary [ "serve" ] fixture.WebEnvironment None
 
     Expect.equal result.ExitCode 3 reason
+
+    Expect.equal
+        (Array.tryLast result.StandardError)
+        (Some 10uy)
+        "The startup diagnostic is a complete log line"
+
     use error = JsonDocument.Parse(ReadOnlyMemory result.StandardError)
     Expect.equal (error.RootElement.GetProperty("code").GetString()) "ASSETSMISSING" reason
 
