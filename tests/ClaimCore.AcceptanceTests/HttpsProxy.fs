@@ -10,6 +10,7 @@ open System.Net
 open System.IO
 open System.Net.Http
 open System.Security.Cryptography.X509Certificates
+open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -142,7 +143,7 @@ type Proxy
         origin: string,
         backend: string,
         certificate: X509Certificate2,
-        http: HttpClient,
+        handler: HttpMessageHandler,
         directory: string
     ) =
     let builder = WebApplication.CreateBuilder()
@@ -158,6 +159,8 @@ type Proxy
         |> ignore
 
     let application = builder.Build()
+    // Host responses and downstream cancellation govern forwarded browser requests.
+    let http = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
     let control = RedirectControl.Control(directory)
 
     let transforms =
@@ -241,4 +244,12 @@ type Proxy
         lock routing (fun () -> selectedBackend <- backend)
 
     interface IAsyncDisposable with
-        member _.DisposeAsync() = application.DisposeAsync()
+        member _.DisposeAsync() =
+            ValueTask(
+                task {
+                    try
+                        do! application.DisposeAsync()
+                    finally
+                        http.Dispose()
+                }
+            )
