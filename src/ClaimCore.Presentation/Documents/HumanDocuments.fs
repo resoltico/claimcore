@@ -519,7 +519,11 @@ module HumanReadDocuments =
                 let links =
                     actor.View
                     |> List.map (function
-                        | View.Cases -> named "view.CASES.label" LinkRelation.View (caseList None)
+                        | View.Cases ->
+                            named
+                                "view.CASES.label"
+                                LinkRelation.View
+                                (caseList (Some CaseView.NeedsAttention))
                         | View.People ->
                             named
                                 "view.PEOPLE.label"

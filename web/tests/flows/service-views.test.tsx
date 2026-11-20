@@ -13,7 +13,10 @@ import { endpointResponse } from "../support/transport-response.fixtures";
 
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelineDocument, openedTimelineEntry } from "../support/timeline-document.fixtures";
-import { navigate } from "../../src/routing/navigation";
+import { act as flush, waitFor } from "@testing-library/react";
+import { csvExportTransport } from "@contracts/client";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { navigate, setNavigationBlocker } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -466,4 +469,208 @@ it("routes dashboard list selections and the new-case act into the typed editor"
 
 beforeEach(() => {
   stubWorklistSummary();
+});
+
+it("opens clean All and focuses search only after a guarded activation, including at the same URL", async () => {
+  navigate("/cases?view=ALL&status=OPENED", true);
+  const user = userEvent.setup();
+  render(<Dashboard />);
+  await screen.findByRole("tab", { name: /^All /u, selected: true });
+  await user.type(screen.getByRole("searchbox"), "unsent draft");
+  expect(screen.getByRole("searchbox")).toHaveValue("unsent draft");
+
+  let confirm: (() => void) | undefined;
+  const unregister = setNavigationBlocker((proceed) => {
+    confirm = proceed;
+    return false;
+  });
+  try {
+    await user.click(screen.getByRole("link", { name: "Search cases" }));
+    expect(location.search).toBe("?view=ALL&status=OPENED");
+    expect(screen.getByRole("searchbox")).toHaveValue("unsent draft");
+    expect(confirm).toBeTypeOf("function");
+
+    await flush(() =>
+      Promise.resolve().then(() => {
+        confirm?.();
+      }),
+    );
+    await waitFor(() => {
+      expect(location.search).toBe("?view=ALL");
+      expect(screen.getByRole("searchbox")).toHaveValue("");
+      expect(screen.getByRole("searchbox")).toHaveFocus();
+    });
+
+    await user.type(screen.getByRole("searchbox"), "new draft");
+    await user.click(screen.getByRole("link", { name: "Search cases" }));
+    expect(screen.getByRole("searchbox")).toHaveValue("new draft");
+    await flush(() =>
+      Promise.resolve().then(() => {
+        confirm?.();
+      }),
+    );
+    await waitFor(() => {
+      expect(location.search).toBe("?view=ALL");
+      expect(screen.getByRole("searchbox")).toHaveValue("");
+      expect(screen.getByRole("searchbox")).toHaveFocus();
+    });
+  } finally {
+    unregister();
+  }
+});
+
+it.each(["clear", "apply"])("%s of the last viewless filter keeps All", async (action) => {
+  navigate("/cases?status=CLOSED", true);
+  const user = userEvent.setup();
+  const empty = humanReadReply("case.list", {
+    ...timelineDocument([]),
+    disclosure: "CURRENT",
+  });
+  const list = mockEndpoint("case.list").mockResolvedValue({
+    kind: "outcome",
+    value: empty,
+    status: 200,
+  });
+  render(<Dashboard />);
+  await waitFor(() => {
+    expect(list).toHaveBeenCalledWith(
+      "token",
+      { limit: 50, status: ["CLOSED"] },
+      expect.anything(),
+    );
+  });
+  if (action === "clear") {
+    await user.click(await screen.findByRole("button", { name: "Clear filters" }));
+  } else {
+    await user.click(await screen.findByRole("button", { name: "Filters (1)" }));
+    await user.click(screen.getByText("Status filter (1)", { selector: "summary" }));
+    await user.click(screen.getByRole("checkbox", { name: "Closed" }));
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
+  }
+  await waitFor(() => {
+    expect(location.search).toBe("?view=ALL");
+  });
+});
+
+it.each([
+  ["case.list", "/cases?view=ALL", "Export case list CSV"],
+  ["case.summary", "/cases/report?view=ALL", "Export report CSV"],
+  ["people.history", "/people-history", "Download CSV"],
+  ["case.timeline", "/cases/id/20000000-0000-4000-8000-000000000001", "Download CSV"],
+] as const)("retires a %s export when Settings parks its route", async (endpoint, path, label) => {
+  navigate(path, true);
+  const { installationId } = activeRequester.subject;
+  stubDashboardContext().mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: humanReadReply("context", {
+      ...activeRequester,
+      links: [
+        ...activeRequester.links,
+        {
+          rel: "VIEW",
+          labelId: "endpoint.people.history.label",
+          link: { endpoint: "people.history", input: { limit: 20 } },
+        },
+      ],
+    }),
+  });
+  mockEndpoint("case.get").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: humanReadReply("case.get", current),
+  });
+  const document = timelineDocument([]);
+  mockEndpoint(endpoint).mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: {
+      representation: "HUMAN",
+      outcome: {
+        kind: "SUCCEEDED",
+        document: { ...document, disclosure: endpoint === "case.timeline" ? "FULL" : "CURRENT" },
+      },
+    },
+  });
+  const create = vi.fn(() => "blob:export");
+  const NativeURL = URL;
+  vi.stubGlobal(
+    "URL",
+    class extends NativeURL {
+      static override createObjectURL = create;
+      static override revokeObjectURL = vi.fn();
+    },
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(vi.fn());
+  const pending: {
+    reply: PromiseWithResolvers<Response>;
+    signal: AbortSignal | null | undefined;
+  }[] = [];
+  vi.mocked(fetch).mockImplementation((_, init) => {
+    const reply = Promise.withResolvers<Response>();
+    pending.push({ reply, signal: init?.signal });
+    return reply.promise;
+  });
+  const payload = "Scope,record\r\n";
+  const download = () =>
+    new Response(payload, {
+      headers: {
+        "content-type": csvExportTransport.mediaType,
+        "content-length": String(payload.length),
+        "content-encoding": "identity",
+        "content-disposition": `attachment; filename="${csvExportTransport.filenames[endpoint]}"`,
+        "ClaimCore-Installation": installationId,
+      },
+    });
+
+  const user = userEvent.setup();
+  render(<Dashboard />);
+  if (endpoint === "case.summary") {
+    await user.click(await screen.findByRole("combobox", { name: "Group by" }));
+    await user.click(await screen.findByRole("option", { name: "Received month" }));
+  }
+  const exportButton = () => screen.getByRole("button", { name: label });
+  await waitFor(() => {
+    expect(exportButton()).toBeEnabled();
+  });
+  await user.click(exportButton());
+  await waitFor(() => {
+    expect(pending).toHaveLength(1);
+  });
+  await flush(() =>
+    Promise.resolve().then(() => {
+      pending[0]!.reply.resolve(download());
+    }),
+  );
+  await waitFor(() => {
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  await user.click(exportButton());
+  await waitFor(() => {
+    expect(pending).toHaveLength(2);
+  });
+  await flush(() =>
+    Promise.resolve().then(() => {
+      navigate("/settings");
+    }),
+  );
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(pending[1]!.signal?.aborted).toBe(true);
+
+  // Even a transport that delivers after abort cannot create a Blob, including after return.
+  await flush(() =>
+    Promise.resolve().then(() => {
+      navigate(path);
+    }),
+  );
+  await flush(() =>
+    Promise.resolve().then(() => {
+      pending[1]!.reply.resolve(download());
+    }),
+  );
+  expect(create).toHaveBeenCalledTimes(1);
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: label })).toBeEnabled();
+  });
 });

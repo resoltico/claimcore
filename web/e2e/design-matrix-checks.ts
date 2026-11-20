@@ -24,6 +24,18 @@ import type { MatrixRoute } from "./design-matrix-fixtures";
 export const displayLocaleFor = (language: Dimension["language"]) =>
   presentationDisplayOptions.find((option) => option.language === language)?.value ??
   presentationDefaults.displayLocale;
+const assertQueueOrReport = async (page: Page, route: MatrixRoute) => {
+  if (route.id === "cases-summary") {
+    await expect(page.locator(".summary-band")).toBeVisible();
+    await expect(page.locator(".summary-band[role=status], .summary-band[role=alert]")).toHaveCount(
+      0,
+    );
+  }
+  if (route.id.startsWith("cases-") && route.id !== "cases-summary") {
+    await expect(page.locator(".summary-band")).toHaveCount(0);
+    await expect(page.locator('.view-tabs [role="tab"][aria-selected="true"]')).toHaveCount(1);
+  }
+};
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
   await page.setViewportSize({
@@ -75,13 +87,7 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator('.region-notice[data-tone="FINAL"]')).toBeVisible();
     await expect(page.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
   }
-  if (route.id.startsWith("cases-")) {
-    await expect(page.locator(".summary-band")).toBeVisible();
-    await expect(page.locator(".summary-band[role=status], .summary-band[role=alert]")).toHaveCount(
-      0,
-    );
-    await expect(page.locator('.view-tabs [role="tab"][aria-selected="true"]')).toHaveCount(1);
-  }
+  await assertQueueOrReport(page, route);
   if (route.id.startsWith("case-")) {
     await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
     await expect(
@@ -315,14 +321,6 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();
     await expect(summary).toBeInViewport({ ratio: 1 });
-  }
-  if (route.summaryExpanded === true) {
-    await expect(page.locator(".summary-band")).toBeVisible();
-    await expect(page.locator(".summary-band[role=status]")).toHaveCount(0);
-    const disclosure = page.locator("details.summary-band");
-    if (await disclosure.count()) {
-      await disclosure.locator("summary").click();
-    }
   }
   const observed = apiRequests();
   if (route.id === "not-found") {

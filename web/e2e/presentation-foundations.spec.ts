@@ -335,7 +335,19 @@ for (const language of ["en", "ar"] as const) {
       const mobile = width === 320;
       await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
       await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
-      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(mobile ? 0 : 1);
+      const recovery = page.locator('nav a[href="/recovery"]');
+      await expect(recovery).toHaveCount(1);
+      if (mobile) {
+        await expect(recovery).toBeHidden();
+        const trigger = page.locator(".compact-navigation > summary");
+        await trigger.focus();
+        await page.keyboard.press("Enter");
+        await expect(recovery).toBeVisible();
+        await expect(page.locator('.workspace-header a[href="/cases?view=ALL"]')).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(trigger).toBeFocused();
+        await expect(recovery).toBeHidden();
+      }
       await expect(page.locator(".shell-business-date")).toHaveCount(1);
       const overflow = await page.evaluate(() => ({
         document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -352,6 +364,43 @@ for (const language of ["en", "ar"] as const) {
     });
   }
 }
+for (const language of ["de", "ar"] as const) {
+  test(`compact keyboard Back restores the Recovery link in ${language} @engine`, async ({
+    page,
+  }) => {
+    await observe(page, true);
+    await seed(page, { language });
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto("/cases?view=ALL");
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    const menu = page.locator(".compact-navigation");
+    const trigger = menu.locator(":scope > summary");
+    const recovery = menu.getByRole("link", { name: new RegExp(ui(language, "ui.recovery"), "u") });
+    await trigger.press("Enter");
+    await expect(recovery).toBeVisible();
+    await recovery.press("Enter");
+    const heading = page.getByRole("heading", { name: ui(language, "ui.recovery"), exact: true });
+    await expect(heading).toBeFocused();
+    await expect(recovery).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
+    await expect(recovery).toBeFocused();
+    await expect(menu).toHaveAttribute("open", "");
+    if (language === "de") {
+      const [newTab] = await Promise.all([
+        page.context().waitForEvent("page"),
+        recovery.click({ modifiers: ["ControlOrMeta"] }),
+      ]);
+      try {
+        await newTab.waitForURL(/\/recovery$/u);
+        await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
+      } finally {
+        await newTab.close();
+      }
+    }
+  });
+}
+
 test("a busy read shows one notice and waits for explicit retry under CSP", async ({
   page,
   browserName,
@@ -648,14 +697,14 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await page.goto("/cases", {
     waitUntil: "commit",
   });
-  await expect(page).toHaveURL(/\/cases\?view=OVERDUE$/u);
+  await expect(page).toHaveURL(/\/cases\?view=NEEDS_ATTENTION$/u);
   const views = page
     .getByRole("tablist", {
       name: "Case view",
     })
     .getByRole("tab");
   await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
-  await expect(views.first()).toHaveAttribute("aria-selected", "true");
+  await expect(views.last()).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".table-view tbody")).toContainText("Paid");
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
@@ -668,7 +717,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   expect(requests).toEqual([
     {
       limit: 50,
-      view: "OVERDUE",
+      view: "NEEDS_ATTENTION",
     },
   ]);
   await expectAccessible(page);
@@ -1705,7 +1754,16 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                 },
                 subject: { kind: "LIST" },
                 actions: [],
-                links: [],
+                links: [
+                  {
+                    rel: "OPEN_CASE",
+                    labelId: "field.caseReference.label",
+                    link: {
+                      endpoint: "case.get",
+                      input: { target: { kind: "ID", caseId } },
+                    },
+                  },
+                ],
                 history: null,
                 nextCursor: null,
                 basis: {
@@ -2717,6 +2775,8 @@ test("People uses core roles and state without row reads and forwards known-zero
     })
     .click();
   await expect.poll(() => listInputs.length).toBe(1);
+  expect(summaryInputs).toEqual([]);
+  await page.getByRole("link", { name: "Case report", exact: true }).click();
   await expect.poll(() => summaryInputs.length).toBe(1);
   expect(listInputs).toEqual([
     {

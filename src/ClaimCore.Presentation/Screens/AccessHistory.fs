@@ -68,25 +68,21 @@ module AccessHistoryScreen =
         let items =
             rows
             |> List.map (fun (item: PeopleHistoryEntry) ->
-                let sections =
-                    peopleHistory item
-                    |> List.map (fun section ->
-                        let visible =
-                            section.Entries
-                            |> List.filter (fun entry ->
-                                not (technical entry)
-                                && not (
-                                    List.contains entry.Key [ "recordedAt"; "recordedBy"; "act" ]
-                                ))
-
-                        { section with Entries = visible })
+                let changes, _ =
+                    ReviewScreen.describePart
+                        item.References
+                        (ActorId.value item.Target.ActorId)
+                        (ClaimCore.Domain.Changes.PartDescription.Person item.Changes)
 
                 {
-                    RegionTimelineEntry.Key = EffectPosition.format item.Position
-                    Link =
-                        item.References.Cases
-                        |> List.tryHead
-                        |> Option.map (fun item -> Link.caseById item.CaseId)
+                    RegionTimelineEntry.Key =
+                        EffectPosition.format item.Position
+                        + "."
+                        + OperationId.format item.OperationId
+                    Link = Some(Link.person item.Target.ActorId)
+                    Target = Some(PresentedValue.Actor item.Target)
+                    Changes = changes
+                    ChangedFields = TimelineScreen.changedFieldLabels changes []
                     Actions = []
                     When = item.RecordedAt
                     Who = ActorPresentation.authorityValue item.RecordedBy
@@ -95,27 +91,34 @@ module AccessHistoryScreen =
                             MessageId = "task." + TaskId.token item.Task + ".label"
                             Arguments = Map.empty
                         }
-                    Highlights = sections
-                    Details = []
+                    Highlights =
+                        [
+                            section
+                                "label.changes"
+                                [
+                                    if not item.PrivateAvailable then
+                                        value
+                                            "privateContent"
+                                            "label.changes"
+                                            Prominence.Secondary
+                                            (PresentedValue.Absent "label.changesErased")
+                                    else
+                                        value
+                                            "changes"
+                                            "label.changes"
+                                            Prominence.Secondary
+                                            (PresentedValue.Count(int64 changes.Length))
+                                ]
+                        ]
+                    Details =
+                        [
+                            section
+                                "label.recordDetails"
+                                (entries peopleHistoryColumns item |> List.filter technical)
+                        ]
                 })
 
-        let details =
-            rows
-            |> List.collect (fun item ->
-                peopleHistory item
-                |> List.collect _.Entries
-                |> List.filter technical
-                |> List.map (fun entry ->
-                    { entry with
-                        Key = EffectPosition.format item.Position + "." + entry.Key
-                    }))
-
-        Screen.create
-            [
-                region RegionRole.Activity None (RegionContent.Timeline items)
-                if not details.IsEmpty then
-                    entryRegion RegionRole.Details (Some "label.recordDetails") details
-            ]
+        Screen.create [ region RegionRole.Activity None (RegionContent.Timeline items) ]
 
     let view (reply: PeopleHistoryPage) =
         rows reply.Entries |> page reply.Basis reply.Entries.Length reply.NextCursor

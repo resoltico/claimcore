@@ -22,8 +22,8 @@ module internal ConflictReads =
         (conflict: RevisionConflictInfo)
         =
         task {
-            match parent, actor.Actor with
-            | Some parent, Some requester when
+            match parent, actor.Actor, entity with
+            | Some parent, Some requester, Some entity when
                 Access.can
                     services.Principal
                     actor
@@ -115,7 +115,25 @@ module internal ConflictReads =
                 | None -> return Error CoreFault.StoreIntegrityError
                 | Some expected ->
                     let! result = explain services tx actor parent entity expected conflict
-                    return result |> Result.map Refusal.RevisionConflict
+
+                    let readableCase =
+                        if
+                            CaseRecords.authorize
+                                services.Principal
+                                actor
+                                Capability.ReadCase
+                                parent
+                        then
+                            parent |> Option.map _.CaseId
+                        else
+                            None
+
+                    return
+                        result
+                        |> Result.map (
+                            RevisionConflictInfo.offerCaseRead readableCase
+                            >> Refusal.RevisionConflict
+                        )
             | _ -> return Ok refusal
         }
 

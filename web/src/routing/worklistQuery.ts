@@ -13,6 +13,12 @@ import {
 
 export type WorklistQuery = CaseListSelection;
 export const reportDateFields = caseSelectionDateFields;
+export const invalidCaseDateEnd = (selection: WorklistQuery) =>
+  caseSelectionDateRanges.find(([lower, upper]) => {
+    const first = selection[lower];
+    const last = selection[upper];
+    return first !== undefined && last !== undefined && first > last;
+  })?.[1];
 
 type SelectionFragment = {
   position: number;
@@ -184,6 +190,7 @@ export const repairWorklistQuery = (
   fragments: ReadonlyArray<SelectionFragment>,
   issue: SelectionIssue,
   values: ReadonlyArray<string>,
+  path = "/cases",
 ): string => {
   const remaining = fragments
     .filter((fragment) => !issue.fragments.includes(fragment))
@@ -196,10 +203,10 @@ export const repairWorklistQuery = (
     }
     remaining.push(replacement.toString());
   }
-  return remaining.length === 0 ? "/cases" : `/cases?${remaining.join("&")}`;
+  return remaining.length === 0 ? path : `${path}?${remaining.join("&")}`;
 };
 
-export const worklistPath = (query: WorklistQuery): string => {
+export const worklistPath = (query: WorklistQuery, path = "/cases"): string => {
   const params = new URLSearchParams();
   if (query.view !== undefined) {
     params.set("view", query.view);
@@ -226,7 +233,7 @@ export const worklistPath = (query: WorklistQuery): string => {
     }
   }
   const suffix = params.toString();
-  return suffix === "" ? "/cases" : `/cases?${suffix}`;
+  return suffix === "" ? path : `${path}?${suffix}`;
 };
 export const listRequest = (query: WorklistQuery, cursor: string | null): CaseListRequest => ({
   ...query,

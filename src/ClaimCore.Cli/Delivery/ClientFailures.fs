@@ -13,6 +13,7 @@ type CliReply =
         Frame: FrameReply
         Bytes: byte array
         ExitCode: int
+        HostContractIdentity: string option
     }
 
 module CliReply =
@@ -21,6 +22,7 @@ module CliReply =
             Frame = frame
             Bytes = Frames.encode frame
             ExitCode = Frames.exitCode frame
+            HostContractIdentity = None
         }
 
     let private decode (reply: CliReply) = reply.Frame
@@ -34,6 +36,7 @@ module CliReply =
             Frame = frame
             Bytes = bytes
             ExitCode = Frames.exitCode frame
+            HostContractIdentity = None
         }
 
     let private initial result =
@@ -117,12 +120,21 @@ module CliReply =
 
         frame invocation delivery (FrameResult.HostFailure failure) |> encoded
 
+    let withHostContractIdentity identity reply =
+        { reply with
+            HostContractIdentity = identity
+        }
+
     let forAttempt invocation delivery reply =
         let decoded = decode reply
-        frame invocation delivery decoded.Result |> encoded
+
+        frame invocation delivery decoded.Result
+        |> encoded
+        |> withHostContractIdentity reply.HostContractIdentity
 
     let unknown reply =
         { decode reply with
             Delivery = DeliveryState.Uncertain
         }
         |> encoded
+        |> withHostContractIdentity reply.HostContractIdentity

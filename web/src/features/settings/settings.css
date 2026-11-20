@@ -134,3 +134,9 @@
   flex-wrap: wrap;
   min-inline-size: 0;
 }
+
+.settings-session-group {
+  margin-block: var(--space-6);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-subtle);
+}

@@ -136,7 +136,16 @@ const conflictDocument = (
   },
   subject: { kind: "LIST" },
   actions: [],
-  links: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+      },
+    },
+  ],
   history: null,
   nextCursor,
   basis: {
@@ -169,7 +178,16 @@ const withheldConflictDocument: HumanDocument = {
   },
   subject: { kind: "LIST" },
   actions: [],
-  links: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+      },
+    },
+  ],
   history: null,
   nextCursor: null,
   basis: {

@@ -172,6 +172,29 @@ let internal factsAndPaging fixture =
             "Actor filter means target, not executor"
 
         let! filteredFirst = read owner (Some(ActorId.value targetId)) None 1
+
+        let! filteredSecond =
+            read owner (Some(ActorId.value targetId)) (page filteredFirst).NextCursor 2
+
+        let! filteredLast =
+            read owner (Some(ActorId.value targetId)) (page filteredSecond).NextCursor 2
+
+        Expect.equal
+            ([ filteredFirst; filteredSecond; filteredLast ]
+             |> List.collect (page >> _.Entries))
+            (page filtered).Entries
+            "Filtered pages cross interleaved other actors without repeats or foreign entries"
+
+        Expect.isNone (page filteredLast).NextCursor "The actor-scoped traversal is complete"
+
+        let! globalCursor =
+            read owner (Some(ActorId.value targetId)) (page first).NextCursor 2
+
+        Expect.equal
+            globalCursor
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "Global cursor cannot enter actor scope"
+
         let! wrongFilter = read owner None (page filteredFirst).NextCursor 1
 
         Expect.equal

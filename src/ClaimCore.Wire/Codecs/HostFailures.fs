@@ -7,6 +7,9 @@ open ClaimCore.Application.Contracts
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HostFailureReason =
+    [<Literal>]
+    let ContractIdentityHeader = "ClaimCore-Host-Contract"
+
     // Reasons and wire codes are separate sets: dispatch reasons share INTERNAL and differ by phase.
     let vocabulary =
         Vocabulary.ofUnion<HostFailureReason> "host-reason" TokenCasing.ScreamingSnake None

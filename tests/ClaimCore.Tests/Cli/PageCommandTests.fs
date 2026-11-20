@@ -362,11 +362,78 @@ let private snapshot success wrongRoute serialize =
     Expect.equal exchanges 1 "The snapshot uses exactly one exchange"
     code, List.ofSeq output, List.ofSeq errors, serializations
 
+let private mismatchCsv () =
+    for arguments, paged in
+        [
+            [ "case"; "list"; "--format"; "csv" ], true
+            [ "case"; "get"; "CSV-SNAPSHOT" ], false
+        ] do
+        let initial =
+            Grammar.prepare (fun () -> failtest "Read must not allocate an ID") arguments
+            |> CaseBuilders.accepted
+
+        let prepared = { initial with Format = VerbFormat.Csv }
+
+        let declaration =
+            EndpointDeclarations.find (Frames.endpoint prepared.Invocation).Token
+            |> Option.get
+
+        let declaredCsv = { declaration with Csv = true }
+        let expectedHost = String.replicate 64 "a"
+        use errors = new MemoryStream()
+        let mutable count = 0
+
+        let io =
+            {
+                Exchange =
+                    fun frame _ ->
+                        count <- count + 1
+
+                        let reply =
+                            CliReply.serviceFailure
+                                frame
+                                {
+                                    Code = HostFailureCode.ContractMismatch
+                                    Phase = Some ExecutionPhase.NotStarted
+                                }
+
+                        let identified = CliReply.withHostContractIdentity (Some expectedHost) reply
+
+                        Expect.equal
+                            identified.Bytes
+                            reply.Bytes
+                            "Local response metadata never changes machine JSON"
+
+                        Task.FromResult identified
+                Deliver = fun _ _ -> failtest "CSV failure must not print a machine frame"
+                Output = ignore
+                Errors = fun bytes -> errors.Write bytes
+            }
+
+        let code =
+            ReadCommand.runWith
+                { Width = 100; BoldHeader = false }
+                declaredCsv
+                io
+                prepared
+                CancellationToken.None
+            |> _.GetAwaiter().GetResult()
+
+        Expect.equal count 1 "A mismatch cannot cause a repeat request"
+        Expect.equal code 3 "The typed host mismatch preserves its exit"
+        Expect.equal declaration.Paged paged "Each acquisition branch is exercised"
+        let output = Encoding.UTF8.GetString(errors.ToArray())
+        Expect.stringContains output expectedHost "CSV stderr names the admitted host contract"
+        Expect.stringContains output ContractIdentity.value "CSV stderr names the local contract"
+
 [<Tests>]
 let snapshotCsvTests =
     testList
         "native CSV snapshot acquisition"
         [
+            testCase
+                "paged and snapshot CSV failures keep typed host identity on stderr"
+                mismatchCsv
             testCase "one nonpaged DATA response serializes the complete CSV" (fun () ->
                 let code, output, errors, calls = snapshot true false true
                 Expect.equal code 0 "The admitted snapshot succeeded"

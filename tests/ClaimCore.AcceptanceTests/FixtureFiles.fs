@@ -92,8 +92,26 @@ let private ephemeralRanges =
 
             first, last)
 
+let private portBounds =
+    match Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_PORT_RANGE" with
+    | null -> 10000, 32767
+    | raw ->
+        let invalid () =
+            invalidOp "CLAIMCORE_ACCEPTANCE_PORT_RANGE must be FIRST-LAST within 10000-32767."
+
+        match raw.Split('-') with
+        | [| first; last |] ->
+            match
+                Int32.TryParse(first, NumberStyles.None, CultureInfo.InvariantCulture),
+                Int32.TryParse(last, NumberStyles.None, CultureInfo.InvariantCulture)
+            with
+            | (true, first), (true, last) when first >= 10000 && last <= 32767 && first <= last ->
+                first, last
+            | _ -> invalid ()
+        | _ -> invalid ()
+
 let private portGate = obj ()
-let mutable private nextPort = 10000
+let mutable private nextPort = fst portBounds
 
 // Keep service listeners out of kernel/Docker dynamic allocation and never reuse a port in this process.
 // Chromium blocks Amanda port 10080, the only restricted port in our candidate range.
@@ -101,7 +119,7 @@ let port () =
     lock portGate (fun () ->
         let mutable selected = None
 
-        while selected.IsNone && nextPort < 32768 do
+        while selected.IsNone && nextPort <= snd portBounds do
             let candidate = nextPort
             nextPort <- nextPort + 1
 

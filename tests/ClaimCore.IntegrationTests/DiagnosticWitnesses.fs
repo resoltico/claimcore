@@ -81,10 +81,16 @@ let internal diagnostic reason =
     let reply = RepresentationReply.Data(Outcome<CaseReadModel>.Rejected reason)
     let encoded = Codec.encode Api.caseGet.Output reply
 
+    let dataReason =
+        match reason with
+        | Refusal.RevisionConflict conflict ->
+            Refusal.RevisionConflict(RevisionConflictInfo.offerCaseRead None conflict)
+        | _ -> reason
+
     Expect.equal
         (Codec.decode Limits.MaximumResponseBytes Api.caseGet.Output encoded)
-        (Ok reply)
-        "Every request-produced refusal crosses the typed Wire boundary"
+        (Ok(RepresentationReply.Data(Outcome<CaseReadModel>.Rejected dataReason)))
+        "Every DATA refusal round-trips its fields, independently of HUMAN navigation"
 
     use document = JsonDocument.Parse(encoded.AsMemory())
 

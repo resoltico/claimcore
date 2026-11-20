@@ -128,6 +128,8 @@ type internal ShellSession
                         processor
                         arguments
                         token
+            | Ok(CliInvocation.Configure None) ->
+                return unsupported (UsageError.NotApplicable("--show", "shell"))
             | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
                 return unsupported (UsageError.NotApplicable("command", "shell"))
             | Ok invocation ->

@@ -4,6 +4,7 @@ import { Button } from "../ui/Button";
 import { presentationLanguageOptions, presentationPseudolanguage } from "@contracts/client";
 import { SettingsPanel } from "../features/settings/SettingsPanel";
 import { rememberLoginReturn } from "../routing/loginReturn";
+import { loginPath } from "../routing/loginPath";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { productMetadata } from "../protocol/productMetadata";
@@ -32,7 +33,7 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
             <NoticeView value={message} />
           </p>
         )}
-        <a className="login-link" href="/auth/login" onClick={rememberLoginReturn}>
+        <a className="login-link" href={loginPath(p.language)} onClick={rememberLoginReturn}>
           {p.text("ui.signIn")}
         </a>
       </section>

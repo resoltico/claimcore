@@ -26,7 +26,7 @@ import {} from "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
 import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
-import { WorkspaceHeader } from "./WorkspaceHeader";
+import { isWorkspaceLinkId, WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -35,7 +35,7 @@ import { useEndpoint } from "../hooks/useEndpoint";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { usePresentation } from "../presentation/context";
 import { NoticeView, Message } from "../presentation/Message";
-import { useRoute } from "../routing/useRoute";
+import { useFocusActivation, useRoute } from "../routing/useRoute";
 import { type Route, casePath } from "../routing/routes";
 
 import { navigate, takeRouteFocus, setRouteFocusOwner } from "../routing/navigation";
@@ -88,7 +88,8 @@ const useInitialAllowedRoute = (
   }, [route, views, known]);
 };
 const routeFocusTarget = (root: HTMLElement, id: string | null) => {
-  const requested = id === null ? null : document.getElementById(id);
+  const elementAtId = id === null ? null : document.getElementById(id);
+  const requested = elementAtId?.closest("[hidden],[inert]") === null ? elementAtId : null;
   const heading =
     [...root.querySelectorAll<HTMLElement>("h1")].find(
       (candidate) => candidate.closest("[hidden],[inert]") === null,
@@ -109,11 +110,17 @@ const moveRouteFocus = (element: HTMLElement, scrollY: number | null) => {
     window.scrollTo(0, scrollY);
   }
 };
-const useRouteHeading = (route: Route, owner: string | null, ready: boolean) => {
+const useRouteHeading = (
+  route: Route,
+  owner: string | null,
+  { loading, admitted }: { loading: boolean; admitted: boolean },
+) => {
   const identity = `${owner}:${route.screen === "cases" ? "cases" : JSON.stringify(route)}`;
+  const activation = useFocusActivation();
   const content = useRef<HTMLDivElement>(null);
   const focused = useRef<{
     identity: string;
+    activation: number;
     id: string | null;
     scrollY: number | null;
     complete: boolean;
@@ -124,27 +131,37 @@ const useRouteHeading = (route: Route, owner: string | null, ready: boolean) => 
       return;
     }
     const intent =
-      focused.current?.identity === identity
+      focused.current?.identity === identity && focused.current.activation === activation.revision
         ? focused.current
-        : { identity, ...(takeRouteFocus() ?? { id: null, scrollY: null }), complete: false };
+        : {
+            identity,
+            activation: activation.revision,
+            ...(takeRouteFocus() ?? { id: null, scrollY: null }),
+            complete: false,
+          };
     focused.current = intent;
     if (intent.complete) {
       return;
     }
     const { id, scrollY } = intent;
     const focus = () => {
-      if (!ready) {
+      // The departure guard is portaled and can outlive the route render.
+      if (loading || document.querySelector("[data-navigation-guard]") !== null) {
         return false;
       }
-      if (id !== null && target.querySelector('[aria-busy="true"]') !== null) {
-        return false;
-      }
-      const destination = routeFocusTarget(target, id);
-      if (destination.element === null) {
+      const { element, restored } = routeFocusTarget(target, id);
+      const busy = '[aria-busy="true"]';
+      // The shell renders all offered links as soon as the requester is admitted.
+      const waitingForContent = id !== null && !restored && !(admitted && isWorkspaceLinkId(id));
+      if (
+        element === null ||
+        (restored && element.closest(busy) !== null) ||
+        (waitingForContent && target.querySelector(busy) !== null)
+      ) {
         return false;
       }
       intent.complete = true;
-      moveRouteFocus(destination.element, destination.restored ? scrollY : null);
+      moveRouteFocus(element, restored ? scrollY : null);
       return true;
     };
     if (focus()) {
@@ -165,17 +182,17 @@ const useRouteHeading = (route: Route, owner: string | null, ready: boolean) => 
     const options = { capture: true, signal: cancellation.signal };
     document.addEventListener("pointerdown", interrupt, options);
     document.addEventListener("keydown", interrupt, options);
-    observer.observe(target, {
+    observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["aria-busy"],
+      attributeFilter: ["aria-busy", "hidden", "inert"],
     });
     return () => {
       observer.disconnect();
       cancellation.abort();
     };
-  }, [identity, ready]);
+  }, [identity, loading, admitted, activation.revision]);
   return content;
 };
 const WorkspaceStatus = ({
@@ -568,7 +585,10 @@ export const Dashboard = () => {
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
-  const content = useRouteHeading(route, focusScope, !context.loading);
+  const content = useRouteHeading(route, focusScope, {
+    loading: context.loading,
+    admitted: actorContext !== null,
+  });
   const businessDate = useBusinessDate(actorContext);
   const tasks = requesterTasks(actorContext);
   const committed = (receipt: CaseLinkedReceipt, operationId: string) => {
@@ -601,7 +621,6 @@ export const Dashboard = () => {
                 <WorkspaceHeader
                   route={route}
                   presentation={presentation}
-                  openCase={caseNavigation.openCase}
                   active={route.screen === "reminders" ? "reminders" : active}
                   views={views}
                   tasks={tasks}

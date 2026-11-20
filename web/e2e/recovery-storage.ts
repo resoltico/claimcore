@@ -1,14 +1,21 @@
 import type { Page } from "@playwright/test";
 
 /** Inspect committed native state independently of the application adapter. */
-export const recoveryRecords = (page: Page): Promise<Record<string, unknown>[]> =>
+export const recoveryRecords = (
+  page: Page,
+  { allowMissing = false }: { allowMissing?: boolean } = {},
+): Promise<Record<string, unknown>[]> =>
   page.evaluate(
-    () =>
+    (missingIsEmpty) =>
       new Promise<Record<string, unknown>[]>((resolve, reject) => {
         const request = indexedDB.open("claimcore.recovery", 1);
         request.onupgradeneeded = () => {
           request.transaction?.abort();
-          reject(new Error("Expected an existing committed recovery database"));
+          if (missingIsEmpty) {
+            resolve([]);
+          } else {
+            reject(new Error("Expected an existing committed recovery database"));
+          }
         };
         request.onerror = () => {
           reject(new Error("Recovery inspection could not open storage"));
@@ -33,4 +40,5 @@ export const recoveryRecords = (page: Page): Promise<Record<string, unknown>[]> 
           tx.onerror = failed;
         };
       }),
+    allowMissing,
   );

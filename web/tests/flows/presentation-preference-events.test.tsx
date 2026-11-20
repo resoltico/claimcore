@@ -24,7 +24,7 @@ it("applies batched preference changes to current state even through a stale eve
     language: "ar",
     displayLocale: "lv-LV",
     mode: "system" as const,
-    accent: "green" as const,
+    accent: "blue" as const,
   });
   act(() => {
     stale({ kind: "DISPLAY_LOCALE", displayLocale: "ar-EG" });
@@ -60,7 +60,7 @@ it("preserves the independent preference through bounded reproducible event sequ
       ({ displayLocale } = change);
     }
     actual = changePreferences(actual, change);
-    expect(actual).toEqual({ language, displayLocale, mode: "system", accent: "green" as const });
+    expect(actual).toEqual({ language, displayLocale, mode: "system", accent: "blue" as const });
     expect(before).not.toBe(actual);
   }
 });

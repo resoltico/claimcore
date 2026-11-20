@@ -7,6 +7,8 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 
+type internal RetainedAttachmentMetadataMatch = RetainedAttachmentMetadataMatch of AttachmentId
+
 /// Attachment binary values stay out of root and projection reads.
 module internal AttachmentStorage =
     let private corrupt () =
@@ -140,7 +142,7 @@ module internal AttachmentStorage =
         AttachmentIntent.length left = AttachmentIntent.length right
         && AttachmentIntent.digest left = AttachmentIntent.digest right
 
-    let private storedBytes (tx: ReadTx) caseId blob requested =
+    let private origin (tx: ReadTx) caseId blob =
         task {
             let! rows =
                 DatabaseSession.rows
@@ -155,77 +157,77 @@ module internal AttachmentStorage =
                     tx.CancellationToken
 
             match rows with
-            | [ origin ] ->
-                let! change = accepted tx caseId origin
+            | [ row ] ->
+                let! change = accepted tx caseId row
 
                 match change.Value with
                 | PartValue.Attachment(AttachmentEffect.Added(true, Some descriptor)) when
-                    descriptor.Blob = blob && agrees requested descriptor.Intent
+                    descriptor.Blob = blob
+                    && DatabaseSession.optional<int64> 3 row =
+                        Some(AttachmentIntent.length descriptor.Intent)
+                    && DatabaseSession.optional<byte array> 4 row =
+                        Some(
+                            AttachmentIntent.digest descriptor.Intent
+                            |> AttachmentDigest.value
+                            |> Convert.FromHexString
+                        )
                     ->
-                    let length = AttachmentIntent.length descriptor.Intent
-
-                    let digest =
-                        AttachmentIntent.digest descriptor.Intent
-                        |> AttachmentDigest.value
-                        |> Convert.FromHexString
-
-                    if
-                        DatabaseSession.optional<int64> 3 origin <> Some length
-                        || DatabaseSession.optional<byte array> 4 origin <> Some digest
-                    then
-                        return corrupt ()
-                    else
-                        use command =
-                            DatabaseSession.statement
-                                tx.Connection
-                                """
-                                SELECT payload FROM claimcore.attachment_blobs
-                                WHERE case_id=$1 AND blob_id=$2 AND octet_length(payload)=$3
-                                """
-                                [| family caseId; identity blob; box length |]
-
-                        use! reader =
-                            command.ExecuteReaderAsync(
-                                CommandBehavior.SequentialAccess,
-                                tx.CancellationToken
-                            )
-
-                        let! present = reader.ReadAsync(tx.CancellationToken)
-
-                        if not present then
-                            return corrupt ()
-                        else
-                            use stream = reader.GetStream 0
-                            let bytes = Array.zeroCreate (int length)
-                            do! stream.ReadExactlyAsync(Memory bytes, tx.CancellationToken)
-                            return descriptor, bytes
+                    return descriptor
                 | _ -> return corrupt ()
             | _ -> return corrupt ()
         }
 
-    let read tx caseId (descriptor: AttachmentDescriptor) =
+    let private storedBytes (tx: ReadTx) caseId (descriptor: AttachmentDescriptor) =
         task {
-            let! _, bytes = storedBytes tx caseId descriptor.Blob descriptor.Intent
+            let length = AttachmentIntent.length descriptor.Intent
 
-            return
-                VerifiedAttachment.verify descriptor.Intent (ReadOnlyMemory bytes)
-                |> Option.defaultWith corrupt
+            use command =
+                DatabaseSession.statement
+                    tx.Connection
+                    """
+                    SELECT payload FROM claimcore.attachment_blobs
+                    WHERE case_id=$1 AND blob_id=$2 AND octet_length(payload)=$3
+                    """
+                    [| family caseId; identity descriptor.Blob; box length |]
+
+            use! reader =
+                command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, tx.CancellationToken)
+
+            let! present = reader.ReadAsync(tx.CancellationToken)
+
+            if not present then
+                return corrupt ()
+            else
+                use stream = reader.GetStream 0
+                let bytes = Array.zeroCreate (int length)
+                do! stream.ReadExactlyAsync(Memory bytes, tx.CancellationToken)
+                return bytes
         }
 
-    let findMatch (tx: ReadTx) caseId verified =
+    let read tx caseId (descriptor: AttachmentDescriptor) =
         task {
-            let wanted = VerifiedAttachment.intent verified
+            let! accepted = origin tx caseId descriptor.Blob
 
-            let digest =
-                AttachmentIntent.digest wanted
-                |> AttachmentDigest.value
-                |> Convert.FromHexString
+            if not (agrees descriptor.Intent accepted.Intent) then
+                return corrupt ()
+            else
+                let! bytes = storedBytes tx caseId accepted
 
+                return
+                    VerifiedAttachment.verify descriptor.Intent (ReadOnlyMemory bytes)
+                    |> Option.defaultWith corrupt
+        }
+
+    let private retainedMetadata (tx: ReadTx) caseId digest =
+        task {
             let! matches =
                 DatabaseSession.rows
                     tx.Connection
                     "SELECT blob_id FROM claimcore.attachment_blobs WHERE case_id=$1 AND digest=$2"
-                    [| family caseId; box digest |]
+                    [|
+                        family caseId
+                        box (AttachmentDigest.value digest |> Convert.FromHexString)
+                    |]
                     tx.CancellationToken
 
             match matches with
@@ -235,10 +237,9 @@ module internal AttachmentStorage =
                     DatabaseSession.value<Guid> 0 row
                     |> DatabaseSession.admitted AttachmentId.create
 
-                let! descriptor, bytes = storedBytes tx caseId blob wanted
+                let! descriptor = origin tx caseId blob
 
-                // The accepting links are authoritative; omission or damage to list membership
-                // cannot turn an already-current exact match into a second attachment.
+                // The accepting links remain authoritative even if list membership is missing.
                 let! active =
                     DatabaseSession.rows
                         tx.Connection
@@ -252,36 +253,57 @@ module internal AttachmentStorage =
                         [| family caseId; identity blob |]
                         tx.CancellationToken
 
-                let! current =
-                    task {
-                        match active with
-                        | [] -> return None
-                        | [ row ] ->
-                            let id =
-                                DatabaseSession.value<Guid> 0 row
-                                |> DatabaseSession.admitted AttachmentId.create
+                match active with
+                | [] -> return Some(descriptor, None)
+                | [ row ] ->
+                    let id =
+                        DatabaseSession.value<Guid> 0 row
+                        |> DatabaseSession.admitted AttachmentId.create
 
-                            let! accepted = current tx caseId id
+                    let! live = current tx caseId id
 
-                            match accepted |> Option.map _.Value with
-                            | Some(PartValue.Attachment(AttachmentEffect.Added(_, Some live))) when
-                                live.Blob = blob && agrees wanted live.Intent
-                                ->
-                                return Some id
-                            | _ -> return corrupt ()
-                        | _ -> return corrupt ()
-                    }
+                    match live |> Option.map _.Value with
+                    | Some(PartValue.Attachment(AttachmentEffect.Added(_, Some attachment))) when
+                        attachment.Blob = blob && agrees descriptor.Intent attachment.Intent
+                        ->
+                        return Some(descriptor, Some id)
+                    | _ -> return corrupt ()
+                | _ -> return corrupt ()
+            | _ -> return corrupt ()
+        }
+
+    let findMetadataMatch tx caseId intent =
+        task {
+            let! retained = retainedMetadata tx caseId (AttachmentIntent.digest intent)
+
+            return
+                retained
+                |> Option.bind (fun (descriptor, current) ->
+                    if agrees intent descriptor.Intent then
+                        current |> Option.map RetainedAttachmentMetadataMatch
+                    else
+                        None)
+        }
+
+    let findMatch tx caseId verified =
+        task {
+            let wanted = VerifiedAttachment.intent verified
+            let! retained = retainedMetadata tx caseId (AttachmentIntent.digest wanted)
+
+            match retained with
+            | None -> return None
+            | Some(descriptor, current) ->
+                let! bytes = storedBytes tx caseId descriptor
 
                 return
                     RetainedAttachmentMatch.verify
                         verified
-                        blob
+                        descriptor.Blob
                         descriptor
                         current
                         (ReadOnlySpan<byte> bytes)
                     |> Option.map Some
                     |> Option.defaultWith corrupt
-            | _ -> return corrupt ()
         }
 
     let checkReferences

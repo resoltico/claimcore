@@ -31,7 +31,11 @@ services:
     restart: unless-stopped
 
   identity:
-    image: quay.io/keycloak/keycloak:26.8.2@sha256:c68e286cacd87b942ac1939a0a1481461109d6acd3a57dc496969a319a76bbf0
+    image: ${CLAIMCORE_COMPOSE_PROJECT}-identity
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: identity
     mem_limit: 2g
     command:
       - start
@@ -45,6 +49,7 @@ services:
       - --https-certificate-key-file=/etc/claimcore-identity/server.key
       - --hostname=https://identity.localhost:${CLAIMCORE_IDENTITY_PORT:-5444}
       - --import-realm
+      - --spi-locale-selector--provider=claimcore-script
     networks:
       default:
         aliases: [identity.localhost]

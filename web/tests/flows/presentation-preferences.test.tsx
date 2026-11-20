@@ -89,7 +89,7 @@ it("refuses corrupt, oversized and unknown preference records without retaining 
     parsePreferences(
       '{"version":3,"language":null,"displayLocale":42,"mode":"system","accent":"green"}',
     ),
-  ).toEqual(defaults);
+  ).toEqual({ ...defaults, accent: "green" });
   localStorage.setItem(preferenceKey, "private-invalid-text");
   expect(loadPreferences()).toEqual(defaults);
 });

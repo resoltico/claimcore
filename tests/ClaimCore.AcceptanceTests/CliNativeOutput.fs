@@ -14,6 +14,7 @@ open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json
+open ClaimCore.TestSupport
 open CliCalls
 
 let private run
@@ -545,15 +546,17 @@ let publishedRelatedDirections =
                     use fixture = new PublishedFixture.Fixture()
                     do! fixture.Start()
                     setup fixture
-                    let prefix = "NATIVELINK"
+                    let prefix = "NATIVELINK-" + String.replicate 47 "R"
                     let a, b, c = prefix + "-A", prefix + "-B", prefix + "-C"
+                    let hidden = "UNREADABLE-RELATED-" + id ()
+                    let cases = [ a; b; c; hidden ] |> List.map (fun reference -> reference, id ())
 
-                    for reference in [ a; b; c ] do
+                    for reference, operation in cases do
                         automation
                             fixture
                             "operation.execute"
                             {|
-                                operationId = id ()
+                                operationId = operation
                                 task = "case.open"
                                 binding =
                                     {|
@@ -595,7 +598,16 @@ let publishedRelatedDirections =
                             invoke
                                 fixture
                                 owner
-                                [ "case"; "get"; "--format"; "text"; "--language"; "en"; reference ]
+                                [
+                                    "case"
+                                    "get"
+                                    "--format"
+                                    "text"
+                                    "--language"
+                                    "en"
+                                    "--details"
+                                    reference
+                                ]
                                 Array.empty
                                 0
 
@@ -624,6 +636,123 @@ let publishedRelatedDirections =
                     Expect.stringContains both "Links to this case" "Incoming heading remains"
                     Expect.stringContains both c "New target is visible"
                     Expect.stringContains both a "Incoming source remains visible"
+
+                    link b hidden
+                    Expect.stringContains (read b) hidden "An owner can see the third related case"
+
+                    let notes = [ "First Rīga\n原文 😀"; "Second العربية\n\nFinal exact line" ]
+
+                    for note in notes do
+                        frame
+                            "operation.execute"
+                            {|
+                                operationId = id ()
+                                task = "note.add"
+                                binding =
+                                    {|
+                                        kind = "NOTE"
+                                        target =
+                                            {|
+                                                kind = "REFERENCE"
+                                                caseReference = b
+                                            |}
+                                    |}
+                                inputs = dict [ "input:noteText", note ]
+                            |}
+                        |> fun command -> CliCalls.run fixture owner command 0
+                        |> require "ACCEPTED"
+                        |> ignore
+
+                    let reader = principal fixture "HUMAN" IdentityRealm.readerSubject
+                    let actorId = selectedActorId fixture reader
+                    setGrant fixture reader "CASE_READER" false
+
+                    for reference in [ a; b; c ] do
+                        frame
+                            "operation.execute"
+                            {|
+                                operationId = id ()
+                                task = "people.grant"
+                                binding =
+                                    {|
+                                        kind = "PEOPLE"
+                                        actorId = actorId
+                                        expectedRevision = reviewedActorRevision fixture actorId
+                                    |}
+                                inputs =
+                                    dict
+                                        [
+                                            "input:role", "CASE_READER"
+                                            "input:scope", "CASE"
+                                            "field:caseReference", reference
+                                        ]
+                            |}
+                        |> fun command -> CliCalls.run fixture owner command 0
+                        |> require "ACCEPTED"
+                        |> ignore
+
+                    let scoped = interactiveEnvironment fixture "synthetic-reader" "valid"
+
+                    let readScoped args =
+                        invoke fixture scoped args Array.empty 0
+
+                    let data =
+                        CliCalls.verb fixture scoped [ "case"; "notes"; b; "--all" ] 0
+                        |> require "SUCCEEDED"
+
+                    let canonical =
+                        data.GetProperty("notes").GetProperty("items").EnumerateArray()
+                        |> Seq.map (fun note -> note.GetProperty("text").GetString() |> nonNull)
+                        |> Set.ofSeq
+
+                    Expect.equal
+                        canonical
+                        (Set.ofList notes)
+                        "DATA preserves both exact Unicode notes and line breaks"
+
+                    let readCommand reference =
+                        "claimcore case get --case-id="
+                        + (List.find (fst >> (=) reference) cases |> snd)
+
+                    for width in [ "112"; "32" ] do
+                        scoped["COLUMNS"] <- width
+
+                        let rendered args =
+                            (readScoped args).StandardOutput |> Encoding.UTF8.GetString
+
+                        let detail = rendered [ "case"; "get"; b; "--format"; "text"; "--details" ]
+
+                        let notePage =
+                            rendered
+                                [ "case"; "notes"; b; "--format"; "text"; "--all"; "--details" ]
+
+                        for note in notes do
+                            Expect.stringContains detail note "Case details contain the full note"
+
+                            Expect.stringContains
+                                notePage
+                                note
+                                "Notes details contain the full note"
+
+                        for reference, other in [ a, c; c, a ] do
+                            let command = readCommand reference
+                            let position = detail.IndexOf(command, StringComparison.Ordinal)
+                            Expect.isGreaterThanOrEqual position 0 "Exact stable read command"
+                            let preceding = detail.Substring(0, position)
+
+                            Expect.isGreaterThan
+                                (preceding.LastIndexOf(reference, StringComparison.Ordinal))
+                                (max -1 (preceding.LastIndexOf(other, StringComparison.Ordinal)))
+                                "The full reference precedes its own command in the same record"
+
+                        Expect.isFalse
+                            (detail.Contains(hidden, StringComparison.Ordinal))
+                            "The unreadable reference is withheld"
+
+                        Expect.isFalse
+                            (detail.Contains(readCommand hidden, StringComparison.Ordinal))
+                            "The unreadable command is withheld"
+
                     fixture.Complete()
                 }
 

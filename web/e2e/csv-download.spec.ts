@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { settlePopupTriggerScroll, showAccountActions } from "./workspace-navigation";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage } from "./localization-support";
 import { openCase } from "./case-workflow";
@@ -32,10 +33,56 @@ const download = async (page: Page, button: Locator, filename: string) => {
     await file.delete();
   }
 };
+const rejectParkedDownload = async (page: Page, button: Locator) => {
+  const held = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  const completed = Promise.withResolvers<void>();
+  await page.evaluate(() => {
+    const create = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object) => {
+      document.documentElement.dataset["lateExportBlob"] = "created";
+      return create(object);
+    };
+  });
+  const routePath = `**${csvExportTransport.path}`;
+  await page.route(routePath, async (route) => {
+    try {
+      const response = await route.fetch();
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toContain("text/csv");
+      held.resolve();
+      await release.promise;
+      await route.fulfill({ response }).catch(() => undefined);
+    } catch (error) {
+      held.reject(error);
+      throw error;
+    } finally {
+      completed.resolve();
+    }
+  });
+  try {
+    await button.click();
+    await held.promise;
+    await showAccountActions(page);
+    if (new URL(page.url()).pathname !== "/settings") {
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+    }
+    await expect(page).toHaveURL(/\/settings$/u);
+    release.resolve();
+    await completed.promise;
+    await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+    await expect(button).toBeEnabled();
+    expect(await page.locator("html").getAttribute("data-late-export-blob")).toBeNull();
+  } finally {
+    release.resolve();
+    await page.unroute(routePath);
+  }
+};
+
 test("downloads complete filtered CSV bytes for the four existing query selections @engine", async ({
   page,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
   const reference = `CSV-${randomUUID()}`;
@@ -57,10 +104,11 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
   expect(history.text).toContain(reference);
   expect(history.text).toContain("'+CSV α reminder");
   expect(history.request).toMatchObject({ query: "case.timeline", selection: { filter: "WORK" } });
+  await rejectParkedDownload(page, timeline.getByRole("button", { name: "Download CSV" }));
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(reference)}`);
   const cases = await download(
     page,
-    page.getByRole("button", { name: "Download CSV" }),
+    page.getByRole("button", { name: "Export case list CSV" }),
     "claimcore-cases.csv",
   );
   expect(cases.text).toContain(reference);
@@ -68,6 +116,24 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
     query: "case.list",
     selection: { view: "ALL", text: reference },
   });
+  await rejectParkedDownload(page, page.getByRole("button", { name: "Export case list CSV" }));
+
+  await page.goto(`/cases/report?view=ALL&q=${encodeURIComponent(reference)}`);
+  const grouping = page.getByRole("combobox", { name: "Group by" });
+  await settlePopupTriggerScroll(grouping);
+  await grouping.press("Home");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Registered month" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  const reportButton = page.getByRole("button", { name: "Export report CSV" });
+  const report = await download(page, reportButton, "claimcore-case-summary.csv");
+  expect(report.request).toEqual({
+    query: "case.summary",
+    selection: { view: "ALL", text: reference, groupBy: "REGISTERED_MONTH" },
+  });
+  await rejectParkedDownload(page, reportButton);
+
   await page.goto(
     `/reminders?filters=manual&state=PENDING&caseReference=${encodeURIComponent(reference)}`,
   );
@@ -90,4 +156,5 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
   );
   expect(people.text.startsWith("operationId,sequence,effectIndex,")).toBe(true);
   expect(people.request).toEqual({ query: "people.history", selection: {} });
+  await rejectParkedDownload(page, page.getByRole("button", { name: "Download CSV" }));
 });

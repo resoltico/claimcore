@@ -38,6 +38,9 @@ it("renders an OIDC sign-in link without collecting a credential", () => {
   });
   render(<App />);
   expect(screen.getByRole("heading", { name: "Sign in to the case register" })).toBeVisible();
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login?language=en",
+  );
   expect(screen.queryByLabelText("Bootstrap credential")).toBeNull();
 });

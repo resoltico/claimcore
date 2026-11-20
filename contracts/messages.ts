@@ -1006,6 +1006,7 @@ export type MessageArgs = {
   "ui.accentGreen": Readonly<Record<string, never>>;
   "ui.accentSet": { readonly "value": string };
   "ui.accessState.check": Readonly<Record<string, never>>;
+  "ui.accountAccessHistory": Readonly<Record<string, never>>;
   "ui.actDescription": { readonly "label": string; readonly "meaning": string };
   "ui.actorRequestRetained": Readonly<Record<string, never>>;
   "ui.addRole": Readonly<Record<string, never>>;
@@ -1013,11 +1014,14 @@ export type MessageArgs = {
   "ui.after": { readonly "value": string };
   "ui.anyFilter": Readonly<Record<string, never>>;
   "ui.appearance": Readonly<Record<string, never>>;
+  "ui.applyFilters": Readonly<Record<string, never>>;
   "ui.attachments.empty": Readonly<Record<string, never>>;
   "ui.attachments.file": Readonly<Record<string, never>>;
   "ui.backToCases": Readonly<Record<string, never>>;
   "ui.before": { readonly "value": string };
+  "ui.browserSessions": Readonly<Record<string, never>>;
   "ui.calendar": Readonly<Record<string, never>>;
+  "ui.cancelChanges": Readonly<Record<string, never>>;
   "ui.canonicalCopyHint": Readonly<Record<string, never>>;
   "ui.caseReport": Readonly<Record<string, never>>;
   "ui.caseSelectionApply": Readonly<Record<string, never>>;
@@ -1046,6 +1050,7 @@ export type MessageArgs = {
   "ui.copyFallback": { readonly "label": string };
   "ui.countryName": { readonly "code": string; readonly "name": string };
   "ui.countryUnassigned": { readonly "code": string };
+  "ui.currentBrowserSession": Readonly<Record<string, never>>;
   "ui.currentMode": { readonly "value": string };
   "ui.defaultAccent": Readonly<Record<string, never>>;
   "ui.detectedLanguage": Readonly<Record<string, never>>;
@@ -1062,6 +1067,8 @@ export type MessageArgs = {
   "ui.exactOperationId": Readonly<Record<string, never>>;
   "ui.exactReference": { readonly "label": string; readonly "reference": string };
   "ui.explainFields": Readonly<Record<string, never>>;
+  "ui.exportCasesCsv": Readonly<Record<string, never>>;
+  "ui.exportReportCsv": Readonly<Record<string, never>>;
   "ui.filters": Readonly<Record<string, never>>;
   "ui.findCase": Readonly<Record<string, never>>;
   "ui.formatPreview": { readonly "amount": string; readonly "date": string };
@@ -1144,6 +1151,7 @@ export type MessageArgs = {
   "ui.requests.refresh": Readonly<Record<string, never>>;
   "ui.resourceUnavailable": Readonly<Record<string, never>>;
   "ui.restartReport": Readonly<Record<string, never>>;
+  "ui.restartSignIn": Readonly<Record<string, never>>;
   "ui.retryExact": Readonly<Record<string, never>>;
   "ui.retryExactDescription": Readonly<Record<string, never>>;
   "ui.retryLanguage": Readonly<Record<string, never>>;
@@ -1171,11 +1179,11 @@ export type MessageArgs = {
   "ui.showAllNotes": Readonly<Record<string, never>>;
   "ui.showAllPayments": Readonly<Record<string, never>>;
   "ui.signIn": Readonly<Record<string, never>>;
+  "ui.signInIncomplete": Readonly<Record<string, never>>;
   "ui.signInTitle": Readonly<Record<string, never>>;
   "ui.signOut": Readonly<Record<string, never>>;
   "ui.stage.noDate": Readonly<Record<string, never>>;
   "ui.submitting": Readonly<Record<string, never>>;
-  "ui.summaryDetails": Readonly<Record<string, never>>;
   "ui.theme": Readonly<Record<string, never>>;
   "ui.themeAccessibility": Readonly<Record<string, never>>;
   "ui.themeDark": Readonly<Record<string, never>>;
@@ -1192,7 +1200,6 @@ export type MessageArgs = {
   "ui.viewLoadFailed": Readonly<Record<string, never>>;
   "ui.viewLoading": Readonly<Record<string, never>>;
   "ui.workDateBasis": { readonly "date": string; readonly "zone": string };
-  "ui.workQueue": Readonly<Record<string, never>>;
   "ui.worklistSearch": Readonly<Record<string, never>>;
   "view.ALL.label": Readonly<Record<string, never>>;
   "view.CANCELLED.label": Readonly<Record<string, never>>;

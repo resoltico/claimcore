@@ -25,6 +25,10 @@ export default {
     },
     chunkSizeWarningLimit: 600,
     rolldownOptions: {
+      input: {
+        workspace: fileURLToPath(new URL("./index.html", import.meta.url)),
+        recovery: fileURLToPath(new URL("./auth-recovery.html", import.meta.url)),
+      },
       output: {
         codeSplitting: {
           groups: [{ name: "workspace", test: /\/web\/src\//u, entriesAware: true }],

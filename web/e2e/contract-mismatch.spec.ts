@@ -5,6 +5,11 @@ import { startOpen } from "./case-workflow";
 import { consumerContractIdentity } from "@contracts/client";
 
 test("a real contract refusal prompts reload without replaying the draft", async ({ page }) => {
+  const untouched = await page.request.get("/api/session", {
+    headers: { "ClaimCore-Contract": "0".repeat(64) },
+  });
+  expect(untouched.status()).toBe(409);
+  expect(untouched.headers()["claimcore-host-contract"]).toBe(consumerContractIdentity);
   await openAuthenticated(page);
   await startOpen(page, `MISMATCH-${randomUUID()}`);
   let previews = 0;
@@ -20,6 +25,7 @@ test("a real contract refusal prompts reload without replaying the draft", async
     expect(headers["claimcore-contract"]).not.toBe(consumerContractIdentity);
     const response = await route.fetch({ headers, maxRedirects: 0 });
     expect(response.status()).toBe(409);
+    expect(response.headers()["claimcore-host-contract"]).toBe(consumerContractIdentity);
     expect(await response.json()).toMatchObject({
       hostFailure: { code: "CONTRACT_MISMATCH", phase: "NOT_STARTED" },
     });

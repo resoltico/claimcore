@@ -1,7 +1,8 @@
+import { caseLinkTarget } from "../routing/coreLinks";
 import { isOperationAffordance } from "./affordances";
 import {
-  type OperationSubmission,
   type CaseSelector,
+  type OperationSubmission,
   type OperationTaskDefinition,
   type OperationBinding,
   type Affordance,
@@ -15,11 +16,28 @@ import type {
 } from "./operationTypes";
 const caseBound = (source: LocalSource): source is ConflictSource =>
   "target" in source.prepared.input.binding;
+const stableConflictTarget = (
+  diagnostic: NonNullable<RevisionConflictSnapshot["diagnostic"]>,
+  previous: CaseSelector,
+  knownCaseId: string | undefined,
+): RevisionConflictSnapshot["target"] | null => {
+  const offered = diagnostic.document.links.filter(({ rel }) => rel === "OPEN_CASE");
+  const target = offered.length === 1 ? caseLinkTarget(offered[0]!.link) : undefined;
+  if (
+    target?.kind !== "ID" ||
+    (previous.kind === "ID" && previous.caseId !== target.caseId) ||
+    (knownCaseId !== undefined && knownCaseId !== target.caseId)
+  ) {
+    return null;
+  }
+  return target;
+};
 export const conflictFromRefusal = (
   action: Extract<OperationAction, { type: "REFUSE" }>,
   source: LocalSource | null,
   entry: OperationTaskDefinition,
   uncertain: boolean,
+  knownCaseId: string | undefined,
 ): RevisionConflictSnapshot | null => {
   if (
     uncertain ||
@@ -31,8 +49,17 @@ export const conflictFromRefusal = (
   ) {
     return null;
   }
+  const target = stableConflictTarget(
+    action.rejection,
+    source.prepared.input.binding.target,
+    knownCaseId,
+  );
+  if (target === null) {
+    return null;
+  }
   return {
     identity: action.identity,
+    target,
     source,
     minimumRevision: action.rejection.actualRevision,
     diagnostic: action.rejection,
@@ -41,6 +68,7 @@ export const conflictFromRefusal = (
 };
 export const rebasedOperationBinding = (
   input: OperationSubmission,
+  target: RevisionConflictSnapshot["target"],
   revision: number,
   currentActions: ReadonlyArray<Affordance>,
 ): OperationBinding => {
@@ -60,18 +88,15 @@ export const rebasedOperationBinding = (
     }
     return {
       ...binding,
+      target,
       expectedRevision: current.binding.expectedRevision,
       expectedFamilySequence: current.binding.expectedFamilySequence,
     };
   }
   return "target" in binding && "expectedRevision" in binding
-    ? { ...binding, expectedRevision: revision }
+    ? { ...binding, target, expectedRevision: revision }
     : binding;
 };
-const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
-  left.kind === "ID"
-    ? right.kind === "ID" && left.caseId === right.caseId
-    : right.kind === "REFERENCE" && left.caseReference === right.caseReference;
 const sameChild = (left: OperationBinding, right: OperationBinding): boolean => {
   if ("partyId" in left) {
     return "partyId" in right && left.partyId === right.partyId;
@@ -94,6 +119,7 @@ const sameChild = (left: OperationBinding, right: OperationBinding): boolean => 
 export const sameConflictTarget = (
   before: OperationSubmission,
   after: OperationSubmission,
+  target: RevisionConflictSnapshot["target"],
 ): boolean => {
   const left = before.binding;
   const right = after.binding;
@@ -102,7 +128,8 @@ export const sameConflictTarget = (
     !("target" in right) ||
     left.kind !== right.kind ||
     before.task !== after.task ||
-    !sameSelector(left.target, right.target)
+    right.target.kind !== "ID" ||
+    right.target.caseId !== target.caseId
   ) {
     return false;
   }

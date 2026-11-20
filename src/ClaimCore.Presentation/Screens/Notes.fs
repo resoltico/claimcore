@@ -44,6 +44,13 @@ module NotesScreen =
                                         "label.recordDetails"
                                         [
                                             value
+                                                "noteText"
+                                                "field.noteText.label"
+                                                Prominence.Detail
+                                                (PresentedValue.Narrative(
+                                                    NoteText.format item.Text
+                                                ))
+                                            value
                                                 "noteId"
                                                 "field.noteId.label"
                                                 Prominence.Detail

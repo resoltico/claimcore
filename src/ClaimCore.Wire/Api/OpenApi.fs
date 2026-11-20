@@ -105,7 +105,24 @@ module OpenApi =
 
             code,
             name,
-            object [ "description", text ("HTTP " + code); "content", hostContent status ])
+            object
+                [
+                    "description", text ("HTTP " + code)
+                    "content", hostContent status
+                    if status = HostFailureReason.status HostFailureReason.ContractMismatch then
+                        "headers",
+                        object
+                            [
+                                HostFailureReason.ContractIdentityHeader,
+                                object
+                                    [
+                                        "description",
+                                        text
+                                            "The responding host's contract identity, available on CONTRACT_MISMATCH only."
+                                        "schema", schema ResponseScalars.digest.Schema
+                                    ]
+                            ]
+                ])
 
     let private withHostResponses success =
         let failures =

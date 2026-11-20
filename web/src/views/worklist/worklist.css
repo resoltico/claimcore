@@ -313,3 +313,30 @@ details.summary-band {
 .case-selection-choices label bdi {
   min-inline-size: 0;
 }
+
+.worklist-toolbar {
+  display: grid;
+  align-items: start;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.worklist-search-scope {
+  flex-basis: 100%;
+}
+.worklist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.report-date-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.report-date-fields label {
+  display: grid;
+  gap: var(--space-1);
+}

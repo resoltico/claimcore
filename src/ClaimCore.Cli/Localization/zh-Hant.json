@@ -498,5 +498,13 @@
   "cli.attachment.outputFailed": {
     "text": "無法將附件儲存到選取的位置。",
     "source": "915060f3dc90"
+  },
+  "cli.contractIdentities": {
+    "text": "CLI 契約：{local}。服務契約：{host}。",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "請在作業系統的終端機中執行 {command}。",
+    "source": "278514d04b5d"
   }
 }

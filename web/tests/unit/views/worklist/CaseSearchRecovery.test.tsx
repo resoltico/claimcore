@@ -21,13 +21,11 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
           onSearch={setDraft}
           onChange={publish}
           onSelect={vi.fn()}
-          loading={false}
-          onReload={vi.fn()}
         />
       );
     };
     render(<Toolbar />);
-    const input = screen.getByRole("searchbox", { name: "Filter this view" });
+    const input = screen.getByRole("searchbox", { name: /Filter this view/u });
     input.focus();
     fireEvent.change(input, { target: { value: "North " } });
     act(() => {
@@ -50,6 +48,8 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
     act(() => {
       vi.advanceTimersByTime(700);
     });
+    expect(publish).not.toHaveBeenCalled();
+    fireEvent.submit(screen.getByRole("search", { name: "Filter this view" }));
     expect(publish).toHaveBeenCalledExactlyOnceWith({
       view: "ALL",
       status: ["OPENED"],
@@ -58,6 +58,31 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
   } finally {
     vi.useRealTimers();
   }
+});
+
+it("applies the whole date pair once and associates a reversed range with its end", () => {
+  const publish = vi.fn();
+  render(
+    <WorklistToolbar
+      query={{ receivedFrom: "2026-09-01", receivedThrough: "2026-09-08" }}
+      search=""
+      onSearch={vi.fn()}
+      onChange={publish}
+      onSelect={vi.fn()}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /^Filters/u }));
+  fireEvent.change(screen.getByLabelText("Received from"), { target: { value: "2026-09-09" } });
+  expect(publish).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+  expect(screen.getByLabelText("Received through")).toHaveAttribute("aria-invalid", "true");
+  expect(publish).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText("Received through"), { target: { value: "2026-09-12" } });
+  fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+  expect(publish).toHaveBeenCalledExactlyOnceWith({
+    receivedFrom: "2026-09-09",
+    receivedThrough: "2026-09-12",
+  });
 });
 
 it("requires an explicit duplicate choice and applies only the corrected chosen value", () => {

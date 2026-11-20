@@ -18,11 +18,11 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 module Attachments = AttachmentPostgresTests
 
-let private draft fixture number (payload: byte array) =
+let private draftWithLength fixture number length (payload: byte array) =
     let inputs =
         [
             InputTarget.AttachmentName, "evidence.bin"
-            InputTarget.AttachmentLength, payload.Length.ToString(CultureInfo.InvariantCulture)
+            InputTarget.AttachmentLength, (length: int).ToString(CultureInfo.InvariantCulture)
             InputTarget.AttachmentDigest, SHA256.HashData(payload) |> Convert.ToHexStringLower
         ]
         |> List.map (fun (target, value) -> Submissions.text (Submissions.input target) value)
@@ -33,6 +33,9 @@ let private draft fixture number (payload: byte array) =
         (id fixture number)
         (OperationBinding.Attachment(Attachments.target, None))
         inputs
+
+let private draft fixture number (payload: byte array) =
+    draftWithLength fixture number payload.Length payload
 
 /// Model a previous writer which accepted a structurally correct, byte-verified addition
 /// without checking retained capacity. All ledger, compartment, payload and projection
@@ -333,6 +336,28 @@ let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
             }
 
         Expect.isTrue denied "The runtime role is denied a direct payload SELECT"
+
+        let! duplicate = Service.previewSubmission actor (draft fixture 712 [| 0uy |]) token
+
+        match duplicate.Outcome with
+        | Outcome.Rejected(Refusal.AttachmentDuplicate attachment) ->
+            Expect.equal (AttachmentId.value attachment) (id fixture 710) "The retained attachment"
+        | other -> failtestf "A preview matches retained metadata with no payload SELECT: %A" other
+
+        let! wrongLength =
+            Service.previewSubmission actor (draftWithLength fixture 714 2 [| 0uy |]) token
+
+        match wrongLength.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ()
+        | other ->
+            failtestf "Contradictory authored length does not imply corrupt storage: %A" other
+
+        let! distinct = Service.previewSubmission actor (draft fixture 713 [| 2uy |]) token
+
+        match distinct.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ()
+        | other -> failtestf "Expected a review when no metadata matched: %A" other
+
         let! listed = Attachments.list actor
 
         match listed with
@@ -365,6 +390,52 @@ let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
                 "The continuation returns the older attachment"
         | other ->
             failtestf "Timeline continuation must succeed without payload-column access: %A" other
+
+        let retained = id fixture 710
+
+        do!
+            sql
+                database
+                "DELETE FROM claimcore.case_attachments WHERE attachment_id=$1"
+                [| box retained |]
+
+        let! withoutProjection =
+            Service.previewSubmission actor (draft fixture 715 [| 0uy |]) token
+
+        match withoutProjection.Outcome with
+        | Outcome.Rejected(Refusal.AttachmentDuplicate attachment) ->
+            Expect.equal
+                (AttachmentId.value attachment)
+                retained
+                "Ledger-backed match ignores projection absence"
+        | other -> failtestf "Expected duplicate without listing projection: %A" other
+
+        // Damage the located row while keeping its queried digest and structural length constraint.
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.attachment_blobs DISABLE TRIGGER attachment_blobs_protect"
+                [||]
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.attachment_blobs SET length=2, payload=decode('0000','hex') WHERE blob_id=$1"
+                [| box retained |]
+
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.attachment_blobs ENABLE TRIGGER attachment_blobs_protect"
+                [||]
+
+        let! corrupt =
+            Service.previewSubmission actor (draftWithLength fixture 716 2 [| 0uy |]) token
+
+        Expect.equal
+            corrupt.Outcome
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "Corrupt retained metadata fails even if it agrees with the submitted length"
     }
 
 let private measure sql action explanation =

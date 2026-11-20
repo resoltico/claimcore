@@ -549,6 +549,9 @@ See [Integrating](integrating.md) for results and [Support](../SUPPORT.md) for r
 
 Keep the delivered license, project/commercial notices, dependency notices and `SOURCE.tar.gz`
 with each application. The web source link must work without login. Before each Compose/image build,
-run `bash eng/source-archive.sh SOURCE.tar.gz`; the image builds that captured source inventory. For a modified deployment,
+run `bash eng/source-archive.sh SOURCE.tar.gz`; the Web and identity images build from that captured source inventory.
+A fresh evaluation realm imports nine login languages and the ClaimCore Blue login theme for the Web client.
+The evaluation image preserves the Simplified and Traditional Chinese script choices when Keycloak matches login languages.
+Keycloak keeps existing realm settings on restart. Operators of external issuers control their own login appearance. For a modified deployment,
 rebuild the source archive and include all additional Corresponding Source required by the license;
 do not point users only to an unmodified upstream release. See the [project notice](../PROJECT-NOTICE.md).

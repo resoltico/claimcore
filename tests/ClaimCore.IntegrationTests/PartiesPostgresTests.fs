@@ -122,6 +122,50 @@ let private integration (database: PostgresFixture.Database) =
 
         accepted edited |> ignore
 
+        let revisedParty task operation revision =
+            Submissions.createRaw
+                task
+                (id fixture operation)
+                (OperationBinding.Party(target, Some(PartyId.value party.PartyId, revision)))
+                Map.empty
+
+        let! currentReview =
+            Service.previewSubmission owner (revisedParty "party.remove" 685 2L) token
+
+        match currentReview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ()
+        | other -> failtestf "Expected current party review: %A" other
+
+        let checkStale =
+            function
+            | Refusal.RevisionConflict stale ->
+                Expect.equal (Revision.value stale.ActualRevision) 2L "The actual party revision"
+
+                Expect.equal
+                    stale.Changes
+                    (Some ConflictChanges.Withheld)
+                    "Party history has no revision range"
+
+                Expect.equal
+                    stale.ReadCaseId
+                    (Some subject.Snapshot.CaseId)
+                    "The stable authorized case ID"
+            | other -> failtestf "Expected stale party conflict: %A" other
+
+        let! staleReview =
+            Service.previewSubmission owner (revisedParty "party.remove" 685 1L) token
+
+        match staleReview.Outcome with
+        | Outcome.Rejected refusal -> checkStale refusal
+        | other -> failtestf "Expected stale party review: %A" other
+
+        let! staleWrite =
+            Service.executeSubmission owner (revisedParty "party.remove" 685 1L) token
+
+        match staleWrite.Outcome with
+        | ExecuteResult.Rejected refusal -> checkStale refusal
+        | other -> failtestf "Expected stale party execution: %A" other
+
         let! history = timeline owner target
 
         let existed =

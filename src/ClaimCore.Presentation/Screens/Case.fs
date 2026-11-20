@@ -173,7 +173,25 @@ module CaseScreen =
         let table rows =
             tableWithControls
                 (fun (row: RelatedCaseRead) -> LinkId.format row.Id)
-                (fun _ -> None)
+                (fun row ->
+                    row.Case
+                    |> Option.map (fun target ->
+                        {
+                            Summary = None
+                            Highlights = []
+                            Sections =
+                                [
+                                    section
+                                        "section.relatedCases.label"
+                                        [
+                                            value
+                                                "reference"
+                                                "field.caseReference.label"
+                                                Prominence.Detail
+                                                (PresentedValue.Reference target.Reference)
+                                        ]
+                                ]
+                        }))
                 columns
                 (fun row ->
                     row.Case

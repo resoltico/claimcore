@@ -186,9 +186,101 @@ const summaryRoute = "**/api/case.summary";
 const nextSummaryRequest = (page: Page) =>
   page.waitForRequest((request) => new URL(request.url()).pathname === "/api/case.summary");
 
+for (const releaseOn of ["Settings", "return"] as const) {
+  test(`retires a real report reply released on ${releaseOn} @engine`, async ({ page }) => {
+    await owner(page);
+    const reference = `REPORT-DET${randomUUID()}`;
+    const writer = await page.context().newPage();
+    try {
+      await writer.goto("/cases");
+      const token = await sessionToken(writer);
+      const access = { token, installationId: await installationId(writer, token) };
+      const held = Promise.withResolvers<void>();
+      const release = Promise.withResolvers<void>();
+      const delivered = Promise.withResolvers<void>();
+      let requests = 0;
+      await page.route(summaryRoute, async (route) => {
+        if (++requests > 1) {
+          await route.continue();
+          return;
+        }
+        const response = await route.fetch();
+        expect(response.status()).toBe(200);
+        const reply = (await response.json()) as ResponseFor<"case.summary", "HUMAN">;
+        expect(reply.outcome).toMatchObject({
+          kind: "SUCCEEDED",
+          document: {
+            screen: {
+              regions: expect.arrayContaining([
+                expect.objectContaining({
+                  role: "TOTALS",
+                  content: expect.objectContaining({
+                    entries: [expect.objectContaining({ value: { kind: "COUNT", value: 0 } })],
+                  }),
+                }),
+              ]),
+            },
+          },
+        });
+        held.resolve();
+        await release.promise;
+        await route.fulfill({ response });
+        delivered.resolve();
+      });
+      const path = `/cases/report?q=${reference}`;
+      try {
+        await page.goto(path);
+        await held.promise;
+        await page.locator(".account-menu > summary").click();
+        await page.locator(".account-menu").getByRole("link", { name: "Settings" }).click();
+        await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+        await execute(writer, access, {
+          operationId: operationId(),
+          task: "case.open",
+          binding: { kind: "CASE", expectedRevision: 0 },
+          inputs: { "field:caseReference": reference },
+        });
+        const total = page.locator('[data-region="TOTALS"] [data-entry="total"] dd');
+        if (releaseOn === "Settings") {
+          release.resolve();
+          await delivered.promise;
+          await expect(total).toHaveCount(0);
+        }
+        await page.locator("[data-return-workspace]").click();
+        await expect(page).toHaveURL(new RegExp(`${reference}$`, "u"));
+        await expect(total).toHaveText("1");
+        if (releaseOn === "return") {
+          release.resolve();
+          await delivered.promise;
+          await expect(total).toHaveText("1");
+        }
+        expect(requests).toBe(2);
+      } finally {
+        release.resolve();
+      }
+    } finally {
+      await writer.close();
+    }
+  });
+}
+
+test("the report's Cases link preserves an unqualified report's All selection @engine", async ({
+  page,
+}) => {
+  await owner(page);
+  await page.goto("/cases/report");
+  const report = page.getByRole("region", { name: "Case report" });
+  const cases = report.getByRole("link", { name: "Cases", exact: true });
+  await expect(cases).toHaveAttribute("href", "/cases?view=ALL");
+  await cases.press("Enter");
+  await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
+  await page.goto("/cases");
+  await expect(page).toHaveURL(/\/cases\?view=NEEDS_ATTENTION$/u);
+});
+
 const verifyReportDisclosure = async (page: Page) => {
-  const report = page.getByRole("region", { name: "Show summary totals" });
-  const download = report.getByRole("button", { name: "Download CSV" });
+  const report = page.getByRole("region", { name: "Case report" });
+  const download = report.getByRole("button", { name: "Export report CSV" });
   const alert = report.getByRole("alert");
   const retry = alert.getByRole("button", { name: "Try again" });
   let attempts = 0;
@@ -273,9 +365,16 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
     }),
   );
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(prefix)}`);
-  const report = page.getByRole("region", { name: "Show summary totals" });
+  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Case report" }).press("Enter");
+  await expect(page).toHaveURL(/\/cases\/report\?/u);
+  const report = page.getByRole("region", { name: "Case report" });
   await expect(report.locator('[data-region="RESULTS"]')).toBeVisible();
   const grouping = report.getByRole("combobox", { name: "Group by" });
+  const heading = report.getByRole("heading", { name: "Case report" });
+  await expect(heading).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(grouping).toBeFocused();
   await grouping.scrollIntoViewIfNeeded();
   // Open after scrolling has settled so nonmodal popup dismissal keeps its normal behavior.
   await page.evaluate(
@@ -295,10 +394,9 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   await expect(page.getByRole("option", { name: "Received month" })).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const heading = report.getByRole("heading", { name: "Case report" });
   const next = report.getByRole("button", { name: "Next report page" });
   const restart = report.getByRole("button", { name: "Restart report" });
-  const download = report.getByRole("button", { name: "Download CSV" });
+  const download = report.getByRole("button", { name: "Export report CSV" });
   const exportCsv = async () => {
     const completed = page.waitForResponse(
       (reply) => new URL(reply.url()).pathname === "/api/export",
@@ -320,6 +418,8 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   await next.focus();
   await page.keyboard.press("Enter");
   await expect(heading).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(grouping).toBeFocused();
   await expect(report.locator('[aria-live="polite"]')).toHaveText("Report page 2");
   await expect(next).toHaveCount(0);
 

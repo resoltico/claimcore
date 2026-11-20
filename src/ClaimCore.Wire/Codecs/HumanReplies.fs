@@ -111,7 +111,21 @@ module HumanReplies =
                 | Some ConflictChanges.Withheld
                 | None -> HumanDocument.empty HumanDisclosure.Withheld
 
-            HumanRejection.Conflict(advice, conflict.ActualRevision, document)
+            let links =
+                conflict.ReadCaseId
+                |> Option.map (fun id ->
+                    {
+                        NamedLink.Relation = LinkRelation.OpenCase
+                        LabelId = "field.caseReference.label"
+                        Link = Link.caseById id
+                    })
+                |> Option.toList
+
+            HumanRejection.Conflict(
+                advice,
+                conflict.ActualRevision,
+                { document with Links = links }
+            )
         | _ -> HumanRejection.Refused advice
 
     let read describe outcome =

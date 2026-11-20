@@ -276,8 +276,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "Melden Sie sich mit dem Konto Ihrer Organisation an.",
-    "source": "2d954a0e8a31"
+    "text": "Geben Sie Ihre Organisations-Zugangsdaten bei Ihrem Anmeldeanbieter ein.",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "Die Anmeldung konnte nicht abgeschlossen werden.",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "Anmeldung neu starten",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "Wird gesucht…",
@@ -531,10 +539,6 @@
     "text": "Wird erfasst…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "Gesamtsummen der Übersicht anzeigen",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "Design",
     "source": "efb52e7172b7"
@@ -578,10 +582,6 @@
   "ui.workDateBasis": {
     "text": "Geschäftsdatum {date} ({zone}).",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "Arbeitsübersicht",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "Diese Ansicht filtern",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "Seite {page} von {count}",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "Fallliste als CSV exportieren",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "Bericht als CSV exportieren",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "Aktuelle Browsersitzung",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "ClaimCore-Browsersitzungen",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "Filter anwenden",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "Abbrechen",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "Zugriffsverlauf des Kontos",
+    "source": "ed6a3714adfd"
   }
 }

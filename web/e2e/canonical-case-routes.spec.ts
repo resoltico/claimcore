@@ -57,11 +57,9 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
-  await goToView(page, "cases");
-  const search = page.getByRole("searchbox", {
-    name: "Filter this view",
-    exact: true,
-  });
+  await page.getByRole("link", { name: "Search cases", exact: true }).click();
+  const search = page.getByRole("searchbox", { name: /^Filter this view · /u });
+  await expect(search).toBeFocused();
   await search.fill(second.caseReference);
   await search.press("Enter");
   const link = page.locator(".table-view").getByRole("link", {
@@ -146,8 +144,9 @@ test("historical exact search follows the encoded selector and restores its link
   await expect(page.locator("#case-detail-title")).toHaveText(current);
   await expect(changedFrom).toContainText(earlier);
 
-  await goToView(page, "cases");
-  const search = page.getByRole("searchbox", { name: "Filter this view", exact: true });
+  await page.getByRole("link", { name: "Search cases", exact: true }).click();
+  const search = page.getByRole("searchbox", { name: /^Filter this view · /u });
+  await expect(search).toBeFocused();
   await search.fill(earlier);
   await search.press("Enter");
   const exact = page.getByRole("group", { name: "Exact reference match", exact: true });

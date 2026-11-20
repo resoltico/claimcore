@@ -40,10 +40,30 @@ test("successful summary continuation removes previously loaded full history aft
     binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
     inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
   });
+  const release = Promise.withResolvers<void>();
+  const captured = Promise.withResolvers<string>();
+  await page.route("**/api/case.timeline", async (route) => {
+    const input = route.request().postDataJSON() as RequestByEndpoint["case.timeline"];
+    if (input.filter !== "FACTS") {
+      await route.continue();
+      return;
+    }
+    try {
+      const reply = await route.fetch();
+      captured.resolve(await reply.text());
+      await release.promise;
+      await route.fulfill({ response: reply }).catch(() => undefined);
+    } catch (error) {
+      captured.reject(error);
+      throw error;
+    }
+  });
   try {
     await page.reload();
     const history = page.locator(".case-timeline-panel");
     await expect(history).toContainText("PRIVATE_HISTORY_11");
+    await history.getByRole("tab", { name: "Case facts" }).click();
+    expect(await captured.promise).toContain("PRIVATE_HISTORY_11");
     await applyPeople(page, {
       operationId: operationId(),
       task: "people.revoke",
@@ -67,32 +87,16 @@ test("successful summary continuation removes previously loaded full history aft
         caseTimelineReply.outcome.document.disclosure === "SUMMARY"
       );
     });
-    const continuation = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/case.timeline",
-    );
-    await history
-      .getByRole("button", {
-        name: "Load more",
-        exact: true,
-      })
-      .click();
-    const caseTimelineReply = (await (await continuation).json()) as ResponseFor<
-      "case.timeline",
-      "HUMAN"
-    >;
-    if (
-      caseTimelineReply.representation !== "HUMAN" ||
-      caseTimelineReply.outcome.kind !== "SUCCEEDED"
-    ) {
-      throw Error("Successful timeline continuation required");
-    }
-    expect(caseTimelineReply.outcome.document.disclosure).toBe("SUMMARY");
-    await refreshed;
+    await history.getByRole("tab", { name: "Everything" }).click();
+    const restricted = await refreshed;
+    expect(await restricted.text()).not.toContain("PRIVATE_HISTORY_");
+    await expect(history.locator(".region-timeline > li")).toHaveCount(10);
+    release.resolve();
+    await expect(history.locator(".timeline-comparison")).toHaveCount(0);
     await expect(history).not.toContainText("PRIVATE_HISTORY_11");
     await expect(history).not.toContainText("PRIVATE_HISTORY_12");
-    // Tightened continuation invalidates workspace observations and reloads the bounded first page.
-    await expect(history.locator(".region-timeline > li")).toHaveCount(10);
   } finally {
+    release.resolve();
     await applyPeople(page, {
       operationId: operationId(),
       task: "people.grant",

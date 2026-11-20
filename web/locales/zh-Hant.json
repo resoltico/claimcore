@@ -276,8 +276,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "請使用您組織的帳戶登入。",
-    "source": "2d954a0e8a31"
+    "text": "請前往登入服務提供者，輸入組織帳戶的憑證。",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "無法完成登入。",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "重新開始登入",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "正在查詢…",
@@ -531,10 +539,6 @@
     "text": "正在記錄…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "顯示匯總資料",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "主題",
     "source": "efb52e7172b7"
@@ -578,10 +582,6 @@
   "ui.workDateBasis": {
     "text": "業務日期 {date}（{zone}）。",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "工作隊列",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "篩選此視圖",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "第 {page} 頁，共 {count} 頁",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "匯出案件清單 CSV",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "匯出報告 CSV",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "目前的瀏覽器工作階段",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "ClaimCore 瀏覽器工作階段",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "套用篩選條件",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "取消",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "帳戶存取記錄",
+    "source": "ed6a3714adfd"
   }
 }

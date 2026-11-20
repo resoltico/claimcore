@@ -4,10 +4,11 @@ import https from "node:https";
 import net from "node:net";
 import path from "node:path";
 import process from "node:process";
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 
 const [root, owned] = process.argv.slice(2);
-const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
+const { consumerContractIdentity, presentationLanguages, presentationPseudolanguage } =
+  await import(path.join(root, "contracts/client.ts"));
 const { operationId } = await import(path.join(root, "web/src/operation/operationId.ts"));
 const configuration = path.join(owned, "configuration $CLAIMCORE_QA_PATH # :, \" \\\' end\\");
 const composeFile = path.join(root, "deployment/compose.yaml");
@@ -149,6 +150,72 @@ const awaitReady = async (origin, ca, route = "/health/ready") => {
   }
   throw new Error("Owned deployment readiness deadline.");
 };
+const priorRealmFile = "prior-claimcore-realm.json";
+const priorRealmName = "Prior ClaimCore Realm";
+const writePriorRealm = (origin, displayName) => {
+  writeFileSync(
+    path.join(owned, priorRealmFile),
+    JSON.stringify({
+      realm: "prior-claimcore",
+      displayName,
+      enabled: true,
+      sslRequired: "all",
+      clients: [
+        {
+          clientId: "prior-web",
+          enabled: true,
+          publicClient: true,
+          standardFlowEnabled: true,
+          redirectUris: [`${origin}/signin-oidc`],
+        },
+      ],
+    }),
+  );
+  const mount = owned.replaceAll('"', '""');
+  // configure-local assigns the import directory to the container UID.
+  command(
+    "docker",
+    [
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "--user",
+      "0",
+      "--mount",
+      `type=bind,"source=${mount}",target=/work`,
+      "--entrypoint",
+      "/bin/sh",
+      cleanupImage,
+      "-ec",
+      'install -m 0644 "/work/$1" "/work/$2/identity/realm/$1"',
+      "write-prior-realm",
+      priorRealmFile,
+      path.basename(configuration),
+    ],
+    60_000,
+  );
+};
+const verifyPriorRealm = async (browser, origin, provider) => {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  try {
+    const login = new URL("/realms/prior-claimcore/protocol/openid-connect/auth", provider);
+    login.search = new URLSearchParams({
+      client_id: "prior-web",
+      redirect_uri: `${origin}/signin-oidc`,
+      response_type: "code",
+      scope: "openid",
+    }).toString();
+    const page = await context.newPage();
+    const response = await page.goto(login.href);
+    expect(response?.status()).toBe(200);
+    await expect(page.locator("#kc-header-wrapper")).toHaveText(priorRealmName);
+    await expect(page.locator("#username")).toBeVisible();
+    await expect(page.locator('link[href$="/css/claimcore.css"]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+};
 const payload = (response) => {
   if (response.status() !== 200) {
     throw new Error("Unexpected owned service status.");
@@ -191,9 +258,87 @@ const owner = async (context, origin, fingerprint, csrf) => {
   }
   return value.outcome.data.requester;
 };
-const login = async (context, origin) => {
+const openProvider = async (page, origin, language) => {
+  const address = new URL("/auth/login", origin);
+  if (language !== undefined) {
+    address.searchParams.set("language", language);
+  }
+  let response = await page.goto(address.href);
+  if (response?.status() === 429) {
+    // The evaluation image allows five challenges per one-minute window.
+    // Keep the production limiter in the test path.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 61_000);
+    });
+    response = await page.goto(address.href);
+  }
+  if (response?.status() !== 200) {
+    throw new Error("A new provider challenge must reach its credential form.");
+  }
+};
+
+const login = async (context, origin, provider) => {
   const page = await context.newPage();
-  await page.goto(`${origin}/auth/login`);
+  const preferences = {
+    version: 3,
+    language: "ar",
+    displayLocale: "de-DE",
+    mode: "system",
+    accent: "blue",
+  };
+  await page.addInitScript(
+    ({ appOrigin, preferred }) => {
+      if (
+        location.origin === appOrigin &&
+        localStorage.getItem("claimcore.presentation.v3") === null
+      ) {
+        localStorage.setItem("claimcore.presentation.v3", JSON.stringify(preferred));
+      }
+    },
+    { appOrigin: origin, preferred: preferences },
+  );
+  await page.goto(`${origin}/cases`);
+  const signIn = page.locator(".login-link");
+  await expect(signIn).toHaveAttribute("href", "/auth/login?language=ar");
+  const challenge = page.waitForRequest((request) =>
+    new URL(request.url()).pathname.endsWith("/protocol/openid-connect/auth"),
+  );
+  await signIn.click();
+  const authorization = new URL((await challenge).url());
+  expect(authorization.origin).toBe(provider);
+  expect(authorization.searchParams.has("request_uri")).toBe(true);
+  await page.waitForURL((url) => url.origin === provider);
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  const selection = page.locator("#login-select-toggle");
+  await expect(selection.locator("option")).toHaveCount(9);
+  const latvian = await selection
+    .locator("option")
+    .evaluateAll((options) =>
+      options
+        .map((option) => option.value)
+        .find((value) => new URL(value, location.origin).searchParams.get("kc_locale") === "lv"),
+    );
+  if (latvian === undefined) {
+    throw new Error("The provider must offer an explicit Latvian locale.");
+  }
+  await selection.selectOption(latvian);
+  await expect(page.locator("html")).toHaveAttribute("lang", "lv");
+  process.stdout.write(
+    "An Arabic app hint reached the provider through PAR. Explicit Latvian took precedence.\n",
+  );
+  await page.locator("#username").fill("owner");
+  await page.locator("#password").fill("intentionally-wrong-synthetic-password");
+  await page.locator("#kc-login").click();
+  await expect(page.locator("#password")).toBeVisible();
+  const denied = await payload(
+    await context.request.get(`${origin}/api/session`, {
+      headers: { "ClaimCore-Contract": consumerContractIdentity },
+    }),
+  );
+  if (denied.outcome.kind !== "SUCCEEDED" || denied.outcome.data.authenticated) {
+    throw new Error("The wrong synthetic credentials must leave the browser signed out.");
+  }
+  process.stdout.write("The provider refused the wrong synthetic credentials.\n");
   await page.locator("#username").fill("owner");
   const password = readFileSync(path.join(configuration, "owner-login.password"));
   try {
@@ -202,21 +347,118 @@ const login = async (context, origin) => {
     await page.waitForURL(
       (url) => url.origin === origin && ["/", "/people", "/cases"].includes(url.pathname),
     );
+    await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+    expect(
+      await page.evaluate(() => JSON.parse(localStorage.getItem("claimcore.presentation.v3"))),
+    ).toEqual(preferences);
   } finally {
     password.fill(0);
     await page.close();
   }
 };
-const qualify = async (origin, ca) => {
+const verifyProviderAppearance = async (page, dark) => {
+  await page.keyboard.press("Tab");
+  const username = page.locator("#username");
+  await username.focus();
+  await expect(username).toBeFocused();
+  const appearance = await page.locator("#kc-login").evaluate((button) => ({
+    token: getComputedStyle(document.documentElement).getPropertyValue("--cc-accent-solid").trim(),
+    background: getComputedStyle(button).backgroundColor,
+    font: getComputedStyle(button).fontFamily,
+    headingFont: getComputedStyle(document.querySelector("#kc-header-wrapper")).fontFamily,
+    focus: (() => {
+      const field = document.querySelector("#username");
+      const style = getComputedStyle(field);
+      return [
+        field.matches(":focus-visible"),
+        style.outlineStyle,
+        style.outlineWidth,
+        style.outlineColor,
+      ];
+    })(),
+    overflow: document.documentElement.scrollWidth > innerWidth,
+    sheets: [...document.styleSheets].map(({ href }) => href),
+  }));
+  expect(appearance.token).toBe(dark ? "#a0c6fe" : "#0f52ab");
+  expect(appearance.background).toBe(dark ? "rgb(160, 198, 254)" : "rgb(15, 82, 171)");
+  expect(appearance.font).toMatch(/^system-ui,.*Noto Sans Arabic/u);
+  expect(appearance.headingFont).toMatch(/^system-ui,.*Noto Sans Arabic/u);
+  expect(appearance.focus).toEqual([
+    true,
+    "solid",
+    "2px",
+    dark ? "rgb(160, 198, 254)" : "rgb(32, 104, 203)",
+  ]);
+  if (
+    appearance.overflow ||
+    appearance.sheets.findIndex((url) => url?.endsWith("/css/styles.css")) < 0 ||
+    appearance.sheets.findIndex((url) => url?.endsWith("/css/styles.css")) >=
+      appearance.sheets.findIndex((url) => url?.endsWith("/css/claimcore.css"))
+  ) {
+    throw new Error("The inherited and branded provider styles must render in order.");
+  }
+};
+const verifyProviderTheme = async (browser, origin, provider, languages) => {
+  for (const [index, language] of languages.entries()) {
+    // Do not overrun the real five-per-minute app challenge window in a clean installation.
+    if (index === 5) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 61_000);
+      });
+    }
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      locale: "en-US",
+      viewport: { width: 320, height: 720 },
+      colorScheme: language === "ar" ? "dark" : "light",
+    });
+    try {
+      const page = await context.newPage();
+      let brandedStyles = false;
+      page.on("response", (response) => {
+        const url = new URL(response.url());
+        if (url.origin === provider && url.pathname.endsWith("/css/claimcore.css")) {
+          brandedStyles = response.ok();
+        }
+      });
+      // English in a fresh context is the no-hint control.
+      await openProvider(page, origin, language === "en" ? undefined : language);
+      if (!brandedStyles || new URL(page.url()).origin !== provider) {
+        throw new Error(
+          "The configured identity provider must serve the ClaimCore login stylesheet.",
+        );
+      }
+      await expect(page.locator("html")).toHaveAttribute("lang", language);
+      await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
+      await expect(page.locator("#login-select-toggle option")).toHaveCount(9);
+      await expect(page.locator("#username")).toHaveAttribute("autocomplete", "username");
+      await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
+      await expect(page.locator("#kc-login")).toBeVisible();
+      await verifyProviderAppearance(page, language === "ar");
+      process.stdout.write(
+        `Rendered provider locale ${language} (form, direction, inherited and branded styles).\n`,
+      );
+    } finally {
+      await context.close();
+    }
+  }
+  process.stdout.write(`Rendered identity provider locales: ${languages.join(", ")}.\n`);
+};
+const qualify = async (origin, provider, ca) => {
   const fingerprint = consumerContractIdentity;
   if (!/^[0-9a-f]{64}$/u.test(fingerprint)) {
     throw new Error("Invalid generated consumer-contract identity.");
   }
   const browser = await chromium.launch({ headless: true });
   try {
-    // Only this synthetic browser ignores fixture certificates. Readiness above verifies its explicit CA and hostname.
+    // Only this synthetic browser ignores fixture certificates. Readiness verifies the explicit CA and hostnames.
+    const languages = presentationLanguages.filter(
+      (language) => language !== presentationPseudolanguage,
+    );
+    await verifyProviderTheme(browser, origin, provider, languages);
+    await verifyPriorRealm(browser, origin, provider);
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
-    await login(context, origin);
+    await login(context, origin, provider);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
     const requester = await owner(context, origin, fingerprint, csrf);
@@ -263,8 +505,15 @@ const qualify = async (origin, ca) => {
       throw new Error("The evaluation owner cannot open a case immediately after sign-in.");
     }
     progress("restart");
-    compose("restart", "web");
+    writePriorRealm(origin, "Replacement realm import must be skipped");
+    compose("restart", "identity", "web");
     await awaitReady(origin, ca);
+    await awaitReady(provider, ca, "/realms/claimcore/.well-known/openid-configuration");
+    await verifyProviderTheme(browser, origin, provider, languages);
+    await verifyPriorRealm(browser, origin, provider);
+    process.stdout.write(
+      "The imported stock-theme realm retained its existing display name despite a conflicting import file.\n",
+    );
     await owner(context, origin, fingerprint, csrf);
     await session(context, origin, fingerprint);
     progress("logout");
@@ -348,26 +597,26 @@ try {
     120_000,
   );
   project = settings().CLAIMCORE_COMPOSE_PROJECT;
-  progress("readiness-negative");
-  rejectUnstartedIdentity();
+  const origin = `https://localhost:${webPort}`;
+  writePriorRealm(origin, priorRealmName);
   progress("build-and-start");
   command(
     "bash",
     [path.join(root, "eng/source-archive.sh"), path.join(root, "SOURCE.tar.gz")],
     120_000,
   );
+  compose("build", "identity");
+  progress("readiness-negative");
+  rejectUnstartedIdentity();
+  progress("build-and-start");
   compose("up", "--build", "--detach", "--wait", "--wait-timeout", "240");
   qualifyIdentityMemory();
   const ca = readFileSync(path.join(configuration, "ca.pem"));
-  const origin = `https://localhost:${webPort}`;
   await awaitReady(origin, ca);
-  await awaitReady(
-    `https://identity.localhost:${identityPort}`,
-    ca,
-    "/realms/claimcore/.well-known/openid-configuration",
-  );
+  const provider = `https://identity.localhost:${identityPort}`;
+  await awaitReady(provider, ca, "/realms/claimcore/.well-known/openid-configuration");
   progress("owner-login");
-  await qualify(origin, ca);
+  await qualify(origin, provider, ca);
   progress("qualified");
 } catch {
   failed = true;

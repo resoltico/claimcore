@@ -236,7 +236,16 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                       },
                       subject: { kind: "LIST" },
                       actions: [],
-                      links: [],
+                      links: [
+                        {
+                          rel: "OPEN_CASE",
+                          labelId: "field.caseReference.label",
+                          link: {
+                            endpoint: "case.get",
+                            input: { target: { kind: "ID", caseId } },
+                          },
+                        },
+                      ],
                       history: null,
                       nextCursor: null,
                       basis: {

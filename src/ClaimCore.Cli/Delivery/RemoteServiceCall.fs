@@ -43,6 +43,22 @@ module RemoteServiceCall =
             |> Result.bind (CliReply.result frame)
             |> Result.defaultWith (fun _ -> invalid frame))
 
+    let internal singleton (header: string) (headers: HttpHeaders) =
+        match headers.TryGetValues header with
+        | true, values ->
+            match List.ofSeq (nonNull values) with
+            | [ value ] -> Some value
+            | _ -> None
+        | _ -> None
+
+    let internal hostContractIdentity (failure: HostFailure) (response: HttpResponseMessage) =
+        if failure.Code = HostFailureCode.ContractMismatch then
+            singleton HostFailureReason.ContractIdentityHeader response.Headers
+            |> Option.bind (fun value ->
+                ResponseScalars.digest.Read "$" (JsonValue.String value) |> Result.toOption)
+        else
+            None
+
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {
             let media =
@@ -70,17 +86,14 @@ module RemoteServiceCall =
                     | Ok failure when
                         HostFailureCodecs.matchesStatus (int response.StatusCode) failure
                         ->
-                        return encode frame (fun () -> CliReply.serviceFailure frame failure)
+                        return
+                            encode frame (fun () ->
+                                CliReply.serviceFailure frame failure
+                                |> CliReply.withHostContractIdentity (
+                                    hostContractIdentity failure response
+                                ))
                     | _ -> return invalid frame
         }
-
-    let internal singleton (header: string) (headers: HttpHeaders) =
-        match headers.TryGetValues header with
-        | true, values ->
-            match List.ofSeq (nonNull values) with
-            | [ value ] -> Some value
-            | _ -> None
-        | _ -> None
 
     let internal confirms (installation: Guid) (response: HttpResponseMessage) =
         singleton "ClaimCore-Installation" response.Headers = Some(installation.ToString("D"))

@@ -53,6 +53,62 @@ let tests =
     testList
         "attachment client"
         [
+            testCaseAsync
+                "binary failures admit only a canonical digest on a typed mismatch"
+                (async {
+                    let host = String.replicate 64 "a"
+
+                    for status, code, headers, expected in
+                        [
+                            HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ host ], Some host
+                            HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [], None
+                            HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ host; host ], None
+                            HttpStatusCode.Conflict,
+                            "CONTRACT_MISMATCH",
+                            [ host + "," + host ],
+                            None
+                            HttpStatusCode.Conflict, "CONTRACT_MISMATCH", [ host + " " ], None
+                            HttpStatusCode.Conflict,
+                            "CONTRACT_MISMATCH",
+                            [ host.ToUpperInvariant() ],
+                            None
+                            HttpStatusCode.Conflict,
+                            "CONTRACT_MISMATCH",
+                            [ host.Substring(1) ],
+                            None
+                            HttpStatusCode.Conflict, "INSTALLATION_MISMATCH", [ host ], None
+                            HttpStatusCode.Forbidden, "CONTRACT_MISMATCH", [ host ], None
+                            HttpStatusCode.Conflict, "UNKNOWN", [ host ], None
+                        ] do
+                        let! result =
+                            received installation (fun response ->
+                                response.StatusCode <- status
+
+                                response.Content <-
+                                    new StringContent(
+                                        $"""{{"hostFailure":{{"code":"{code}","phase":"NOT_STARTED"}}}}""",
+                                        Encoding.UTF8,
+                                        "application/json"
+                                    )
+
+                                response.Headers.TryAddWithoutValidation(
+                                    "ClaimCore-Host-Contract",
+                                    (headers: seq<string>)
+                                )
+                                |> ignore)
+
+                        match result with
+                        | Error(AttachmentDownloadFailure.Host(_, supplied)) ->
+                            Expect.equal
+                                supplied
+                                expected
+                                "Only an admitted typed mismatch may convey the host build"
+                        | Error(AttachmentDownloadFailure.Local ClientFailure.InvalidResponse) ->
+                            Expect.isTrue
+                                (status <> HttpStatusCode.Conflict || code = "UNKNOWN")
+                                "Only malformed failure responses fail transport admission"
+                        | _ -> failtest "Expected an attachment response refusal"
+                })
             testCase
                 "frozen upload reads a regular handle and uses the selected basename"
                 (fun () ->

@@ -34,7 +34,16 @@ module internal HumanText =
         | HumanRejection.Input(value, issues) ->
             advice rendering value @ (issues |> List.map (issue rendering))
         | HumanRejection.Conflict(value, _, document) ->
-            advice rendering value @ ViewText.renderDocument details rendering document
+            let render =
+                if
+                    document.Links
+                    |> List.exists (fun link -> link.Relation = LinkRelation.OpenCase)
+                then
+                    ViewText.renderActionableRefusal
+                else
+                    ViewText.renderDocument
+
+            advice rendering value @ render details rendering document
         | HumanRejection.Refused value -> advice rendering value
 
     let read details (rendering: RenderingContext) (reply: HumanReadReply) =

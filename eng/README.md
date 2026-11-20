@@ -35,3 +35,8 @@ derivation notes and hand-authored expected bytes. [SQL baseline identity](../sr
 exact embedded source bytes. The installation format is owned by [InstallationFormat.fs](../src/ClaimCore.RecordFormat/InstallationFormat.fs).
 
 See the [glossary](../docs/glossary.md) for project terminology.
+
+
+For simultaneous published acceptance processes on one development host, set
+`CLAIMCORE_ACCEPTANCE_PORT_RANGE=FIRST-LAST` to a different inclusive range for each process.
+Use disjoint ranges within 10000–32767. Each fixture still skips restricted, ephemeral and occupied ports.

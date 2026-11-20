@@ -129,7 +129,6 @@ export type MatrixRoute = {
   endpoint?: EndpointId;
   expectedInput?: Readonly<Record<string, unknown>>;
   filtered?: boolean;
-  summaryExpanded?: boolean;
   expectedReference?: string;
 };
 const views = [
@@ -202,15 +201,14 @@ const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] =>
   },
   {
     id: "cases-summary",
-    path: `/cases?view=ALL&q=${marker}`,
-    ready: "#case-list-title",
-    endpoint: "case.list",
+    path: `/cases/report?view=ALL&q=${marker}`,
+    ready: ".summary-band",
+    endpoint: "case.summary",
     expectedInput: {
       limit: 50,
       view: "ALL",
       text: marker,
     },
-    summaryExpanded: true,
   },
   ...views.map((view) => ({
     id: `cases-${view.id}`,

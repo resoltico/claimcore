@@ -1,5 +1,4 @@
 import { apiEndpoints, requestEndpoint, resultNotice } from "../../api/service";
-import type { CaseSelector } from "@contracts/client";
 import { hasDocumentSubject } from "../../protocol/types";
 
 import { isDisclosureRefused } from "../../api/outcomes";
@@ -36,14 +35,13 @@ const partyRevision = (current: ConflictObservation["current"], partyId: string)
 
 const reminderRevision = async (
   effect: Effect,
-  target: CaseSelector,
   reminderId: string,
   signal: AbortSignal,
 ): Promise<number | Failed> => {
   const result = await requestEndpoint(
     apiEndpoints.reminderGet,
     effect.identity.credential,
-    { target, reminderId },
+    { target: effect.target, reminderId },
     signal,
   );
   if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
@@ -51,7 +49,11 @@ const reminderRevision = async (
   }
   return (
     result.value.outcome.document.actions.flatMap(({ binding }) =>
-      binding.kind === "REMINDER" && "expectedRevision" in binding
+      binding.kind === "REMINDER" &&
+      "reminderId" in binding &&
+      binding.reminderId === reminderId &&
+      binding.target.kind === "ID" &&
+      binding.target.caseId === effect.target.caseId
         ? [binding.expectedRevision]
         : [],
     )[0] ?? incomplete
@@ -66,6 +68,9 @@ const observe = async (
   if (current.disclosure === "ERASED") {
     return { kind: "observed", value: { current, revision: null } };
   }
+  if (current.disclosure !== "CURRENT") {
+    return incomplete;
+  }
   const { binding } = effect.source.prepared.input;
   let revision: number | Failed = current.subject.revision;
   if (binding.kind === "WORK") {
@@ -73,7 +78,7 @@ const observe = async (
   } else if ("partyId" in binding) {
     revision = partyRevision(current, binding.partyId) ?? incomplete;
   } else if ("reminderId" in binding) {
-    revision = await reminderRevision(effect, binding.target, binding.reminderId, signal);
+    revision = await reminderRevision(effect, binding.reminderId, signal);
   } else if (binding.kind === "PARTY" || binding.kind === "REMINDER") {
     return incomplete;
   }
@@ -95,7 +100,7 @@ export const readConflict = async (
     const result = await requestEndpoint(
       apiEndpoints.caseGet,
       effect.identity.credential,
-      { target: effect.source.prepared.input.binding.target },
+      { target: effect.target },
       controller.signal,
     );
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
@@ -107,7 +112,7 @@ export const readConflict = async (
       };
     }
     const { document } = result.value.outcome;
-    if (!hasDocumentSubject(document, "CASE")) {
+    if (!hasDocumentSubject(document, "CASE") || document.subject.caseId !== effect.target.caseId) {
       return {
         type: "CONFLICT_READ_FAILED",
         ...common,

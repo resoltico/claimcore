@@ -756,6 +756,7 @@ const reviewLatestDraft = (
       values,
       rebasedOperationBinding(
         conflict.source.prepared.input,
+        conflict.target,
         conflict.latest.revision,
         documentActions(conflict.latest.current),
       ),

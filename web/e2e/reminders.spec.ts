@@ -923,14 +923,31 @@ test("published reminder rows show server timing in case and queue views across 
   }
 });
 
+const seedReminder = async (
+  page: Parameters<typeof openCase>[0],
+  caseReference: string,
+  action: string,
+  due: string,
+) => {
+  const operationId = mintOperationId();
+  const result = await workRequest(page, "operation.execute", {
+    operationId,
+    task: "reminder.create",
+    binding: { kind: "REMINDER", target: { kind: "REFERENCE", caseReference } },
+    inputs: { "input:reminderAction": action, "input:reminderDueDate": due },
+  });
+  expect(result.outcome.kind).toBe("ACCEPTED");
+  return { operationId };
+};
+
 test("@engine exact reminder URLs retain completed selection and UUID-shaped references across reload", async ({
   page,
 }) => {
   await openAuthenticated(page);
   const reference = randomUUID();
   await openCase(page, reference);
-  const first = await plan(page, "Exact completed reminder", "2026-01-01");
-  const second = await plan(page, "Another pending reminder", "2026-01-02");
+  const first = await seedReminder(page, reference, "Exact completed reminder", "2026-01-01");
+  const second = await seedReminder(page, reference, "Another pending reminder", "2026-01-02");
   const target = { kind: "REFERENCE" as const, caseReference: reference };
   const completed = await workRequest(page, "operation.execute", {
     operationId: mintOperationId(),
@@ -1061,7 +1078,7 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
   await openAuthenticated(page);
   const first = `FOREIGN-${randomUUID()}`;
   await openCase(page, first);
-  const foreign = await plan(page, "Private foreign reminder", "2026-01-01");
+  const foreign = await seedReminder(page, first, "Private foreign reminder", "2026-01-01");
   const parent = `READABLE-${randomUUID()}`;
   await page.goto("/cases");
   await openCase(page, parent);

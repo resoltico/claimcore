@@ -3550,6 +3550,17 @@
               ]
             }
           }
+        },
+        "headers": {
+          "ClaimCore-Host-Contract": {
+            "description": "The responding host's contract identity, available on CONTRACT_MISMATCH only.",
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          }
         }
       },
       "Host413": {
@@ -24882,6 +24893,28 @@
           },
           "who": {
             "$ref": "#/components/schemas/PresentedValue"
+          },
+          "target": {
+            "$ref": "#/components/schemas/PresentedValue"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedChange"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "changedFields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "minItems": 0,
+            "maxItems": 324
           },
           "summary": {
             "$ref": "#/components/schemas/PresentedMessage"

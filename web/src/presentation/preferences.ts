@@ -9,6 +9,8 @@ import {
   presentationLanguageAliases,
   presentationDisplayOptions,
 } from "@contracts/client";
+import tokens from "../theme/tokens.json" with { type: "json" };
+
 export const languages = presentationLanguages;
 export const displayLocales = presentationDisplayLocales;
 export const accents = presentationAccents;
@@ -43,7 +45,7 @@ export const changePreferences = (current: Preferences, change: PreferenceChange
 export const defaults: Preferences = Object.freeze({
   ...presentationDefaults,
   mode: "system",
-  accent: "green",
+  accent: accents.find((accent) => accent === tokens.$extensions.claimcore.defaultAccent)!,
 });
 export const preferenceKey = "claimcore.presentation.v3";
 const resolveMode = (value: unknown): Mode => modes.find((mode) => mode === value) ?? defaults.mode;

@@ -6,6 +6,7 @@ import { prepareRequest } from "../../../src/protocol/preparedRequest";
 import { begin, effect, reviewed, secondId } from "../../support/operation-identity.fixtures";
 import { current } from "../../support/operation-form.fixtures";
 import type { HumanRejection_CONFLICT } from "@contracts/client";
+const stableTarget = { kind: "ID", caseId: current.subject.caseId } as const;
 const diagnostic: HumanRejection_CONFLICT = {
   kind: "CONFLICT",
   actualRevision: 5,
@@ -22,7 +23,13 @@ const diagnostic: HumanRejection_CONFLICT = {
     },
     subject: { kind: "LIST" },
     actions: [],
-    links: [],
+    links: [
+      {
+        rel: "OPEN_CASE",
+        labelId: "field.caseReference.label",
+        link: { endpoint: "case.get", input: { target: stableTarget } },
+      },
+    ],
     history: null,
     nextCursor: null,
     basis: current.basis,
@@ -57,13 +64,10 @@ it("rebinds the declared revision without putting executable identity or authori
     inputs: { "field:claimedAmount": "1234.56", "field:claimedCurrency": "EUR" },
   });
   const { bytes } = command;
-  const binding = rebasedOperationBinding(command.input, 8, []);
+  const binding = rebasedOperationBinding(command.input, stableTarget, 8, []);
   expect(binding).toEqual({
     kind: "CASE",
-    target: {
-      kind: "REFERENCE",
-      caseReference: "CASE-SERIALIZATION",
-    },
+    target: stableTarget,
     expectedRevision: 8,
   });
   expect(command.bytes).toBe(bytes);
@@ -221,14 +225,14 @@ it("refreshes both erasure preconditions from the supplied current action after 
     {},
     [],
   );
-  expect(rebasedOperationBinding(old.input, 8, [fresh])).toEqual({
+  expect(rebasedOperationBinding(old.input, stableTarget, 8, [fresh])).toEqual({
     kind: "CASE",
-    target,
+    target: stableTarget,
     expectedRevision: 8,
     expectedFamilySequence: 25,
   });
   expect(old.input.binding).toMatchObject({ expectedRevision: 4, expectedFamilySequence: 12 });
   expect(() => {
-    rebasedOperationBinding(old.input, 8, []);
+    rebasedOperationBinding(old.input, stableTarget, 8, []);
   }).toThrow("A fresh reviewed action is required.");
 });

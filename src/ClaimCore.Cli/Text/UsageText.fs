@@ -126,6 +126,8 @@ module UsageText =
                 CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
             | Some CliCommand.Version, _ -> CliMessage.InvalidVersionOptions
+            | Some CliCommand.Configure, UsageError.NotApplicable("--show", "shell") ->
+                CliMessage.ConfigureShowFromShell "claimcore configure --show"
             | Some CliCommand.Configure, _ -> CliMessage.InvalidConfigureOptions
             | _ -> CliMessage.InvalidInvocation commandText
 

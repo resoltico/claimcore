@@ -120,6 +120,10 @@ test("browser renders void, reinstatement and live payload erasure through autho
   await openAuthenticated(page);
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);
+  const ownerHistory = page.locator(".case-timeline-panel");
+  await expect(
+    ownerHistory.locator(".timeline-comparison [data-side=after]").first(),
+  ).toBeAttached();
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
@@ -152,7 +156,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     }
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");
-    await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
+    await expect(history.locator(".timeline-comparison [data-side]")).toHaveCount(0);
     await expectAccessible(steward);
   } finally {
     await context.close();

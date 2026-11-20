@@ -2,7 +2,9 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expect, test, type Page } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
-import { expectAccessible, login, logout } from "./session-helpers";
+import { recoveryRecords } from "./recovery-storage";
+import { selectedActor, syntheticPrincipals } from "./people-setup";
+import { browserRequest, expectAccessible, login, logout, sessionToken } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -138,6 +140,80 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", 
   await expectAnonymousSession(page);
 });
 
+test("a refused callback offers a fresh same-origin restart without copying the callback @engine", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await page.goto("/cases?view=ALL", { waitUntil: "commit" });
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await page.evaluate(() => {
+    sessionStorage.setItem("claimcore.loginReturn", "/cases?view=ALL");
+    localStorage.setItem(
+      "claimcore.presentation.v3",
+      JSON.stringify({
+        version: 3,
+        language: "lv",
+        displayLocale: "en-GB",
+        mode: "system",
+        accent: "blue",
+      }),
+    );
+  });
+  const canary = "CALLBACK-PRIVATE-CANARY";
+  const refused = await page.goto(`/signin-oidc?error=access_denied&error_description=${canary}`);
+  expect(refused?.status()).toBe(401);
+  expect(refused?.headers()["cache-control"]).toContain("no-store");
+  expect(refused?.headers()["referrer-policy"]).toBe("no-referrer");
+  await expect(page.locator("html")).toHaveAttribute("lang", "lv");
+  await expect(page.locator("#restart-sign-in")).toHaveAttribute("href", "/auth/login?language=lv");
+  await expect(page.locator("body")).not.toContainText(canary);
+  expect(await page.evaluate(() => sessionStorage.getItem("claimcore.loginReturn"))).toBe(
+    "/cases?view=ALL",
+  );
+  await expectAnonymousSession(page);
+  await login(page, null, (await page.locator("#restart-sign-in").textContent())!);
+  await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
+  await expect(page.locator("html")).toHaveAttribute("lang", "lv");
+  await expect(readSession(page)).resolves.toMatchObject({
+    payload: { outcome: { data: { authenticated: true } } },
+  });
+});
+
+for (const dependency of ["catalog", "script"] as const) {
+  test(`a refused callback retains its static retry when only the ${dependency} fails @engine`, async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      sessionStorage.removeItem("claimcore.loginReturn");
+      localStorage.setItem(
+        "claimcore.presentation.v3",
+        JSON.stringify({
+          version: 3,
+          language: "lv",
+          displayLocale: "en-GB",
+          mode: "system",
+          accent: "blue",
+        }),
+      );
+    });
+    let blocked = 0;
+    const glob = dependency === "catalog" ? "**/catalogs/*.json" : "**/assets/*.js";
+    await page.route(glob, async (route) => {
+      blocked += 1;
+      await route.abort();
+    });
+    const refused = await page.goto("/signin-oidc?error=access_denied");
+    expect(refused?.status()).toBe(401);
+    await expect.poll(() => blocked).toBeGreaterThan(0);
+    await expect(page.getByRole("link", { name: "Restart sign-in" })).toHaveAttribute(
+      "href",
+      "/auth/login",
+    );
+    expect(await page.evaluate(() => sessionStorage.getItem("claimcore.loginReturn"))).toBeNull();
+  });
+}
+
 test("ends all ClaimCore browser sessions while allowing a fresh login afterward @engine", async ({
   page,
   browser,
@@ -149,6 +225,12 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   }
   await page.goto("/", { waitUntil: "commit" });
   await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/people-history");
+  await expect(page.getByRole("heading", { name: "You don’t have access yet" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Access history" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Search cases" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   const other = await browser.newContext({
     baseURL,
     ignoreHTTPSErrors: true,
@@ -158,6 +240,16 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     const second = await other.newPage();
     await second.goto("/", { waitUntil: "commit" });
     await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    const firstLogout = page.waitForResponse((response) =>
+      response.url().endsWith("/api/session.logout"),
+    );
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    expect((await firstLogout).status()).toBe(200);
+    await expectAnonymousSession(page);
+    await expect(readSession(second)).resolves.toMatchObject({
+      payload: { outcome: { data: { authenticated: true } } },
+    });
+    await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await page
       .getByRole("button", { name: "End my ClaimCore browser sessions", exact: true })
       .click();
@@ -208,6 +300,85 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     expect((await signedOut).status()).toBe(200);
     await expectAnonymousSession(page);
+  } finally {
+    await other.close();
+  }
+});
+
+test("reports a dispatched session termination with a lost reply only once @engine", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await page.goto("/", { waitUntil: "commit" });
+  await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+  const action = "End my ClaimCore browser sessions";
+  let sent = 0;
+  await page.route("**/api/session.terminateOwn", async (route) => {
+    sent += 1;
+    const reply = await route.fetch();
+    expect(reply.status()).toBe(200);
+    expect(await reply.json()).toMatchObject({ outcome: { kind: "SUCCEEDED", self: true } });
+    await route.abort();
+  });
+  const control = page.getByRole("button", { name: action, exact: true });
+  await control.click();
+  const dialog = page.getByRole("dialog", { name: action, exact: true });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(sent).toBe(0);
+  await control.click();
+  await dialog.getByRole("button", { name: action, exact: true }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "The request was not confirmed. It may have ended the ClaimCore browser sessions. Repeating it can also end newer sessions.",
+  );
+  await expect(dialog).not.toContainText("ClaimCore browser sessions ended.");
+  await expect.poll(() => recoveryRecords(page, { allowMissing: true })).toEqual([]);
+  expect(sent).toBe(1);
+  await expectAnonymousSession(page);
+});
+
+test("owner termination ends the selected person's existing ticket and preserves the administrator's @engine", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout * 2);
+  if (baseURL === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  await page.goto("/");
+  await login(page);
+  const other = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors: true,
+    storageState: { cookies: [], origins: [] },
+  });
+  try {
+    const person = await other.newPage();
+    await person.goto("/");
+    await login(person, "Cases", "Sign in", "synthetic-steward");
+    const principal = await syntheticPrincipals();
+    const actorId = await selectedActor(page, {
+      kind: "HUMAN",
+      issuer: principal.issuer,
+      subject: principal.stewardSubject,
+    });
+    const replay = await browserRequest(page, "/api/people.terminateSessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ClaimCore-Representation": "HUMAN",
+        "X-ClaimCore-Antiforgery": await sessionToken(page),
+      },
+      body: JSON.stringify({ "input:actorId": actorId }),
+    });
+    expect(replay.status).toBe(200);
+    expect(replay.payload).toMatchObject({ outcome: { kind: "SUCCEEDED", self: false } });
+    await expectAnonymousSession(person);
+    await expect(readSession(page)).resolves.toMatchObject({
+      payload: { outcome: { data: { authenticated: true } } },
+    });
   } finally {
     await other.close();
   }

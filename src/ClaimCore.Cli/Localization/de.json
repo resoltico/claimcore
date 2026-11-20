@@ -498,5 +498,13 @@
   "cli.attachment.outputFailed": {
     "text": "Der Anhang konnte am gewählten Ziel nicht gespeichert werden.",
     "source": "915060f3dc90"
+  },
+  "cli.contractIdentities": {
+    "text": "CLI-Vertrag: {local}. Dienstvertrag: {host}.",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "Führen Sie {command} im Terminal Ihres Betriebssystems aus.",
+    "source": "278514d04b5d"
   }
 }

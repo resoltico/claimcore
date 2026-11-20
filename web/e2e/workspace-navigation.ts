@@ -9,9 +9,10 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
 };
 /** Compact workspace navigation stays available below case tasks. */
 export const compactSettingsNavigation = async (page: Page): Promise<Locator> => {
-  const settings = page.locator('.workspace-mobile-tabs a[href="/settings"]');
+  const navigation = page.locator(".workspace-mobile-tabs");
+  const settings = navigation.locator('a[href="/settings"]');
   if (!(await settings.isVisible())) {
-    await page.locator(".case-back button").click();
+    await navigation.locator("details > summary").click();
   }
   await expect(settings).toBeVisible();
   return settings;
@@ -42,7 +43,6 @@ export const choiceGroup = (page: Page, name: string): Locator =>
   page.locator(`fieldset[id="field-${name}"]`);
 export const showExactLookup = async (page: Page): Promise<Locator> => {
   await page.locator('.worklist[aria-busy="false"]').waitFor({ state: "visible" });
-  await page.locator('.summary-band[aria-busy="true"]').waitFor({ state: "detached" });
   const input = page.locator("#case-lookup");
   if (!(await input.isVisible())) {
     await page.locator(".exact-lookup > summary").click();
@@ -56,7 +56,11 @@ export const goToView = async (
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   const navigation = page.locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav");
-  await navigation.locator(`a[href="/${name}"]`).click();
+  const destination = navigation.locator(`a[href="/${name}"]`);
+  if (compact && !(await destination.isVisible())) {
+    await navigation.locator("details > summary").click();
+  }
+  await destination.click();
 };
 /** The recovery route also supports an exact direct link. */
 export const openRecovery = async (page: Page): Promise<void> => {

@@ -498,5 +498,13 @@
   "cli.failure.RECOVERY_ROOT_NOT_ABSOLUTE": {
     "text": "Lai izmantotu lokālo atkopšanu, iestatiet {setting} uz absolūtu mapes ceļu.",
     "source": "5c168d61cfd3"
+  },
+  "cli.contractIdentities": {
+    "text": "CLI līgums: {local}. Pakalpojuma līgums: {host}.",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "Palaidiet {command} operētājsistēmas terminālī.",
+    "source": "278514d04b5d"
   }
 }

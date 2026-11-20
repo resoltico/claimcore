@@ -187,6 +187,12 @@ let private responseLabels () =
                     text
                     required
                     "Negotiation guidance preserves its declared boundary behavior"
+        | [ "ClaimCore-Host-Contract"; "headers"; "Host409"; "responses"; "components" ],
+          ClaimCore.Json.JsonValue.String text ->
+            Expect.stringContains
+                text
+                "CONTRACT_MISMATCH only"
+                "The digest applies only to this refusal"
         | _ -> failtestf "Optional prose must not enter the structural document: %A" path
 
     fixedDescriptions ()

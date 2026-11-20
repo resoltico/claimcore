@@ -308,8 +308,16 @@
     "source": "3d3c04cbc07b"
   },
   "ui.loginInstructions": {
-    "text": "سجل الدخول بحساب مؤسستك.",
-    "source": "2d954a0e8a31"
+    "text": "انتقل إلى مزوّد تسجيل الدخول لإدخال بيانات اعتماد مؤسستك.",
+    "source": "cdd1baf4db63"
+  },
+  "ui.signInIncomplete": {
+    "text": "تعذّر إكمال تسجيل الدخول.",
+    "source": "f6f1d86a127a"
+  },
+  "ui.restartSignIn": {
+    "text": "أعِد بدء تسجيل الدخول",
+    "source": "58c173e2e27e"
   },
   "ui.lookingUp": {
     "text": "جارٍ البحث…",
@@ -587,10 +595,6 @@
     "text": "جارٍ التسجيل…",
     "source": "7ea93caac0f5"
   },
-  "ui.summaryDetails": {
-    "text": "عرض المجاميع",
-    "source": "aa9b920c97a9"
-  },
   "ui.theme": {
     "text": "المظهر",
     "source": "efb52e7172b7"
@@ -654,10 +658,6 @@
   "ui.workDateBasis": {
     "text": "تاريخ العمل {date} ({zone}).",
     "source": "10dbbbcb3088"
-  },
-  "ui.workQueue": {
-    "text": "قائمة العمل",
-    "source": "696e7291ea90"
   },
   "ui.worklistSearch": {
     "text": "تصفية هذا العرض",
@@ -774,5 +774,33 @@
   "ui.documentPage": {
     "text": "الصفحة {page} من {count}",
     "source": "e80db00f5ef1"
+  },
+  "ui.exportCasesCsv": {
+    "text": "تصدير قائمة الملفات بصيغة CSV",
+    "source": "87a0ff3f5f6b"
+  },
+  "ui.exportReportCsv": {
+    "text": "تصدير التقرير بصيغة CSV",
+    "source": "59502c05a50e"
+  },
+  "ui.currentBrowserSession": {
+    "text": "جلسة المتصفح الحالية",
+    "source": "75cad0cd2868"
+  },
+  "ui.browserSessions": {
+    "text": "جلسات متصفح ClaimCore",
+    "source": "afe6f30a2564"
+  },
+  "ui.applyFilters": {
+    "text": "تطبيق عوامل التصفية",
+    "source": "d80ab19b7edb"
+  },
+  "ui.cancelChanges": {
+    "text": "إلغاء",
+    "source": "19766ed6ccb2"
+  },
+  "ui.accountAccessHistory": {
+    "text": "سجلّ الوصول للحساب",
+    "source": "ed6a3714adfd"
   }
 }

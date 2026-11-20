@@ -14,7 +14,7 @@ open ClaimCore.Wire
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
 type internal AttachmentDownloadFailure =
     | Local of ClientFailure
-    | Host of HostFailure
+    | Host of HostFailure * contractIdentity: string option
     | Refused of AttachmentTransferFailure
     | Access of CliReply
 
@@ -65,7 +65,12 @@ module internal AttachmentBinaryCall =
                         | Ok failure when
                             HostFailureCodecs.matchesStatus (int response.StatusCode) failure
                             ->
-                            Error(AttachmentDownloadFailure.Host failure)
+                            Error(
+                                AttachmentDownloadFailure.Host(
+                                    failure,
+                                    RemoteServiceCall.hostContractIdentity failure response
+                                )
+                            )
                         | _ -> invalid
             elif
                 response.StatusCode <> HttpStatusCode.OK

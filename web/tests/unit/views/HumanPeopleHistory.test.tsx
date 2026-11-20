@@ -14,7 +14,8 @@ const document: HumanDocument = {
           entries: [
             {
               key: "1/0",
-              link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+              link: { endpoint: "people.grants", input: { actorId: caseId } },
+              target: { kind: "TEXT", value: "Core target Ω" },
               when: "2026-11-09T12:00:00.000000Z",
               who: {
                 kind: "ACTOR",
@@ -78,7 +79,7 @@ const reply = (doc: unknown) => ({
   },
 });
 afterEach(() => vi.unstubAllGlobals());
-it("links an opaque supplied scope caption using its typed effect destination", async () => {
+it("links the supplied target independently of the scope caption", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
     new Response(JSON.stringify(reply(document)), {
       status: 200,
@@ -90,7 +91,7 @@ it("links an opaque supplied scope caption using its typed effect destination", 
   vi.stubGlobal("fetch", fetch);
   render(<PeopleHistory actorId={caseId} />);
   const link = await screen.findByRole("link", {
-    name: "Core scoped caption Ω",
+    name: "Core target Ω",
   });
   expect(link).toHaveAttribute("href", expect.stringContaining(caseId));
   expect(screen.getByText("Core recorder Ψ")).toBeVisible();

@@ -284,14 +284,12 @@ it("retains only the same history page on transient delivery failure and retries
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
 });
 
-it("renders the provided case scope link and actor refs without revealing a bootstrap principal as a name", async () => {
+it("renders the affected account link and the separate recorder without revealing a bootstrap principal as a name", async () => {
   const scoped: HistoryRow = {
     content: {
       ...entry().content,
-      link: {
-        endpoint: "case.get",
-        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
-      },
+      link: { endpoint: "people.grants", input: { actorId: first } },
+      target: { kind: "TEXT", value: "Affected account one" },
       summary: { messageId: "task.people.grant.label", arguments: [] },
       highlights: [
         {
@@ -331,9 +329,9 @@ it("renders the provided case scope link and actor refs without revealing a boot
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(page([scoped, registered]));
   vi.stubGlobal("fetch", fetch);
   showHistory();
-  expect(await screen.findByRole("link", { name: "FT-0007" })).toHaveAttribute(
+  expect(await screen.findByRole("link", { name: "Affected account one" })).toHaveAttribute(
     "href",
-    "/cases/id/20000000-0000-4000-8000-000000000001",
+    `/people/${first}`,
   );
   expect(screen.getByText("Current target two")).toBeVisible();
   expect(screen.getByText("PRIVATE_PRINCIPAL_CANARY", { exact: true })).not.toBeVisible();

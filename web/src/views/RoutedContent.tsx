@@ -33,6 +33,7 @@ import { navigate } from "../routing/navigation";
 import type { PeoplePanel as PeoplePanelType } from "./PeoplePanel";
 import type { CaseDetail as CaseDetailType } from "./CaseDetail";
 import { ReminderQueue } from "./work/ReminderQueue";
+import { CaseReport } from "./worklist/SummaryBand";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
@@ -351,10 +352,13 @@ export const RoutedContent = ({
 }) => {
   const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
+    case "caseReport":
+      return <CaseReport query={route.query} available={caseAvailable} />;
     case "cases":
       return (
         <CaseList
           onSelect={selectCase}
+          onOpenCase={caseNavigation.openCase}
           onMutationLockChange={setLocked}
           disclosureAvailable={caseAvailable}
         />

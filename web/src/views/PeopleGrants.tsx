@@ -133,7 +133,7 @@ const PersonContents = ({
             });
           }}
         >
-          {p.text("endpoint.people.history.label")}
+          {p.text("ui.accountAccessHistory")}
         </a>
       )}
       {page.page === null ? null : (

@@ -3,6 +3,7 @@ import { isObject } from "../protocol/client";
 import type { CaseSelector } from "@contracts/client";
 export type Route =
   | { screen: "cases"; query: string }
+  | { screen: "caseReport"; query: string }
   | { screen: "home" }
   | { screen: "reminders"; query: string; invalidSelection?: true }
   | { screen: "settings" }
@@ -141,6 +142,9 @@ export const parseRoute = (location: Pick<Location, "pathname" | "search">): Rou
     const simple = singleRoute(segments, location.search);
     if (simple !== null) {
       return simple;
+    }
+    if (segments.join("/") === "cases/report") {
+      return { screen: "caseReport", query: location.search };
     }
     if (segments[0] === "cases") {
       return caseRoute(segments, location.search);

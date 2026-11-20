@@ -158,6 +158,7 @@ let private changeLocaleText directory =
 let private localeClient (fixture: PublishedFixture.Fixture) directory =
     changeLocaleText directory
     let output = publish fixture directory "locale-client"
+
     let before = fixture.Administration [ "head" ]
     Expect.equal before.ExitCode 0 "Read head before the locale-only client control"
 
@@ -186,6 +187,34 @@ let qualify (fixture: PublishedFixture.Fixture) =
     changeStructuralVocabulary directory
 
     let output = publish fixture directory "different-client"
+
+    let version binary =
+        let observed =
+            ProcessRunner.dotnet 60_000 binary [ "version"; "--json" ] fixture.Environment None
+
+        Expect.equal observed.ExitCode 0 "Published version succeeds without a session"
+        use document = JsonDocument.Parse observed.StandardOutput
+
+        (document.RootElement.GetProperty("version").GetString() |> nonNull),
+        (document.RootElement.GetProperty("contractIdentity").GetString() |> nonNull)
+
+    let currentVersion, currentDigest = version fixture.Cli
+
+    let alternateVersion, alternateDigest =
+        version (Path.Combine(output, "claimcore.dll"))
+
+    Expect.equal
+        alternateVersion
+        currentVersion
+        "Independently built consumers can share a version label"
+
+    Expect.notEqual
+        alternateDigest
+        currentDigest
+        "Structural contract changes identify the exact build"
+
+    Expect.equal currentDigest ContractIdentity.value "Published CLI identity matches the host"
+
     let before = fixture.Administration [ "head" ]
     Expect.equal before.ExitCode 0 "Read accepted head before the mismatched mutation"
 
@@ -220,6 +249,24 @@ let qualify (fixture: PublishedFixture.Fixture) =
         (failure.GetProperty("phase").GetString())
         "NOT_STARTED"
         "Mismatch precedes dispatch"
+
+    let exported =
+        ProcessRunner.dotnet
+            60_000
+            (Path.Combine(output, "claimcore.dll"))
+            [ "case"; "list"; "--format"; "csv" ]
+            fixture.Environment
+            None
+
+    Expect.equal exported.ExitCode 3 "Published CSV mismatch retains the failure exit"
+    let diagnostics = System.Text.Encoding.UTF8.GetString exported.StandardError
+
+    Expect.stringContains
+        diagnostics
+        currentDigest
+        "CSV stderr identifies the responding host build"
+
+    Expect.stringContains diagnostics alternateDigest "CSV stderr identifies its own build"
 
     let after = fixture.Administration [ "head" ]
     Expect.equal after.ExitCode 0 "Read accepted head after the mismatched mutation"

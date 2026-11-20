@@ -172,6 +172,8 @@ type CliMessage =
     | [<MessageKey("cli.shell.exitCode")>] ShellExitCode of code: string
     | [<MessageKey("cli.shell.invalidLine")>] InvalidShellLine
     | [<MessageKey("cli.usage.shellInteractiveRequired")>] ShellInteractiveRequired
+    | [<MessageKey("cli.contractIdentities")>] ContractIdentities of local: string * host: string
+    | [<MessageKey("cli.usage.configureShowFromShell")>] ConfigureShowFromShell of command: string
     | [<MessageKey("cli.usage.configureOptions")>] InvalidConfigureOptions
     | [<MessageKey("cli.attachment.unresolved")>] AttachmentUnresolved of statusCommand: string
     | [<MessageKey("cli.attachment.saved")>] AttachmentSaved

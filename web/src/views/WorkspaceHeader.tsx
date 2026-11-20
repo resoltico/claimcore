@@ -1,4 +1,3 @@
-import { operationTask } from "../protocol/taskCatalog";
 import {
   type Screen,
   type TaskId,
@@ -6,14 +5,14 @@ import {
   type PresentedValue as Value,
 } from "@contracts/client";
 import { apiEndpoints } from "../api/service";
-import { useRequesterContext, useCaseCreationControl } from "../hooks/useRequesterContext";
+import { useRequesterContext } from "../hooks/useRequesterContext";
 import { coreLinkPath } from "../routing/coreLinks";
 import { renderCatalogKey } from "../presentation/messages";
 import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
@@ -21,7 +20,7 @@ import { navigate, guardedDeparture } from "../routing/navigation";
 import { followLink } from "../routing/followLink";
 import type { Route } from "../routing/routes";
 import { Icon } from "../ui/icons";
-import { Button } from "../ui/Button";
+import { worklistPath } from "../routing/worklistQuery";
 import {} from "./shell.css";
 
 const areas = [
@@ -38,6 +37,8 @@ const areas = [
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
 ] as const;
 type Area = (typeof areas)[number];
+const workspaceLinkId = (area: Area) => `workspace-link-${area.name}`;
+export const isWorkspaceLinkId = (id: string) => areas.some((area) => workspaceLinkId(area) === id);
 type NavigationCount = { value: Value; timeZone: string };
 const useNavigationCounts = () => {
   const views = useWorkspaceViews();
@@ -60,11 +61,13 @@ const useNavigationCounts = () => {
 const ShellLink = ({
   area,
   active,
+  current,
   locked,
   counts,
 }: {
   area: Area;
   active: string;
+  current: Route["screen"] | null;
   locked: boolean;
   counts: ReadonlyMap<Area["name"], NavigationCount>;
 }) => {
@@ -77,9 +80,11 @@ const ShellLink = ({
   const captionId = useId();
   return (
     <a
+      id={workspaceLinkId(area)}
       href={area.path}
       aria-labelledby={count === undefined ? captionId : `${captionId} ${captionId}-count`}
-      aria-current={active === area.name ? "page" : undefined}
+      data-active-area={active === area.name || undefined}
+      aria-current={current === area.name ? "page" : undefined}
       aria-disabled={locked || undefined}
       onClick={(event) => {
         followLink(event, () => {
@@ -185,70 +190,78 @@ const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null })
     </details>
   );
 };
-const useSearchShortcut = (search: React.RefObject<HTMLInputElement | null>) => {
-  useEffect(() => {
-    const key = (event: KeyboardEvent) => {
-      const { target } = event;
-      if (
-        event.key === "/" &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey &&
-        !(
-          target instanceof HTMLElement &&
-          (target.isContentEditable ||
-            target.closest("input,textarea,[role=combobox],[role=listbox],[role=dialog]") !== null)
-        )
-      ) {
-        const input = search.current;
-        if (input !== null && input.getClientRects().length > 0 && !input.disabled) {
-          event.preventDefault();
-          input.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => {
-      window.removeEventListener("keydown", key);
-    };
-  }, [search]);
-};
-const ShellSearch = ({ locked }: { locked: boolean }) => {
+const SearchCases = ({ locked }: { locked: boolean }) => {
   const p = usePresentation();
-  const [query, setQuery] = useState("");
-  const search = useRef<HTMLInputElement>(null);
-  useSearchShortcut(search);
+  const path = worklistPath({ view: "ALL" });
   return (
-    <form
+    <a
       className="shell-search"
-      role="search"
-      aria-label={p.text("ui.shell.searchCases")}
-      onSubmit={(event) => {
-        event.preventDefault();
-        navigate(`/cases?q=${encodeURIComponent(query)}`);
+      href={path}
+      aria-disabled={locked || undefined}
+      onClick={(event) => {
+        followLink(event, () => {
+          navigate(path, false, "worklist-search");
+        });
       }}
     >
-      <label htmlFor="shell-case-search" className="sr-only">
-        {p.text("ui.shell.searchCases")}
-      </label>
       <Icon name="search" />
-      <input
-        ref={search}
-        id="shell-case-search"
-        type="search"
-        value={query}
-        disabled={locked}
-        onChange={(event) => {
-          setQuery(event.target.value);
-        }}
-        placeholder={p.text("ui.shell.searchCases")}
-      />
-      <Button type="submit" variant="secondary" isDisabled={locked}>
-        {p.text("ui.search")}
-      </Button>
-    </form>
+      {p.text("ui.shell.searchCases")}
+    </a>
   );
 };
+
+const MoreNavigation = ({
+  items,
+  active,
+  current,
+  locked,
+  counts,
+}: {
+  items: ReadonlyArray<Area>;
+  active: string;
+  current: Route["screen"] | null;
+  locked: boolean;
+  counts: ReadonlyMap<Area["name"], NavigationCount>;
+}) => {
+  const p = usePresentation();
+  const menu = useRef<HTMLDetailsElement>(null);
+  const trigger = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const disclosure = menu.current;
+    if (disclosure === null) {
+      return;
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && disclosure.open) {
+        event.preventDefault();
+        disclosure.open = false;
+        trigger.current?.focus();
+      }
+    };
+    disclosure.addEventListener("keydown", escape);
+    return () => {
+      disclosure.removeEventListener("keydown", escape);
+    };
+  }, []);
+  return (
+    <details className="compact-navigation" ref={menu}>
+      <summary ref={trigger}>{p.text("ui.shell.administration")}</summary>
+      <div className="compact-navigation-links">
+        {items.map((area) => (
+          <ShellLink
+            key={area.name}
+            area={area}
+            active={active}
+            current={current}
+            locked={locked}
+            counts={counts}
+          />
+        ))}
+      </div>
+    </details>
+  );
+};
+
 export const WorkspaceHeader = ({
   route,
   presentation,
@@ -256,7 +269,6 @@ export const WorkspaceHeader = ({
   views,
   tasks,
   locked,
-  openCase,
 }: {
   route: Route;
   presentation: Screen | null;
@@ -264,25 +276,29 @@ export const WorkspaceHeader = ({
   views: ReadonlyArray<Link["endpoint"]>;
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
-  openCase: () => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
   const view = presentation;
   const counts = useNavigationCounts();
-  const creation = useCaseCreationControl();
   const cases = views.includes(apiEndpoints.caseList);
-  const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
-  const admin = areas.filter(
-    (area) =>
-      (area.name === "people" && views.includes(apiEndpoints.peopleList)) ||
-      (area.name === "peopleHistory" && tasks.includes(apiEndpoints.peopleHistory)),
-  );
-  const mobile = [
-    ...primary,
-    ...admin.filter((area) => area.name === "people"),
-    areas.find((area) => area.name === "settings")!,
-  ];
+  const available: Record<Area["name"], boolean> = {
+    cases,
+    reminders: cases,
+    people: views.includes(apiEndpoints.peopleList),
+    peopleHistory: tasks.includes(apiEndpoints.peopleHistory),
+    recovery: true,
+    settings: true,
+  };
+  const offered = areas.filter(({ name }) => available[name]);
+  const primary = offered.filter(({ name }) => name === "cases" || name === "reminders");
+  const additional = offered.filter((area) => !primary.includes(area));
+  const desktopAdministration = additional.filter(({ name }) => name !== "settings");
+  const current =
+    ("actorId" in route && route.actorId !== "") ||
+    (route.screen === "recovery" && route.operationId !== "")
+      ? null
+      : route.screen;
   const title =
     areas.find((area) => area.name === active)?.label ??
     (route.screen === "recovery" ? "ui.recovery" : "label.caseDetail");
@@ -314,30 +330,24 @@ export const WorkspaceHeader = ({
                   key={area.name}
                   area={area}
                   active={active}
+                  current={current}
                   locked={locked}
                   counts={counts}
                 />
               ))}
-              <ShellLink
-                area={areas.find((area) => area.name === "recovery")!}
-                active={active}
-                locked={locked}
-                counts={counts}
-              />
-              {admin.length === 0 ? null : (
-                <div className="shell-admin">
-                  <p>{p.text("ui.shell.administration")}</p>
-                  {admin.map((area) => (
-                    <ShellLink
-                      key={area.name}
-                      area={area}
-                      active={active}
-                      locked={locked}
-                      counts={counts}
-                    />
-                  ))}
-                </div>
-              )}
+              <div className="shell-admin">
+                <p>{p.text("ui.shell.administration")}</p>
+                {desktopAdministration.map((area) => (
+                  <ShellLink
+                    key={area.name}
+                    area={area}
+                    active={active}
+                    current={current}
+                    locked={locked}
+                    counts={counts}
+                  />
+                ))}
+              </div>
             </nav>
             <footer>
               <BusinessDate view={view} />
@@ -348,34 +358,28 @@ export const WorkspaceHeader = ({
       </aside>
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
-        {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && creation !== undefined ? (
-          <a
-            id="open-case"
-            className="shell-open-case"
-            href="/cases/new"
-            aria-disabled={locked || undefined}
-            onClick={(event) => {
-              followLink(event, () => {
-                openCase();
-              });
-            }}
-          >
-            {renderCatalogKey(p, operationTask(creation.task).labelId)}
-          </a>
-        ) : null}
+        {cases ? <SearchCases locked={locked} /> : null}
       </header>
       {compact ? (
         <nav className="workspace-mobile-tabs" aria-label={p.text("ui.primary")}>
-          {mobile.map((area) => (
+          {primary.map((area) => (
             <ShellLink
               key={area.name}
               area={area}
               active={active}
+              current={current}
               locked={locked}
               counts={counts}
             />
           ))}
+          <MoreNavigation
+            items={additional}
+            key={JSON.stringify(route)}
+            active={active}
+            current={current}
+            locked={locked}
+            counts={counts}
+          />
         </nav>
       ) : null}
     </>

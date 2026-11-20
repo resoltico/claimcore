@@ -80,6 +80,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   await showCaseActionMenu(page);
   if (role === "CASE_HANDLER") {
+    await expect(history.locator(".timeline-comparison [data-side=after]").first()).toBeAttached();
     await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   } else {
     await expect(
@@ -89,7 +90,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     ).toBeDisabled();
   }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
-    await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
+    await expect(history.locator(".timeline-comparison [data-side]")).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);
     await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   }
@@ -134,6 +135,9 @@ for (const [name, role, scoped] of cases) {
     page,
     browser,
   }) => {
+    if (role === "CASE_READER" && scoped) {
+      test.setTimeout(60_000);
+    }
     const fixture = await test.step("Create owner cases", () => prepareRoleFixture(page));
     const context = await browser.newContext({
       baseURL: new URL(page.url()).origin,
@@ -161,6 +165,29 @@ for (const [name, role, scoped] of cases) {
     await test.step("Open narrow actor session", () =>
       openNarrowSession(narrow, role === null ? "You don’t have access yet" : "Cases"));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));
+    if (role === "CASE_READER" && scoped) {
+      await narrow.setViewportSize({ width: 320, height: 900 });
+      let reads = 0;
+      narrow.on("request", (request) => {
+        if (new URL(request.url()).pathname === "/api/people.history") {
+          reads += 1;
+        }
+      });
+      await narrow.goto("/people-history");
+      const navigation = narrow.locator(".workspace-mobile-tabs");
+      await expect(navigation.getByRole("link", { name: /^Cases/u })).toBeVisible();
+      await navigation.locator(".compact-navigation > summary").press("Enter");
+      await expect(navigation.getByRole("link", { name: /^Unconfirmed changes/u })).toBeVisible();
+      await expect(navigation.getByRole("link", { name: "Access history" })).toHaveCount(0);
+      await expect(
+        narrow.getByRole("heading", { name: "Access history", exact: true }),
+      ).toBeVisible();
+      await expect(narrow.locator("main").getByRole("alert")).toBeVisible();
+      expect(reads).toBe(0);
+      await narrow.goto("/cases?view=ALL");
+      await expect(narrow.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+      await narrow.setViewportSize({ width: 1280, height: 900 });
+    }
     if (role === "CASE_READER" || role === "CASE_HANDLER" || role === "DATA_STEWARD") {
       await test.step("Read current case and enforce history scope", () =>
         readCase(narrow, fixture, role, scoped));

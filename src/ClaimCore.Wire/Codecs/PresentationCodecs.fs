@@ -893,21 +893,38 @@ module PresentationCodecs =
         |> field "tone" _.Tone (VocabularyCodec.create NoticeTone.vocabulary)
 
     let private timelineEntry =
-        (record (fun key whenAt who summary highlights details link actions ->
-            {
-                RegionTimelineEntry.Key = key
-                Link = link
-                Actions = defaultArg actions []
-                When = whenAt
-                Who = who
-                Summary = summary
-                Highlights = highlights
-                Details = details
-            })
+        (record
+            (fun key whenAt who target changes changedFields summary highlights details link actions ->
+                {
+                    RegionTimelineEntry.Key = key
+                    Link = link
+                    Actions = defaultArg actions []
+                    When = whenAt
+                    Who = who
+                    Target = target
+                    Changes = defaultArg changes []
+                    ChangedFields = defaultArg changedFields []
+                    Summary = summary
+                    Highlights = highlights
+                    Details = details
+                })
         : Fields<RegionTimelineEntry, _>)
         |> field "key" _.Key key
         |> field "when" _.When instant
         |> field "who" _.Who value
+        |> optionalField "target" _.Target value
+        |> optionalField
+            "changes"
+            (fun entry -> if entry.Changes.IsEmpty then None else Some entry.Changes)
+            (list MaximumEntries change)
+        |> optionalField
+            "changedFields"
+            (fun entry ->
+                if entry.ChangedFields.IsEmpty then
+                    None
+                else
+                    Some entry.ChangedFields)
+            (list MaximumEntries messageId)
         |> field "summary" _.Summary message
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "details" _.Details (list MaximumEntries section)

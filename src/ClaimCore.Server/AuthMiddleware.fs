@@ -11,6 +11,7 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Authentication.JwtBearer
@@ -137,11 +138,43 @@ module AuthMiddleware =
 
                     Task.CompletedTask))
 
+        options.Events.OnRedirectToIdentityProvider <-
+            Func<RedirectContext, Task>(fun context ->
+                match context.Properties.Items.TryGetValue "ui_locales" with
+                | true, language -> context.ProtocolMessage.UiLocales <- language
+                | _ -> ()
+
+                Task.CompletedTask)
+
         options.Events.OnRemoteFailure <-
             Func<RemoteFailureContext, Task>(fun context ->
                 context.HandleResponse()
-                context.Response.StatusCode <- 401
-                Task.CompletedTask)
+                context.Response.StatusCode <- StatusCodes.Status401Unauthorized
+                context.Response.ContentType <- "text/html; charset=utf-8"
+                context.Response.Headers["Referrer-Policy"] <- "no-referrer"
+                HttpHeaders.noStore context.HttpContext
+
+                let environment =
+                    context.HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>()
+
+                let recovery = environment.WebRootFileProvider.GetFileInfo "auth-recovery.html"
+
+                if recovery.Exists then
+                    task {
+                        use stream = recovery.CreateReadStream()
+
+                        do!
+                            stream.CopyToAsync(
+                                context.Response.Body,
+                                context.HttpContext.RequestAborted
+                            )
+                    }
+                else
+                    context.Response.WriteAsync(
+                        "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>ClaimCore</title>"
+                        + "<main><h1>Sign-in could not be completed.</h1>"
+                        + "<a href=\"/auth/login\">Restart sign-in</a></main></html>"
+                    ))
 
     let private bearer
         (syntheticRoot: X509Certificate2 option)

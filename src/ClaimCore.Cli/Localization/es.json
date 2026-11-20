@@ -498,5 +498,13 @@
   "cli.attachment.outputFailed": {
     "text": "No se pudo guardar el adjunto en el destino seleccionado.",
     "source": "915060f3dc90"
+  },
+  "cli.contractIdentities": {
+    "text": "Contrato de la CLI: {local}. Contrato del servicio: {host}.",
+    "source": "3da6268e3a39"
+  },
+  "cli.usage.configureShowFromShell": {
+    "text": "Ejecuta {command} en el terminal de tu sistema operativo.",
+    "source": "278514d04b5d"
   }
 }

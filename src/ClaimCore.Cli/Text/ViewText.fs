@@ -13,6 +13,7 @@ module internal ViewText =
 
     let private renderWithHeader
         timeZone
+        showEmpty
         includeHeader
         includeDetails
         options
@@ -31,7 +32,7 @@ module internal ViewText =
                 @ sections detail.Highlights
                 @ (if includeDetails then sections detail.Sections else [])
 
-        let table (table: RegionTable) =
+        let table related (table: RegionTable) =
             let definitions =
                 table.Columns
                 |> List.mapi (fun index column ->
@@ -53,7 +54,16 @@ module internal ViewText =
 
             let rows values =
                 values
-                |> List.collect (fun row -> render [ row.Values ] @ detailLines row.Detail)
+                |> List.collect (fun row ->
+                    render [ row.Values ]
+                    @ detailLines row.Detail
+                    @ [
+                        if includeDetails && related then
+                            for link in Option.toList row.Link do
+                                label (CliMessages.key CliMessage.NextLabel)
+                                + ": "
+                                + ControlHints.link link
+                    ])
 
             (if table.Meter.IsSome then sections table.Sections else [])
             @ (table.Meter
@@ -99,7 +109,7 @@ module internal ViewText =
                         |> List.map (fun entry -> label entry.LabelId + ": " + text entry.Value)
                     else
                         []
-                | RegionContent.Table data -> table data
+                | RegionContent.Table data -> table (region.Role = RegionRole.RelatedCases) data
                 | RegionContent.Stages data ->
                     data.Steps
                     |> List.map (fun step ->
@@ -141,10 +151,25 @@ module internal ViewText =
                     |> List.collect (fun entry ->
                         [
                             message rendering entry.Summary
+                            yield! entry.Target |> Option.map text |> Option.toList
                             text entry.Who + " · " + text (PresentedValue.Instant entry.When)
                         ]
                         @ sections entry.Highlights
-                        @ (if includeDetails then sections entry.Details else []))
+                        @ (if entry.ChangedFields.IsEmpty then
+                               []
+                           else
+                               [ entry.ChangedFields |> List.map label |> String.concat " · " ])
+                        @ (if includeDetails then
+                               (entry.Changes
+                                |> List.collect (fun change ->
+                                    [
+                                        label change.LabelId
+                                        label "label.before" + ": " + text change.Before
+                                        label "label.after" + ": " + text change.After
+                                    ]))
+                               @ sections entry.Details
+                           else
+                               []))
 
             if body.IsEmpty then [] else heading @ body
 
@@ -153,16 +178,16 @@ module internal ViewText =
             |> List.filter (fun region -> includeDetails || region.Role <> RegionRole.Details)
             |> List.collect render
 
-        if lines.IsEmpty && includeHeader then
+        if lines.IsEmpty && includeHeader && showEmpty then
             [ label "view.empty" ]
         else
             lines
 
     let renderWithDetails includeDetails options (rendering: RenderingContext) screen =
-        renderWithHeader "UTC" true includeDetails options rendering screen
+        renderWithHeader "UTC" true true includeDetails options rendering screen
 
     let renderRowsWithDetails includeDetails options (rendering: RenderingContext) screen =
-        renderWithHeader "UTC" false includeDetails options rendering screen
+        renderWithHeader "UTC" true false includeDetails options rendering screen
 
     let renderWith options (rendering: RenderingContext) screen =
         renderWithDetails false options rendering screen
@@ -175,11 +200,19 @@ module internal ViewText =
 
     /// Renders instants in the supplied installation zone instead of UTC.
     let renderSelectedIn timeZone includeDetails (rendering: RenderingContext) screen =
-        renderWithHeader timeZone true includeDetails (TextTable.environment ()) rendering screen
+        renderWithHeader
+            timeZone
+            true
+            true
+            includeDetails
+            (TextTable.environment ())
+            rendering
+            screen
 
     let render (rendering: RenderingContext) screen = renderSelected false rendering screen
 
-    let renderDocumentWithHeader
+    let private renderDocumentCore
+        showEmpty
         options
         includeHeader
         includeDetails
@@ -197,7 +230,7 @@ module internal ViewText =
             |> fun regions -> Screen.withRegions regions document.Screen
 
         let body =
-            renderWithHeader zone includeHeader includeDetails options rendering screen
+            renderWithHeader zone showEmpty includeHeader includeDetails options rendering screen
 
         let actions =
             Screen.affordances screen @ document.Actions
@@ -209,7 +242,10 @@ module internal ViewText =
                |> List.collect (fun region ->
                    let children =
                        match region.Content with
-                       | RegionContent.Table table -> table.Rows |> List.choose _.Link
+                       | RegionContent.Table table when
+                           not (includeDetails && region.Role = RegionRole.RelatedCases)
+                           ->
+                           table.Rows |> List.choose _.Link
                        | RegionContent.Timeline entries -> entries |> List.choose _.Link
                        | RegionContent.Stages stages -> stages.Steps |> List.choose _.Link
                        | _ -> []
@@ -221,6 +257,12 @@ module internal ViewText =
                 ReplyTextFormat.label rendering label + ": " + ControlHints.link link)
 
         body @ actions @ links
+
+    let renderDocumentWithHeader options includeHeader includeDetails rendering document =
+        renderDocumentCore true options includeHeader includeDetails rendering document
+
+    let renderActionableRefusal includeDetails rendering document =
+        renderDocumentCore false (TextTable.environment ()) true includeDetails rendering document
 
     let renderDocument includeDetails (rendering: RenderingContext) document =
         renderDocumentWithHeader (TextTable.environment ()) true includeDetails rendering document

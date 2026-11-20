@@ -14,14 +14,22 @@ module Discovery =
     let versionJson () =
         let identity = BuildIdentity.current
 
-        Codec.encode
-            VersionFrame.codec
-            {
-                Product = identity.Product
-                Version = identity.Version
-                AssemblyVersion = identity.AssemblyVersion
-                FileVersion = identity.FileVersion
-            }
+        let version =
+            VersionFrame.codec.Write
+                {
+                    Product = identity.Product
+                    Version = identity.Version
+                    AssemblyVersion = identity.AssemblyVersion
+                    FileVersion = identity.FileVersion
+                }
+
+        match version with
+        | JsonValue.Object fields ->
+            JsonValue.Object(
+                fields @ [ "contractIdentity", JsonValue.String ContractIdentity.value ]
+            )
+            |> WireWriter.bytes
+        | _ -> invalidOp "Version metadata requires an object."
 
 
     let private choices input =

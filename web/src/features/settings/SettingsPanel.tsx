@@ -15,6 +15,7 @@ import {
   resolveLanguage,
   modes,
   accents,
+  defaults,
 } from "../../presentation/preferences";
 import { productMetadata } from "../../protocol/productMetadata";
 
@@ -162,6 +163,7 @@ export const SettingsPanel = () => {
                   type="radio"
                   name={`${id}-accent`}
                   value={accent}
+                  aria-describedby={accent === defaults.accent ? `${id}-default-accent` : undefined}
                   checked={p.accent === accent}
                   onChange={() => {
                     p.setPreferences({ kind: "ACCENT", accent });
@@ -169,7 +171,11 @@ export const SettingsPanel = () => {
                 />
                 <span>{p.text(accentLabels[accent])}</span>
               </span>
-              {accent === "green" ? <small>{p.text("ui.defaultAccent")}</small> : null}
+              {accent === defaults.accent ? (
+                <small id={`${id}-default-accent`} aria-hidden="true">
+                  {p.text("ui.defaultAccent")}
+                </small>
+              ) : null}
             </label>
           ))}
         </fieldset>

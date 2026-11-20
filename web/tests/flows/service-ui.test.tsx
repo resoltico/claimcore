@@ -182,7 +182,7 @@ const sessionLifecycle = async () => {
   const signIn = await screen.findByRole("link", {
     name: "Sign in",
   });
-  expect(signIn).toHaveAttribute("href", "/auth/login");
+  expect(signIn).toHaveAttribute("href", "/auth/login?language=en");
   expect(fetch).toHaveBeenCalledTimes(1);
   anonymous.unmount();
   fetch.mockResolvedValueOnce(sessionReply(true, "authenticated"));
