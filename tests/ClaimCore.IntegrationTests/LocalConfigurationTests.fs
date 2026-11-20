@@ -92,7 +92,11 @@ let private literalComposePaths directory (document: JsonDocument) =
         document.RootElement.GetProperty("services").GetProperty("administration")
 
     let mutable entrypoint = Unchecked.defaultof<JsonElement>
-    Expect.isFalse (admin.TryGetProperty("entrypoint", &entrypoint)) "Use the server entrypoint"
+
+    Expect.isTrue
+        (not (admin.TryGetProperty("entrypoint", &entrypoint))
+         || entrypoint.ValueKind = JsonValueKind.Null)
+        "Use the server entrypoint"
 
     let arguments =
         admin.GetProperty("command").EnumerateArray()
