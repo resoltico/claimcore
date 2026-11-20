@@ -28,7 +28,7 @@ module internal ProjectionRebuild =
             token
             (fun connection transaction ->
                 task {
-                    ServerSupport.require connection.PostgreSqlVersion
+                    do! DatabaseProfile.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
                     let! installation, _ = Baseline.require connection token

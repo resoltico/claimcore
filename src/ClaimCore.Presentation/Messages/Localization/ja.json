@@ -1,4 +1,8 @@
 {
+  "notice.unsupportedDatabaseProfile": {
+    "text": "UTF8 エンコーディングと組み込みの C.UTF-8 ロケールを使用し、データチェックサムを有効にした PostgreSQL クラスターを使用してください。",
+    "source": "65d336cc3bee"
+  },
   "diagnostic.CASE_DATE_RANGE": {
     "text": "{field}には開始日以降の日付を指定してください。",
     "source": "ba65df5311c2"

@@ -318,10 +318,22 @@ jobs:
       - name: Validate production configuration
         run: |
           set -euo pipefail
-          actual="$(docker compose --env-file deployment/production/production.env.example \
-            -f deployment/production/compose.yaml --profile administration config --format json | jq -er '.services.postgres.image')"
-          expected="$(jq -er '.supportedMajors[0].containerImage' db/postgresql-baseline.json)"
-          test "$actual" = "$expected"
+          expected_image="$(jq -er '.supportedMajors[0].containerImage' db/postgresql-baseline.json)"
+          expected_initdb="$(jq -er '.initdbArguments' db/postgresql-baseline.json)"
+          check_postgres() {
+            jq -e --arg image "$expected_image" --arg initdb "$expected_initdb" \
+              '.services.postgres | .image == $image and .environment.POSTGRES_INITDB_ARGS == $initdb' >/dev/null
+          }
+          docker compose --env-file deployment/production/production.env.example \
+            -f deployment/production/compose.yaml --profile administration config --format json | check_postgres
+          config_dir="$(mktemp -d)"
+          trap 'unlink "$config_dir/web.env"; rmdir "$config_dir"' EXIT
+          : > "$config_dir/web.env"
+          CLAIMCORE_CONFIG_DIR="$config_dir" CLAIMCORE_COMPOSE_PROJECT=claimcore-validation \
+            CLAIMCORE_UID=1654 CLAIMCORE_GID=1654 CLAIMCORE_BUSINESS_ZONE=Etc/UTC \
+            CLAIMCORE_IDENTITY_PORT=5444 CLAIMCORE_OWNER_SUBJECT=synthetic-owner \
+            CLAIMCORE_OWNER_NAME='Synthetic owner' \
+            docker compose -f deployment/compose.yaml config --format json | check_postgres
       - name: Build and verify the distribution
         env:
           RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release

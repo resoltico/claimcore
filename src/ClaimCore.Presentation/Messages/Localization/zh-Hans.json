@@ -1,4 +1,8 @@
 {
+  "notice.unsupportedDatabaseProfile": {
+    "text": "请使用 UTF8 编码、内置的 C.UTF-8 区域设置以及启用了数据校验和的 PostgreSQL 集群。",
+    "source": "65d336cc3bee"
+  },
   "diagnostic.CASE_DATE_RANGE": {
     "text": "请将{field}设为开始日期当天或之后的日期。",
     "source": "ba65df5311c2"

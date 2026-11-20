@@ -178,8 +178,8 @@ Merge keys only when their concepts agree. Keep grammatical gender and singular/
 Use labelled counts, rather than choosing a singular template from a numeric comparison.
 Automated checks establish structure, not human linguistic approval; record the language and review scope.
 
-The attachment copy and the corresponding case erasure wording in translated catalogs are
-agent-authored drafts pending fluent review.
+The attachment copy, corresponding case erasure wording, and unsupported database profile notice
+in translated catalogs are agent-authored drafts pending fluent review.
 
 ## Theme and layout
 
@@ -280,7 +280,7 @@ Failed browser jobs retain synthetic failed-spec traces, screenshots and bounded
 three days in their verification artifact. Authentication-state files and private fixture configuration
 are excluded. Individual request/assertion bounds remain separate from multi-step workflow budgets.
 
-Store contracts use the single pinned PostgreSQL image from [postgresql-baseline.json](../db/postgresql-baseline.json).
+Store contracts use the single pinned PostgreSQL 19 image from [postgresql-baseline.json](../db/postgresql-baseline.json).
 Tests discover vocabulary from product declarations; reviewed contract diffs, hand-authored business cases and [durable vectors](../tests/fixtures/durable-vectors.json)
 provide independent expectations. Builders supply inputs, never expected business outcomes. There is no
 fixture update mode. Keep `--zero-tests-policy=strict` and fail-on-focused controls.

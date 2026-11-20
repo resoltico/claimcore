@@ -175,7 +175,7 @@ module internal Baseline =
                     token
                     (fun connection transaction ->
                         task {
-                            ServerSupport.require connection.PostgreSqlVersion
+                            do! DatabaseProfile.require connection token
                             // CLAIMCOR: serialize namespace discovery and installation, even before tables exist.
                             let! _ =
                                 DatabaseSession.execute

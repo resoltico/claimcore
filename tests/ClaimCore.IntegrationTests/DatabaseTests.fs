@@ -22,11 +22,103 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.DatabaseScenarios
 
 
+let private expectProfileRefusal name (action: unit -> System.Threading.Tasks.Task<'a>) =
+    task {
+        let! fault =
+            task {
+                try
+                    let! _ = action ()
+                    return None
+                with :? OperatorFaultException as error ->
+                    return Some error.Fault
+            }
+
+        Expect.equal fault (Some OperatorFault.UnsupportedDatabase) name
+    }
+
+let private databaseProfile (database: PostgresFixture.Database) =
+    task {
+        use! runtimeConnection = database.RuntimeSource.OpenConnectionAsync(token)
+        do! DatabaseProfile.require runtimeConnection token
+        let! checkpoint = VerificationSupport.checkpoint database
+
+        do!
+            sql
+                database
+                "CREATE DATABASE claimcore_libc TEMPLATE template0 LOCALE_PROVIDER libc LOCALE 'C'"
+
+        let ownerSettings =
+            Npgsql.NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+
+        ownerSettings.Database <- "claimcore_libc"
+
+        use administration =
+            new Administration(ownerSettings.ConnectionString, BuildIdentity.current.Version)
+
+        let handle =
+            MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000001")
+            |> Option.get
+
+        let owner = initialOwner database
+
+        do!
+            expectProfileRefusal "Initialize" (fun () ->
+                administration.Initialize("Etc/UTC", owner, token))
+
+        do!
+            expectProfileRefusal "Initialize if missing" (fun () ->
+                administration.InitializeIfMissing("Etc/UTC", owner, token))
+
+        do! expectProfileRefusal "Status" (fun () -> administration.Status token)
+        do! expectProfileRefusal "Checkpoint capture" (fun () -> administration.Head token)
+        do! expectProfileRefusal "Verification" (fun () -> administration.Verify(None, token))
+
+        do!
+            expectProfileRefusal "Rebuild" (fun () ->
+                administration.Rebuild(checkpoint, handle, token))
+
+        do!
+            expectProfileRefusal "Restore admission" (fun () ->
+                administration.AdmitRestoredInstallation(checkpoint, handle, token))
+
+        do!
+            expectProfileRefusal "Owner recovery" (fun () ->
+                administration.RecoverOwner(
+                    {
+                        ActorId = None
+                        Principal = owner.Principal
+                        Name = None
+                    },
+                    token
+                ))
+
+        let runtimeSettings =
+            Npgsql.NpgsqlConnectionStringBuilder(PostgresFixture.runtimeConnectionString database)
+
+        runtimeSettings.Database <- ownerSettings.Database
+        let! startup = Runtime.openConnection runtimeSettings.ConnectionString token
+
+        match startup with
+        | Error RuntimeOpenFault.UnsupportedDatabase -> ()
+        | Error fault -> failtestf "Expected unsupported database at startup, got %A" fault
+        | Ok runtime ->
+            runtime.Dispose()
+            failtest "The Web runtime admitted a libc database."
+
+        use source = Npgsql.NpgsqlDataSource.Create(ownerSettings.ConnectionString)
+        use! connection = source.OpenConnectionAsync(token)
+        let! present = Baseline.exists connection token
+        Expect.isFalse present "Refusals leave the second database uninitialized"
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL administration"
         [
+            testCaseAsync
+                "owner and Web refuse a libc database before accessing installation state"
+                (run databaseProfile)
             testCaseAsync "concurrent initializers install one tuple" (run concurrentInitialization)
             testCaseAsync
                 "baseline DDL and identity roll back together"
@@ -220,22 +312,11 @@ let tests =
                 let root = ClaimCore.TestSupport.RepositoryRoot.find ()
                 let bytes = IO.File.ReadAllBytes(IO.Path.Combine(root, "db/baseline.sql"))
                 Expect.equal Baseline.digest (SHA256.HashData bytes) "Exact source bytes")
-            testCase
-                "supported server majors enforce their minimum minor and reject unlisted majors"
-                (fun () ->
-                    ServerSupport.require (System.Version(18, 7))
-                    ServerSupport.require (System.Version(18, 8))
-
-                    for version in
-                        [ System.Version(18, 6); System.Version(17, 9); System.Version(19, 0) ] do
-                        Expect.throws
-                            (fun () -> ServerSupport.require version)
-                            "Unqualified major or too-old minor refuses"
-
-                    for zone in [ "US/Eastern"; "Europe/Riga "; "UTC"; "Eastern Standard Time" ] do
-                        Expect.throws
-                            (fun () -> Baseline.zone zone |> ignore)
-                            "Canonical IANA zone required")
+            testCase "only canonical IANA zones pass initialization" (fun () ->
+                for zone in [ "US/Eastern"; "Europe/Riga "; "UTC"; "Eastern Standard Time" ] do
+                    Expect.throws
+                        (fun () -> Baseline.zone zone |> ignore)
+                        "Canonical IANA zone required")
             testCaseAsync
                 "public administration opens one source and refuses foreign schemas untouched"
                 (run (fun database ->

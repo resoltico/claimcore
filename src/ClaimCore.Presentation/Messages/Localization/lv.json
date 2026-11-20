@@ -1,4 +1,8 @@
 {
+  "notice.unsupportedDatabaseProfile": {
+    "text": "Izmantojiet UTF8 kodējumu, iebūvēto lokalizāciju C.UTF-8 un PostgreSQL klasteri ar iespējotām datu kontrolsummām.",
+    "source": "65d336cc3bee"
+  },
   "diagnostic.CASE_DATE_RANGE": {
     "text": "Laukā {field} norādiet sākuma datumu vai vēlāku datumu.",
     "source": "ba65df5311c2"

@@ -538,11 +538,62 @@ let private metadataQueries (database: PostgresFixture.Database) =
             "Only the withdrawn attachments are withheld on the old page"
     }
 
+let private externalPayloadStorage (database: PostgresFixture.Database) =
+    task {
+        let! actor = Attachments.setup database
+        let payload = Array.create (64 * 1024) 0x41uy
+        let! added = Attachments.upload actor (draft database.Fixture 712 payload) payload
+        accepted added |> ignore
+
+        use! connection = database.OwnerSource.OpenConnectionAsync(token)
+
+        let! columns =
+            DatabaseSession.rows
+                connection
+                """
+                SELECT attrelid::regclass::text, attstorage::text
+                FROM pg_attribute
+                WHERE attname = 'payload'
+                  AND attrelid IN ('claimcore.attachment_blobs'::regclass, 'claimcore.ledger_compartments'::regclass)
+                ORDER BY attrelid::regclass::text
+                """
+                [||]
+                token
+
+        Expect.equal
+            (columns
+             |> List.map (fun row ->
+                 DatabaseSession.value<string> 0 row, DatabaseSession.value<string> 1 row))
+            [ "claimcore.attachment_blobs", "e"; "claimcore.ledger_compartments", "e" ]
+            "Attachment bytes and ledger ciphertext use EXTERNAL storage"
+
+        let! stored =
+            DatabaseSession.rows
+                connection
+                "SELECT octet_length(payload), pg_column_compression(payload) IS NULL FROM claimcore.attachment_blobs"
+                [||]
+                token
+
+        let row = List.exactlyOne stored
+
+        Expect.equal
+            (DatabaseSession.value<int> 0 row)
+            65536
+            "The compressible 64 KiB upload is present"
+
+        Expect.isTrue
+            (DatabaseSession.value<bool> 1 row)
+            "The uploaded payload is stored without compression"
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL attachment replay and metadata"
         [
+            testCaseAsync
+                "attachment payload and ledger ciphertext use uncompressed external storage"
+                (run externalPayloadStorage)
             testCaseAsync
                 "retained slot replay refuses a complete 101st blob after withdrawal"
                 (run slots)

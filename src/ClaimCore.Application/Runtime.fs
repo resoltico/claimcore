@@ -114,6 +114,8 @@ module Runtime =
                             | OperatorFault.SchemaMismatch
                             | OperatorFault.FormatMismatch -> RuntimeOpenFault.SchemaMismatch
                             | OperatorFault.UnsupportedServer -> RuntimeOpenFault.UnsupportedServer
+                            | OperatorFault.UnsupportedDatabase ->
+                                RuntimeOpenFault.UnsupportedDatabase
                             | _ -> RuntimeOpenFault.InstallationInvalid
                         | :? InstallationConfigurationException ->
                             RuntimeOpenFault.InstallationInvalid

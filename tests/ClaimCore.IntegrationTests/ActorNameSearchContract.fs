@@ -41,6 +41,7 @@ let internal lookup fixture =
                 "Alice Example"
                 "Āna Bērziņa"
                 "ليلى العربية"
+                "東京事故担当"
                 "İstanbul"
                 "ς"
                 "Straße"
@@ -86,6 +87,7 @@ let internal lookup fixture =
                 "ALICE", [ "Alice Example"; "Ａｌｉｃｅ" ]
                 "āNA", [ "Āna Bērziņa" ]
                 "العربية", [ "ليلى العربية" ]
+                "東京事故", [ "東京事故担当" ]
                 "İSTANBUL", [ "İstanbul" ]
                 "ς", [ "ς" ]
                 "é", [ "e\u0301" ]
@@ -106,6 +108,7 @@ let internal lookup fixture =
                 "ALICE"
                 "āNA"
                 "العربية"
+                "東京事故"
                 "İSTANBUL"
                 "istanbul"
                 "Σ"

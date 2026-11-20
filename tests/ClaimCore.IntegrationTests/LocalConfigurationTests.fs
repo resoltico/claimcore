@@ -185,6 +185,18 @@ let private compose directory file project arguments =
         @ arguments
     )
 
+let private assertPostgresBaseline (document: JsonDocument) =
+    let postgres = document.RootElement.GetProperty("services").GetProperty("postgres")
+
+    let image, initdbArguments = ClaimCore.TestSupport.PostgresBaseline.configuration ()
+
+    Expect.equal (postgres.GetProperty("image").GetString()) image "Pinned PostgreSQL image"
+
+    Expect.equal
+        (postgres.GetProperty("environment").GetProperty("POSTGRES_INITDB_ARGS").GetString())
+        initdbArguments
+        "Pinned PostgreSQL initdb arguments"
+
 let private composePaths directory =
     async {
         let root = ClaimCore.TestSupport.RepositoryRoot.find ()
@@ -198,6 +210,31 @@ let private composePaths directory =
         Expect.equal code 0 "Compose admits generated paths without syntax reinterpretation"
         use document = JsonDocument.Parse(output)
         literalComposePaths directory document
+        assertPostgresBaseline document
+
+        let production = Path.Combine(root, "deployment/production")
+
+        let! code, output, _ =
+            docker
+                [
+                    "compose"
+                    "--project-name"
+                    project
+                    "--env-file"
+                    Path.Combine(production, "production.env.example")
+                    "--file"
+                    Path.Combine(production, "compose.yaml")
+                    "--profile"
+                    "administration"
+                    "config"
+                    "--format"
+                    "json"
+                ]
+            |> Async.AwaitTask
+
+        Expect.equal code 0 "Production Compose renders with example configuration"
+        use productionDocument = JsonDocument.Parse output
+        assertPostgresBaseline productionDocument
     }
 
 let private inspectRoleMount directory file project expected =

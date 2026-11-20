@@ -27,18 +27,15 @@ let private runFile (database: PostgresFixture.Database) user name =
         let destination = "/tmp/" + name
         do! database.Container.CopyAsync(bytes, destination)
 
+        // The fixture's owner and runtime connections already exercise TCP admission.
         let! result =
             database.Container.ExecAsync
                 [|
-                    "env"
-                    "PGPASSWORD=synthetic-only"
                     "psql"
                     "-X"
                     "-At"
                     "-v"
                     "ON_ERROR_STOP=1"
-                    "-h"
-                    "127.0.0.1"
                     "-U"
                     user
                     "-d"
