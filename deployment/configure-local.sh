@@ -19,7 +19,9 @@ done
 for tool in openssl docker node; do
   command -v "${tool}" >/dev/null || { printf 'Required tool is unavailable: %s\n' "${tool}" >&2; exit 2; }
 done
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+script_path="${BASH_SOURCE[0]}"
+if [[ "${script_path}" != */* ]]; then script_path="./${script_path}"; fi
+root="$(CDPATH='' cd -- "${script_path%/*}/.." && pwd)"
 postgres_image="$(node --input-type=module - "${root}/db/postgresql-baseline.json" <<'JAVASCRIPT'
 import { readFileSync } from "node:fs";
 const { supportedMajors } = JSON.parse(readFileSync(process.argv[2], "utf8"));
