@@ -539,6 +539,200 @@ for (const transfer of ["preview", "download"] as const) {
   });
 }
 
+for (const [transfer, key] of [
+  ["preview", "Enter"],
+  ["download", "Enter"],
+  ["download", "Space"],
+] as const) {
+  test(`held ${key} cannot activate attachment ${transfer} across settlement @engine`, async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openAuthenticated(page);
+    await openCase(page, `ATTACH-SETTLEMENT-${randomUUID()}`);
+    const bytes = syntheticPdf([redPage]);
+    const { row } = await upload(
+      page,
+      documentPanel(page),
+      pdfName,
+      pdfName,
+      "application/pdf",
+      bytes,
+    );
+    const trigger = row.getByRole("button", {
+      name: transfer === "preview" ? "Preview" : "Download",
+      exact: true,
+    });
+    const close = row.getByRole("button", { name: "Close", exact: true });
+    const frame = row.locator("iframe");
+    const status = row.getByRole("status");
+    const path = `/api/attachment.${transfer}`;
+    const isTransfer = (request: Request) => new URL(request.url()).pathname === path;
+    let requests = 0;
+    page.on("request", (request) => {
+      if (isTransfer(request)) {
+        requests++;
+      }
+    });
+    const held = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    await page.route(
+      `**${path}`,
+      async (route) => {
+        const response = await route.fetch({ maxRedirects: 0 });
+        held.resolve();
+        await release.promise;
+        await route.fulfill({ response });
+      },
+      { times: 1 },
+    );
+
+    const delivery = transfer === "download" ? page.waitForEvent("download") : null;
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    try {
+      await held.promise;
+      await expect(trigger).toHaveAttribute("aria-disabled", "true");
+      await expect(trigger).toBeFocused();
+      await page.keyboard.down(key);
+    } finally {
+      release.resolve();
+    }
+    try {
+      if (delivery === null) {
+        await expect(status).toHaveText("Page 1 of 1");
+        await expect(close).toBeFocused();
+      } else {
+        const downloaded = await delivery;
+        expect(await readFile(await downloaded.path())).toEqual(bytes);
+        await expect(trigger).toBeEnabled();
+      }
+      if (key === "Enter") {
+        await page.keyboard.down(key);
+      }
+    } finally {
+      await page.keyboard.up(key);
+    }
+    const queued = await page
+      .waitForRequest(isTransfer, { timeout: 750 })
+      .catch((error: unknown) => {
+        if (error instanceof errors.TimeoutError) {
+          return null;
+        }
+        throw error;
+      });
+    expect(queued).toBeNull();
+    expect(requests).toBe(1);
+
+    if (transfer === "preview") {
+      await expect(frame).toHaveCount(1);
+      await expect(close).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(frame).toHaveCount(0);
+    }
+    await expect(trigger).toBeFocused();
+    const separate = page.waitForRequest(isTransfer);
+    const nextDownload = transfer === "download" ? page.waitForEvent("download") : null;
+    await page.keyboard.press(key);
+    await separate;
+    if (nextDownload === null) {
+      await expect(status).toHaveText("Page 1 of 1");
+    } else {
+      await nextDownload;
+    }
+    expect(requests).toBe(2);
+  });
+}
+
+for (const focusOutside of [false, true]) {
+  test(`a failed attachment file read preserves ${focusOutside ? "external" : "picker"} focus @engine`, async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+      let blockFirstRead = true;
+      File.prototype.arrayBuffer = function arrayBuffer(this: File) {
+        if (this.name === "pending-selection.txt") {
+          document.documentElement.dataset["secondFileRead"] = "started";
+        }
+        if (this.name === "unreadable.txt" && blockFirstRead) {
+          blockFirstRead = false;
+          document.documentElement.dataset["attachmentRead"] = "held";
+          return new Promise<ArrayBuffer>((_resolve, reject) => {
+            document.addEventListener(
+              "reject-attachment-read",
+              () => {
+                reject(new DOMException("Synthetic unreadable file", "NotReadableError"));
+              },
+              { once: true },
+            );
+          });
+        }
+        return Blob.prototype.arrayBuffer.call(this);
+      };
+    });
+    await openAuthenticated(page);
+    await openCase(page, `ATTACH-PICKER-FOCUS-${randomUUID()}`);
+    const panel = documentPanel(page);
+    const picker = panel.getByLabel("Choose a file", { exact: true });
+    const external = page.locator(".case-timeline-panel").getByRole("tab", {
+      name: "Attachments",
+      exact: true,
+    });
+    const file = {
+      name: "unreadable.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("synthetic file"),
+    };
+    const chooseFromKeyboard = async () => {
+      const chooser = page.waitForEvent("filechooser");
+      await page.keyboard.press("Enter");
+      return chooser;
+    };
+
+    await picker.focus();
+    await (await chooseFromKeyboard()).setFiles(file);
+    const html = page.locator("html");
+    try {
+      await expect(html).toHaveAttribute("data-attachment-read", "held");
+      await expect(picker).toBeFocused();
+      await expect(picker).toHaveAttribute("aria-disabled", "true");
+      await expect(picker).not.toHaveAttribute("disabled");
+
+      const busyChooser = page
+        .waitForEvent("filechooser", { timeout: 750 })
+        .catch((error: unknown) => {
+          if (error instanceof errors.TimeoutError) {
+            return null;
+          }
+          throw error;
+        });
+      await page.keyboard.press("Enter");
+      expect(await busyChooser).toBeNull();
+      await picker.setInputFiles({ ...file, name: "pending-selection.txt" });
+      await expect(html).not.toHaveAttribute("data-second-file-read");
+      if (focusOutside) {
+        await external.focus();
+        await expect(external).toBeFocused();
+      }
+    } finally {
+      await page.evaluate(() => {
+        document.dispatchEvent(new Event("reject-attachment-read"));
+      });
+    }
+    await expect(panel.getByRole("alert")).toHaveText(
+      "Complete this input using the required format.",
+    );
+    await expect(picker).toBeEnabled();
+    await expect(focusOutside ? external : picker).toBeFocused();
+    if (focusOutside) {
+      await picker.focus();
+    }
+    await (await chooseFromKeyboard()).setFiles(file);
+    await expect(page.getByRole("dialog")).toContainText(file.name);
+  });
+}
+
 test("held Enter closes a PDF preview once before a separate press can reopen it @engine", async ({
   page,
 }) => {

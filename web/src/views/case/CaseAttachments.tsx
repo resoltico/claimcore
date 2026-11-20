@@ -16,6 +16,7 @@ import {
   useState,
   useSyncExternalStore,
   type ChangeEvent,
+  type KeyboardEvent,
 } from "react";
 import {
   attachmentNotice,
@@ -42,6 +43,23 @@ import { Button } from "../../ui/Button";
 import { ButtonControl } from "../../ui/ButtonControl";
 import { DocumentPreview } from "./pdf/DocumentPreview";
 import "./attachments.css";
+
+const suppressActivation = (event: KeyboardEvent, busy: boolean) => {
+  if ((event.key === "Enter" || event.key === " ") && (busy || event.repeat)) {
+    event.preventDefault();
+  }
+};
+
+// Capture at a native ancestor because pending buttons filter their own press handlers.
+const suppressTransferActivation = (event: KeyboardEvent<HTMLDivElement>) => {
+  const target =
+    event.target instanceof Element
+      ? event.target.closest("button[data-attachment-control]")
+      : null;
+  if (target !== null) {
+    suppressActivation(event, target.hasAttribute("data-pending"));
+  }
+};
 
 type CapturedFile = Awaited<ReturnType<typeof captureAttachment>>;
 type Preview = { id: string; generation: number; labelId: string; focusOrigin: Element | null } & (
@@ -360,8 +378,9 @@ const AttachmentPreview = ({
     );
   };
   return (
-    <div className="attachment-preview">
+    <div className="attachment-preview" onKeyDownCapture={suppressTransferActivation}>
       <ButtonControl
+        data-attachment-control
         type="button"
         ref={control}
         onPress={() => {
@@ -388,11 +407,12 @@ const AttachmentControls = ({
   const p = usePresentation();
   const { busy } = interaction;
   return (
-    <div className="attachment-actions">
+    <div className="attachment-actions" onKeyDownCapture={suppressTransferActivation}>
       {row.transfers?.map((transfer) => (
         <Button
           key={transfer.kind}
           variant="secondary"
+          data-attachment-control
           isPending={busy}
           onPress={({ target }) => {
             void interaction.receive(transfer, target);
@@ -459,9 +479,11 @@ const AttachmentRow = ({ row, columns, zone, interaction, ...controls }: Attachm
 
 const AttachmentPicker = ({
   enabled,
+  busy,
   choose,
 }: {
   enabled: boolean;
+  busy: boolean;
   choose: (file: File) => void;
 }) => {
   const p = usePresentation();
@@ -469,14 +491,28 @@ const AttachmentPicker = ({
   const select = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.item(0);
     event.currentTarget.value = "";
-    if (file !== undefined && file !== null && enabled) {
+    if (file !== undefined && file !== null && enabled && !busy) {
       choose(file);
     }
   };
   return (
     <div>
       <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
-      <input id={id} type="file" disabled={!enabled} onChange={select} />
+      <input
+        id={id}
+        type="file"
+        disabled={!enabled}
+        aria-disabled={busy || undefined}
+        onKeyDown={(event) => {
+          suppressActivation(event, busy);
+        }}
+        onClick={(event) => {
+          if (busy) {
+            event.preventDefault();
+          }
+        }}
+        onChange={select}
+      />
     </div>
   );
 };
@@ -565,7 +601,8 @@ const AttachmentWorkspace = ({
     <div aria-busy={interaction.busy}>
       {add === undefined || !props.authoringAvailable ? null : (
         <AttachmentPicker
-          enabled={!interaction.busy && !editing}
+          enabled={!editing}
+          busy={interaction.busy}
           choose={(file) => {
             void interaction.choose(file, addSelected);
           }}
