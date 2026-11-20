@@ -263,8 +263,7 @@ let private rootHydrationQueries (connection: Npgsql.NpgsqlConnection) =
                 """
                 SELECT coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger WHERE operation_id=ANY($1)'),0)::bigint,
                        coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_effects WHERE operation_sequence=ANY($1)%'),0)::bigint,
-                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_compartments WHERE operation_sequence=ANY($1)%'),0)::bigint,
-                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.attachment_blobs%'),0)::bigint
+                       coalesce(sum(calls) FILTER(WHERE query ILIKE '%FROM claimcore.ledger_compartments WHERE operation_sequence=ANY($1)%'),0)::bigint
                 FROM public.pg_stat_statements
                 """
                 [||]
@@ -275,14 +274,98 @@ let private rootHydrationQueries (connection: Npgsql.NpgsqlConnection) =
         return
             DatabaseSession.value<int64> 0 row,
             DatabaseSession.value<int64> 1 row,
-            DatabaseSession.value<int64> 2 row,
-            DatabaseSession.value<int64> 3 row
+            DatabaseSession.value<int64> 2 row
     }
 
 let private read =
     function
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected authorized metadata: %A" other
+
+let private attachmentTimeline actor after limit =
+    Service.timeline
+        actor
+        {
+            Target = Attachments.target
+            Filter = Some TimelineFilter.Attachments
+            AfterCursor = after
+            Limit = limit
+        }
+        token
+
+let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
+    task {
+        let! actor = Attachments.setup database
+        let fixture = database.Fixture
+
+        for number in [ 710; 711 ] do
+            let payload = [| byte (number - 710) |]
+            let! added = Attachments.upload actor (draft fixture number payload) payload
+            accepted added |> ignore
+
+        // This database belongs to this case. Keep column grants for metadata only.
+        do!
+            sql
+                database
+                """
+                REVOKE SELECT ON claimcore.attachment_blobs FROM claimcore_runtime;
+                GRANT SELECT (case_id, blob_id, operation_sequence, effect_index, length, digest)
+                    ON claimcore.attachment_blobs TO claimcore_runtime;
+                """
+                [||]
+
+        use! connection = database.RuntimeSource.OpenConnectionAsync(token)
+
+        let! denied =
+            task {
+                try
+                    let! _ =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT payload FROM claimcore.attachment_blobs"
+                            [||]
+                            token
+
+                    return false
+                with :? Npgsql.PostgresException as error when
+                    error.SqlState = Npgsql.PostgresErrorCodes.InsufficientPrivilege ->
+                    return true
+            }
+
+        Expect.isTrue denied "The runtime role is denied a direct payload SELECT"
+        let! listed = Attachments.list actor
+
+        match listed with
+        | Outcome.Succeeded page ->
+            Expect.sequenceEqual
+                (page.Items |> List.map _.AttachmentId |> List.sort)
+                ([ 710; 711 ] |> List.map (Attachments.attachmentGuid fixture) |> List.sort)
+                "Listing still returns both seeded attachments"
+        | other -> failtestf "Listing must succeed without payload-column access: %A" other
+
+        let! first = attachmentTimeline actor None 1
+        let page = read first
+
+        Expect.sequenceEqual
+            (page.Items |> List.map _.Subject.PartId)
+            [ id fixture 711 ]
+            "The first page returns the newest attachment"
+
+        let cursor =
+            page.NextCursor
+            |> Option.defaultWith (fun () -> failtest "The first page has a continuation")
+
+        let! continued = attachmentTimeline actor (Some cursor) 1
+
+        match continued with
+        | Outcome.Succeeded page ->
+            Expect.sequenceEqual
+                (page.Items |> List.map _.Subject.PartId)
+                [ id fixture 710 ]
+                "The continuation returns the older attachment"
+        | other ->
+            failtestf "Timeline continuation must succeed without payload-column access: %A" other
+    }
 
 let private measure sql action explanation =
     task {
@@ -291,7 +374,7 @@ let private measure sql action explanation =
 
         let! result = action ()
         let! acquired = rootHydrationQueries sql
-        Expect.equal acquired (1L, 1L, 1L, 0L) explanation
+        Expect.equal acquired (1L, 1L, 1L) explanation
         return result
     }
 
@@ -318,7 +401,7 @@ let private metadataQueries (database: PostgresFixture.Database) =
             measure
                 sql
                 (fun () -> Attachments.list actor)
-                "Two current attachments acquire one root/effect/compartment batch without payload storage"
+                "Two current attachments acquire one root/effect/compartment batch"
 
         Expect.hasLength (read two).Items 2 "The smaller list actually hydrates both attachments"
 
@@ -336,18 +419,7 @@ let private metadataQueries (database: PostgresFixture.Database) =
             12
             "The larger list cannot avoid reading the added metadata"
 
-        let history after limit =
-            Service.timeline
-                actor
-                {
-                    Target = Attachments.target
-                    Filter = Some TimelineFilter.Attachments
-                    AfterCursor = after
-                    Limit = limit
-                }
-                token
-
-        let! first = history None 1
+        let! first = attachmentTimeline actor None 1
 
         let cursor =
             (read first).NextCursor
@@ -370,7 +442,7 @@ let private metadataQueries (database: PostgresFixture.Database) =
         let! continued =
             measure
                 sql
-                (fun () -> history (Some cursor) 20)
+                (fun () -> attachmentTimeline actor (Some cursor) 20)
                 "Latest-state redaction for multiple historical roots uses one metadata batch"
 
         let page = (read continued).Items
@@ -409,6 +481,9 @@ let tests =
             testCaseAsync
                 "erased-row verification detects a malformed present digest"
                 (run malformedErasedDigest)
+            testCaseAsync
+                "attachment listing and timeline continuation succeed without payload-column access"
+                (run metadataWithoutPayloadAccess)
             testCaseAsync
                 "metadata hydration batches lists and a historical continuation"
                 (async {

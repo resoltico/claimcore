@@ -6,6 +6,11 @@
   max-inline-size: 100%;
 }
 
+/* The wrapper receives pointer-down during file capture. */
+.attachment-picker[data-pending] > :is(label, input) {
+  pointer-events: none;
+}
+
 .attachment-list {
   list-style: none;
   margin: 0;
@@ -29,6 +34,11 @@
 
 .attachment-metadata dd {
   margin-inline-start: 0;
+}
+
+.attachment-actions > .ui-button[data-pending] {
+  --button-text: var(--text-disabled);
+  cursor: not-allowed;
 }
 
 .attachment-preview img {

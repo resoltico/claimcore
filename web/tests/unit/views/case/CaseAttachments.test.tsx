@@ -201,31 +201,52 @@ test.each([
   },
 );
 
-test("keeps a readable list and leaves download actionable after a typed store fault", async () => {
-  vi.stubGlobal("fetch", () =>
-    Promise.resolve(
-      new Response(
-        JSON.stringify({
-          outcome: {
-            kind: "FAILED",
-            fault: {
-              code: "CORE_STORE_UNAVAILABLE",
-              action: "RETRY_SAFE",
-              messageId: "fault.CORE_STORE_UNAVAILABLE",
-            },
+test("keeps download focused and retries by keyboard after a typed store fault", async () => {
+  const failure = () =>
+    new Response(
+      JSON.stringify({
+        outcome: {
+          kind: "FAILED",
+          fault: {
+            code: "CORE_STORE_UNAVAILABLE",
+            action: "RETRY_SAFE",
+            messageId: "fault.CORE_STORE_UNAVAILABLE",
           },
-        }),
-        { headers },
-      ),
-    ),
-  );
+        },
+      }),
+      { headers },
+    );
+  const held = Promise.withResolvers<Response>();
+  const fetch = vi
+    .fn()
+    .mockReturnValueOnce(held.promise)
+    .mockImplementation(() => Promise.resolve(failure()));
+  vi.stubGlobal("fetch", fetch);
   const { changed, list } = await setup();
-  await download();
-  expect(await screen.findByRole("alert")).toBeVisible();
+  const button = screen.getByRole("button", { name: "Download" });
+  const user = userEvent.setup();
+  act(() => {
+    button.focus();
+  });
+  await user.keyboard("{Enter}");
+  expect(button).toHaveAttribute("aria-disabled", "true");
+  expect(button).toHaveFocus();
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await user.keyboard("{Enter}");
+  expect(fetch).toHaveBeenCalledTimes(1);
+
+  await act(async () => {
+    held.resolve(failure());
+    await held.promise;
+  });
+  expect(await screen.findByRole("alert")).toHaveTextContent("ClaimCore storage is unavailable.");
   expect(changed).not.toHaveBeenCalled();
   expect(list).toHaveBeenCalledTimes(1);
   expect(screen.getByText(filename)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
+  expect(button).toBeEnabled();
+  expect(button).toHaveFocus();
+  await user.keyboard("{Enter}");
+  expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 const mockPreview = (digest: () => Promise<ArrayBuffer>, url: string, mediaType = "image/png") => {

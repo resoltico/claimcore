@@ -1,10 +1,22 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import { attachmentTransport } from "@contracts/client";
 import { readAttachmentPreviewResource } from "../../../api/attachments";
 import { usePresentation } from "../../../presentation/context";
 import { isPositiveInteger, messageRecord, previewChannel } from "./channel";
 
 const pageDeadline = 20_000;
+const suppressRepeatedEnter = (event: KeyboardEvent<HTMLButtonElement>) => {
+  if (event.key === "Enter" && event.repeat) {
+    event.preventDefault();
+  }
+};
 type Position = { page: number; pageCount: number };
 type Connection = {
   port: MessagePort;
@@ -41,10 +53,12 @@ export const DocumentPreview = ({
   bytes,
   title,
   unavailable,
+  closeButton,
 }: {
   bytes: ArrayBuffer;
   title: string;
   unavailable: string;
+  closeButton: RefObject<HTMLButtonElement | null>;
 }) => {
   const p = usePresentation();
   const session = useRef<Connection | null>(null);
@@ -52,6 +66,18 @@ export const DocumentPreview = ({
   const [position, setPosition] = useState<Position | null>(null);
   const [requested, setRequested] = useState(1);
   const [failed, setFailed] = useState(false);
+  const previousButton = useRef<HTMLButtonElement>(null);
+  const nextButton = useRef<HTMLButtonElement>(null);
+  const pager = useRef<HTMLDivElement>(null);
+  const moveFocus = useRef(false);
+
+  useLayoutEffect(() => {
+    if (moveFocus.current) {
+      const enabled = requested === 1 ? nextButton : previousButton;
+      enabled.current?.focus();
+      moveFocus.current = false;
+    }
+  }, [requested]);
 
   const release = useCallback(() => {
     window.clearTimeout(clock.current);
@@ -60,9 +86,12 @@ export const DocumentPreview = ({
     session.current = null;
   }, []);
   const fail = useCallback(() => {
+    if (pager.current?.contains(document.activeElement) === true) {
+      closeButton.current?.focus();
+    }
     release();
     setFailed(true);
-  }, [release]);
+  }, [closeButton, release]);
   useLayoutEffect(() => {
     clock.current = window.setTimeout(fail, pageDeadline);
     return release;
@@ -77,6 +106,9 @@ export const DocumentPreview = ({
     if (page < 1 || page > connection.pageCount) {
       return;
     }
+    moveFocus.current =
+      (page === 1 && document.activeElement === previousButton.current) ||
+      (page === connection.pageCount && document.activeElement === nextButton.current);
     connection.page = page;
     connection.requestId++;
     connection.awaiting = true;
@@ -137,10 +169,12 @@ export const DocumentPreview = ({
   return (
     <>
       {position === null ? null : (
-        <div className="attachment-actions">
+        <div className="attachment-actions" ref={pager}>
           <button
+            ref={previousButton}
             type="button"
             disabled={requested <= 1}
+            onKeyDown={suppressRepeatedEnter}
             onClick={() => {
               navigate(-1);
             }}
@@ -148,8 +182,10 @@ export const DocumentPreview = ({
             {p.text("ui.previousPage")}
           </button>
           <button
+            ref={nextButton}
             type="button"
             disabled={requested >= position.pageCount}
+            onKeyDown={suppressRepeatedEnter}
             onClick={() => {
               navigate(1);
             }}

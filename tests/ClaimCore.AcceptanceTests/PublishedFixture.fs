@@ -24,7 +24,7 @@ let private database (image: string) runId =
         .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
         .Build()
 
-let private observedClient (certificate: X509Certificate2) observe =
+let private pinnedHandler (certificate: X509Certificate2) observe =
     let handler =
         new HttpClientHandler(AllowAutoRedirect = false, UseCookies = false, UseProxy = false)
 
@@ -43,9 +43,13 @@ let private observedClient (certificate: X509Certificate2) observe =
                 errors &&& SslPolicyErrors.RemoteCertificateNameMismatch = SslPolicyErrors.None
                 && chain.Build value
 
-    new HttpClient(handler, Timeout = TimeSpan.FromSeconds(5.))
+    handler
 
-let private client certificate = observedClient certificate ignore
+let private controlClient certificate observe =
+    new HttpClient(pinnedHandler certificate observe, Timeout = TimeSpan.FromSeconds 5.)
+
+let browserRelay origin backend certificate directory =
+    new HttpsProxy.Proxy(origin, backend, certificate, pinnedHandler certificate ignore, directory)
 
 let private awaitReady (http: HttpClient) (origin: string) (web: PublishedProcesses.Web) =
     task {
@@ -105,7 +109,7 @@ let private webEnvironment
 let private startPrerequisites (postgres: PostgreSqlContainer) (identity: IdentityServer.Identity) =
     task {
         use startup = new CancellationTokenSource(TimeSpan.FromMinutes 6.)
-        use identityHttp = client identity.Root
+        use identityHttp = controlClient identity.Root ignore
         identityHttp.MaxResponseContentBufferSize <- 65536L
 
         let ready (start: CancellationToken -> Task) =
@@ -198,10 +202,10 @@ type Fixture() =
         new IdentityServer.Identity(origin, 300, IdentityRealm.workflowAccounts)
 
     let certificate = FixtureFiles.certificate ()
-    let http = client certificate
+    let http = controlClient certificate ignore
     let mutable web: PublishedProcesses.Web option = None
     let mutable commitProxy: CommitReplyProxy.Proxy option = None
-    let proxy = new HttpsProxy.Proxy(origin, backend, certificate, http, directory)
+    let proxy = browserRelay origin backend certificate directory
     let mutable completed = false
     let mutable serviceFailureEvidence: string option = None
     let mutable restarts = 0
@@ -287,7 +291,7 @@ type Fixture() =
 
             do! this.RestartWeb()
             let mutable observed = ""
-            use probe = observedClient certificate (fun actual -> observed <- actual.Thumbprint)
+            use probe = controlClient certificate (fun actual -> observed <- actual.Thumbprint)
             use request = new HttpRequestMessage(HttpMethod.Get, backend + "/health/ready")
             request.Headers.Host <- Uri(origin).Authority
             use! response = probe.SendAsync request
@@ -357,7 +361,7 @@ type Fixture() =
 
     member _.ServiceToken() =
         task {
-            use identityHttp = client identity.Root
+            use identityHttp = controlClient identity.Root ignore
 
             use form =
                 new FormUrlEncodedContent(

@@ -16,6 +16,7 @@ import {
   useState,
   useSyncExternalStore,
   type ChangeEvent,
+  type KeyboardEvent,
 } from "react";
 import {
   attachmentNotice,
@@ -39,11 +40,29 @@ import { ownerScope, type OwnerScope } from "../../protocol/ownerScope";
 import { useSessionContext } from "../../session/SessionContext";
 import { Actions } from "../../ui/regions/Actions";
 import { Button } from "../../ui/Button";
+import { ButtonControl } from "../../ui/ButtonControl";
 import { DocumentPreview } from "./pdf/DocumentPreview";
 import "./attachments.css";
 
+const suppressActivation = (event: KeyboardEvent, busy: boolean) => {
+  if ((event.key === "Enter" || event.key === " ") && (busy || event.repeat)) {
+    event.preventDefault();
+  }
+};
+
+// Capture at a native ancestor because pending buttons filter their own press handlers.
+const suppressTransferActivation = (event: KeyboardEvent<HTMLDivElement>) => {
+  const target =
+    event.target instanceof Element
+      ? event.target.closest("button[data-attachment-control]")
+      : null;
+  if (target !== null) {
+    suppressActivation(event, target.hasAttribute("data-pending"));
+  }
+};
+
 type CapturedFile = Awaited<ReturnType<typeof captureAttachment>>;
-type Preview = { id: string; generation: number; labelId: string } & (
+type Preview = { id: string; generation: number; labelId: string; focusOrigin: Element | null } & (
   { kind: "image"; name: string; url: string; error: boolean } | { kind: "pdf"; bytes: ArrayBuffer }
 );
 type Props = {
@@ -212,6 +231,7 @@ const useAttachmentInteraction = (
   const deliver = (
     control: AttachmentTransferControl,
     file: { bytes: Uint8Array<ArrayBuffer>; mediaType: string },
+    focusOrigin: Element | null,
   ) => {
     const { bytes, mediaType } = file;
     const {
@@ -224,7 +244,7 @@ const useAttachmentInteraction = (
       downloadFile(bytes, mediaType, name);
       return;
     }
-    const presentation = { id, labelId, generation: ++generation.current };
+    const presentation = { id, labelId, generation: ++generation.current, focusOrigin };
     if (mediaType === attachmentTransport.pdfMediaType) {
       setPreview({ ...presentation, kind: "pdf", bytes: bytes.buffer });
       return;
@@ -240,6 +260,16 @@ const useAttachmentInteraction = (
     }
     trigger.current = element instanceof HTMLElement ? element : null;
 
+    const initialFocus = document.activeElement;
+    let focusMoved = false;
+    const observeFocus = (event: FocusEvent) => {
+      if (event.target !== initialFocus && event.target !== document.body) {
+        focusMoved = true;
+      }
+    };
+    if (control.kind === "PREVIEW") {
+      document.addEventListener("focusin", observeFocus, { signal: request.signal });
+    }
     const result = await requestAttachment(
       control.kind,
       control.request,
@@ -248,7 +278,9 @@ const useAttachmentInteraction = (
       owner,
       currentOwner,
       request.signal,
-    );
+    ).finally(() => {
+      document.removeEventListener("focusin", observeFocus);
+    });
     if (!finish(request)) {
       return;
     }
@@ -261,7 +293,7 @@ const useAttachmentInteraction = (
     setNotice(feedback);
     if (result.kind === "outcome" && result.value.kind === "RECEIVED") {
       try {
-        deliver(control, result.value.file);
+        deliver(control, result.value.file, focusMoved ? null : document.activeElement);
       } catch {
         const failed =
           control.kind === "DOWNLOAD"
@@ -316,9 +348,12 @@ const AttachmentPreview = ({
   const p = usePresentation();
   const unavailable = renderCatalogKey(p, "diagnostic.ATTACHMENT_PREVIEW_UNAVAILABLE");
   const control = useRef<HTMLButtonElement>(null);
+  const { focusOrigin } = preview;
   useEffect(() => {
-    control.current?.focus();
-  }, []);
+    if (focusOrigin !== null && document.activeElement === focusOrigin) {
+      control.current?.focus();
+    }
+  }, [focusOrigin]);
   const body = () => {
     if (preview.kind === "pdf") {
       return (
@@ -326,6 +361,7 @@ const AttachmentPreview = ({
           bytes={preview.bytes}
           title={renderCatalogKey(p, preview.labelId)}
           unavailable={unavailable}
+          closeButton={control}
         />
       );
     }
@@ -342,16 +378,17 @@ const AttachmentPreview = ({
     );
   };
   return (
-    <div className="attachment-preview">
-      <button
+    <div className="attachment-preview" onKeyDownCapture={suppressTransferActivation}>
+      <ButtonControl
+        data-attachment-control
         type="button"
         ref={control}
-        onClick={() => {
+        onPress={() => {
           interaction.close(true);
         }}
       >
         {p.text("ui.close")}
-      </button>
+      </ButtonControl>
       {body()}
     </div>
   );
@@ -370,12 +407,13 @@ const AttachmentControls = ({
   const p = usePresentation();
   const { busy } = interaction;
   return (
-    <div className="attachment-actions">
+    <div className="attachment-actions" onKeyDownCapture={suppressTransferActivation}>
       {row.transfers?.map((transfer) => (
         <Button
           key={transfer.kind}
           variant="secondary"
-          isDisabled={busy}
+          data-attachment-control
+          isPending={busy}
           onPress={({ target }) => {
             void interaction.receive(transfer, target);
           }}
@@ -441,24 +479,69 @@ const AttachmentRow = ({ row, columns, zone, interaction, ...controls }: Attachm
 
 const AttachmentPicker = ({
   enabled,
+  busy,
   choose,
 }: {
   enabled: boolean;
+  busy: boolean;
   choose: (file: File) => void;
 }) => {
   const p = usePresentation();
   const id = useId();
+  const busyTouch = useRef<number | null>(null);
   const select = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.item(0);
     event.currentTarget.value = "";
-    if (file !== undefined && file !== null && enabled) {
+    if (file !== undefined && file !== null && enabled && !busy) {
       choose(file);
     }
   };
   return (
-    <div>
+    <div
+      className="attachment-picker"
+      data-pending={busy || undefined}
+      onPointerDown={(event) => {
+        if (event.pointerType === "touch" && event.isPrimary) {
+          busyTouch.current = busy ? event.pointerId : null;
+        }
+        if (busy) {
+          event.preventDefault();
+        }
+      }}
+      onPointerCancel={(event) => {
+        if (event.pointerId === busyTouch.current) {
+          busyTouch.current = null;
+        }
+      }}
+      onClickCapture={(event) => {
+        const { nativeEvent } = event;
+        // Touch can synthesize a click on the input or label after hit testing changes.
+        if (
+          nativeEvent instanceof PointerEvent &&
+          nativeEvent.pointerType === "touch" &&
+          nativeEvent.pointerId === busyTouch.current
+        ) {
+          busyTouch.current = null;
+          event.preventDefault();
+        }
+      }}
+    >
       <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
-      <input id={id} type="file" disabled={!enabled} onChange={select} />
+      <input
+        id={id}
+        type="file"
+        disabled={!enabled}
+        aria-disabled={busy || undefined}
+        onKeyDown={(event) => {
+          suppressActivation(event, busy);
+        }}
+        onClick={(event) => {
+          if (busy) {
+            event.preventDefault();
+          }
+        }}
+        onChange={select}
+      />
     </div>
   );
 };
@@ -547,7 +630,8 @@ const AttachmentWorkspace = ({
     <div aria-busy={interaction.busy}>
       {add === undefined || !props.authoringAvailable ? null : (
         <AttachmentPicker
-          enabled={!interaction.busy && !editing}
+          enabled={!editing}
+          busy={interaction.busy}
           choose={(file) => {
             void interaction.choose(file, addSelected);
           }}
