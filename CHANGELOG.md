@@ -9,6 +9,7 @@
 - Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
 - Regenerate clients for typed attachment controls and disclosure facts, new refusals and the `filename*`-only download disposition.
 - Regenerate clients for affordance `editable` types restricted to each task's declared editable inputs.
+- The non-root Web container can read public assets in images built from checkouts with private file permissions.
 
 ## [0.20.0] - 2026-11-19
 
