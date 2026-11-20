@@ -253,7 +253,8 @@ let private configureRoutes
 let private report reason =
     try
         use stream = StandardSinks.errors ()
-        stream.Write(WebStartupDiagnostics.encode reason)
+        let line = Array.append (WebStartupDiagnostics.encode reason) [| 10uy |]
+        stream.Write line
         stream.Flush()
     with _ ->
         ()
