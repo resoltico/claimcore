@@ -49,7 +49,7 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && find /published/server/wwwroot -type d -exec chmod 0755 {} + \
     && find /published/server/wwwroot -type f -exec chmod 0644 {} +
 
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-resolute-chiseled-extra@sha256:cea9d5494f358fe43082300c24d1cd9f651066b6b7de1e5735bca8d3ade68649 AS runtime
 WORKDIR /app
 COPY --from=build /published/server/ ./
 USER $APP_UID

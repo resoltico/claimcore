@@ -15,6 +15,7 @@ open ClaimCore.RecordFormat
 [<RequireQualifiedAccess; NoComparison>]
 type DatabaseSuccess =
     | Initialized of Guid
+    | InitializationSkipped of Guid
     | OwnerRecovery of OwnerRecoveryResult
     | Rebuilt of ProjectionRebuildReport
     | RestoredInstallationAdmitted of RestoreAdmissionReport
@@ -203,6 +204,13 @@ module Replies =
                 | _ -> None)
                 (record id |> field "installationId" id uuid)
             variant
+                "INITIALIZATION_SKIPPED"
+                (DatabaseSuccess.InitializationSkipped >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.InitializationSkipped id) -> Some id
+                | _ -> None)
+                (record id |> field "installationId" id uuid)
+            variant
                 "OWNER_RECOVERED"
                 (OwnerRecoveryResult.Recovered
                  >> DatabaseSuccess.OwnerRecovery
@@ -322,6 +330,9 @@ module Replies =
 
     let initialized id =
         Reply.Succeeded(DatabaseSuccess.Initialized id) |> encode
+
+    let initializationSkipped id =
+        Reply.Succeeded(DatabaseSuccess.InitializationSkipped id) |> encode
 
     let ownerRecovery result =
         Reply.Succeeded(DatabaseSuccess.OwnerRecovery result) |> encode

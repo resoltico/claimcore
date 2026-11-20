@@ -91,23 +91,41 @@ let private literalComposePaths directory (document: JsonDocument) =
     let admin =
         document.RootElement.GetProperty("services").GetProperty("administration")
 
-    let environment = admin.GetProperty("environment")
+    let mutable entrypoint = Unchecked.defaultof<JsonElement>
+    Expect.isFalse (admin.TryGetProperty("entrypoint", &entrypoint)) "Use the server entrypoint"
 
-    Expect.equal
-        (environment.GetProperty("CLAIMCORE_OWNER_NAME").GetString())
-        "Authored local owner"
-        "Compose preserves the owner name"
+    let arguments =
+        admin.GetProperty("command").EnumerateArray()
+        |> Seq.map (fun value -> value.GetString() |> nonNull)
+        |> Seq.toList
 
-    Expect.equal
-        (environment.GetProperty("CLAIMCORE_OWNER_ISSUER").GetString())
-        "https://identity.localhost:7444/realms/claimcore"
-        "Selected issuer"
+    let subjectValue = arguments |> List.item 6
+
+    Expect.sequenceEqual
+        arguments
+        [
+            "initialize"
+            "Etc/UTC"
+            "--skip-existing"
+            "--owner-issuer"
+            "https://identity.localhost:7444/realms/claimcore"
+            "--owner-subject"
+            subjectValue
+            "--owner-name"
+            "Authored local owner"
+            "--owner-role"
+            "CASE_HANDLER"
+            "--owner-role"
+            "PAYMENT_RECORDER"
+            "--owner-role"
+            "DATA_STEWARD"
+        ]
+        "Compose passes explicit arguments without a shell"
 
     let mutable subject = Guid.Empty
 
     Expect.isTrue
-        (Guid.TryParse(environment.GetProperty("CLAIMCORE_OWNER_SUBJECT").GetString(), &subject)
-         && subject <> Guid.Empty)
+        (Guid.TryParse(subjectValue, &subject) && subject <> Guid.Empty)
         "Configured subject is the realm identity"
 
     for service in document.RootElement.GetProperty("services").EnumerateObject() do

@@ -73,7 +73,9 @@ let private discovery binary connection =
                 ]
                 "Exact command set"
 
-            let! _ = invoke binary (connection + ".absent") [ "version" ] 0
+            let! version = invoke binary (connection + ".absent") [ "version" ] 0
+            let! json = invoke binary (connection + ".absent") [ "version"; "--json" ] 0
+            Expect.equal (json.GetRawText()) (version.GetRawText()) "Both version forms emit JSON"
 
             let! refusal = invoke binary connection [ "unsupported.synthetic" ] 2
             fault "INVOCATION_INVALID" refusal
@@ -87,8 +89,8 @@ let private initialize binary connection =
         let! _ = invoke binary connection [ "verify" ] 2
         let! _ = invoke binary connection ([ "initialize"; "UTC" ] @ ownerArguments) 2
 
-        let! first =
-            invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 0
+        let skip = [ "initialize"; "Etc/UTC"; "--skip-existing" ] @ ownerArguments
+        let! first = invoke binary connection skip 0
 
         Expect.equal (kind first) "INITIALIZED" "Schema and owner are committed together"
 
@@ -96,6 +98,22 @@ let private initialize binary connection =
             invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
 
         fault "ALREADY_INITIALIZED" repeated
+        let! before = invoke binary connection [ "head" ] 0
+        let! skipped = invoke binary connection skip 0
+        Expect.equal (kind skipped) "INITIALIZATION_SKIPPED" "Readable installation is kept"
+
+        Expect.equal
+            (skipped.GetProperty("installationId").GetGuid())
+            (first.GetProperty("installationId").GetGuid())
+            "The original installation is identified"
+
+        let! after = invoke binary connection [ "head" ] 0
+
+        Expect.equal
+            (after.GetRawText())
+            (before.GetRawText())
+            "The skip leaves the ledger unchanged"
+
         let! status = invoke binary connection [ "status" ] 0
 
         Expect.equal

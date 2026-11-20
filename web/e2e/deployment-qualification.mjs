@@ -10,6 +10,7 @@ const [root, owned] = process.argv.slice(2);
 const { consumerContractIdentity, presentationLanguages, presentationPseudolanguage } =
   await import(path.join(root, "contracts/client.ts"));
 const { operationId } = await import(path.join(root, "web/src/operation/operationId.ts"));
+const businessZone = "Europe/Riga";
 const configuration = path.join(owned, "configuration $CLAIMCORE_QA_PATH # :, \" \\\' end\\");
 const composeFile = path.join(root, "deployment/compose.yaml");
 const cleanupImage = JSON.parse(
@@ -461,7 +462,10 @@ const qualify = async (origin, provider, ca) => {
     await login(context, origin, provider);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
+    const dateFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: businessZone });
+    const before = dateFormat.format(new Date());
     const requester = await owner(context, origin, fingerprint, csrf);
+    expect([before, dateFormat.format(new Date())]).toContain(requester.businessDate);
     progress("first-case");
     const input = {
       operationId: operationId(),
@@ -590,7 +594,7 @@ try {
       path.join(root, "deployment/configure-local.sh"),
       configuration,
       "Authored deployment owner",
-      "Etc/UTC",
+      businessZone,
       String(webPort),
       String(identityPort),
     ],

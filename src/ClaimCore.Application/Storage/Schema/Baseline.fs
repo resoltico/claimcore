@@ -157,7 +157,14 @@ module internal Baseline =
             return id
         }
 
-    let initialize (source: NpgsqlDataSource) timeZone initializeOwner token =
+    let initializeWith
+        (source: NpgsqlDataSource)
+        timeZone
+        initializeOwner
+        initialized
+        existing
+        token
+        =
         task {
             let timeZone = zone timeZone
 
@@ -180,17 +187,21 @@ module internal Baseline =
                             let! present = exists connection token
 
                             if present then
-                                let! _ = require connection token
-
-                                return
-                                    raise (OperatorFaultException OperatorFault.AlreadyInitialized)
+                                let! installation = require connection token
+                                return! existing connection installation token
                             else
                                 let! id = install connection timeZone token
                                 do! initializeOwner connection id
                                 do! DatabaseSession.commit transaction token
-                                return id
+                                return initialized id
                         })
         }
+
+    let refuseExisting _ _ _ =
+        raise (OperatorFaultException OperatorFault.AlreadyInitialized)
+
+    let initialize source timeZone initializeOwner token =
+        initializeWith source timeZone initializeOwner id refuseExisting token
 
 /// Owner-only schema initialization; no upgrade, adoption or conversion is provided.
 module internal SchemaAdministration =

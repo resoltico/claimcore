@@ -19,7 +19,7 @@ open ClaimCore.HostSecurity
 open ClaimCore.RecordFormat
 
 type Command =
-    | Initialize of timeZone: string * owner: InitialOwner
+    | Initialize of timeZone: string * owner: InitialOwner * skipExisting: bool
     | RecoverOwner of OwnerRecoveryInput
     | Verify of InstallationCheckpoint option
     | Rebuild of InstallationCheckpoint * MaintenanceHandle
@@ -74,6 +74,7 @@ module Command =
 type CommandArgument =
     | Operand of string
     | Optional of flag: string * value: string
+    | Switch of flag: string
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CommandName =
@@ -100,6 +101,7 @@ module CommandName =
                 CommandArgument.Operand "--owner-name NAME"
                 CommandArgument.Optional("--owner-contact", "TEXT")
                 CommandArgument.Optional("--owner-role", "ROLE")
+                CommandArgument.Switch "--skip-existing"
             ]
         | CommandName.RecoverOwner ->
             [
@@ -126,14 +128,15 @@ module CommandName =
             ]
         | CommandName.Head
         | CommandName.Status
-        | CommandName.Help
-        | CommandName.Version -> []
+        | CommandName.Help -> []
+        | CommandName.Version -> [ CommandArgument.Switch "--json" ]
 
     let synopsis name =
         let argument =
             function
             | CommandArgument.Operand value -> value
             | CommandArgument.Optional(flag, value) -> "[" + flag + " " + value + "]"
+            | CommandArgument.Switch flag -> "[" + flag + "]"
 
         String.concat
             " "
@@ -169,16 +172,19 @@ module Inputs =
         [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--owner-contact" ]
 
     let private initialize arguments =
-        let rec options values roles =
+        let rec options values roles skipExisting =
             function
-            | [] -> Ok(values, List.rev roles)
+            | [] -> Ok(values, List.rev roles, skipExisting)
+            | "--skip-existing" :: _ when skipExisting ->
+                Error(UsageError.DuplicateOption "--skip-existing")
+            | "--skip-existing" :: rest -> options values roles true rest
             | "--owner-role" :: raw :: rest ->
                 match Role.parse raw with
                 | Some role when
                     List.contains role ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
                     && not (List.contains role roles)
                     ->
-                    options values (role :: roles) rest
+                    options values (role :: roles) skipExisting rest
                 | _ ->
                     Error(
                         UsageError.InvalidChoice(
@@ -193,7 +199,7 @@ module Inputs =
                 elif Map.containsKey flag values then
                     Error(UsageError.DuplicateOption flag)
                 else
-                    options (Map.add flag raw values) roles rest
+                    options (Map.add flag raw values) roles skipExisting rest
             | [ flag ] when flag = "--owner-role" || List.contains flag ownerValueFlags ->
                 Error(UsageError.MissingValue flag)
             | flag :: _ -> Error(UsageError.UnknownOption(flag, None))
@@ -201,8 +207,8 @@ module Inputs =
         match arguments with
         | [] -> Error(UsageError.MissingOperand "TIME_ZONE")
         | zone :: flags ->
-            options Map.empty [] flags
-            |> Result.bind (fun (values, roles) ->
+            options Map.empty [] false flags
+            |> Result.bind (fun (values, roles, skipExisting) ->
                 match
                     [ "--owner-issuer"; "--owner-subject"; "--owner-name" ]
                     |> List.tryFind (fun flag -> not (Map.containsKey flag values))
@@ -227,7 +233,8 @@ module Inputs =
                                     Principal = principal
                                     Profile = profile
                                     Roles = roles
-                                }
+                                },
+                                skipExisting
                             )
                         )
                     | Error _, _ ->
@@ -355,6 +362,7 @@ module Inputs =
 
         match name with
         | CommandName.Help -> noArguments Help arguments |> usage
+        | CommandName.Version when arguments = [ "--json" ] -> Ok Version
         | CommandName.Version -> noArguments Version arguments |> usage
         | CommandName.Initialize -> initialize arguments |> usage
         | CommandName.RecoverOwner -> recoverOwner arguments |> usage

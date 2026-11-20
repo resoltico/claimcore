@@ -360,6 +360,14 @@ let private publishedFaults () =
                 privateText "unavailable" ($"Host=127.0.0.1;Port={port};Timeout=1;SSL Mode=Disable")
 
             do! fault unavailable [ "status" ] "UNAVAILABLE" ExitCode.Failed
+
+            do!
+                fault
+                    unavailable
+                    ([ "initialize"; "Etc/UTC"; "--skip-existing" ] @ owner)
+                    "UNAVAILABLE"
+                    ExitCode.Failed
+
             waiting.Stop()
 
             let! result =

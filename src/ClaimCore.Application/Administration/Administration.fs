@@ -10,6 +10,11 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Verification
 
+[<RequireQualifiedAccess>]
+type InitializationResult =
+    | Initialized of Guid
+    | ExistingInstallation of Guid
+
 module internal LedgerAdministration =
     let verify source expected cancellationToken =
         Verification.verify source expected cancellationToken
@@ -22,7 +27,7 @@ module internal LedgerAdministration =
                 return! CheckpointEvidence.read connection installation cancellationToken
             })
 
-    let initialize source productVersion timeZone (owner: InitialOwner) token =
+    let initialize source productVersion timeZone (owner: InitialOwner) initialized existing token =
         if not (PrincipalKey.isHuman owner.Principal) then
             raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 
@@ -35,7 +40,7 @@ module internal LedgerAdministration =
 
         let timeZone = Baseline.zone timeZone
 
-        SchemaAdministration.initialize
+        Baseline.initializeWith
             source
             timeZone
             (fun connection installationId ->
@@ -84,6 +89,8 @@ module internal LedgerAdministration =
                     | Verdict.Replay _ ->
                         return raise (RecordCorruptException "Initial owner recording failed.")
                 })
+            initialized
+            existing
             token
 
     let recoverOwner (source: NpgsqlDataSource) productVersion (input: OwnerRecoveryInput) token =
@@ -250,7 +257,28 @@ type Administration(connectionString: string, productVersion: string) =
     static member ClassifyFailure error = AdministrationFailures.classify error
 
     member _.Initialize(timeZone, owner, cancellationToken) =
-        LedgerAdministration.initialize source productVersion timeZone owner cancellationToken
+        LedgerAdministration.initialize
+            source
+            productVersion
+            timeZone
+            owner
+            id
+            Baseline.refuseExisting
+            cancellationToken
+
+    member _.InitializeIfMissing(timeZone, owner, cancellationToken) =
+        LedgerAdministration.initialize
+            source
+            productVersion
+            timeZone
+            owner
+            InitializationResult.Initialized
+            (fun connection installation token ->
+                task {
+                    let! status = InstallationStatus.readConnection connection installation token
+                    return InitializationResult.ExistingInstallation status.InstallationId
+                })
+            cancellationToken
 
     member _.RecoverOwner(input, cancellationToken) =
         LedgerAdministration.recoverOwner source productVersion input cancellationToken
