@@ -488,6 +488,7 @@ const AttachmentPicker = ({
 }) => {
   const p = usePresentation();
   const id = useId();
+  const busyTouch = useRef<number | null>(null);
   const select = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.item(0);
     event.currentTarget.value = "";
@@ -500,7 +501,27 @@ const AttachmentPicker = ({
       className="attachment-picker"
       data-pending={busy || undefined}
       onPointerDown={(event) => {
+        if (event.pointerType === "touch" && event.isPrimary) {
+          busyTouch.current = busy ? event.pointerId : null;
+        }
         if (busy) {
+          event.preventDefault();
+        }
+      }}
+      onPointerCancel={(event) => {
+        if (event.pointerId === busyTouch.current) {
+          busyTouch.current = null;
+        }
+      }}
+      onClickCapture={(event) => {
+        const { nativeEvent } = event;
+        // Touch can synthesize a click on the input or label after hit testing changes.
+        if (
+          nativeEvent instanceof PointerEvent &&
+          nativeEvent.pointerType === "touch" &&
+          nativeEvent.pointerId === busyTouch.current
+        ) {
+          busyTouch.current = null;
           event.preventDefault();
         }
       }}

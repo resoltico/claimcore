@@ -644,17 +644,22 @@ for (const [transfer, key] of [
   });
 }
 
-for (const { focusOutside, pointerTarget } of [
-  { focusOutside: false, pointerTarget: null },
-  { focusOutside: true, pointerTarget: null },
-  { focusOutside: false, pointerTarget: "input" },
-  { focusOutside: true, pointerTarget: "label" },
+for (const { focusOutside, pointerTarget, gesture } of [
+  { focusOutside: false, pointerTarget: null, gesture: "keyboard" },
+  { focusOutside: true, pointerTarget: null, gesture: "keyboard" },
+  { focusOutside: false, pointerTarget: "input", gesture: "mouse" },
+  { focusOutside: true, pointerTarget: "label", gesture: "mouse" },
+  { focusOutside: false, pointerTarget: "input", gesture: "touch" },
+  { focusOutside: true, pointerTarget: "label", gesture: "touch" },
+  { focusOutside: false, pointerTarget: "input", gesture: "touch cancel" },
 ] as const) {
+  const useTouch = gesture === "touch" || gesture === "touch cancel";
   const name =
     pointerTarget === null
       ? `a failed attachment file read preserves ${focusOutside ? "external" : "picker"} focus`
-      : `a held pointer gesture on the attachment picker ${pointerTarget} stays inactive after settlement`;
-  test(`${name} @engine`, async ({ page }) => {
+      : `a held ${useTouch ? gesture : "pointer gesture"} on the attachment picker ${pointerTarget} stays inactive after settlement`;
+  test(`${name} ${useTouch ? "@chromium" : "@engine"}`, async ({ page, browserName }) => {
+    test.skip(useTouch && browserName !== "chromium", "Split touch gestures require Chromium CDP.");
     test.setTimeout(90_000);
     await page.addInitScript(() => {
       let blockFirstRead = true;
@@ -709,6 +714,31 @@ for (const { focusOutside, pointerTarget } of [
       }
       return { x: box.x + Math.min(box.width / 2, 24), y: box.y + box.height / 2 };
     };
+    const touch = useTouch ? await page.context().newCDPSession(page) : null;
+    if (touch !== null) {
+      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+    }
+    const startPointer = async ({ x, y }: { x: number; y: number }) => {
+      if (touch === null) {
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+      } else {
+        await touch.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [{ x, y }],
+        });
+      }
+    };
+    const finishPointer = async (cancel = false) => {
+      if (touch === null) {
+        await page.mouse.up();
+      } else {
+        await touch.send("Input.dispatchTouchEvent", {
+          type: cancel ? "touchCancel" : "touchEnd",
+          touchPoints: [],
+        });
+      }
+    };
     const observeChooser = () =>
       page.waitForEvent("filechooser", { timeout: 750 }).catch((error: unknown) => {
         if (error instanceof errors.TimeoutError) {
@@ -742,9 +772,7 @@ for (const { focusOutside, pointerTarget } of [
           await expect(external).toBeFocused();
         }
         if (pointerTarget !== null) {
-          const point = await pointAtControl();
-          await page.mouse.move(point.x, point.y);
-          await page.mouse.down();
+          await startPointer(await pointAtControl());
           pointerDown = true;
         }
       } finally {
@@ -758,7 +786,7 @@ for (const { focusOutside, pointerTarget } of [
       await expect(picker).toBeEnabled();
       if (pointerDown) {
         const queuedChooser = observeChooser();
-        await page.mouse.up();
+        await finishPointer(gesture === "touch cancel");
         pointerDown = false;
         expect(await queuedChooser).toBeNull();
       }
@@ -766,7 +794,7 @@ for (const { focusOutside, pointerTarget } of [
       await expect(focusOutside ? external : picker).toBeFocused();
     } finally {
       if (pointerDown) {
-        await page.mouse.up();
+        await finishPointer(true);
       }
     }
 
@@ -778,7 +806,8 @@ for (const { focusOutside, pointerTarget } of [
     } else {
       const point = await pointAtControl();
       const fresh = page.waitForEvent("filechooser");
-      await page.mouse.click(point.x, point.y);
+      await startPointer(point);
+      await finishPointer();
       await (await fresh).setFiles(file);
     }
     expect(choosers).toBe(2);

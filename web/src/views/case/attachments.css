@@ -6,7 +6,7 @@
   max-inline-size: 100%;
 }
 
-/* A gesture started while busy targets the wrapper, so its click cannot activate the picker. */
+/* The wrapper receives pointer-down during file capture. */
 .attachment-picker[data-pending] > :is(label, input) {
   pointer-events: none;
 }
