@@ -6,6 +6,11 @@
   max-inline-size: 100%;
 }
 
+/* A gesture started while busy targets the wrapper, so its click cannot activate the picker. */
+.attachment-picker[data-pending] > :is(label, input) {
+  pointer-events: none;
+}
+
 .attachment-list {
   list-style: none;
   margin: 0;

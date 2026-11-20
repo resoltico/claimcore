@@ -644,10 +644,17 @@ for (const [transfer, key] of [
   });
 }
 
-for (const focusOutside of [false, true]) {
-  test(`a failed attachment file read preserves ${focusOutside ? "external" : "picker"} focus @engine`, async ({
-    page,
-  }) => {
+for (const { focusOutside, pointerTarget } of [
+  { focusOutside: false, pointerTarget: null },
+  { focusOutside: true, pointerTarget: null },
+  { focusOutside: false, pointerTarget: "input" },
+  { focusOutside: true, pointerTarget: "label" },
+] as const) {
+  const name =
+    pointerTarget === null
+      ? `a failed attachment file read preserves ${focusOutside ? "external" : "picker"} focus`
+      : `a held pointer gesture on the attachment picker ${pointerTarget} stays inactive after settlement`;
+  test(`${name} @engine`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.addInitScript(() => {
       let blockFirstRead = true;
@@ -690,45 +697,91 @@ for (const focusOutside of [false, true]) {
       return chooser;
     };
 
+    const pointerControl =
+      pointerTarget === "label"
+        ? panel.locator("label").filter({ hasText: "Choose a file" })
+        : picker;
+    const pointAtControl = async () => {
+      await pointerControl.scrollIntoViewIfNeeded();
+      const box = await pointerControl.boundingBox();
+      if (box === null) {
+        throw new Error("Expected a visible picker control.");
+      }
+      return { x: box.x + Math.min(box.width / 2, 24), y: box.y + box.height / 2 };
+    };
+    const observeChooser = () =>
+      page.waitForEvent("filechooser", { timeout: 750 }).catch((error: unknown) => {
+        if (error instanceof errors.TimeoutError) {
+          return null;
+        }
+        throw error;
+      });
+    let choosers = 0;
+    page.on("filechooser", () => {
+      choosers++;
+    });
+
     await picker.focus();
     await (await chooseFromKeyboard()).setFiles(file);
     const html = page.locator("html");
+    let pointerDown = false;
     try {
-      await expect(html).toHaveAttribute("data-attachment-read", "held");
-      await expect(picker).toBeFocused();
-      await expect(picker).toHaveAttribute("aria-disabled", "true");
-      await expect(picker).not.toHaveAttribute("disabled");
+      try {
+        await expect(html).toHaveAttribute("data-attachment-read", "held");
+        await expect(picker).toBeFocused();
+        await expect(picker).toHaveAttribute("aria-disabled", "true");
+        await expect(picker).not.toHaveAttribute("disabled");
 
-      const busyChooser = page
-        .waitForEvent("filechooser", { timeout: 750 })
-        .catch((error: unknown) => {
-          if (error instanceof errors.TimeoutError) {
-            return null;
-          }
-          throw error;
+        const busyChooser = observeChooser();
+        await page.keyboard.press("Enter");
+        expect(await busyChooser).toBeNull();
+        await picker.setInputFiles({ ...file, name: "pending-selection.txt" });
+        await expect(html).not.toHaveAttribute("data-second-file-read");
+        if (focusOutside) {
+          await external.focus();
+          await expect(external).toBeFocused();
+        }
+        if (pointerTarget !== null) {
+          const point = await pointAtControl();
+          await page.mouse.move(point.x, point.y);
+          await page.mouse.down();
+          pointerDown = true;
+        }
+      } finally {
+        await page.evaluate(() => {
+          document.dispatchEvent(new Event("reject-attachment-read"));
         });
-      await page.keyboard.press("Enter");
-      expect(await busyChooser).toBeNull();
-      await picker.setInputFiles({ ...file, name: "pending-selection.txt" });
-      await expect(html).not.toHaveAttribute("data-second-file-read");
-      if (focusOutside) {
-        await external.focus();
-        await expect(external).toBeFocused();
       }
+      await expect(panel.getByRole("alert")).toHaveText(
+        "Complete this input using the required format.",
+      );
+      await expect(picker).toBeEnabled();
+      if (pointerDown) {
+        const queuedChooser = observeChooser();
+        await page.mouse.up();
+        pointerDown = false;
+        expect(await queuedChooser).toBeNull();
+      }
+      expect(choosers).toBe(1);
+      await expect(focusOutside ? external : picker).toBeFocused();
     } finally {
-      await page.evaluate(() => {
-        document.dispatchEvent(new Event("reject-attachment-read"));
-      });
+      if (pointerDown) {
+        await page.mouse.up();
+      }
     }
-    await expect(panel.getByRole("alert")).toHaveText(
-      "Complete this input using the required format.",
-    );
-    await expect(picker).toBeEnabled();
-    await expect(focusOutside ? external : picker).toBeFocused();
-    if (focusOutside) {
-      await picker.focus();
+
+    if (pointerTarget === null) {
+      if (focusOutside) {
+        await picker.focus();
+      }
+      await (await chooseFromKeyboard()).setFiles(file);
+    } else {
+      const point = await pointAtControl();
+      const fresh = page.waitForEvent("filechooser");
+      await page.mouse.click(point.x, point.y);
+      await (await fresh).setFiles(file);
     }
-    await (await chooseFromKeyboard()).setFiles(file);
+    expect(choosers).toBe(2);
     await expect(page.getByRole("dialog")).toContainText(file.name);
   });
 }

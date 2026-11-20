@@ -496,7 +496,15 @@ const AttachmentPicker = ({
     }
   };
   return (
-    <div>
+    <div
+      className="attachment-picker"
+      data-pending={busy || undefined}
+      onPointerDown={(event) => {
+        if (busy) {
+          event.preventDefault();
+        }
+      }}
+    >
       <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
       <input
         id={id}
