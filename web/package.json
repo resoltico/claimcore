@@ -9,16 +9,16 @@
     "npm": "12.2.3"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b tsconfig.app.json && vite build",
-    "preview": "vite preview",
+    "dev": "vite --configLoader runner",
+    "build": "tsc -b tsconfig.app.json && vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner",
     "typecheck": "tsc -b --pretty false",
     "lint": "node scripts/lint.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "vitest run",
-    "test:unit:watch": "vitest",
-    "dead-code": "knip && knip --production",
+    "test:unit": "vitest run --configLoader runner",
+    "test:unit:watch": "vitest --configLoader runner",
+    "dead-code": "JITI_FS_CACHE=false knip && JITI_FS_CACHE=false knip --production",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "theme": "node scripts/generate-theme.mjs"
   },
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@playwright/test": "1.65.1",
+    "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "8.0.0",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.13",
@@ -48,6 +48,7 @@
     "oxlint": "1.94.0",
     "oxlint-tsgolint": "7.0.2007",
     "prettier": "3.10.1",
+    "react-aria": "3.53.1",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.1"

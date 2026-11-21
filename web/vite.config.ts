@@ -6,17 +6,16 @@ import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import type { InlineConfig } from "vitest/node";
 import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
-import {
-  patchReactAriaLiveAnnouncer,
+import reactAriaLiveAnnouncer, {
   reactAriaLiveAnnouncerBanner,
-} from "./scripts/patch-react-aria.mjs";
-
-patchReactAriaLiveAnnouncer();
+} from "./scripts/react-aria-live-announcer.plugin.mjs";
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
 export default {
-  plugins: [react(), attachmentPreviewResources(), publicAssets()],
+  cacheDir: "artifacts/vite",
+  plugins: [reactAriaLiveAnnouncer(), react(), attachmentPreviewResources(), publicAssets()],
+  optimizeDeps: { rolldownOptions: { plugins: [reactAriaLiveAnnouncer()] } },
   resolve: {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
@@ -50,10 +49,12 @@ export default {
   },
   test: {
     environment: "jsdom",
+    fsModuleCachePath: "artifacts/vitest",
     maxWorkers: testWorkers,
     pool: "vmThreads",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: "./tests/support/setup.ts",
+    server: { deps: { inline: ["react-aria-components", "react-aria"] } },
     allowOnly: false,
     retry: 0,
     reporters: ["default", new RequiredTestReporter()],

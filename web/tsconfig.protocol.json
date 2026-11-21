@@ -2,7 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.protocol.tsbuildinfo",
+    "tsBuildInfoFile": "./artifacts/typescript/tsconfig.protocol.tsbuildinfo",
     "rootDir": "..",
     "lib": ["ES2024"],
     "types": [],
@@ -11,7 +11,7 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "declaration": true,
-    "outDir": "./node_modules/.cache/protocol-types"
+    "outDir": "./artifacts/typescript/protocol-types"
   },
   "include": ["src/protocol/**/*.ts", "../contracts/*.ts", "../contracts/*.json"]
 }

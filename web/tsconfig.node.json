@@ -2,7 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.node.tsbuildinfo",
+    "tsBuildInfoFile": "./artifacts/typescript/tsconfig.node.tsbuildinfo",
     "types": ["node"],
     "allowJs": true,
     "checkJs": true,

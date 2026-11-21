@@ -176,12 +176,7 @@ module internal CaseSelectionSql =
         let filter = selection.Filter
 
         let text =
-            filter.Text
-            |> Option.map (fun value ->
-                (CaseSearchText.value value)
-                    .Replace("\\", "\\\\")
-                    .Replace("%", "\\%")
-                    .Replace("_", "\\_"))
+            filter.Text |> Option.map (CaseSearchText.value >> LikePattern.escapeLiteral)
 
         [|
             box (selection.Visibility = CaseVisibility.Every)

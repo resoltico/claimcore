@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
-import { syntheticPdf } from "./attachment-pdf-fixtures";
+import { jpeg2000Pdf, syntheticPdf } from "./attachment-pdf-fixtures";
 import { uploadAttachment } from "./attachment-workflow";
 import { openCase } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
@@ -110,4 +110,44 @@ test("renders Japanese from a relayed CMap and ignores names outside the publish
   expect(glyphs.first).toBeGreaterThan(20);
   expect(glyphs.second).toBeGreaterThan(20);
   expect(glyphs.distinct).toBe(true);
+});
+
+test("decodes JPEG 2000 with WASM relayed by the workspace @engine", async ({ page }) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-JPX-${randomUUID()}`);
+  const name = "synthetic-jpeg2000.pdf";
+  const { row } = await uploadAttachment(
+    page,
+    page.getByRole("region", { name: "Attachments", exact: true }),
+    name,
+    name,
+    "application/pdf",
+    jpeg2000Pdf(),
+  );
+
+  const decoder = page.waitForResponse(
+    (response) =>
+      /\/assets\/pdf-openjpeg-[a-f0-9]+\.wasm$/u.test(new URL(response.url()).pathname) &&
+      response.ok() &&
+      response.request().frame() === page.mainFrame(),
+  );
+  await row.getByRole("button", { name: "Preview", exact: true }).click();
+  const wasm = await (await decoder).body();
+  expect([...wasm.subarray(0, 4)]).toEqual([0x00, 0x61, 0x73, 0x6d]);
+  await expect(row.getByRole("status").filter({ hasText: "Page 1 of 1" })).toBeVisible();
+
+  const canvas = row.frameLocator('iframe[title="Preview"]').locator("canvas");
+  const [red, green, blue, alpha] = await canvas.evaluate((element) => {
+    if (!(element instanceof HTMLCanvasElement)) {
+      throw new Error("The PDF viewer did not produce a canvas.");
+    }
+    const context = element.getContext("2d")!;
+    const x = Math.floor(element.width / 2);
+    const y = Math.floor(element.height / 2);
+    return [...context.getImageData(x, y, 1, 1).data];
+  });
+  expect(red).toBeGreaterThan(240);
+  expect(green).toBeLessThan(16);
+  expect(blue).toBeLessThan(16);
+  expect(alpha).toBe(255);
 });
