@@ -313,9 +313,11 @@ The Keycloak fixture reads its image pin from the Dockerfile's `keycloak` stage.
 update, update both Compose files and [the PostgreSQL baseline](../db/postgresql-baseline.json)
 together. CI checks those pins against the baseline.
 
-[The React Aria source repair](../web/scripts/patch-react-aria.mjs) checks the locked package before
-Vite builds the workspace. Review it when updating React Aria and run the Chromium Trusted Types
-acceptance checks. The workspace policy requires Trusted Types and disallows creating policies.
+The LiveAnnouncer transform checks the locked React Aria sources for development, tests and
+production builds. Review the transform and run Chromium Trusted Types acceptance when updating
+React Aria. The workspace policy requires Trusted Types and disallows creating policies.
+See the [transform](../web/scripts/react-aria-live-announcer.plugin.mjs) and
+[upstream issue](https://github.com/adobe/react-spectrum/issues/11012).
 The [Playwright pin](../web/package.json) must support Firefox accessible names across execution
 worlds. Use the Firefox acceptance checks when evaluating a bump. See the
 [upstream accessible-name issue](https://github.com/microsoft/playwright/issues/43967).

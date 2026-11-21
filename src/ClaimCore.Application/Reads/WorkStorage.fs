@@ -341,14 +341,6 @@ module internal WorkStorage =
                     |> Map.ofList
         }
 
-    let private literalSearch value =
-        value
-        |> Option.map (fun value ->
-            (CaseSearchText.value value)
-                .Replace("\\", "\\\\")
-                .Replace("%", "\\%")
-                .Replace("_", "\\_"))
-
     let page connection (query: PageQuery) token =
         task {
             let due =
@@ -398,7 +390,10 @@ module internal WorkStorage =
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
                         DatabaseSession.parameter (query.State |> Option.map ReminderState.token)
                         box query.IncludeInactive
-                        DatabaseSession.parameter (literalSearch query.Text)
+                        DatabaseSession.parameter (
+                            query.Text
+                            |> Option.map (CaseSearchText.value >> LikePattern.escapeLiteral)
+                        )
                         DatabaseSession.parameter (
                             query.After |> Option.map (fun p -> CalendarDate.format p.Due)
                         )

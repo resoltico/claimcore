@@ -6,11 +6,6 @@ import { isPositiveInteger, messageRecord, previewChannel } from "./channel";
 const pixels = attachmentTransport.maximumPreviewPixels;
 const canvas = document.querySelector("canvas")!;
 
-const resourceFactory = <Request, Result>(fetchResource: (request: Request) => Promise<Result>) =>
-  class {
-    fetch = fetchResource;
-  };
-
 const pageCanvas = (width: number, height: number) => {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     throw new Error("Invalid PDF page geometry.");
@@ -39,6 +34,18 @@ const initialize = (port: MessagePort, bytes: ArrayBuffer) => {
       port.postMessage({ kind: "resource", resourceId, resourceType, name });
     });
   };
+  class PreviewBinaryDataFactory {
+    fetch({ kind, filename }: { kind: string; filename: string }) {
+      switch (kind) {
+        case "cMapUrl":
+          return fetchResource("cmaps", filename);
+        case "wasmUrl":
+          return fetchResource("wasm", filename);
+        default:
+          throw new Error("Unsupported PDF resource.");
+      }
+    }
+  }
   // The blob contains the static renderer program. PDF bytes travel only over the ports.
   const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
   const worker = new Worker(workerUrl);
@@ -57,16 +64,12 @@ const initialize = (port: MessagePort, bytes: ArrayBuffer) => {
   const loading = getDocument({
     data: bytes,
     worker: PDFWorker.create({ port: worker }),
-    CMapReaderFactory: resourceFactory(async ({ name }: { name: string }) => ({
-      cMapData: await fetchResource("cmaps", `${name}.bcmap`),
-      isCompressed: true,
-    })),
-    WasmFactory: resourceFactory(({ filename }: { filename: string }) =>
-      fetchResource("wasm", filename),
-    ),
+    BinaryDataFactory: PreviewBinaryDataFactory,
+    cMapPacked: true,
+    useWasm: true,
     useWorkerFetch: false,
+    disableWorkerRendering: true,
     useSystemFonts: true,
-    isEvalSupported: false,
     enableXfa: false,
     stopAtErrors: true,
     maxImageSize: pixels,

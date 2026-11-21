@@ -64,3 +64,19 @@ export const filledWidgetPdf = () =>
       " /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << >>",
     ),
   ]);
+
+export const jpeg2000Pdf = () => {
+  // Raw lossless JPEG 2000 codestream for four synthetic red RGB pixels.
+  const image = Buffer.from(
+    "/0//UQAvAAAAAAACAAAAAgAAAAAAAAAAAAABAAAAAQAAAAAAAAAAAAADBwEBBwEBBwEB/1IADAAAAAEABgICAAH/XAAWIEBISFBISFBISFBISFBISFBISFD/ZAAQAAFMYXZjNjMuMS4xMDL/kAAKAAAAAAAsAAH/k99oCAD/AAgH/wAIBwAAAAAAAAAAAAAAAAAAAAAAAP/Z",
+    "base64",
+  );
+  return syntheticPdf(["q 200 0 0 200 0 0 cm /Im Do Q"], {
+    dictionary: "<< /XObject << /Im 5 0 R >> >>",
+    objects: [
+      "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB " +
+        `/BitsPerComponent 8 /Filter /JPXDecode /Length ${image.length} >>\nstream\n` +
+        `${image.toString("latin1")}\nendstream`,
+    ],
+  });
+};

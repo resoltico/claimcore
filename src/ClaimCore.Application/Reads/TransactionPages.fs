@@ -196,13 +196,7 @@ module internal TransactionPages =
                         box (limit + 1)
                         DatabaseSession.parameter (
                             text
-                            |> Option.map (fun query ->
-                                DirectorySearchText.value query
-                                |> fun value ->
-                                    value
-                                        .Replace("\\", "\\\\")
-                                        .Replace("%", "\\%")
-                                        .Replace("_", "\\_"))
+                            |> Option.map (DirectorySearchText.value >> LikePattern.escapeLiteral)
                         )
                         DatabaseSession.parameter (role |> Option.map Role.token)
                     |]
