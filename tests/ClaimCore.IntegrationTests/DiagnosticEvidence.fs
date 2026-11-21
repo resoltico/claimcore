@@ -209,6 +209,8 @@ let internal scalarEvidence () =
         return List.ofSeq results
     }
 
+let private stateReference = "REACH-1"
+
 let internal stateScenarios () =
     let decided = "case.decide", Submissions.fields (DecisionInput.values decision)
     let closed = "case.close", CaseTransitionInputs.closed
@@ -267,7 +269,7 @@ let internal stateScenarios () =
         ("case.changeReference",
          Map.ofList
              [
-                 Submissions.input InputTarget.NewCaseReference, SubmissionValue.Text "REACH-1"
+                 Submissions.input InputTarget.NewCaseReference, SubmissionValue.Text stateReference
              ])
         [ voided ], closed
         [ voided ], voided
@@ -281,7 +283,7 @@ let internal stateScenarios () =
         [ decided; payment ], correct "KEEP" "UPDATE" (decisionUpdate decision)
     ]
 
-let internal stateEvidence (setup, final) =
+let internal stateEvidence () =
     task {
         let! _, fixture = fixture ()
 
@@ -304,34 +306,54 @@ let internal stateEvidence (setup, final) =
                 true
 
         acceptedPeople granted
-        let! opening = execute actor (openRequest fixture 10 "REACH-1")
-        accepted opening |> ignore
+        let evidence = ResizeArray<_>()
+        let newReference = Submissions.input InputTarget.NewCaseReference
 
-        for index, (taskName, values) in List.indexed setup do
+        // Each scenario changes one case. Separate case references and operation numbers keep
+        // those histories independent; the actor and installed database are common inputs.
+        for scenario, (setup, (taskName, values)) in stateScenarios () |> List.indexed do
+            let reference = $"REACH-STATE-{scenario}"
+            let firstOperation = 100 + scenario * 64
+            let! opening = execute actor (openRequest fixture firstOperation reference)
+            accepted opening |> ignore
+
+            for index, (setupTask, fields) in setup |> List.indexed do
+                let! outcome =
+                    execute
+                        actor
+                        (request
+                            fixture
+                            (firstOperation + index + 1)
+                            reference
+                            (int64 (index + 1))
+                            setupTask
+                            fields)
+
+                accepted outcome |> ignore
+
+            let values =
+                match Map.tryFind newReference values with
+                | Some(SubmissionValue.Text value) when value = stateReference ->
+                    Map.add newReference (SubmissionValue.Text reference) values
+                | _ -> values
+
             let! outcome =
                 execute
                     actor
-                    (request fixture (11 + index) "REACH-1" (int64 (index + 1)) taskName values)
+                    (request
+                        fixture
+                        (firstOperation + setup.Length + 1)
+                        reference
+                        (if taskName = "case.open" then
+                             0L
+                         else
+                             int64 (setup.Length + 1))
+                        taskName
+                        values)
 
-            accepted outcome |> ignore
+            evidence.Add(refused outcome)
 
-        let taskName, values = final
-
-        let! outcome =
-            execute
-                actor
-                (request
-                    fixture
-                    50
-                    "REACH-1"
-                    (if taskName = "case.open" then
-                         0L
-                     else
-                         int64 (setup.Length + 1))
-                    taskName
-                    values)
-
-        return refused outcome
+        return List.ofSeq evidence
     }
 
 let internal queryEvidence actor =

@@ -28,13 +28,7 @@ let private completeVocabulary () =
     async {
         let! scalar = scalarEvidence () |> Async.AwaitTask
 
-        // Each scenario owns a PostgreSQL cluster. Keep its setup inside the suite's worker bound.
-        let states = ResizeArray<_>()
-
-        for scenario in stateScenarios () do
-            let! captured = stateEvidence scenario |> Async.AwaitTask
-            states.Add captured
-
+        let! states = stateEvidence () |> Async.AwaitTask
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
         let! entries = DiagnosticEntryEvidence.entriesEvidence () |> Async.AwaitTask
         let! associations = DiagnosticEntryEvidence.associationEvidence () |> Async.AwaitTask
@@ -45,13 +39,7 @@ let private completeVocabulary () =
         let! attachments = DiagnosticEntryEvidence.attachmentEvidence () |> Async.AwaitTask
 
         let evidence =
-            scalar
-            @ List.ofSeq states
-            @ boundaries
-            @ entries
-            @ associations
-            @ authored
-            @ attachments
+            scalar @ states @ boundaries @ entries @ associations @ authored @ attachments
             |> List.collect (fun items -> items)
             |> fun observed -> observed @ DiagnosticEntryEvidence.technicalCountEvidence ()
 
