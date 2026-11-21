@@ -304,6 +304,9 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
+[The React Aria source repair](../web/scripts/patch-react-aria.mjs) checks the locked package before
+Vite builds the workspace. Review it when updating React Aria and run the Chromium Trusted Types
+acceptance checks. The workspace policy requires Trusted Types and disallows creating policies.
 The [Playwright pin](../web/package.json) must support Firefox accessible names across execution
 worlds. Use the Firefox acceptance checks when evaluating a bump. See the
 [upstream accessible-name issue](https://github.com/microsoft/playwright/issues/43967).

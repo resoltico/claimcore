@@ -538,16 +538,21 @@ the sign-in dialog. Preferences use `claimcore.presentation.v3`. Invalid records
 individual values fall back. Direction, contrast and forced-colour preferences remain effective.
 These choices do not alter facts, business dates or rights.
 
-Publish the entire frontend build directory, including `public-assets.json`. Startup verifies hashes
-and captures its served bytes; file replacement does not update a running host. Restart to replace the
-interface, and retain older hashed assets while old tabs may request deferred views or languages.
+Publish the entire frontend build directory, including the private `public-assets.json` inventory.
+Startup verifies and captures the workspace and sign-in recovery documents, legal notices and source
+archive, build assets, and catalogs listed in the inventory. File replacement does not update a
+running host. Restart to replace served files, and retain older hashed assets while old tabs may
+request deferred views or languages.
 Only verified assets without Set-Cookie receive immutable public caching. Runtime catalogs use strong ETags and no-cache; HTML, authentication, APIs,
 refusals and fallback routes remain no-store; business data and recovery identities are not service-worker cached.
 Failed language activation keeps the working language. Protect an unconfirmed change's identity before reload;
 reloading cannot reconstruct a discarded request body.
 
 The PDF viewer at `/attachment-preview/viewer` serves a startup-verified document with its own
-Content Security Policy (CSP). Proxies must forward the viewer and workspace CSP headers unchanged.
+Content Security Policy (CSP). The workspace requires Trusted Types for script sinks and disallows
+creating policies. The service sends HSTS with a one-year lifetime and a Permissions Policy that
+disables unused browser features. Proxies must forward these headers unchanged, including the
+viewer's separate CSP.
 Each preview runs in a fresh opaque-origin sandbox with access to the selected PDF and the renderer
 resources relayed by the workspace. The viewer's CSP permits its in-frame worker and WebAssembly
 image decoders. A compromised viewer could navigate its own frame and send data to an external host.

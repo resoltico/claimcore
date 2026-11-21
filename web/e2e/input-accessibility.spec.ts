@@ -1,7 +1,7 @@
 import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView, chooseChoice } from "./workspace-navigation";
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { expect, test, type Page, type Locator } from "./fixtures";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./people-setup";
 import { selectLanguage, ui, trackForegroundRequests } from "./localization-support";

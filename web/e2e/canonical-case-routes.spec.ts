@@ -1,7 +1,7 @@
 import { type ResponseFor, type CaseSelector } from "@contracts/client";
 import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openCase } from "./case-workflow";
 import { browserRequest, openAuthenticated, sessionToken } from "./session-helpers";
 import { casePath, referencePath } from "../src/routing/routes";

@@ -25,7 +25,7 @@ import {
   caseFields,
   operationId as entryOperationId,
 } from "../tests/support/service-foundation.fixtures";
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { expect, test, type Page, type Locator } from "./fixtures";
 import {
   presentationLanguageOptions,
   type RequestByEndpoint,

@@ -2,7 +2,7 @@ import type { ResponseByEndpoint } from "@contracts/client";
 import { showExactLookup } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { openCase, startAct, reviewDraft, recordReviewed } from "./case-workflow";
 import { workRequest } from "./work-workflow";
 import { isObject } from "../src/protocol/client";

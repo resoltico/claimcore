@@ -3,7 +3,7 @@ import { expectCaseReadsSettled, expectReceiptReadSettled } from "./case-readine
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
-import { type Page, expect, test } from "@playwright/test";
+import { type Page, expect, test } from "./fixtures";
 import { randomUUID } from "node:crypto";
 
 import { openCase, startOpen, startAct, startClose } from "./case-workflow";

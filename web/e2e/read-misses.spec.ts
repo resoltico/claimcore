@@ -3,7 +3,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { openRecovery, showExactLookup, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import {

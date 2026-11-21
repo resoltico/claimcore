@@ -205,15 +205,12 @@ let private cookieStorageIsolation () =
         Expect.equal reads 1 "The owned authentication stage actually enforces the storage boundary"
     }
 
-let private mismatch () =
+let private mismatch path =
     let directory = Directory.CreateTempSubdirectory("claimcore-public-inventory-")
 
     try
-        publishedInventory
-            directory.FullName
-            [ "assets/public-12345678.js", Encoding.UTF8.GetBytes "original" ]
-
-        File.WriteAllText(Path.Combine(directory.FullName, "assets/public-12345678.js"), "actual")
+        publishedInventory directory.FullName [ path, Encoding.UTF8.GetBytes "original" ]
+        File.WriteAllText(Path.Combine(directory.FullName, path), "actual")
 
         let mutable refused = false
 
@@ -223,6 +220,106 @@ let private mismatch () =
             refused <- true
 
         Expect.isTrue refused "An unreviewed replacement cannot borrow a public content identity"
+    finally
+        directory.Delete true
+
+let private serveDocuments () =
+    task {
+        use host = new Host(true)
+
+        let cases =
+            [
+                "/index.html", "text/html; charset=utf-8"
+                "/auth-recovery.html", "text/html; charset=utf-8"
+                "/LICENSE.txt", "text/plain; charset=utf-8"
+                "/PROJECT-NOTICE.md", "text/markdown; charset=utf-8"
+                "/LICENSE-COMMERCIAL.md", "text/markdown; charset=utf-8"
+                "/THIRD-PARTY-NOTICES.txt", "text/plain; charset=utf-8"
+                "/SOURCE.tar.gz", "application/gzip"
+            ]
+
+        for path, mediaType in cases do
+            let file = Path.Combine(host.AssetsDirectory, path.TrimStart('/'))
+            let expected = File.ReadAllBytes file
+            File.WriteAllText(file, "different bytes")
+            use! response = host.Client.GetAsync path
+            Expect.equal response.StatusCode HttpStatusCode.OK path
+            let! actual = response.Content.ReadAsByteArrayAsync()
+            Expect.equal actual expected ("Captured bytes at " + path)
+            Expect.equal ((nonNull response.Content.Headers.ContentType).ToString()) mediaType path
+
+            Expect.equal
+                response.Content.Headers.ContentLength
+                (Nullable(int64 expected.Length))
+                path
+
+            Expect.isTrue (nonNull response.Headers.CacheControl).NoStore path
+
+            if path = "/SOURCE.tar.gz" then
+                let disposition = nonNull response.Content.Headers.ContentDisposition
+                Expect.equal disposition.DispositionType "attachment" path
+                Expect.equal disposition.FileName "SOURCE.tar.gz" path
+
+            use request = new HttpRequestMessage(HttpMethod.Head, path)
+            use! head = host.Client.SendAsync request
+            let! body = head.Content.ReadAsByteArrayAsync()
+            Expect.equal head.StatusCode HttpStatusCode.OK path
+            Expect.equal head.Content.Headers.ContentLength (Nullable(int64 expected.Length)) path
+            Expect.isEmpty body path
+
+            use conditional = new HttpRequestMessage(HttpMethod.Get, path)
+            conditional.Headers.IfNoneMatch.Add(nonNull response.Headers.ETag)
+            use! cached = host.Client.SendAsync conditional
+            Expect.equal cached.StatusCode HttpStatusCode.NotModified path
+
+        for path in [ "/"; "/cases/CASE.001" ] do
+            use! response = host.Client.GetAsync path
+            Expect.equal response.StatusCode HttpStatusCode.OK path
+            let! actual = response.Content.ReadAsStringAsync()
+            Expect.equal actual "<!doctype html><title>Synthetic ClaimCore</title>" path
+    }
+
+let private rejectsUnlistedFiles () =
+    task {
+        use host = new Host(true)
+
+        File.WriteAllText(Path.Combine(host.AssetsDirectory, "stray.txt"), "not inventoried")
+
+        for path in [ "/public-assets.json"; "/stray.txt"; "/assets/"; "/locales/" ] do
+            use request = new HttpRequestMessage(HttpMethod.Get, path)
+            request.Headers.Accept.ParseAdd "text/html"
+            use! response = host.Client.SendAsync request
+            Expect.equal response.StatusCode HttpStatusCode.NotFound path
+            let! body = response.Content.ReadAsStringAsync()
+            Expect.stringContains body "ENDPOINT_MISSING" path
+    }
+
+let private missingDocument () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-required-documents-")
+
+    try
+        publishedInventory directory.FullName []
+        let manifest = Path.Combine(directory.FullName, "public-assets.json")
+        let root = JsonNode.Parse(File.ReadAllText manifest) |> nonNull
+        let assets = (nonNull root["assets"]).AsArray()
+
+        let document =
+            assets
+            |> Seq.find (fun entry ->
+                let item = nonNull entry
+                let path = item["path"] |> nonNull
+                path.GetValue<string>() = "/SOURCE.tar.gz")
+
+        assets.Remove document |> ignore
+        File.WriteAllText(manifest, root.ToJsonString())
+        let mutable refused = false
+
+        try
+            PublicAssets.Inventory directory.FullName |> ignore
+        with WebStartupException WebStartupProblem.AssetsMissing ->
+            refused <- true
+
+        Expect.isTrue refused "A required legal document omitted from the manifest refuses startup"
     finally
         directory.Delete true
 
@@ -265,7 +362,8 @@ let private serveViewer () =
              + "img-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; "
              + "base-uri 'none'; frame-ancestors 'none'; "
              + "frame-src https://localhost:5443/attachment-preview/viewer; form-action 'self'; "
-             + "manifest-src 'self'; media-src 'none'; worker-src 'none'")
+             + "manifest-src 'self'; media-src 'none'; worker-src 'none'; "
+             + "require-trusted-types-for 'script'; trusted-types 'none'")
             "Workspace CSP permits just the configured viewer"
 
         Expect.equal
@@ -328,7 +426,18 @@ let tests =
             testCaseAsync
                 "keeps cookie-bearing public requests outside session storage and contains private capacity rejection"
                 (async { do! cookieStorageIsolation () |> Async.AwaitTask })
-            testCase "refuses an inventory that disagrees with the published content" mismatch
+            for path in [ "assets/public-12345678.js"; "auth-recovery.html"; "SOURCE.tar.gz" ] do
+                testCase $"refuses an inventory that disagrees with the published {path}" (fun () ->
+                    mismatch path)
+            testCase
+                "refuses omission of a required root document from the inventory"
+                missingDocument
+            testCaseAsync
+                "serves the exact inventoried documents, metadata, and fallback bytes"
+                (async { do! serveDocuments () |> Async.AwaitTask })
+            testCaseAsync
+                "hides the inventory, stray files, and asset directories"
+                (async { do! rejectsUnlistedFiles () |> Async.AwaitTask })
             testCaseAsync
                 "applies dedicated viewer and workspace security headers"
                 (async { do! serveViewer () |> Async.AwaitTask })

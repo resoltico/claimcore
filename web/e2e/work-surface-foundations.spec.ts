@@ -2,7 +2,7 @@ import { type ResponseFor } from "@contracts/client";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openCase, reviewDraft, startClose } from "./case-workflow";
 import {
   browserRequest,

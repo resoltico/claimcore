@@ -1,7 +1,7 @@
 import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { startOpen, reviewDraft } from "./case-workflow";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage, settingsNavigation } from "./localization-support";
 

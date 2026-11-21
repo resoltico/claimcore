@@ -1,4 +1,4 @@
-import { expect, test, type Request } from "@playwright/test";
+import { expect, test, type Request } from "./fixtures";
 import { csvExportTransport, endpoints } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
 import { browserRequest, installationId, openAuthenticated, sessionToken } from "./session-helpers";

@@ -4,7 +4,7 @@ import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import {
   openAuthenticated,
   expectAccessible,

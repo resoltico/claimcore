@@ -21,6 +21,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.TestHost
 open Microsoft.AspNetCore.WebUtilities
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Microsoft.IdentityModel.Protocols.OpenIdConnect
 open Expecto
@@ -284,6 +285,73 @@ let private pushedLanguage () =
             "The backchannel omits absent language and carries Arabic exactly once"
     }
 
+let private capturedRecoveryPage () =
+    task {
+        let configuration = middlewareConfiguration ()
+        let assets = Directory.CreateTempSubdirectory("claimcore-oidc-recovery-")
+
+        use _cleanup =
+            { new IDisposable with
+                member _.Dispose() = assets.Delete true
+            }
+
+        ClaimCore.TestSupport.TestServerFixture.publishedInventory assets.FullName []
+        let recovery = Path.Combine(assets.FullName, "auth-recovery.html")
+        let expected = File.ReadAllBytes recovery
+        let inventory = PublicAssets.Inventory assets.FullName
+
+        let builder =
+            WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets.FullName))
+
+        builder.WebHost.UseTestServer() |> ignore
+
+        builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider()
+        |> ignore
+
+        builder.Services.AddSingleton inventory |> ignore
+
+        AuthMiddleware.configure configuration (TimeSpan.FromHours 8.) builder.Services
+
+        builder.Services.Configure<OpenIdConnectOptions>(
+            OpenIdConnectDefaults.AuthenticationScheme,
+            fun (options: OpenIdConnectOptions) ->
+                options.Configuration <-
+                    OpenIdConnectConfiguration(
+                        Issuer = configuration.Issuer.AbsoluteUri,
+                        AuthorizationEndpoint = configuration.Issuer.AbsoluteUri + "/auth"
+                    )
+        )
+        |> ignore
+
+        use application = builder.Build()
+        application.UseAuthentication() |> ignore
+        do! application.StartAsync()
+
+        File.WriteAllText(recovery, "replacement recovery bytes")
+        use browser = application.GetTestClient()
+        browser.BaseAddress <- Uri "https://claimcore.example.test"
+        use! response = browser.GetAsync "/signin-oidc?error=access_denied"
+
+        Expect.equal
+            response.StatusCode
+            HttpStatusCode.Unauthorized
+            "The OIDC failure runs its recovery handler"
+
+        Expect.isTrue (nonNull response.Headers.CacheControl).NoStore "Recovery cannot be cached"
+
+        Expect.equal
+            response.Content.Headers.ContentLength
+            (Nullable(int64 expected.Length))
+            "Recovery content length"
+
+        let! actual = response.Content.ReadAsByteArrayAsync()
+
+        Expect.equal
+            actual
+            expected
+            "The recovery handler serves startup-verified bytes after replacement"
+    }
+
 let private exclusiveCredentialMode () =
     let context = DefaultHttpContext()
     Expect.equal (RequestGate.credentialMode context) CredentialMode.Missing "No credential"
@@ -312,5 +380,8 @@ let tests =
             testCase "bearer principal uses explicit client classification" accessTokenIdentity
             testCase "middleware pins OIDC and JWT validation policy" middlewarePolicy
             testCaseTask "PAR sends the checked language on the private backchannel" pushedLanguage
+            testCaseTask
+                "OIDC failure serves the captured recovery document after disk replacement"
+                capturedRecoveryPage
             testCase "browser and bearer credentials never mix" exclusiveCredentialMode
         ]

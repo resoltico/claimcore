@@ -8,6 +8,8 @@ open System.Text.Json
 open System.Text.RegularExpressions
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.Primitives
+open ClaimCore.Wire
 
 /// A process serves the exact verified public bytes captured from its published build inventory.
 module internal PublicAssets =
@@ -65,6 +67,22 @@ module internal PublicAssets =
             ETag: string
         }
 
+    let private indexPath = "/index.html"
+    let private recoveryPath = "/auth-recovery.html"
+    let private sourcePath = "/" + LegalNotice.sourceFile
+
+    let private requiredPaths =
+        set
+            [
+                indexPath
+                recoveryPath
+                "/" + LegalNotice.licenseFile + ".txt"
+                "/" + LegalNotice.projectNotice
+                "/" + LegalNotice.commercialNotice
+                "/" + LegalNotice.thirdPartyNotices
+                sourcePath
+            ]
+
     let private mediaType path =
         match Path.GetExtension(path: string) with
         | ".js" -> "text/javascript; charset=utf-8"
@@ -76,6 +94,10 @@ module internal PublicAssets =
         | ".woff2" -> "font/woff2"
         | ".bcmap" -> "application/octet-stream"
         | ".wasm" -> "application/wasm"
+        | ".html" -> "text/html; charset=utf-8"
+        | ".txt" -> "text/plain; charset=utf-8"
+        | ".md" -> "text/markdown; charset=utf-8"
+        | ".gz" -> "application/gzip"
         | _ -> invalidOp "Unsupported public build asset."
 
     let private load directory =
@@ -95,12 +117,20 @@ module internal PublicAssets =
                 let expected = item.GetProperty("sha256").GetString() |> nonNull
                 let file = Path.GetFullPath(Path.Combine(directory, path.TrimStart('/')))
 
+                let canonical =
+                    "/"
+                    + Path
+                        .GetRelativePath(directory, file)
+                        .Replace(Path.DirectorySeparatorChar, '/')
+
                 if
                     not (
                         path.StartsWith("/assets/", StringComparison.Ordinal)
                         || path = "/react-aria-pressable.css"
                         || path.StartsWith("/locales/", StringComparison.Ordinal)
+                        || requiredPaths.Contains path
                     )
+                    || path <> canonical
                     || not (file.StartsWith(root, StringComparison.Ordinal))
                 then
                     invalidOp "Invalid public build path."
@@ -122,7 +152,49 @@ module internal PublicAssets =
         if assets.Length <> (assets |> List.map fst |> Set.ofList |> Set.count) then
             invalidOp "Duplicate public build path."
 
-        Map.ofList assets, viewer
+        let files = Map.ofList assets
+
+        if requiredPaths |> Set.exists (fun path -> not (Map.containsKey path files)) then
+            invalidOp "Required public build document missing from its inventory."
+
+        files, viewer
+
+    let private serveAsset (context: HttpContext) (path: string) asset : Task =
+        task {
+            if
+                HttpMethods.IsGet context.Request.Method
+                || HttpMethods.IsHead context.Request.Method
+            then
+                context.Response.ContentType <- asset.ContentType
+                context.Response.Headers.ETag <- asset.ETag
+
+                // Fixed names preserve their existing no-store policy.
+                if path.StartsWith("/assets/", StringComparison.Ordinal) then
+                    HttpHeaders.publicAsset context
+
+                if path = sourcePath then
+                    let disposition = "attachment; filename=\"" + LegalNotice.sourceFile + "\""
+                    context.Response.Headers.ContentDisposition <- StringValues(disposition)
+
+                let matched =
+                    context.Request.Headers.IfNoneMatch
+                    |> Seq.exists (fun value -> value = asset.ETag || value = "*")
+
+                if matched then
+                    context.Response.StatusCode <- StatusCodes.Status304NotModified
+                else
+                    context.Response.ContentLength <- Nullable(int64 asset.Bytes.Length)
+
+                    if HttpMethods.IsGet context.Request.Method then
+                        do!
+                            context.Response.Body
+                                .WriteAsync(asset.Bytes, context.RequestAborted)
+                                .AsTask()
+            else
+                context.Response.StatusCode <- StatusCodes.Status405MethodNotAllowed
+                context.Response.Headers.Allow <- "GET, HEAD"
+                HttpHeaders.noStore context
+        }
 
     type Inventory(directory: string) =
         let assets, viewer =
@@ -136,34 +208,14 @@ module internal PublicAssets =
 
         member _.Viewer = viewer
 
-        member _.Serve(context: HttpContext, next: RequestDelegate) : Task =
-            task {
-                match
-                    assets |> Map.tryFind (defaultArg (Option.ofObj context.Request.Path.Value) "")
-                with
-                | None -> do! next.Invoke context
-                | Some asset when
-                    HttpMethods.IsGet context.Request.Method
-                    || HttpMethods.IsHead context.Request.Method
-                    ->
-                    context.Response.ContentType <- asset.ContentType
-                    context.Response.Headers.ETag <- asset.ETag
-                    // Fixed-name styles must not inherit immutable caching across builds.
-                    if context.Request.Path.StartsWithSegments(PathString "/assets") then
-                        HttpHeaders.publicAsset context
+        member _.Recovery = assets[recoveryPath].Bytes
 
-                    let matched =
-                        context.Request.Headers.IfNoneMatch
-                        |> Seq.exists (fun value -> value = asset.ETag || value = "*")
+        member _.ServeIndex context =
+            serveAsset context indexPath assets[indexPath]
 
-                    if matched then
-                        context.Response.StatusCode <- StatusCodes.Status304NotModified
-                    else
-                        context.Response.ContentLength <- Nullable(int64 asset.Bytes.Length)
+        member _.Serve(context: HttpContext, next: RequestDelegate) =
+            let path = defaultArg (Option.ofObj context.Request.Path.Value) ""
 
-                        if HttpMethods.IsGet context.Request.Method then
-                            do! context.Response.Body.WriteAsync(asset.Bytes).AsTask()
-                | Some _ ->
-                    context.Response.StatusCode <- StatusCodes.Status405MethodNotAllowed
-                    HttpHeaders.noStore context
-            }
+            match Map.tryFind path assets with
+            | Some asset -> serveAsset context path asset
+            | None -> next.Invoke context

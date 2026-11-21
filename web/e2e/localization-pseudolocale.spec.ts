@@ -6,7 +6,7 @@ import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import {
   seedPresentation,

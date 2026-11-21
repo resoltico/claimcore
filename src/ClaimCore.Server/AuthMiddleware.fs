@@ -11,7 +11,6 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
-open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Authentication.JwtBearer
@@ -154,27 +153,15 @@ module AuthMiddleware =
                 context.Response.Headers["Referrer-Policy"] <- "no-referrer"
                 HttpHeaders.noStore context.HttpContext
 
-                let environment =
-                    context.HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>()
+                let inventory =
+                    context.HttpContext.RequestServices.GetRequiredService<PublicAssets.Inventory>()
 
-                let recovery = environment.WebRootFileProvider.GetFileInfo "auth-recovery.html"
+                let recovery = inventory.Recovery
+                context.Response.ContentLength <- Nullable(int64 recovery.Length)
 
-                if recovery.Exists then
-                    task {
-                        use stream = recovery.CreateReadStream()
-
-                        do!
-                            stream.CopyToAsync(
-                                context.Response.Body,
-                                context.HttpContext.RequestAborted
-                            )
-                    }
-                else
-                    context.Response.WriteAsync(
-                        "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>ClaimCore</title>"
-                        + "<main><h1>Sign-in could not be completed.</h1>"
-                        + "<a href=\"/auth/login\">Restart sign-in</a></main></html>"
-                    ))
+                context.Response.Body
+                    .WriteAsync(recovery, context.HttpContext.RequestAborted)
+                    .AsTask())
 
     let private bearer
         (syntheticRoot: X509Certificate2 option)

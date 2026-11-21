@@ -1,7 +1,7 @@
 import { dimensions, dimensionCaseTitle, type Dimension } from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
-import { expect, test, type Page, type TestInfo, type Request } from "@playwright/test";
+import { expect, test, type Page, type TestInfo, type Request } from "./fixtures";
 import {
   prepareDesignDataset,
   type DesignDataset,

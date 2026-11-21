@@ -9,7 +9,7 @@ import {
   type Locator,
   type Page,
   type Request,
-} from "@playwright/test";
+} from "./fixtures";
 import type { ResponseFor } from "@contracts/client";
 import { openCase } from "./case-workflow";
 import { bluePage, filledWidgetPdf, redPage, syntheticPdf } from "./attachment-pdf-fixtures";

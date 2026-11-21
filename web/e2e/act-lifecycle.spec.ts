@@ -2,7 +2,7 @@ import { showCaseRecordDetails, goToView, showOperationLookup } from "./workspac
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import {
   completeAct,

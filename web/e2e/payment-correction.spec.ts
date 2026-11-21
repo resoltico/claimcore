@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import type { RequestByEndpoint, ResponseFor } from "@contracts/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, completeAct } from "./case-workflow";

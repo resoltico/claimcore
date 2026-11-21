@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type ServerResponse } from "node:http";
 import { gzipSync } from "node:zlib";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { retainResponseBodies } from "./response-bodies";
 
 const raw = Buffer.from(JSON.stringify({ synthetic: true, padding: "x".repeat(262144) }));

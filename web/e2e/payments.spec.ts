@@ -1,7 +1,7 @@
 import type { ResponseFor, RequestByEndpoint } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page, type Response } from "@playwright/test";
+import { expect, test, type Page, type Response } from "./fixtures";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { selectLanguage, selectFormat, selectMode, ui } from "./localization-support";
 import { openAuthenticated, expectAccessible } from "./session-helpers";

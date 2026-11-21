@@ -142,6 +142,9 @@ let private retainFailureFiles output destination =
             || name = "error-context.md"
             || name = "playwright.stdout"
             || name = "playwright.stderr"
+            || name = "trusted-types-auth-setup.json"
+            || name = "trusted-types-violations.json"
+            || name = "trusted-types-worker.json"
             || (name.StartsWith("test-failed-", StringComparison.Ordinal)
                 && name.EndsWith(".png", StringComparison.Ordinal))
         then

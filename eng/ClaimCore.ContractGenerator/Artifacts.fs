@@ -49,6 +49,7 @@ module ContractArtifacts =
                                 sourceFile = LegalNotice.sourceFile
                                 projectNotice = LegalNotice.projectNotice
                                 commercialNotice = LegalNotice.commercialNotice
+                                thirdPartyNotices = LegalNotice.thirdPartyNotices
                             |}
                         )
                         + " as const;\n"

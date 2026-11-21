@@ -9,7 +9,6 @@ open ClaimCore.Json
 
 
 open System
-open System.IO
 open System.Security.Claims
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
@@ -18,7 +17,6 @@ open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
-open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
@@ -122,7 +120,7 @@ module HostRoutes =
             | _ -> do! next.Invoke context
         }
 
-    let private fallback assets (context: HttpContext) : Task =
+    let private fallback (assets: PublicAssets.Inventory) (context: HttpContext) : Task =
         task {
             HttpHeaders.noStore context
 
@@ -139,12 +137,17 @@ module HostRoutes =
                         HostFailureReason.EndpointMissing
 
                 do! (RouteSupport.hostFailure context reason).ExecuteAsync context
-            else
+            elif
+                [ "/assets"; "/locales"; "/auth"; "/health" ]
+                |> List.exists (fun prefix ->
+                    context.Request.Path.StartsWithSegments(PathString prefix))
+            then
                 do!
-                    Results
-                        .File(Path.Combine(assets, "index.html"), "text/html; charset=utf-8")
+                    (RouteSupport.hostFailure context HostFailureReason.EndpointMissing)
                         .ExecuteAsync
                         context
+            else
+                do! assets.ServeIndex context
         }
 
     let private attachmentViewer
@@ -173,8 +176,7 @@ module HostRoutes =
                 context.Response.Headers.Allow <- "GET, HEAD"
         }
 
-    let internal publicAssets assets (application: WebApplication) =
-        let publicFiles = PublicAssets.Inventory assets
+    let internal publicAssets (publicFiles: PublicAssets.Inventory) (application: WebApplication) =
 
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(attachmentViewer publicFiles.Viewer)
@@ -198,15 +200,7 @@ module HostRoutes =
         )
         |> ignore
 
-    let map assets configuration handlers withActor (application: WebApplication) =
-        let files = StaticFileOptions()
-
-        files.OnPrepareResponse <-
-            Action<StaticFileResponseContext>(fun response -> HttpHeaders.noStore response.Context)
-
-        application.UseDefaultFiles() |> ignore
-        application.UseStaticFiles files |> ignore
-
+    let internal map assets configuration handlers withActor (application: WebApplication) =
         application.MapPost(
             ExportTransport.path,
             Func<HttpContext, Task<IResult>>(ExportRoutes.handle configuration withActor)
@@ -278,3 +272,11 @@ module HostRoutes =
             application.MapFallback(pattern, RequestDelegate(fallback assets)) |> ignore
 
         application.MapFallback(RequestDelegate(fallback assets)) |> ignore
+
+        application.MapFallback(
+            "/{**path}",
+            RequestDelegate(fun context ->
+                (RouteSupport.hostFailure context HostFailureReason.EndpointMissing).ExecuteAsync
+                    context)
+        )
+        |> ignore

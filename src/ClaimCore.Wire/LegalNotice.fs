@@ -8,6 +8,7 @@ module LegalNotice =
     let sourceFile = "SOURCE.tar.gz"
     let projectNotice = "PROJECT-NOTICE.md"
     let commercialNotice = "LICENSE-COMMERCIAL.md"
+    let thirdPartyNotices = "THIRD-PARTY-NOTICES.txt"
     let rights = "No warranty. You may redistribute under the license terms."
 
     let summary =

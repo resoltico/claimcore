@@ -1,6 +1,6 @@
 import { type ResponseByEndpoint, consumerContractIdentity } from "@contracts/client";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { browserRequest, expectHostFailure, login, sessionToken } from "./session-helpers";
 test.use({
   storageState: {

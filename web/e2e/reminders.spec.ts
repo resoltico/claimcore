@@ -18,7 +18,7 @@ import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath, referencePath } from "../src/routing/routes";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Request } from "@playwright/test";
+import { expect, test, type Request } from "./fixtures";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft, startOpen, recordReviewed, startAct } from "./case-workflow";
 import { fillBusinessField } from "./typed-entry";

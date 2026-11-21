@@ -1,7 +1,7 @@
 import type * as Navigation from "../src/routing/navigation";
 import { readFile } from "node:fs/promises";
 import { transformWithOxc } from "vite";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // Serve the actual routing owner through the same TS transform used by the frontend build.
 // Only the document/asset delivery is a fixture; History traversal is the pinned native engine.

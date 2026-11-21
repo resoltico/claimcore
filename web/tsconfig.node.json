@@ -19,6 +19,7 @@
     "playwright.config.ts",
     "scripts",
     "../contracts/client.ts",
+    "../contracts/legal.ts",
     "prettier.config.mjs",
     "browser-transport-lint.config.ts"
   ]

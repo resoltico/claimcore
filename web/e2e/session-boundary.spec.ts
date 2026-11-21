@@ -1,5 +1,5 @@
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { recoveryRecords } from "./recovery-storage";
