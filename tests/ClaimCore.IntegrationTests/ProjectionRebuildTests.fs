@@ -370,7 +370,7 @@ let private databaseCommands database =
                 AdministrationProcess.privateText
                     directory
                     "connection"
-                    (database.Container.GetConnectionString())
+                    (PostgresFixture.ownerConnectionString database)
 
             let configuration =
                 typeof<ClaimCore.Server.Administration.DatabaseSuccess>

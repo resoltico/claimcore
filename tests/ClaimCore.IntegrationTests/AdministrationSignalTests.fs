@@ -43,7 +43,7 @@ let private signalled () =
                 AdministrationProcess.privateText
                     directory
                     "connection"
-                    (database.Container.GetConnectionString())
+                    (PostgresFixture.ownerConnectionString database)
 
             let! _ = AdministrationProcess.invoke binary connection [ "status" ] 0
             let! checkpoint = LedgerAdministration.head database.OwnerSource token
@@ -247,7 +247,9 @@ let private confirmedCleanup () =
                     member _.Dispose() = ()
                 }
 
-            let builder = NpgsqlDataSourceBuilder(database.Container.GetConnectionString())
+            let builder =
+                NpgsqlDataSourceBuilder(PostgresFixture.ownerConnectionString database)
+
             builder.UseLoggerFactory factory |> ignore
             use source = builder.Build()
             // Npgsql 10.0.3 emits CommittedTransaction after awaiting the server's COMMIT response:
@@ -277,7 +279,7 @@ let private confirmedCleanup () =
 
             use administration =
                 new Administration(
-                    database.Container.GetConnectionString(),
+                    PostgresFixture.ownerConnectionString database,
                     ClaimCore.Wire.BuildIdentity.current.Version
                 )
 
@@ -304,7 +306,7 @@ let private confirmedCleanup () =
 
             use independent =
                 new Administration(
-                    database.Container.GetConnectionString(),
+                    PostgresFixture.ownerConnectionString database,
                     ClaimCore.Wire.BuildIdentity.current.Version
                 )
 

@@ -255,7 +255,7 @@ let private runtime () =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 
@@ -472,7 +472,7 @@ let private profileReplayBeforeAdmission () =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 

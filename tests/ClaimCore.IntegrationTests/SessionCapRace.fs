@@ -49,7 +49,7 @@ let private prepare database =
 
 let private waitForCleanup (database: PostgresFixture.Database) =
     task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! connection = database.RuntimeSource.OpenConnectionAsync()
         let watch = Stopwatch.StartNew()
         let mutable waiting = false
 

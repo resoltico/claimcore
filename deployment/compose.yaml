@@ -5,10 +5,10 @@ services:
     image: postgres:19.0@sha256:bb6e70add742cd868fb62cb3b2f67d1dd2bdd2b65a521e778420748753687c60
     environment:
       POSTGRES_DB: claimcore
-      POSTGRES_USER: claimcore_owner
-      POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/owner.password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/superuser.password
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
-    command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key]
+    command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key, -c, hba_file=/etc/claimcore-postgres-hba.conf]
     volumes:
       - postgres-data:/var/lib/postgresql
       - type: bind
@@ -23,8 +23,26 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ./postgres-hba.conf
+        target: /etc/claimcore-postgres-hba.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /var/run/postgresql:rw,noexec,nosuid,nodev,size=16m
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
+    # The entrypoint starts a socket-only server while it initializes the database.
     healthcheck:
-      test: [CMD, pg_isready, -h, 127.0.0.1, -U, claimcore_owner, -d, claimcore]
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -h /var/run/postgresql -U postgres -d claimcore &&
+          test "$$(psql -XwAt -h /var/run/postgresql -U postgres -d claimcore
+          -c "SELECT current_setting('listen_addresses') <> ''")" = t
       interval: 2s
       timeout: 3s
       retries: 30
@@ -37,6 +55,7 @@ services:
       dockerfile: deployment/Dockerfile
       target: identity
     mem_limit: 2g
+    pids_limit: 512
     command:
       - start
       - --db=dev-file
@@ -120,6 +139,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
     depends_on:
       postgres:
         condition: service_healthy
@@ -150,6 +170,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    pids_limit: 1024
     depends_on:
       administration:
         condition: service_completed_successfully

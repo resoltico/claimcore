@@ -455,7 +455,9 @@ let private mixedPayload database =
                     System.Guid.Parse "10000000-0000-4000-8000-000000000099"
                 ))
 
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        // Keep the synthetic snapshots in one session, with ordinary owner access until the bypass.
+        use! connection = database.SuperuserSource.OpenConnectionAsync()
+        let! _ = DatabaseSession.execute connection "SET ROLE claimcore_owner" [||] token
 
         for statement in
             [
@@ -511,6 +513,7 @@ let private mixedPayload database =
             "The ordinary immutable ledger guard refuses restoration of erased bytes"
         // Deliberately simulate only a stale physical payload/projection copy in this owned fixture.
         // The accepted current head/ERASE metadata remain; this is distinct from oldHead above.
+        let! _ = DatabaseSession.execute connection "RESET ROLE" [||] token
         use! transaction = connection.BeginTransactionAsync()
 
         let! _ =

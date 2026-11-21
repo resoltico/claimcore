@@ -43,7 +43,7 @@ let private sql (database: PostgresFixture.Database) text =
 
 let private waitForWaiter (database: PostgresFixture.Database) =
     task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! connection = database.RuntimeSource.OpenConnectionAsync()
         let mutable found = false
         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.
 

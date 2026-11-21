@@ -121,7 +121,7 @@ let private lostAcknowledgement transition drop landed (database: PostgresFixtur
                 RegisterMaintenance.create 2L (Some pauseB)
 
         let settings =
-            NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         use proxy = new CommitProxy.Proxy(nonNull settings.Host, settings.Port, drop)
         settings.Host <- "127.0.0.1"
@@ -254,7 +254,7 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
             |> Option.get
 
         let settings =
-            NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         settings.ApplicationName <- if rebuild then "fenced-rebuild" else "fenced-restore"
         use commandSource = NpgsqlDataSource.Create settings.ConnectionString

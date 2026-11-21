@@ -255,11 +255,15 @@ let private lockRace (database: PostgresFixture.Database) =
             let mutable blocked = false
             let deadline = DateTimeOffset.UtcNow.AddSeconds 5.
 
+            use! observer = database.RuntimeSource.OpenConnectionAsync()
+
             while not blocked && DateTimeOffset.UtcNow < deadline do
                 let! locks =
-                    rows
-                        database
+                    DatabaseSession.rows
+                        observer
                         "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND wait_event='advisory'"
+                        [||]
+                        token
 
                 blocked <- DatabaseSession.value<int64> 0 locks.Head > 0L
 

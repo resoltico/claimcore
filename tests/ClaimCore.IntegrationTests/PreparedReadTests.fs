@@ -377,7 +377,7 @@ let private cancellation (database: PostgresFixture.Database) =
 
         use cancel = new CancellationTokenSource()
         let reading = Service.context core () cancel.Token
-        use! observer = database.OwnerSource.OpenConnectionAsync()
+        use! observer = database.RuntimeSource.OpenConnectionAsync()
         let watch = Stopwatch.StartNew()
         let mutable blocked = false
 

@@ -453,7 +453,8 @@ let private metadataQueries (database: PostgresFixture.Database) =
     task {
         let! actor = Attachments.setup database
         let fixture = database.Fixture
-        use! sql = database.OwnerSource.OpenConnectionAsync(token)
+        // This witness resets cluster counters and reads runtime query statistics.
+        use! sql = database.SuperuserSource.OpenConnectionAsync(token)
         let! _ = DatabaseSession.execute sql "CREATE EXTENSION pg_stat_statements" [||] token
 
         let add number =

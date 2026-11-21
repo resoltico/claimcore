@@ -28,7 +28,7 @@ module internal RestoreAdmission =
             token
             (fun connection transaction ->
                 task {
-                    do! DatabaseProfile.require connection token
+                    do! OwnerAdmission.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
                     let! installation, _ = Baseline.require connection token

@@ -73,7 +73,7 @@ module internal InstallationStatus =
     let read (source: NpgsqlDataSource) token =
         DatabaseSession.read source token (fun connection ->
             task {
-                do! DatabaseProfile.require connection token
+                do! OwnerAdmission.require connection token
                 let! installation = Baseline.require connection token
                 return! readConnection connection installation token
             })

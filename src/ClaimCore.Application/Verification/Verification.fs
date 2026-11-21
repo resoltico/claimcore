@@ -289,7 +289,7 @@ module internal Verification =
         =
         DatabaseSession.read source token (fun connection ->
             task {
-                do! DatabaseProfile.require connection token
+                do! OwnerAdmission.require connection token
                 let! installationId, _ = Baseline.require connection token
 
                 let identity =

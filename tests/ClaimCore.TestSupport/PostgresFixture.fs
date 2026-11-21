@@ -20,8 +20,7 @@ open ClaimCore.TestSupport.StoreFixtures
 
 type private SetupStage =
     | ContainerReadiness
-    | OwnerConnection
-    | RuntimeRole
+    | DatabaseRoles
     | SchemaInitialization
     | RuntimeAdmission
 
@@ -49,6 +48,7 @@ type internal Database =
     {
         Container: PostgreSqlContainer
         OwnerSource: NpgsqlDataSource
+        SuperuserSource: NpgsqlDataSource
         RuntimeSource: NpgsqlDataSource
         Fixture: Fixture
     }
@@ -59,8 +59,17 @@ type internal Database =
             BusinessTimeZone = this.Fixture.Calendar.TimeZoneId
         }
 
+let private ownerRole = "claimcore_owner"
+let private ownerPassword = "synthetic-owner-only"
 let private runtimeRole = "claimcore_runtime"
 let private runtimePassword = "synthetic-only"
+
+let private ownerSettings (container: PostgreSqlContainer) =
+    NpgsqlConnectionStringBuilder(
+        container.GetConnectionString(),
+        Username = ownerRole,
+        Password = ownerPassword
+    )
 
 let private runtimeSettings (container: PostgreSqlContainer) =
     NpgsqlConnectionStringBuilder(
@@ -69,8 +78,38 @@ let private runtimeSettings (container: PostgreSqlContainer) =
         Password = runtimePassword
     )
 
-let internal runtimeConnectionString (database: Database) =
-    (runtimeSettings database.Container).ConnectionString
+let internal ownerConnection (container: PostgreSqlContainer) =
+    (ownerSettings container).ConnectionString
+
+let internal ownerConnectionString (database: Database) = ownerConnection database.Container
+
+let internal runtimeConnection (container: PostgreSqlContainer) =
+    (runtimeSettings container).ConnectionString
+
+let internal runtimeConnectionString (database: Database) = runtimeConnection database.Container
+
+let internal createRoles (superuser: NpgsqlDataSource) token =
+    task {
+        use! connection = superuser.OpenConnectionAsync(token)
+        use identifiers = new NpgsqlCommandBuilder()
+        let database = identifiers.QuoteIdentifier(connection.Database)
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                $"""
+                CREATE ROLE {ownerRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '{ownerPassword}';
+                CREATE ROLE {runtimeRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '{runtimePassword}';
+                ALTER DATABASE {database} OWNER TO {ownerRole};
+                REVOKE ALL ON DATABASE {database} FROM PUBLIC;
+                GRANT CONNECT ON DATABASE {database} TO {runtimeRole};
+                REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+                """
+                [||]
+                token
+
+        return ()
+    }
 
 let private container configure =
     let image, initdbArguments = PostgresBaseline.configuration ()
@@ -99,6 +138,7 @@ let private disposalSteps (container: PostgreSqlContainer) (sources: NpgsqlDataS
 type private AdmittedConnections =
     {
         Owner: NpgsqlDataSource
+        Superuser: NpgsqlDataSource
         Runtime: NpgsqlDataSource
     }
 
@@ -138,6 +178,7 @@ let private admittedDatabase
     {
         Container = container
         OwnerSource = ownerSource
+        SuperuserSource = connections.Superuser
         RuntimeSource = runtime
         Fixture = fixture
     }
@@ -152,19 +193,13 @@ let private createInZone configure owner timeZone poolCapacity =
 
         try
             do! container.StartAsync()
-            stage <- SetupStage.OwnerConnection
-            let ownerSource = NpgsqlDataSource.Create(container.GetConnectionString())
-            sources <- [ ownerSource ]
-            use! connection = ownerSource.OpenConnectionAsync()
+            stage <- SetupStage.DatabaseRoles
+            let superuser = NpgsqlDataSource.Create(container.GetConnectionString())
+            sources <- [ superuser ]
+            do! createRoles superuser CancellationToken.None
 
-            stage <- SetupStage.RuntimeRole
-
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    $"CREATE ROLE {runtimeRole} LOGIN PASSWORD '{runtimePassword}'"
-                    [||]
-                    CancellationToken.None
+            let ownerSource = NpgsqlDataSource.Create(ownerConnection container)
+            sources <- ownerSource :: sources
 
             stage <- SetupStage.SchemaInitialization
 
@@ -191,6 +226,7 @@ let private createInZone configure owner timeZone poolCapacity =
                     sources
                     {
                         Owner = ownerSource
+                        Superuser = superuser
                         Runtime = runtime
                     }
                     installationId

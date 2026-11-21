@@ -118,16 +118,18 @@ let guardedSql (database: PostgresFixture.Database) statement parameters =
             refused <- error.SqlState = "CC003"
 
         Expect.isTrue refused "The owner-level append-only guard rejects the same write"
-        use! transaction = connection.BeginTransactionAsync()
+        // Only the deliberate trigger bypass uses the superuser.
+        use! corruptor = database.SuperuserSource.OpenConnectionAsync()
+        use! transaction = corruptor.BeginTransactionAsync()
 
         let! _ =
             DatabaseSession.execute
-                connection
+                corruptor
                 "SET LOCAL session_replication_role=replica"
                 [||]
                 token
 
-        let! _ = DatabaseSession.execute connection statement parameters token
+        let! _ = DatabaseSession.execute corruptor statement parameters token
         do! transaction.CommitAsync()
     }
 
@@ -312,11 +314,13 @@ let rewrite
 
             originals.Add(Option.get value)
 
-        use! transaction = connection.BeginTransactionAsync()
+        // Only the deliberate trigger bypass uses the superuser.
+        use! corruptor = database.SuperuserSource.OpenConnectionAsync()
+        use! transaction = corruptor.BeginTransactionAsync()
 
         let! _ =
             DatabaseSession.execute
-                connection
+                corruptor
                 "SET LOCAL session_replication_role=replica"
                 [||]
                 token
@@ -344,12 +348,12 @@ let rewrite
                     root.Structure.Effects
                     root.Structure.Compartments
 
-            do! replaceRoot connection rewritten
+            do! replaceRoot corruptor rewritten
             previous <- Some rewritten.Hash
 
         let! _ =
             DatabaseSession.execute
-                connection
+                corruptor
                 "UPDATE claimcore.ledger_head SET entry_hash=$1"
                 [| box (EntryHash.toBytes (Option.get previous)) |]
                 token

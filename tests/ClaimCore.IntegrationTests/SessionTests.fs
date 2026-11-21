@@ -390,7 +390,7 @@ let private capacity (database: PostgresFixture.Database) =
 let private storeFailure (database: PostgresFixture.Database) =
     task {
         use source =
-            Npgsql.NpgsqlDataSource.Create(database.Container.GetConnectionString())
+            Npgsql.NpgsqlDataSource.Create(PostgresFixture.ownerConnectionString database)
 
         let store = SessionStore(source, database.Installation) :> ISessionStore
         let! key = create store

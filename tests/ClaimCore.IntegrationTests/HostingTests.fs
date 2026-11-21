@@ -283,7 +283,14 @@ let tests =
                     ($"typed runtime open refusal: {name}")
                     (run (fun database ->
                         task {
-                            use! connection = database.OwnerSource.OpenConnectionAsync()
+                            // Role and ownership changes are cluster-operator fault injection.
+                            let source =
+                                if name = "superuser" || name = "owner" then
+                                    database.SuperuserSource
+                                else
+                                    database.OwnerSource
+
+                            use! connection = source.OpenConnectionAsync()
                             let! _ = DatabaseSession.execute connection change [||] token
 
                             let! opened =
@@ -359,7 +366,7 @@ let tests =
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.
                         let mutable waiting = false
-                        use! observer = database.OwnerSource.OpenConnectionAsync()
+                        use! observer = database.RuntimeSource.OpenConnectionAsync()
 
                         while not waiting && DateTimeOffset.UtcNow < deadline do
                             let! rows =

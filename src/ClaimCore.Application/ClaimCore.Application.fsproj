@@ -24,6 +24,7 @@
     <Compile Include="Storage/FailureDiagnostics.fs" />
     <Compile Include="Storage/DatabaseSession.fs" />
     <Compile Include="Storage/InstallationCheck/DatabaseProfile.fs" />
+    <Compile Include="Storage/InstallationCheck/OwnerAdmission.fs" />
     <Compile Include="Storage/PrincipalLock.fs" />
     <Compile Include="Storage/ExpiryFrontierStorage.fs" />
     <Compile Include="Storage/Ledger/OperationStorage.fs" />

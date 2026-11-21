@@ -61,7 +61,7 @@ let private structuralScenarios database =
     task {
         let! _ = populated database
         let! runtime = runFile database "claimcore_runtime" "SchemaScenarios.sql"
-        let! owner = runFile database "postgres" "OwnerSchemaScenarios.sql"
+        let! owner = runFile database "claimcore_owner" "OwnerSchemaScenarios.sql"
 
         for message in
             [
@@ -88,8 +88,8 @@ let private calendarBounds (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
 
-        // The owner bypass is confined to this fixture; CHECK constraints remain active.
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        // This fixture suppresses triggers to reach the unchanged CHECK constraints.
+        use! connection = database.SuperuserSource.OpenConnectionAsync()
 
         for value, expected in
             [

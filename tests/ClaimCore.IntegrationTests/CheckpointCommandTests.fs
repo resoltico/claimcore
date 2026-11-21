@@ -41,7 +41,7 @@ let private commandPath () =
                 AdministrationProcess.privateText
                     directory
                     "connection"
-                    (database.Container.GetConnectionString())
+                    (PostgresFixture.ownerConnectionString database)
 
             let configuration =
                 typeof<DatabaseSuccess>
@@ -308,7 +308,7 @@ let private commandPath () =
 
                 use administration =
                     new Administration(
-                        database.Container.GetConnectionString(),
+                        PostgresFixture.ownerConnectionString database,
                         BuildIdentity.current.Version
                     )
 

@@ -22,7 +22,7 @@ module internal LedgerAdministration =
     let head source cancellationToken =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
-                do! DatabaseProfile.require connection cancellationToken
+                do! OwnerAdmission.require connection cancellationToken
                 let! installation, _ = Baseline.require connection cancellationToken
                 return! CheckpointEvidence.read connection installation cancellationToken
             })
@@ -102,7 +102,7 @@ module internal LedgerAdministration =
             token
             (fun connection transaction ->
                 task {
-                    do! DatabaseProfile.require connection token
+                    do! OwnerAdmission.require connection token
                     let! installationId, timeZone = Baseline.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token

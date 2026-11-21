@@ -123,7 +123,7 @@ let private headWaiter (db: PostgresFixture.Database) =
         let mutable waiting = false
 
         while not waiting && started.Elapsed < TimeSpan.FromSeconds 10. do
-            use! connection = db.OwnerSource.OpenConnectionAsync()
+            use! connection = db.RuntimeSource.OpenConnectionAsync()
 
             let! rows =
                 DatabaseSession.rows

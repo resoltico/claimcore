@@ -15,7 +15,9 @@ OIDC identifies human/service principals; current scoped ClaimCore grants author
 antiforgery. The browser and actor CLI have no database credentials. Owner administration uses the same
 `claimcore-server` executable with a separate database-owner credential; the serving process uses runtime credentials. Current permissions and receipt disclosure are decided within the authoritative view.
 
-The IdP, service host, database owner and backup operator remain trusted. Hashes detect inconsistency against
+The dedicated database owner has no superuser, role creation, replication or row-security bypass
+privileges. The PostgreSQL bootstrap superuser is confined to the database container's local socket
+in Compose. The IdP, service host, database owner and backup operator remain trusted. Hashes detect inconsistency against
 trusted retained evidence; they cannot establish independent freshness or defeat an administrator rewriting all
 evidence. Live erasure cannot reach old row versions, WAL, exports, replicas or backups. Even retained references
 may identify people. Read [Operations](docs/operating.md) before handling personal data.

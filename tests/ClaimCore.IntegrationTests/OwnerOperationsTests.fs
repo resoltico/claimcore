@@ -627,7 +627,7 @@ let private recoverPausedOwner (database: PostgresFixture.Database) =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 

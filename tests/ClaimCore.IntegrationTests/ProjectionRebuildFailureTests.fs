@@ -70,13 +70,13 @@ let private trigger database body =
          + " RETURN NEW; END $$; CREATE TRIGGER rebuild_case_control BEFORE INSERT ON claimcore.cases FOR EACH ROW EXECUTE FUNCTION public.rebuild_case_control()")
         [||]
 
-let private waitFor (database: PostgresFixture.Database) statement =
+let private waitFor (source: NpgsqlDataSource) statement =
     task {
         let timer = Diagnostics.Stopwatch.StartNew()
         let mutable found = false
 
         while not found && timer.Elapsed < TimeSpan.FromSeconds 3. do
-            use! connection = database.OwnerSource.OpenConnectionAsync()
+            use! connection = source.OpenConnectionAsync()
             let! values = DatabaseSession.rows connection statement [||] token
             found <- DatabaseSession.value<bool> 0 values.Head
 
@@ -262,7 +262,7 @@ let private cancelledStaging database =
                  |> Option.get)
                 cancelled.Token
 
-        do! waitFor database advisoryWait
+        do! waitFor database.OwnerSource advisoryWait
         cancelled.Cancel()
         let mutable refused = false
 
@@ -297,7 +297,7 @@ let private writerRace database =
                  |> Option.get)
                 token
 
-        do! waitFor database advisoryWait
+        do! waitFor database.OwnerSource advisoryWait
 
         let writing =
             Service.executeSubmission
@@ -315,7 +315,7 @@ let private writerRace database =
 
         do!
             waitFor
-                database
+                database.RuntimeSource
                 "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename='claimcore_runtime' AND wait_event_type='Lock')"
 
         Expect.isFalse writing.IsCompleted "An actor cannot pass the head lock during replacement"
@@ -349,7 +349,7 @@ let private commitLoss drop landed database =
         let! before = image database
 
         let settings =
-            NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         use proxy = new CommitProxy.Proxy(nonNull settings.Host, settings.Port, drop)
         settings.Host <- "127.0.0.1"

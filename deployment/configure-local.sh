@@ -60,12 +60,14 @@ leaf identity 'DNS:identity.localhost'
 leaf web 'DNS:localhost'
 openssl pkcs12 -export -in "${configuration}/web/server.pem" -inkey "${configuration}/web/server.key" \
   -certfile "${configuration}/ca.pem" -passout pass: -out "${configuration}/web/server.pfx" >/dev/null 2>&1
+superuser_password="$(openssl rand -hex 32)"
 owner_password="$(openssl rand -hex 32)"
 runtime_password="$(openssl rand -hex 32)"
 web_secret="$(openssl rand -hex 32)"
 service_secret="$(openssl rand -hex 32)"
 owner_login="$(openssl rand -hex 32)"
 owner_subject="$(uuid)"
+printf '%s' "${superuser_password}" >"${configuration}/postgres/superuser.password"
 printf '%s' "${owner_password}" >"${configuration}/postgres/owner.password"
 printf '%s' "${runtime_password}" >"${configuration}/postgres/runtime.password"
 printf '%s' "${web_secret}" >"${configuration}/web/client.secret"
@@ -146,7 +148,7 @@ docker run --rm --name "${project}-permissions" --label claimcore.configuration=
   --network none --read-only --mount "type=bind,\"source=${mount_configuration}\",target=/config" \
   --user 0 --entrypoint /bin/sh "${postgres_image}" \
   -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
-unset owner_password runtime_password web_secret service_secret owner_login
+unset superuser_password owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
 printf 'Use the isolated browser profile and public CA. Leaf certificates expire after 30 days.\n'
 printf 'CLI setup in Bash: export XDG_CONFIG_HOME=%q; claimcore configure --show\n' "${configuration}/cli"

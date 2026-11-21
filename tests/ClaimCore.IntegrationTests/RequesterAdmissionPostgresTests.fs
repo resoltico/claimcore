@@ -46,7 +46,7 @@ let private writeSnapshot (database: PostgresFixture.Database) =
         let! _ =
             DatabaseSession.rows connection "SELECT count(*) FROM pg_stat_activity" [||] token
 
-        use! observer = database.OwnerSource.OpenConnectionAsync()
+        use! observer = database.RuntimeSource.OpenConnectionAsync()
 
         let pending =
             Service.executeSubmission

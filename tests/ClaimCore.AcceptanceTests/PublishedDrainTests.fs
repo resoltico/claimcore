@@ -45,7 +45,7 @@ let private qualify () =
             )
 
         use! connection = source.OpenConnectionAsync()
-        use! observer = source.OpenConnectionAsync()
+        use! observer = fixture.OpenRuntimeMonitor()
         use! transaction = connection.BeginTransactionAsync()
 
         use head =
@@ -98,7 +98,7 @@ let private qualify () =
         use count =
             new NpgsqlCommand(
                 "SELECT count(*) FROM claimcore.ledger WHERE operation_id=$1",
-                observer
+                connection
             )
 
         count.Parameters.AddWithValue(Guid.Parse operation) |> ignore
@@ -112,7 +112,7 @@ let private qualify () =
         use after =
             new NpgsqlCommand(
                 "SELECT sequence FROM claimcore.ledger_head WHERE singleton",
-                observer
+                connection
             )
 
         let! position = after.ExecuteScalarAsync()

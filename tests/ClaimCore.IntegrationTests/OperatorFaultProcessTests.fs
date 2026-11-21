@@ -45,7 +45,8 @@ let private publishedFaults () =
             let privateText name value =
                 AdministrationProcess.privateText directory name value
 
-            let connection = privateText "connection" (database.Container.GetConnectionString())
+            let connection =
+                privateText "connection" (PostgresFixture.ownerConnectionString database)
 
             let fault connectionFile arguments expected exit =
                 async {
@@ -303,10 +304,20 @@ let private publishedFaults () =
                     "INSERT INTO claimcore.ledger_head(sequence,entry_hash) VALUES(0,decode(repeat('00',32),'hex'))"
                     [||]
 
-            do! sql "CREATE ROLE operator_no_access LOGIN PASSWORD 'synthetic-only'" [||]
+            // Provision a login that may connect but cannot act as the installation owner.
+            use! bootstrap =
+                database.SuperuserSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask
+
+            let! _ =
+                DatabaseSession.execute
+                    bootstrap
+                    "CREATE ROLE operator_no_access LOGIN PASSWORD 'synthetic-only'; GRANT CONNECT ON DATABASE postgres TO operator_no_access"
+                    [||]
+                    CancellationToken.None
+                |> Async.AwaitTask
 
             let settings =
-                NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+                NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
             settings.Username <- "operator_no_access"
             settings.Password <- "synthetic-only"
@@ -417,7 +428,7 @@ let private publishedFaults () =
             Expect.equal (unchanged.GetProperty("actorId").GetGuid()) actorId "Same account"
 
             let proxySettings =
-                NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+                NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
             let terminate backend =
                 task {

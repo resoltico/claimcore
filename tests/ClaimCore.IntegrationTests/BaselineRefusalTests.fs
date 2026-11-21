@@ -47,13 +47,6 @@ let private install identifier format (bytes: byte array) (source: NpgsqlDataSou
         use! transaction = connection.BeginTransactionAsync()
 
         let! _ =
-            DatabaseSession.execute
-                connection
-                "CREATE ROLE claimcore_runtime LOGIN PASSWORD 'synthetic-only'"
-                [||]
-                token
-
-        let! _ =
             DatabaseSession.execute connection (Encoding.UTF8.GetString bytes) [||] token
 
         let! _ =
@@ -91,7 +84,9 @@ let private refusedInstallation identifier format load =
 
         try
             do! database.StartAsync() |> Async.AwaitTask
-            use source = NpgsqlDataSource.Create(database.GetConnectionString())
+            use bootstrap = NpgsqlDataSource.Create(database.GetConnectionString())
+            do! PostgresFixture.createRoles bootstrap token |> Async.AwaitTask
+            use source = NpgsqlDataSource.Create(PostgresFixture.ownerConnection database)
             do! install identifier format (load ()) source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
