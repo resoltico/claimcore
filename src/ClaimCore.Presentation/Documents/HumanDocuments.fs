@@ -36,7 +36,8 @@ module ConfirmationTarget =
             subject.StartsWith('"') || not (TextDisplay.warning subject).CodePoints.IsEmpty
 
         if needsQuoting then
-            ConfirmationTarget.Principal(""" + JsonEncodedText.Encode(subject).ToString() + """)
+            let quote = string '"'
+            ConfirmationTarget.Principal(quote + JsonEncodedText.Encode(subject).ToString() + quote)
         else
             ConfirmationTarget.Principal subject
 
