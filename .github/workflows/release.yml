@@ -29,7 +29,9 @@ jobs:
     environment: release
     permissions:
       actions: read # Read the CI conclusion for the tagged commit.
+      attestations: write # Publish provenance for the image and archives.
       contents: write # Create the release for the existing tag.
+      id-token: write # Authenticate the provenance signer.
       packages: write # Publish the server image to GHCR.
     env:
       IMAGE_REPOSITORY: ghcr.io/resoltico/claimcore-server
@@ -52,6 +54,11 @@ jobs:
           test "$(git cat-file -t "refs/tags/$TAG")" = "tag"
           sha="$(git rev-parse "refs/tags/$TAG^{commit}")"
           test "$sha" = "$EXPECTED_SHA"
+          # GitHub provenance records the dispatch commit from the runner's OIDC token.
+          if [[ "$sha" != "$GITHUB_SHA" ]]; then
+            echo "The release tag must identify the main commit that started this run." >&2
+            exit 1
+          fi
           git merge-base --is-ancestor "$sha" origin/main
 
           git show "$sha:Directory.Build.props" | grep -Fq "<Version>$version</Version>"
@@ -89,25 +96,63 @@ jobs:
           test -s notes.md
 
       - name: Build the server and CLI distribution
+        id: distribution
         env:
           CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
-          RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release
-        run: bash eng/build-release-artifacts.sh "$RELEASE_ARTIFACTS" "$IMAGE_REPOSITORY:$CANDIDATE_VERSION"
-      - name: Publish the versioned server image and release files
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
-          CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
-          REGISTRY_USER: ${{ github.actor }}
           RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release
         run: |
           set -euo pipefail
+          test ! -e "$RELEASE_ARTIFACTS"
+          bash eng/build-release-artifacts.sh "$RELEASE_ARTIFACTS" "$IMAGE_REPOSITORY:$CANDIDATE_VERSION"
+          (cd "$RELEASE_ARTIFACTS" && shasum -a 256 -c SHA256SUMS)
+          echo "directory=$RELEASE_ARTIFACTS" >> "$GITHUB_OUTPUT"
+      - name: Push the versioned server image
+        id: image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_VERSION: ${{ steps.candidate.outputs.version }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
           image="$IMAGE_REPOSITORY:$CANDIDATE_VERSION"
-          printf '%s\n' "$GH_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
-          trap 'docker logout ghcr.io' EXIT
-          docker push "$image" | tee "$RUNNER_TEMP/claimcore-image-push.log"
+          # The attestation action reads inline credentials from the runner's standard Docker config.
+          printf '%s\n' "$GH_TOKEN" | docker --config "$HOME/.docker" login ghcr.io \
+            --username "$REGISTRY_USER" --password-stdin
+          jq -e '.auths["ghcr.io"].auth | type == "string" and length > 0' \
+            "$HOME/.docker/config.json" >/dev/null
+          docker --config "$HOME/.docker" push "$image" | tee "$RUNNER_TEMP/claimcore-image-push.log"
           digest="$(sed -nE 's/^[^ ]+: digest: (sha256:[0-9a-f]{64}) size: [0-9]+$/\1/p' "$RUNNER_TEMP/claimcore-image-push.log")"
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          printf "\\nServer image: \`%s@%s\`\\n" "$IMAGE_REPOSITORY" "$digest" >> notes.md
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest the pushed server image
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE_REPOSITORY }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Clear registry credentials
+        if: always() && steps.image.outcome != 'skipped'
+        run: docker --config "$HOME/.docker" logout ghcr.io
+
+      - name: Attest the release files
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            ${{ steps.distribution.outputs.directory }}/SOURCE.tar.gz
+            ${{ steps.distribution.outputs.directory }}/SHA256SUMS
+            ${{ steps.distribution.outputs.directory }}/claimcore-cli-*.tar.gz
+
+      - name: Publish the release files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          RELEASE_ARTIFACTS: ${{ steps.distribution.outputs.directory }}
+        run: |
+          set -euo pipefail
+          (cd "$RELEASE_ARTIFACTS" && shasum -a 256 -c SHA256SUMS)
+          printf "\\nServer image: \`%s@%s\`\\n" "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" >> notes.md
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md \
             "$RELEASE_ARTIFACTS/SOURCE.tar.gz" "$RELEASE_ARTIFACTS/SHA256SUMS" "$RELEASE_ARTIFACTS"/claimcore-cli-*.tar.gz

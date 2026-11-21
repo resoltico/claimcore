@@ -23,6 +23,8 @@
 - The server image uses chiseled Ubuntu 26.04 with no shell. Local Compose initializes or skips an existing installation through the server command.
 - Web serves verified startup copies of workspace and sign-in recovery pages, assets, and legal files. Responses add HSTS and a stricter browser Permissions Policy.
 - The workspace enforces Trusted Types. Date editing uses DOM operations for live announcements.
+- Dependabot proposes updates for Docker builds and both Compose deployments. Identity tests use the Keycloak image pinned by the Dockerfile.
+- Releases attest the server image and archives. Publication requires the annotated tag to match the workflow dispatch commit.
 
 ## [0.20.0] - 2026-11-19
 
