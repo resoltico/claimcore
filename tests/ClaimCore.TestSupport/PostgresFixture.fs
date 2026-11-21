@@ -8,6 +8,8 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
+open DotNet.Testcontainers.Builders
+open DotNet.Testcontainers.Configurations
 open Testcontainers.PostgreSql
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -111,20 +113,85 @@ let internal createRoles (superuser: NpgsqlDataSource) token =
         return ()
     }
 
-let private container configure =
+let private dataRoot = "/var/lib/postgresql"
+let private seedMount = "/claimcore-postgres-seed"
+
+let private builder () =
     let image, initdbArguments = PostgresBaseline.configuration ()
 
-    let builder =
-        (new PostgreSqlBuilder(image))
-            .WithEnvironment("POSTGRES_INITDB_ARGS", initdbArguments)
-            .WithLabel("claimcore.test", "ledger-store")
-            .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
-            .WithTmpfsMount("/var/lib/postgresql")
-            .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
+    (new PostgreSqlBuilder(image))
+        .WithEnvironment("POSTGRES_INITDB_ARGS", initdbArguments)
+        .WithLabel("claimcore.test", "ledger-store")
+        .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
+        .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
 
-    (configure builder: PostgreSqlBuilder).Build()
+let private fixtureContainer (configure: PostgreSqlBuilder -> PostgreSqlBuilder) =
+    builder().WithTmpfsMount(dataRoot) |> configure |> _.Build()
 
-let internal empty () = container (fun builder -> builder)
+let internal empty () = fixtureContainer (fun value -> value)
+
+let private createSeed () =
+    task {
+        let volume =
+            VolumeBuilder()
+                .WithName("claimcore-postgres-seed-" + Guid.NewGuid().ToString("N"))
+                .WithCleanUp(true)
+                .Build()
+
+        try
+            do! volume.CreateAsync()
+            use seed = builder().WithVolumeMount(volume.Name, dataRoot).Build()
+            do! seed.StartAsync()
+            do! seed.StopAsync()
+            let! exitCode = seed.GetExitCodeAsync()
+
+            if exitCode <> 0L then
+                invalidOp "The fixture PostgreSQL seed did not shut down cleanly."
+
+            return volume
+        with error ->
+            // The same Testcontainers session reaps the seed volume when the suite exits.
+            // Remove it immediately if seeding fails.
+            FixtureDisposal.afterFailure
+                error
+                [ fun () -> volume.DisposeAsync().AsTask().GetAwaiter().GetResult() ]
+
+            return raise error
+    }
+
+let private seed = lazy (createSeed ())
+
+let private seededFixture configure =
+    task {
+        let! volume = seed.Value
+
+        return
+            fixtureContainer (fun builder ->
+                builder
+                    .WithVolumeMount(volume.Name, seedMount, AccessMode.ReadOnly)
+                    .WithEntrypoint(
+                        "/bin/sh",
+                        "-ec",
+                        """
+                        root=$1
+                        seed=$2
+                        shift 2
+                        case "${PGDATA:?}" in
+                            "$root"/*) source="$seed/${PGDATA#"$root"/}" ;;
+                            *) echo 'Unexpected fixture PostgreSQL data directory.' >&2; exit 1 ;;
+                        esac
+                        test -s "$source/PG_VERSION"
+                        test ! -e "$source/postmaster.pid"
+                        mkdir -p "$PGDATA"
+                        cp -a "$source/." "$PGDATA/"
+                        exec /usr/local/bin/docker-entrypoint.sh "$@"
+                        """,
+                        "claimcore-seed-copy",
+                        dataRoot,
+                        seedMount
+                    )
+                |> configure)
+    }
 
 let private disposalSteps (container: PostgreSqlContainer) (sources: NpgsqlDataSource list) =
     [
@@ -183,9 +250,14 @@ let private admittedDatabase
         Fixture = fixture
     }
 
-let private createInZone configure owner timeZone poolCapacity =
+let private createInZone seeded configure owner timeZone poolCapacity =
     task {
-        let container = container configure
+        let! container =
+            if seeded && TestcontainersSettings.ResourceReaperEnabled then
+                seededFixture configure
+            else
+                Task.FromResult(fixtureContainer configure)
+
         let mutable sources: NpgsqlDataSource list = []
         let mutable stage = SetupStage.ContainerReadiness
         let mutable ownedId = "CREATED_EVENT_NOT_OBSERVED"
@@ -253,13 +325,13 @@ let private createInZone configure owner timeZone poolCapacity =
 let private defaults builder = builder
 
 let internal createFor principal =
-    createInZone defaults principal "Etc/UTC" None
+    createInZone true defaults principal "Etc/UTC" None
 
 let internal createWithZone timeZone =
-    createInZone defaults owner timeZone None
+    createInZone true defaults owner timeZone None
 
 let internal createForPool principal capacity =
-    createInZone defaults principal "Etc/UTC" (Some capacity)
+    createInZone true defaults principal "Etc/UTC" (Some capacity)
 
 let internal create () = createFor owner
 
@@ -267,7 +339,7 @@ let internal createWithStatementCounts () =
     let configure (builder: PostgreSqlBuilder) =
         builder.WithCommand("-c", "shared_preload_libraries=pg_stat_statements")
 
-    createInZone configure owner "Etc/UTC" None
+    createInZone false configure owner "Etc/UTC" None
 
 /// The two additional ports belong to independent, promoted physical restores inside the
 /// owned fixture. The primary archives to an atomic, test-only sibling of its data directory.
@@ -291,7 +363,7 @@ let internal createArchived () =
                 "archive_command=mkdir -p /var/lib/postgresql/attachment-wal && cp %p /var/lib/postgresql/attachment-wal/%f.tmp && mv /var/lib/postgresql/attachment-wal/%f.tmp /var/lib/postgresql/attachment-wal/%f"
             )
 
-    createInZone configure owner "Etc/UTC" None
+    createInZone false configure owner "Etc/UTC" None
 
 let internal fixture () =
     task { let! database = create () in return database.Fixture }

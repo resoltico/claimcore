@@ -281,6 +281,10 @@ three days in their verification artifact. Authentication-state files and privat
 are excluded. Individual request/assertion bounds remain separate from multi-step workflow budgets.
 
 Store contracts use the single pinned PostgreSQL 19 image from [postgresql-baseline.json](../db/postgresql-baseline.json).
+With Testcontainers resource cleanup enabled, ordinary store fixtures copy a read-only initialized
+cluster into their own tmpfs, then provision their roles and register independently. Physical
+recovery and other explicitly fresh-cluster fixtures initialize their own data directories.
+See [PostgresFixture](../tests/ClaimCore.TestSupport/PostgresFixture.fs).
 Tests discover vocabulary from product declarations; reviewed contract diffs, hand-authored business cases and [durable vectors](../tests/fixtures/durable-vectors.json)
 provide independent expectations. Builders supply inputs, never expected business outcomes. There is no
 fixture update mode. Keep `--zero-tests-policy=strict` and fail-on-focused controls.
