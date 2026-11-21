@@ -57,9 +57,9 @@ module HumanDocumentCodecs =
                     | _ -> None)
                     (record id
                      |> field
-                         "subject"
+                         "confirmationText"
                          id
-                         (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters))
+                         (boundedText 1 ConfirmationTarget.maximumPrincipalTextCharacters))
             ]
 
     let private subjectVariants =

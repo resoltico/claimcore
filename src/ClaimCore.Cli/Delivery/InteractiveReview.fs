@@ -136,10 +136,7 @@ module internal InteractiveReview =
                                              }) when not draft.PreviewOnly ->
                 let consent =
                     if ConfirmationTarget.requiresExactMatch consequence confirmation then
-                        CliConfirmation.exactTarget
-                            console
-                            draft.Language
-                            (ConfirmationTarget.text confirmation)
+                        CliConfirmation.exactConfirmation console draft.Language confirmation
                     else
                         MessageCatalogs.renderCli draft.Language CliMessage.ReviewConfirmation
                         |> Encoding.UTF8.GetBytes

@@ -65,7 +65,7 @@ const describeTarget = (
     case "OPERATION":
       return { expected: target.operationId, label: p.text("ui.exactOperationId") };
     case "PRINCIPAL":
-      return { expected: target.subject, label: p.text("ui.exactPrincipalSubject") };
+      return { expected: target.confirmationText, label: p.text("ui.exactPrincipalSubject") };
   }
 };
 const useReviewControls = (model: ReviewModel, paused: boolean) => {

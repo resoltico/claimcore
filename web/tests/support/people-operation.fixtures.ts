@@ -21,7 +21,7 @@ export const peopleReview = (input: PeopleInput): HumanReview => {
         confirmation:
           input.task === "people.admit" &&
           typeof input.inputs["input:principal.subject"] === "string"
-            ? { kind: "PRINCIPAL", subject: input.inputs["input:principal.subject"] }
+            ? { kind: "PRINCIPAL", confirmationText: input.inputs["input:principal.subject"] }
             : { kind: "OPERATION", operationId: input.operationId },
         consequence: task.consequence,
       },

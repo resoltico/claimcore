@@ -8,7 +8,7 @@ module HumanReviewDocument =
         let confirmation =
             match principal, review.Target with
             | Some principal, _ ->
-                (PrincipalKey.toInput principal).Subject |> ConfirmationTarget.Principal
+                (PrincipalKey.toInput principal).Subject |> ConfirmationTarget.principal
             | None, ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
             | None, ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
 

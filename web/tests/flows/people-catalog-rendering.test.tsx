@@ -183,16 +183,16 @@ it.each(examples)(
       );
     }
     if (act.kind === "people.admit") {
-      const input = calls[0]!.input;
+      const { input: reviewedInput } = calls[0]!;
       if (
-        input.task !== "people.admit" ||
-        typeof input.inputs["input:principal.subject"] !== "string"
+        reviewedInput.task !== "people.admit" ||
+        typeof reviewedInput.inputs["input:principal.subject"] !== "string"
       ) {
         throw new Error("Expected a submitted principal subject.");
       }
       await user.type(
         screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }),
-        input.inputs["input:principal.subject"],
+        reviewedInput.inputs["input:principal.subject"],
       );
     }
     await user.click(reviewConfirm());

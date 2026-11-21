@@ -382,7 +382,7 @@ module internal VerbRunner =
                 let consent =
                     match CliConfirmation.requiredTarget frame, prepared.Confirmation with
                     | Some target, None ->
-                        CliConfirmation.exactTarget io.Review prepared.Language target
+                        CliConfirmation.exactConfirmation io.Review prepared.Language target
                     | _ -> true
 
                 if not consent then

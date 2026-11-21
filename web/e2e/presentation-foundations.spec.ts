@@ -1433,7 +1433,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           },
           confirmation: {
             kind: "PRINCIPAL",
-            subject: "retained-person",
+            confirmationText: "retained-person",
           },
         },
         presentationBasis,
@@ -1991,7 +1991,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           },
           confirmation: {
             kind: "PRINCIPAL",
-            subject: "admission-person",
+            confirmationText: "admission-person",
           },
         },
         presentationBasis,

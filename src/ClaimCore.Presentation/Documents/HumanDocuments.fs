@@ -1,5 +1,6 @@
 namespace ClaimCore.Presentation
 
+open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -22,14 +23,28 @@ type ObservationBasis =
 type ConfirmationTarget =
     | CaseReference of CaseReference
     | Operation of System.Guid
-    | Principal of subject: string
+    | Principal of confirmationText: string
 
 module ConfirmationTarget =
+    // A quoted JSON spelling contains at most six characters per UTF-16 code unit plus quotes.
+    let maximumPrincipalTextCharacters =
+        6 * PrincipalKey.MaximumHumanSubjectCharacters + 2
+
+    let principal (subject: string) =
+        // A leading quote distinguishes the quoted form from every verbatim spelling.
+        let needsQuoting =
+            subject.StartsWith('"') || not (TextDisplay.warning subject).CodePoints.IsEmpty
+
+        if needsQuoting then
+            ConfirmationTarget.Principal(""" + JsonEncodedText.Encode(subject).ToString() + """)
+        else
+            ConfirmationTarget.Principal subject
+
     let text =
         function
         | ConfirmationTarget.CaseReference reference -> CaseReference.format reference
         | ConfirmationTarget.Operation id -> id.ToString("D")
-        | ConfirmationTarget.Principal subject -> subject
+        | ConfirmationTarget.Principal text -> text
 
     let requiresExactMatch consequence target =
         match target with

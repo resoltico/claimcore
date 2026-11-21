@@ -131,13 +131,89 @@ let tests =
                         "Mismatch is a usage error even at a terminal"
 
                     Expect.equal
-                        (CliConfirmation.requiredTarget confirmed.Invocation)
+                        (CliConfirmation.requiredTarget confirmed.Invocation
+                         |> Option.map ConfirmationTarget.text)
                         (Some target)
                         "Target semantics are explicit"
 
                 Expect.isError
                     (Grammar.prepare identity [ "case"; "list"; "--confirm"; "anything" ])
                     "Ordinary reads do not accept an irrelevant confirmation")
+            testCase
+                "subjects with controls and escape-looking literals have distinct exact spellings"
+                (fun () ->
+                    let control = "synthetic\nsubject"
+                    let shown = "\"synthetic\\nsubject\""
+                    let literal = shown
+
+                    let spelling = ConfirmationTarget.principal >> ConfirmationTarget.text
+
+                    Expect.equal
+                        (spelling "service\\account")
+                        "service\\account"
+                        "Ordinary subjects stay verbatim"
+
+                    Expect.equal (spelling control) shown "A line feed is typeable as quoted JSON"
+
+                    Expect.notEqual
+                        (spelling literal)
+                        shown
+                        "A literal quoted identifier cannot impersonate the line feed"
+
+                    let arguments value =
+                        [
+                            "people"
+                            "admit"
+                            "--principal-kind"
+                            "HUMAN"
+                            "--issuer"
+                            "https://id.example/"
+                            "--subject"
+                            control
+                            "--name"
+                            "Authored name"
+                            "--role"
+                            "CASE_READER"
+                            "--confirm"
+                            value
+                        ]
+
+                    let valid = Grammar.prepare identity (arguments shown) |> CaseBuilders.accepted
+
+                    let wrong =
+                        Grammar.prepare identity (arguments (spelling literal))
+                        |> CaseBuilders.accepted
+
+                    Expect.isNone
+                        (CliConfirmation.validate false valid)
+                        "CLI automation uses the displayed spelling"
+
+                    Expect.isSome
+                        (CliConfirmation.validate false wrong)
+                        "A different subject's spelling is refused"
+
+                    let captured = StringBuilder()
+
+                    let console =
+                        {
+                            IsInteractive = true
+                            ReadLine = fun () -> Some shown
+                            Write =
+                                fun bytes ->
+                                    captured.Append(Encoding.UTF8.GetString bytes) |> ignore
+                        }
+
+                    Expect.isTrue
+                        (CliConfirmation.exactConfirmation
+                            console
+                            "en"
+                            (ConfirmationTarget.principal control))
+                        "The printed challenge can be typed exactly"
+
+                    Expect.equal
+                        (captured.ToString())
+                        ("Type " + shown + " to confirm: ")
+                        "The challenge is printed once")
             testCase "profile issuer is explicit in the actual prepared admission frame" (fun () ->
                 let withoutIssuer =
                     [

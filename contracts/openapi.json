@@ -13096,15 +13096,15 @@
           "kind": {
             "const": "PRINCIPAL"
           },
-          "subject": {
+          "confirmationText": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 512
+            "maxLength": 3074
           }
         },
         "required": [
           "kind",
-          "subject"
+          "confirmationText"
         ]
       },
       "ConflictChangePage": {

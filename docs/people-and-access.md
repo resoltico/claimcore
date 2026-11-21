@@ -21,7 +21,8 @@ explicit service identity. A name or email address is not a sign-in identity. Cl
 you enter; it does not take a profile name from sign-in claims.
 
 Confirm the exact sign-in ID shown in the Web review. In an interactive CLI review, type that same
-value at the prompt. For CLI automation, pass it as `--confirm`.
+value at the prompt. For CLI automation, pass it as `--confirm`. If the prompt shows the ID as a
+quoted string, include the quotes and any escape characters displayed.
 
 The CLI performs the same admission in one request:
 

@@ -37,34 +37,46 @@ module internal CliConfirmation =
             |> List.exists (fun word ->
                 String.Equals(answer.Trim(), word, StringComparison.OrdinalIgnoreCase)))
 
-    let exactTarget (console: InteractiveConsole) language target =
+    let private promptForTarget (console: InteractiveConsole) language shown target =
         if not console.IsInteractive then
             false
         else
-            MessageCatalogs.renderCli
-                language
-                (CliMessage.TypeConfirmationTarget(TerminalText.data target))
+            MessageCatalogs.renderCli language (CliMessage.TypeConfirmationTarget shown)
             |> Encoding.UTF8.GetBytes
             |> console.Write
 
             console.ReadLine()
             |> Option.exists (fun answer -> String.Equals(answer, target, StringComparison.Ordinal))
 
+    let exactTarget console language target =
+        promptForTarget console language (TerminalText.data target) target
+
+    let exactConfirmation console language target =
+        let text = ConfirmationTarget.text target
+
+        match target with
+        | ConfirmationTarget.Principal _ -> promptForTarget console language text text
+        | _ -> exactTarget console language text
+
     let requiredTarget invocation =
         match Frames.value Api.operationExecute invocation with
         | Some input when OperationSubmission.requiresPrincipalConfirmation input.Task ->
             OperationSubmission.principalConfirmation input
-            |> Option.map (PrincipalKey.toInput >> _.Subject)
+            |> Option.map (PrincipalKey.toInput >> _.Subject >> ConfirmationTarget.principal)
         | Some input when TaskConsequences.ofTask input.Task = Consequence.Irreversible ->
             match input.Envelope.Binding with
-            | OperationBinding.Case(CaseSelector.Reference reference, _, _, _) -> Some reference
+            | OperationBinding.Case(CaseSelector.Reference reference, _, _, _) ->
+                CaseReference.parse reference
+                |> Result.toOption
+                |> Option.map ConfirmationTarget.CaseReference
             | OperationBinding.Case(CaseSelector.Id _, _, _, _) -> None
-            | OperationBinding.People _ -> Some(input.OperationId.ToString("D"))
+            | OperationBinding.People _ -> Some(ConfirmationTarget.Operation input.OperationId)
             | _ -> invalidOp "Human irreversible commands require their confirmation target."
         | _ -> None
 
     let validate isInteractive (prepared: PreparedVerb) =
         requiredTarget prepared.Invocation
+        |> Option.map ConfirmationTarget.text
         |> Option.bind (fun target ->
             match prepared.Confirmation with
             | Some value when value <> target ->
