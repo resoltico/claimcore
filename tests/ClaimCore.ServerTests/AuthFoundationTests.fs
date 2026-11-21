@@ -54,7 +54,7 @@ let private metadataValidation () =
     let issuer = Uri("https://issuer.example.test/realms/claimcore")
 
     let document actualIssuer tokenEndpoint =
-        $"""{{"issuer":"{actualIssuer}","authorization_endpoint":"https://issuer.example.test/auth","token_endpoint":"{tokenEndpoint}","jwks_uri":"https://issuer.example.test/keys"}}"""
+        $"""{{"issuer":"{actualIssuer}","authorization_endpoint":"https://issuer.example.test/auth","token_endpoint":"{tokenEndpoint}","end_session_endpoint":"https://issuer.example.test/logout","jwks_uri":"https://issuer.example.test/keys"}}"""
         |> Encoding.UTF8.GetBytes
         |> ReadOnlyMemory<byte>
 
@@ -101,6 +101,41 @@ let private accessTokenIdentity () =
         (classify "another-service" "service-subject")
         (PrincipalIdentity.service issuer "another-service")
         "Each other verified client is a distinct service"
+
+let private emailHintVerification () =
+    let issuer = Uri("https://issuer.example.test/realms/claimcore")
+    let verifiedClaim = Claim("email_verified", "true", ClaimValueTypes.Boolean)
+
+    for verified, expected in
+        [
+            [ verifiedClaim ], true
+            [ Claim("email_verified", "false", ClaimValueTypes.Boolean) ], false
+            [ Claim("email_verified", "true") ], false
+            [ verifiedClaim; verifiedClaim ], false
+            [], false
+        ] do
+        let claims =
+            [
+                Claim("sub", "synthetic-requester")
+                Claim("azp", "claimcore-cli")
+                Claim("email", "requester@example.test")
+            ]
+            @ verified
+
+        let principal = ClaimsPrincipal(ClaimsIdentity(claims, "verified-provider"))
+
+        for authenticate in
+            [
+                PrincipalIdentity.fromBrowserSession issuer
+                PrincipalIdentity.fromAccessToken issuer "claimcore-cli"
+            ] do
+            let result =
+                authenticate principal
+                |> Result.defaultWith (string >> failtest)
+                |> AuthenticatedPrincipals.claims
+
+            Expect.isSome result.Email "A supplied address remains a hint"
+            Expect.equal result.EmailVerified expected "Only one boolean true verifies the hint"
 
 let private middlewareConfiguration () =
     {
@@ -378,6 +413,7 @@ let tests =
             testCase "human and service principals remain distinct" principalIdentity
             testCase "metadata pins issuer and secure endpoints" metadataValidation
             testCase "bearer principal uses explicit client classification" accessTokenIdentity
+            testCase "verified provider email needs a unique boolean claim" emailHintVerification
             testCase "middleware pins OIDC and JWT validation policy" middlewarePolicy
             testCaseTask "PAR sends the checked language on the private backchannel" pushedLanguage
             testCaseTask

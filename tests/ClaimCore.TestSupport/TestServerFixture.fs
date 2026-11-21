@@ -175,10 +175,14 @@ let private login (context: HttpContext) : Task =
             if context.Request.Query.ContainsKey name then
                 identity.AddClaim(Claim(name, context.Request.Query[name].ToString()))
 
+        let properties = AuthenticationProperties()
+        properties.Items[AuthMiddleware.idTokenProperty] <- "synthetic-logout-hint"
+
         do!
             context.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                ClaimsPrincipal identity
+                ClaimsPrincipal identity,
+                properties
             )
 
         context.Response.StatusCode <- 200
@@ -275,6 +279,7 @@ type Host
         HostRoutes.map
             files
             (configuration certificate)
+            (Uri "https://issuer.example.test/logout")
             (if forActor.IsSome then
                  ClaimCore.Server.ApiRoutes.route
              else

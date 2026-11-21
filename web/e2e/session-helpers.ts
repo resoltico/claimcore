@@ -17,6 +17,7 @@ import {
   test,
   type Browser,
   type BrowserContext,
+  type Locator,
   type Page,
   type Response,
 } from "@playwright/test";
@@ -361,7 +362,11 @@ const loginAttempt = (page: Page, address: URL, signIn: string | null, remaining
           .click(options);
   return loginAdmissionAttempt(response, navigation, controller, remaining);
 };
-const awaitLoginAdmission = async (page: Page, signIn: string, applicationOrigin: string) => {
+export const awaitLoginAdmission = async (
+  page: Page,
+  signIn: string,
+  applicationOrigin: string,
+) => {
   const href = await page
     .getByRole("link", {
       name: signIn,
@@ -477,22 +482,34 @@ export const authenticateSteward = async (
     await context.close();
   }
 };
-export const logout = async (page: Page): Promise<void> => {
-  const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/session.logout",
-  );
+export const signOut = async (page: Page, button: Locator): Promise<Response> => {
+  const landing = new URL("/", page.url());
+  const [response] = await Promise.all([
+    page.waitForResponse((reply) => {
+      const url = new URL(reply.url());
+      return url.origin === landing.origin && url.pathname === "/api/session.logout";
+    }),
+    page.waitForEvent("framenavigated", {
+      predicate: (frame) => frame === page.mainFrame() && frame.url() === landing.href,
+      timeout: loginNavigationTimeout,
+    }),
+    button.click(),
+  ]);
+  expect(response.status()).toBe(200);
+  return response;
+};
+
+export const logout = async (page: Page): Promise<Response> => {
   await showAccountActions(page);
-  const signOut = page.getByRole("button", {
+  const control = page.getByRole("button", {
     name: "Sign out",
     exact: true,
   });
-  if (!(await signOut.isVisible())) {
+  if (!(await control.isVisible())) {
     await page.locator('a[href="/settings"]').click();
     await expect(page.locator(".settings-panel")).toBeVisible();
   }
-  await signOut.click();
-  const response = await responseEvent;
-  expect(response.status()).toBe(200);
+  const response = await signOut(page, control);
   await expect(
     page.getByRole("heading", {
       name: "Sign in to the case register",
@@ -510,6 +527,7 @@ export const logout = async (page: Page): Promise<void> => {
     throw new Error("Session refused.");
   }
   expect(sessionReply.outcome.data.authenticated).toBe(false);
+  return response;
 };
 const contextFailureCode = (status: number, payload: unknown): string => {
   if (isHostFailure(payload, status)) {

@@ -652,7 +652,8 @@ CREATE TABLE claimcore.access_request (
     last_seen timestamptz NOT NULL CHECK (last_seen>=first_seen),
     name text CHECK (name IS NULL OR (char_length(name) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(name))),
     preferred_username text CHECK (preferred_username IS NULL OR (char_length(preferred_username) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(preferred_username))),
-    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email)))
+    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email))),
+    email_verified boolean NOT NULL DEFAULT false CHECK (email IS NOT NULL OR NOT email_verified)
 );
 CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,principal_key);
 

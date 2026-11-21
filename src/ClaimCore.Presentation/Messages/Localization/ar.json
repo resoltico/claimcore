@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "الاسم المطلوب",
-    "source": "ca0175e2d2c8"
+    "text": "الاسم الإرشادي",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "اسم المستخدم المطلوب",
-    "source": "2bfe148a8785"
+    "text": "اسم المستخدم الإرشادي",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "البريد الإلكتروني المطلوب",
-    "source": "50cffab6e474"
+    "text": "البريد الإلكتروني الإرشادي",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "طلب الوصول",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "معلومات الاسم واسم المستخدم",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "التحقق من البريد الإلكتروني",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "قدّم موفّر الهوية هذه المعلومات دون التحقّق منها.",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "تحقّق موفّر الهوية من عنوان البريد الإلكتروني هذا.",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "أول طلب",

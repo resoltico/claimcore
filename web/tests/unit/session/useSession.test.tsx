@@ -114,7 +114,11 @@ it("refuses an invalid refresh and clears credentials after confirmed logout", a
   });
   fetch.mockResolvedValueOnce(
     endpointResponse("session.logout", {
-      outcome: { kind: "SUCCEEDED", data: null, view: { regions: [] } },
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { location: "https://issuer.example.test/logout" },
+        view: { regions: [] },
+      },
     }),
   );
   await result.current.logout();

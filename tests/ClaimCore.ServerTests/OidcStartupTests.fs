@@ -23,7 +23,7 @@ type private SuspendedContent() =
     override _.SerializeToStreamAsync(_, _) = Task.Delay(Timeout.Infinite)
     override _.SerializeToStreamAsync(_, _, token) = Task.Delay(Timeout.Infinite, token)
 
-type private DiscoveryHandler(issuer: Uri, suspend: bool) =
+type private DiscoveryHandler(issuer: Uri, suspend: bool, endSession: bool) =
     inherit HttpMessageHandler()
     let mutable observed = None
     member _.Observed = observed
@@ -36,8 +36,14 @@ type private DiscoveryHandler(issuer: Uri, suspend: bool) =
             if suspend then
                 new SuspendedContent() :> HttpContent
             else
+                let logout =
+                    if endSession then
+                        ""","end_session_endpoint":"https://issuer.example.test/logout" """
+                    else
+                        ""
+
                 new StringContent(
-                    $"""{{"issuer":"{issuer.AbsoluteUri}","authorization_endpoint":"https://synthetic.example/auth/","token_endpoint":"https://synthetic.example/token/","jwks_uri":"https://synthetic.example/keys/"}}""",
+                    $"""{{"issuer":"{issuer.AbsoluteUri}","authorization_endpoint":"https://synthetic.example/auth/","token_endpoint":"https://synthetic.example/token/","jwks_uri":"https://synthetic.example/keys/"{logout}}}""",
                     Encoding.UTF8
                 )
                 :> HttpContent
@@ -62,11 +68,14 @@ let private discoveryPaths () =
             "https://synthetic.example/realm"
         ] do
         let issuer = Uri source
-        use handler = new DiscoveryHandler(issuer, false)
+        use handler = new DiscoveryHandler(issuer, false, true)
         use client = new HttpClient(handler, false)
 
-        OidcStartup.verify client (configuration issuer) System.Threading.CancellationToken.None
-        |> _.GetAwaiter().GetResult()
+        let endpoint =
+            OidcStartup.verify client (configuration issuer) CancellationToken.None
+            |> _.GetAwaiter().GetResult()
+
+        Expect.equal endpoint (Uri "https://issuer.example.test/logout") "Provider logout endpoint"
 
         Expect.equal
             handler.Observed
@@ -75,7 +84,7 @@ let private discoveryPaths () =
 
 let private suspendedStartup () =
     let issuer = Uri("https://synthetic.example/")
-    use handler = new DiscoveryHandler(issuer, true)
+    use handler = new DiscoveryHandler(issuer, true, true)
 
     use client =
         new HttpClient(handler, false, Timeout = TimeSpan.FromMilliseconds 100.)
@@ -88,6 +97,7 @@ let private suspendedStartup () =
                     (configuration issuer)
                     System.Threading.CancellationToken.None
                 |> _.GetAwaiter().GetResult()
+                |> ignore
 
                 false
             with WebStartupException WebStartupProblem.OidcConfigurationInvalid ->
@@ -95,6 +105,23 @@ let private suspendedStartup () =
 
     Expect.isTrue (work.Wait(2000)) "Startup does not wait forever on a body after headers"
     Expect.isTrue work.Result "The bounded startup diagnostic contains no provider body"
+
+let private missingLogoutEndpoint () =
+    let issuer = Uri "https://synthetic.example/realm"
+    use handler = new DiscoveryHandler(issuer, false, false)
+    use client = new HttpClient(handler, false)
+
+    let refused =
+        try
+            OidcStartup.verify client (configuration issuer) CancellationToken.None
+            |> _.GetAwaiter().GetResult()
+            |> ignore
+
+            false
+        with WebStartupException WebStartupProblem.OidcConfigurationInvalid ->
+            true
+
+    Expect.isTrue refused "Discovery without an end-session endpoint refuses startup"
 
 [<Tests>]
 let tests =
@@ -104,5 +131,6 @@ let tests =
             testCase
                 "startup requests one exact discovery path for root and path issuers"
                 discoveryPaths
+            testCase "startup refuses missing OIDC end-session endpoint" missingLogoutEndpoint
             testCase "startup deadline covers a suspended metadata body" suspendedStartup
         ]

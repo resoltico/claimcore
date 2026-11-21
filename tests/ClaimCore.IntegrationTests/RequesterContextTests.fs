@@ -55,6 +55,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 (Some "Author hint")
                 (Some "username")
                 (Some "hint@example.invalid")
+                true
 
         let caller = core database.Fixture human |> Service.withClaims claims
         let! initial = Service.context caller () token
@@ -71,6 +72,15 @@ let private lifecycle (database: PostgresFixture.Database) =
             before.Length
             2
             "Human and service requests with the same issuer/subject remain distinct"
+
+        let! listed = Service.accessRequests owner { AfterCursor = None; Limit = 10 } token
+
+        let humanRequest =
+            (read listed).Items |> List.find (fun item -> item.Principal = human)
+
+        Expect.isTrue
+            humanRequest.Claims.EmailVerified
+            "Verified email is stored and returned to the owner"
 
         let! refreshed = Service.context (core database.Fixture human) () token
         unregistered RequesterClaims.empty refreshed

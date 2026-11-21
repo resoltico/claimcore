@@ -142,7 +142,11 @@ let internal lifecycle fixture =
             Service.context
                 (core fixture target
                  |> Service.withClaims (
-                     RequesterClaims.admit (Some "IdP hint must not become a profile") None None
+                     RequesterClaims.admit
+                         (Some "IdP hint must not become a profile")
+                         None
+                         None
+                         false
                  ))
                 ()
                 token
@@ -597,7 +601,7 @@ let internal atomicWrites fixture =
     task {
         let! owner = bootstrap fixture
         let target = principal "rollback-admission"
-        let hints = RequesterClaims.admit (Some "Original waiting hint") None None
+        let hints = RequesterClaims.admit (Some "Original waiting hint") None None false
         let! _ = Service.context (core fixture target |> Service.withClaims hints) () token
         let! pending = Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
 

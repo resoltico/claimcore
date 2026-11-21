@@ -176,7 +176,7 @@ const replies: Replies = {
       },
     },
   }),
-  "session.logout": () => succeeded(null),
+  "session.logout": () => succeeded({ location: "https://issuer.example.test/logout" }),
   context: () => ({
     representation: "HUMAN",
     outcome: {

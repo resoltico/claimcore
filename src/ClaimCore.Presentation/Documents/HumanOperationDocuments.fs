@@ -4,13 +4,17 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 module HumanReviewDocument =
-    let private describe task operationId binding seeds (review: OperationReview) =
+    let private describe task operationId principal binding seeds (review: OperationReview) =
         let confirmation =
-            match review.Target with
-            | ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
-            | ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
+            match principal, review.Target with
+            | Some principal, _ ->
+                (PrincipalKey.toInput principal).Subject |> ConfirmationTarget.principal
+            | None, ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
+            | None, ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
 
-        let screen, presentation = ReviewDocumentParts.describe (Some operationId) review
+        let screen, presentation =
+            ReviewDocumentParts.describe (Some operationId) principal review
+
         let action = TaskAffordances.offered task (Some binding) seeds [] Map.empty
 
         {
@@ -28,9 +32,18 @@ module HumanReviewDocument =
         }
 
     let ofSubmission (submission: OperationSubmission) review =
+        let principal = OperationSubmission.principalConfirmation submission
+
+        if
+            principal.IsNone
+            && OperationSubmission.requiresPrincipalConfirmation submission.Task
+        then
+            invalidArg (nameof submission) "A reviewed admission must have an admitted principal."
+
         describe
             submission.Task
             submission.OperationId
+            principal
             review.Binding
             (submission.Operation
              |> Result.map (fun operation -> operation.Inputs.Values)

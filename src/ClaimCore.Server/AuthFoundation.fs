@@ -9,14 +9,14 @@ open System.Text.Json
 open System.Security.Claims
 
 module OidcAuthority =
-    let private exactHttpsUri (value: string) =
+    let private httpsUri allowQuery (value: string) =
         try
             let uri = Uri(value, UriKind.Absolute)
 
             if
                 uri.Scheme = Uri.UriSchemeHttps
                 && uri.UserInfo = ""
-                && uri.Query = ""
+                && (allowQuery || uri.Query = "")
                 && uri.Fragment = ""
                 && uri.HostNameType <> UriHostNameType.Unknown
             then
@@ -26,7 +26,7 @@ module OidcAuthority =
         with :? UriFormatException ->
             Error AuthenticationFailure.UriInvalid
 
-    let parse value = exactHttpsUri value
+    let parse value = httpsUri false value
 
     let discoveryLocation (issuer: Uri) =
         Uri(issuer.AbsoluteUri.TrimEnd('/') + "/.well-known/openid-configuration")
@@ -60,9 +60,13 @@ module OidcAuthority =
             | Some actual, Some authorization, Some token, Some jwks when
                 String.Equals(actual, issuer.AbsoluteUri, StringComparison.Ordinal)
                 && ([ authorization; token; jwks ]
-                    |> List.forall (fun value -> Result.isOk (exactHttpsUri value)))
+                    |> List.forall (fun value -> Result.isOk (parse value)))
                 ->
-                Ok()
+                match
+                    text "end_session_endpoint" |> Option.bind (httpsUri true >> Result.toOption)
+                with
+                | Some endpoint -> Ok endpoint
+                | None -> Error AuthenticationFailure.MetadataInvalid
             | _ -> Error AuthenticationFailure.MetadataInvalid
         with :? JsonException ->
             Error AuthenticationFailure.MetadataInvalid
@@ -88,20 +92,30 @@ module PrincipalIdentity =
         | [ identity ] when identity.IsAuthenticated -> Some identity
         | _ -> None
 
-    let private singleClaim (name: string) (identity: ClaimsIdentity) =
+    let private uniqueClaim (name: string) (identity: ClaimsIdentity) =
         match
             identity.Claims
             |> Seq.filter (fun claim -> String.Equals(claim.Type, name, StringComparison.Ordinal))
             |> Seq.toList
         with
-        | [ claim ] -> Some claim.Value
+        | [ claim ] -> Some claim
         | _ -> None
 
+    let private singleClaim name identity =
+        uniqueClaim name identity |> Option.map _.Value
+
     let private claims (identity: ClaimsIdentity) =
+        let emailVerified =
+            match uniqueClaim "email_verified" identity with
+            | Some claim when claim.ValueType = ClaimValueTypes.Boolean ->
+                String.Equals(claim.Value, "true", StringComparison.OrdinalIgnoreCase)
+            | _ -> false
+
         ClaimCore.Application.Contracts.RequesterClaims.admit
             (singleClaim "name" identity)
             (singleClaim "preferred_username" identity)
             (singleClaim "email" identity)
+            emailVerified
 
     let fromBrowserSession issuer principal =
         match authenticatedIdentity principal with

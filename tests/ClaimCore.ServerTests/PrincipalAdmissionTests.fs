@@ -124,7 +124,7 @@ let private metadataShapes () =
             "Malformed and nonobject discovery refuses without throwing"
 
     let fields =
-        "\"issuer\":\"https://issuer.example.test/realm\",\"authorization_endpoint\":\"https://issuer.example.test/auth\",\"token_endpoint\":\"https://issuer.example.test/token\",\"jwks_uri\":\"https://issuer.example.test/keys\""
+        "\"issuer\":\"https://issuer.example.test/realm\",\"authorization_endpoint\":\"https://issuer.example.test/auth\",\"token_endpoint\":\"https://issuer.example.test/token\",\"end_session_endpoint\":\"https://issuer.example.test/logout\",\"jwks_uri\":\"https://issuer.example.test/keys\""
 
     Expect.isOk
         (validate ("{" + fields + ",\"extension\":true}"))
@@ -147,7 +147,7 @@ let private rootIssuerDiscovery () =
             |> Result.defaultWith (fun _ -> failtest "A canonical HTTPS issuer is valid.")
 
         let metadata =
-            $"""{{"issuer":"{source}","authorization_endpoint":"https://issuer.example.test/auth/","token_endpoint":"https://issuer.example.test/token/","jwks_uri":"https://issuer.example.test/keys/"}}"""
+            $"""{{"issuer":"{source}","authorization_endpoint":"https://issuer.example.test/auth/","token_endpoint":"https://issuer.example.test/token/","end_session_endpoint":"https://issuer.example.test/logout","jwks_uri":"https://issuer.example.test/keys/"}}"""
 
         let validate value =
             OidcAuthority.validateMetadata

@@ -271,6 +271,11 @@ test("people refusal preserves authored input through Settings and needs a fresh
   expect(correctedId).not.toBe(operationId(refused));
   const consent = editor.locator("button[data-confirm-operation]");
   await expect(consent).toHaveAccessibleName("Add person");
+  await expect(consent).toBeDisabled();
+  const challenge = editor.getByRole("textbox", { name: "Enter the exact sign-in ID." });
+  await challenge.fill("different-subject");
+  await expect(consent).toBeDisabled();
+  await challenge.fill(subjectValue);
   await expect(consent).toBeEnabled();
   await expect(editor.getByRole("checkbox")).toHaveCount(0);
   await expect.poll(() => recoveryRecords(page)).toEqual([]);
@@ -279,7 +284,7 @@ test("people refusal preserves authored input through Settings and needs a fresh
   await editor.locator("[data-open-settings]").click();
   await expect(page.locator(".settings-panel")).toBeVisible();
   await page.locator("[data-return-workspace]").click();
-  await expect(consent).toBeEnabled();
+  await expect(consent).toBeVisible();
   await expect(editor.locator(".screen-details")).toContainText(correctedId);
   expect(requests).toEqual(["POST /api/operation.preview", "POST /api/operation.preview"]);
   await editor

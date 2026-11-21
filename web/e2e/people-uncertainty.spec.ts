@@ -199,13 +199,20 @@ test("people review and uncertainty survive locale changes while refusal clears 
         name: ui(language, "task.people.admit.label"),
         exact: true,
       });
-      await expect(review.locator("button[data-confirm-operation]")).toBeEnabled();
+      await expect(review.locator("button[data-confirm-operation]")).toBeDisabled();
       await expect(review.getByRole("checkbox")).toHaveCount(0);
-      await expect(review.locator(".screen-details")).toContainText(subject);
+      await expect(review.locator('.operation-target [data-region="IDENTITY"]')).toContainText(
+        subject,
+      );
       await expect(review.locator(".screen-details")).toContainText(prepared.operationId);
       expect(writes).toEqual([]);
       await noHorizontalOverflow(steward, "narrow");
     }
+    const challenge = steward.getByRole("textbox", { name: ui("en", "ui.exactPrincipalSubject") });
+    await challenge.fill("different-subject");
+    await expect(steward.locator("button[data-confirm-operation]")).toBeDisabled();
+    expect(writes).toEqual([]);
+    await challenge.fill(subject);
     await uncertainAdmission(steward, prepared);
     expect(writes).toEqual([prepared.bytes.toString("utf8")]);
     await ownerGrant(page, false);

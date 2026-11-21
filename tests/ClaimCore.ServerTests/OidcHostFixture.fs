@@ -154,6 +154,7 @@ type Host
         HostRoutes.map
             files
             web
+            (Uri(configuration.Issuer, "/logout"))
             (defaultArg handlers ClaimCore.Server.ApiRoutes.route)
             (fun principal action ->
                 task { let! value = action (forActor principal) in return Some value })

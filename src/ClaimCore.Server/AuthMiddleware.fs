@@ -16,6 +16,7 @@ open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Authentication.OpenIdConnect
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Options
 open Microsoft.IdentityModel.Tokens
 open ClaimCore.HostSecurity
 
@@ -61,13 +62,34 @@ module AuthMiddleware =
     let internal productionTrustHandler () =
         new HttpClientHandler(AllowAutoRedirect = false, CheckCertificateRevocationList = true)
 
+    let internal idTokenProperty = "ClaimCore.IdToken"
+
     let private requireHuman (configuration: OidcConfiguration) (context: TokenValidatedContext) =
         match context.Principal |> Option.ofObj with
         | Some principal ->
             match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
             | Error _ ->
                 context.Fail(AuthenticationFailure.token AuthenticationFailure.SubjectInvalid)
-            | Ok _ -> ()
+            | Ok _ ->
+                let cookies =
+                    context.HttpContext.RequestServices
+                        .GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+                        .Get(CookieAuthenticationDefaults.AuthenticationScheme)
+
+                if not (isNull cookies.SessionStore) then
+                    match context.Properties, context.TokenEndpointResponse with
+                    | NonNull properties, NonNull response ->
+                        match response.IdToken with
+                        | NonNull token when not (String.IsNullOrWhiteSpace token) ->
+                            properties.Items[idTokenProperty] <- token
+                        | _ ->
+                            context.Fail(
+                                AuthenticationFailure.token AuthenticationFailure.PrincipalInvalid
+                            )
+                    | _ ->
+                        context.Fail(
+                            AuthenticationFailure.token AuthenticationFailure.PrincipalInvalid
+                        )
         | None -> context.Fail(AuthenticationFailure.token AuthenticationFailure.SubjectInvalid)
 
         Task.CompletedTask

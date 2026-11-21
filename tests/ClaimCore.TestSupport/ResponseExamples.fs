@@ -240,7 +240,14 @@ let internal replies () : IEndpointOutput list =
                         ContractIdentity = ContractIdentity.value
                         AntiforgeryToken = Some "csrf"
                     })
-        yield! hostRead Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
+        yield!
+            hostRead
+                Api.logout
+                (fun _ -> ContextScreen.logoutView ())
+                (Outcome.Succeeded
+                    {
+                        Location = "https://issuer.example.test/logout"
+                    })
         yield!
             actorRead
                 Api.context

@@ -219,6 +219,10 @@
     "text": "{label} (دقيق)",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "أدخل معرّف تسجيل الدخول كما هو.",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "معرّف العملية الدقيق",
     "source": "dbdca09f6e48"

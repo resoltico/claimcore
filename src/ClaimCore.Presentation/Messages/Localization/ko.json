@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "요청한 이름",
-    "source": "ca0175e2d2c8"
+    "text": "이름 참고 정보",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "요청한 사용자 이름",
-    "source": "2bfe148a8785"
+    "text": "사용자 이름 참고 정보",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "요청한 이메일",
-    "source": "50cffab6e474"
+    "text": "이메일 주소 참고 정보",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "접근 요청",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "이름 및 사용자 이름 참고 정보",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "이메일 주소 인증",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "ID 공급자가 이 정보를 제공했으며 확인하지 않았습니다.",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "ID 공급자가 이 이메일 주소를 확인했습니다.",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "최초 요청",

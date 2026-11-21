@@ -54,7 +54,7 @@ it.each([
     kind: "NOT_REGISTERED",
     issuer: active.issuer,
     subject: "unknown",
-    claims: {},
+    claims: { emailVerified: false },
   },
 ])("refuses non-owner requester state %# without inferring people", (requester) => {
   expect(isActiveOwnerContext(reply(requester))).toBe(false);

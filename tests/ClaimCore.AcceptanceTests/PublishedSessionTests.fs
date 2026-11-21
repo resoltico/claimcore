@@ -315,28 +315,92 @@ let private ticketPayloads (fixture: PublishedFixture.Fixture) =
         use! connection = source.OpenConnectionAsync()
 
         use command =
-            new NpgsqlCommand("SELECT protected_ticket FROM claimcore.sessions", connection)
+            new NpgsqlCommand(
+                "SELECT session_key,protected_ticket FROM claimcore.sessions",
+                connection
+            )
 
         use! reader = command.ExecuteReaderAsync()
-        let rows = ResizeArray<byte array>()
+        let rows = ResizeArray<string * byte array>()
         let mutable reading = true
 
         while reading do
             let! found = reader.ReadAsync()
 
             if found then
-                rows.Add(reader.GetFieldValue<byte array> 0)
+                rows.Add((reader.GetString 0, reader.GetFieldValue<byte array> 1))
             else
                 reading <- false
 
         return List.ofSeq rows
     }
 
+let private ticketBoundary (fixture: PublishedFixture.Fixture) sessionKey (payload: byte array) =
+    let directory =
+        DirectoryInfo fixture.WebEnvironment["CLAIMCORE_WEB_KEY_RING_DIRECTORY"]
+
+    let provider =
+        DataProtectionProvider.Create(
+            directory,
+            fun builder -> builder.SetApplicationName("ClaimCore.Server") |> ignore
+        )
+
+    let clear =
+        provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.1").Unprotect payload
+
+    let idToken =
+        try
+            let ticket = TicketSerializer.Default.Deserialize clear |> nonNull
+            let properties = ticket.Properties
+
+            Expect.isTrue
+                (properties.GetTokens() |> Seq.isEmpty)
+                "OIDC automatic token persistence is disabled"
+
+            match properties.Items.TryGetValue "ClaimCore.IdToken" with
+            | true, value when not (String.IsNullOrWhiteSpace value) -> nonNull value
+            | _ -> failtest "The database ticket retains the ID token hint"
+        finally
+            CryptographicOperations.ZeroMemory clear
+
+    use state =
+        JsonDocument.Parse(
+            File.ReadAllBytes(Path.Combine(fixture.Directory, "published-session-state.json"))
+        )
+
+    let cookie =
+        state.RootElement.GetProperty("cookies").EnumerateArray()
+        |> Seq.find (fun value -> value.GetProperty("name").GetString() = "__Host-ClaimCoreSession")
+        |> fun value -> value.GetProperty("value").GetString() |> nonNull
+
+    // These are the pinned ASP.NET Cookies handler's documented ticket protection purposes.
+    let format =
+        TicketDataFormat(
+            provider.CreateProtector(
+                "Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware",
+                "Cookies",
+                "v2"
+            )
+        )
+
+    let browser = format.Unprotect cookie |> nonNull
+
+    let lookupOnly =
+        match browser.Principal.Claims |> Seq.toList with
+        | [ claim ] ->
+            claim.Type = "Microsoft.AspNetCore.Authentication.Cookies-SessionId"
+            && claim.Value = sessionKey
+            && browser.Properties.Items.Count = 0
+        | _ -> false
+
+    Expect.isTrue lookupOnly "The cookie ticket carries only the database session lookup key"
+    idToken
+
 let private newKeyProtectsTicket (fixture: PublishedFixture.Fixture) keyId oldPayload =
     task {
         let! payloads = ticketPayloads fixture
         Expect.equal payloads.Length 2 "Both independently protected live session rows are present"
-        let newer = payloads |> List.filter ((<>) oldPayload)
+        let newer = payloads |> List.map snd |> List.filter ((<>) oldPayload)
         Expect.equal newer.Length 1 "Only the new ticket differs from the preserved original row"
         let directory = Path.Combine(fixture.Directory, "new-key-only")
 
@@ -381,6 +445,8 @@ let private rollover (fixture: PublishedFixture.Fixture) before =
     task {
         let! originalPayloads = ticketPayloads fixture
         Expect.equal originalPayloads.Length 1 "One original protected ticket precedes rollover"
+        let originalKey, originalTicket = originalPayloads.Head
+        let idToken = ticketBoundary fixture originalKey originalTicket
 
         let directory =
             DirectoryInfo fixture.WebEnvironment["CLAIMCORE_WEB_KEY_RING_DIRECTORY"]
@@ -420,7 +486,7 @@ let private rollover (fixture: PublishedFixture.Fixture) before =
         let! two = lifetimes fixture
         Expect.equal two.Length 2 "A fresh real OIDC login coexists with the old live session"
         browserPhase fixture "verify" "new-key-verify"
-        do! newKeyProtectsTicket fixture replacement.KeyId originalPayloads.Head
+        do! newKeyProtectsTicket fixture replacement.KeyId originalTicket
         browserPhase fixture "logout" "new-key-logout"
 
         FixtureFiles.write fixture.Directory "published-session-state.json" oldState
@@ -433,6 +499,8 @@ let private rollover (fixture: PublishedFixture.Fixture) before =
             remaining
             before
             "Logging out the new ticket does not remove the old live ticket"
+
+        return idToken
     }
 
 let private qualify () =
@@ -445,10 +513,18 @@ let private qualify () =
             browserPhase fixture "login" "primary-login"
             let! before = lifetimes fixture
             Expect.equal before.Length 1 "Real OIDC login creates exactly one server-side ticket"
-            do! rollover fixture before
+            let! idToken = rollover fixture before
             do! fixture.WithAdditionalWeb(concurrentHosts fixture before)
             peerServed fixture "context"
             peerServed fixture "session.logout"
+
+            for stream in [ "stdout"; "stderr" ] do
+                let path = Path.Combine(fixture.Directory, "web-session-peer." + stream)
+
+                Expect.isFalse
+                    ((File.ReadAllText path).Contains(idToken, StringComparison.Ordinal))
+                    "The process serving logout keeps the ID token out of its logs"
+
             fixture.Complete()
         with error ->
             // Web stderr is materialized by fixture disposal, so read it after that scope ends.

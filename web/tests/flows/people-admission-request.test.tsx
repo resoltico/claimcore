@@ -91,15 +91,33 @@ const setup = (manage: boolean) => {
                 kind: "TABLE",
                 columns: [
                   {
-                    key: "name",
-                    labelId: "label.requestedName",
+                    key: "issuer",
+                    labelId: "field.principal.issuer.label",
                     prominence: "PRIMARY",
                     isMoney: false,
                   },
                   {
-                    key: "email",
-                    labelId: "field.profile.contact.label",
+                    key: "subject",
+                    labelId: "field.principal.subject.label",
                     prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "name",
+                    labelId: "label.requestedName",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "email",
+                    labelId: "label.requestedEmail",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "emailHintStatus",
+                    labelId: "label.emailHintStatus",
+                    prominence: "SECONDARY",
                     isMoney: false,
                   },
                   {
@@ -139,8 +157,11 @@ const setup = (manage: boolean) => {
                       ),
                     ],
                     values: [
+                      { kind: "IDENTIFIER", value: request.principal.issuer },
+                      { kind: "IDENTIFIER", value: request.principal.subject },
                       { kind: "TEXT", value: "Unverified name" },
                       { kind: "TEXT", value: "unverified@example.test" },
+                      { kind: "MESSAGE", messageId: "label.unverifiedProviderHint" },
                       { kind: "CODE", vocabulary: "principalKind", token: "SERVICE" },
                       { kind: "INSTANT", value: "2026-11-01T10:00:00.000000Z" },
                       { kind: "INSTANT", value: "2026-11-02T12:00:00.000000Z" },
@@ -182,7 +203,12 @@ it("binds request admission identity while profile hints stay editable through r
   });
   setup(true);
   const user = userEvent.setup();
-  await screen.findByText("Unverified name");
+  expect(await screen.findByText(request.principal.issuer)).toBeVisible();
+  expect(screen.getByText(request.principal.subject)).toBeVisible();
+  expect(screen.getByText("Unverified name")).toBeVisible();
+  expect(
+    screen.getByText("The identity provider supplied this information without verifying it."),
+  ).toBeVisible();
   await user.click(screen.getAllByRole("button", { name: "Add person" }).at(-1)!);
   await screen.findByRole("dialog", { name: "Add person" });
   for (const name of [
@@ -214,6 +240,13 @@ it("binds request admission identity while profile hints stay editable through r
   expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  const confirmation = screen.getByRole("textbox", { name: "Enter the exact sign-in ID." });
+  expect(reviewConfirm()).toBeDisabled();
+  await user.type(confirmation, "different-subject");
+  expect(reviewConfirm()).toBeDisabled();
+  expect(execute).not.toHaveBeenCalled();
+  await user.clear(confirmation);
+  await user.type(confirmation, request.principal.subject);
   await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   await user.click(screen.getByRole("button", { name: "Send again" }));

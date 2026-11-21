@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "Angefragter Name",
-    "source": "ca0175e2d2c8"
+    "text": "Namenshinweis",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "Angefragter Benutzername",
-    "source": "2bfe148a8785"
+    "text": "Benutzernamenhinweis",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "Angefragte E-Mail-Adresse",
-    "source": "50cffab6e474"
+    "text": "E-Mail-Hinweis",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "Zugriffsanfrage",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "Hinweise zu Name und Benutzername",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "E-Mail-Verifizierung",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "Der Identitätsanbieter hat diese Angaben ohne Überprüfung bereitgestellt.",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "Der Identitätsanbieter hat diese E-Mail-Adresse verifiziert.",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "Erste Anfrage",

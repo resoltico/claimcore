@@ -23,6 +23,10 @@ import {
   type NarrowRole,
   type RoleFixture,
 } from "./narrow-role-fixture";
+
+// The provider navigation and logout reply carry an ID token hint.
+test.use({ trace: "off" });
+
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>> | undefined;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);

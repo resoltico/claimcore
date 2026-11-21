@@ -2,12 +2,14 @@
 
 ## [Unreleased]
 
+- Register the Web origin plus `/` as the OIDC post-logout redirect URI. Ordinary Web sign-out now ends the provider session. Regenerate consumers for the logout location reply.
 - Compose requires a fresh database, a separate `postgres/superuser.password`, and verified TLS. Owner commands require a dedicated non-superuser database owner.
 - Format 8 requires a [fresh installation](docs/operating.md#install-a-fresh-register) on PostgreSQL 19 with UTF8, built-in C.UTF-8 and data checksums.
-- Preserve databases from the unreleased format-8 build in PR #178 with that build and use a [fresh installation](docs/operating.md#install-a-fresh-register) for this build.
+- Preserve databases from earlier unreleased format-8 builds with their original build and use a [fresh installation](docs/operating.md#install-a-fresh-register) for this build.
 - Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) in Web or CLI. Archive refused file types before attaching them.
 - Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
 - Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
+- Confirm the exact sign-in subject to admit a person in Web or CLI. Access requests show the issuer, subject and email verification status.
 - Regenerate clients for typed attachment controls and disclosure facts, new refusals and the `filename*`-only download disposition.
 - Regenerate clients for affordance `editable` types restricted to each task's declared editable inputs.
 - The non-root Web container can read public assets in images built from checkouts with private file permissions.

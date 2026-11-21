@@ -55,7 +55,7 @@ module internal AccessRequests =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,principal_key) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8) ON CONFLICT (principal_key) DO UPDATE SET last_seen=greatest(access_request.last_seen,EXCLUDED.last_seen),name=EXCLUDED.name,preferred_username=EXCLUDED.preferred_username,email=EXCLUDED.email WHERE access_request.principal_kind=EXCLUDED.principal_kind AND access_request.issuer=EXCLUDED.issuer AND access_request.subject=EXCLUDED.subject"
+                    "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,email_verified,principal_key) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8,$9) ON CONFLICT (principal_key) DO UPDATE SET last_seen=greatest(access_request.last_seen,EXCLUDED.last_seen),name=EXCLUDED.name,preferred_username=EXCLUDED.preferred_username,email=EXCLUDED.email,email_verified=EXCLUDED.email_verified WHERE access_request.principal_kind=EXCLUDED.principal_kind AND access_request.issuer=EXCLUDED.issuer AND access_request.subject=EXCLUDED.subject"
                     (Array.append
                         (parameters principal)
                         [|
@@ -63,6 +63,7 @@ module internal AccessRequests =
                             hint claims.Name
                             hint claims.PreferredUsername
                             hint claims.Email
+                            box claims.EmailVerified
                             box (PrincipalKey.naturalKey principal)
                         |])
                     token
@@ -93,7 +94,7 @@ module internal AccessRequests =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ("SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,principal_key FROM claimcore.access_request WHERE NOT ("
+                    ("SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,email_verified,principal_key FROM claimcore.access_request WHERE NOT ("
                      + expiredPredicate ""
                      + ") AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND principal_key>$3)) ORDER BY last_seen DESC,principal_key LIMIT $4")
                     [|
@@ -124,7 +125,7 @@ module internal AccessRequests =
                             raise (RecordCorruptException "Invalid access-request principal."))
 
                     if
-                        DatabaseSession.value<string> 8 row <> PrincipalKey.naturalKey principal
+                        DatabaseSession.value<string> 9 row <> PrincipalKey.naturalKey principal
                     then
                         raise (
                             RecordCorruptException
@@ -140,6 +141,7 @@ module internal AccessRequests =
                                 (DatabaseSession.optional<string> 5 row)
                                 (DatabaseSession.optional<string> 6 row)
                                 (DatabaseSession.optional<string> 7 row)
+                                (DatabaseSession.value<bool> 8 row)
                     })
 
             let visible = List.truncate query.Limit items

@@ -1,12 +1,21 @@
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expect, test, type Page } from "./fixtures";
+import { expect, test, type Page, type Response } from "./fixtures";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { recoveryRecords } from "./recovery-storage";
 import { selectedActor, syntheticPrincipals } from "./people-setup";
-import { browserRequest, expectAccessible, login, logout, sessionToken } from "./session-helpers";
+import {
+  awaitLoginAdmission,
+  browserRequest,
+  expectAccessible,
+  login,
+  logout,
+  sessionToken,
+  signOut,
+} from "./session-helpers";
 
-test.use({ storageState: { cookies: [], origins: [] } });
+// A logout navigation carries an ID token hint in the provider request URL.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
 
 type SessionEnvelope = {
   outcome: { kind: "SUCCEEDED"; data: { authenticated: boolean; antiforgeryToken: string } };
@@ -111,11 +120,38 @@ const expectAnonymousSession = async (page: Page) => {
   });
 };
 
-test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", async ({
+const checkSignOutLocation = async (
+  reply: Response,
+  providerRequest: string,
+  landing: URL,
+  cookies: string,
+) => {
+  const payload = (await reply.json().catch(() => {
+    throw new Error("The Sign out reply was not JSON.");
+  })) as { outcome: { data: { location: string } } };
+  const { location, ...otherData } = payload.outcome.data;
+  const address = URL.parse(location);
+  const hint = address?.searchParams.get("id_token_hint");
+  if (address === null || hint === undefined || hint === null || hint === "") {
+    throw new Error("The Sign out reply did not carry the provider's ID token hint.");
+  }
+  expect(providerRequest === location, "The browser navigated to the returned location").toBe(true);
+  expect(address.searchParams.get("client_id") === "web").toBe(true);
+  expect(address.searchParams.get("post_logout_redirect_uri") === landing.href).toBe(true);
+  expect(reply.headers()["cache-control"]).toContain("no-store");
+  expect(reply.headers()["referrer-policy"]).toBe("no-referrer");
+  const otherBody = { ...payload, outcome: { ...payload.outcome, data: otherData } };
+  expect(JSON.stringify(otherBody).includes(hint)).toBe(false);
+  expect(JSON.stringify(await reply.headersArray()).includes(hint)).toBe(false);
+  expect(cookies.includes(hint)).toBe(false);
+};
+
+test("signs out of ClaimCore and Keycloak before asking for credentials again @engine", async ({
   page,
 }) => {
-  test.setTimeout(freshLoginWorkflowTimeout);
+  test.setTimeout(freshLoginWorkflowTimeout * 2);
   await page.goto("/", { waitUntil: "commit" });
+  const landing = new URL("/", page.url());
   await expect(
     page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
   ).toBeVisible();
@@ -136,8 +172,43 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", 
     },
   });
   await expectAccessible(page);
-  await logout(page);
+  const { issuer } = await syntheticPrincipals();
+  const endpoint = new URL(`${issuer}/protocol/openid-connect/logout`);
+  const before = await page.context().cookies();
+  expect(before.some((cookie) => cookie.name === "KEYCLOAK_IDENTITY")).toBe(true);
+  const [reply, endSession] = await Promise.all([
+    logout(page),
+    page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return (
+        request.isNavigationRequest() &&
+        request.frame() === page.mainFrame() &&
+        url.origin === endpoint.origin &&
+        url.pathname === endpoint.pathname
+      );
+    }),
+  ]);
+  const after = await page.context().cookies();
+  expect(after.some((cookie) => cookie.name === "KEYCLOAK_IDENTITY")).toBe(false);
+  await checkSignOutLocation(
+    reply,
+    endSession.url(),
+    landing,
+    JSON.stringify([...before, ...after]),
+  );
   await expectAnonymousSession(page);
+
+  // Stop any unexpected direct callback before it can create a new application session.
+  await page.route(
+    (url) => url.origin === landing.origin && url.pathname === "/signin-oidc",
+    (route) => route.abort(),
+  );
+  await awaitLoginAdmission(page, "Sign in", landing.origin).catch(() => {
+    throw new Error("Keycloak did not present a fresh sign-in challenge.");
+  });
+  await expect(page.locator('input[name="username"]')).toBeVisible();
+  await expect(page.locator('input[name="password"]')).toBeVisible();
+  expect(new URL(page.url()).origin === endpoint.origin).toBe(true);
 });
 
 test("a refused callback offers a fresh same-origin restart without copying the callback @engine", async ({
@@ -240,11 +311,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     const second = await other.newPage();
     await second.goto("/", { waitUntil: "commit" });
     await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
-    const firstLogout = page.waitForResponse((response) =>
-      response.url().endsWith("/api/session.logout"),
-    );
-    await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    expect((await firstLogout).status()).toBe(200);
+    await signOut(page, page.getByRole("button", { name: "Sign out", exact: true }));
     await expectAnonymousSession(page);
     await expect(readSession(second)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
@@ -294,11 +361,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     await expect(readSession(page)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
     });
-    const signedOut = page.waitForResponse(
-      (reply) => new URL(reply.url()).pathname === "/api/session.logout",
-    );
-    await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    expect((await signedOut).status()).toBe(200);
+    await signOut(page, page.getByRole("button", { name: "Sign out", exact: true }));
     await expectAnonymousSession(page);
   } finally {
     await other.close();

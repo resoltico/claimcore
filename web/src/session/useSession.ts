@@ -17,8 +17,7 @@ export type SessionState =
   | { kind: "authenticated"; token: string; epoch: number }
   | { kind: "failure"; message: Notice; epoch: number };
 
-type SessionResponse =
-  ServiceResponse<typeof apiEndpoints.session> | ServiceResponse<typeof apiEndpoints.sessionLogout>;
+type SessionResponse = ServiceResponse<typeof apiEndpoints.session>;
 
 const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
   result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
@@ -90,16 +89,17 @@ export const useSession = () => {
     if (requestSerial.current !== requestId) {
       return;
     }
-    const value =
+    const data =
       result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
-        ? {
-            authenticated: false,
-            antiforgeryToken: null,
-            contractIdentity: consumerContractIdentity,
-          }
+        ? result.value.outcome.data
         : null;
-    // Only successful unit replies confirm logout; every result advances the privacy epoch.
-    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
+    const logoutEpoch = nextEpoch(epoch);
+    if (data === null) {
+      setState(stateFor(null, resultNotice(result), logoutEpoch));
+      return;
+    }
+    setState({ kind: "anonymous", token: null, message: null, epoch: logoutEpoch });
+    window.location.replace(data.location);
   };
 
   const endedBrowserSessions = (expectedEpoch: number): void => {

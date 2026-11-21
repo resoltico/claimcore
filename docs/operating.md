@@ -49,8 +49,10 @@ operator-controlled path. Set `CLAIMCORE_SERVER_SHA256` to the 64 hexadecimal di
 PostgreSQL and the server on a private network and publishes the server's HTTPS port.
 
 Set the public web origin and OIDC client settings for your issuer. Register the confidential
-browser client's redirect URI at the web origin plus `/signin-oidc`. Configure the native client
-and API audience for CLI access. See [CLI use](integrating.md#cli-use).
+browser client's redirect URI at the web origin plus `/signin-oidc`, and its post-logout redirect
+URI at the web origin plus `/`. The issuer must advertise an HTTPS `end_session_endpoint` in
+discovery metadata. Keep logout query parameters out of identity-provider and proxy logs because
+the request carries an ID token hint. Configure the native client and API audience for CLI access. See [CLI use](integrating.md#cli-use).
 
 Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 
@@ -277,6 +279,11 @@ that had not yet been pruned. An unconfirmed acknowledgement reports no count an
 automatically: repeating deletion could also end sessions created since the original attempt. Inspect
 the outcome before deliberately starting another request; there is no operation.get recovery record.
 
+Ordinary Sign out deletes the current browser ticket and sends the browser to the identity provider
+to end its session. The provider returns the browser to the signed-out page after logout. Complete
+any confirmation the provider presents. Session-ending actions leave independent bearer tokens
+and the ledger untouched.
+
 Session creation and deletion serialize on the canonical principal index, including principal kind,
 issuer and subject. The index is derived from the validated protected ticket, not names or sign-in
 hints. Retrieval checks the decrypted ticket against this index. Renewal checks both the index and
@@ -292,9 +299,11 @@ retrieval was admitted before it may finish. A callback that started earlier but
 after that commit can survive. Self success expires the current cookie and clears private browser
 workspace ownership; it does not erase durable recovery identities belonging to the principal.
 
-Access requests contain unverified hints, grant no rights and expire after 30 days. The cache retains
-at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
-can create another request. Names become profiles only after an owner enters and confirms them.
+Access requests identify the sign-in by issuer and subject. Names and email addresses are hints from
+the provider. Review the email verification status and confirm the exact subject before admission.
+Requests grant no rights, expire after 30 days and are capped at 1,000. Admission removes a matching
+request. Dismissal grants nothing, and a later sign-in can create another request. Names become
+profiles only after an owner enters and confirms them.
 
 ## Daily reminder digest
 

@@ -12,7 +12,7 @@ open Expecto
 let private issuer = Uri "https://identity.example.test/realms/expected"
 
 let private metadata actual =
-    $"""{{"issuer":"{actual}","authorization_endpoint":"https://identity.example.test/auth","token_endpoint":"https://identity.example.test/token","jwks_uri":"https://identity.example.test/keys"}}"""
+    $"""{{"issuer":"{actual}","authorization_endpoint":"https://identity.example.test/auth","token_endpoint":"https://identity.example.test/token","end_session_endpoint":"https://issuer.example.test/logout","jwks_uri":"https://identity.example.test/keys"}}"""
 
 type private Responses(statuses: HttpStatusCode list, actualIssuer: string) =
     inherit HttpMessageHandler()

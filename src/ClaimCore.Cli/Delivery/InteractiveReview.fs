@@ -135,16 +135,9 @@ module internal InteractiveReview =
                                                                                        }
                                              }) when not draft.PreviewOnly ->
                 let consent =
-                    match consequence with
-                    | Consequence.Irreversible ->
-                        let target =
-                            match confirmation with
-                            | ConfirmationTarget.CaseReference reference ->
-                                CaseReference.format reference
-                            | ConfirmationTarget.Operation id -> id.ToString("D")
-
-                        CliConfirmation.exactTarget console draft.Language target
-                    | _ ->
+                    if ConfirmationTarget.requiresExactMatch consequence confirmation then
+                        CliConfirmation.exactConfirmation console draft.Language confirmation
+                    else
                         MessageCatalogs.renderCli draft.Language CliMessage.ReviewConfirmation
                         |> Encoding.UTF8.GetBytes
                         |> console.Write

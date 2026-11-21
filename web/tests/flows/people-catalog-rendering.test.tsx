@@ -182,6 +182,19 @@ it.each(examples)(
         calls[0]!.input.operationId,
       );
     }
+    if (act.kind === "people.admit") {
+      const { input: reviewedInput } = calls[0]!;
+      if (
+        reviewedInput.task !== "people.admit" ||
+        typeof reviewedInput.inputs["input:principal.subject"] !== "string"
+      ) {
+        throw new Error("Expected a submitted principal subject.");
+      }
+      await user.type(
+        screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }),
+        reviewedInput.inputs["input:principal.subject"],
+      );
+    }
     await user.click(reviewConfirm());
     await waitFor(() => {
       expect(calls).toHaveLength(2);

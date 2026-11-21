@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "申請中的姓名或名稱",
-    "source": "ca0175e2d2c8"
+    "text": "姓名提示",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "申請中的使用者名稱",
-    "source": "2bfe148a8785"
+    "text": "使用者名稱提示",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "申請中的電子郵箱",
-    "source": "50cffab6e474"
+    "text": "電子郵件地址提示",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "存取申請",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "姓名和使用者名稱提示",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "電子郵件地址驗證",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "此資訊由身分提供者提供，未經驗證。",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "身分提供者已驗證此電子郵件地址。",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "首次申請時間",

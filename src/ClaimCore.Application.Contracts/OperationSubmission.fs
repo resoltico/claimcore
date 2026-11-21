@@ -91,6 +91,30 @@ module OperationSubmission =
     let private target input = TaskInputId.Target input
     let private field input = target (InputTarget.Field input)
 
+    let requiresPrincipalConfirmation task = task = ClientCompositions.admission
+
+    let principalConfirmation (submission: OperationSubmission) =
+        if requiresPrincipalConfirmation submission.Task then
+            submission.Operation
+            |> Result.toOption
+            |> Option.bind (fun operation ->
+                let text field =
+                    match Map.tryFind (target field) operation.Inputs.Values with
+                    | Some(InputValue.Text value) -> Some value
+                    | _ -> None
+
+                match
+                    text InputTarget.PrincipalKind
+                    |> Option.bind (Vocabulary.tryParse PrincipalKind.vocabulary),
+                    text InputTarget.PrincipalIssuer,
+                    text InputTarget.PrincipalSubject
+                with
+                | Some kind, Some issuer, Some subject ->
+                    PrincipalKey.ofKind kind issuer subject |> Result.toOption
+                | _ -> None)
+        else
+            None
+
     let private issue input violation =
         let target =
             match input with

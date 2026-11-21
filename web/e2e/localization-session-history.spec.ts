@@ -6,7 +6,7 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { openCase } from "./case-workflow";
-import { login, logout, openAuthenticated } from "./session-helpers";
+import { login, logout, openAuthenticated, signOut } from "./session-helpers";
 import {
   selectLanguage,
   selectFormat,
@@ -15,6 +15,10 @@ import {
   expectPreferences,
 } from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
+
+// The provider navigation and logout reply carry an ID token hint.
+test.use({ trace: "off" });
+
 test("updates supplied records without refetching while receipt disclosure refreshes after Settings", async ({
   page,
 }) => {
@@ -75,7 +79,7 @@ test("updates supplied records without refetching while receipt disclosure refre
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
   page,
 }) => {
-  test.setTimeout(freshLoginWorkflowTimeout);
+  test.setTimeout(freshLoginWorkflowTimeout * 2);
   // This workflow owns the server-side ticket that logout revokes.
   await page.goto("/", {
     waitUntil: "commit",
@@ -84,22 +88,11 @@ test("preserves language and independent display preferences through real logout
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
   await showAccountActions(page);
-  await expect(
-    page.getByRole("button", {
-      name: ui("ar", "ui.signOut"),
-      exact: true,
-    }),
-  ).toBeVisible();
-  const logoutResponse = page.waitForResponse(
-    (reply) => new URL(reply.url()).pathname === "/api/session.logout",
-  );
-  await page
-    .getByRole("button", {
-      name: ui("ar", "ui.signOut"),
-      exact: true,
-    })
-    .click();
-  expect((await logoutResponse).status()).toBe(200);
+  const control = page.getByRole("button", {
+    name: ui("ar", "ui.signOut"),
+    exact: true,
+  });
+  await signOut(page, control);
   await expect(
     page.getByRole("link", {
       name: ui("ar", "ui.signIn"),

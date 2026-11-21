@@ -36,6 +36,8 @@ type Session =
         AntiforgeryToken: string option
     }
 
+type LogoutLocation = { Location: string }
+
 /// The public host failure carries no server prose or transport status.
 type HostFailure =
     {

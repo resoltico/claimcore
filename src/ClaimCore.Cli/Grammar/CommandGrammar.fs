@@ -280,7 +280,7 @@ module CommandGrammar =
                 "--dry-run", ""
                 "--details", ""
 
-                if TaskRouting.consequence operation = Consequence.Irreversible then
+                if TaskRouting.requiresExactConfirmation operation then
                     "--confirm", "TARGET"
 
                 if attachmentTransfer operation then

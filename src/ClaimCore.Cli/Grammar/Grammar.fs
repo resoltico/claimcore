@@ -244,7 +244,7 @@ module Grammar =
 
             if
                 options.ContainsKey "--confirm"
-                && TaskRouting.consequence entry <> Consequence.Irreversible
+                && not (TaskRouting.requiresExactConfirmation entry)
                 && not (CommandGrammar.attachmentTransfer entry)
             then
                 problems.Add(

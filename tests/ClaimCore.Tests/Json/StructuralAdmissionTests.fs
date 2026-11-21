@@ -186,7 +186,7 @@ let tests =
 
                     let page =
                         bytes
-                            """{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"items":[{"principal":{"kind":"HUMAN","issuer":"https://issuer.example:bad/","subject":"person"},"firstSeen":"2026-11-09T12:00:00.000000Z","lastSeen":"2026-11-09T12:00:00.000000Z","claims":{}}],"nextCursor":null}"""
+                            """{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"items":[{"principal":{"kind":"HUMAN","issuer":"https://issuer.example:bad/","subject":"person"},"firstSeen":"2026-11-09T12:00:00.000000Z","lastSeen":"2026-11-09T12:00:00.000000Z","claims":{"emailVerified":false}}],"nextCursor":null}"""
 
                     Expect.isOk
                         (Codec.validate 8192 ResponseCodecs.accessRequestsPage page)

@@ -211,7 +211,13 @@ let private frames () =
                 FrameResult.Reply(
                     ClaimCore.Tests.CliReplies.ofValue
                         Api.logout
-                        (Outcome.Succeeded(Presented.create (fun () -> Screen.create []) ()))
+                        (Outcome.Succeeded(
+                            Presented.create
+                                (fun _ -> Screen.create [])
+                                {
+                                    Location = "https://issuer.example.test/logout"
+                                }
+                        ))
                 )
         }
 
