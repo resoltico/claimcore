@@ -183,6 +183,9 @@ const prepare = async () => {
   await chooseAdmissionRole();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  fireEvent.change(screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }), {
+    target: { value: "synthetic-authored" },
+  });
 };
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = (): ApiResult<ServiceResponse<"context">> => ({

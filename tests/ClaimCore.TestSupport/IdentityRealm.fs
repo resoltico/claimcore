@@ -68,6 +68,7 @@ type private ClientDefinition =
         Interactive: bool
         Scoped: bool
         Redirects: string
+        PostLogoutRedirect: string option
     }
 
 let private client (definition: ClientDefinition) =
@@ -87,7 +88,13 @@ let private client (definition: ClientDefinition) =
     node["standardFlowEnabled"] <- JsonValue.Create<bool> interactive
     node["serviceAccountsEnabled"] <- JsonValue.Create(not interactive)
     node["redirectUris"] <- parse redirects
-    node["attributes"] <- parse """{"pkce.code.challenge.method":"S256"}"""
+    let attributes = parse """{"pkce.code.challenge.method":"S256"}"""
+
+    definition.PostLogoutRedirect
+    |> Option.iter (fun redirect ->
+        attributes["post.logout.redirect.uris"] <- JsonValue.Create redirect)
+
+    node["attributes"] <- attributes
 
     if scoped then
         node["protocolMappers"] <-
@@ -111,6 +118,7 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
                 Interactive = true
                 Scoped = true
                 Redirects = JsonSerializer.Serialize [| definition.Origin + "/signin-oidc" |]
+                PostLogoutRedirect = Some(definition.Origin + "/")
             }
     )
 
@@ -123,6 +131,7 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
                 Interactive = true
                 Scoped = true
                 Redirects = """["http://127.0.0.1"]"""
+                PostLogoutRedirect = None
             }
     )
 
@@ -135,6 +144,7 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
                 Interactive = false
                 Scoped = true
                 Redirects = "[]"
+                PostLogoutRedirect = None
             }
     )
 
@@ -147,6 +157,7 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
                 Interactive = false
                 Scoped = true
                 Redirects = "[]"
+                PostLogoutRedirect = None
             }
     )
 
@@ -159,6 +170,7 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
                 Interactive = false
                 Scoped = false
                 Redirects = "[]"
+                PostLogoutRedirect = None
             }
     )
 

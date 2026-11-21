@@ -187,6 +187,10 @@
     "text": "{label} (exacta)",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "Introduzca el identificador de inicio de sesión exacto.",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "ID exacto de operación",
     "source": "dbdca09f6e48"

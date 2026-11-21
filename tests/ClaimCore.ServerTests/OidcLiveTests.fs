@@ -71,7 +71,7 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         handler.UseCookies <- true
         use identity = new HttpClient(handler, Timeout = TimeSpan.FromSeconds 30.)
         stage "issuer metadata"
-        do! OidcStartup.verify identity configuration token
+        let! _ = OidcStartup.verify identity configuration token
         stage "create Application fixture"
         use! core = OidcCoreFixture.create configuration.Issuer.AbsoluteUri
         stage "construct authenticated host"

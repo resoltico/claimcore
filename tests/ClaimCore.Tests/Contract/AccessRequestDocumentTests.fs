@@ -13,7 +13,7 @@ let private principal =
     PrincipalKey.human "https://issuer.example/" "request-handle"
     |> Result.defaultWith (string >> failtest)
 
-let private document name =
+let private document name verified =
     HumanReadDocuments.requests
         {
             Basis = DomainInputs.workBasis
@@ -29,6 +29,7 @@ let private document name =
                                 name
                                 (Some "fallback input hint")
                                 (Some "contact@example.test")
+                                verified
                     }
                 ]
         }
@@ -48,7 +49,7 @@ let tests =
             testCase
                 "principal seeds stay fixed while unverified profile hints remain editable"
                 (fun () ->
-                    let original = document (Some "preferred input hint")
+                    let original = document (Some "preferred input hint") false
 
                     let admit =
                         actions original
@@ -89,7 +90,7 @@ let tests =
                         "A human authors the profile"
 
                     let fallback =
-                        actions (document None)
+                        actions (document None false)
                         |> List.find (fun action -> action.Task = admit.Task)
 
                     Expect.equal
@@ -109,9 +110,56 @@ let tests =
                     Expect.isOk
                         (Codec.decode 65536 HumanDocumentCodecs.document bytes)
                         "Actual row controls round trip")
+            testCase
+                "issuer and subject identify the row and email verification is explicit"
+                (fun () ->
+                    let firstRow verified =
+                        (document (Some "Display hint") verified).Screen.Regions
+                        |> List.pick (fun region ->
+                            match region.Content with
+                            | RegionContent.Table table ->
+                                Some(table.Columns, List.head table.Rows)
+                            | _ -> None)
+
+                    let columns, row = firstRow false
+                    let fields = List.zip columns row.Values
+
+                    for (key, expected) in
+                        [ "issuer", "https://issuer.example/"; "subject", "request-handle" ] do
+                        let column, value =
+                            fields |> List.find (fun (column, _) -> column.Key = key)
+
+                        Expect.equal column.Prominence Prominence.Primary "Identity is prominent"
+
+                        Expect.equal
+                            value
+                            (PresentedValue.Identifier expected)
+                            "Exact identity value"
+
+                    let hintStatus field (fields: (Column * PresentedValue) list) =
+                        fields |> List.find (fun (column, _) -> column.Key = field) |> snd
+
+                    let unverified = PresentedValue.Message "label.unverifiedProviderHint"
+
+                    Expect.equal
+                        (hintStatus "profileHintStatus" fields)
+                        unverified
+                        "A display hint is unverified"
+
+                    Expect.equal
+                        (hintStatus "emailHintStatus" fields)
+                        unverified
+                        "A false email claim is unverified"
+
+                    let verifiedColumns, verifiedRow = firstRow true
+
+                    Expect.equal
+                        (hintStatus "emailHintStatus" (List.zip verifiedColumns verifiedRow.Values))
+                        (PresentedValue.Message "label.providerVerifiedEmail")
+                        "Only the verified email changes its label")
             testCase "request rows carry their own dismissal command" (fun () ->
                 let dismiss =
-                    actions (document None)
+                    actions (document None false)
                     |> List.find (fun action ->
                         action.Task = (TaskId.ofLiteral "people.requests.dismiss"))
 

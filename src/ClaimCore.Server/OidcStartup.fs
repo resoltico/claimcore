@@ -32,8 +32,9 @@ module internal OidcStartup =
                 match
                     OidcAuthority.validateMetadata configuration.Issuer (ReadOnlyMemory bytes)
                 with
-                | Ok() -> ()
-                | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+                | Ok endpoint -> return endpoint
+                | Error _ ->
+                    return WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
             with
             | :? OperationCanceledException when ct.IsCancellationRequested ->
                 return raise (OperationCanceledException(ct))

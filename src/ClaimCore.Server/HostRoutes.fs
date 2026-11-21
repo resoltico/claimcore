@@ -17,6 +17,7 @@ open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
+open Microsoft.AspNetCore.WebUtilities
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
@@ -61,7 +62,7 @@ module HostRoutes =
                     |> fun reply -> RouteSupport.reply reply context
         }
 
-    let private logout configuration context =
+    let private logout configuration (endSessionEndpoint: Uri) (context: HttpContext) =
         task {
             if not (ApiRoutes.handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
@@ -83,6 +84,22 @@ module HostRoutes =
                                 return
                                     RouteSupport.hostFailure context HostFailureReason.InputInvalid
                             | Ok _ ->
+                                let! ticket =
+                                    context.AuthenticateAsync(
+                                        CookieAuthenticationDefaults.AuthenticationScheme
+                                    )
+
+                                let hint =
+                                    match ticket.Properties with
+                                    | null -> None
+                                    | properties ->
+                                        match
+                                            properties.Items.TryGetValue
+                                                AuthMiddleware.idTokenProperty
+                                        with
+                                        | true, NonNull token -> Some token
+                                        | _ -> None
+
                                 do!
                                     context.SignOutAsync(
                                         CookieAuthenticationDefaults.AuthenticationScheme
@@ -90,15 +107,37 @@ module HostRoutes =
 
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
-                                return
-                                    Endpoint.reply
-                                        Api.logout
-                                        (Outcome.Succeeded(
-                                            Presented.create
-                                                (fun () -> ContextScreen.logoutView ())
-                                                ()
-                                        ))
-                                    |> fun reply -> RouteSupport.reply reply context
+                                match hint with
+                                | None ->
+                                    return
+                                        RouteSupport.hostFailure
+                                            context
+                                            HostFailureReason.SessionRejected
+                                | Some token ->
+                                    let parameters =
+                                        dict
+                                            [
+                                                "client_id", oidc.ClientId
+                                                "id_token_hint", token
+                                                "post_logout_redirect_uri",
+                                                Uri(configuration.Binding.Origin, "/").AbsoluteUri
+                                            ]
+
+                                    let location =
+                                        QueryHelpers.AddQueryString(
+                                            endSessionEndpoint.AbsoluteUri,
+                                            parameters
+                                        )
+
+                                    return
+                                        Endpoint.reply
+                                            Api.logout
+                                            (Outcome.Succeeded(
+                                                Presented.create
+                                                    (fun _ -> ContextScreen.logoutView ())
+                                                    { Location = location }
+                                            ))
+                                        |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
 
@@ -200,7 +239,14 @@ module HostRoutes =
         )
         |> ignore
 
-    let internal map assets configuration handlers withActor (application: WebApplication) =
+    let internal map
+        assets
+        configuration
+        endSessionEndpoint
+        handlers
+        withActor
+        (application: WebApplication)
+        =
         application.MapPost(
             ExportTransport.path,
             Func<HttpContext, Task<IResult>>(ExportRoutes.handle configuration withActor)
@@ -218,7 +264,7 @@ module HostRoutes =
             let handler =
                 match Api.identity endpoint with
                 | EndpointId.Host HostEndpoint.Session -> session configuration
-                | EndpointId.Host HostEndpoint.Logout -> logout configuration
+                | EndpointId.Host HostEndpoint.Logout -> logout configuration endSessionEndpoint
                 | EndpointId.Actor actor ->
                     ApiRoutes.handle (handlers actor) configuration withActor
 

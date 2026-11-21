@@ -187,6 +187,10 @@
     "text": "{label} (genau)",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "Geben Sie die genaue Anmelde-ID ein.",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "Genaue Vorgangs-ID",
     "source": "dbdca09f6e48"

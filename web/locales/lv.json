@@ -219,6 +219,10 @@
     "text": "{label} (precīzs)",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "Ievadiet precīzu pierakstīšanās identifikatoru.",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "Precīzs operācijas ID",
     "source": "dbdca09f6e48"

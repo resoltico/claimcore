@@ -197,7 +197,8 @@
                 "lastSeen": "2026-11-04T01:00:00.000000Z",
                 "claims": {
                   "name": "Token hint",
-                  "email": "hint@example.invalid"
+                  "email": "hint@example.invalid",
+                  "emailVerified": false
                 }
               }
             ],
@@ -1779,7 +1780,9 @@
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
-          "data": null,
+          "data": {
+            "location": "https://issuer.example.test/logout"
+          },
           "view": {
             "regions": []
           }

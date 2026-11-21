@@ -5,7 +5,7 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 
 module internal ReviewDocumentParts =
-    let describe operationId (review: OperationReview) =
+    let describe operationId principal (review: OperationReview) =
         let described = ReviewScreen.operationReview review
 
         let identityEntries =
@@ -15,14 +15,15 @@ module internal ReviewDocumentParts =
                     "label.action"
                     Prominence.Primary
                     (PresentedValue.Message("task." + TaskId.token review.Task + ".label"))
-                match review.Target with
-                | ReviewTarget.Case(_, reference) ->
+                match principal, review.Target with
+                | Some principal, _ -> yield! ScreenEntries.principalIdentity principal
+                | None, ReviewTarget.Case(_, reference) ->
                     ScreenEntries.value
                         "reference"
                         "field.caseReference.label"
                         Prominence.Primary
                         (PresentedValue.Reference reference)
-                | ReviewTarget.Person actor ->
+                | None, ReviewTarget.Person actor ->
                     ScreenEntries.value
                         "target"
                         "label.targetAccount"

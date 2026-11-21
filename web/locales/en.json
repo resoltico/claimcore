@@ -54,6 +54,7 @@
   "ui.editSummary": "Edit summary",
   "ui.enterDetails": "Enter details",
   "ui.exactCaseReference": "{label} (exact)",
+  "ui.exactPrincipalSubject": "Enter the exact sign-in ID.",
   "ui.exactOperationId": "Exact operation ID",
   "ui.exactReference": "{label} (exact): {reference}",
   "ui.explainFields": "Explain fields",

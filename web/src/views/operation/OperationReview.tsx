@@ -52,6 +52,22 @@ const useReviewChallenge = (model: ReviewModel) => {
   return { typed: changed ? "" : challenge.text, setChallenge, operationId, review };
 };
 const canSubmit = (ready: boolean, paused: boolean, busy: boolean) => ready && !paused && !busy;
+const describeTarget = (
+  target: Extract<HumanReview["document"]["subject"], { kind: "REVIEW" }>["confirmation"],
+  p: ReturnType<typeof usePresentation>,
+) => {
+  switch (target.kind) {
+    case "CASE_REFERENCE":
+      return {
+        expected: target.reference,
+        label: p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") }),
+      };
+    case "OPERATION":
+      return { expected: target.operationId, label: p.text("ui.exactOperationId") };
+    case "PRINCIPAL":
+      return { expected: target.subject, label: p.text("ui.exactPrincipalSubject") };
+  }
+};
 const useReviewControls = (model: ReviewModel, paused: boolean) => {
   const p = usePresentation();
   const id = useId();
@@ -67,13 +83,10 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
   const task = taskForCommand(model.prepared.input);
   const binding = review.document.subject;
   const target = binding.confirmation;
-  const expected = target.kind === "CASE_REFERENCE" ? target.reference : target.operationId;
+  const { expected, label } = describeTarget(target, p);
   const irreversible = binding.consequence === "IRREVERSIBLE";
-  const ready = !irreversible || typed === expected;
-  const label =
-    target.kind === "CASE_REFERENCE"
-      ? p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })
-      : p.text("ui.exactOperationId");
+  const exact = irreversible || target.kind === "PRINCIPAL";
+  const ready = !exact || typed === expected;
   let submitText = renderCatalogKey(p, task.labelId);
   if (model.phase === "PREPARING") {
     submitText = p.text("ui.preparingRecovery");
@@ -81,7 +94,7 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     submitText = p.text("ui.submitting");
   }
   return {
-    body: irreversible ? (
+    body: exact ? (
       <div className="text-field irreversible-confirmation">
         <p>
           <bdi dir="ltr">{expected}</bdi>

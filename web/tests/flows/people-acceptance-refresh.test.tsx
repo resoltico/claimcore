@@ -316,6 +316,9 @@ it.each(["transport", "host", "core"] as const)(
     await author("synthetic-first");
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     await waitForReviewConfirm();
+    fireEvent.change(screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }), {
+      target: { value: "synthetic-first" },
+    });
     fireEvent.click(reviewConfirm());
     await waitFor(() => {
       expect(
@@ -354,6 +357,9 @@ it("context reload preserves an uncertain prepared people request and exact retr
   await author("synthetic-pending");
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  fireEvent.change(screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }), {
+    target: { value: "synthetic-pending" },
+  });
   fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [prepared] = execute.mock.calls[0]!;
@@ -393,6 +399,9 @@ it("retries only the accepted receipt read after admission pressure", async () =
   await author("receipt-pressure");
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  fireEvent.change(screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }), {
+    target: { value: "receipt-pressure" },
+  });
   fireEvent.click(reviewConfirm());
   const heading = await screen.findByRole("heading", { name: "Recorded change" });
   const receipt = heading.closest("section")!;

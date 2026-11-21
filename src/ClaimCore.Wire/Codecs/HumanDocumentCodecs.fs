@@ -49,6 +49,17 @@ module HumanDocumentCodecs =
                     | ConfirmationTarget.Operation value -> Some value
                     | _ -> None)
                     (record id |> field "operationId" id uuid)
+                variant
+                    "PRINCIPAL"
+                    ConfirmationTarget.Principal
+                    (function
+                    | ConfirmationTarget.Principal value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field
+                         "subject"
+                         id
+                         (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters))
             ]
 
     let private subjectVariants =

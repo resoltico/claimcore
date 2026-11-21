@@ -168,7 +168,7 @@ const peopleTarget = async (page: Page, issuer: string, subject: string) => {
   await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
   await page.locator('[name="input:principal.subject"]').fill(subject);
 };
-const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
+const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED", subject?: string) => {
   const dialog = page.getByRole("dialog");
   const previewed = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
@@ -202,6 +202,9 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
     throw new Error("Expected people review.");
   }
   await confirmReview(page);
+  if (subject !== undefined) {
+    await dialog.getByRole("textbox", { name: "Enter the exact sign-in ID." }).fill(subject);
+  }
   const pending = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
   );
@@ -383,7 +386,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   const name = `Authored browser service ${randomUUID()}`;
   // D2 admission records profile and the original case-only grant atomically; no extra installation access is added.
   await openAdmission(page, source.issuer, subject, name, reference);
-  const admitted = await submitPeople(page, "ACCEPTED");
+  const admitted = await submitPeople(page, "ACCEPTED", subject);
   if (
     admitted === null ||
     admitted.disclosure !== "CURRENT" ||

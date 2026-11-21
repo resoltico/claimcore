@@ -443,15 +443,17 @@ module ResponseCodecs =
                 (fun path value -> (boundedText 1 PartyName.MaximumCharacters).Validate path value)
             |> refine (PartyName.admit >> Result.isOk)
 
-        (record (fun name username email ->
+        (record (fun name username email verified ->
             RequesterClaims.admit
                 (name |> Option.map PartyName.format)
                 (username |> Option.map PartyName.format)
-                (email |> Option.map PartyName.format))
+                (email |> Option.map PartyName.format)
+                verified)
         : Fields<RequesterClaims, _>)
         |> optionalField "name" _.Name hint
         |> optionalField "preferredUsername" _.PreferredUsername hint
         |> optionalField "email" _.Email hint
+        |> field "emailVerified" _.EmailVerified boolean
         |> build
         |> named "RequesterClaims"
 
@@ -702,6 +704,12 @@ module ResponseCodecs =
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "ActorsPage"
+
+    let logoutLocation =
+        (record (fun value -> { LogoutLocation.Location = value }): Fields<LogoutLocation, _>)
+        |> field "location" _.Location nonempty
+        |> build
+        |> named "LogoutLocation"
 
     let session =
         (record (fun v0 v1 v2 ->

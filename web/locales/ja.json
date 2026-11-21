@@ -187,6 +187,10 @@
     "text": "{label}（正確な値）",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "正確なサインインIDを入力してください。",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "正確な操作ID",
     "source": "dbdca09f6e48"

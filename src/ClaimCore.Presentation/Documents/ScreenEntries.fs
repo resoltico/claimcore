@@ -202,6 +202,34 @@ module ScreenEntries =
                 (code ReminderState.vocabulary (Reminder.state reminder))
         ]
 
+    let principalIdentity principal =
+        let _, issuer, subject = PrincipalKey.parts principal
+
+        [
+            value
+                "issuer"
+                "field.principal.issuer.label"
+                Prominence.Primary
+                (PresentedValue.Identifier issuer)
+            value
+                "subject"
+                "field.principal.subject.label"
+                Prominence.Primary
+                (PresentedValue.Identifier subject)
+        ]
+
+    let profileHintStatus (item: RequesterClaims) =
+        if item.Name.IsSome || item.PreferredUsername.IsSome then
+            PresentedValue.Message "label.unverifiedProviderHint"
+        else
+            absent
+
+    let emailHintStatus (item: RequesterClaims) =
+        match item.Email with
+        | None -> absent
+        | Some _ when item.EmailVerified -> PresentedValue.Message "label.providerVerifiedEmail"
+        | Some _ -> PresentedValue.Message "label.unverifiedProviderHint"
+
     let claims (item: RequesterClaims) =
         [
             value
@@ -219,6 +247,16 @@ module ScreenEntries =
                 "label.requestedEmail"
                 Prominence.Secondary
                 (optional PresentedValue.Party item.Email)
+            value
+                "profileHintStatus"
+                "label.profileHintStatus"
+                Prominence.Secondary
+                (profileHintStatus item)
+            value
+                "emailHintStatus"
+                "label.emailHintStatus"
+                Prominence.Secondary
+                (emailHintStatus item)
         ]
 
 

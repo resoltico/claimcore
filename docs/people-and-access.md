@@ -20,11 +20,14 @@ Use the person's exact issuer and subject from the sign-in provider. A service a
 explicit service identity. A name or email address is not a sign-in identity. ClaimCore keeps the name
 you enter; it does not take a profile name from sign-in claims.
 
+Confirm the exact sign-in ID shown in the Web review. In an interactive CLI review, type that same
+value at the prompt. For CLI automation, pass it as `--confirm`.
+
 The CLI performs the same admission in one request:
 
 ```sh
 claimcore people admit --principal-kind human --issuer https://identity.example/ \
-  --subject PERSON-SUBJECT --name "Alex Example" --role case-handler
+  --subject PERSON-SUBJECT --confirm PERSON-SUBJECT --name "Alex Example" --role case-handler
 ```
 
 Add another `--role` for each assignment. A role without `@` applies across the installation; for a
@@ -39,9 +42,10 @@ registering someone does not change their sign-in-provider membership.
 ## Handle access requests
 
 A signed-in person who is not registered sees an explanation that an owner needs to add their account.
-Their access request appears in People and access. Select it to review the supplied identity and any
-optional sign-in hints. Confirm the name yourself, choose roles, and add the account. Sign-in hints are
-suggestions, not an authored profile or evidence of permission.
+Their access request appears in People and access. Review the issuer and subject as the sign-in
+identity. The identity provider supplies any name and username hints without verification. An email
+hint shows whether the provider verified that address. Confirm the identity with a trusted source,
+check the suggested profile details, choose roles, and type the subject to add the account.
 
 Dismiss removes a request without granting access. Requests are temporary and bounded; a later sign-in
 can make a new request. Human and service identities with the same issuer and subject stay distinct.
@@ -126,7 +130,8 @@ bytes; starting a different change requires a new identifier and a fresh review.
 
 In Settings or on the access screen, **End my ClaimCore browser sessions** ends all of your
 ClaimCore browser sessions, including the current one. The access screen exposes this action before
-registration and without roles. Ordinary **Sign out** still ends only the current browser session.
+registration and without roles. Ordinary **Sign out** ends the current browser session in ClaimCore
+and at the identity provider.
 
 An owner can select a person and choose **End this person’s ClaimCore browser sessions**. Permission
 is checked again when deletion runs. A confirmed result reports the number of stored session tickets

@@ -229,6 +229,7 @@ let tests =
                                                                     (Some "Request name")
                                                                     None
                                                                     (Some "person@example.test")
+                                                                    false
                                                         }
                                                     ]
                                                 NextCursor = None
@@ -324,7 +325,13 @@ let hostReplyPresentation =
                         (FrameResult.Reply(
                             CliReplies.ofValue
                                 Api.logout
-                                (Outcome.Succeeded(Presented.create ContextScreen.logoutView ()))
+                                (Outcome.Succeeded(
+                                    Presented.create
+                                        (fun _ -> ContextScreen.logoutView ())
+                                        {
+                                            Location = "https://issuer.example.test/logout"
+                                        }
+                                ))
                         ))
                     |> String.concat "\n"
 

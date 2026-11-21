@@ -136,7 +136,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   );
   const { onAdmit } = setup();
   await screen.findByText("Unverified hint");
-  expect(screen.getByRole("columnheader", { name: "Requested name" })).toBeVisible();
+  expect(screen.getByRole("columnheader", { name: "Name hint" })).toBeVisible();
   expect(onAdmit).not.toHaveBeenCalled();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Load more access requests" }));

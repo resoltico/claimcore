@@ -50,8 +50,11 @@ module internal CliConfirmation =
             console.ReadLine()
             |> Option.exists (fun answer -> String.Equals(answer, target, StringComparison.Ordinal))
 
-    let irreversibleTarget invocation =
+    let requiredTarget invocation =
         match Frames.value Api.operationExecute invocation with
+        | Some input when OperationSubmission.requiresPrincipalConfirmation input.Task ->
+            OperationSubmission.principalConfirmation input
+            |> Option.map (PrincipalKey.toInput >> _.Subject)
         | Some input when TaskConsequences.ofTask input.Task = Consequence.Irreversible ->
             match input.Envelope.Binding with
             | OperationBinding.Case(CaseSelector.Reference reference, _, _, _) -> Some reference
@@ -61,7 +64,7 @@ module internal CliConfirmation =
         | _ -> None
 
     let validate isInteractive (prepared: PreparedVerb) =
-        irreversibleTarget prepared.Invocation
+        requiredTarget prepared.Invocation
         |> Option.bind (fun target ->
             match prepared.Confirmation with
             | Some value when value <> target ->

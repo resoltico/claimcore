@@ -380,7 +380,7 @@ module internal VerbRunner =
                 let frame = prepared.Invocation
 
                 let consent =
-                    match CliConfirmation.irreversibleTarget frame, prepared.Confirmation with
+                    match CliConfirmation.requiredTarget frame, prepared.Confirmation with
                     | Some target, None ->
                         CliConfirmation.exactTarget io.Review prepared.Language target
                     | _ -> true

@@ -187,6 +187,10 @@
     "text": "{label}（精确值）",
     "source": "cf3a934bfd96"
   },
+  "ui.exactPrincipalSubject": {
+    "text": "请输入准确的登录 ID。",
+    "source": "d809ce38c667"
+  },
   "ui.exactOperationId": {
     "text": "完整操作 ID",
     "source": "dbdca09f6e48"

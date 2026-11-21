@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "申請時の名前",
-    "source": "ca0175e2d2c8"
+    "text": "氏名の参考情報",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "申請時のユーザー名",
-    "source": "2bfe148a8785"
+    "text": "ユーザー名の参考情報",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "申請時のメールアドレス",
-    "source": "50cffab6e474"
+    "text": "メールアドレスの参考情報",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "アクセス申請",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "氏名とユーザー名の参考情報",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "メールアドレスの確認",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "この情報は本人確認プロバイダーによって提供され、確認されていません。",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "本人確認プロバイダーがこのメールアドレスを確認しました。",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "最初の申請",

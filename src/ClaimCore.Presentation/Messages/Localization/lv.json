@@ -2024,20 +2024,36 @@
     "source": "29e9d0964e33"
   },
   "label.requestedName": {
-    "text": "Pieprasītais vārds",
-    "source": "ca0175e2d2c8"
+    "text": "Vārda norāde",
+    "source": "741265bd9824"
   },
   "label.requestedUsername": {
-    "text": "Pieprasītais lietotājvārds",
-    "source": "2bfe148a8785"
+    "text": "Lietotājvārda norāde",
+    "source": "75bb7e312e9b"
   },
   "label.requestedEmail": {
-    "text": "Pieprasītais e-pasts",
-    "source": "50cffab6e474"
+    "text": "E-pasta adreses norāde",
+    "source": "fa8e4fb681b6"
   },
   "label.accessRequest": {
     "text": "Piekļuves pieprasījums",
     "source": "8096ea7049c2"
+  },
+  "label.profileHintStatus": {
+    "text": "Vārda un lietotājvārda norādes",
+    "source": "fa2a1e0507a9"
+  },
+  "label.emailHintStatus": {
+    "text": "E-pasta adreses pārbaude",
+    "source": "4d225196c4e2"
+  },
+  "label.unverifiedProviderHint": {
+    "text": "Identitātes nodrošinātājs sniedza šo informāciju bez pārbaudes.",
+    "source": "fb9aebf8d4a1"
+  },
+  "label.providerVerifiedEmail": {
+    "text": "Identitātes nodrošinātājs ir pārbaudījis šo e-pasta adresi.",
+    "source": "8ad97fcd3941"
   },
   "label.firstSeen": {
     "text": "Pirmoreiz pieprasīts",

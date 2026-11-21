@@ -10,26 +10,31 @@ type RequesterClaims =
             NameHint: PartyName option
             UsernameHint: PartyName option
             EmailHint: PartyName option
+            VerifiedEmail: bool
         }
 
     member this.Name = this.NameHint
     member this.PreferredUsername = this.UsernameHint
     member this.Email = this.EmailHint
+    member this.EmailVerified = this.VerifiedEmail
 
 module RequesterClaims =
-    let admit name username email =
+    let admit name username email emailVerified =
         let hint value =
             value
             |> Option.bind (fun raw ->
                 PartyName.parse raw |> Result.bind PartyName.admit |> Result.toOption)
 
+        let email = hint email
+
         {
             NameHint = hint name
             UsernameHint = hint username
-            EmailHint = hint email
+            EmailHint = email
+            VerifiedEmail = email.IsSome && emailVerified
         }
 
-    let empty = admit None None None
+    let empty = admit None None None false
 
 type UnregisteredRequester =
     {

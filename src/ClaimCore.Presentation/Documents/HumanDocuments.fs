@@ -22,6 +22,19 @@ type ObservationBasis =
 type ConfirmationTarget =
     | CaseReference of CaseReference
     | Operation of System.Guid
+    | Principal of subject: string
+
+module ConfirmationTarget =
+    let text =
+        function
+        | ConfirmationTarget.CaseReference reference -> CaseReference.format reference
+        | ConfirmationTarget.Operation id -> id.ToString("D")
+        | ConfirmationTarget.Principal subject -> subject
+
+    let requiresExactMatch consequence target =
+        match target with
+        | ConfirmationTarget.Principal _ -> true
+        | _ -> consequence = Consequence.Irreversible
 
 type RequesterSubject =
     {

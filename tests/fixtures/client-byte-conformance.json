@@ -293,7 +293,7 @@
       "endpoint": "session.logout",
       "direction": "response",
       "valid": false,
-      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":null}}"
+      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"location\":\"https://issuer.example.test/logout\"}}}"
     }
   ]
 }

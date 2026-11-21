@@ -42,7 +42,7 @@ let private cancelsBlockedStartup () =
     stop.Cancel()
 
     Expect.throwsT<OperationCanceledException>
-        (fun () -> pending.GetAwaiter().GetResult())
+        (fun () -> pending.GetAwaiter().GetResult() |> ignore)
         "Controlled stop is cancellation, not invalid issuer configuration"
 
 [<Tests>]

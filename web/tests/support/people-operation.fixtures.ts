@@ -18,7 +18,11 @@ export const peopleReview = (input: PeopleInput): HumanReview => {
       screen: { regions: [] },
       subject: {
         kind: "REVIEW",
-        confirmation: { kind: "OPERATION", operationId: input.operationId },
+        confirmation:
+          input.task === "people.admit" &&
+          typeof input.inputs["input:principal.subject"] === "string"
+            ? { kind: "PRINCIPAL", subject: input.inputs["input:principal.subject"] }
+            : { kind: "OPERATION", operationId: input.operationId },
         consequence: task.consequence,
       },
       actions: [operationAffordance(input.task, input.binding, reviewSeeds(input.inputs), [])],

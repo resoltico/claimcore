@@ -1432,8 +1432,8 @@ test("same-requester access loss retains unknown bytes and a visible departure g
             },
           },
           confirmation: {
-            kind: "OPERATION",
-            operationId: operationPreviewRequest.operationId,
+            kind: "PRINCIPAL",
+            subject: "retained-person",
           },
         },
         presentationBasis,
@@ -1520,6 +1520,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       exact: true,
     })
     .click();
+  await page.getByRole("textbox", { name: "Enter the exact sign-in ID." }).fill("retained-person");
   await page.locator("button[data-confirm-operation]").click();
   await expect(
     page.getByRole("button", {
@@ -1989,8 +1990,8 @@ for (const reviewLanguage of ["en", "ar"] as const) {
             },
           },
           confirmation: {
-            kind: "OPERATION",
-            operationId: operationPreviewRequest.operationId,
+            kind: "PRINCIPAL",
+            subject: "admission-person",
           },
         },
         presentationBasis,

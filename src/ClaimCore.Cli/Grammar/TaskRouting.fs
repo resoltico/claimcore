@@ -32,6 +32,10 @@ module TaskRouting =
     let consequence task =
         (TaskDeclarations.describe task).Consequence
 
+    let requiresExactConfirmation task =
+        consequence task = Consequence.Irreversible
+        || (act task |> Option.exists OperationSubmission.requiresPrincipalConfirmation)
+
     let private messages task =
         let declaration = TaskDeclarations.describe task
 

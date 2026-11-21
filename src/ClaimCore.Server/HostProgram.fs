@@ -120,7 +120,7 @@ let private verifyOidcMetadata (configuration: OidcConfiguration) (ct: Cancellat
 
             handler.AllowAutoRedirect <- false
             use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds(10.))
-            do! OidcStartup.verify client configuration ct
+            return! OidcStartup.verify client configuration ct
         with
         | :? HttpRequestException
         | :? InvalidOperationException ->
@@ -201,6 +201,7 @@ let internal configuredBuilder
 let private configureRoutes
     (files: PublicAssets.Inventory)
     (configuration: WebConfiguration)
+    (endSessionEndpoint: Uri)
     (runtime: IRuntime)
     (application: WebApplication)
     =
@@ -245,6 +246,7 @@ let private configureRoutes
     HostRoutes.map
         publicFiles
         configuration
+        endSessionEndpoint
         ClaimCore.Server.ApiRoutes.route
         (fun principal action -> runtime.WithActor(principal, action))
         application
@@ -304,7 +306,7 @@ let private runAsync (ct: CancellationToken) =
             |> Option.defaultWith (fun () ->
                 WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid)
 
-        do! verifyOidcMetadata oidc ct
+        let! endSessionEndpoint = verifyOidcMetadata oidc ct
 
         let assets = assetDirectory ()
         let files = PublicAssets.Inventory assets
@@ -318,7 +320,7 @@ let private runAsync (ct: CancellationToken) =
                     let builder = configuredBuilder assets configuration oidc runtime
                     builder.Services.AddSingleton files |> ignore
                     use application = builder.Build()
-                    configureRoutes files configuration runtime application
+                    configureRoutes files configuration endSessionEndpoint runtime application
 
                     Console.WriteLine(
                         "ClaimCore Web login URL: "

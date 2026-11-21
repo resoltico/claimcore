@@ -13040,13 +13040,17 @@
           },
           {
             "$ref": "#/components/schemas/ConfirmationTarget.OPERATION"
+          },
+          {
+            "$ref": "#/components/schemas/ConfirmationTarget.PRINCIPAL"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "CASE_REFERENCE": "#/components/schemas/ConfirmationTarget.CASE_REFERENCE",
-            "OPERATION": "#/components/schemas/ConfirmationTarget.OPERATION"
+            "OPERATION": "#/components/schemas/ConfirmationTarget.OPERATION",
+            "PRINCIPAL": "#/components/schemas/ConfirmationTarget.PRINCIPAL"
           }
         }
       },
@@ -13083,6 +13087,24 @@
         "required": [
           "kind",
           "operationId"
+        ]
+      },
+      "ConfirmationTarget.PRINCIPAL": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PRINCIPAL"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "kind",
+          "subject"
         ]
       },
       "ConflictChangePage": {
@@ -16869,6 +16891,20 @@
           "fields"
         ]
       },
+      "LogoutLocation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          }
+        },
+        "required": [
+          "location"
+        ]
+      },
       "LogoutReply": {
         "type": "object",
         "additionalProperties": false,
@@ -16910,7 +16946,7 @@
             "const": "SUCCEEDED"
           },
           "data": {
-            "type": "null"
+            "$ref": "#/components/schemas/LogoutLocation"
           },
           "view": {
             "$ref": "#/components/schemas/Screen"
@@ -26138,9 +26174,14 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 200
+          },
+          "emailVerified": {
+            "type": "boolean"
           }
         },
-        "required": []
+        "required": [
+          "emailVerified"
+        ]
       },
       "RequesterContext": {
         "type": "object",

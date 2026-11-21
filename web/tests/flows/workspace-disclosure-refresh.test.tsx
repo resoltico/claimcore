@@ -96,6 +96,10 @@ const beginUnknownPeople = async (user: ReturnType<typeof userEvent.setup>) => {
   await chooseAdmissionRole();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  await user.type(
+    screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }),
+    "pending-target",
+  );
   await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
 };
