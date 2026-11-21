@@ -76,7 +76,8 @@ let private proxyCore (database: PostgresFixture.Database) source =
 
 let private terminate (database: PostgresFixture.Database) backendId =
     task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        // Simulate a provider disconnect in an owned backend.
+        use! connection = database.SuperuserSource.OpenConnectionAsync()
 
         let! rows =
             DatabaseSession.rows
@@ -222,7 +223,7 @@ let private resolveInitialization (database: PostgresFixture.Database) =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 
@@ -361,7 +362,7 @@ let tests =
 
                             let settings =
                                 NpgsqlConnectionStringBuilder(
-                                    database.Container.GetConnectionString()
+                                    PostgresFixture.ownerConnectionString database
                                 )
 
                             use proxy =

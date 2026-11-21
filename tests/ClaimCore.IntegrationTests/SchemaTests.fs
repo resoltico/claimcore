@@ -57,11 +57,32 @@ let private runFile (database: PostgresFixture.Database) user name =
         return output
     }
 
-let private structuralScenarios database =
+let private structuralScenarios (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
+        use! ownerConnection = database.OwnerSource.OpenConnectionAsync(token)
+
+        let! fixturePrivileges =
+            DatabaseSession.rows
+                ownerConnection
+                "SELECT has_database_privilege('claimcore_runtime', current_database(), 'TEMP')"
+                [||]
+                token
+
+        Expect.isFalse
+            (fixturePrivileges |> List.exactlyOne |> DatabaseSession.value<bool> 0)
+            "The runtime's deployed privileges exclude temporary objects"
+
+        // The SQLSTATE witness uses a session-local pg_temp function to catch expected failures.
+        let! _ =
+            DatabaseSession.execute
+                ownerConnection
+                "GRANT TEMPORARY ON DATABASE postgres TO claimcore_runtime"
+                [||]
+                token
+
         let! runtime = runFile database "claimcore_runtime" "SchemaScenarios.sql"
-        let! owner = runFile database "postgres" "OwnerSchemaScenarios.sql"
+        let! owner = runFile database "claimcore_owner" "OwnerSchemaScenarios.sql"
 
         for message in
             [
@@ -88,8 +109,8 @@ let private calendarBounds (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
 
-        // The owner bypass is confined to this fixture; CHECK constraints remain active.
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        // This fixture suppresses triggers to reach the unchanged CHECK constraints.
+        use! connection = database.SuperuserSource.OpenConnectionAsync()
 
         for value, expected in
             [

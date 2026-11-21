@@ -63,6 +63,13 @@ let private configure directory =
     config
 
 let private admittedOwner directory =
+    let bootstrap = Path.Combine(configuration directory, "postgres/superuser.password")
+
+    Expect.equal
+        (File.GetUnixFileMode bootstrap)
+        (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+        "The PostgreSQL bootstrap secret has mode 0600"
+
     Expect.isFalse
         (File.Exists(Path.Combine(configuration directory, "administration/owner.principal")))
         "No deadline-bound principal file is created"
@@ -135,9 +142,11 @@ let private literalComposePaths directory (document: JsonDocument) =
     for service in document.RootElement.GetProperty("services").EnumerateObject() do
         for volume in service.Value.GetProperty("volumes").EnumerateArray() do
             if volume.GetProperty("type").GetString() = "bind" then
+                let target = volume.GetProperty("target").GetString() |> nonNull
+
                 if
-                    volume.GetProperty("target").GetString()
-                    <> "/docker-entrypoint-initdb.d/10-claimcore-roles.sh"
+                    target <> "/docker-entrypoint-initdb.d/10-claimcore-roles.sh"
+                    && target <> "/etc/claimcore-postgres-hba.conf"
                 then
                     let source = volume.GetProperty("source").GetString() |> nonNull
 
@@ -197,6 +206,52 @@ let private assertPostgresBaseline (document: JsonDocument) =
         initdbArguments
         "Pinned PostgreSQL initdb arguments"
 
+let private assertBootstrapSecret (document: JsonDocument) =
+    let services = document.RootElement.GetProperty("services")
+    let postgres = services.GetProperty("postgres")
+    let environment = postgres.GetProperty("environment")
+
+    Expect.equal
+        (environment.GetProperty("POSTGRES_USER").GetString())
+        "postgres"
+        "Bootstrap identity"
+
+    Expect.equal
+        (environment.GetProperty("POSTGRES_PASSWORD_FILE").GetString())
+        "/etc/claimcore-postgres/superuser.password"
+        "PostgreSQL alone reads the bootstrap secret"
+
+    let binds (service: JsonElement) =
+        service.GetProperty("volumes").EnumerateArray()
+        |> Seq.filter (fun volume -> volume.GetProperty("type").GetString() = "bind")
+
+    let postgresConfig =
+        binds postgres
+        |> Seq.find (fun volume ->
+            volume.GetProperty("target").GetString() = "/etc/claimcore-postgres")
+
+    let mountSource (volume: JsonElement) =
+        (volume.GetProperty("source").GetString() |> nonNull).Replace("$$", "$")
+        |> Path.GetFullPath
+
+    let secret = Path.Combine(mountSource postgresConfig, "superuser.password")
+
+    Expect.isTrue
+        (postgresConfig.GetProperty("read_only").GetBoolean())
+        "PostgreSQL configuration is read-only"
+
+    for service in services.EnumerateObject() do
+        if service.Name <> "postgres" then
+            for mount in binds service.Value do
+                let relation = Path.GetRelativePath(mountSource mount, secret)
+
+                let outside =
+                    relation = ".." || relation.StartsWith("../", StringComparison.Ordinal)
+
+                Expect.isTrue
+                    outside
+                    $"The {service.Name} service cannot access the bootstrap secret"
+
 let private composePaths directory =
     async {
         let root = ClaimCore.TestSupport.RepositoryRoot.find ()
@@ -211,6 +266,7 @@ let private composePaths directory =
         use document = JsonDocument.Parse(output)
         literalComposePaths directory document
         assertPostgresBaseline document
+        assertBootstrapSecret document
 
         let production = Path.Combine(root, "deployment/production")
 
@@ -235,6 +291,7 @@ let private composePaths directory =
         Expect.equal code 0 "Production Compose renders with example configuration"
         use productionDocument = JsonDocument.Parse output
         assertPostgresBaseline productionDocument
+        assertBootstrapSecret productionDocument
     }
 
 let private inspectRoleMount directory file project expected =
@@ -327,6 +384,12 @@ let private checkoutMount directory =
 
         let role = Path.Combine(checkout, "postgres-roles.sh")
         File.Copy(Path.Combine(root, "deployment/postgres-roles.sh"), role)
+
+        File.Copy(
+            Path.Combine(root, "deployment/postgres-hba.conf"),
+            Path.Combine(checkout, "postgres-hba.conf")
+        )
+
         let file = Path.Combine(checkout, "compose.yaml")
         File.Copy(Path.Combine(root, "deployment/compose.yaml"), file)
         do! createdMount directory file role true

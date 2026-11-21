@@ -241,7 +241,15 @@ let internal initializationRollback (database: PostgresFixture.Database) =
     task {
         use! connection = database.OwnerSource.OpenConnectionAsync()
         do! resetForInitialization connection
-        do! sql database "DROP ROLE claimcore_runtime"
+        // Only fixture role changes use the bootstrap superuser.
+        use! bootstrap = database.SuperuserSource.OpenConnectionAsync()
+
+        let! _ =
+            DatabaseSession.execute
+                bootstrap
+                "REVOKE CONNECT ON DATABASE postgres FROM claimcore_runtime; DROP ROLE claimcore_runtime"
+                [||]
+                token
 
         do!
             refused
@@ -267,7 +275,15 @@ let internal initializationRollback (database: PostgresFixture.Database) =
             (DatabaseSession.value<bool> 0 moduleRows.Head)
             "The extension created by the failed installation rolls back with its schema"
 
-        do! sql database "CREATE ROLE claimcore_runtime LOGIN"
+        let! _ =
+            DatabaseSession.execute bootstrap "CREATE ROLE claimcore_runtime LOGIN" [||] token
+
+        let! _ =
+            DatabaseSession.execute
+                bootstrap
+                "GRANT CONNECT ON DATABASE postgres TO claimcore_runtime"
+                [||]
+                token
 
         let! _ =
             Baseline.initialize

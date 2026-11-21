@@ -175,7 +175,7 @@ module internal Baseline =
                     token
                     (fun connection transaction ->
                         task {
-                            do! DatabaseProfile.require connection token
+                            do! OwnerAdmission.require connection token
                             // CLAIMCOR: serialize namespace discovery and installation, even before tables exist.
                             let! _ =
                                 DatabaseSession.execute

@@ -42,13 +42,18 @@ let private databaseProfile (database: PostgresFixture.Database) =
         do! DatabaseProfile.require runtimeConnection token
         let! checkpoint = VerificationSupport.checkpoint database
 
-        do!
-            sql
-                database
-                "CREATE DATABASE claimcore_libc TEMPLATE template0 LOCALE_PROVIDER libc LOCALE 'C'"
+        // The cluster operator provisions the deliberate locale mismatch.
+        use! bootstrap = database.SuperuserSource.OpenConnectionAsync()
+
+        let! _ =
+            DatabaseSession.execute
+                bootstrap
+                "CREATE DATABASE claimcore_libc OWNER claimcore_owner TEMPLATE template0 LOCALE_PROVIDER libc LOCALE 'C'"
+                [||]
+                token
 
         let ownerSettings =
-            Npgsql.NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            Npgsql.NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         ownerSettings.Database <- "claimcore_libc"
 
@@ -111,11 +116,121 @@ let private databaseProfile (database: PostgresFixture.Database) =
         Expect.isFalse present "Refusals leave the second database uninitialized"
     }
 
+let private ownerAdmission (database: PostgresFixture.Database) =
+    task {
+        use owner =
+            new Administration(
+                PostgresFixture.ownerConnectionString database,
+                BuildIdentity.current.Version
+            )
+
+        let! status = owner.Status token
+
+        Expect.equal
+            status.InstallationId
+            database.Installation.InstallationId
+            "The ordinary database owner is admitted"
+
+        let refusesOwner name (candidate: Administration) =
+            task {
+                let! observed =
+                    task {
+                        try
+                            let! _ = candidate.Status token
+                            return None
+                        with :? OperatorFaultException as error ->
+                            return Some error.Fault
+                    }
+
+                Expect.equal observed (Some OperatorFault.PermissionDenied) name
+            }
+
+        // Each unsafe attribute is injected independently by the synthetic cluster operator.
+        use! bootstrap = database.SuperuserSource.OpenConnectionAsync()
+
+        for attribute in [ "SUPERUSER"; "CREATEROLE"; "REPLICATION"; "BYPASSRLS" ] do
+            let! _ =
+                DatabaseSession.execute
+                    bootstrap
+                    $"ALTER ROLE claimcore_owner {attribute}"
+                    [||]
+                    token
+
+            do! refusesOwner ($"The database owner with {attribute} is refused") owner
+
+            let! _ =
+                DatabaseSession.execute
+                    bootstrap
+                    $"ALTER ROLE claimcore_owner NO{attribute}"
+                    [||]
+                    token
+
+            ()
+
+        let impersonatingSettings =
+            Npgsql.NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+
+        impersonatingSettings.Options <- "-c role=claimcore_owner"
+
+        use impersonatingSource =
+            Npgsql.NpgsqlDataSource.Create(impersonatingSettings.ConnectionString)
+
+        use! impersonatingConnection = impersonatingSource.OpenConnectionAsync(token)
+
+        let! identity =
+            DatabaseSession.rows
+                impersonatingConnection
+                "SELECT session_user::text, current_user::text"
+                [||]
+                token
+
+        let role = List.exactlyOne identity
+
+        Expect.equal
+            (DatabaseSession.value<string> 0 role)
+            "postgres"
+            "The authenticated role is still the superuser"
+
+        Expect.equal
+            (DatabaseSession.value<string> 1 role)
+            "claimcore_owner"
+            "The startup option selected the owner role"
+
+        use impersonating =
+            new Administration(
+                impersonatingSettings.ConnectionString,
+                BuildIdentity.current.Version
+            )
+
+        do!
+            refusesOwner
+                "An authenticated superuser with its current role set to the owner is refused"
+                impersonating
+
+        use runtime =
+            new Administration(
+                PostgresFixture.runtimeConnectionString database,
+                BuildIdentity.current.Version
+            )
+
+        do! refusesOwner "A role that does not own the database is refused" runtime
+
+        let! restored = owner.Status token
+
+        Expect.equal
+            restored.InstallationId
+            status.InstallationId
+            "Restoring the admitted attributes permits status"
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL administration"
         [
+            testCaseAsync
+                "installation owner admission rejects unsafe role attributes and a non-owner"
+                (run ownerAdmission)
             testCaseAsync
                 "owner and Web refuse a libc database before accessing installation state"
                 (run databaseProfile)
@@ -225,7 +340,13 @@ let tests =
                     ($"runtime admission refuses {name}")
                     (run (fun database ->
                         task {
-                            do! sql database change
+                            if name = "schema owner" || name = "superuser" then
+                                // Exercise unsafe roles through explicit cluster-operator setup.
+                                use! bootstrap = database.SuperuserSource.OpenConnectionAsync()
+                                let! _ = DatabaseSession.execute bootstrap change [||] token
+                                ()
+                            else
+                                do! sql database change
 
                             do!
                                 refused
@@ -323,7 +444,7 @@ let tests =
                     task {
                         use administration =
                             new Administration(
-                                database.Container.GetConnectionString(),
+                                PostgresFixture.ownerConnectionString database,
                                 BuildIdentity.current.Version
                             )
 
@@ -419,18 +540,23 @@ let tests =
                     ($"runtime cannot inherit or assume schema ownership: inherit={inheritance}")
                     (run (fun database ->
                         task {
-                            do!
-                                sql
-                                    database
+                            // Simulate a cluster operator granting the runtime schema ownership.
+                            use! bootstrap = database.SuperuserSource.OpenConnectionAsync()
+
+                            let! _ =
+                                DatabaseSession.execute
+                                    bootstrap
                                     "CREATE ROLE schema_owner; ALTER SCHEMA claimcore OWNER TO schema_owner"
+                                    [||]
+                                    token
 
                             let grant =
                                 if inheritance then
-                                    "GRANT schema_owner TO claimcore_runtime"
+                                    "GRANT schema_owner TO claimcore_runtime WITH INHERIT TRUE, SET TRUE"
                                 else
                                     "GRANT schema_owner TO claimcore_runtime WITH INHERIT FALSE, SET TRUE"
 
-                            do! sql database grant
+                            let! _ = DatabaseSession.execute bootstrap grant [||] token
                             use! connection = database.RuntimeSource.OpenConnectionAsync()
 
                             let! rows =

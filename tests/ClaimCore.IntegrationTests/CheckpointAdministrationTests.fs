@@ -32,7 +32,7 @@ let private checkpoints () =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 

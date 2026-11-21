@@ -42,7 +42,8 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 
 | Path | Contents |
 | --- | --- |
-| `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for the runtime password. |
+| `postgres/superuser.password` | Separate bootstrap password for `postgres`, mounted only in PostgreSQL. Use 64 lowercase hexadecimal characters and mode 0600. |
+| `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for each. |
 | `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
 | `web/server.pfx`, `web/client.secret` | A passwordless PFX with the private key and publicly trusted HTTPS certificate for the web origin, and the OIDC client secret. |
 | `web/runtime.connection`, `web/ca.pem` | Runtime connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/runtime/ca.pem`. |
@@ -67,6 +68,10 @@ docker compose --env-file /PRIVATE/production.env -f deployment/production/compo
 
 Use the same administration profile to run later owner commands. The web host works with the
 runtime connection, and the owner connection is mounted only by the administration service.
+The Compose database accepts TCP connections only for those two roles over TLS with SCRAM on the
+`claimcore` database. The bootstrap superuser connects through the local socket inside PostgreSQL.
+Compose limits each service's process and thread count. Set memory limits to suit the installation's
+workload and host capacity.
 
 ## Install a fresh register
 
@@ -95,12 +100,19 @@ the supplied application images include their pinned runtime.
 
 Use PostgreSQL 19. Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
 The PostgreSQL cluster must have data checksums enabled. The Compose files initialize this profile.
-On a self-managed server, create an empty database with:
+On a self-managed server, provision separate login roles and set their passwords securely. Create an
+empty database owned by the dedicated owner role:
 
 ```sql
-CREATE DATABASE claimcore TEMPLATE template0 ENCODING 'UTF8'
+CREATE ROLE claimcore_owner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+CREATE ROLE claimcore_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+CREATE DATABASE claimcore OWNER claimcore_owner TEMPLATE template0 ENCODING 'UTF8'
   LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8';
 ```
+
+Owner commands require the current database owner with `NOSUPERUSER`, `NOCREATEROLE`,
+`NOREPLICATION` and `NOBYPASSRLS`. Apply the [TLS-only access rules](../deployment/postgres-hba.conf)
+to the ClaimCore database and roles when managing PostgreSQL yourself.
 
 ### Initialize the register
 
@@ -162,7 +174,7 @@ an output reply. Stdout remains one JSON reply; storage diagnostics use stderr.
 | --- | --- |
 | `CONNECTION_FILE_REQUIRED`, `CONNECTION_FILE_REFUSED`, `CONNECTION_FILE_INVALID` | Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to an absolute private file containing a nonempty UTF-8 connection string; check permissions. |
 | `CONNECTION_INVALID`, `CONNECTION_REJECTED`, `UNSAFE_TRANSPORT` | Check connection syntax, credentials and verified TLS for remote hosts. |
-| `PERMISSION_DENIED` | Use credentials with the privileges required by the owner command. |
+| `PERMISSION_DENIED` | Use the dedicated database owner and check its ownership and role attributes. |
 | `TIME_ZONE_INVALID`, `INITIAL_OWNER_INVALID`, `INVOCATION_INVALID` | Check the command's help, canonical IANA zone, owner principal/profile and supported roles. |
 | `ALREADY_INITIALIZED` | Inspect status; initialization does not adopt or upgrade an existing schema. |
 | `UNSUPPORTED_DATABASE` | Use UTF8 encoding, the built-in C.UTF-8 locale, and a cluster with data checksums enabled. The owner command exits with code 2. Web startup reports `RUNTIME_UNSUPPORTED_DATABASE`. |

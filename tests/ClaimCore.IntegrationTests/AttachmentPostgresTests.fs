@@ -583,7 +583,8 @@ let private corruptWithdrawn (database: PostgresFixture.Database) =
         let! trusted = checkpoint database
 
         let! handle = maintained database
-        use! witness = database.OwnerSource.OpenConnectionAsync()
+        // The privileged recovery connection owns this temporary snapshot.
+        use! witness = database.SuperuserSource.OpenConnectionAsync()
 
         let! _ =
             DatabaseSession.execute

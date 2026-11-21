@@ -136,19 +136,14 @@ let private initialize
     (environment: Dictionary<string, string>)
     =
     task {
-        use source = NpgsqlDataSource.Create(postgres.GetConnectionString())
-        use! connection = source.OpenConnectionAsync()
-
-        use command =
-            new NpgsqlCommand(
-                "CREATE ROLE claimcore_runtime LOGIN PASSWORD 'synthetic-only'",
-                connection
-            )
-
-        let! _ = command.ExecuteNonQueryAsync()
+        use superuser = NpgsqlDataSource.Create(postgres.GetConnectionString())
+        do! PostgresFixture.createRoles superuser CancellationToken.None
 
         environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <-
-            FixtureFiles.text directory "owner.connection" (postgres.GetConnectionString())
+            FixtureFiles.text
+                directory
+                "owner.connection"
+                (PostgresFixture.ownerConnection postgres)
 
         let arguments =
             [
@@ -184,10 +179,11 @@ let private initialize
 
             Expect.equal result.ExitCode 0 ("Published administration " + arguments.Head)
 
-        let settings = NpgsqlConnectionStringBuilder(postgres.GetConnectionString())
-        settings.Username <- "claimcore_runtime"
-        settings.Password <- "synthetic-only"
-        return FixtureFiles.text directory "runtime.connection" settings.ConnectionString
+        return
+            FixtureFiles.text
+                directory
+                "runtime.connection"
+                (PostgresFixture.runtimeConnection postgres)
     }
 
 type Fixture() =
@@ -216,6 +212,23 @@ type Fixture() =
     let mutable webSettings = Dictionary<string, string>()
     let adminEnvironment = Dictionary<string, string>()
     let serviceEnvironment = Dictionary<string, string>()
+
+    member _.OpenRuntimeMonitor() =
+        task {
+            // Observe the published runtime's own role without borrowing its pool.
+            let settings =
+                NpgsqlConnectionStringBuilder(PostgresFixture.runtimeConnection postgres)
+
+            settings.Pooling <- false
+            let connection = new NpgsqlConnection(settings.ConnectionString)
+
+            try
+                do! connection.OpenAsync()
+                return connection
+            with error ->
+                connection.Dispose()
+                return raise error
+        }
 
     member _.Directory = directory
     member _.Root = root

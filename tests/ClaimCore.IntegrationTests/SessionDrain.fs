@@ -20,7 +20,7 @@ let private token = CancellationToken.None
 let private runtime (database: PostgresFixture.Database) =
     task {
         let settings =
-            NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         settings.Username <- "claimcore_runtime"
         settings.Password <- "synthetic-only"
@@ -39,7 +39,7 @@ let private runtime (database: PostgresFixture.Database) =
 
 let private waitForRow (database: PostgresFixture.Database) application =
     task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! connection = database.RuntimeSource.OpenConnectionAsync()
         let watch = Stopwatch.StartNew()
         let mutable waiting = false
 

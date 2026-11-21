@@ -48,7 +48,7 @@ let private completed expectedCount self =
 
 let private waitForLocks (database: PostgresFixture.Database) expected =
     task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! connection = database.RuntimeSource.OpenConnectionAsync()
         let watch = Diagnostics.Stopwatch.StartNew()
         let mutable count = 0L
 
@@ -541,7 +541,7 @@ let private rollbackAndUnknown (database: PostgresFixture.Database) =
                 [||]
 
         let settings =
-            NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         use proxy =
             new CommitProxy.Proxy(

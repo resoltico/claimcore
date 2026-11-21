@@ -51,7 +51,7 @@ let private initialization (database: PostgresFixture.Database) =
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 
@@ -73,7 +73,7 @@ let private initialization (database: PostgresFixture.Database) =
             "Status identifies the authored owner"
 
         let settings =
-            Npgsql.NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+            Npgsql.NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
         settings.Username <- "claimcore_runtime"
         settings.Password <- "synthetic-only"
@@ -152,15 +152,19 @@ let private rollback (database: PostgresFixture.Database) =
     task {
         do! reset database
 
-        do!
-            sql
-                database
+        // A cluster event trigger injects a late failure into ordinary owner initialization.
+        use! faultInjector = database.SuperuserSource.OpenConnectionAsync()
+
+        let! _ =
+            DatabaseSession.execute
+                faultInjector
                 "CREATE FUNCTION public.reject_initial_grant() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.role='PAYMENT_RECORDER' THEN RAISE EXCEPTION 'synthetic bootstrap failure'; END IF; RETURN NEW; END $$; CREATE FUNCTION public.arm_initial_failure() RETURNS event_trigger LANGUAGE plpgsql AS $$ DECLARE item record; BEGIN FOR item IN SELECT * FROM pg_event_trigger_ddl_commands() LOOP IF item.object_identity='claimcore.grants' AND item.object_type='table' AND NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('claimcore.grants') AND tgname='reject_initial_grant') THEN EXECUTE 'CREATE TRIGGER reject_initial_grant BEFORE INSERT ON claimcore.grants FOR EACH ROW EXECUTE FUNCTION public.reject_initial_grant()'; END IF; END LOOP; END $$; CREATE EVENT TRIGGER arm_initial_failure ON ddl_command_end WHEN TAG IN ('CREATE TABLE') EXECUTE FUNCTION public.arm_initial_failure()"
                 [||]
+                token
 
         use administration =
             new Administration(
-                database.Container.GetConnectionString(),
+                PostgresFixture.ownerConnectionString database,
                 BuildIdentity.current.Version
             )
 

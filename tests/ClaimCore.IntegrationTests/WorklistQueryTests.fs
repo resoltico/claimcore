@@ -200,26 +200,60 @@ let private facets fixture =
             ((Vocabulary.entries CaseListOrder.vocabulary |> List.map snd) |> Set.ofList)
             "Every declared order executes"
 
-        let mutable scenarios = 0
+        let scenarios =
+            [
+                for lifecycle in lifecycleSets do
+                    for status in statusSets do
+                        for progress in progressSets do
+                            for order in orders do
+                                let filter =
+                                    CaseListFilter.create lifecycle status progress None order
 
-        for lifecycle in lifecycleSets do
-            for status in statusSets do
-                for progress in progressSets do
-                    for order in orders do
-                        let filter = CaseListFilter.create lifecycle status progress None order
+                                let rows = expected filter
 
-                        for limit in limits do
-                            do! walk fixture filter limit (expected filter)
-                            scenarios <- scenarios + 1
+                                for limit in limits do
+                                    yield filter, limit, rows
+            ]
 
         Expect.equal
-            scenarios
+            scenarios.Length
             ((1 <<< ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length)
              * (1 <<< ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length)
              * (1 <<< ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length)
              * ((Vocabulary.entries CaseListOrder.vocabulary |> List.map snd)).Length
              * limits.Length)
             "Every facet set, declared order and page size executes"
+
+        // The seeded fixture remains read-only. Independent walks can overlap Docker
+        // round trips, while each walk still follows cursor pages in order.
+        let pool =
+            Npgsql.NpgsqlConnectionStringBuilder(fixture.Database.RuntimeSource.ConnectionString)
+
+        let workers = ParallelOptions(MaxDegreeOfParallelism = min 8 pool.MaxPoolSize)
+
+        do!
+            Parallel.ForEachAsync(
+                scenarios,
+                workers,
+                fun (filter, limit, rows) _ ->
+                    ValueTask(
+                        task {
+                            try
+                                do! walk fixture filter limit rows
+                            with failure ->
+                                return
+                                    raise (
+                                        InvalidOperationException(
+                                            sprintf
+                                                "Worklist walk failed for %A at page size %d."
+                                                filter
+                                                limit,
+                                            failure
+                                        )
+                                    )
+                        }
+                    )
+            )
     }
 
 let private search fixture =

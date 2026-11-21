@@ -368,7 +368,9 @@ let private connectionGuards
     (database: Testcontainers.PostgreSql.PostgreSqlContainer)
     =
     task {
-        let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
+        let settings =
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnection database)
+
         settings.Password <- "incorrect-synthetic-password"
         let path = privateText directory "bad-connection" settings.ConnectionString
         let! failed = invoke binary path [ "head" ] 2
@@ -394,7 +396,8 @@ let private lostCommit
     task {
         do! DatabaseScenarios.resetForInitialization connection
 
-        let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
+        let settings =
+            NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnection database)
 
         use proxy =
             new CommitProxy.Proxy(
@@ -419,7 +422,7 @@ let private lostCommit
             "Landed commit with lost confirmation is uncertain"
 
         let directFile =
-            privateText directory "direct-connection" (database.GetConnectionString())
+            privateText directory "direct-connection" (PostgresFixture.ownerConnection database)
 
         let! _ = invoke binary directFile [ "status" ] 0
 
@@ -484,24 +487,27 @@ let private publishedCommands () =
                         async {
                             try
                                 do! database.StartAsync() |> Async.AwaitTask
-                                use source = NpgsqlDataSource.Create(database.GetConnectionString())
+
+                                use bootstrap =
+                                    NpgsqlDataSource.Create(database.GetConnectionString())
+
+                                do!
+                                    PostgresFixture.createRoles bootstrap CancellationToken.None
+                                    |> Async.AwaitTask
+
+                                use source =
+                                    NpgsqlDataSource.Create(
+                                        PostgresFixture.ownerConnection database
+                                    )
 
                                 use! connection =
                                     source.OpenConnectionAsync().AsTask() |> Async.AwaitTask
-
-                                let! _ =
-                                    DatabaseSession.execute
-                                        connection
-                                        "CREATE ROLE claimcore_runtime LOGIN"
-                                        [||]
-                                        CancellationToken.None
-                                    |> Async.AwaitTask
 
                                 let connectionFile =
                                     privateText
                                         directory
                                         "connection"
-                                        (database.GetConnectionString())
+                                        (PostgresFixture.ownerConnection database)
 
                                 do! discovery binary connectionFile |> Async.AwaitTask
 

@@ -50,7 +50,8 @@ let private takeBase database =
 
 let private archivePoint (database: PostgresFixture.Database) label =
     task {
-        use! sql = database.OwnerSource.OpenConnectionAsync()
+        // WAL archive orchestration belongs to the cluster operator in this fixture.
+        use! sql = database.SuperuserSource.OpenConnectionAsync()
 
         let! rows =
             DatabaseSession.rows
@@ -124,7 +125,7 @@ let private restoreCases (database: PostgresFixture.Database) port expected newe
     task {
         use administrative =
             NpgsqlDataSource.Create(
-                endpoint database port (database.Container.GetConnectionString())
+                endpoint database port (PostgresFixture.ownerConnectionString database)
             )
 
         use runtime =
