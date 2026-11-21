@@ -35,6 +35,7 @@ let main arguments =
                     match command with
                     | Initialize _
                     | RecoverOwner _
+                    | RotateMasterKey _
                     | Rebuild _
                     | AdmitRestoredInstallation _
                     | Maintenance _ -> true

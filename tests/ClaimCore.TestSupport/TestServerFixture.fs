@@ -57,6 +57,7 @@ let configuration certificate =
         KeyRingDirectory = DirectoryInfo(Path.GetTempPath())
         Binding = WebBindings.create origin "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
+        DataKeyFile = "synthetic-not-opened"
         Certificate = certificate
         SessionIdle = TimeSpan.FromMinutes 30.
         SessionAbsolute = TimeSpan.FromHours 8.

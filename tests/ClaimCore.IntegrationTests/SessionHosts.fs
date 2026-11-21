@@ -229,6 +229,7 @@ let run (database: PostgresFixture.Database) =
             let! maintenance =
                 RegisterMaintenanceStore.change
                     database.OwnerSource
+                    database.MasterKey
                     (MaintenanceChange.Acquire(
                         0L,
                         System.Guid.Parse "10000000-0000-4000-8000-000000000099"
@@ -239,7 +240,8 @@ let run (database: PostgresFixture.Database) =
                 maintenance.State.Active
                 "Traffic is stopped and maintenance is active for restore admission"
 
-            let! trusted = LedgerAdministration.head database.OwnerSource cancellation
+            let! trusted =
+                LedgerAdministration.head database.OwnerSource database.MasterKey cancellation
 
             do!
                 exec
@@ -258,6 +260,7 @@ let run (database: PostgresFixture.Database) =
             let! admitted =
                 RestoreAdmission.admit
                     database.OwnerSource
+                    database.MasterKey
                     trusted
                     (MaintenanceHandle.create
                         1L
@@ -321,6 +324,7 @@ let run (database: PostgresFixture.Database) =
             let! restoredAdmission =
                 RestoreAdmission.admit
                     database.OwnerSource
+                    database.MasterKey
                     trusted
                     (MaintenanceHandle.create
                         1L

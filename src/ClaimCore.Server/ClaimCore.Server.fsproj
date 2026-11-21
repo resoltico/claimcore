@@ -23,6 +23,7 @@
     <Compile Include="Admission.fs" />
     <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
+    <Compile Include="MasterKeyFile.fs" />
     <Compile Include="StartupDiagnostics.fs" />
     <Compile Include="StorageFailureLog.fs" />
     <Compile Include="PrivateInputs.fs" />

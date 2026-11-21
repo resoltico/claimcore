@@ -70,6 +70,15 @@ let private admittedOwner directory =
         (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         "The PostgreSQL bootstrap secret has mode 0600"
 
+    let dataKey = Path.Combine(configuration directory, "data.key")
+
+    Expect.equal
+        (File.GetUnixFileMode dataKey)
+        (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+        "The data key file has mode 0600"
+
+    Expect.equal (FileInfo(dataKey).Length) 32L "The master key file contains 32 raw bytes"
+
     Expect.isFalse
         (File.Exists(Path.Combine(configuration directory, "administration/owner.principal")))
         "No deadline-bound principal file is created"
@@ -93,6 +102,34 @@ let private literalMount directory =
         (fields.ReadFields() |> nonNull)
         [| "type=bind"; "source=" + configuration directory; "target=/config" |]
         "Docker's CSV mount argument preserves the admitted path"
+
+let private assertDataKeyMounts directory (document: JsonDocument) =
+    let services = document.RootElement.GetProperty("services")
+
+    for name in [ "web"; "administration" ] do
+        let service = services.GetProperty name
+        let target = "/run/claimcore/data.key"
+
+        let mounted =
+            service.GetProperty("volumes").EnumerateArray()
+            |> Seq.filter (fun volume -> volume.GetProperty("target").GetString() = target)
+            |> Seq.exactlyOne
+
+        Expect.equal
+            (mounted.GetProperty("source").GetString()
+             |> nonNull
+             |> fun path -> path.Replace("$$", "$"))
+            (Path.Combine(directory, "data.key"))
+            "Web and administration share exactly one host file"
+
+        Expect.isTrue
+            (mounted.GetProperty("read_only").GetBoolean())
+            "The master key mount is read-only"
+
+        Expect.equal
+            (service.GetProperty("environment").GetProperty("CLAIMCORE_DATA_KEY_FILE").GetString())
+            target
+            "The configured path matches the mounted path"
 
 let private literalComposePaths directory (document: JsonDocument) =
     let admin =
@@ -139,7 +176,10 @@ let private literalComposePaths directory (document: JsonDocument) =
         (Guid.TryParse(subjectValue, &subject) && subject <> Guid.Empty)
         "Configured subject is the realm identity"
 
-    for service in document.RootElement.GetProperty("services").EnumerateObject() do
+    assertDataKeyMounts (configuration directory) document
+    let services = document.RootElement.GetProperty("services")
+
+    for service in services.EnumerateObject() do
         for volume in service.Value.GetProperty("volumes").EnumerateArray() do
             if volume.GetProperty("type").GetString() = "bind" then
                 let target = volume.GetProperty("target").GetString() |> nonNull
@@ -292,6 +332,7 @@ let private composePaths directory =
         use productionDocument = JsonDocument.Parse output
         assertPostgresBaseline productionDocument
         assertBootstrapSecret productionDocument
+        assertDataKeyMounts "/srv/claimcore/config" productionDocument
     }
 
 let private inspectRoleMount directory file project expected =

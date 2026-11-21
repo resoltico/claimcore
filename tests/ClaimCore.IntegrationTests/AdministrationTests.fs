@@ -49,10 +49,10 @@ let private ownerArguments =
         "CASE_HANDLER"
     ]
 
-let private discovery binary connection =
+let private discovery binary connection keyFile =
     task {
         for _ in 1..2 do
-            let! help = invoke binary (connection + ".absent") [ "help" ] 0
+            let! help = invoke binary (connection + ".absent") (keyFile + ".absent") [ "help" ] 0
 
             Expect.equal
                 (help.GetProperty("acts").EnumerateArray()
@@ -62,6 +62,7 @@ let private discovery binary connection =
                     "serve"
                     "initialize"
                     "recover-owner"
+                    "rotate-master-key"
                     "verify"
                     "rebuild"
                     "admit-restored-installation"
@@ -73,33 +74,44 @@ let private discovery binary connection =
                 ]
                 "Exact command set"
 
-            let! version = invoke binary (connection + ".absent") [ "version" ] 0
-            let! json = invoke binary (connection + ".absent") [ "version"; "--json" ] 0
+            let! version =
+                invoke binary (connection + ".absent") (keyFile + ".absent") [ "version" ] 0
+
+            let! json =
+                invoke
+                    binary
+                    (connection + ".absent")
+                    (keyFile + ".absent")
+                    [ "version"; "--json" ]
+                    0
+
             Expect.equal (json.GetRawText()) (version.GetRawText()) "Both version forms emit JSON"
 
-            let! refusal = invoke binary connection [ "unsupported.synthetic" ] 2
+            let! refusal = invoke binary connection keyFile [ "unsupported.synthetic" ] 2
             fault "INVOCATION_INVALID" refusal
     }
 
-let private initialize binary connection =
+let private initialize binary connection keyFile =
     task {
-        let! missing = invoke binary connection [ "migrate" ] 2
+        let! missing = invoke binary connection keyFile [ "migrate" ] 2
         fault "INVOCATION_INVALID" missing
-        let! _ = invoke binary connection [ "head" ] 2
-        let! _ = invoke binary connection [ "verify" ] 2
-        let! _ = invoke binary connection ([ "initialize"; "UTC" ] @ ownerArguments) 2
+        let! _ = invoke binary connection keyFile [ "head" ] 2
+        let! _ = invoke binary connection keyFile [ "verify" ] 2
+
+        let! _ =
+            invoke binary connection keyFile ([ "initialize"; "UTC" ] @ ownerArguments) 2
 
         let skip = [ "initialize"; "Etc/UTC"; "--skip-existing" ] @ ownerArguments
-        let! first = invoke binary connection skip 0
+        let! first = invoke binary connection keyFile skip 0
 
         Expect.equal (kind first) "INITIALIZED" "Schema and owner are committed together"
 
         let! repeated =
-            invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
+            invoke binary connection keyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
 
         fault "ALREADY_INITIALIZED" repeated
-        let! before = invoke binary connection [ "head" ] 0
-        let! skipped = invoke binary connection skip 0
+        let! before = invoke binary connection keyFile [ "head" ] 0
+        let! skipped = invoke binary connection keyFile skip 0
         Expect.equal (kind skipped) "INITIALIZATION_SKIPPED" "Readable installation is kept"
 
         Expect.equal
@@ -107,14 +119,14 @@ let private initialize binary connection =
             (first.GetProperty("installationId").GetGuid())
             "The original installation is identified"
 
-        let! after = invoke binary connection [ "head" ] 0
+        let! after = invoke binary connection keyFile [ "head" ] 0
 
         Expect.equal
             (after.GetRawText())
             (before.GetRawText())
             "The skip leaves the ledger unchanged"
 
-        let! status = invoke binary connection [ "status" ] 0
+        let! status = invoke binary connection keyFile [ "status" ] 0
 
         Expect.equal
             (status
@@ -125,14 +137,14 @@ let private initialize binary connection =
             "Administration fixture owner"
             "Status shows the recorded owner"
 
-        let! retired = invoke binary connection [ "provision-owner" ] 2
+        let! retired = invoke binary connection keyFile [ "provision-owner" ] 2
         fault "INVOCATION_INVALID" retired
         return ()
     }
 
-let private checkpoints binary connection =
+let private checkpoints binary connection keyFile =
     task {
-        let! head = invoke binary connection [ "head" ] 0
+        let! head = invoke binary connection keyFile [ "head" ] 0
 
         let position =
             JsonSerializer.SerializeToElement(
@@ -149,16 +161,17 @@ let private checkpoints binary connection =
                 (head.GetRawText())
 
         for _ in 1..2 do
-            let! verified = invoke binary connection [ "verify"; "--checkpoint"; checkpoint ] 0
+            let! verified =
+                invoke binary connection keyFile [ "verify"; "--checkpoint"; checkpoint ] 0
 
             Expect.isTrue
                 (JsonElement.DeepEquals(verified.GetProperty("position"), position))
                 "Verifier agrees with head"
 
-            let! repeated = invoke binary connection [ "head" ] 0
+            let! repeated = invoke binary connection keyFile [ "head" ] 0
             Expect.equal (repeated.GetRawText()) (head.GetRawText()) "Read-only head repeats"
 
-        let! status = invoke binary connection [ "status" ] 0
+        let! status = invoke binary connection keyFile [ "status" ] 0
         Expect.equal (kind status) "STATUS" "Owner status has its own read-only result"
 
         Expect.isTrue
@@ -201,12 +214,19 @@ let private checkpoints binary connection =
         maintenanceState 0L None status
 
         for act in [ "rebuild"; "admit-restored-installation" ] do
-            let! missing = invoke binary connection [ act; "--checkpoint"; checkpoint ] 64
+            let! missing =
+                invoke binary connection keyFile [ act; "--checkpoint"; checkpoint ] 64
+
             Expect.equal (kind missing) "USAGE_ERROR" "An omitted handle is a usage failure"
-            let! inactive = invoke binary connection (checkpointArguments act "1" pause) 2
+
+            let! inactive =
+                invoke binary connection keyFile (checkpointArguments act "1" pause) 2
+
             fault "MAINTENANCE_REQUIRED" inactive
 
-        let! acquired = invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 0
+        let! acquired =
+            invoke binary connection keyFile [ "maintenance"; "acquire"; "0"; pause ] 0
+
         Expect.equal (kind acquired) "MAINTENANCE" "Owner acquisition commits an explicit pause"
 
         Expect.isTrue
@@ -214,7 +234,9 @@ let private checkpoints binary connection =
             "Initial acquisition changes state"
 
         maintenanceState 1L (Some pause) acquired
-        let! repeated = invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 0
+
+        let! repeated =
+            invoke binary connection keyFile [ "maintenance"; "acquire"; "0"; pause ] 0
 
         Expect.isFalse
             (repeated.GetProperty("changed").GetBoolean())
@@ -222,7 +244,9 @@ let private checkpoints binary connection =
 
         maintenanceState 1L (Some pause) repeated
 
-        let! rebuilt = invoke binary connection (checkpointArguments "rebuild" "1" pause) 0
+        let! rebuilt =
+            invoke binary connection keyFile (checkpointArguments "rebuild" "1" pause) 0
+
         Expect.equal (kind rebuilt) "REBUILT" "Reconstruction consumes the exact active handle"
 
         Expect.isTrue
@@ -230,7 +254,12 @@ let private checkpoints binary connection =
             "Owner rebuild preserves the head"
 
         let! takeover =
-            invoke binary connection [ "maintenance"; "takeover"; "1"; pause; replacement ] 0
+            invoke
+                binary
+                connection
+                keyFile
+                [ "maintenance"; "takeover"; "1"; pause; replacement ]
+                0
 
         maintenanceState 2L (Some replacement) takeover
 
@@ -239,18 +268,21 @@ let private checkpoints binary connection =
             "Takeover transfers pause ownership"
 
         for act in [ "rebuild"; "admit-restored-installation" ] do
-            let! stale = invoke binary connection (checkpointArguments act "1" pause) 2
+            let! stale = invoke binary connection keyFile (checkpointArguments act "1" pause) 2
             fault "MAINTENANCE_CONFLICT" stale
 
-        let! staleResume = invoke binary connection [ "maintenance"; "resume"; "1"; pause ] 2
+        let! staleResume =
+            invoke binary connection keyFile [ "maintenance"; "resume"; "1"; pause ] 2
+
         fault "MAINTENANCE_CONFLICT" staleResume
-        let! current = invoke binary connection [ "status" ] 0
+        let! current = invoke binary connection keyFile [ "status" ] 0
         maintenanceState 2L (Some replacement) current
 
         let! admitted =
             invoke
                 binary
                 connection
+                keyFile
                 (checkpointArguments "admit-restored-installation" "2" replacement)
                 0
 
@@ -264,7 +296,7 @@ let private checkpoints binary connection =
             "Admission preserves the trusted root and frontier"
 
         let! resumed =
-            invoke binary connection [ "maintenance"; "resume"; "2"; replacement ] 0
+            invoke binary connection keyFile [ "maintenance"; "resume"; "2"; replacement ] 0
 
         maintenanceState 3L None resumed
 
@@ -273,39 +305,47 @@ let private checkpoints binary connection =
             "An exact resume releases the pause"
 
         let! repeatedResume =
-            invoke binary connection [ "maintenance"; "resume"; "2"; replacement ] 2
+            invoke binary connection keyFile [ "maintenance"; "resume"; "2"; replacement ] 2
 
         fault "MAINTENANCE_CONFLICT" repeatedResume
 
         let! releasedAcquire =
-            invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 2
+            invoke binary connection keyFile [ "maintenance"; "acquire"; "0"; pause ] 2
 
         fault "MAINTENANCE_CONFLICT" releasedAcquire
 
         for act in [ "rebuild"; "admit-restored-installation" ] do
-            let! inactive = invoke binary connection (checkpointArguments act "2" replacement) 2
+            let! inactive =
+                invoke binary connection keyFile (checkpointArguments act "2" replacement) 2
+
             fault "MAINTENANCE_REQUIRED" inactive
 
-        let! inactive = invoke binary connection [ "status" ] 0
+        let! inactive = invoke binary connection keyFile [ "status" ] 0
         maintenanceState 3L None inactive
-        let! reacquired = invoke binary connection [ "maintenance"; "acquire"; "3"; fresh ] 0
+
+        let! reacquired =
+            invoke binary connection keyFile [ "maintenance"; "acquire"; "3"; fresh ] 0
+
         maintenanceState 4L (Some fresh) reacquired
-        let! released = invoke binary connection [ "maintenance"; "resume"; "4"; fresh ] 0
+
+        let! released =
+            invoke binary connection keyFile [ "maintenance"; "resume"; "4"; fresh ] 0
+
         maintenanceState 5L None released
 
         for retired in [ "prune-sessions"; "invalidate-restored-sessions" ] do
-            let! refused = invoke binary connection [ retired ] 2
+            let! refused = invoke binary connection keyFile [ retired ] 2
             fault "INVOCATION_INVALID" refused
 
         for retired in [ "on"; "off" ] do
-            let! refused = invoke binary connection [ "maintenance"; retired ] 64
+            let! refused = invoke binary connection keyFile [ "maintenance"; retired ] 64
 
             Expect.equal
                 (kind refused)
                 "USAGE_ERROR"
                 "Retired generation-free maintenance syntax is not accepted"
 
-        let! _ = invoke binary connection [ "rebuild" ] 64
+        let! _ = invoke binary connection keyFile [ "rebuild" ] 64
 
         for changed in
             [
@@ -313,11 +353,11 @@ let private checkpoints binary connection =
                 "-1:" + String.replicate 64 "0"
                 "1:NOT_A_HASH"
             ] do
-            let! _ = invoke binary connection [ "verify"; "--expect"; changed ] 64
+            let! _ = invoke binary connection keyFile [ "verify"; "--expect"; changed ] 64
             ()
     }
 
-let private divergence binary connection (database: NpgsqlConnection) =
+let private divergence binary connection keyFile (database: NpgsqlConnection) =
     task {
         let! _ =
             DatabaseSession.execute
@@ -326,7 +366,7 @@ let private divergence binary connection (database: NpgsqlConnection) =
                 [||]
                 CancellationToken.None
 
-        let! result = invoke binary connection [ "verify" ] 5
+        let! result = invoke binary connection keyFile [ "verify" ] 5
         Expect.equal (kind result) "DIVERGED" "Divergence has its own public kind and exit"
         Expect.equal (result.GetProperty("finding").GetString() |> nonNull) "HEAD" "Exact finding"
 
@@ -342,7 +382,7 @@ let private divergence binary connection (database: NpgsqlConnection) =
                 [||]
                 CancellationToken.None
 
-        let! head = invoke binary connection [ "head" ] 0
+        let! head = invoke binary connection keyFile [ "head" ] 0
         let changed = System.Text.Json.Nodes.JsonNode.Parse(head.GetRawText()) |> nonNull
         changed["operationHash"] <- System.Text.Json.Nodes.JsonValue.Create(String.replicate 64 "0")
 
@@ -352,7 +392,8 @@ let private divergence binary connection (database: NpgsqlConnection) =
                 "mismatched-checkpoint.json"
                 (changed.ToJsonString())
 
-        let! mismatch = invoke binary connection [ "verify"; "--checkpoint"; checkpoint ] 5
+        let! mismatch =
+            invoke binary connection keyFile [ "verify"; "--checkpoint"; checkpoint ] 5
 
         Expect.equal
             (mismatch.GetProperty("finding").GetString() |> nonNull)
@@ -365,6 +406,7 @@ let private divergence binary connection (database: NpgsqlConnection) =
 let private connectionGuards
     binary
     directory
+    keyFile
     (database: Testcontainers.PostgreSql.PostgreSqlContainer)
     =
     task {
@@ -373,23 +415,24 @@ let private connectionGuards
 
         settings.Password <- "incorrect-synthetic-password"
         let path = privateText directory "bad-connection" settings.ConnectionString
-        let! failed = invoke binary path [ "head" ] 2
+        let! failed = invoke binary path keyFile [ "head" ] 2
         fault "CONNECTION_REJECTED" failed
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
-        let! _ = invoke binary path [ "head" ] 2
+        let! _ = invoke binary path keyFile [ "head" ] 2
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         settings.Host <- "external.invalid"
         settings.SslMode <- SslMode.Prefer
         File.WriteAllText(path, settings.ConnectionString)
-        let! _ = invoke binary path ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
+        let! _ = invoke binary path keyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
         File.WriteAllBytes(path, [| 0xffuy |])
-        let! _ = invoke binary path [ "head" ] 2
+        let! _ = invoke binary path keyFile [ "head" ] 2
         ()
     }
 
 let private lostCommit
     binary
     directory
+    keyFile
     (database: Testcontainers.PostgreSql.PostgreSqlContainer)
     (connection: NpgsqlConnection)
     =
@@ -414,7 +457,7 @@ let private lostCommit
         let proxyFile = privateText directory "proxy-connection" settings.ConnectionString
 
         let! unknown =
-            invoke binary proxyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 4
+            invoke binary proxyFile keyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 4
 
         Expect.equal
             (kind unknown)
@@ -424,7 +467,7 @@ let private lostCommit
         let directFile =
             privateText directory "direct-connection" (PostgresFixture.ownerConnection database)
 
-        let! _ = invoke binary directFile [ "status" ] 0
+        let! _ = invoke binary directFile keyFile [ "status" ] 0
 
         let! rows =
             DatabaseSession.rows
@@ -439,7 +482,7 @@ let private lostCommit
             "Safe repeat does not create another installation"
     }
 
-let private foreignRefusal binary connectionFile (connection: NpgsqlConnection) =
+let private foreignRefusal binary connectionFile keyFile (connection: NpgsqlConnection) =
     async {
         let! _ =
             DatabaseSession.execute
@@ -457,7 +500,7 @@ let private foreignRefusal binary connectionFile (connection: NpgsqlConnection) 
                 [ "verify" ]
                 [ "head" ]
             ] do
-            let! _ = invoke binary connectionFile arguments 2 |> Async.AwaitTask
+            let! _ = invoke binary connectionFile keyFile arguments 2 |> Async.AwaitTask
             ()
 
         let! marker =
@@ -475,6 +518,8 @@ let private publishedCommands () =
     async {
         let directory = Directory.CreateTempSubdirectory("claimcore-admin-test-").FullName
         let published = Path.Combine(directory, "published")
+        let keyFile = Path.Combine(directory, "data.key")
+        PostgresFixture.writeKeyFile keyFile
 
         let! outcome =
             async {
@@ -509,22 +554,26 @@ let private publishedCommands () =
                                         "connection"
                                         (PostgresFixture.ownerConnection database)
 
-                                do! discovery binary connectionFile |> Async.AwaitTask
+                                do! discovery binary connectionFile keyFile |> Async.AwaitTask
 
-                                do! initialize binary connectionFile |> Async.AwaitTask
+                                do! initialize binary connectionFile keyFile |> Async.AwaitTask
 
 
-                                do! checkpoints binary connectionFile |> Async.AwaitTask
-
-                                do! divergence binary connectionFile connection |> Async.AwaitTask
-
-                                do! connectionGuards binary directory database |> Async.AwaitTask
+                                do! checkpoints binary connectionFile keyFile |> Async.AwaitTask
 
                                 do!
-                                    lostCommit binary directory database connection
+                                    divergence binary connectionFile keyFile connection
                                     |> Async.AwaitTask
 
-                                do! foreignRefusal binary connectionFile connection
+                                do!
+                                    connectionGuards binary directory keyFile database
+                                    |> Async.AwaitTask
+
+                                do!
+                                    lostCommit binary directory keyFile database connection
+                                    |> Async.AwaitTask
+
+                                do! foreignRefusal binary connectionFile keyFile connection
                                 return Ok()
                             with error ->
                                 return Error error

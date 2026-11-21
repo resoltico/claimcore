@@ -9,6 +9,9 @@ type OperatorFault =
     | ConnectionFileRequired
     | ConnectionFileRefused
     | ConnectionFileInvalid
+    | DataKeyFileRequired
+    | DataKeyFileInvalid
+    | DataKeyInvalid
     | ConnectionInvalid
     | ConnectionRejected
     | UnsafeTransport

@@ -52,6 +52,10 @@ let private configured action =
         for path in [ connection; certificate ] do
             File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
 
+        let keyFile = Path.Combine(directory, "data.key")
+        File.WriteAllBytes(keyFile, RandomNumberGenerator.GetBytes 32)
+        File.SetUnixFileMode(keyFile, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+        Environment.SetEnvironmentVariable("CLAIMCORE_DATA_KEY_FILE", keyFile)
         Environment.SetEnvironmentVariable("CLAIMCORE_CONNECTION_FILE", connection)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificate)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_ORIGIN", "https://probe.localhost:5443")
@@ -68,6 +72,7 @@ let private catalogue () =
         set
             [
                 "CLAIMCORE_CONNECTION_FILE"
+                "CLAIMCORE_DATA_KEY_FILE"
                 "CLAIMCORE_WEB_ORIGIN"
                 "CLAIMCORE_WEB_LISTEN_ADDRESS"
                 "CLAIMCORE_WEB_LISTEN_PORT"

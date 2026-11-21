@@ -40,6 +40,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 before
                 (MaintenanceHandle.create
                     1L

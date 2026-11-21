@@ -17,6 +17,7 @@ type DatabaseSuccess =
     | Initialized of Guid
     | InitializationSkipped of Guid
     | OwnerRecovery of OwnerRecoveryResult
+    | MasterKeyRotated of installationId: Guid
     | Rebuilt of ProjectionRebuildReport
     | RestoredInstallationAdmitted of RestoreAdmissionReport
     | Status of InstallationStatus
@@ -158,6 +159,15 @@ module Replies =
     // This closed codec table pairs every success constructor with its inverse projection; it has no nested decisions.
     let private successVariants =
         [
+            variant
+                "MASTER_KEY_ROTATED"
+                (DatabaseSuccess.MasterKeyRotated >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.MasterKeyRotated installation) ->
+                    Some installation
+                | _ -> None)
+                (record id |> field "installationId" id uuid)
+
             variant
                 "STATUS"
                 (DatabaseSuccess.Status >> Reply.Succeeded)
@@ -327,6 +337,9 @@ module Replies =
 
     let encode reply =
         Codec.encode codec reply, ExitCode.value (exitCode reply)
+
+    let masterKeyRotated installation =
+        Reply.Succeeded(DatabaseSuccess.MasterKeyRotated installation) |> encode
 
     let initialized id =
         Reply.Succeeded(DatabaseSuccess.Initialized id) |> encode

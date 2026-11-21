@@ -142,7 +142,12 @@ let private requireTrustedConnection
 
 let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken) =
     task {
-        let! opened = Runtime.openConnection configuration.ConnectionString ct
+        use masterKey =
+            MasterKeyFile.read configuration.DataKeyFile
+            |> Option.defaultWith (fun () ->
+                WebStartupDiagnostics.refuse WebStartupProblem.DataKeyFileInvalid)
+
+        let! opened = Runtime.openConnection configuration.ConnectionString masterKey ct
 
         match opened with
         | Ok value -> return value

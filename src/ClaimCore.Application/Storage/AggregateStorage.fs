@@ -17,8 +17,7 @@ module internal AggregateStorage =
             match Map.tryFind id cache with
             | Some record -> return record, cache
             | None ->
-                let! record =
-                    OperationStorage.find tx.Connection tx.InstallationId id tx.CancellationToken
+                let! record = OperationStorage.find tx.Connection tx.Cipher id tx.CancellationToken
 
                 let record =
                     record |> Option.defaultWith (fun () -> corrupt "Accepted part root is absent.")
@@ -156,7 +155,7 @@ module internal AggregateStorage =
                                 if includePrivate then
                                     OperationStorage.find
                                         tx.Connection
-                                        tx.InstallationId
+                                        tx.Cipher
                                         operation
                                         tx.CancellationToken
                                 else

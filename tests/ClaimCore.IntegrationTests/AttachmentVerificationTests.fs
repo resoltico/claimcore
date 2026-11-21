@@ -118,6 +118,7 @@ let private joinMaintenance (database: PostgresFixture.Database) generation =
         let! mode =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Acquire(generation, handleId))
                 token
 
@@ -130,15 +131,20 @@ let private qualifiedAtBoundary (database: PostgresFixture.Database) =
         let! trusted = checkpoint database
         let! handle = joinMaintenance database 0L
 
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource trusted handle token
+        let! rebuilt =
+            ProjectionRebuild.rebuild database.OwnerSource database.MasterKey trusted handle token
+
         Expect.isOk rebuilt "Exact retained capacity permits projection rebuild"
 
-        let! restored = RestoreAdmission.admit database.OwnerSource trusted handle token
+        let! restored =
+            RestoreAdmission.admit database.OwnerSource database.MasterKey trusted handle token
+
         Expect.isOk restored "Exact retained capacity permits restore admission"
 
         let! resumed =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Resume handle)
                 token
 
@@ -154,7 +160,8 @@ let private rejectedByAll
     generation
     =
     task {
-        let! verified = Verification.verify database.OwnerSource (Some trusted) token
+        let! verified =
+            Verification.verify database.OwnerSource database.MasterKey (Some trusted) token
 
         let expect finding =
             Expect.equal
@@ -168,8 +175,12 @@ let private rejectedByAll
             failtest "Verification admitted invalid attachment evidence"
 
         let! handle = joinMaintenance database generation
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource trusted handle token
-        let! restored = RestoreAdmission.admit database.OwnerSource trusted handle token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild database.OwnerSource database.MasterKey trusted handle token
+
+        let! restored =
+            RestoreAdmission.admit database.OwnerSource database.MasterKey trusted handle token
 
         for result in [ Result.map ignore rebuilt; Result.map ignore restored ] do
             match result with
@@ -410,7 +421,8 @@ let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
                 "Ledger-backed match ignores projection absence"
         | other -> failtestf "Expected duplicate without listing projection: %A" other
 
-        // Damage the located row while keeping its queried digest and structural length constraint.
+        // Keep the encrypted width consistent with the damaged length. The denied payload
+        // column forces the preview to detect the disagreement in native metadata.
         do!
             sql
                 database
@@ -420,7 +432,7 @@ let private metadataWithoutPayloadAccess (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.attachment_blobs SET length=2, payload=decode('0000','hex') WHERE blob_id=$1"
+                "UPDATE claimcore.attachment_blobs SET length=2, payload=payload||decode('00','hex') WHERE blob_id=$1"
                 [| box retained |]
 
         do!
@@ -579,8 +591,8 @@ let private externalPayloadStorage (database: PostgresFixture.Database) =
 
         Expect.equal
             (DatabaseSession.value<int> 0 row)
-            65536
-            "The compressible 64 KiB upload is present"
+            (65536 + InstallationCipher.envelopeOverhead)
+            "The 64 KiB upload is stored in its authenticated envelope"
 
         Expect.isTrue
             (DatabaseSession.value<bool> 1 row)

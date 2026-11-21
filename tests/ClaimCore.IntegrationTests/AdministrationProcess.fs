@@ -156,10 +156,14 @@ let requireDiagnostics (errors: string) =
             (value.GetProperty("classification").GetString() |> nonNull)
             "Bounded class"
 
-let invoke binary connectionFile arguments expected =
+let configure (config: ProcessStartInfo) connectionFile dataKeyFile =
+    config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
+    config.Environment["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
+
+let invoke binary connectionFile dataKeyFile arguments expected =
     task {
         let config = start (binary :: arguments)
-        config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
+        configure config connectionFile dataKeyFile
         let! code, output, errors = execute config
 
         Expect.equal

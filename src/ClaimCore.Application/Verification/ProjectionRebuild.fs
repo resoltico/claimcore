@@ -18,6 +18,7 @@ open ClaimCore.RecordFormat
 module internal ProjectionRebuild =
     let rebuild
         (source: NpgsqlDataSource)
+        masterKey
         (expected: InstallationCheckpoint)
         (handle: MaintenanceHandle)
         (token: CancellationToken)
@@ -32,6 +33,7 @@ module internal ProjectionRebuild =
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
                     let! installation, _ = Baseline.require connection token
+                    use! cipher = Baseline.loadCipher connection installation masterKey token
                     do! RegisterMaintenanceStore.requireActive handle connection token
 
                     let! scanned =
@@ -43,6 +45,7 @@ module internal ProjectionRebuild =
                                     Verification.authoritative
                                         connection
                                         installation
+                                        cipher
                                         (Some expected.Position)
                                         token
 

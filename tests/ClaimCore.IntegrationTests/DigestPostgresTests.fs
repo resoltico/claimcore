@@ -265,11 +265,13 @@ let private integration (database: PostgresFixture.Database) =
         let! first =
             ClaimCore.Server.Composition.Runtime.openConnection
                 (PostgresFixture.runtimeConnectionString database)
+                database.MasterKey
                 token
 
         let! second =
             ClaimCore.Server.Composition.Runtime.openConnection
                 (PostgresFixture.runtimeConnectionString database)
+                database.MasterKey
                 token
 
         use first = first |> Result.defaultWith (string >> failtest)
@@ -441,7 +443,10 @@ let private integration (database: PostgresFixture.Database) =
             "Erasing the profile removes opt-in"
 
         let! _ = verified database
-        let! checkpoint = LedgerAdministration.head database.OwnerSource token
+
+        let! checkpoint =
+            LedgerAdministration.head database.OwnerSource database.MasterKey token
+
         do! enterMaintenance database
 
         let maintenance =
@@ -449,7 +454,12 @@ let private integration (database: PostgresFixture.Database) =
             |> Option.get
 
         let! rebuilt =
-            ProjectionRebuild.rebuild database.OwnerSource checkpoint maintenance token
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                database.MasterKey
+                checkpoint
+                maintenance
+                token
 
         Expect.isOk rebuilt "Operational digest claims cannot block rebuilding derived projections"
         let! afterRebuild = recorded database

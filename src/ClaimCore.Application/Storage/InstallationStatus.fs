@@ -70,10 +70,11 @@ module internal InstallationStatus =
             | _ -> return raise (RecordCorruptException "Ledger head is absent.")
         }
 
-    let read (source: NpgsqlDataSource) token =
+    let read (source: NpgsqlDataSource) masterKey token =
         DatabaseSession.read source token (fun connection ->
             task {
                 do! OwnerAdmission.require connection token
                 let! installation = Baseline.require connection token
+                use! _cipher = Baseline.loadCipher connection (fst installation) masterKey token
                 return! readConnection connection installation token
             })

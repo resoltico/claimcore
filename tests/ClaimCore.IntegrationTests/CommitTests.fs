@@ -51,7 +51,7 @@ let private replay
         else
             accepted replay |> ignore
 
-        let! head = Verification.verify database.OwnerSource None token
+        let! head = Verification.verify database.OwnerSource database.MasterKey None token
 
         Expect.equal
             (VerificationSupport.position head).Sequence
@@ -61,7 +61,7 @@ let private replay
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(source, database.Installation, Transactions.timeouts) :> IStore
+        LedgerStore(source, database.Installation, database.Cipher, Transactions.timeouts) :> IStore
 
     let actor =
         Service.create
@@ -94,7 +94,7 @@ let private terminate (database: PostgresFixture.Database) backendId =
 let private lostLookup drop (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let! initial = Verification.verify database.OwnerSource None token
+        let! initial = Verification.verify database.OwnerSource database.MasterKey None token
         let before = (VerificationSupport.position initial).Sequence
 
         let settings =
@@ -149,7 +149,7 @@ let private lostLookup drop (database: PostgresFixture.Database) =
         | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
         | other -> failtestf "An expired ID cannot execute after confirmation: %A" other
 
-        let! head = Verification.verify database.OwnerSource None token
+        let! head = Verification.verify database.OwnerSource database.MasterKey None token
 
         Expect.equal
             (VerificationSupport.position head).Sequence
@@ -160,7 +160,7 @@ let private lostLookup drop (database: PostgresFixture.Database) =
 let private lostPeople drop landed (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let! initial = Verification.verify database.OwnerSource None token
+        let! initial = Verification.verify database.OwnerSource database.MasterKey None token
         let before = (VerificationSupport.position initial).Sequence
 
         let settings =
@@ -208,7 +208,7 @@ let private lostPeople drop landed (database: PostgresFixture.Database) =
              | _ -> false)
             "Exact people replay reconciles both commit outcomes"
 
-        let! head = Verification.verify database.OwnerSource None token
+        let! head = Verification.verify database.OwnerSource database.MasterKey None token
 
         Expect.equal
             (VerificationSupport.position head).Sequence
@@ -224,7 +224,8 @@ let private resolveInitialization (database: PostgresFixture.Database) =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         if present then
@@ -290,7 +291,14 @@ let tests =
                     (run (fun database ->
                         task {
                             let! actor = caseWorker database.Fixture
-                            let! initial = Verification.verify database.OwnerSource None token
+
+                            let! initial =
+                                Verification.verify
+                                    database.OwnerSource
+                                    database.MasterKey
+                                    None
+                                    token
+
                             let before = (VerificationSupport.position initial).Sequence
 
                             let settings =
@@ -382,7 +390,8 @@ let tests =
                             use administration =
                                 new Administration(
                                     settings.ConnectionString,
-                                    BuildIdentity.current.Version
+                                    BuildIdentity.current.Version,
+                                    database.MasterKey
                                 )
 
                             let correlation = Guid.NewGuid()

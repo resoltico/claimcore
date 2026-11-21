@@ -46,6 +46,7 @@ let enterMaintenance (database: PostgresFixture.Database) =
         let! mode =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Acquire(
                     0L,
                     System.Guid.Parse "10000000-0000-4000-8000-000000000099"
@@ -62,7 +63,7 @@ let position =
 
 let verified (database: PostgresFixture.Database) =
     task {
-        let! result = Verification.verify database.OwnerSource None token
+        let! result = Verification.verify database.OwnerSource database.MasterKey None token
 
         return
             match result with
@@ -76,7 +77,7 @@ let verified (database: PostgresFixture.Database) =
 
 let finding expected (database: PostgresFixture.Database) =
     task {
-        let! result = Verification.verify database.OwnerSource None token
+        let! result = Verification.verify database.OwnerSource database.MasterKey None token
 
         match result with
         | VerificationResult.Diverged value ->
@@ -150,8 +151,7 @@ let row (database: PostgresFixture.Database) (sequence: Sequence) =
             |> OperationId.create
             |> Option.get
 
-        let! operation =
-            OperationStorage.find connection database.Fixture.InstallationId identity token
+        let! operation = OperationStorage.find connection database.Cipher identity token
 
         return operation |> Option.defaultWith (fun () -> failtest "Accepted root is missing")
     }
@@ -159,14 +159,15 @@ let row (database: PostgresFixture.Database) (sequence: Sequence) =
 let private updateRoot =
     "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,installation_format=$4,operation_id=$5,actor_id=$6,recorded_at=$7,business_date=$8::text::date,aggregate_kind=$9,task=$10,structure=$11::jsonb WHERE sequence=$1"
 
-let private rootParameters root =
-    let parameters = OperationStorage.parameters root
+let private rootParameters (parameters: (obj | null) array) =
     Array.append [| parameters[1] |] parameters[2..11]
 
-let private replaceRoot connection root =
+let private replaceRoot connection cipher root =
     task {
-        let parameters = OperationStorage.parameters root
-        let! _ = DatabaseSession.execute connection updateRoot (rootParameters root) token
+        let parameters = OperationStorage.parameters cipher root
+
+        let! _ =
+            DatabaseSession.execute connection updateRoot (rootParameters parameters) token
 
         let! _ =
             DatabaseSession.execute
@@ -185,7 +186,7 @@ let private replaceRoot connection root =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload) SELECT $1,(value->>'ordinal')::integer,value#>>'{owner,kind}',(value#>>'{owner,id}')::uuid,decode(value->>'commitment','hex'),decode(value->>'nonce','hex'),decode(value->>'payload','hex') FROM jsonb_array_elements($2::jsonb)"
+                "INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload) SELECT $1,(value->>'ordinal')::integer,value#>>'{owner,kind}',(value#>>'{owner,id}')::uuid,decode(value->>'commitment','hex'),decode(value->>'nonce','hex'),decode(value->>'nonceFingerprint','hex'),decode(value->>'payload','hex') FROM jsonb_array_elements($2::jsonb)"
                 [| parameters[1]; parameters[13] |]
                 token
 
@@ -290,7 +291,13 @@ let rewrite
         let mutable refused = false
 
         try
-            let! _ = DatabaseSession.execute connection updateRoot (rootParameters changed) token
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    updateRoot
+                    (OperationStorage.parameters database.Cipher changed |> rootParameters)
+                    token
+
             ()
         with :? PostgresException as error ->
             refused <- error.SqlState = "CC003"
@@ -309,8 +316,7 @@ let rewrite
         for raw in rows do
             let identity = DatabaseSession.value<Guid> 0 raw |> OperationId.create |> Option.get
 
-            let! value =
-                OperationStorage.find connection database.Fixture.InstallationId identity token
+            let! value = OperationStorage.find connection database.Cipher identity token
 
             originals.Add(Option.get value)
 
@@ -348,7 +354,7 @@ let rewrite
                     root.Structure.Effects
                     root.Structure.Compartments
 
-            do! replaceRoot corruptor rewritten
+            do! replaceRoot corruptor database.Cipher rewritten
             previous <- Some rewritten.Hash
 
         let! _ =
@@ -370,7 +376,10 @@ let recreate header task binding inputs changes nonce =
 let checkpoint (database: PostgresFixture.Database) =
     task {
         let! expected = verified database
-        let! current = LedgerAdministration.head database.OwnerSource token
+
+        let! current =
+            LedgerAdministration.head database.OwnerSource database.MasterKey token
+
         Expect.equal current.Position expected "Checkpoint captures the independently verified root"
         return current
     }

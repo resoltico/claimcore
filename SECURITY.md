@@ -28,6 +28,11 @@ and structured export selections for 24 calendar months, including after whole-c
 The database owner and backup operator remain trusted. See the
 [disclosure trail](docs/operating.md#disclosure-trail).
 
+Attachment bytes and private ledger compartments are encrypted in PostgreSQL with an
+installation data key. Keep the wrapping master key outside the database and back it up
+separately. Case snapshots, search text, notes and parties remain readable in projections.
+Live erasure leaves existing backups and WAL intact. See [data-at-rest keys](docs/operating.md#data-at-rest-keys).
+
 [Private-file admission](docs/operating.md#private-configuration) follows secret-volume symlinks and allows group
 read. It checks neither ownership nor ACLs and does not freeze concurrent changes. Protect the Web key ring
 separately and back it up with the database. Database-backed session sharing is qualified under the documented

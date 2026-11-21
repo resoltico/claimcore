@@ -314,6 +314,7 @@ let private lifecycle database =
         let! repaired =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -347,6 +348,7 @@ let private lifecycle database =
         let! mode =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Resume(
                     MaintenanceHandle.create
                         1L
@@ -445,7 +447,7 @@ let private missingPayload database =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 150) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -472,12 +474,32 @@ let private causalText database =
 
         accepted added |> ignore
         let! _ = verified database
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! coordinates =
+            DatabaseSession.rows
+                connection
+                "SELECT operation_sequence,ordinal,owner_kind,owner_id FROM claimcore.ledger_compartments WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                [| box (id database.Fixture 160) |]
+                token
+
+        let coordinates = List.exactlyOne coordinates
+        let bytes = System.Text.Encoding.UTF8.GetBytes "\"Different valid text\""
+
+        let ciphertext =
+            database.Cipher.EncryptCompartment(
+                DatabaseSession.value<int64> 0 coordinates,
+                DatabaseSession.value<int> 1 coordinates,
+                DatabaseSession.value<string> 2 coordinates,
+                DatabaseSession.value<System.Guid> 3 coordinates,
+                bytes
+            )
 
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger_compartments SET payload=convert_to($2,'UTF8') WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
-                [| box (id database.Fixture 160); box "\"Different valid text\"" |]
+                "UPDATE claimcore.ledger_compartments SET payload=$2 WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                [| box (id database.Fixture 160); box ciphertext |]
 
         do! finding VerificationFinding.PayloadFormat database
     }
@@ -547,7 +569,11 @@ let private targetedLoading database =
         let replace =
             "UPDATE claimcore.ledger_compartments SET payload=$2 WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
 
-        do! guardedSql database replace [| box (id database.Fixture 181); box [| 0uy |] |]
+        do!
+            guardedSql
+                database
+                replace
+                [| box (id database.Fixture 181); box (Array.zeroCreate<byte> payload.Length) |]
 
         let! reminderRows =
             DatabaseSession.rows
@@ -557,7 +583,15 @@ let private targetedLoading database =
                 token
 
         let reminderPayload = DatabaseSession.value<byte array> 0 reminderRows.Head
-        do! guardedSql database replace [| box (id database.Fixture 184); box [| 0uy |] |]
+
+        do!
+            guardedSql
+                database
+                replace
+                [|
+                    box (id database.Fixture 184)
+                    box (Array.zeroCreate<byte> reminderPayload.Length)
+                |]
 
         let! closed =
             executeCase database owner 190 1L "case.close" CaseTransitionInputs.closed

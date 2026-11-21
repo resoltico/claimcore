@@ -1,7 +1,6 @@
 module ClaimCore.IntegrationTests.AttachmentLedgerTests
 
 open System
-open System.Text
 open System.Threading
 open Expecto
 open Npgsql
@@ -14,10 +13,8 @@ let private token = CancellationToken.None
 let private id number =
     Guid.Parse(sprintf "00000000-0000-4000-8000-%012d" number)
 
-let private fixtureSha =
-    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-
-let private fixtureBytes = Encoding.UTF8.GetBytes "abc"
+let private keyedDigest = String.replicate 32 "37"
+let private ciphertext = Array.create 31 0xabuy
 
 let private nullable value =
     value |> Option.map box |> Option.defaultValue (box DBNull.Value)
@@ -33,7 +30,7 @@ let private append
     kind
     revision
     (retained: string option)
-    (descriptor: string option)
+    (structuralLink: string option)
     binary
     erase
     =
@@ -49,7 +46,7 @@ let private append
                         'aggregate',jsonb_build_object('kind','FAMILY','id',$2::uuid),
                         'part',jsonb_build_object('kind',$5::text,'id',$4::uuid),
                         'revision',$6::bigint,'retained',$7::jsonb,
-                        'compartment',CASE WHEN $8::jsonb IS NOT NULL THEN 0 END,
+                        'attachmentLink',$8::jsonb,'compartment',CASE WHEN $8::jsonb IS NOT NULL THEN 0 END,
                         'erases',CASE WHEN $10::boolean THEN jsonb_build_object('kind','FAMILY','id',$2::uuid) END)) AS value
                 )
                 SELECT claimcore.append_operation(
@@ -58,9 +55,8 @@ let private append
                     'FAMILY','sample.change','{"binding":{},"retained":{}}'::jsonb,jsonb_build_array(effect.value),
                     CASE WHEN $8::jsonb IS NULL THEN '[]'::jsonb ELSE jsonb_build_array(jsonb_build_object(
                         'ordinal',0,'owner',jsonb_build_object('kind','FAMILY','id',$2::uuid),
-                        'commitment',repeat('11',32),'nonce',lpad(to_hex(next),64,'0'),
-                        'payload',encode(convert_to(jsonb_build_object('inputs','{}'::jsonb,
-                            'values',jsonb_build_object('0',$8::jsonb))::text,'UTF8'),'hex'))) END,
+                        'commitment',repeat('11',32),'nonce',lpad(to_hex(next),120,'0'),
+                        'nonceFingerprint',lpad(to_hex(next),64,'0'),'payload',repeat('a5',30))) END,
                     $9::bytea)
                 FROM current_head CROSS JOIN effect
                 """
@@ -72,7 +68,7 @@ let private append
                     box kind
                     box revision
                     nullable retained
-                    nullable descriptor
+                    nullable structuralLink
                     nullable binary
                     box erase
                     box (int16 InstallationFormat.Current)
@@ -105,16 +101,10 @@ let private exercise (database: PostgresFixture.Database) =
         let first, second, other = id 11, id 12, id 21
         let installation = database.Fixture.InstallationId
 
-        let descriptor blob length digest =
-            Some(
-                sprintf
-                    """{"blob":"%O","name":"synthetic.bin","length":%d,"digest":"%s"}"""
-                    blob
-                    length
-                    digest
-            )
+        let link blob length digest =
+            Some(sprintf """{"blobId":"%O","length":%d,"keyedDigest":"%s"}""" blob length digest)
 
-        let add connection caseId attachment blob introduces sha data =
+        let add connection caseId attachment blob introduces length digest data =
             append
                 connection
                 installation
@@ -129,7 +119,7 @@ let private exercise (database: PostgresFixture.Database) =
                     else
                         """{"introducesBlob":false}"""
                 ))
-                (descriptor blob 3 sha)
+                (link blob length digest)
                 data
                 false
 
@@ -197,8 +187,9 @@ let private exercise (database: PostgresFixture.Database) =
                         owner
                         """
                         INSERT INTO claimcore.ledger_compartments
-                          (operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload)
-                        VALUES(1,0,'FAMILY',$1,sha256(decode('62','hex')),sha256(decode('63','hex')),decode('7b7d','hex'))
+                          (operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload)
+                        VALUES(1,0,'FAMILY',$1,decode(repeat('11',32),'hex'),decode(repeat('12',60),'hex'),
+                            decode(repeat('13',32),'hex'),decode(repeat('a5',30),'hex'))
                         """
                         [| box firstCase |]
                         token
@@ -223,16 +214,56 @@ let private exercise (database: PostgresFixture.Database) =
                         "Rejection comes from the attachment closure"
             }
 
-        do! rejection "CC004" (fun () -> add runtime firstCase first first true fixtureSha None)
+        do! rejection "CC004" (fun () -> add runtime firstCase first first true 3 keyedDigest None)
 
         do!
             rejection "CC004" (fun () ->
-                add runtime firstCase first first true fixtureSha (Some [| 0uy; 0uy; 0uy |]))
+                add runtime firstCase first first true 3 keyedDigest (Some [| 0uy; 0uy; 0uy |]))
 
-        do! add runtime firstCase first first true fixtureSha (Some fixtureBytes)
-        do! add runtime otherCase other other true fixtureSha (Some fixtureBytes)
+        do! add runtime firstCase first first true 3 keyedDigest (Some ciphertext)
+        do! add runtime otherCase other other true 3 keyedDigest (Some ciphertext)
 
-        do! rejection "23503" (fun () -> add runtime firstCase second other false fixtureSha None)
+        do!
+            rejection "CC004" (fun () ->
+                add runtime firstCase second other false 3 keyedDigest None)
+
+        do!
+            rejection "CC004" (fun () ->
+                add runtime firstCase second first false 2 keyedDigest None)
+
+        do!
+            rejection "CC004" (fun () ->
+                add runtime firstCase second first false 3 (String.replicate 32 "a8") None)
+
+        do!
+            rejection "CC004" (fun () ->
+                append
+                    runtime
+                    installation
+                    firstCase
+                    (id 15)
+                    (id 15)
+                    "ATTACHMENT"
+                    1L
+                    (Some """{"introducesBlob":true}""")
+                    None
+                    (Some ciphertext)
+                    false)
+
+        let! permanent =
+            DatabaseSession.rows
+                owner
+                """
+                SELECT count(*) FROM claimcore.ledger_effects
+                WHERE part_kind='ATTACHMENT' AND retained ? 'attachmentLink'
+                """
+                [||]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 (List.exactlyOne permanent))
+            0L
+            "The append-only effect does not retain the transient blob link"
 
         do!
             rejection "42501" (fun () ->
@@ -273,7 +304,7 @@ let private exercise (database: PostgresFixture.Database) =
         Expect.equal withdrawn (3L, 1L, 1L, 0L) "Withdrawal removes only current list membership"
 
         use! interrupted = runtime.BeginTransactionAsync()
-        do! add runtime firstCase second first false fixtureSha None
+        do! add runtime firstCase second first false 3 keyedDigest None
         let! staged = counts ()
 
         Expect.equal
@@ -285,7 +316,7 @@ let private exercise (database: PostgresFixture.Database) =
 
         let! rolledBack = counts ()
         Expect.equal rolledBack withdrawn "Head, link, and projection roll back together"
-        do! add runtime firstCase second first false fixtureSha None
+        do! add runtime firstCase second first false 3 keyedDigest None
 
         // The missing case projection cannot hide an incomplete attachment clearing.
         do!
@@ -297,7 +328,7 @@ let private exercise (database: PostgresFixture.Database) =
                     let! _ =
                         DatabaseSession.execute
                             owner
-                            "UPDATE claimcore.ledger_compartments SET nonce=NULL,payload=NULL WHERE owner_kind='FAMILY' AND owner_id=$1"
+                            "UPDATE claimcore.ledger_compartments SET nonce=NULL,nonce_fingerprint=NULL,payload=NULL WHERE owner_kind='FAMILY' AND owner_id=$1"
                             [| box firstCase |]
                             token
 
@@ -338,9 +369,9 @@ let private exercise (database: PostgresFixture.Database) =
                 """
                 SELECT (SELECT count(*) FROM claimcore.attachment_blobs WHERE case_id=$1 AND length IS NULL AND digest IS NULL AND payload IS NULL),
                     (SELECT count(*) FROM claimcore.attachment_references WHERE case_id=$1 AND blob_id IS NULL),
-                    (SELECT count(*) FROM claimcore.attachment_blobs WHERE case_id=$2 AND payload=decode('616263','hex'))
+                    (SELECT count(*) FROM claimcore.attachment_blobs WHERE case_id=$2 AND payload=$3::bytea)
                 """
-                [| box firstCase; box otherCase |]
+                [| box firstCase; box otherCase; box ciphertext |]
                 token
 
         let row = List.exactlyOne evidence
@@ -351,13 +382,14 @@ let private exercise (database: PostgresFixture.Database) =
             2L
             "Both added attachment identities remain"
 
-        Expect.equal (DatabaseSession.value<int64> 2 row) 1L "Distinct case's exact bytes remain"
+        Expect.equal (DatabaseSession.value<int64> 2 row) 1L "Distinct case's ciphertext remains"
 
         let! disclosure =
             DatabaseSession.rows
                 owner
                 """
-                SELECT actor_id,case_id,attachment_id,kind,outcome,row_to_json(t)::text
+                SELECT actor_id,case_id,attachment_id,kind,outcome,
+                    jsonb_strip_nulls(to_jsonb(t) - ARRAY['id','recorded_at','actor_id','case_id','attachment_id','kind','outcome'])='{}'::jsonb
                 FROM claimcore.disclosure_trail t
                 """
                 [||]
@@ -374,13 +406,13 @@ let private exercise (database: PostgresFixture.Database) =
             (actor, firstCase, second, "ATTACHMENT_DOWNLOAD", "SUCCEEDED")
             "Whole-case erasure preserves the disclosure identity and outcome"
 
-        Expect.isFalse
-            ((DatabaseSession.value<string> 5 preserved).Contains "synthetic.bin")
-            "Operational disclosure evidence carries no attachment name"
+        Expect.isTrue
+            (DatabaseSession.value<bool> 5 preserved)
+            "Attachment disclosure evidence contains no payload metadata"
 
         do!
             rejection "CC004" (fun () ->
-                add runtime firstCase (id 14) (id 14) true fixtureSha (Some fixtureBytes))
+                add runtime firstCase (id 14) (id 14) true 3 keyedDigest (Some ciphertext))
     }
 
 [<Tests>]

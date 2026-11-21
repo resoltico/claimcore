@@ -162,7 +162,7 @@ module internal TransactionPages =
                 }
         }
 
-    let peopleHistory connection installation (query: PeopleHistoryQuery) token =
+    let peopleHistory connection cipher (query: PeopleHistoryQuery) token =
         task {
             let! rows =
                 DatabaseSession.rows
@@ -181,7 +181,7 @@ module internal TransactionPages =
                     |]
                     token
 
-            let! effects = StoredEntries.bind connection installation rows token
+            let! effects = StoredEntries.bind connection cipher rows token
             return page query.Limit (fun (entry: StoredEffect) -> entry.Position) effects
         }
 

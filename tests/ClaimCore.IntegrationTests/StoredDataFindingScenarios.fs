@@ -113,7 +113,7 @@ let internal ioFailure (database: PostgresFixture.Database) =
         let mutable category = "no exception"
 
         try
-            let! _ = Verification.verify database.OwnerSource None token in ()
+            let! _ = Verification.verify database.OwnerSource database.MasterKey None token in ()
         with error ->
             category <-
                 error.GetType().Name
@@ -191,7 +191,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                     [| box sequence |]
         | None -> ()
 
-        let! result = Verification.verify database.OwnerSource None token
+        let! result = Verification.verify database.OwnerSource database.MasterKey None token
         // Loading a root by its now-ambiguous identity must refuse at the first affected root.
         let sequence = earlierFailure |> Option.map (min 4L) |> Option.defaultValue 4L
         let expected = VerificationFinding.PayloadFormat

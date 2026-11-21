@@ -126,7 +126,7 @@ module internal Engine =
                             Error(ExecutionStop.Refused Refusal.AttachmentCapacityReached)
                         | AttachmentAdmission.RetainNew ->
                             admit true descriptor.Blob (Some verified)
-                        | AttachmentAdmission.Reattach blob -> admit false blob None
+                        | AttachmentAdmission.Reattach blob -> admit false blob (Some verified)
                 | _ -> return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
             | _ -> return Error(ExecutionStop.Failed CoreFault.StoreIntegrityError)
         }
@@ -164,11 +164,7 @@ module internal Engine =
                         )
                 else
                     let! existing =
-                        OperationStorage.find
-                            tx.Connection
-                            tx.InstallationId
-                            operation
-                            tx.CancellationToken
+                        OperationStorage.find tx.Connection tx.Cipher operation tx.CancellationToken
 
                     match existing with
                     | Some record ->

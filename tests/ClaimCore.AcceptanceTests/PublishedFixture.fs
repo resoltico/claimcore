@@ -211,6 +211,12 @@ type Fixture() =
     let mutable webBinary = ""
     let mutable webSettings = Dictionary<string, string>()
     let adminEnvironment = Dictionary<string, string>()
+
+    let dataKeyFile =
+        let path = Path.Combine(directory, "data.key")
+        PostgresFixture.writeKeyFile path
+        path
+
     let serviceEnvironment = Dictionary<string, string>()
 
     member _.OpenRuntimeMonitor() =
@@ -238,6 +244,7 @@ type Fixture() =
     member _.Cli = cli
     member _.WebBinary = webBinary
     member _.WebEnvironment = webSettings
+    member _.AdministrationEnvironment = adminEnvironment
     member _.Http = http
     member _.Environment = serviceEnvironment
     member _.TransformNextReply(path, rewrite) = proxy.TransformNextReply(path, rewrite)
@@ -452,6 +459,7 @@ type Fixture() =
             webBinary <- PublishedProcesses.publish root directory "ClaimCore.Server"
             admin <- webBinary
             do! startPrerequisites postgres identity
+            adminEnvironment["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
             let! runtime = initialize directory postgres identity admin adminEnvironment
             let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)
             let relay = new CommitReplyProxy.Proxy(settings.Host |> nonNull, settings.Port)
@@ -468,6 +476,7 @@ type Fixture() =
                 FixtureFiles.write directory "web.pfx" (certificate.Export(X509ContentType.Pfx))
 
             webSettings <- webEnvironment directory origin identity proxiedRuntime pfx
+            webSettings["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
             webSettings["CLAIMCORE_WEB_LISTEN_PORT"] <- string (Uri(backend).Port)
             let values = webSettings
             let host = new PublishedProcesses.Web(webBinary, values, directory)

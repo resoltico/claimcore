@@ -129,10 +129,13 @@ type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: 
         member _.Dispose() = gate.Stop() |> ignore
 
 module internal Runtime =
-    let openConnection connectionString cancellationToken =
+    let openConnection connectionString masterKey cancellationToken =
         task {
             let! opened =
-                ClaimCore.Application.Runtime.openConnection connectionString cancellationToken
+                ClaimCore.Application.Runtime.openConnection
+                    connectionString
+                    masterKey
+                    cancellationToken
 
             match opened with
             | Error error -> return Error error

@@ -33,7 +33,10 @@ let private actualPayments () =
         DatabaseSession.execute connection statement [||] token |> awaitResult |> ignore
 
     let verified () =
-        match Verification.verify database.OwnerSource None token |> awaitResult with
+        match
+            Verification.verify database.OwnerSource database.MasterKey None token
+            |> awaitResult
+        with
         | VerificationResult.Verified position -> position
         | VerificationResult.Diverged finding -> failwithf "Expected verified history: %A" finding
 
@@ -324,6 +327,7 @@ let private actualPayments () =
 
         RegisterMaintenanceStore.change
             database.OwnerSource
+            database.MasterKey
             (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
             token
         |> awaitResult
@@ -358,7 +362,10 @@ let private actualPayments () =
             | ExecuteResult.AlreadyAccepted _ -> ()
             | _ -> failwith "Current payment corruption or maintenance blocked exact replay."
 
-            match Verification.verify database.OwnerSource None token |> awaitResult with
+            match
+                Verification.verify database.OwnerSource database.MasterKey None token
+                |> awaitResult
+            with
             | VerificationResult.Diverged finding ->
                 check
                     VerificationFinding.CasePaymentsProjection
@@ -368,6 +375,7 @@ let private actualPayments () =
 
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 (InstallationCheckpoint.create fixture.InstallationId checkpoint None
                  |> Option.get)
                 (ClaimCore.Application.Contracts.MaintenanceHandle.create
@@ -388,6 +396,7 @@ let private actualPayments () =
 
         RegisterMaintenanceStore.change
             database.OwnerSource
+            database.MasterKey
             (MaintenanceChange.Resume(
                 MaintenanceHandle.create
                     1L
@@ -449,6 +458,7 @@ let private actualPayments () =
 
         RegisterMaintenanceStore.change
             database.OwnerSource
+            database.MasterKey
             (MaintenanceChange.Acquire(2L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
             token
         |> awaitResult
@@ -458,6 +468,7 @@ let private actualPayments () =
 
         ProjectionRebuild.rebuild
             database.OwnerSource
+            database.MasterKey
             (InstallationCheckpoint.create fixture.InstallationId erasedCheckpoint None
              |> Option.get)
             (ClaimCore.Application.Contracts.MaintenanceHandle.create
@@ -671,7 +682,10 @@ let private lockedBounds () =
             entries <- entries |> List.filter (fun (existing, _) -> existing <> identity)
             checkPosition ()
 
-        match Verification.verify database.OwnerSource None token |> awaitResult with
+        match
+            Verification.verify database.OwnerSource database.MasterKey None token
+            |> awaitResult
+        with
         | VerificationResult.Verified _ -> ()
         | other ->
             failtestf

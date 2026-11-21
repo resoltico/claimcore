@@ -51,7 +51,11 @@ let private programmerFailure () =
 
         try
             let! before =
-                Verification.verify database.OwnerSource None CancellationToken.None
+                Verification.verify
+                    database.OwnerSource
+                    database.MasterKey
+                    None
+                    CancellationToken.None
                 |> Async.AwaitTask
 
             let! outcome =
@@ -75,7 +79,11 @@ let private programmerFailure () =
                 "Unexpected decision failure is not corruption"
 
             let! after =
-                Verification.verify database.OwnerSource None CancellationToken.None
+                Verification.verify
+                    database.OwnerSource
+                    database.MasterKey
+                    None
+                    CancellationToken.None
                 |> Async.AwaitTask
 
             Expect.equal after before "Failed decision accepted nothing and left a verifiable store"

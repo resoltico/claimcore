@@ -6,6 +6,7 @@ open ClaimCore.Application
 [<RequireQualifiedAccess>]
 type WebSetting =
     | ConnectionFile
+    | DataKeyFile
     | CertificatePath
     | KeyRingDirectory
     | Origin
@@ -49,6 +50,7 @@ module WebSettings =
     let private entries =
         [
             WebSetting.ConnectionFile, "CLAIMCORE_CONNECTION_FILE"
+            WebSetting.DataKeyFile, MasterKeyFile.setting
             WebSetting.KeyRingDirectory, "CLAIMCORE_WEB_KEY_RING_DIRECTORY"
             WebSetting.CertificatePath, "CLAIMCORE_WEB_CERTIFICATE_PATH"
             WebSetting.Origin, "CLAIMCORE_WEB_ORIGIN"
@@ -75,6 +77,7 @@ module WebSettings =
     let required =
         [
             WebSetting.ConnectionFile
+            WebSetting.DataKeyFile
             WebSetting.CertificatePath
             WebSetting.KeyRingDirectory
             WebSetting.OidcIssuer
@@ -99,6 +102,7 @@ type WebStartupProblem =
     | OriginInvalid
     | ConnectionFileRefused
     | ConnectionFileEmpty
+    | DataKeyFileInvalid
     | PoolCapacityInsufficient
     | SessionLifetimeInvalid
     | OidcConfigurationInvalid
@@ -126,6 +130,8 @@ module WebStartupDiagnostics =
                 "SETTING_REQUIRED", Some(WebSettings.token setting)
             | WebStartupProblem.InvalidSetting setting ->
                 "SETTING_INVALID", Some(WebSettings.token setting)
+            | WebStartupProblem.DataKeyFileInvalid ->
+                "DATA_KEY_FILE_INVALID", Some(WebSettings.token WebSetting.DataKeyFile)
             | WebStartupProblem.PoolCapacityInsufficient ->
                 "POOL_CAPACITY_INSUFFICIENT", Some(WebSettings.token WebSetting.ConnectionFile)
             | WebStartupProblem.RuntimeOpen fault ->
@@ -136,6 +142,7 @@ module WebStartupDiagnostics =
                  | RuntimeOpenFault.UnsafeRole -> "RUNTIME_UNSAFE_ROLE"
                  | RuntimeOpenFault.SchemaMismatch -> "RUNTIME_SCHEMA_MISMATCH"
                  | RuntimeOpenFault.InstallationInvalid -> "RUNTIME_INSTALLATION_INVALID"
+                 | RuntimeOpenFault.DataKeyInvalid -> "RUNTIME_DATA_KEY_INVALID"
                  | RuntimeOpenFault.HeadMismatch -> "RUNTIME_HEAD_MISMATCH"
                  | RuntimeOpenFault.Unavailable -> "RUNTIME_UNAVAILABLE"
                  | RuntimeOpenFault.Cancelled -> "RUNTIME_CANCELLED"),

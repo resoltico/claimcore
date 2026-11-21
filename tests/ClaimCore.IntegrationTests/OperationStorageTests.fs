@@ -145,7 +145,7 @@ let private storage () =
         let write root after =
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection root token |> sync |> ignore
+            OperationStorage.append connection database.Cipher root token |> sync |> ignore
             after connection
             transaction.Commit()
             sequence <- root.Header.Sequence
@@ -289,7 +289,7 @@ let private storage () =
                 |> _.Root
 
             if date = DateOnly.MinValue then
-                let parameters = OperationStorage.parameters root
+                let parameters = OperationStorage.parameters database.Cipher root
                 parameters[6] <- DBNull.Value
 
                 expectFailureMatching
@@ -301,10 +301,10 @@ let private storage () =
 
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection root token |> sync |> ignore
+            OperationStorage.append connection database.Cipher root token |> sync |> ignore
 
             let loaded =
-                OperationStorage.find connection database.Fixture.InstallationId owner token
+                OperationStorage.find connection database.Cipher owner token
                 |> sync
                 |> Option.get
 
@@ -374,7 +374,7 @@ let private storage () =
 
         let read identity =
             DatabaseSession.read database.RuntimeSource token (fun connection ->
-                OperationStorage.find connection database.Fixture.InstallationId identity token)
+                OperationStorage.find connection database.Cipher identity token)
             |> sync
             |> Option.get
 
@@ -467,13 +467,14 @@ let private storage () =
         let appendSql =
             "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
 
-        let parameters () = OperationStorage.parameters control
+        let parameters () =
+            OperationStorage.parameters database.Cipher control
 
         expectFailure
             "23505"
             database.RuntimeSource
             appendSql
-            (OperationStorage.parameters duplicate)
+            (OperationStorage.parameters database.Cipher duplicate)
 
         let changed index value =
             let values = parameters () in
@@ -706,7 +707,7 @@ let familyMarkers =
                 let! stored =
                     OperationStorage.find
                         connection
-                        fixture.InstallationId
+                        database.Cipher
                         (OperationId.create removal.OperationId |> Option.get)
                         token
                     |> Async.AwaitTask
@@ -743,7 +744,8 @@ let familyMarkers =
                     "Family erasure clears every private byte and nonce"
 
                 let! verified =
-                    Verification.verify database.OwnerSource None token |> Async.AwaitTask
+                    Verification.verify database.OwnerSource database.MasterKey None token
+                    |> Async.AwaitTask
 
                 match verified with
                 | VerificationResult.Verified _ -> ()

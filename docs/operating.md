@@ -58,6 +58,7 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 
 | Path | Contents |
 | --- | --- |
+| `data.key` | A private 32-byte master key file, mounted read-only by Web and administration. Generate it using a cryptographic random source and set mode 0600. |
 | `postgres/superuser.password` | Separate bootstrap password for `postgres`, mounted only in PostgreSQL. Use 64 lowercase hexadecimal characters and mode 0600. |
 | `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for each. |
 | `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
@@ -245,6 +246,41 @@ Every host cleans expired sessions and access requests in bounded batches every 
 one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
 No manual prune command is required. See [housekeeping](../src/ClaimCore.Application/Storage/Housekeeping.fs)
 and the [host service](../src/ClaimCore.Server/HousekeepingService.fs) for the enforced limits and scheduling.
+
+## Data-at-rest keys
+
+Each fresh installation creates a random 256-bit data key during initialization. The database
+keeps its wrapped form. Set `CLAIMCORE_DATA_KEY_FILE` in Web and administration to the
+absolute path of the same private 32-byte master key file. The local configuration command
+generates `data.key` with mode 0600, and both Compose templates mount it read-only. Web and
+administration report a typed key fault when they cannot admit the file or unwrap the data key.
+
+Back up the master key separately from database backups and WAL. Losing every copy of the
+master key makes the encrypted attachment bytes and private ledger details unrecoverable.
+Keep the key that matches each retained database recovery point, including recovery points
+from before a rotation.
+
+Attachment payloads and private ledger compartments use AES-256-GCM with fresh random
+96-bit IVs. The compartment salt is encrypted too. Attachment duplicate lookup uses HMAC-SHA-256. Case snapshots, search text, notes and parties remain readable in
+the projections to support search. Live erasure clears the covered records in the current
+database. Existing backups, WAL, exports and copies keep the data they already hold.
+
+Count all encryptions under a data key across its lifetime, including salts and all hosts
+that use the key. [NIST SP 800-38D §8.3](https://csrc.nist.gov/pubs/sp/800/38/d/final)
+sets an upper bound of 2³² invocations for random IVs. Master-key rotation rewraps the
+installation data key. A fresh installation creates a different data key.
+
+To rotate the master key, prepare a new private 32-byte file and run the owner command with
+the current key still named by `CLAIMCORE_DATA_KEY_FILE`.
+
+```sh
+claimcore-server rotate-master-key --new-key-file /private/claimcore/replacement.key
+```
+
+After `MASTER_KEY_ROTATED`, configure Web and administration to use the replacement
+file before their next start. Verify the installation with the replacement key. Keep the
+previous key separately for older recovery points. If the rotation result is unconfirmed,
+check which key authenticates the current installation before issuing another change.
 
 ## Access review and sessions
 

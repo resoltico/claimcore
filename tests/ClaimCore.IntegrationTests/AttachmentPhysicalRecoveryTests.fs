@@ -138,6 +138,7 @@ let private restoreCases (database: PostgresFixture.Database) port expected newe
         let! maintenance =
             RegisterMaintenanceStore.change
                 administrative
+                database.MasterKey
                 (MaintenanceChange.Acquire(0L, modeId))
                 token
 
@@ -149,7 +150,8 @@ let private restoreCases (database: PostgresFixture.Database) port expected newe
 
         match newer with
         | Some later ->
-            let! refused = RestoreAdmission.admit administrative later handle token
+            let! refused =
+                RestoreAdmission.admit administrative database.MasterKey later handle token
 
             match refused with
             | Error failure ->
@@ -161,13 +163,15 @@ let private restoreCases (database: PostgresFixture.Database) port expected newe
                 failtest "The earlier restore admitted a checkpoint containing a later erasure"
         | None -> ()
 
-        let! admitted = RestoreAdmission.admit administrative expected handle token
+        let! admitted =
+            RestoreAdmission.admit administrative database.MasterKey expected handle token
 
         Expect.isOk
             admitted
             "The isolated promoted cluster admits its independent matching checkpoint"
 
-        let! verified = Verification.verify administrative (Some expected) token
+        let! verified =
+            Verification.verify administrative database.MasterKey (Some expected) token
 
         Expect.equal
             (position verified)
@@ -176,7 +180,14 @@ let private restoreCases (database: PostgresFixture.Database) port expected newe
 
         let fixture =
             { database.Fixture with
-                Store = LedgerStore(runtime, database.Installation, Transactions.timeouts) :> IStore
+                Store =
+                    LedgerStore(
+                        runtime,
+                        database.Installation,
+                        database.Cipher,
+                        Transactions.timeouts
+                    )
+                    :> IStore
             }
 
         let actor = core fixture fixture.Owner

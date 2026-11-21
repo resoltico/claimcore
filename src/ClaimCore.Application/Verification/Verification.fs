@@ -21,6 +21,7 @@ module internal Verification =
     let private scan
         connection
         installationId
+        cipher
         (expected: LedgerPosition option)
         (token: CancellationToken)
         =
@@ -60,11 +61,7 @@ module internal Verification =
                             | Ok() ->
                                 try
                                     let! found =
-                                        OperationStorage.find
-                                            connection
-                                            installationId
-                                            identity
-                                            token
+                                        OperationStorage.find connection cipher identity token
 
                                     state <-
                                         state
@@ -113,7 +110,7 @@ module internal Verification =
                 |> Result.bind (Replay.head state)
         }
 
-    let private attachments connection state token =
+    let private attachments connection cipher state token =
         task {
             let! references =
                 task {
@@ -132,27 +129,31 @@ module internal Verification =
             else
                 try
                     let! payloads =
-                        AttachmentStorage.checkBlobs connection (Replay.attachmentBlobs state) token
+                        AttachmentStorage.checkBlobs
+                            connection
+                            cipher
+                            (Replay.attachmentBlobs state)
+                            token
 
                     return require None VerificationFinding.AttachmentPayloads payloads
                 with :? RecordCorruptException ->
                     return Error(divergence None VerificationFinding.AttachmentPayloads)
         }
 
-    let private erasureAndAttachments connection state token =
+    let private erasureAndAttachments connection cipher state token =
         match Replay.erasure state with
         | Error error -> System.Threading.Tasks.Task.FromResult(Error error)
-        | Ok() -> attachments connection state token
+        | Ok() -> attachments connection cipher state token
 
     /// Authoritative scan for maintenance; projection divergence must not prevent repair.
-    let authoritative connection installationId expected token =
+    let authoritative connection installationId cipher expected token =
         task {
-            let! scanned = scan connection installationId expected token
+            let! scanned = scan connection installationId cipher expected token
 
             match scanned with
             | Error finding -> return Error finding
             | Ok state ->
-                let! evidence = erasureAndAttachments connection state token
+                let! evidence = erasureAndAttachments connection cipher state token
 
                 match evidence with
                 | Error finding -> return Error finding
@@ -256,12 +257,13 @@ module internal Verification =
     let private finish
         connection
         installationId
+        cipher
         (expected: LedgerPosition option)
         (state: Replay.Scan)
         token
         =
         task {
-            let! evidence = erasureAndAttachments connection state token
+            let! evidence = erasureAndAttachments connection cipher state token
 
             match evidence with
             | Error error -> return VerificationResult.Diverged error
@@ -284,6 +286,7 @@ module internal Verification =
 
     let verify
         (source: NpgsqlDataSource)
+        masterKey
         (expected: InstallationCheckpoint option)
         (token: CancellationToken)
         =
@@ -291,6 +294,7 @@ module internal Verification =
             task {
                 do! OwnerAdmission.require connection token
                 let! installationId, _ = Baseline.require connection token
+                use! cipher = Baseline.loadCipher connection installationId masterKey token
 
                 let identity =
                     expected
@@ -301,12 +305,12 @@ module internal Verification =
                 | Error finding -> return VerificationResult.Diverged finding
                 | Ok() ->
                     let position = expected |> Option.map _.Position
-                    let! result = scan connection installationId position token
+                    let! result = scan connection installationId cipher position token
 
                     match result with
                     | Error error -> return VerificationResult.Diverged error
                     | Ok state ->
-                        let! result = finish connection installationId position state token
+                        let! result = finish connection installationId cipher position state token
 
                         match result with
                         | VerificationResult.Diverged _ -> return result

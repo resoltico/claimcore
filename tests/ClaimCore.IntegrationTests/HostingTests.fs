@@ -73,7 +73,10 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             accepted result |> ignore
 
         let! first =
-            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection
+                (connectionString database)
+                database.MasterKey
+                token
 
         use first = configuredRuntime first
 
@@ -106,7 +109,10 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         | _ -> failtest "Same-runtime continuation refused"
 
         let! second =
-            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection
+                (connectionString database)
+                database.MasterKey
+                token
 
         use second = configuredRuntime second
 
@@ -129,7 +135,10 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 let private readinessCancellation database =
     task {
         let! opened =
-            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection
+                (connectionString database)
+                database.MasterKey
+                token
 
         use runtime = configuredRuntime opened
         use! owner = database.OwnerSource.OpenConnectionAsync token
@@ -187,6 +196,7 @@ let tests =
                         let! opened =
                             ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
+                                database.MasterKey
                                 token
 
                         use runtime = configuredRuntime opened
@@ -216,6 +226,7 @@ let tests =
                         let! opened =
                             ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
+                                database.MasterKey
                                 token
 
                         use runtime = configuredRuntime opened
@@ -296,6 +307,7 @@ let tests =
                             let! opened =
                                 ClaimCore.Server.Composition.Runtime.openConnection
                                     (connectionString database)
+                                    database.MasterKey
                                     token
 
                             match opened with
@@ -307,9 +319,12 @@ let tests =
             testCaseAsync
                 "remote unverified transport and pre-cancellation have typed faults"
                 (async {
+                    use masterKey = PostgresFixture.newMasterKey ()
+
                     let! opened =
                         ClaimCore.Server.Composition.Runtime.openConnection
                             "Host=remote.example;SSL Mode=Require"
+                            masterKey
                             token
                         |> Async.AwaitTask
 
@@ -321,9 +336,12 @@ let tests =
                     use cancelled = new CancellationTokenSource()
                     cancelled.Cancel()
 
+                    use masterKey = PostgresFixture.newMasterKey ()
+
                     let! result =
                         ClaimCore.Server.Composition.Runtime.openConnection
                             "Host=localhost"
+                            masterKey
                             cancelled.Token
                         |> Async.AwaitTask
 
@@ -341,6 +359,7 @@ let tests =
                         let! opened =
                             ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
+                                database.MasterKey
                                 token
 
                         use runtime = configuredRuntime opened
@@ -387,7 +406,9 @@ let tests =
                         do! transaction.CommitAsync()
                         let! outcome = running
                         accepted outcome |> ignore
-                        let! verified = Verification.verify database.OwnerSource None token
+
+                        let! verified =
+                            Verification.verify database.OwnerSource database.MasterKey None token
 
                         Expect.equal
                             (match verified with

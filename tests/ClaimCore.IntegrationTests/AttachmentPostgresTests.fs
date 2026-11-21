@@ -11,6 +11,7 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Verification
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -29,7 +30,7 @@ let private firstName = "private-canary.txt"
 let internal attachmentGuid fixture number =
     id fixture number |> AttachmentId.create |> Option.get
 
-let private draft fixture number name count digest =
+let private draftFor target fixture number name count digest =
     Submissions.createRaw
         "attachment.add"
         (id fixture number)
@@ -41,6 +42,8 @@ let private draft fixture number name count digest =
          ]
          |> List.map (fun (target, value) -> Submissions.text (Submissions.input target) value)
          |> Map.ofList)
+
+let private draft = draftFor target
 
 let internal add fixture number name = draft fixture number name "3" digest
 
@@ -172,6 +175,7 @@ let private maintainedAt (database: PostgresFixture.Database) generation =
         let! mode =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Acquire(generation, pauseId))
                 token
 
@@ -506,7 +510,10 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         do! finding VerificationFinding.CaseAttachmentsProjection database
         let! handle = maintained database
-        let! repaired = ProjectionRebuild.rebuild database.OwnerSource trusted handle token
+
+        let! repaired =
+            ProjectionRebuild.rebuild database.OwnerSource database.MasterKey trusted handle token
+
         Expect.isOk repaired "Projection-only damage is independently repairable"
 
         let! afterRepair = download owner reattached.AttachmentId
@@ -515,6 +522,7 @@ let private lifecycle (database: PostgresFixture.Database) =
         let! resumed =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Resume handle)
                 token
 
@@ -558,11 +566,35 @@ let private lifecycle (database: PostgresFixture.Database) =
                     "Erased add and withdrawal receipts carry their typed attachment observation"
             | other -> failtestf "Expected authorized erased attachment receipt: %A" other
 
+        use! evidenceConnection = database.OwnerSource.OpenConnectionAsync()
+
+        let! disclosures =
+            DatabaseSession.rows
+                evidenceConnection
+                "SELECT row_to_json(t)::text FROM claimcore.disclosure_trail t WHERE case_id=$1 AND attachment_id=$2 AND kind='ATTACHMENT_DOWNLOAD' AND outcome='SUCCEEDED'"
+                [| box (CaseId.value attachment.CaseId); box (AttachmentId.value current) |]
+                token
+
+        Expect.isNonEmpty disclosures "Whole-case erasure preserves the real prior download event"
+
+        for disclosure in disclosures do
+            let text = DatabaseSession.value<string> 0 disclosure
+            Expect.isFalse (text.Contains firstName) "The trail omits the first authored filename"
+
+            Expect.isFalse
+                (text.Contains "duplicate-name.txt")
+                "The trail omits the second authored filename"
+
         let! erasedHead = checkpoint database
         let! erasedHandle = maintainedAt database resumed.State.Generation
 
         let! erasedRebuild =
-            ProjectionRebuild.rebuild database.OwnerSource erasedHead erasedHandle token
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                database.MasterKey
+                erasedHead
+                erasedHandle
+                token
 
         Expect.isOk erasedRebuild "Accepted attachment history still rebuilds after erasure"
         return ()
@@ -611,7 +643,7 @@ let private corruptWithdrawn (database: PostgresFixture.Database) =
 
         for statement in
             [
-                "UPDATE claimcore.attachment_blobs SET payload=decode('616264','hex')"
+                "UPDATE claimcore.attachment_blobs SET payload=set_byte(payload,0,(get_byte(payload,0)+1)%256)"
                 "DELETE FROM claimcore.attachment_blobs"
                 "UPDATE claimcore.attachment_blobs SET case_id='10000000-0000-4000-8000-000000000007'"
                 "INSERT INTO claimcore.attachment_blobs(case_id,blob_id,operation_sequence,effect_index)
@@ -621,8 +653,16 @@ let private corruptWithdrawn (database: PostgresFixture.Database) =
             do! guardedSql database statement [||]
             do! finding VerificationFinding.AttachmentPayloads database
 
-            let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource trusted handle token
-            let! admitted = RestoreAdmission.admit database.OwnerSource trusted handle token
+            let! rebuilt =
+                ProjectionRebuild.rebuild
+                    database.OwnerSource
+                    database.MasterKey
+                    trusted
+                    handle
+                    token
+
+            let! admitted =
+                RestoreAdmission.admit database.OwnerSource database.MasterKey trusted handle token
 
             for actual in [ rebuilt |> Result.map ignore; admitted |> Result.map ignore ] do
                 match actual with
@@ -758,7 +798,7 @@ let private previewEligibility (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.attachment_blobs SET payload=decode('255044462d322e300a','hex') WHERE blob_id=$1"
+                "UPDATE claimcore.attachment_blobs SET payload=set_byte(payload,0,(get_byte(payload,0)+1)%256) WHERE blob_id=$1"
                 [| box (AttachmentId.value pdf) |]
 
         do! finding VerificationFinding.AttachmentPayloads database
@@ -1195,11 +1235,145 @@ let private readAcrossWithdrawal (database: PostgresFixture.Database) =
         assertUnavailable fresh
     }
 
+let private encryptedRows (database: PostgresFixture.Database) =
+    task {
+        let! owner = setup database
+        let fixture = database.Fixture
+        let bytes = Encoding.UTF8.GetBytes "synthetic attachment plaintext witness"
+        let name = "synthetic-private-filename.txt"
+        let digest = SHA256.HashData bytes
+
+        let uploadTo selector number =
+            let command =
+                draftFor
+                    selector
+                    fixture
+                    number
+                    name
+                    (bytes.Length.ToString(CultureInfo.InvariantCulture))
+                    (Convert.ToHexStringLower digest)
+
+            upload owner command bytes
+
+        let! opened =
+            Service.executeSubmission
+                owner
+                (request
+                    fixture
+                    70
+                    "encrypted-second-case"
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values registration)))
+                token
+
+        accepted opened |> ignore
+        let! first = uploadTo target 71
+        let first = accepted first |> attachmentReceipt
+        let! second = uploadTo (CaseSelector.Reference "encrypted-second-case") 72
+        let second = accepted second |> attachmentReceipt
+        let! downloaded = download owner first.AttachmentId
+        assertDownload bytes downloaded
+        let! _ = verified database
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let stored id =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT b.payload,b.digest,b.operation_sequence,c.ordinal,c.payload FROM claimcore.attachment_blobs b JOIN claimcore.ledger_compartments c USING(operation_sequence) WHERE b.blob_id=$1"
+                        [| box (AttachmentId.value id) |]
+                        token
+
+                return List.exactlyOne rows
+            }
+
+        let! raw = stored first.AttachmentId
+        let! other = stored second.AttachmentId
+        let blob = DatabaseSession.value<byte array> 0 raw
+        let keyed = DatabaseSession.value<byte array> 1 raw
+        let sequence = DatabaseSession.value<int64> 2 raw
+        let ordinal = DatabaseSession.value<int> 3 raw
+        let compartment = DatabaseSession.value<byte array> 4 raw
+        let fileName = Encoding.UTF8.GetBytes name
+
+        let has (needle: byte array) (value: byte array) =
+            (ReadOnlySpan<byte> value).IndexOf(ReadOnlySpan<byte> needle) >= 0
+
+        let caseId = CaseId.value first.CaseId
+        let blobId = AttachmentId.value first.AttachmentId
+        let otherCaseId = CaseId.value second.CaseId
+        let otherBlobId = AttachmentId.value second.AttachmentId
+
+        Expect.equal blob.Length (bytes.Length + 28) "Blob framing includes one IV and one tag"
+        Expect.isFalse (has bytes blob) "The blob row keeps file content private"
+        Expect.isFalse (keyed = digest) "The duplicate index has no ordinary SHA-256"
+        Expect.isFalse (has fileName compartment) "The compartment keeps the filename private"
+
+        let clear =
+            database.Cipher.DecryptCompartment(sequence, ordinal, "FAMILY", caseId, compartment)
+
+        Expect.equal
+            compartment.Length
+            (clear.Length + 28)
+            "Compartment framing includes an IV and tag"
+
+        Expect.isTrue
+            (has fileName clear)
+            "The encrypted value contains the expected retained detail"
+
+        let tryBlob family id () =
+            database.Cipher.DecryptBlob(family, id, blob) |> ignore
+
+        Expect.throwsT<RecordCorruptException>
+            (tryBlob caseId otherBlobId)
+            "Changing only the blob ID breaks authentication"
+
+        Expect.throwsT<RecordCorruptException>
+            (tryBlob otherCaseId blobId)
+            "Changing only the case ID breaks authentication"
+
+        Expect.throwsT<RecordCorruptException>
+            (fun () ->
+                database.Cipher.DecryptCompartment(
+                    sequence + 1L,
+                    ordinal,
+                    "FAMILY",
+                    caseId,
+                    compartment
+                )
+                |> ignore)
+            "Moving a compartment to the next row breaks authentication"
+
+        let replaceBlob payload =
+            guardedSql
+                database
+                "UPDATE claimcore.attachment_blobs SET payload=$2 WHERE blob_id=$1"
+                [| box blobId; box payload |]
+
+        do! replaceBlob (DatabaseSession.value<byte array> 0 other)
+        do! finding VerificationFinding.AttachmentPayloads database
+        do! replaceBlob blob
+
+        do!
+            guardedSql
+                database
+                "UPDATE claimcore.ledger_compartments SET payload=$3 WHERE operation_sequence=$1 AND ordinal=$2"
+                [| box sequence; box ordinal; box (DatabaseSession.value<byte array> 4 other) |]
+
+        do! finding VerificationFinding.PayloadFormat database
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL attachment policy"
         [
+            testCaseAsync
+                "attachment and compartment ciphertext are private and bound to their rows"
+                (run encryptedRows)
             testCaseAsync
                 "verified upload rechecks revoked grant"
                 (run (

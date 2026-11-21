@@ -16,18 +16,31 @@ type InitializationResult =
     | ExistingInstallation of Guid
 
 module internal LedgerAdministration =
-    let verify source expected cancellationToken =
-        Verification.verify source expected cancellationToken
+    let verify source masterKey expected cancellationToken =
+        Verification.verify source masterKey expected cancellationToken
 
-    let head source cancellationToken =
+    let head source masterKey cancellationToken =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
                 do! OwnerAdmission.require connection cancellationToken
                 let! installation, _ = Baseline.require connection cancellationToken
+
+                use! _cipher =
+                    Baseline.loadCipher connection installation masterKey cancellationToken
+
                 return! CheckpointEvidence.read connection installation cancellationToken
             })
 
-    let initialize source productVersion timeZone (owner: InitialOwner) initialized existing token =
+    let initialize
+        source
+        masterKey
+        productVersion
+        timeZone
+        (owner: InitialOwner)
+        initialized
+        existing
+        token
+        =
         if not (PrincipalKey.isHuman owner.Principal) then
             raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 
@@ -42,8 +55,9 @@ module internal LedgerAdministration =
 
         Baseline.initializeWith
             source
+            masterKey
             timeZone
-            (fun connection installationId ->
+            (fun connection installationId cipher ->
                 task {
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token
@@ -55,6 +69,7 @@ module internal LedgerAdministration =
                                 InstallationId = installationId
                                 BusinessTimeZone = timeZone
                             },
+                            cipher,
                             Transactions.timeouts
                         )
                         :> IStore
@@ -68,6 +83,7 @@ module internal LedgerAdministration =
                         LedgerStore.InTransaction(
                             connection,
                             installationId,
+                            cipher,
                             head,
                             observed,
                             token
@@ -93,7 +109,13 @@ module internal LedgerAdministration =
             existing
             token
 
-    let recoverOwner (source: NpgsqlDataSource) productVersion (input: OwnerRecoveryInput) token =
+    let recoverOwner
+        (source: NpgsqlDataSource)
+        masterKey
+        productVersion
+        (input: OwnerRecoveryInput)
+        token
+        =
         let refuse fault = raise (OperatorFaultException fault)
 
         DatabaseSession.transaction
@@ -104,6 +126,7 @@ module internal LedgerAdministration =
                 task {
                     do! OwnerAdmission.require connection token
                     let! installationId, timeZone = Baseline.require connection token
+                    use! cipher = Baseline.loadCipher connection installationId masterKey token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token
 
@@ -111,6 +134,7 @@ module internal LedgerAdministration =
                         LedgerStore.InTransaction(
                             connection,
                             installationId,
+                            cipher,
                             head,
                             observed,
                             token
@@ -139,6 +163,7 @@ module internal LedgerAdministration =
                                 InstallationId = installationId
                                 BusinessTimeZone = timeZone
                             },
+                            cipher,
                             Transactions.timeouts
                         )
                         :> IStore
@@ -192,6 +217,7 @@ module internal AdministrationFailures =
         | RuntimeOpenFault.UnsafeRole -> OperatorFault.PermissionDenied
         | RuntimeOpenFault.SchemaMismatch -> OperatorFault.SchemaMismatch
         | RuntimeOpenFault.InstallationInvalid -> OperatorFault.InstallationInvalid
+        | RuntimeOpenFault.DataKeyInvalid -> OperatorFault.DataKeyInvalid
         | RuntimeOpenFault.HeadMismatch -> OperatorFault.HeadMismatch
         | RuntimeOpenFault.Unavailable -> OperatorFault.Unavailable
         | RuntimeOpenFault.Cancelled -> OperatorFault.Cancelled
@@ -237,7 +263,7 @@ module internal AdministrationFailures =
 
 /// The owner administration process supplies its connection; runtime composition does not expose it.
 [<Sealed>]
-type Administration(connectionString: string, productVersion: string) =
+type Administration(connectionString: string, productVersion: string, masterKey: MasterKey) =
     let source =
         let settings =
             try
@@ -260,6 +286,7 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Initialize(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize
             source
+            masterKey
             productVersion
             timeZone
             owner
@@ -270,6 +297,7 @@ type Administration(connectionString: string, productVersion: string) =
     member _.InitializeIfMissing(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize
             source
+            masterKey
             productVersion
             timeZone
             owner
@@ -282,26 +310,29 @@ type Administration(connectionString: string, productVersion: string) =
             cancellationToken
 
     member _.RecoverOwner(input, cancellationToken) =
-        LedgerAdministration.recoverOwner source productVersion input cancellationToken
+        LedgerAdministration.recoverOwner source masterKey productVersion input cancellationToken
 
     member _.Verify(expected, cancellationToken) =
-        LedgerAdministration.verify source expected cancellationToken
+        LedgerAdministration.verify source masterKey expected cancellationToken
 
     member _.Rebuild(expected, handle, cancellationToken) =
-        ProjectionRebuild.rebuild source expected handle cancellationToken
+        ProjectionRebuild.rebuild source masterKey expected handle cancellationToken
 
     /// Call only with all application/bearer/CLI traffic externally isolated and maintenance active.
     member _.AdmitRestoredInstallation(checkpoint, handle, cancellationToken) =
-        RestoreAdmission.admit source checkpoint handle cancellationToken
+        RestoreAdmission.admit source masterKey checkpoint handle cancellationToken
 
     member _.Status(cancellationToken) =
-        InstallationStatus.read source cancellationToken
+        InstallationStatus.read source masterKey cancellationToken
 
     member _.Maintenance(change, cancellationToken) =
-        RegisterMaintenanceStore.change source change cancellationToken
+        RegisterMaintenanceStore.change source masterKey change cancellationToken
 
     member _.Head(cancellationToken) =
-        LedgerAdministration.head source cancellationToken
+        LedgerAdministration.head source masterKey cancellationToken
+
+    member _.RotateMasterKey(newMasterKey, cancellationToken) =
+        Baseline.rotate source masterKey newMasterKey cancellationToken
 
     interface IDisposable with
         member _.Dispose() =

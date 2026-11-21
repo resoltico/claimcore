@@ -851,6 +851,7 @@ let private projectionRepair database =
         let! repaired =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -874,6 +875,7 @@ let private projectionRepair database =
         let! repairedDate =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -901,6 +903,7 @@ let private projectionRepair database =
         let! repairedSearch =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -925,6 +928,7 @@ let private projectionRepair database =
             let! repairedBytes =
                 ProjectionRebuild.rebuild
                     database.OwnerSource
+                    database.MasterKey
                     checkpoint
                     (MaintenanceHandle.create
                         1L
@@ -1032,6 +1036,7 @@ let private casePageOwners database =
         let! repaired =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L

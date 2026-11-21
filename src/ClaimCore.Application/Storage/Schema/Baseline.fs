@@ -147,16 +147,57 @@ module internal Baseline =
                 raise (InstallationConfigurationException())
         }
 
-    let private install connection timeZone token =
+    let private wrappedKey lockRow connection installationId token =
+        task {
+            let query =
+                "SELECT wrapped_data_key FROM claimcore.installation WHERE singleton AND installation_id=$1"
+                + (if lockRow then " FOR UPDATE" else "")
+
+            let! rows = DatabaseSession.rows connection query [| box installationId |] token
+
+            match rows with
+            | [ row ] -> return DatabaseSession.value<byte array> 0 row
+            | _ -> return raise (OperatorFaultException OperatorFault.DataKeyInvalid)
+        }
+
+    let loadCipher connection installationId masterKey token =
+        task {
+            let! wrapped = wrappedKey false connection installationId token
+            return InstallationCipher.unwrap masterKey installationId wrapped
+        }
+
+    let rotate (source: NpgsqlDataSource) masterKey newMasterKey token =
+        DatabaseSession.transaction
+            source
+            Data.IsolationLevel.ReadCommitted
+            token
+            (fun connection transaction ->
+                task {
+                    do! OwnerAdmission.require connection token
+                    let! installationId, _ = require connection token
+                    let! wrapped = wrappedKey true connection installationId token
+                    use cipher = InstallationCipher.unwrap masterKey installationId wrapped
+
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "UPDATE claimcore.installation SET wrapped_data_key=$1 WHERE singleton AND installation_id=$2"
+                            [| box (cipher.Wrap newMasterKey); box installationId |]
+                            token
+
+                    do! DatabaseSession.commit transaction token
+                    return installationId
+                })
+
+    let private install connection timeZone id wrapped token =
         task {
             do! apply connection token
-            let id = Guid.NewGuid()
 
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ($1,$2,$3)"
-                    [| box id; box timeZone; box (int16 InstallationFormat.Current) |]
+                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ($1,$2,$3,$4)"
+                    [| box id; box timeZone; box (int16 InstallationFormat.Current); box wrapped |]
                     token
 
             let! _ =
@@ -166,11 +207,12 @@ module internal Baseline =
                     [| box DisclosureTrail.retentionMonths |]
                     token
 
-            return id
+            return ()
         }
 
     let initializeWith
         (source: NpgsqlDataSource)
+        masterKey
         timeZone
         initializeOwner
         initialized
@@ -200,10 +242,16 @@ module internal Baseline =
 
                             if present then
                                 let! installation = require connection token
+
+                                use! _admitted =
+                                    loadCipher connection (fst installation) masterKey token
+
                                 return! existing connection installation token
                             else
-                                let! id = install connection timeZone token
-                                do! initializeOwner connection id
+                                let id = Guid.NewGuid()
+                                use cipher = InstallationCipher.create id
+                                do! install connection timeZone id (cipher.Wrap masterKey) token
+                                do! initializeOwner connection id cipher
                                 do! DatabaseSession.commit transaction token
                                 return initialized id
                         })
@@ -212,10 +260,10 @@ module internal Baseline =
     let refuseExisting _ _ _ =
         raise (OperatorFaultException OperatorFault.AlreadyInitialized)
 
-    let initialize source timeZone initializeOwner token =
-        initializeWith source timeZone initializeOwner id refuseExisting token
+    let initialize source masterKey timeZone initializeOwner token =
+        initializeWith source masterKey timeZone initializeOwner id refuseExisting token
 
 /// Owner-only schema initialization; no upgrade, adoption or conversion is provided.
 module internal SchemaAdministration =
-    let initialize source timeZone initializeOwner cancellationToken =
-        Baseline.initialize source timeZone initializeOwner cancellationToken
+    let initialize source masterKey timeZone initializeOwner cancellationToken =
+        Baseline.initialize source masterKey timeZone initializeOwner cancellationToken

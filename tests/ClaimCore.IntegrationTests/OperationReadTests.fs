@@ -256,7 +256,8 @@ let private runtime () =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let status = administration.Status token |> sync
@@ -473,7 +474,8 @@ let private profileReplayBeforeAdmission () =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         Expect.equal

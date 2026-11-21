@@ -18,11 +18,12 @@
     <Compile Include="Storage/PaymentRows.fs" />
     <Compile Include="Storage/Models.fs" />
     <Compile Include="Reads/CaseSelection.fs" />
-    <Compile Include="Storage/ReadTransaction.fs" />
     <Compile Include="Storage/OperatorFaults.fs" />
     <Compile Include="Storage/InstallationCheck/ServerSupport.fs" />
     <Compile Include="Storage/FailureDiagnostics.fs" />
     <Compile Include="Storage/DatabaseSession.fs" />
+    <Compile Include="Storage/InstallationCipher.fs" />
+    <Compile Include="Storage/ReadTransaction.fs" />
     <Compile Include="Storage/DisclosureStorage.fs" />
     <Compile Include="Storage/InstallationCheck/DatabaseProfile.fs" />
     <Compile Include="Storage/InstallationCheck/OwnerAdmission.fs" />

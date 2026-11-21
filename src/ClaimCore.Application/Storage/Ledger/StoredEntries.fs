@@ -19,10 +19,10 @@ module internal StoredEntries =
         |> Option.defaultWith (fun () ->
             raise (RecordCorruptException "Invalid stored operation position."))
 
-    let operation connection installation id token =
-        OperationStorage.find connection installation id token
+    let operation connection cipher id token =
+        OperationStorage.find connection cipher id token
 
-    let bind connection installation (rows: obj array list) token =
+    let bind connection cipher (rows: obj array list) token =
         task {
             let mutable operations = Map.empty
             let effects = ResizeArray<StoredEffect>()
@@ -38,8 +38,7 @@ module internal StoredEntries =
                     | Some value -> System.Threading.Tasks.Task.FromResult value
                     | None ->
                         task {
-                            let! found =
-                                OperationStorage.find connection installation identity token
+                            let! found = OperationStorage.find connection cipher identity token
 
                             let value =
                                 found

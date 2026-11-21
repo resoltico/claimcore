@@ -52,7 +52,8 @@ let private initialization (database: PostgresFixture.Database) =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let! installation = administration.Initialize("Etc/UTC", owner database, token)
@@ -77,7 +78,10 @@ let private initialization (database: PostgresFixture.Database) =
 
         settings.Username <- "claimcore_runtime"
         settings.Password <- "synthetic-only"
-        let! runtime = Runtime.openConnection settings.ConnectionString token
+
+        let! runtime =
+            Runtime.openConnection settings.ConnectionString database.MasterKey token
+
         use runtime = runtime |> Result.defaultWith (string >> failtest)
 
         let service =
@@ -165,7 +169,8 @@ let private rollback (database: PostgresFixture.Database) =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let mutable failure = None

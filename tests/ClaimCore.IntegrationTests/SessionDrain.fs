@@ -29,7 +29,10 @@ let private runtime (database: PostgresFixture.Database) =
         settings.ApplicationName <- application
 
         let! opened =
-            ClaimCore.Server.Composition.Runtime.openConnection settings.ConnectionString token
+            ClaimCore.Server.Composition.Runtime.openConnection
+                settings.ConnectionString
+                database.MasterKey
+                token
 
         return
             opened
