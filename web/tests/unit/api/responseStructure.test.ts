@@ -151,7 +151,7 @@ describe("generated finite structural interpreter", () => {
             principal: { kind: "HUMAN", issuer, subject: "synthetic-unicode-principal" },
             firstSeen: "2024-02-29T10:00:00.123456Z",
             lastSeen: "2024-02-29T11:00:00.123456Z",
-            claims: {},
+            claims: { emailVerified: false },
           },
         ],
         nextCursor: null,

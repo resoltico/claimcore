@@ -136,6 +136,9 @@ it("declining an uncertain request retarget preserves the exact request and retr
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
+  fireEvent.change(screen.getByRole("textbox", { name: "Enter the exact sign-in ID." }), {
+    target: { value: "authored-other" },
+  });
   fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [original] = execute.mock.calls[0]!;
