@@ -342,7 +342,7 @@ let private restore database path =
                 [|
                     "psql"
                     "-U"
-                    "postgres"
+                    "claimcore_owner"
                     "-d"
                     "postgres"
                     "-v"
@@ -355,14 +355,16 @@ let private restore database path =
             DatabaseSession.read database.OwnerSource token (fun connection ->
                 DatabaseSession.rows
                     connection
-                    "SELECT extversion FROM pg_extension WHERE extname='pg_trgm'"
+                    "SELECT extversion, pg_get_userbyid(extowner) = current_user FROM pg_extension WHERE extname='pg_trgm'"
                     [||]
                     token)
 
         Expect.equal
-            (moduleRows |> List.map (DatabaseSession.value<string> 0))
-            [ "1.6" ]
-            "Each full restore recreates its module dependency"
+            (moduleRows
+             |> List.map (fun row ->
+                 DatabaseSession.value<string> 0 row, DatabaseSession.value<bool> 1 row))
+            [ "1.6", true ]
+            "Each full restore recreates its module dependency as the database owner"
     }
 
 let private oldHead database =
