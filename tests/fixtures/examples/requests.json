@@ -17,6 +17,36 @@
       }
     },
     {
+      "id": "disclosure-trail-refuses-invalid-kind",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "ATTACHMENT_GONE",
+        "limit": 1
+      }
+    },
+    {
+      "id": "disclosure-trail-refuses-invalid-from",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "from": "2026-11-04T10:30:00Z",
+        "limit": 1
+      }
+    },
+    {
+      "id": "disclosure-trail-refuses-invalid-until",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "until": "2026-11-04T12:30:00.000000+01:00",
+        "limit": 1
+      }
+    },
+    {
       "id": "disclosure-trail-refuses-nil-actor-id",
       "endpoint": "disclosure.trail",
       "direction": "request",

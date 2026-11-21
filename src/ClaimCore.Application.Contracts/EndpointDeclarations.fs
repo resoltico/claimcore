@@ -205,10 +205,10 @@ module EndpointDeclarations =
                 QueryTaskId.DisclosureTrail
                 ([
                     optional TaskInputId.ActorId
-                    optional (target InputTarget.DisclosureCaseId)
-                    optional (target InputTarget.DisclosureKind)
-                    optional (target InputTarget.DisclosureFrom)
-                    optional (target InputTarget.DisclosureUntil)
+                    optional TaskInputId.DisclosureCaseId
+                    optional TaskInputId.DisclosureKind
+                    optional TaskInputId.DisclosureFrom
+                    optional TaskInputId.DisclosureUntil
                  ]
                  @ page)
                 (paging

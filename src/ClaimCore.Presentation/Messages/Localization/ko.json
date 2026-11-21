@@ -1407,51 +1407,51 @@
     "text": "거부",
     "source": "66b873543aeb"
   },
-  "field.disclosureKind.label": {
+  "input.disclosureKind.label": {
     "text": "이벤트 유형",
     "source": "7e047de1d852"
   },
-  "field.disclosureKind.hint": {
+  "input.disclosureKind.hint": {
     "text": "이벤트 유형을 선택해 기록을 필터링합니다.",
     "source": "c3a76737f118"
   },
-  "field.disclosureKind.rule": {
+  "input.disclosureKind.rule": {
     "text": "지원되는 공개 이벤트 유형을 사용하세요.",
     "source": "164fcd0efd4a"
   },
-  "field.disclosureCaseId.label": {
+  "input.disclosureCaseId.label": {
     "text": "청구 건 ID",
     "source": "e0aed7cf64e8"
   },
-  "field.disclosureCaseId.hint": {
+  "input.disclosureCaseId.hint": {
     "text": "청구 건 ID를 입력해 기록을 필터링합니다.",
     "source": "d23a16269a61"
   },
-  "field.disclosureCaseId.rule": {
+  "input.disclosureCaseId.rule": {
     "text": "청구 건 ID를 UUID 형식으로 입력하세요.",
     "source": "172a4f1fca6b"
   },
-  "field.disclosureFrom.label": {
+  "input.disclosureFrom.label": {
     "text": "시작 (포함)",
     "source": "0186c425ca2e"
   },
-  "field.disclosureFrom.hint": {
+  "input.disclosureFrom.hint": {
     "text": "초 소수점 이하 여섯 자리의 UTC를 사용하세요. 예시는 2026-11-21T09:30:00.000000Z입니다.",
     "source": "e36c1c702d68"
   },
-  "field.disclosureFrom.rule": {
+  "input.disclosureFrom.rule": {
     "text": "범위 끝과 같거나 그 이전의 UTC 시각을 사용하세요.",
     "source": "406c5d1a2c26"
   },
-  "field.disclosureUntil.label": {
+  "input.disclosureUntil.label": {
     "text": "종료 (제외)",
     "source": "fac51096ac56"
   },
-  "field.disclosureUntil.hint": {
+  "input.disclosureUntil.hint": {
     "text": "초 소수점 이하 여섯 자리의 UTC로 범위 끝을 입력하세요.",
     "source": "747373b6c910"
   },
-  "field.disclosureUntil.rule": {
+  "input.disclosureUntil.rule": {
     "text": "범위 시작과 같거나 그 이후의 UTC 시각을 사용하세요.",
     "source": "65efce282118"
   },

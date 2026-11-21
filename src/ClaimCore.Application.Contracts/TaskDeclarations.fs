@@ -112,7 +112,7 @@ module TaskChoiceId =
         | TaskInputId.Progress -> Some TaskChoiceId.Progress
         | TaskInputId.CaseView -> Some TaskChoiceId.CaseView
         | TaskInputId.RoleFilter -> Some TaskChoiceId.RoleFilter
-        | TaskInputId.Target InputTarget.DisclosureKind -> Some TaskChoiceId.DisclosureKind
+        | TaskInputId.DisclosureKind -> Some TaskChoiceId.DisclosureKind
         | TaskInputId.ReminderView -> Some TaskChoiceId.ReminderView
         | TaskInputId.TimelineFilter -> Some TaskChoiceId.TimelineFilter
         | TaskInputId.Order -> Some TaskChoiceId.Order
@@ -132,9 +132,12 @@ module TaskChoiceId =
         | TaskInputId.Target(InputTarget.Field BusinessField.Outcome) ->
             Some TaskChoiceId.ClosureOutcome
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.ProfileDigestEmail | InputTarget.DirectorySearch | InputTarget.DisclosureCaseId | InputTarget.DisclosureFrom | InputTarget.DisclosureUntil | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.AttachmentId | InputTarget.AttachmentName | InputTarget.AttachmentLength | InputTarget.AttachmentDigest | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.ProfileDigestEmail | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.AttachmentId | InputTarget.AttachmentName | InputTarget.AttachmentLength | InputTarget.AttachmentDigest | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
+        | TaskInputId.DisclosureCaseId
+        | TaskInputId.DisclosureFrom
+        | TaskInputId.DisclosureUntil
         | TaskInputId.ResponsibleActorFilter
         | TaskInputId.CaseDate _
         | TaskInputId.IncludeInactive -> None

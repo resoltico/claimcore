@@ -1407,51 +1407,51 @@
     "text": "拒否",
     "source": "66b873543aeb"
   },
-  "field.disclosureKind.label": {
+  "input.disclosureKind.label": {
     "text": "イベント種別",
     "source": "7e047de1d852"
   },
-  "field.disclosureKind.hint": {
+  "input.disclosureKind.hint": {
     "text": "イベント種別を選んで記録を絞り込みます。",
     "source": "c3a76737f118"
   },
-  "field.disclosureKind.rule": {
+  "input.disclosureKind.rule": {
     "text": "有効な開示イベント種別を指定します。",
     "source": "164fcd0efd4a"
   },
-  "field.disclosureCaseId.label": {
+  "input.disclosureCaseId.label": {
     "text": "案件ID",
     "source": "e0aed7cf64e8"
   },
-  "field.disclosureCaseId.hint": {
+  "input.disclosureCaseId.hint": {
     "text": "案件IDを入力して記録を絞り込みます。",
     "source": "d23a16269a61"
   },
-  "field.disclosureCaseId.rule": {
+  "input.disclosureCaseId.rule": {
     "text": "案件IDをUUID形式で入力します。",
     "source": "172a4f1fca6b"
   },
-  "field.disclosureFrom.label": {
+  "input.disclosureFrom.label": {
     "text": "開始（含む）",
     "source": "0186c425ca2e"
   },
-  "field.disclosureFrom.hint": {
+  "input.disclosureFrom.hint": {
     "text": "UTCで秒の小数部を6桁にします。例は2026-11-21T09:30:00.000000Zです。",
     "source": "e36c1c702d68"
   },
-  "field.disclosureFrom.rule": {
+  "input.disclosureFrom.rule": {
     "text": "期間の終了以前のUTC時刻を指定します。",
     "source": "406c5d1a2c26"
   },
-  "field.disclosureUntil.label": {
+  "input.disclosureUntil.label": {
     "text": "終了（含まない）",
     "source": "fac51096ac56"
   },
-  "field.disclosureUntil.hint": {
+  "input.disclosureUntil.hint": {
     "text": "終了時刻をUTCで秒の小数部を6桁にして入力します。",
     "source": "747373b6c910"
   },
-  "field.disclosureUntil.rule": {
+  "input.disclosureUntil.rule": {
     "text": "期間の開始以降のUTC時刻を指定します。",
     "source": "65efce282118"
   },

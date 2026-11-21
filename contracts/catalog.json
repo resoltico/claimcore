@@ -587,34 +587,6 @@
       }
     },
     {
-      "name": "disclosureCaseId",
-      "labelId": "field.disclosureCaseId.label",
-      "hintId": "field.disclosureCaseId.hint",
-      "ruleId": "field.disclosureCaseId.rule",
-      "scalar": null
-    },
-    {
-      "name": "disclosureKind",
-      "labelId": "field.disclosureKind.label",
-      "hintId": "field.disclosureKind.hint",
-      "ruleId": "field.disclosureKind.rule",
-      "scalar": null
-    },
-    {
-      "name": "disclosureFrom",
-      "labelId": "field.disclosureFrom.label",
-      "hintId": "field.disclosureFrom.hint",
-      "ruleId": "field.disclosureFrom.rule",
-      "scalar": null
-    },
-    {
-      "name": "disclosureUntil",
-      "labelId": "field.disclosureUntil.label",
-      "hintId": "field.disclosureUntil.hint",
-      "ruleId": "field.disclosureUntil.rule",
-      "scalar": null
-    },
-    {
       "name": "grants",
       "labelId": "field.grants.label",
       "hintId": "field.grants.hint",
@@ -971,6 +943,34 @@
       "labelId": "input.roleFilter.label",
       "hintId": "input.roleFilter.hint",
       "ruleId": "input.roleFilter.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureCaseId",
+      "labelId": "input.disclosureCaseId.label",
+      "hintId": "input.disclosureCaseId.hint",
+      "ruleId": "input.disclosureCaseId.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureKind",
+      "labelId": "input.disclosureKind.label",
+      "hintId": "input.disclosureKind.hint",
+      "ruleId": "input.disclosureKind.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureFrom",
+      "labelId": "input.disclosureFrom.label",
+      "hintId": "input.disclosureFrom.hint",
+      "ruleId": "input.disclosureFrom.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureUntil",
+      "labelId": "input.disclosureUntil.label",
+      "hintId": "input.disclosureUntil.hint",
+      "ruleId": "input.disclosureUntil.rule",
       "scalar": null
     },
     {

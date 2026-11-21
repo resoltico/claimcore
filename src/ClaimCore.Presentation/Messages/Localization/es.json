@@ -1407,51 +1407,51 @@
     "text": "Denegado",
     "source": "66b873543aeb"
   },
-  "field.disclosureKind.label": {
+  "input.disclosureKind.label": {
     "text": "Tipo de evento",
     "source": "7e047de1d852"
   },
-  "field.disclosureKind.hint": {
+  "input.disclosureKind.hint": {
     "text": "Elija un tipo de evento para filtrar el registro.",
     "source": "c3a76737f118"
   },
-  "field.disclosureKind.rule": {
+  "input.disclosureKind.rule": {
     "text": "Use un tipo de evento de divulgación reconocido.",
     "source": "164fcd0efd4a"
   },
-  "field.disclosureCaseId.label": {
+  "input.disclosureCaseId.label": {
     "text": "ID de expediente",
     "source": "e0aed7cf64e8"
   },
-  "field.disclosureCaseId.hint": {
+  "input.disclosureCaseId.hint": {
     "text": "Introduzca el ID de expediente para filtrar el registro.",
     "source": "d23a16269a61"
   },
-  "field.disclosureCaseId.rule": {
+  "input.disclosureCaseId.rule": {
     "text": "Introduzca un ID de expediente en formato UUID.",
     "source": "172a4f1fca6b"
   },
-  "field.disclosureFrom.label": {
+  "input.disclosureFrom.label": {
     "text": "Desde (inclusive)",
     "source": "0186c425ca2e"
   },
-  "field.disclosureFrom.hint": {
+  "input.disclosureFrom.hint": {
     "text": "Use UTC con seis decimales de segundo, por ejemplo 2026-11-21T09:30:00.000000Z.",
     "source": "e36c1c702d68"
   },
-  "field.disclosureFrom.rule": {
+  "input.disclosureFrom.rule": {
     "text": "Use un instante UTC anterior o igual al final del intervalo.",
     "source": "406c5d1a2c26"
   },
-  "field.disclosureUntil.label": {
+  "input.disclosureUntil.label": {
     "text": "Hasta (exclusive)",
     "source": "fac51096ac56"
   },
-  "field.disclosureUntil.hint": {
+  "input.disclosureUntil.hint": {
     "text": "Introduzca el final del intervalo en UTC con seis decimales de segundo.",
     "source": "747373b6c910"
   },
-  "field.disclosureUntil.rule": {
+  "input.disclosureUntil.rule": {
     "text": "Use un instante UTC posterior o igual al inicio del intervalo.",
     "source": "65efce282118"
   },

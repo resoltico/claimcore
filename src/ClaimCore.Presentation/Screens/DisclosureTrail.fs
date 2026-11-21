@@ -29,7 +29,7 @@ module DisclosureTrailScreen =
                 (fun (item: RecordedDisclosure) -> PresentedValue.Instant item.RecordedAt)
             column "actorId" "input.actorId.label" Prominence.Primary false (fun item ->
                 identifier ActorId.format item.Event.ActorId)
-            column "kind" "field.disclosureKind.label" Prominence.Primary false (fun item ->
+            column "kind" "input.disclosureKind.label" Prominence.Primary false (fun item ->
                 code DisclosureKind.vocabulary item.Event.Kind)
             column "caseId" "input.caseId.label" Prominence.Secondary false (fun item ->
                 optional (identifier CaseId.format) item.Event.CaseId)

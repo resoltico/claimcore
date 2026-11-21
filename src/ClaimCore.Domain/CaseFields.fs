@@ -58,10 +58,6 @@ type InputTarget =
     | ProfileContact
     | ProfileDigestEmail
     | DirectorySearch
-    | DisclosureCaseId
-    | DisclosureKind
-    | DisclosureFrom
-    | DisclosureUntil
     | Grants
     | Role
     | Scope

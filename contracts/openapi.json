@@ -6992,21 +6992,6 @@
             "minItems": 0,
             "maxItems": 2
           },
-          "input:disclosureKind": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "CASE_READ",
-                "ATTACHMENT_DOWNLOAD",
-                "ATTACHMENT_PREVIEW",
-                "EXPORT",
-                "TRAIL_READ",
-                "ACCESS_REFUSED"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 6
-          },
           "input:role": {
             "type": "array",
             "items": {
@@ -7141,6 +7126,21 @@
             },
             "minItems": 0,
             "maxItems": 7
+          },
+          "input:disclosureKind": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE_READ",
+                "ATTACHMENT_DOWNLOAD",
+                "ATTACHMENT_PREVIEW",
+                "EXPORT",
+                "TRAIL_READ",
+                "ACCESS_REFUSED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 6
           },
           "input:reminderView": {
             "type": "array",
@@ -7389,18 +7389,6 @@
           "input:directorySearch": {
             "$ref": "#/components/schemas/InputAtom"
           },
-          "input:disclosureCaseId": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
-          "input:disclosureKind": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
-          "input:disclosureFrom": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
-          "input:disclosureUntil": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
           "input:grants": {
             "$ref": "#/components/schemas/InputAtom"
           },
@@ -7525,6 +7513,18 @@
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:roleFilter": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:disclosureCaseId": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:disclosureKind": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:disclosureFrom": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
+          "input:disclosureUntil": {
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:reminderView": {
@@ -16952,10 +16952,6 @@
           "input:profile.contact",
           "input:profile.digestEmail",
           "input:directorySearch",
-          "input:disclosureCaseId",
-          "input:disclosureKind",
-          "input:disclosureFrom",
-          "input:disclosureUntil",
           "input:grants",
           "input:role",
           "input:scope",
@@ -27931,10 +27927,6 @@
           "input:profile.contact",
           "input:profile.digestEmail",
           "input:directorySearch",
-          "input:disclosureCaseId",
-          "input:disclosureKind",
-          "input:disclosureFrom",
-          "input:disclosureUntil",
           "input:grants",
           "input:role",
           "input:limit",
@@ -27977,6 +27969,10 @@
           "input:caseView",
           "input:responsibleActorFilter",
           "input:roleFilter",
+          "input:disclosureCaseId",
+          "input:disclosureKind",
+          "input:disclosureFrom",
+          "input:disclosureUntil",
           "input:reminderView",
           "input:timelineFilter",
           "input:order",

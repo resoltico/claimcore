@@ -1407,51 +1407,51 @@
     "text": "Atteikts",
     "source": "66b873543aeb"
   },
-  "field.disclosureKind.label": {
+  "input.disclosureKind.label": {
     "text": "Notikuma veids",
     "source": "7e047de1d852"
   },
-  "field.disclosureKind.hint": {
+  "input.disclosureKind.hint": {
     "text": "Atlasiet notikuma veidu, lai filtrētu žurnālu.",
     "source": "c3a76737f118"
   },
-  "field.disclosureKind.rule": {
+  "input.disclosureKind.rule": {
     "text": "Izmantojiet derīgu izpaušanas notikuma veidu.",
     "source": "164fcd0efd4a"
   },
-  "field.disclosureCaseId.label": {
+  "input.disclosureCaseId.label": {
     "text": "Lietas ID",
     "source": "e0aed7cf64e8"
   },
-  "field.disclosureCaseId.hint": {
+  "input.disclosureCaseId.hint": {
     "text": "Ievadiet lietas ID, lai filtrētu žurnālu.",
     "source": "d23a16269a61"
   },
-  "field.disclosureCaseId.rule": {
+  "input.disclosureCaseId.rule": {
     "text": "Ievadiet lietas ID UUID formātā.",
     "source": "172a4f1fca6b"
   },
-  "field.disclosureFrom.label": {
+  "input.disclosureFrom.label": {
     "text": "No (ieskaitot)",
     "source": "0186c425ca2e"
   },
-  "field.disclosureFrom.hint": {
+  "input.disclosureFrom.hint": {
     "text": "Izmantojiet UTC ar sešām ciparzīmēm sekundes daļā, piemēram, 2026-11-21T09:30:00.000000Z.",
     "source": "e36c1c702d68"
   },
-  "field.disclosureFrom.rule": {
+  "input.disclosureFrom.rule": {
     "text": "Izmantojiet UTC laiku, kas nav vēlāks par diapazona beigām.",
     "source": "406c5d1a2c26"
   },
-  "field.disclosureUntil.label": {
+  "input.disclosureUntil.label": {
     "text": "Līdz (neieskaitot)",
     "source": "fac51096ac56"
   },
-  "field.disclosureUntil.hint": {
+  "input.disclosureUntil.hint": {
     "text": "Ievadiet diapazona beigas UTC ar sešām ciparzīmēm sekundes daļā.",
     "source": "747373b6c910"
   },
-  "field.disclosureUntil.rule": {
+  "input.disclosureUntil.rule": {
     "text": "Izmantojiet UTC laiku, kas nav agrāks par diapazona sākumu.",
     "source": "65efce282118"
   },

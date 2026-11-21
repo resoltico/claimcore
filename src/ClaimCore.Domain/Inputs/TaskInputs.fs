@@ -25,6 +25,10 @@ type TaskInputId =
     | CaseView
     | ResponsibleActorFilter
     | RoleFilter
+    | DisclosureCaseId
+    | DisclosureKind
+    | DisclosureFrom
+    | DisclosureUntil
     | ReminderView
     | TimelineFilter
     | Order
@@ -60,6 +64,10 @@ module TaskInputId =
         | TaskInputId.CaseView -> "caseView"
         | TaskInputId.ResponsibleActorFilter -> "responsibleActorFilter"
         | TaskInputId.RoleFilter -> "roleFilter"
+        | TaskInputId.DisclosureCaseId -> "disclosureCaseId"
+        | TaskInputId.DisclosureKind -> "disclosureKind"
+        | TaskInputId.DisclosureFrom -> "disclosureFrom"
+        | TaskInputId.DisclosureUntil -> "disclosureUntil"
         | TaskInputId.ReminderView -> "reminderView"
         | TaskInputId.TimelineFilter -> "timelineFilter"
         | TaskInputId.Order -> "order"
@@ -86,6 +94,10 @@ module TaskInputId =
             TaskInputId.CaseView
             TaskInputId.ResponsibleActorFilter
             TaskInputId.RoleFilter
+            TaskInputId.DisclosureCaseId
+            TaskInputId.DisclosureKind
+            TaskInputId.DisclosureFrom
+            TaskInputId.DisclosureUntil
             TaskInputId.ReminderView
             TaskInputId.TimelineFilter
             TaskInputId.Order

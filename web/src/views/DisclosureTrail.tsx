@@ -71,12 +71,12 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
         <input id="trail-actor" name="actorId" type="text" autoComplete="off" dir="ltr" />
       </div>
       <div className="text-field">
-        <label htmlFor="trail-case">{p.text("field.disclosureCaseId.label")}</label>
+        <label htmlFor="trail-case">{p.text("input.disclosureCaseId.label")}</label>
         <input id="trail-case" name="caseId" type="text" autoComplete="off" dir="ltr" />
       </div>
       <Select
         id="trail-kind"
-        label={p.text("field.disclosureKind.label")}
+        label={p.text("input.disclosureKind.label")}
         value={kind}
         options={[
           { value: "", label: p.text("label.disclosureAnyKind") },
@@ -88,7 +88,7 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
         onChange={setKind}
       />
       <div className="text-field">
-        <label htmlFor="trail-from">{p.text("field.disclosureFrom.label")}</label>
+        <label htmlFor="trail-from">{p.text("input.disclosureFrom.label")}</label>
         <input
           id="trail-from"
           name="from"
@@ -99,7 +99,7 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
         />
       </div>
       <div className="text-field">
-        <label htmlFor="trail-until">{p.text("field.disclosureUntil.label")}</label>
+        <label htmlFor="trail-until">{p.text("input.disclosureUntil.label")}</label>
         <input
           id="trail-until"
           name="until"
@@ -109,7 +109,7 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
           aria-describedby="trail-time-format"
         />
       </div>
-      <p id="trail-time-format">{p.text("field.disclosureFrom.hint")}</p>
+      <p id="trail-time-format">{p.text("input.disclosureFrom.hint")}</p>
       <button type="submit">{p.text("ui.applyFilters")}</button>
     </form>
   );

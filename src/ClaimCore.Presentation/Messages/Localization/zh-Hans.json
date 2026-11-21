@@ -1407,51 +1407,51 @@
     "text": "已拒绝",
     "source": "66b873543aeb"
   },
-  "field.disclosureKind.label": {
+  "input.disclosureKind.label": {
     "text": "事件类型",
     "source": "7e047de1d852"
   },
-  "field.disclosureKind.hint": {
+  "input.disclosureKind.hint": {
     "text": "选择事件类型以筛选日志。",
     "source": "c3a76737f118"
   },
-  "field.disclosureKind.rule": {
+  "input.disclosureKind.rule": {
     "text": "请使用受支持的披露事件类型。",
     "source": "164fcd0efd4a"
   },
-  "field.disclosureCaseId.label": {
+  "input.disclosureCaseId.label": {
     "text": "案件 ID",
     "source": "e0aed7cf64e8"
   },
-  "field.disclosureCaseId.hint": {
+  "input.disclosureCaseId.hint": {
     "text": "输入案件 ID 以筛选日志。",
     "source": "d23a16269a61"
   },
-  "field.disclosureCaseId.rule": {
+  "input.disclosureCaseId.rule": {
     "text": "请以 UUID 格式输入案件 ID。",
     "source": "172a4f1fca6b"
   },
-  "field.disclosureFrom.label": {
+  "input.disclosureFrom.label": {
     "text": "起始（含）",
     "source": "0186c425ca2e"
   },
-  "field.disclosureFrom.hint": {
+  "input.disclosureFrom.hint": {
     "text": "请使用带六位小数秒的 UTC，例如 2026-11-21T09:30:00.000000Z。",
     "source": "e36c1c702d68"
   },
-  "field.disclosureFrom.rule": {
+  "input.disclosureFrom.rule": {
     "text": "请使用不晚于范围结束时间的 UTC 时刻。",
     "source": "406c5d1a2c26"
   },
-  "field.disclosureUntil.label": {
+  "input.disclosureUntil.label": {
     "text": "结束（不含）",
     "source": "fac51096ac56"
   },
-  "field.disclosureUntil.hint": {
+  "input.disclosureUntil.hint": {
     "text": "请以带六位小数秒的 UTC 输入范围结束时间。",
     "source": "747373b6c910"
   },
-  "field.disclosureUntil.rule": {
+  "input.disclosureUntil.rule": {
     "text": "请使用不早于范围开始时间的 UTC 时刻。",
     "source": "65efce282118"
   },

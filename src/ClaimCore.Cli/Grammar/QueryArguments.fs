@@ -121,7 +121,8 @@ module internal QueryArguments =
                     Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
                 | TaskInputId.ActorId
                 | TaskInputId.ResponsibleActorFilter
-                | TaskInputId.Target(InputTarget.OperationId | InputTarget.ReminderId | InputTarget.DisclosureCaseId) ->
+                | TaskInputId.DisclosureCaseId
+                | TaskInputId.Target(InputTarget.OperationId | InputTarget.ReminderId) ->
                     uuid name value |> Option.map Codec.uuid.Write
                 | TaskInputId.Target InputTarget.Cursor ->
                     let maximum =
