@@ -91,6 +91,7 @@ const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefine
   },
   "people.list": () => "/people",
   "people.requests": () => "/people",
+  "disclosure.trail": () => "/disclosure-trail",
   "operation.get": (link) => {
     const operation = link.input["operationId"];
     return typeof operation === "string"

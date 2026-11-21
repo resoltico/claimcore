@@ -239,6 +239,7 @@ const replies: Replies = {
   "people.list": () => read({ kind: "LIST" }),
   "people.grants": () => read({ kind: "PERSON", actorId }),
   "people.history": () => read({ kind: "LIST" }),
+  "disclosure.trail": () => read({ kind: "LIST" }),
   "people.requests": () => read({ kind: "LIST" }),
   "people.requests.dismiss": () => read({ kind: "LIST" }),
   "operation.execute": (subject) => ({

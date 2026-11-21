@@ -22,6 +22,12 @@ trusted retained evidence; they cannot establish independent freshness or defeat
 evidence. Live erasure cannot reach old row versions, WAL, exports, replicas or backups. Even retained references
 may identify people. Read [Operations](docs/operating.md) before handling personal data.
 
+Reads covered by the disclosure trail require a committed event before the service returns
+content. Installation-wide Auditors can review the trail. Its rows keep identifiers, outcomes
+and structured export selections for 24 calendar months, including after whole-case erasure.
+The database owner and backup operator remain trusted. See the
+[disclosure trail](docs/operating.md#disclosure-trail).
+
 [Private-file admission](docs/operating.md#private-configuration) follows secret-volume symlinks and allows group
 read. It checks neither ownership nor ACLs and does not freeze concurrent changes. Protect the Web key ring
 separately and back it up with the database. Database-backed session sharing is qualified under the documented

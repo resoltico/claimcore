@@ -311,6 +311,14 @@
     "text": "案件をさらに読み込む",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "記録を再読み込み",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "イベントをさらに読み込む",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "活動をさらに読み込む",
     "source": "e3f0587b4839"

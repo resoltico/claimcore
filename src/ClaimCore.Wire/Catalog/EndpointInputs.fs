@@ -11,6 +11,10 @@ module EndpointInputs =
         | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) -> "target"
         | TaskInputId.Target InputTarget.DirectorySearch -> "text"
         | TaskInputId.RoleFilter -> "role"
+        | TaskInputId.Target InputTarget.DisclosureCaseId -> "caseId"
+        | TaskInputId.Target InputTarget.DisclosureKind -> "kind"
+        | TaskInputId.Target InputTarget.DisclosureFrom -> "from"
+        | TaskInputId.Target InputTarget.DisclosureUntil -> "until"
         | TaskInputId.CaseView
         | TaskInputId.ReminderView -> "view"
         | TaskInputId.ResponsibleActorFilter -> "responsibleActor"

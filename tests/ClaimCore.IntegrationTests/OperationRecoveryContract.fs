@@ -84,6 +84,9 @@ let internal rolelessAuthorship fixture =
 
         let readOnly =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
                 member _.Read operation = fixture.Store.Read operation
 

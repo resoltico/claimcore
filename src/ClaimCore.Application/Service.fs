@@ -46,6 +46,7 @@ module Service =
                 { new IStore with
                     member _.Context query = store.Context query
                     member _.Read operation = store.Read operation
+                    member _.RecordDisclosure(event, token) = store.RecordDisclosure(event, token)
 
                     member _.Write operation =
                         task {
@@ -83,6 +84,9 @@ module Service =
     let payments = PaymentQueries.page
 
     let timeline = TimelineQueries.read
+    let timelineForExport = TimelineQueries.forExport
+    let recordExport = DisclosureReads.recordExport
+    let disclosureTrail = DisclosureReads.page
 
     let operationGet services (input: OperationLookup) ct =
         task {

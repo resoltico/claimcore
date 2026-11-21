@@ -112,6 +112,9 @@ let private confirmed () =
 
         let readOnlyStore =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
                 member _.Read query = fixture.Store.Read query
 
@@ -268,6 +271,9 @@ let private cancellation () =
 
         let interruptedStore =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
                 member _.Read query = fixture.Store.Read query
 
@@ -310,6 +316,9 @@ let private acknowledgementLoss () =
 
         let interruptedStore =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
                 member _.Read query = fixture.Store.Read query
 

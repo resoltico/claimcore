@@ -147,6 +147,7 @@ type CliMessage =
     | [<MessageKey("cli.family.case")>] CaseFamily
     | [<MessageKey("cli.family.party")>] PartyCommands
     | [<MessageKey("cli.family.people")>] PeopleFamily
+    | [<MessageKey("cli.family.disclosure")>] DisclosureFamily
     | [<MessageKey("cli.family.operation")>] OperationFamily
     | [<MessageKey("cli.family.context")>] ContextFamily
     | [<MessageKey("cli.family.call")>] CallFamily

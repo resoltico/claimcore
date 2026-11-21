@@ -108,6 +108,18 @@ let all () : IEndpointInput list =
                     Limit = 50
                 }
         yield EndpointValues.input Api.peopleRequests page
+        yield
+            EndpointValues.input
+                Api.disclosureTrail
+                {
+                    ActorId = ActorId.create targetId
+                    CaseId = None
+                    Kind = Some DisclosureKind.CaseRead
+                    From = None
+                    Until = None
+                    AfterCursor = None
+                    Limit = 10
+                }
         yield EndpointValues.input Api.peopleRequestsDismiss DomainInputs.principal
         yield EndpointValues.input Api.terminateOwnSessions ()
         yield EndpointValues.input Api.terminatePersonSessions { ActorId = targetId }

@@ -39,6 +39,9 @@ let private decisionStore =
         member _.Read _ =
             failtest "Pure decisions must not read storage"
 
+        member _.RecordDisclosure(_, _) =
+            failtest "Pure decisions must not record disclosure"
+
         member _.Write _ =
             failtest "Pure decisions must not write storage"
     }

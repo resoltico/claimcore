@@ -127,6 +127,12 @@ If a change cannot be confirmed, keep its identifier and use [delivery recovery]
 Checking a result does not record it again. Retrying an in-memory reviewed change sends its identical
 bytes; starting a different change requires a new identifier and a fresh review.
 
+## Read the disclosure trail
+
+An Auditor with an installation-wide grant can open **Access and export log** or run
+`claimcore disclosure trail`. The trail identifies the actor and targets by ID and includes
+reads of the trail itself. See [disclosure trail operations](operating.md#disclosure-trail).
+
 ## End browser sessions
 
 In Settings or on the access screen, **End my ClaimCore browser sessions** ends all of your

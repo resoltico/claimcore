@@ -2,6 +2,51 @@
   "source": "Hand-reviewed literal decoding examples. No updater or generated snapshots. Focused tests use builders for behavioral variants and boundary controls.",
   "cases": [
     {
+      "id": "disclosure-trail-filtered",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "actorId": "10000000-0000-7000-8000-000000000001",
+        "caseId": "20000000-0000-7000-8000-000000000001",
+        "kind": "ATTACHMENT_DOWNLOAD",
+        "from": "2026-11-04T10:30:00.000000Z",
+        "until": "2026-11-04T11:30:00.000000Z",
+        "cursor": "disclosure-page-two",
+        "limit": 1
+      }
+    },
+    {
+      "id": "disclosure-trail-refuses-nil-actor-id",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "actorId": "00000000-0000-0000-0000-000000000000",
+        "limit": 1
+      }
+    },
+    {
+      "id": "disclosure-trail-refuses-nil-case-id",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "caseId": "00000000-0000-0000-0000-000000000000",
+        "limit": 1
+      }
+    },
+    {
+      "id": "disclosure-trail-refuses-case-selector-as-id",
+      "endpoint": "disclosure.trail",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "caseId": {"kind": "ID", "caseId": "20000000-0000-7000-8000-000000000001"},
+        "limit": 1
+      }
+    },
+    {
       "id": "people.grants-request-0",
       "endpoint": "people.grants",
       "direction": "request",

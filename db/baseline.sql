@@ -2,7 +2,7 @@
 --
 -- Applied by `claimcore-server initialize` as the schema owner, inside one transaction, to a
 -- database that has no `claimcore` schema. The administration tool inserts the `installation`
--- row and the `baseline_identity` row for this source in that same transaction.
+-- settings, including the disclosure retention period, and the baseline identity in that transaction.
 --
 -- The role `claimcore_runtime` must already exist (cluster roles are an operator concern, not a
 -- schema concern). It is the only role the HTTPS service connects as.
@@ -657,6 +657,98 @@ CREATE TABLE claimcore.access_request (
 );
 CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,principal_key);
 
+-- The owner installation transaction supplies the Core retention period. A pruning caller cannot
+-- shorten it; the runtime has read-only access to this installation value.
+CREATE TABLE claimcore.disclosure_retention (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    months integer NOT NULL CHECK (months > 0)
+);
+
+-- Operational disclosure evidence is independent of ledger order and case erasure.
+CREATE TABLE claimcore.disclosure_trail (
+    id bigint GENERATED ALWAYS AS IDENTITY (MAXVALUE 9007199254740991)
+        PRIMARY KEY CHECK (id BETWEEN 1 AND 9007199254740991),
+    recorded_at timestamptz NOT NULL DEFAULT clock_timestamp() CHECK (isfinite(recorded_at)),
+    actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
+    kind text COLLATE "C" NOT NULL CHECK (kind ~ '^[A-Z][A-Z_]*$'),
+    case_id uuid CHECK (case_id <> '00000000-0000-0000-0000-000000000000'),
+    attachment_id uuid CHECK (attachment_id <> '00000000-0000-0000-0000-000000000000'),
+    outcome text COLLATE "C" NOT NULL CHECK (outcome ~ '^[A-Z][A-Z_]*$'),
+    export_query text COLLATE "C",
+    export_selection jsonb,
+    export_row_count integer,
+    CHECK (
+        (export_query IS NULL AND export_selection IS NULL AND export_row_count IS NULL)
+        OR (export_query IS NOT NULL AND export_selection IS NOT NULL AND export_row_count IS NOT NULL
+            AND jsonb_typeof(export_selection) = 'object' AND export_row_count >= 0)
+    )
+);
+
+CREATE INDEX disclosure_trail_recorded ON claimcore.disclosure_trail(recorded_at,id);
+CREATE INDEX disclosure_trail_actor ON claimcore.disclosure_trail(actor_id,recorded_at,id);
+CREATE INDEX disclosure_trail_case ON claimcore.disclosure_trail(case_id,recorded_at,id);
+CREATE INDEX disclosure_trail_kind ON claimcore.disclosure_trail(kind,recorded_at,id);
+
+CREATE FUNCTION claimcore.disclosure_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF TG_RELID='claimcore.disclosure_trail'::regclass AND TG_OP='DELETE'
+       AND current_setting('claimcore.disclosure_pruning',true)='on'
+       AND current_user=pg_get_userbyid((SELECT relowner FROM pg_catalog.pg_class WHERE oid=TG_RELID)) THEN
+        RETURN OLD;
+    END IF;
+    RAISE EXCEPTION 'disclosure evidence can only be deleted by retention pruning' USING ERRCODE='CC003';
+END;
+$$;
+CREATE TRIGGER disclosure_trail_guard BEFORE UPDATE OR DELETE ON claimcore.disclosure_trail
+FOR EACH ROW EXECUTE FUNCTION claimcore.disclosure_guard();
+CREATE TRIGGER disclosure_trail_no_truncate BEFORE TRUNCATE ON claimcore.disclosure_trail
+FOR EACH STATEMENT EXECUTE FUNCTION claimcore.disclosure_guard();
+CREATE TRIGGER disclosure_retention_guard BEFORE UPDATE OR DELETE OR TRUNCATE ON claimcore.disclosure_retention
+FOR EACH STATEMENT EXECUTE FUNCTION claimcore.disclosure_guard();
+
+-- The application authorizes the actor in the snapshot that calls this reader. Give the
+-- runtime only this keyset read rather than direct SELECT on the trail's storage columns.
+CREATE FUNCTION claimcore.read_disclosure_trail(
+    p_actor uuid, p_case uuid, p_kind text, p_from timestamptz, p_until timestamptz,
+    p_before_time timestamptz, p_before_id bigint, p_limit integer
+)
+RETURNS SETOF claimcore.disclosure_trail LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT t.* FROM claimcore.disclosure_trail t
+    WHERE (p_actor IS NULL OR t.actor_id=p_actor)
+      AND (p_case IS NULL OR t.case_id=p_case)
+      AND (p_kind IS NULL OR t.kind=p_kind)
+      AND (p_from IS NULL OR t.recorded_at>=p_from)
+      AND (p_until IS NULL OR t.recorded_at<p_until)
+      AND (p_before_time IS NULL OR (t.recorded_at,t.id)<(p_before_time,p_before_id))
+    ORDER BY t.recorded_at DESC,t.id DESC
+    LIMIT p_limit
+$$;
+
+CREATE FUNCTION claimcore.prune_disclosure_trail(p_cutoff timestamptz, p_months integer)
+RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE retention integer; removed bigint; prior_marker text;
+BEGIN
+    SELECT months INTO STRICT retention FROM claimcore.disclosure_retention WHERE singleton;
+    IF p_months IS DISTINCT FROM retention OR p_cutoff IS NULL OR NOT isfinite(p_cutoff)
+       OR p_cutoff>date_subtract(clock_timestamp(),make_interval(months => retention),'UTC') THEN
+        RAISE EXCEPTION 'invalid disclosure retention cutoff' USING ERRCODE='CC005';
+    END IF;
+
+    -- Scope the marker to this deletion. Rollback restores it if deletion fails.
+    prior_marker:=current_setting('claimcore.disclosure_pruning',true);
+    PERFORM set_config('claimcore.disclosure_pruning','on',true);
+    WITH candidates AS MATERIALIZED (
+        SELECT id FROM claimcore.disclosure_trail
+        WHERE recorded_at<p_cutoff ORDER BY recorded_at,id LIMIT 128 FOR UPDATE SKIP LOCKED
+    )
+    DELETE FROM claimcore.disclosure_trail t USING candidates c WHERE t.id=c.id;
+    GET DIAGNOSTICS removed=ROW_COUNT;
+    PERFORM set_config('claimcore.disclosure_pruning',prior_marker,true);
+    RETURN removed;
+END;
+$$;
+
 
 ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
     FOREIGN KEY (responsible_actor) REFERENCES claimcore.actors (actor_id);
@@ -921,6 +1013,13 @@ GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
+
+
+GRANT SELECT ON claimcore.disclosure_retention TO claimcore_runtime;
+GRANT INSERT(actor_id,kind,case_id,attachment_id,outcome,export_query,export_selection,export_row_count)
+    ON claimcore.disclosure_trail TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.read_disclosure_trail(uuid,uuid,text,timestamptz,timestamptz,timestamptz,bigint,integer) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.prune_disclosure_trail(timestamptz,integer) TO claimcore_runtime;
 
 GRANT SELECT, INSERT, DELETE ON claimcore.sessions TO claimcore_runtime;
 -- Session identity and original deadlines are immutable for runtime writers.

@@ -178,9 +178,9 @@ Merge keys only when their concepts agree. Keep grammatical gender and singular/
 Use labelled counts, rather than choosing a singular template from a numeric comparison.
 Automated checks establish structure, not human linguistic approval; record the language and review scope.
 
-The attachment copy, corresponding case erasure wording, unsupported database profile notice
-and access-request hint and admission confirmation wording in translated catalogs are agent-authored
-drafts pending fluent review.
+The attachment copy, corresponding case erasure wording, unsupported database profile notice,
+access-request hints, admission confirmation and disclosure-trail wording in translated catalogs
+are agent-authored drafts pending fluent review.
 
 ## Theme and layout
 

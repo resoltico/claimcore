@@ -25,8 +25,24 @@ module internal OperationQueries =
                 |> Option.map ClaimCore.Domain.Aggregates.Person.access
                 |> AccessView.ofActor
 
+            let target =
+                entry
+                |> Option.bind (fun stored -> DisclosureReads.receiptTarget stored.Changes.Head)
+
+            let capture outcome =
+                match target with
+                | Some(caseId, attachment) ->
+                    DisclosureReads.observe
+                        services.Principal
+                        caller
+                        DisclosureKind.CaseRead
+                        (Some caseId)
+                        attachment
+                        outcome
+                | None -> outcome, None
+
             if not (Access.validActor services.Principal caller) then
-                return QueryResults.unavailable
+                return capture QueryResults.unavailable
             else
                 match entry, caller.Actor with
                 | Some entry, Some requester when entry.Root.Header.OperationId = operation ->
@@ -42,7 +58,16 @@ module internal OperationQueries =
                                     entry.Changes.Head.Aggregate
                             ))
                     then
-                        return Outcome.Succeeded None
+                        let disclosure =
+                            target
+                            |> Option.bind (fun (caseId, attachment) ->
+                                DisclosureReads.refused
+                                    services.Principal
+                                    caller
+                                    (Some caseId)
+                                    attachment)
+
+                        return Outcome.Succeeded None, disclosure
                     else
                         let! receipt =
                             ReceiptReads.read
@@ -57,8 +82,9 @@ module internal OperationQueries =
                             |> Result.map (fun receipt ->
                                 Some(OperationLookupResult.Accepted(receipt, own)))
                             |> Outcome.ofResult
-                | Some _, _ -> return Outcome.Failed CoreFault.StoreIntegrityError
-                | None, _ -> return Outcome.Succeeded None
+                            |> capture
+                | Some _, _ -> return Outcome.Failed CoreFault.StoreIntegrityError, None
+                | None, _ -> return Outcome.Succeeded None, None
         }
 
     let private confirm (services: ServiceContext) operation token =
@@ -69,16 +95,20 @@ module internal OperationQueries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! found = receipt services tx operation false
+                                    let! found, disclosure = receipt services tx operation false
 
                                     match found with
                                     | Outcome.Succeeded(Some accepted) ->
-                                        return Verdict.Proceed accepted
+                                        return Verdict.Proceed(accepted, disclosure)
                                     | Outcome.Succeeded None ->
                                         let! frontier = RegisterReads.expiredBefore tx ()
 
                                         if OperationLifetime.expiredBefore frontier operation then
-                                            return Verdict.Proceed OperationLookupResult.NotAccepted
+                                            return
+                                                Verdict.Proceed(
+                                                    OperationLookupResult.NotAccepted,
+                                                    disclosure
+                                                )
                                         else
                                             let cutoff = OperationLifetime.cutoff tx.ObservedAt
 
@@ -91,8 +121,10 @@ module internal OperationQueries =
                                                         operation
                                                 then
                                                     return
-                                                        Verdict.Proceed
-                                                            OperationLookupResult.NotAccepted
+                                                        Verdict.Proceed(
+                                                            OperationLookupResult.NotAccepted,
+                                                            disclosure
+                                                        )
                                                 else
                                                     return
                                                         Verdict.Fail CoreFault.StoreIntegrityError
@@ -101,7 +133,8 @@ module internal OperationQueries =
                                                     Verdict.Proceed(
                                                         OperationLookupResult.Pending(
                                                             OperationLifetime.finalAt operation
-                                                        )
+                                                        ),
+                                                        disclosure
                                                     )
                                     | Outcome.Rejected refusal -> return Verdict.Refuse refusal
                                     | Outcome.Failed fault -> return Verdict.Fail fault
@@ -112,14 +145,14 @@ module internal OperationQueries =
 
             return
                 match result with
-                | Ok verdict ->
-                    Verdict.outcome
-                        id
-                        (fun receipt -> OperationLookupResult.Accepted(receipt, true))
-                        verdict
+                | Ok(Verdict.Proceed(value, disclosure)) -> Outcome.Succeeded value, disclosure
+                | Ok(Verdict.Replay receipt) ->
+                    Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)), None
+                | Ok(Verdict.Refuse refusal) -> Outcome.Rejected refusal, None
+                | Ok(Verdict.Fail fault) -> Outcome.Failed fault, None
                 | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
-                    Outcome.Failed CoreFault.StoreUnavailable
-                | Error failure -> QueryResults.failure failure
+                    Outcome.Failed CoreFault.StoreUnavailable, None
+                | Error failure -> QueryResults.failure failure, None
         }
 
     let get (services: ServiceContext) (request: OperationLookup) token =
@@ -148,34 +181,48 @@ module internal OperationQueries =
                             CancellationToken = token
                         }
 
-                match result with
-                | Error failure -> return QueryResults.failure failure
-                | Ok(_, _, Outcome.Rejected refusal) -> return Outcome.Rejected refusal
-                | Ok(_, _, Outcome.Failed fault) -> return Outcome.Failed fault
-                | Ok(_, _, Outcome.Succeeded(Some accepted)) -> return Outcome.Succeeded accepted
-                | Ok(_, frontier, Outcome.Succeeded None) when
-                    OperationLifetime.expiredBefore frontier operation
-                    ->
-                    return Outcome.Succeeded OperationLookupResult.NotAccepted
-                | Ok(observedAt, _, Outcome.Succeeded None) ->
-                    if observedAt - OperationId.issuedAt operation > OperationLifetime.window then
-                        // Confirmation publishes the monotonic cutoff before returning final absence.
-                        return! confirm services operation token
-                    else
-                        try
-                            return
-                                Outcome.Succeeded(
-                                    OperationLookupResult.Pending(
-                                        OperationLifetime.finalAt operation
-                                    )
-                                )
-                        with :? ArgumentOutOfRangeException ->
-                            // The supplied timestamp is beyond a representable deadline; it cannot enter today's window.
-                            return
-                                Outcome.Rejected(
-                                    Refusal.OperationIdOutOfWindow(
-                                        OperationId.issuedAt operation,
-                                        observedAt
-                                    )
-                                )
+                let! captured =
+                    task {
+                        match result with
+                        | Error failure -> return QueryResults.failure failure, None
+                        | Ok(_, _, (Outcome.Rejected refusal, disclosure)) ->
+                            return Outcome.Rejected refusal, disclosure
+                        | Ok(_, _, (Outcome.Failed fault, disclosure)) ->
+                            return Outcome.Failed fault, disclosure
+                        | Ok(_, _, (Outcome.Succeeded(Some accepted), disclosure)) ->
+                            return Outcome.Succeeded accepted, disclosure
+                        | Ok(_, frontier, (Outcome.Succeeded None, disclosure)) when
+                            OperationLifetime.expiredBefore frontier operation
+                            ->
+                            return Outcome.Succeeded OperationLookupResult.NotAccepted, disclosure
+                        | Ok(observedAt, _, (Outcome.Succeeded None, disclosure)) ->
+                            if
+                                observedAt - OperationId.issuedAt operation >
+                                    OperationLifetime.window
+                            then
+                                // Confirmation publishes the monotonic cutoff before returning final absence.
+                                let! outcome, recorded = confirm services operation token
+                                return outcome, Option.orElse disclosure recorded
+                            else
+                                try
+                                    return
+                                        Outcome.Succeeded(
+                                            OperationLookupResult.Pending(
+                                                OperationLifetime.finalAt operation
+                                            )
+                                        ),
+                                        disclosure
+                                with :? ArgumentOutOfRangeException ->
+                                    // The supplied timestamp is beyond a representable deadline; it cannot enter today's window.
+                                    return
+                                        Outcome.Rejected(
+                                            Refusal.OperationIdOutOfWindow(
+                                                OperationId.issuedAt operation,
+                                                observedAt
+                                            )
+                                        ),
+                                        disclosure
+                    }
+
+                return! DisclosureReads.release services token captured
         }

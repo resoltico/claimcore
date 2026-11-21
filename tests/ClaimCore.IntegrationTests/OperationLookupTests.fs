@@ -33,6 +33,8 @@ type internal ControlledStore
         ?readInstant: DateTimeOffset
     ) =
     interface IStore with
+        member _.RecordDisclosure(event, token) = inner.RecordDisclosure(event, token)
+
         member _.Context query = inner.Context query
 
         member _.Read operation =

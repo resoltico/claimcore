@@ -67,6 +67,10 @@
     "text": "服务不可用。",
     "source": "6468ac9f9bca"
   },
+  "cli.family.disclosure": {
+    "text": "查看访问和导出日志。",
+    "source": "370be36fbfc0"
+  },
   "cli.family.people": {
     "text": "人员与访问权限",
     "source": "1e133caaec46"

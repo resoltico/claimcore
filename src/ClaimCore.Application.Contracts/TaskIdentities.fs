@@ -20,6 +20,7 @@ type QueryTaskId =
     | PeopleGrants
     | PeopleHistory
     | PeopleRequests
+    | DisclosureTrail
     | Context
 
 module QueryTaskId =
@@ -43,6 +44,7 @@ module QueryTaskId =
                 QueryTaskId.PeopleGrants, "people.grants"
                 QueryTaskId.PeopleHistory, "people.history"
                 QueryTaskId.PeopleRequests, "people.requests"
+                QueryTaskId.DisclosureTrail, "disclosure.trail"
                 QueryTaskId.Context, "context"
             ]
 

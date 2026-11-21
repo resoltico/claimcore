@@ -75,11 +75,11 @@ module ResponseScalars =
                             }))
         |> map (OperationId.create >> Option.get) OperationId.value
 
-    let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+    let caseId = RequestCodecs.caseId
     let noteId = uuid |> map (NoteId.create >> Option.get) NoteId.value
     let linkId = uuid |> map (LinkId.create >> Option.get) LinkId.value
     let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
-    let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
+    let actorId = RequestCodecs.actorId
     let nonempty = boundedText 1 Int32.MaxValue
 
     let private amountMaximumCharacters =

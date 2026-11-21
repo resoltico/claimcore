@@ -494,7 +494,13 @@ let private traversal (database: PostgresFixture.Database) =
             ClaimCore.Server.CsvExport.traversal owner (ExportSelection.CaseSummary selection)
             |> ClaimCore.Server.CsvExport.materialize 65536 token
 
-        let csv = exported |> Result.defaultWith (sprintf "%A" >> failtest)
+        let document = exported |> Result.defaultWith (sprintf "%A" >> failtest)
+        let csv = document.Bytes
+
+        Expect.equal
+            document.RowCount
+            51
+            "Audit count covers actual encoded rows across continuations"
 
         let expected =
             [ CaseSummaryCsv.header; CaseSummaryCsv.rows first; CaseSummaryCsv.rows tail ]

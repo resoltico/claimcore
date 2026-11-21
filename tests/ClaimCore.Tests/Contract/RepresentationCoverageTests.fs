@@ -21,9 +21,9 @@ let tests =
         "exported endpoint representation coverage"
         [
             testCase
-                "all twenty-four represented endpoints have nonempty admitted behavioral envelopes and complete outcome discovery"
+                "all twenty-five represented endpoints have nonempty admitted behavioral envelopes and complete outcome discovery"
                 (fun () ->
-                    Expect.equal Api.all.Length 24 "Adopted endpoint inventory"
+                    Expect.equal Api.all.Length 25 "Adopted endpoint inventory"
 
                     for endpoint in Api.all do
                         let samples = ResponseExamples.samples endpoint.Token

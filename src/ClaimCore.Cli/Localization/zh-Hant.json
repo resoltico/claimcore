@@ -67,6 +67,10 @@
     "text": "服務不可用。",
     "source": "6468ac9f9bca"
   },
+  "cli.family.disclosure": {
+    "text": "檢視存取和匯出日誌。",
+    "source": "370be36fbfc0"
+  },
   "cli.family.people": {
     "text": "人員與存取權限",
     "source": "1e133caaec46"

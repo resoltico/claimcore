@@ -86,6 +86,8 @@
   "ui.moreActors": "More people",
   "ui.moreCaseActions": "More actions",
   "ui.moreCases": "Load more cases",
+  "ui.disclosureReload": "Reload log",
+  "ui.disclosureMore": "Load more events",
   "ui.moreHistory": "Load more activity",
   "ui.moreReminders": "More reminders",
   "ui.nextAccounts": "More accounts",

@@ -7,6 +7,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
@@ -164,21 +165,53 @@ module internal ExportRoutes =
 
                                                     match result with
                                                     | Error error -> return Ok(failureReply error)
-                                                    | Ok bytes ->
-                                                        return
-                                                            Ok
-                                                                {
-                                                                    RouteReply.Response =
-                                                                        RouteBody.Csv(
-                                                                            bytes,
-                                                                            ExportTransport
-                                                                                .filename
-                                                                                selection,
-                                                                            installation
+                                                    | Ok document ->
+                                                        let disclosure =
+                                                            ExportSelection.disclosure
+                                                                document.RowCount
+                                                                document.CaseId
+                                                                selection
+
+                                                        match!
+                                                            Service.recordExport
+                                                                services
+                                                                document.CaseId
+                                                                disclosure
+                                                                budget.Token
+                                                        with
+                                                        | Outcome.Failed fault ->
+                                                            return
+                                                                Ok(
+                                                                    failureReply (
+                                                                        ExportFailure.Failed fault
+                                                                    )
+                                                                )
+                                                        | Outcome.Rejected refusal ->
+                                                            return
+                                                                Ok(
+                                                                    failureReply (
+                                                                        ExportFailure.Rejected(
+                                                                            HumanReplies.rejection
+                                                                                refusal
                                                                         )
-                                                                    RecordedBy = None
-                                                                    ExpireBrowserSession = false
-                                                                }
+                                                                    )
+                                                                )
+                                                        | Outcome.Succeeded() ->
+                                                            return
+                                                                Ok
+                                                                    {
+                                                                        RouteReply.Response =
+                                                                            RouteBody.Csv(
+                                                                                document.Bytes,
+                                                                                ExportTransport
+                                                                                    .filename
+                                                                                    selection,
+                                                                                installation
+                                                                            )
+                                                                        RecordedBy = None
+                                                                        ExpireBrowserSession =
+                                                                            false
+                                                                    }
                                             })
 
                                 match result with

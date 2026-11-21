@@ -13,6 +13,7 @@ type TaskChoiceId =
     | Progress
     | CaseView
     | RoleFilter
+    | DisclosureKind
     | ReminderView
     | TimelineFilter
     | Order
@@ -42,6 +43,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> vocabularyTokens Role.vocabulary
+        | TaskChoiceId.DisclosureKind -> vocabularyTokens DisclosureKind.vocabulary
         | TaskChoiceId.PartyRole -> vocabularyTokens PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> vocabularyTokens PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> vocabularyTokens ScopeKind.vocabulary
@@ -73,6 +75,7 @@ module TaskChoiceId =
         function
         | TaskChoiceId.Role
         | TaskChoiceId.RoleFilter -> Vocabulary.name Role.vocabulary
+        | TaskChoiceId.DisclosureKind -> Vocabulary.name DisclosureKind.vocabulary
         | TaskChoiceId.PartyRole -> Vocabulary.name PartyRole.vocabulary
         | TaskChoiceId.PrincipalKind -> Vocabulary.name PrincipalKind.vocabulary
         | TaskChoiceId.Scope -> Vocabulary.name ScopeKind.vocabulary
@@ -109,6 +112,7 @@ module TaskChoiceId =
         | TaskInputId.Progress -> Some TaskChoiceId.Progress
         | TaskInputId.CaseView -> Some TaskChoiceId.CaseView
         | TaskInputId.RoleFilter -> Some TaskChoiceId.RoleFilter
+        | TaskInputId.Target InputTarget.DisclosureKind -> Some TaskChoiceId.DisclosureKind
         | TaskInputId.ReminderView -> Some TaskChoiceId.ReminderView
         | TaskInputId.TimelineFilter -> Some TaskChoiceId.TimelineFilter
         | TaskInputId.Order -> Some TaskChoiceId.Order
@@ -128,7 +132,7 @@ module TaskChoiceId =
         | TaskInputId.Target(InputTarget.Field BusinessField.Outcome) ->
             Some TaskChoiceId.ClosureOutcome
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.ProfileDigestEmail | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.AttachmentId | InputTarget.AttachmentName | InputTarget.AttachmentLength | InputTarget.AttachmentDigest | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.ProfileDigestEmail | InputTarget.DirectorySearch | InputTarget.DisclosureCaseId | InputTarget.DisclosureFrom | InputTarget.DisclosureUntil | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.AttachmentId | InputTarget.AttachmentName | InputTarget.AttachmentLength | InputTarget.AttachmentDigest | InputTarget.Parties | InputTarget.PartyId | InputTarget.PartyName | InputTarget.PartyDetails | InputTarget.ExpectedPartyRevision | InputTarget.PaymentId | InputTarget.PaymentReference | InputTarget.PaymentPayee | InputTarget.ReminderAction | InputTarget.ReminderDueDate | InputTarget.NewCaseReference | InputTarget.LinkId | InputTarget.LinkTargetReference | InputTarget.LinkTargetId | InputTarget.LinkNote | InputTarget.ReminderDoneOn)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter

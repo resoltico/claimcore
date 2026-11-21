@@ -14,7 +14,89 @@ open ClaimCore.RecordFormat
 module internal TimelineQueries =
     open TimelineHistory
 
-    let read (services: ServiceContext) (request: CaseTimelineRequest) token =
+    let private readInSnapshot
+        (services: ServiceContext)
+        (request: CaseTimelineRequest)
+        pageLimit
+        (tx: ReadTx)
+        (view: CaseReadFacts)
+        =
+        task {
+            match view.Case with
+            | Some parent when
+                Access.can
+                    services.Principal
+                    view.Actor
+                    Capability.ReadHistory
+                    (Scope.Case parent.CaseId)
+                ->
+                let scope = binding parent.CaseId view.Actor.Actor.Value.ActorId request.Filter
+
+                match
+                    QueryResults.cursor
+                        (Cursors.decodeTimeline services.InstallationId scope)
+                        request.AfterCursor
+                with
+                | Error refusal -> return Outcome.Rejected refusal
+                | Ok position ->
+                    let before = position |> Option.map _.BeforePosition
+
+                    let range = position |> Option.bind _.Range
+
+                    let! page =
+                        LedgerReads.timelinePage
+                            tx
+                            {
+                                CaseId = parent.CaseId
+                                Filter = request.Filter
+                                Range = range
+                                BeforePosition = before
+                                Limit = pageLimit
+                            }
+
+                    if not (validPage parent.CaseId request.Filter range before pageLimit page) then
+                        return Outcome.Failed CoreFault.StoreIntegrityError
+                    else
+                        let erased = CaseState.lifecycle parent.Snapshot.State = Lifecycle.Erased
+
+                        let full =
+                            Access.can
+                                services.Principal
+                                view.Actor
+                                Capability.ReadHistoryFull
+                                (Scope.Case parent.CaseId)
+
+                        let! attachmentDisclosure = AttachmentReads.disclosure tx parent.CaseId
+
+                        let! items =
+                            entries services tx parent.Snapshot.Reference erased full range page
+
+                        return
+                            items
+                            |> Result.map (fun items ->
+                                {
+                                    CaseTimelinePage.Disclosure =
+                                        HistoryDisclosure.ofAccess erased full
+                                    AttachmentDisclosure = attachmentDisclosure
+                                    Basis = ServiceContext.basis services tx.ObservedAt
+                                    CaseId = parent.CaseId
+                                    Reference = parent.Snapshot.Reference
+                                    Items = items
+                                    NextCursor =
+                                        page.Next
+                                        |> Option.map (
+                                            Cursors.encodeTimeline
+                                                services.InstallationId
+                                                scope
+                                                range
+                                        )
+                                })
+                            |> Result.map Outcome.Succeeded
+                            |> Result.defaultWith Outcome.Failed
+            | _ -> return QueryResults.unavailable
+        }
+
+    let private readWith audit (services: ServiceContext) (request: CaseTimelineRequest) token =
         let pageLimit = min request.Limit Paging.MaximumTimelinePageSize
 
         task {
@@ -34,121 +116,31 @@ module internal TimelineQueries =
                                             let! view =
                                                 CaseReadContext.load services tx request.Target
 
-                                            match view.Case with
-                                            | Some parent when
-                                                Access.can
-                                                    services.Principal
-                                                    view.Actor
-                                                    Capability.ReadHistory
-                                                    (Scope.Case parent.CaseId)
-                                                ->
-                                                let scope =
-                                                    binding
-                                                        parent.CaseId
-                                                        view.Actor.Actor.Value.ActorId
-                                                        request.Filter
+                                            let! outcome =
+                                                readInSnapshot services request pageLimit tx view
 
-                                                match
-                                                    QueryResults.cursor
-                                                        (Cursors.decodeTimeline
-                                                            services.InstallationId
-                                                            scope)
-                                                        request.AfterCursor
-                                                with
-                                                | Error refusal -> return Outcome.Rejected refusal
-                                                | Ok position ->
-                                                    let before =
-                                                        position |> Option.map _.BeforePosition
+                                            match outcome with
+                                            | Outcome.Succeeded _ when not audit ->
+                                                return outcome, None
+                                            | _ ->
+                                                let caseId =
+                                                    DisclosureReads.target
+                                                        request.Target
+                                                        (view.Case |> Option.map _.CaseId)
 
-                                                    let range = position |> Option.bind _.Range
-
-                                                    let! page =
-                                                        LedgerReads.timelinePage
-                                                            tx
-                                                            {
-                                                                CaseId = parent.CaseId
-                                                                Filter = request.Filter
-                                                                Range = range
-                                                                BeforePosition = before
-                                                                Limit = pageLimit
-                                                            }
-
-                                                    if
-                                                        not (
-                                                            validPage
-                                                                parent.CaseId
-                                                                request.Filter
-                                                                range
-                                                                before
-                                                                pageLimit
-                                                                page
-                                                        )
-                                                    then
-                                                        return
-                                                            Outcome.Failed
-                                                                CoreFault.StoreIntegrityError
-                                                    else
-                                                        let erased =
-                                                            CaseState.lifecycle
-                                                                parent.Snapshot.State
-                                                                =
-                                                                Lifecycle.Erased
-
-                                                        let full =
-                                                            Access.can
-                                                                services.Principal
-                                                                view.Actor
-                                                                Capability.ReadHistoryFull
-                                                                (Scope.Case parent.CaseId)
-
-                                                        let! attachmentDisclosure =
-                                                            AttachmentReads.disclosure
-                                                                tx
-                                                                parent.CaseId
-
-                                                        let! items =
-                                                            entries
-                                                                services
-                                                                tx
-                                                                parent.Snapshot.Reference
-                                                                erased
-                                                                full
-                                                                range
-                                                                page
-
-                                                        return
-                                                            items
-                                                            |> Result.map (fun items ->
-                                                                {
-                                                                    CaseTimelinePage.Disclosure =
-                                                                        HistoryDisclosure.ofAccess
-                                                                            erased
-                                                                            full
-                                                                    AttachmentDisclosure =
-                                                                        attachmentDisclosure
-                                                                    Basis =
-                                                                        ServiceContext.basis
-                                                                            services
-                                                                            tx.ObservedAt
-                                                                    CaseId = parent.CaseId
-                                                                    Reference =
-                                                                        parent.Snapshot.Reference
-                                                                    Items = items
-                                                                    NextCursor =
-                                                                        page.Next
-                                                                        |> Option.map (
-                                                                            Cursors.encodeTimeline
-                                                                                services
-                                                                                    .InstallationId
-                                                                                scope
-                                                                                range
-                                                                        )
-                                                                })
-                                                            |> Result.map Outcome.Succeeded
-                                                            |> Result.defaultWith Outcome.Failed
-                                            | _ -> return QueryResults.unavailable
+                                                return
+                                                    DisclosureReads.observe
+                                                        services.Principal
+                                                        view.Actor
+                                                        DisclosureKind.CaseRead
+                                                        caseId
+                                                        None
+                                                        outcome
                                         }
                             }
 
-                    return QueryResults.readResult result
+                    return! DisclosureReads.complete services token result
         }
+
+    let read = readWith true
+    let forExport = readWith false

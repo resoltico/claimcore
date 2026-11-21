@@ -24,6 +24,7 @@ type Link =
     | PeopleGrants of GrantsRequest
     | PeopleHistory of PeopleHistoryRequest
     | PeopleRequests of PageRequest
+    | DisclosureTrail of DisclosureTrailRequest
 
 module Link =
     let endpoint =
@@ -46,6 +47,7 @@ module Link =
         | Link.PeopleGrants _ -> QueryTaskId.PeopleGrants
         | Link.PeopleHistory _ -> QueryTaskId.PeopleHistory
         | Link.PeopleRequests _ -> QueryTaskId.PeopleRequests
+        | Link.DisclosureTrail _ -> QueryTaskId.DisclosureTrail
 
     let caseById id =
         Link.CaseGet { Target = CaseSelector.Id id }

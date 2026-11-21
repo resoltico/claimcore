@@ -15,6 +15,7 @@ type Capability =
     | Steward
     | ManageAccess
     | ReadAccess
+    | ReadDisclosureTrail
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Capability =

@@ -19,6 +19,8 @@ type Store(inner: IStore) =
         |> Option.defaultWith (fun () -> invalidOp "No transaction was observed.")
 
     interface IStore with
+        member _.RecordDisclosure(event, token) = inner.RecordDisclosure(event, token)
+
         member _.Context query =
             task {
                 Interlocked.Increment(&calls) |> ignore

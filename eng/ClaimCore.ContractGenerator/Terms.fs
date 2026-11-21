@@ -113,6 +113,8 @@ module Terms =
             rendered ClosureOutcome.vocabulary
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary
+            rendered DisclosureKind.vocabulary
+            rendered DisclosureOutcome.vocabulary
             rendered Role.vocabulary
             rendered PartyRole.vocabulary
             rendered PrincipalKind.vocabulary

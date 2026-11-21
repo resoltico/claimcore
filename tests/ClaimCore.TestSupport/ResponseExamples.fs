@@ -499,6 +499,31 @@ let internal replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
+            actorRead
+                Api.disclosureTrail
+                HumanReadDocuments.disclosureTrail
+                (Outcome.Succeeded
+                    {
+                        Basis = basis
+                        Items =
+                            [
+                                {
+                                    Id = 1L
+                                    RecordedAt = basis.ObservedAt
+                                    Event =
+                                        {
+                                            ActorId = actor.ActorId
+                                            Kind = DisclosureKind.TrailRead
+                                            CaseId = None
+                                            AttachmentId = None
+                                            Outcome = DisclosureOutcome.Succeeded
+                                            Export = None
+                                        }
+                                }
+                            ]
+                        NextCursor = None
+                    })
+        yield!
             actorRead Api.peopleRequestsDismiss HumanReadDocuments.dismissed (Outcome.Succeeded())
         for outcome in
             [

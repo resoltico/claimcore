@@ -177,6 +177,8 @@ let private qualify () =
 
             let decorate (store: IStore) =
                 { new IStore with
+                    member _.RecordDisclosure(event, token) = store.RecordDisclosure(event, token)
+
                     member _.Context query = store.Context query
                     member _.Write operation = store.Write operation
 
@@ -298,6 +300,19 @@ let private qualify () =
                     return Encoding.UTF8.GetString actual
                 }
 
+            let trail kind =
+                task {
+                    use! connection = database.OwnerSource.OpenConnectionAsync(token)
+
+                    return!
+                        DatabaseSession.rows
+                            connection
+                            ("SELECT export_query,export_row_count,export_selection::text "
+                             + "FROM claimcore.disclosure_trail WHERE kind=$1 ORDER BY id")
+                            [| box kind |]
+                            token
+                }
+
             let! cases =
                 collect
                     CaseCsv.csvHeader
@@ -330,7 +345,7 @@ let private qualify () =
                     (fun cursor ->
                         task {
                             let! result =
-                                Service.timeline
+                                Service.timelineForExport
                                     service
                                     { timeline with AfterCursor = cursor }
                                     token in
@@ -340,8 +355,15 @@ let private qualify () =
                     TimelineCsv.csvRows
                     _.NextCursor
 
+            let! priorCaseReads = trail "CASE_READ"
             let! eventText = export (ExportSelection.Timeline timeline) events
             Expect.stringContains eventText "'+CSV" "Timeline formula neutralization"
+            let! subsequentCaseReads = trail "CASE_READ"
+
+            Expect.equal
+                subsequentCaseReads.Length
+                priorCaseReads.Length
+                "Timeline export discloses once for the document"
 
             let! reminderBytes =
                 collect
@@ -393,6 +415,73 @@ let private qualify () =
                 empty
                 (Encoding.UTF8.GetString CaseCsv.csvHeader)
                 "Authorized empty query is header-only"
+
+            let! audited = trail "EXPORT"
+
+            Expect.sequenceEqual
+                (audited |> List.map (DatabaseSession.value<string> 0))
+                [ "case.list"; "case.timeline"; "reminder.list"; "people.history"; "case.list" ]
+                "Each complete export has exactly one ordered event"
+
+            Expect.equal
+                (audited |> List.map (DatabaseSession.value<int> 1) |> List.head)
+                51
+                "The case export records data rows without its header"
+
+            let emptyEvent = List.last audited
+
+            Expect.equal
+                (DatabaseSession.value<int> 1 emptyEvent)
+                0
+                "An empty export records zero rows"
+
+            let selection = DatabaseSession.value<string> 2 emptyEvent
+
+            Expect.stringContains
+                selection
+                "textFilter"
+                "An authored filter is recorded by its presence"
+
+            Expect.isFalse
+                (selection.Contains("no-such-csv-selection"))
+                "The authored filter stays private"
+
+            use! ownerConnection = database.OwnerSource.OpenConnectionAsync(token)
+
+            let! _ =
+                DatabaseSession.execute
+                    ownerConnection
+                    "ALTER TABLE claimcore.disclosure_trail RENAME TO csv_trail_failure"
+                    [||]
+                    token
+
+            try
+                use! unaudited =
+                    host.CallResponse(
+                        ExportTransport.token,
+                        Codec.encode ExportTransport.request (ExportSelection.Cases filter),
+                        credential
+                    )
+
+                let! reply = unaudited.Content.ReadAsByteArrayAsync()
+
+                Expect.equal
+                    (nonNull unaudited.Content.Headers.ContentType).MediaType
+                    "application/json"
+                    "A failed trail insert releases no CSV bytes or headers"
+
+                Expect.equal
+                    (Codec.decode Limits.MaximumResponseBytes ExportTransport.failure reply)
+                    (Ok(ExportFailure.Failed CoreFault.SchemaMismatch))
+                    "A complete query with a failed disclosure insert returns the store fault"
+            finally
+                DatabaseSession.execute
+                    ownerConnection
+                    "ALTER TABLE claimcore.csv_trail_failure RENAME TO disclosure_trail"
+                    [||]
+                    token
+                |> _.GetAwaiter().GetResult()
+                |> ignore
 
             inject <- true
             reads <- 0

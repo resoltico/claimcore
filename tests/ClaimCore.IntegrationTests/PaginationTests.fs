@@ -131,6 +131,8 @@ type internal PausedPageStore
             failtest "Page release was not signalled"
 
     interface IStore with
+        member _.RecordDisclosure(event, token) = inner.RecordDisclosure(event, token)
+
         member _.Context query = inner.Context query
         member _.Write operation = inner.Write operation
 

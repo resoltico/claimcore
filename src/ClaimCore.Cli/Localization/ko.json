@@ -67,6 +67,10 @@
     "text": "서비스를 사용할 수 없습니다.",
     "source": "6468ac9f9bca"
   },
+  "cli.family.disclosure": {
+    "text": "접근 및 내보내기 기록을 봅니다.",
+    "source": "370be36fbfc0"
+  },
   "cli.family.people": {
     "text": "사람 및 접근 권한",
     "source": "1e133caaec46"

@@ -225,6 +225,8 @@ let private lockRace (database: PostgresFixture.Database) =
 
         let held =
             { new IStore with
+                member _.RecordDisclosure(event, token) = original.RecordDisclosure(event, token)
+
                 member _.Context query = original.Context query
                 member _.Read operation = original.Read operation
 

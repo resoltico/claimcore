@@ -201,6 +201,21 @@ module EndpointDeclarations =
                     Paging.MaximumPageSize
                     Paging.DefaultPageSize)
                 false
+            query
+                QueryTaskId.DisclosureTrail
+                ([
+                    optional TaskInputId.ActorId
+                    optional (target InputTarget.DisclosureCaseId)
+                    optional (target InputTarget.DisclosureKind)
+                    optional (target InputTarget.DisclosureFrom)
+                    optional (target InputTarget.DisclosureUntil)
+                 ]
+                 @ page)
+                (paging
+                    Paging.MaximumDisclosureTrailCursorCharacters
+                    Paging.MaximumPageSize
+                    Paging.DefaultPageSize)
+                false
             query QueryTaskId.Context [] None false
         ]
 

@@ -1363,6 +1363,122 @@
     "text": "所有者需要先批准加入此账户，才能访问 ClaimCore。",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "访问和导出日志",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "查看已记录的访问、导出和拒绝。",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "查看访问和导出日志",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "案件读取",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "附件下载",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "附件预览",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "导出",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "访问和导出日志读取",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "访问被拒绝",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "成功",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "已拒绝",
+    "source": "66b873543aeb"
+  },
+  "field.disclosureKind.label": {
+    "text": "事件类型",
+    "source": "7e047de1d852"
+  },
+  "field.disclosureKind.hint": {
+    "text": "选择事件类型以筛选日志。",
+    "source": "c3a76737f118"
+  },
+  "field.disclosureKind.rule": {
+    "text": "请使用受支持的披露事件类型。",
+    "source": "164fcd0efd4a"
+  },
+  "field.disclosureCaseId.label": {
+    "text": "案件 ID",
+    "source": "e0aed7cf64e8"
+  },
+  "field.disclosureCaseId.hint": {
+    "text": "输入案件 ID 以筛选日志。",
+    "source": "d23a16269a61"
+  },
+  "field.disclosureCaseId.rule": {
+    "text": "请以 UUID 格式输入案件 ID。",
+    "source": "172a4f1fca6b"
+  },
+  "field.disclosureFrom.label": {
+    "text": "起始（含）",
+    "source": "0186c425ca2e"
+  },
+  "field.disclosureFrom.hint": {
+    "text": "请使用带六位小数秒的 UTC，例如 2026-11-21T09:30:00.000000Z。",
+    "source": "e36c1c702d68"
+  },
+  "field.disclosureFrom.rule": {
+    "text": "请使用不晚于范围结束时间的 UTC 时刻。",
+    "source": "406c5d1a2c26"
+  },
+  "field.disclosureUntil.label": {
+    "text": "结束（不含）",
+    "source": "fac51096ac56"
+  },
+  "field.disclosureUntil.hint": {
+    "text": "请以带六位小数秒的 UTC 输入范围结束时间。",
+    "source": "747373b6c910"
+  },
+  "field.disclosureUntil.rule": {
+    "text": "请使用不早于范围开始时间的 UTC 时刻。",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "所有事件类型",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "结果",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "导出查询",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "导出选项",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "导出行数",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "没有匹配的已记录事件。",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "访问申请",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "查看案件及其完整历史记录。拥有此角色的所有案件权限时，还可查看人员和访问权限。不能更改任何内容。",
-    "source": "5c16effd2666"
+    "text": "查看案件及其完整历史记录。拥有此角色的所有案件权限时，还可查看人员、访问权限和访问和导出日志。不能更改任何内容。",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "已指定 {person} 负责",

@@ -184,6 +184,11 @@ type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?read
             | Some store -> store.Read operation
             | None -> Task.FromResult(Error StoreFailure.Unavailable)
 
+        member _.RecordDisclosure(event, token) =
+            match reads with
+            | Some store -> store.RecordDisclosure(event, token)
+            | None -> Task.FromResult(Error StoreFailure.Unavailable)
+
         member _.Write _ =
             invalidOp "Host reply stubs do not execute writes."
 
@@ -220,6 +225,9 @@ type Stub() =
                     Task.FromResult(Error StoreFailure.Unavailable)
 
                 member _.Read _ =
+                    Task.FromResult(Error StoreFailure.Unavailable)
+
+                member _.RecordDisclosure(_, _) =
                     Task.FromResult(Error StoreFailure.Unavailable)
 
                 member _.Write _ =

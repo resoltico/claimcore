@@ -37,6 +37,7 @@
     <Compile Include="Screens/Review.fs" />
     <Compile Include="Screens/AccessHistory.fs" />
     <Compile Include="Screens/AccessRequests.fs" />
+    <Compile Include="Screens/DisclosureTrail.fs" />
     <Compile Include="Screens/Context.fs" />
     <Compile Include="Screens/WorkViews.fs" />
     <Compile Include="Screens/Receipt.fs" />

@@ -6,6 +6,7 @@
 - Compose requires a fresh database, a separate `postgres/superuser.password`, and verified TLS. Owner commands require a dedicated non-superuser database owner.
 - Format 8 requires a [fresh installation](docs/operating.md#install-a-fresh-register) on PostgreSQL 19 with UTF8, built-in C.UTF-8 and data checksums.
 - Preserve databases from earlier unreleased format-8 builds with their original build and use a [fresh installation](docs/operating.md#install-a-fresh-register) for this build.
+- Installation-wide Auditors can page through the [disclosure trail](docs/operating.md#disclosure-trail). Covered reads and exports return a store fault if recording fails.
 - Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) in Web or CLI. Archive refused file types before attaching them.
 - Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
 - Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.

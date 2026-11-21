@@ -275,6 +275,7 @@
     <Compile Include="Cli/CliDisplayLocaleTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
+    <Compile Include="Cli/DisclosureTrailTests.fs" />
     <Compile Include="Contract/CsvExportTests.fs" />
     <Compile Include="Contract/ReminderSelectionAdapterTests.fs" />
     <Compile Include="Contract/PaymentCorrectionAcceptanceTests.fs" />

@@ -311,6 +311,14 @@
     "text": "加载更多案件",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "重新加载日志",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "加载更多事件",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "加载更多活动",
     "source": "e3f0587b4839"

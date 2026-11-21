@@ -587,6 +587,21 @@ module HumanReadDocuments =
                                             AfterCursor = None
                                             Limit = Paging.DefaultPageSize
                                         })
+                        if List.contains Capability.ReadDisclosureTrail actor.Capability then
+                            yield
+                                named
+                                    "endpoint.disclosure.trail.label"
+                                    LinkRelation.View
+                                    (Link.DisclosureTrail
+                                        {
+                                            ActorId = None
+                                            CaseId = None
+                                            Kind = None
+                                            From = None
+                                            Until = None
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
                         if List.contains Capability.ManageAccess actor.Capability then
                             yield
                                 named
@@ -830,6 +845,9 @@ module HumanReadDocuments =
 
     let requests (value: AccessRequestPage) =
         listPage value.Basis (AccessRequestsScreen.view value) value.NextCursor
+
+    let disclosureTrail (value: DisclosureTrailPage) =
+        listPage value.Basis (DisclosureTrailScreen.view value) value.NextCursor
 
     let dismissed () =
         { HumanDocument.empty HumanDisclosure.Current with

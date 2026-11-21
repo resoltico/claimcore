@@ -305,6 +305,23 @@ Requests grant no rights, expire after 30 days and are capped at 1,000. Admissio
 request. Dismissal grants nothing, and a later sign-in can create another request. Names become
 profiles only after an owner enters and confirms them.
 
+## Disclosure trail
+
+An Auditor with an installation-wide grant can open **Access and export log** in Web or run
+`claimcore disclosure trail`. Filter by actor ID, case ID, event kind or UTC time range. Follow
+the continuation to review further pages. Open a row’s details or use `--details` in the CLI
+to see complete identifiers. Each authorized page read adds a trail-read event.
+
+The trail records case detail, timeline and receipt reads, attachment downloads and previews,
+exports, and refused case or attachment access. It uses actor, case and attachment identifiers.
+Exports record their query, data row count, and selections such as IDs, dates and fixed choices.
+Free-text searches and case-reference selectors are recorded by their presence. Lists and
+searches do not add events.
+
+A read that requires an event can release its content only after recording succeeds. A failed
+trail write returns a store fault. Housekeeping prunes records older than 24 calendar months
+in bounded batches using UTC. Whole-case erasure leaves trail records until that cutoff.
+
 ## Daily reminder digest
 
 An Owner opts a person in by setting their digest address. Once per business day after the

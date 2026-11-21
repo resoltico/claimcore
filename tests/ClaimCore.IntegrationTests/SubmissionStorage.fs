@@ -12,6 +12,8 @@ open ClaimCore.Presentation
 
 let private interceptWrites (store: IStore) intercept =
     { new IStore with
+        member _.RecordDisclosure(event, token) = store.RecordDisclosure(event, token)
+
         member _.Context query = store.Context query
 
         member _.Read

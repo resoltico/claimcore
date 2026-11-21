@@ -1,0 +1,175 @@
+import { useCallback, useState } from "react";
+import type { RegionRow, RequestByEndpoint } from "@contracts/client";
+import { termKeys } from "@contracts/messages";
+import { apiEndpoints, type ServiceResponse } from "../api/service";
+import { useEndpointPage } from "../hooks/useEndpointPage";
+import { usePresentation } from "../presentation/context";
+import { NoticeView } from "../presentation/Message";
+import { isTerm } from "../presentation/terms";
+import { PageTables } from "../ui/PageTables";
+import { Select } from "../ui/Select";
+
+const endpoint = apiEndpoints.disclosureTrail;
+type TrailSelection = Omit<RequestByEndpoint[typeof endpoint], "cursor" | "limit">;
+
+const select = (reply: ServiceResponse<typeof endpoint>) => {
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const { document } = reply.outcome;
+  if (document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: document.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: document.nextCursor,
+    basis: document.basis.observation,
+    screen: document.screen,
+    disclosure: document.disclosure,
+  };
+};
+
+const textField = (data: FormData, name: string) => {
+  const value = data.get(name);
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+};
+
+const trailSelection = (form: HTMLFormElement, kind: string): TrailSelection => {
+  const fields = new FormData(form);
+  const actorId = textField(fields, "actorId");
+  const caseId = textField(fields, "caseId");
+  const from = textField(fields, "from");
+  const until = textField(fields, "until");
+  return {
+    ...(actorId === undefined ? {} : { actorId }),
+    ...(caseId === undefined ? {} : { caseId }),
+    ...(from === undefined ? {} : { from }),
+    ...(until === undefined ? {} : { until }),
+    ...(isTerm("disclosureKind", kind) ? { kind } : {}),
+  };
+};
+
+const trailKinds = Object.keys(termKeys.disclosureKind).filter((kind) =>
+  isTerm("disclosureKind", kind),
+);
+
+const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void }) => {
+  const p = usePresentation();
+  const [kind, setKind] = useState("");
+  return (
+    <form
+      className="worklist-toolbar"
+      onSubmit={(event) => {
+        event.preventDefault();
+        apply(trailSelection(event.currentTarget, kind));
+      }}
+    >
+      <div className="text-field">
+        <label htmlFor="trail-actor">{p.text("input.actorId.label")}</label>
+        <input id="trail-actor" name="actorId" type="text" autoComplete="off" dir="ltr" />
+      </div>
+      <div className="text-field">
+        <label htmlFor="trail-case">{p.text("field.disclosureCaseId.label")}</label>
+        <input id="trail-case" name="caseId" type="text" autoComplete="off" dir="ltr" />
+      </div>
+      <Select
+        id="trail-kind"
+        label={p.text("field.disclosureKind.label")}
+        value={kind}
+        options={[
+          { value: "", label: p.text("label.disclosureAnyKind") },
+          ...trailKinds.map((eventKind) => ({
+            value: eventKind,
+            label: p.term("disclosureKind", eventKind),
+          })),
+        ]}
+        onChange={setKind}
+      />
+      <div className="text-field">
+        <label htmlFor="trail-from">{p.text("field.disclosureFrom.label")}</label>
+        <input
+          id="trail-from"
+          name="from"
+          type="text"
+          autoComplete="off"
+          dir="ltr"
+          aria-describedby="trail-time-format"
+        />
+      </div>
+      <div className="text-field">
+        <label htmlFor="trail-until">{p.text("field.disclosureUntil.label")}</label>
+        <input
+          id="trail-until"
+          name="until"
+          type="text"
+          autoComplete="off"
+          dir="ltr"
+          aria-describedby="trail-time-format"
+        />
+      </div>
+      <p id="trail-time-format">{p.text("field.disclosureFrom.hint")}</p>
+      <button type="submit">{p.text("ui.applyFilters")}</button>
+    </form>
+  );
+};
+
+type TrailPage = NonNullable<ReturnType<typeof select>>;
+export const DisclosureTrail = () => {
+  const p = usePresentation();
+  const [selection, setSelection] = useState<TrailSelection>({});
+  const input = useCallback(
+    (cursor: string | null) => ({
+      ...selection,
+      limit: 50,
+      ...(cursor === null ? {} : { cursor }),
+    }),
+    [selection],
+  );
+  const page = useEndpointPage<typeof endpoint, RegionRow, TrailPage>(endpoint, input, select);
+  const load = (cursor: string | null) => {
+    document.getElementById("disclosure-trail-title")?.focus({ preventScroll: true });
+    void page.load(cursor);
+  };
+  return (
+    <section aria-labelledby="disclosure-trail-title">
+      <h1 id="disclosure-trail-title" tabIndex={-1}>
+        {p.text("endpoint.disclosure.trail.label")}
+      </h1>
+      <TrailFilters apply={setSelection} />
+      {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+      {page.message === null ? null : (
+        <p role="alert">
+          <NoticeView value={page.message} />
+        </p>
+      )}
+      {page.page !== null && page.items.length === 0 ? (
+        <p>{p.text("label.disclosureEmpty")}</p>
+      ) : null}
+      <PageTables views={page.views} />
+      <div className="worklist-actions">
+        <button
+          type="button"
+          disabled={page.loading}
+          onClick={() => {
+            load(null);
+          }}
+        >
+          {p.text("ui.disclosureReload")}
+        </button>
+        {page.cursor === null ? null : (
+          <button
+            type="button"
+            disabled={page.loading}
+            onClick={() => {
+              load(page.cursor);
+            }}
+          >
+            {p.text("ui.disclosureMore")}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+};

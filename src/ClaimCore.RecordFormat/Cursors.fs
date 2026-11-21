@@ -735,3 +735,31 @@ module Cursors =
                 | _ -> None
             | _ -> None)
             token
+
+    let encodeDisclosureTrail installation scope (recordedAt: DateTimeOffset, id: int64) =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "DISCLOSURE_TRAIL"
+                "scope", JsonValue.String scope
+                "beforeId", JsonValue.Integer id
+                "beforeInstant",
+                JsonValue.String(
+                    recordedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
+                )
+            ]
+
+    let decodeDisclosureTrail installation scope token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "beforeId", JsonValue.Integer id
+                                 "beforeInstant", JsonValue.String recordedAt
+                                 "kind", JsonValue.String "DISCLOSURE_TRAIL"
+                                 "scope", JsonValue.String expected ] when
+                expected = scope && id > 0L
+                ->
+                instant recordedAt |> Option.map (fun recordedAt -> recordedAt, id)
+            | _ -> None)
+            token

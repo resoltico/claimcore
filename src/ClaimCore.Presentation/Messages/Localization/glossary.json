@@ -17,6 +17,18 @@
     "de": "Fall",
     "es": "expediente"
   },
+  "access and export log": {
+    "en": "access and export log",
+    "lv": "piekļuves un eksporta žurnāls",
+    "ar": "سجل الوصول والتصدير",
+    "de": "Zugriffs- und Exportprotokoll",
+    "es": "Registro de acceso y exportación",
+    "ja": "アクセスとエクスポートの記録",
+    "ko": "접근 및 내보내기 기록",
+    "zh-Hans": "访问和导出日志",
+    "zh-Hant": "存取和匯出日誌",
+    "forbidden": {}
+  },
   "claim": {
     "en": "claim",
     "lv": "prasījums",

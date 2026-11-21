@@ -2,6 +2,43 @@
   "source": "Hand-reviewed literal decoding examples. No updater or generated snapshots. Focused tests use builders for behavioral variants and boundary controls.",
   "cases": [
     {
+      "name": "disclosure-trail-export-event",
+      "endpoint": "disclosure.trail",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Etc/UTC"
+            },
+            "items": [
+              {
+                "id": 42,
+                "recordedAt": "2026-11-04T09:00:00.000000Z",
+                "event": {
+                  "actorId": "10000000-0000-7000-8000-000000000001",
+                  "kind": "EXPORT",
+                  "caseId": null,
+                  "attachmentId": null,
+                  "outcome": "SUCCEEDED",
+                  "export": {
+                    "query": "case.list",
+                    "selection": [{"key": "view", "value": "NEEDS_ATTENTION"}],
+                    "rowCount": 12
+                  }
+                }
+              }
+            ],
+            "nextCursor": "disclosure-page-two"
+          }
+        }
+      }
+    },
+    {
       "name": "people.grants-response-0",
       "endpoint": "people.grants",
       "value": {

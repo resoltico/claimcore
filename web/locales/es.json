@@ -311,6 +311,14 @@
     "text": "Cargar más expedientes",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "Recargar el registro",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "Cargar más eventos",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "Cargar más actividad",
     "source": "e3f0587b4839"

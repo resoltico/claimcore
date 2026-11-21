@@ -18,6 +18,7 @@ export type Route =
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
   | { screen: "peopleHistory"; actorId: string }
+  | { screen: "disclosureTrail" }
   | { screen: "missing" };
 
 const opaque = (value: string): string =>
@@ -105,6 +106,11 @@ const caseRoute = (segments: string[], query: string): Route => {
   }
   return caseActRoute(target, segments[4]!, query);
 };
+const unqualifiedRoutes = new Map<string, Route>([
+  ["settings", { screen: "settings" }],
+  ["disclosure-trail", { screen: "disclosureTrail" }],
+]);
+
 const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | null => {
   if (segments.length === 0) {
     return { screen: "home" };
@@ -112,8 +118,9 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
   if (segments.length !== 1) {
     return null;
   }
-  if (segments[0] === "settings") {
-    return { screen: "settings" };
+  const unqualified = unqualifiedRoutes.get(segments[0]!);
+  if (unqualified !== undefined) {
+    return unqualified;
   }
   if (segments[0] === "cases") {
     return { screen: "cases", query };

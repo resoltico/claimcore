@@ -1363,6 +1363,122 @@
     "text": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "سجل الوصول والتصدير",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "راجع عمليات الوصول والتصدير والرفض المسجّلة.",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "عرض سجل الوصول والتصدير",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "قراءة الملف",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "تنزيل المرفق",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "معاينة المرفق",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "التصدير",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "قراءة سجل الوصول والتصدير",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "رفض الوصول",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "تم بنجاح",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "مرفوض",
+    "source": "66b873543aeb"
+  },
+  "field.disclosureKind.label": {
+    "text": "نوع الحدث",
+    "source": "7e047de1d852"
+  },
+  "field.disclosureKind.hint": {
+    "text": "اختر نوع حدث لتصفية السجل.",
+    "source": "c3a76737f118"
+  },
+  "field.disclosureKind.rule": {
+    "text": "استخدم نوع حدث إفصاح معروفًا.",
+    "source": "164fcd0efd4a"
+  },
+  "field.disclosureCaseId.label": {
+    "text": "معرّف الملف",
+    "source": "e0aed7cf64e8"
+  },
+  "field.disclosureCaseId.hint": {
+    "text": "أدخل معرّف الملف لتصفية السجل.",
+    "source": "d23a16269a61"
+  },
+  "field.disclosureCaseId.rule": {
+    "text": "أدخل معرّف الملف بتنسيق UUID.",
+    "source": "172a4f1fca6b"
+  },
+  "field.disclosureFrom.label": {
+    "text": "من (شامل)",
+    "source": "0186c425ca2e"
+  },
+  "field.disclosureFrom.hint": {
+    "text": "استخدم UTC بست خانات لكسر الثانية، مثل 2026-11-21T09:30:00.000000Z.",
+    "source": "e36c1c702d68"
+  },
+  "field.disclosureFrom.rule": {
+    "text": "استخدم وقت UTC يوافق نهاية النطاق أو يسبقها.",
+    "source": "406c5d1a2c26"
+  },
+  "field.disclosureUntil.label": {
+    "text": "إلى (غير شامل)",
+    "source": "fac51096ac56"
+  },
+  "field.disclosureUntil.hint": {
+    "text": "أدخل نهاية النطاق بتوقيت UTC بست خانات لكسر الثانية.",
+    "source": "747373b6c910"
+  },
+  "field.disclosureUntil.rule": {
+    "text": "استخدم وقت UTC يوافق بداية النطاق أو يليها.",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "كل أنواع الأحداث",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "النتيجة",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "استعلام التصدير",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "نطاق التصدير",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "الصفوف المصدّرة",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "لا توجد أحداث مسجّلة مطابقة.",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "طلبات الوصول",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "يعرض الملفات وسجلها الكامل. ومع هذا الدور لجميع الملفات، يعرض أيضًا الأشخاص والصلاحيات. لا يمكنه تغيير شيء.",
-    "source": "5c16effd2666"
+    "text": "يعرض الملفات وسجلها الكامل. ومع هذا الدور لجميع الملفات، يعرض أيضًا الأشخاص والصلاحيات وسجل الوصول والتصدير. لا يمكنه تغيير شيء.",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "أُسندت المسؤولية إلى {person}",

@@ -347,6 +347,14 @@
     "text": "تحميل المزيد من الملفات",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "إعادة تحميل السجل",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "تحميل المزيد من الأحداث",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "تحميل المزيد من النشاط",
     "source": "e3f0587b4839"
