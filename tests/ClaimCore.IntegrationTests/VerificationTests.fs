@@ -89,7 +89,7 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
             forged
             "The rehashed retained snapshot matches the materialized state"
 
-        let! result = Verification.verify database.OwnerSource None token
+        let! result = Verification.verify database.OwnerSource database.MasterKey None token
 
         Expect.equal
             result

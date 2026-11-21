@@ -104,6 +104,7 @@ let tests =
                         RuntimeOpenFault.UnsafeRole, "RUNTIME_UNSAFE_ROLE"
                         RuntimeOpenFault.SchemaMismatch, "RUNTIME_SCHEMA_MISMATCH"
                         RuntimeOpenFault.InstallationInvalid, "RUNTIME_INSTALLATION_INVALID"
+                        RuntimeOpenFault.DataKeyInvalid, "RUNTIME_DATA_KEY_INVALID"
                         RuntimeOpenFault.HeadMismatch, "RUNTIME_HEAD_MISMATCH"
                         RuntimeOpenFault.Unavailable, "RUNTIME_UNAVAILABLE"
                         RuntimeOpenFault.Cancelled, "RUNTIME_CANCELLED"

@@ -208,6 +208,7 @@ let tests =
                 let! entered =
                     RegisterMaintenanceStore.change
                         database.OwnerSource
+                        database.MasterKey
                         (MaintenanceChange.Acquire(
                             0L,
                             System.Guid.Parse "10000000-0000-4000-8000-000000000099"

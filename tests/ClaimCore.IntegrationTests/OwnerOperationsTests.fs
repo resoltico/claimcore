@@ -24,11 +24,11 @@ let private success =
     | other -> failtestf "Expected success: %A" other
 
 let private changed (database: PostgresFixture.Database) change =
-    RegisterMaintenanceStore.change database.OwnerSource change token
+    RegisterMaintenanceStore.change database.OwnerSource database.MasterKey change token
 
 let private statusAndModes (database: PostgresFixture.Database) =
     task {
-        let! initial = InstallationStatus.read database.OwnerSource token
+        let! initial = InstallationStatus.read database.OwnerSource database.MasterKey token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
         Expect.equal initial.InstallationFormat 8 "Fresh installations use the consolidated grammar"
@@ -108,7 +108,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
             changed database (MaintenanceChange.Resume(next.State.Handle |> Option.get))
 
         Expect.isFalse finalOff.State.Active "Only the exact later handle resumes"
-        let! final = InstallationStatus.read database.OwnerSource token
+        let! final = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             final.Position
@@ -149,7 +149,7 @@ let private actionState (database: PostgresFixture.Database) =
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
         | other -> failtestf "Positive pre-maintenance preview: %A" other
 
-        let! before = InstallationStatus.read database.OwnerSource token
+        let! before = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         let! _ =
             changed
@@ -274,7 +274,7 @@ let private actionState (database: PostgresFixture.Database) =
             (Some [| 1uy |])
             "Operational authentication storage remains available"
 
-        let! after = InstallationStatus.read database.OwnerSource token
+        let! after = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             after.Position
@@ -309,6 +309,7 @@ let private rebuildMode (database: PostgresFixture.Database) =
             let! _ =
                 ProjectionRebuild.rebuild
                     database.OwnerSource
+                    database.MasterKey
                     checkpoint
                     (MaintenanceHandle.create
                         1L
@@ -329,6 +330,7 @@ let private rebuildMode (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -337,7 +339,7 @@ let private rebuildMode (database: PostgresFixture.Database) =
                 token
 
         Expect.isOk rebuilt "Maintenance plus the trusted checkpoint permits atomic reconstruction"
-        let! after = InstallationStatus.read database.OwnerSource token
+        let! after = InstallationStatus.read database.OwnerSource database.MasterKey token
         Expect.isTrue after.Maintenance.Active "Reconstruction never auto-resumes"
         Expect.equal after.Position checkpoint.Position "Reconstruction preserves the ledger head"
     }
@@ -363,7 +365,7 @@ let private pruning (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,7) n"
                 [||]
 
-        let! before = InstallationStatus.read database.OwnerSource token
+        let! before = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             (before.Sessions, before.ExpiredSessions)
@@ -388,7 +390,7 @@ let private pruning (database: PostgresFixture.Database) =
             (Some [| 1uy |])
             "Live ticket remains available"
 
-        let! after = InstallationStatus.read database.OwnerSource token
+        let! after = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             (after.Sessions, after.ExpiredSessions)
@@ -453,6 +455,7 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let entering =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Acquire(
                     0L,
                     System.Guid.Parse "10000000-0000-4000-8000-000000000099"
@@ -565,7 +568,7 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
 
         let! ticket = sessions.Retrieve(live.Value, token)
         Expect.isNone ticket.Value "Concurrent renewal cannot resurrect a logged-out ticket"
-        let! status = InstallationStatus.read database.OwnerSource token
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             (status.Sessions, status.ExpiredSessions)
@@ -631,7 +634,8 @@ let private recoverPausedOwner (database: PostgresFixture.Database) =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let recover principal actor =

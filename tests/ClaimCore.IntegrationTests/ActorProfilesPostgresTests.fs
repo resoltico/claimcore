@@ -38,7 +38,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL WHERE owner_kind='PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         let! _ = verified database
@@ -46,7 +46,7 @@ let private lifecycle (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL WHERE owner_kind='PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -67,7 +67,7 @@ let private noErase (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL WHERE owner_kind='PROFILE'"
                 [||]
 
         let! _ = verified database
@@ -91,6 +91,7 @@ let private projection (database: PostgresFixture.Database) =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 before
                 (MaintenanceHandle.create
                     1L
@@ -286,6 +287,7 @@ let private currentProfileGuard (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 before
                 (MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
                  |> Option.get)

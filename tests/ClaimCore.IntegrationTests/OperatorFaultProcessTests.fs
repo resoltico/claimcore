@@ -54,6 +54,7 @@ let private publishedFaults () =
                         AdministrationProcess.invoke
                             binary
                             connectionFile
+                            database.DataKeyFile
                             arguments
                             (ExitCode.value exit)
                         |> Async.AwaitTask
@@ -250,7 +251,8 @@ let private publishedFaults () =
                 ]
 
             let! proof =
-                AdministrationProcess.invoke binary connection [ "head" ] 0 |> Async.AwaitTask
+                AdministrationProcess.invoke binary connection database.DataKeyFile [ "head" ] 0
+                |> Async.AwaitTask
 
             let proofPath = privateText "checkpoint.json" (proof.GetRawText())
 
@@ -288,13 +290,28 @@ let private publishedFaults () =
                     "UPDATE claimcore.installation SET installation_format=8; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=8)"
                     [||]
 
+            let! wrapped =
+                async {
+                    use ownerConnection = database.OwnerSource.OpenConnection()
+
+                    let! rows =
+                        DatabaseSession.rows
+                            ownerConnection
+                            "SELECT wrapped_data_key FROM claimcore.installation WHERE singleton"
+                            [||]
+                            CancellationToken.None
+                        |> Async.AwaitTask
+
+                    return DatabaseSession.value<byte array> 0 (List.exactlyOne rows)
+                }
+
             do! sql "DELETE FROM claimcore.installation" [||]
             do! fault connection [ "status" ] "INSTALLATION_INVALID" ExitCode.Rejected
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(8,$1,'Etc/UTC')"
-                    [| box database.Fixture.InstallationId |]
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,wrapped_data_key) VALUES(8,$1,'Etc/UTC',$2)"
+                    [| box database.Fixture.InstallationId; box wrapped |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
             do! fault connection [ "head" ] "INTEGRITY_FAILURE" ExitCode.Failed
@@ -328,7 +345,7 @@ let private publishedFaults () =
             do! fault authentication [ "status" ] "CONNECTION_REJECTED" ExitCode.Rejected
 
             let probe = AdministrationProcess.start [ binary; "status" ]
-            probe.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- authentication
+            AdministrationProcess.configure probe authentication database.DataKeyFile
 
             let! diagnosticExit, diagnosticReply, diagnosticErrors =
                 AdministrationProcess.execute probe |> Async.AwaitTask
@@ -382,7 +399,8 @@ let private publishedFaults () =
             waiting.Stop()
 
             let! result =
-                AdministrationProcess.invoke binary connection [ "status" ] 0 |> Async.AwaitTask
+                AdministrationProcess.invoke binary connection database.DataKeyFile [ "status" ] 0
+                |> Async.AwaitTask
 
             Expect.equal
                 (result.GetProperty("kind").GetString())
@@ -406,6 +424,7 @@ let private publishedFaults () =
                 AdministrationProcess.invoke
                     binary
                     connection
+                    database.DataKeyFile
                     (recovery @ [ "--owner-name"; "New Owner" ])
                     0
                 |> Async.AwaitTask
@@ -418,7 +437,8 @@ let private publishedFaults () =
             let actorId = recovered.GetProperty("actorId").GetGuid()
 
             let! unchanged =
-                AdministrationProcess.invoke binary connection recovery 0 |> Async.AwaitTask
+                AdministrationProcess.invoke binary connection database.DataKeyFile recovery 0
+                |> Async.AwaitTask
 
             Expect.equal
                 (unchanged.GetProperty("kind").GetString())
@@ -469,7 +489,7 @@ let private publishedFaults () =
                         "10000000-0000-4000-8000-000000000099"
                     ]
 
-            command.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- lostCommit
+            AdministrationProcess.configure command lostCommit database.DataKeyFile
 
             let! commitExit, commitReply, commitErrors =
                 AdministrationProcess.execute command |> Async.AwaitTask
@@ -516,7 +536,10 @@ let private publishedFaults () =
                     "Original provider classification survives"
 
                 let! current =
-                    InstallationStatus.read database.OwnerSource CancellationToken.None
+                    InstallationStatus.read
+                        database.OwnerSource
+                        database.MasterKey
+                        CancellationToken.None
                     |> Async.AwaitTask
 
                 Expect.isTrue

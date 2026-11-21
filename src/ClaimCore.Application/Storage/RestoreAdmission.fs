@@ -18,6 +18,7 @@ open ClaimCore.Application.Contracts
 module internal RestoreAdmission =
     let admit
         (source: NpgsqlDataSource)
+        masterKey
         (trusted: InstallationCheckpoint)
         (handle: MaintenanceHandle)
         (token: CancellationToken)
@@ -32,6 +33,7 @@ module internal RestoreAdmission =
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
                     let! installation, _ = Baseline.require connection token
+                    use! cipher = Baseline.loadCipher connection installation masterKey token
                     do! RegisterMaintenanceStore.requireActive handle connection token
 
                     match CheckpointEvidence.installation installation trusted with
@@ -41,6 +43,7 @@ module internal RestoreAdmission =
                             Verification.authoritative
                                 connection
                                 installation
+                                cipher
                                 (Some trusted.Position)
                                 token
 

@@ -284,7 +284,9 @@ let private seeded database =
 
 let private mode (database: PostgresFixture.Database) change =
     task {
-        let! result = RegisterMaintenanceStore.change database.OwnerSource change token
+        let! result =
+            RegisterMaintenanceStore.change database.OwnerSource database.MasterKey change token
+
         return result
     }
 
@@ -306,7 +308,7 @@ let private assertErased (database: PostgresFixture.Database) =
         let! counts =
             DatabaseSession.rows
                 connection
-                "SELECT count(*) FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1 AND (payload IS NOT NULL OR nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
+                "SELECT count(*) FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1 AND (payload IS NOT NULL OR nonce IS NOT NULL OR nonce_fingerprint IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
                 [| box (CaseId.value (parent database.Fixture)) |]
                 token
 
@@ -421,7 +423,8 @@ let private oldHead database =
             restoredMode.Active
             "The synthetic old backup was captured with register writes paused; traffic remains isolated"
 
-        let! rejected = Verification.verify database.OwnerSource (Some acceptedErasure) token
+        let! rejected =
+            Verification.verify database.OwnerSource database.MasterKey (Some acceptedErasure) token
 
         match rejected with
         | VerificationResult.Diverged finding ->
@@ -433,7 +436,9 @@ let private oldHead database =
             failtestf "An old head must not be admitted against the external checkpoint: %A" other
         // A retained later source is external evidence. Rebuild cannot invent missing accepted events.
         do! restore database "/tmp/reminders-accepted-erasure.sql"
-        let! current = Verification.verify database.OwnerSource (Some acceptedErasure) token
+
+        let! current =
+            Verification.verify database.OwnerSource database.MasterKey (Some acceptedErasure) token
 
         Expect.equal
             current
@@ -463,7 +468,7 @@ let private mixedPayload database =
 
         for statement in
             [
-                "CREATE TEMP TABLE restore_compartments AS SELECT operation_sequence,ordinal,payload,nonce FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1"
+                "CREATE TEMP TABLE restore_compartments AS SELECT operation_sequence,ordinal,payload,nonce,nonce_fingerprint FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1"
                 "CREATE TEMP TABLE restore_cases AS SELECT * FROM claimcore.cases WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_work AS SELECT * FROM claimcore.case_work WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_reminders AS SELECT * FROM claimcore.reminders WHERE case_id=$1"
@@ -500,7 +505,7 @@ let private mixedPayload database =
                 ))
 
         let restorePayload =
-            "UPDATE claimcore.ledger_compartments p SET payload=b.payload,nonce=b.nonce FROM restore_compartments b WHERE p.operation_sequence=b.operation_sequence AND p.ordinal=b.ordinal"
+            "UPDATE claimcore.ledger_compartments p SET payload=b.payload,nonce=b.nonce,nonce_fingerprint=b.nonce_fingerprint FROM restore_compartments b WHERE p.operation_sequence=b.operation_sequence AND p.ordinal=b.ordinal"
 
         let mutable guardRefused = false
 
@@ -547,6 +552,7 @@ let private mixedPayload database =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     3L

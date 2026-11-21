@@ -29,7 +29,15 @@ let private operation fixture number =
 
 let private inspect (database: PostgresFixture.Database) work =
     DatabaseSession.read database.RuntimeSource token (fun connection ->
-        work (ReadTx(connection, database.Fixture.InstallationId, DateTimeOffset.UtcNow, token)))
+        work (
+            ReadTx(
+                connection,
+                database.Fixture.InstallationId,
+                database.Cipher,
+                DateTimeOffset.UtcNow,
+                token
+            )
+        ))
 
 let private readCase database caseId =
     inspect database (fun tx -> FamilyReads.findCase tx caseId)
@@ -430,6 +438,7 @@ let private bounded (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 (InstallationCheckpoint.create fixture.InstallationId checkpoint None
                  |> Option.get)
                 (MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
@@ -447,6 +456,7 @@ let private bounded (database: PostgresFixture.Database) =
         let! _ =
             RegisterMaintenanceStore.change
                 database.OwnerSource
+                database.MasterKey
                 (MaintenanceChange.Resume(
                     MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
                     |> Option.get

@@ -45,8 +45,11 @@ let private signalled () =
                     "connection"
                     (PostgresFixture.ownerConnectionString database)
 
-            let! _ = AdministrationProcess.invoke binary connection [ "status" ] 0
-            let! checkpoint = LedgerAdministration.head database.OwnerSource token
+            let! _ =
+                AdministrationProcess.invoke binary connection database.DataKeyFile [ "status" ] 0
+
+            let! checkpoint =
+                LedgerAdministration.head database.OwnerSource database.MasterKey token
 
             let checkpointFile =
                 AdministrationProcess.privateText
@@ -69,7 +72,7 @@ let private signalled () =
                         "10000000-0000-4000-8000-000000000099"
                     ]
 
-            config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
+            AdministrationProcess.configure config connection database.DataKeyFile
             let! _, refusal, quiet = AdministrationProcess.execute config
             use refusalDocument = JsonDocument.Parse refusal
 
@@ -81,7 +84,7 @@ let private signalled () =
             Expect.equal quiet "" "Business refusal is not a storage diagnostic"
 
             for signal in [ "INT"; "TERM" ] do
-                let! before = InstallationStatus.read database.OwnerSource token
+                let! before = InstallationStatus.read database.OwnerSource database.MasterKey token
                 use! holder = database.OwnerSource.OpenConnectionAsync()
                 use! held = holder.BeginTransactionAsync()
                 let! _ = Transactions.head holder token
@@ -98,7 +101,7 @@ let private signalled () =
                             "10000000-0000-4000-8000-000000000099"
                         ]
 
-                config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
+                AdministrationProcess.configure config connection database.DataKeyFile
 
                 use child =
                     Process.Start(config)
@@ -167,7 +170,9 @@ let private signalled () =
                         "The production sink reports the cancelled storage attempt"
 
                     do! held.RollbackAsync()
-                    let! status = InstallationStatus.read database.OwnerSource token
+
+                    let! status =
+                        InstallationStatus.read database.OwnerSource database.MasterKey token
 
                     Expect.isFalse
                         status.Maintenance.Active
@@ -176,6 +181,7 @@ let private signalled () =
                     let! positive =
                         RegisterMaintenanceStore.change
                             database.OwnerSource
+                            database.MasterKey
                             (MaintenanceChange.Acquire(
                                 before.Maintenance.Generation,
                                 System.Guid.Parse "10000000-0000-4000-8000-000000000099"
@@ -189,6 +195,7 @@ let private signalled () =
                     let! _ =
                         RegisterMaintenanceStore.change
                             database.OwnerSource
+                            database.MasterKey
                             (MaintenanceChange.Resume(positive.State.Handle |> Option.get))
                             token
 
@@ -257,6 +264,7 @@ let private confirmedCleanup () =
             let! confirmed =
                 RegisterMaintenanceStore.change
                     source
+                    database.MasterKey
                     (MaintenanceChange.Acquire(
                         0L,
                         System.Guid.Parse "10000000-0000-4000-8000-000000000099"
@@ -280,7 +288,8 @@ let private confirmedCleanup () =
             use administration =
                 new Administration(
                     PostgresFixture.ownerConnectionString database,
-                    ClaimCore.Wire.BuildIdentity.current.Version
+                    ClaimCore.Wire.BuildIdentity.current.Version,
+                    database.MasterKey
                 )
 
             let! report =
@@ -307,7 +316,8 @@ let private confirmedCleanup () =
             use independent =
                 new Administration(
                     PostgresFixture.ownerConnectionString database,
-                    ClaimCore.Wire.BuildIdentity.current.Version
+                    ClaimCore.Wire.BuildIdentity.current.Version,
+                    database.MasterKey
                 )
 
             let! status = independent.Status token

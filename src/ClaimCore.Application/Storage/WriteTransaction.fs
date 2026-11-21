@@ -9,8 +9,8 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// The store constructs writes only after lock_ledger_head returns in IStore.Write.
-type internal WriteTx(connection, installation, head: LedgerPosition, observedAt, token) =
-    inherit ReadTx(connection, installation, observedAt, token)
+type internal WriteTx(connection, installation, cipher, head: LedgerPosition, observedAt, token) =
+    inherit ReadTx(connection, installation, cipher, observedAt, token)
 
     member _.Head = head
 
@@ -29,8 +29,8 @@ type internal WriteTx(connection, installation, head: LedgerPosition, observedAt
                 let! _ =
                     match attachment with
                     | Some payload ->
-                        OperationStorage.appendWithAttachment connection entry.Root payload token
-                    | None -> OperationStorage.append connection entry.Root token
+                        OperationStorage.appendWithAttachment connection cipher entry payload token
+                    | None -> OperationStorage.append connection cipher entry.Root token
 
                 return ()
             finally

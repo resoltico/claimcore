@@ -355,7 +355,8 @@ let private cancellation (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
 
         let store =
-            LedgerStore(source, database.Installation, Transactions.timeouts) :> IStore
+            LedgerStore(source, database.Installation, database.Cipher, Transactions.timeouts)
+            :> IStore
 
         let core =
             Service.create

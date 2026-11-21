@@ -132,7 +132,7 @@ module internal TimelineHistory =
                                             let! prior =
                                                 OperationStorage.previous
                                                     tx.Connection
-                                                    tx.InstallationId
+                                                    tx.Cipher
                                                     change
                                                     tx.CancellationToken
 

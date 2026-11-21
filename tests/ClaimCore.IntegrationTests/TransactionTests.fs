@@ -90,7 +90,8 @@ let private instantOrdering (database: PostgresFixture.Database) =
 
 let private waiter (database: PostgresFixture.Database) settings =
     let store =
-        LedgerStore(database.RuntimeSource, database.Installation, settings) :> IStore
+        LedgerStore(database.RuntimeSource, database.Installation, database.Cipher, settings)
+        :> IStore
 
     let result =
         store.Write(
@@ -168,7 +169,8 @@ let tests =
                             [| 4L .. 23L |]
                             "Each locked decision saw the current sequence"
 
-                        let! verified = Verification.verify database.OwnerSource None token
+                        let! verified =
+                            Verification.verify database.OwnerSource database.MasterKey None token
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
@@ -233,7 +235,8 @@ let tests =
                             (Ok(Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)))
                             "Next writer proceeds"
 
-                        let! head = Verification.verify database.OwnerSource None token
+                        let! head =
+                            Verification.verify database.OwnerSource database.MasterKey None token
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
@@ -357,7 +360,8 @@ let tests =
                             (ExecuteResult.Failed CoreFault.StoreUnavailable)
                             "SQLSTATE is definite"
 
-                        let! head = Verification.verify database.OwnerSource None token
+                        let! head =
+                            Verification.verify database.OwnerSource database.MasterKey None token
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
@@ -441,7 +445,13 @@ let tests =
                         let attempt () =
                             task {
                                 try
-                                    let! _ = OperationStorage.append connection root token
+                                    let! _ =
+                                        OperationStorage.append
+                                            connection
+                                            database.Cipher
+                                            root
+                                            token
+
                                     return None
                                 with :? PostgresException as error ->
                                     return Some error.SqlState
@@ -473,7 +483,8 @@ let tests =
                             unguarded
                             "Removing both owned structural safeguards admits the same gap"
 
-                        let! finding = Verification.verify database.OwnerSource None token
+                        let! finding =
+                            Verification.verify database.OwnerSource database.MasterKey None token
 
                         match finding with
                         | VerificationResult.Diverged _ -> ()

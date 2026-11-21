@@ -561,7 +561,8 @@ let private rollbackAndUnknown (database: PostgresFixture.Database) =
             Service.create
                 BuildIdentity.current.Version
                 database.Fixture.InstallationId
-                (LedgerStore(source, database.Installation, Transactions.timeouts) :> IStore)
+                (LedgerStore(source, database.Installation, database.Cipher, Transactions.timeouts)
+                :> IStore)
                 database.Fixture.Calendar
                 actor
 

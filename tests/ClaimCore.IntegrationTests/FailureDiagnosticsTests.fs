@@ -223,6 +223,7 @@ let tests =
                             let! admitted =
                                 Runtime.openConnection
                                     settings.ConnectionString
+                                    database.MasterKey
                                     CancellationToken.None
 
                             use runtime =
@@ -294,6 +295,7 @@ let tests =
                             let! startup =
                                 Runtime.openConnection
                                     settings.ConnectionString
+                                    database.MasterKey
                                     CancellationToken.None
 
                             Expect.isError startup "The invalid credential cannot admit a runtime"

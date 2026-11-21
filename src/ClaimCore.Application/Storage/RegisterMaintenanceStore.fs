@@ -66,7 +66,7 @@ module internal RegisterMaintenanceStore =
             return after, changed
         }
 
-    let change (source: NpgsqlDataSource) change (token: CancellationToken) =
+    let change (source: NpgsqlDataSource) masterKey change (token: CancellationToken) =
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -76,7 +76,8 @@ module internal RegisterMaintenanceStore =
                     do! OwnerAdmission.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! position, observed = Transactions.head connection token
-                    let! _ = Baseline.require connection token
+                    let! installation, _ = Baseline.require connection token
+                    use! _cipher = Baseline.loadCipher connection installation masterKey token
                     let! after, changed = changeWithinHeadLock connection change token
 
                     do! DatabaseSession.commit transaction token

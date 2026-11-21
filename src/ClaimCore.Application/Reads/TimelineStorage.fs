@@ -16,7 +16,7 @@ module internal TimelineStorage =
             Limit: int
         }
 
-    let stages connection installation parent token =
+    let stages connection cipher parent token =
         task {
             let kind = PartKind.token PartKind.Case
 
@@ -27,7 +27,7 @@ module internal TimelineStorage =
                     [| box (CaseId.value parent); box kind |]
                     token
 
-            let! entries = StoredEntries.bind connection installation rows token
+            let! entries = StoredEntries.bind connection cipher rows token
 
             match entries with
             | [] -> return None
@@ -87,7 +87,7 @@ module internal TimelineStorage =
             | _ -> return raise (RecordCorruptException "Current case stage is duplicated.")
         }
 
-    let page connection installation (query: PageQuery) token =
+    let page connection cipher (query: PageQuery) token =
         task {
             let kinds =
                 query.Filter
@@ -124,7 +124,7 @@ module internal TimelineStorage =
                     |]
                     token
 
-            let! entries = StoredEntries.bind connection installation rows token
+            let! entries = StoredEntries.bind connection cipher rows token
             let visible = List.truncate query.Limit entries
 
             return
@@ -138,7 +138,7 @@ module internal TimelineStorage =
                 }
         }
 
-    let previous connection installation (entries: StoredEffect list) token =
+    let previous connection cipher (entries: StoredEffect list) token =
         task {
             if entries.Length > Paging.MaximumTimelinePageSize then
                 invalidArg (nameof entries) "Use one bounded timeline page."
@@ -146,7 +146,7 @@ module internal TimelineStorage =
             let mutable result = Map.empty
 
             for entry in entries do
-                let! previous = OperationStorage.previous connection installation entry.Change token
+                let! previous = OperationStorage.previous connection cipher entry.Change token
 
                 match previous with
                 | Some previous -> result <- Map.add entry.Position previous result

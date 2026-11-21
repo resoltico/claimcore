@@ -27,6 +27,13 @@ module Execution =
             | RecoverOwner input ->
                 let! result = administration.RecoverOwner(input, token)
                 return Replies.ownerRecovery result
+            | RotateMasterKey keyFile ->
+                match Inputs.keyFile keyFile with
+                | Error fault -> return Replies.operatorFault fault
+                | Ok replacement ->
+                    use replacement = replacement
+                    let! installation = administration.RotateMasterKey(replacement, token)
+                    return Replies.masterKeyRotated installation
             | Verify expected ->
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
                 let! result = administration.Verify(expected, token)
@@ -64,12 +71,19 @@ module Execution =
             | Help -> return Replies.help ()
             | Version -> return Replies.version ()
             | _ ->
-                match Inputs.connection () with
+                let inputs =
+                    Inputs.connection ()
+                    |> Result.bind (fun connection ->
+                        Inputs.masterKey () |> Result.map (fun masterKey -> connection, masterKey))
+
+                match inputs with
                 | Error fault -> return Replies.operatorFault fault
-                | Ok connection ->
+                | Ok(connection, masterKey) ->
+                    use masterKey = masterKey
+
                     try
                         use administration =
-                            new Administration(connection, BuildIdentity.current.Version)
+                            new Administration(connection, BuildIdentity.current.Version, masterKey)
 
                         return! perform administration token command
                     with error ->

@@ -60,7 +60,12 @@ let private commandPath () =
                 |> Async.AwaitTask
 
             let invoke arguments exit =
-                AdministrationProcess.invoke binary connection arguments (ExitCode.value exit)
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    database.DataKeyFile
+                    arguments
+                    (ExitCode.value exit)
                 |> Async.AwaitTask
 
             let! head = invoke [ "head" ] ExitCode.Success
@@ -214,6 +219,7 @@ let private commandPath () =
                     AdministrationProcess.invoke
                         binary
                         noConnection
+                        database.DataKeyFile
                         [ "verify"; "--checkpoint"; path ]
                         (ExitCode.value ExitCode.Rejected)
                     |> Async.AwaitTask
@@ -286,7 +292,7 @@ let private commandPath () =
                         "10000000-0000-4000-8000-000000000099"
                     ]
 
-            config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
+            AdministrationProcess.configure config connection database.DataKeyFile
 
             use child =
                 Process.Start(config)
@@ -309,7 +315,8 @@ let private commandPath () =
                 use administration =
                     new Administration(
                         PostgresFixture.ownerConnectionString database,
-                        BuildIdentity.current.Version
+                        BuildIdentity.current.Version,
+                        database.MasterKey
                     )
 
                 let! afterLoss = administration.Head CancellationToken.None |> Async.AwaitTask

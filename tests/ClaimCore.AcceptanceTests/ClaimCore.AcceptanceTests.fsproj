@@ -21,6 +21,7 @@
     <Compile Include="HttpsProxy.fs" />
     <Compile Include="CommitReplyProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
+    <Compile Include="PublishedDataKeyTests.fs" />
     <Compile Include="HttpsProxyTests.fs" />
     <Compile Include="PublishedSessionTests.fs" />
     <Compile Include="CliBrowserReturnEvidence.fs" />

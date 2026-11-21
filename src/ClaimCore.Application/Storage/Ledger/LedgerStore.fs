@@ -15,11 +15,12 @@ open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, settings) =
+type internal LedgerStore
+    (source: NpgsqlDataSource, installation: Installation, cipher: InstallationCipher, settings) =
     let installationId = installation.InstallationId
 
-    static member InTransaction(connection, installationId, head, observedAt, token) =
-        WriteTx(connection, installationId, head, observedAt, token)
+    static member InTransaction(connection, installationId, cipher, head, observedAt, token) =
+        WriteTx(connection, installationId, cipher, head, observedAt, token)
 
     interface IStore with
         member _.Context query =
@@ -72,7 +73,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, 
             Transactions.read source token (fun connection observedAt ->
                 task {
                     do! Baseline.requireExpected installation connection token
-                    return! work (ReadTx(connection, installationId, observedAt, token))
+                    return! work (ReadTx(connection, installationId, cipher, observedAt, token))
                 })
 
         member _.RecordDisclosure(event, token) =
@@ -97,7 +98,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, 
 
                     let! verdict =
                         work (
-                            WriteTx(connection, installationId, head, observedAt, token)
+                            WriteTx(connection, installationId, cipher, head, observedAt, token)
 
                         )
 

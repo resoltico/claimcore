@@ -254,7 +254,7 @@ let private confirmed () =
         Expect.equal (frontier database) (Some future) "Refusals and replays never lower frontier"
 
         Expect.equal
-            (Verification.verify database.OwnerSource None token |> sync)
+            (Verification.verify database.OwnerSource database.MasterKey None token |> sync)
             (VerificationResult.Verified cleared.Position)
             "Frontier updates and refusals append no business root"
     finally

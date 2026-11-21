@@ -17,6 +17,7 @@ type RuntimeOpenFault =
     | UnsafeRole
     | SchemaMismatch
     | InstallationInvalid
+    | DataKeyInvalid
     | HeadMismatch
     | Unavailable
     | Cancelled

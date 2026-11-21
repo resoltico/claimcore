@@ -58,7 +58,14 @@ services:
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     environment:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/owner.connection
+      CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
     volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/data.key
+        target: /run/claimcore/data.key
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR:?}/administration
         target: /etc/claimcore/administration
@@ -83,6 +90,7 @@ services:
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     environment:
       CLAIMCORE_CONNECTION_FILE: /etc/claimcore/runtime/runtime.connection
+      CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
       CLAIMCORE_WEB_CERTIFICATE_PATH: /etc/claimcore/runtime/server.pfx
       CLAIMCORE_WEB_KEY_RING_DIRECTORY: /var/lib/claimcore/key-ring
       CLAIMCORE_WEB_ORIGIN: ${CLAIMCORE_WEB_ORIGIN:?}
@@ -98,6 +106,12 @@ services:
         published: "${CLAIMCORE_HOST_PORT:-443}"
         host_ip: ${CLAIMCORE_BIND_ADDRESS:-0.0.0.0}
     volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/data.key
+        target: /run/claimcore/data.key
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR:?}/web
         target: /etc/claimcore/runtime

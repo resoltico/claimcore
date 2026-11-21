@@ -39,6 +39,7 @@ type WebConfiguration =
         KeyRingDirectory: DirectoryInfo
         Binding: WebBinding
         ConnectionString: string
+        DataKeyFile: string
         Certificate: X509Certificate2
         SessionIdle: TimeSpan
         SessionAbsolute: TimeSpan
@@ -199,6 +200,7 @@ module Configuration =
                 WebStartupProblem.ConnectionFileRefused
                 WebStartupProblem.ConnectionFileEmpty
 
+        let dataKeyFile = required WebSetting.DataKeyFile
         let configuredLimits = requestLimits ()
 
         let sufficientPool =
@@ -248,6 +250,7 @@ module Configuration =
                 KeyRingDirectory = keyRingDirectory
                 Binding = configuredEndpoint
                 ConnectionString = configuredConnection
+                DataKeyFile = dataKeyFile
                 Certificate = configuredCertificate
                 SessionIdle = sessionIdle
                 SessionAbsolute = sessionAbsolute

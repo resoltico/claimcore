@@ -33,9 +33,11 @@ type IRuntime =
     abstract Installation: Installation
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
 
-type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
+type private RuntimeResource
+    (source: NpgsqlDataSource, installation: Installation, cipher: InstallationCipher) =
 
-    member _.Store = LedgerStore(source, installation, Transactions.timeouts) :> IStore
+    member _.Store =
+        LedgerStore(source, installation, cipher, Transactions.timeouts) :> IStore
 
     interface IRuntime with
         member _.Housekeep(dateAt, token) =
@@ -65,10 +67,13 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
 
         member _.Dispose() =
             try
-                source.Dispose()
-            with error ->
-                FailureDiagnostics.reportAt FailurePhase.Cleanup error
-                reraise ()
+                try
+                    source.Dispose()
+                with error ->
+                    FailureDiagnostics.reportAt FailurePhase.Cleanup error
+                    reraise ()
+            finally
+                (cipher :> IDisposable).Dispose()
 
 module Runtime =
     let correlate correlation =
@@ -91,15 +96,18 @@ module Runtime =
             calendar
             principal
 
-    let openConnection (connectionString: string) cancellationToken =
+    let openConnection (connectionString: string) masterKey cancellationToken =
         task {
             let mutable owned: NpgsqlDataSource option = None
 
             try
                 let source = InstallationCheck.dataSource connectionString
                 owned <- Some source
-                let! installation = InstallationCheck.openRuntime source cancellationToken
-                return Ok(new RuntimeResource(source, installation) :> IRuntime)
+
+                let! installation, cipher =
+                    InstallationCheck.openRuntime source masterKey cancellationToken
+
+                return Ok(new RuntimeResource(source, installation, cipher) :> IRuntime)
             with error ->
                 match owned with
                 | Some source -> do! FailureDiagnostics.cleanup source.DisposeAsync
@@ -113,6 +121,7 @@ module Runtime =
                             match fault.Fault with
                             | OperatorFault.SchemaMismatch
                             | OperatorFault.FormatMismatch -> RuntimeOpenFault.SchemaMismatch
+                            | OperatorFault.DataKeyInvalid -> RuntimeOpenFault.DataKeyInvalid
                             | OperatorFault.UnsupportedServer -> RuntimeOpenFault.UnsupportedServer
                             | OperatorFault.UnsupportedDatabase ->
                                 RuntimeOpenFault.UnsupportedDatabase

@@ -44,9 +44,9 @@ module internal FamilyReads =
 
     let caseStageFacts (tx: ReadTx) caseId =
         let connection = tx.Connection
-        let installation = tx.InstallationId
+        let cipher = tx.Cipher
         let token = tx.CancellationToken
-        TimelineStorage.stages connection installation caseId token
+        TimelineStorage.stages connection cipher caseId token
 
     let casePage (tx: ReadTx) (query: TransactionPages.CaseQuery) =
         let connection = tx.Connection

@@ -214,13 +214,16 @@ let internal stateSequence (database: PostgresFixture.Database) =
 let internal erasure (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! original = row database (CaseFixtures.sequence 4L)
+        use! connection = database.OwnerSource.OpenConnectionAsync()
 
-        let nonce, bytes =
-            original.Root.Structure.Compartments
-            |> List.exactlyOne
-            |> Compartment.content
-            |> Option.get
+        let! original =
+            DatabaseSession.rows
+                connection
+                "SELECT payload,nonce,nonce_fingerprint FROM claimcore.ledger_compartments WHERE operation_sequence=4"
+                [||]
+                token
+
+        let protectedBytes = List.exactlyOne original
 
         let! granted =
             grant
@@ -247,8 +250,8 @@ let internal erasure (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger_compartments SET payload=$1,nonce=$2 WHERE operation_sequence=4"
-                [| box bytes; box nonce |]
+                "UPDATE claimcore.ledger_compartments SET payload=$1,nonce=$2,nonce_fingerprint=$3 WHERE operation_sequence=4"
+                protectedBytes
 
         do! finding VerificationFinding.ErasureIncomplete database
     }
@@ -260,7 +263,7 @@ let internal missingPayload (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE operation_sequence=4"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL WHERE operation_sequence=4"
                 [||]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -421,7 +424,8 @@ let internal expected (database: PostgresFixture.Database) =
         let! _ = populated database
         let! position = verified database
 
-        let! current = LedgerAdministration.head database.OwnerSource token
+        let! current =
+            LedgerAdministration.head database.OwnerSource database.MasterKey token
 
         let checkpoint =
             InstallationCheckpoint.create
@@ -432,7 +436,8 @@ let internal expected (database: PostgresFixture.Database) =
                 current.ExpiredBefore
             |> Option.get
 
-        let! result = Verification.verify database.OwnerSource (Some checkpoint) token
+        let! result =
+            Verification.verify database.OwnerSource database.MasterKey (Some checkpoint) token
 
         Expect.equal
             result

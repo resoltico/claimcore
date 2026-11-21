@@ -51,6 +51,7 @@ CREATE TABLE claimcore.installation (
         AND business_time_zone = btrim(business_time_zone)
         AND business_time_zone !~ '[[:cntrl:]]'
     ),
+    wrapped_data_key bytea NOT NULL CHECK (octet_length(wrapped_data_key)=60),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 
@@ -106,11 +107,15 @@ CREATE TABLE claimcore.ledger_compartments (
     owner_kind text NOT NULL CHECK (owner_kind IN ('FAMILY','PROFILE')),
     owner_id uuid NOT NULL CHECK (owner_id<>'00000000-0000-0000-0000-000000000000'),
     commitment bytea NOT NULL CHECK (octet_length(commitment)=32),
-    nonce bytea UNIQUE,
+    nonce bytea,
+    nonce_fingerprint bytea UNIQUE,
     payload bytea STORAGE EXTERNAL,
     PRIMARY KEY(operation_sequence,ordinal),
     UNIQUE(operation_sequence,owner_kind,owner_id),
-    CHECK ((nonce IS NULL AND payload IS NULL) OR (nonce IS NOT NULL AND payload IS NOT NULL AND octet_length(nonce)=32 AND octet_length(payload) BETWEEN 1 AND 32768))
+    CHECK ((nonce IS NULL AND nonce_fingerprint IS NULL AND payload IS NULL)
+        OR (nonce IS NOT NULL AND nonce_fingerprint IS NOT NULL AND payload IS NOT NULL
+            AND octet_length(nonce)=60 AND octet_length(nonce_fingerprint)=32
+            AND octet_length(payload) BETWEEN 29 AND 32796))
 );
 ALTER TABLE claimcore.ledger_effects ADD CONSTRAINT effect_compartment
     FOREIGN KEY(operation_sequence,compartment) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal) DEFERRABLE INITIALLY DEFERRED;
@@ -131,7 +136,8 @@ CREATE TABLE claimcore.attachment_blobs (
     FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     CHECK ((length IS NULL AND digest IS NULL AND payload IS NULL)
         OR (length IS NOT NULL AND digest IS NOT NULL AND payload IS NOT NULL
-            AND octet_length(payload)=length AND octet_length(digest)=32))
+            AND length>=0 AND octet_length(payload)::bigint-28=length
+            AND octet_length(digest)=32))
 );
 CREATE UNIQUE INDEX attachment_family_digest ON claimcore.attachment_blobs(case_id,digest) WHERE digest IS NOT NULL;
 
@@ -232,8 +238,9 @@ BEGIN
         RAISE EXCEPTION 'a cleared family cannot acquire attachment contents' USING ERRCODE='CC004';
     END IF;
     IF TG_TABLE_NAME='attachment_blobs' THEN
-        IF NEW.payload IS NULL OR sha256(NEW.payload) IS DISTINCT FROM NEW.digest THEN
-            RAISE EXCEPTION 'attachment payload must match its integrity value' USING ERRCODE='CC004';
+        IF NEW.payload IS NULL OR NEW.length IS NULL OR NEW.length<0
+           OR octet_length(NEW.payload)::bigint-28<>NEW.length THEN
+            RAISE EXCEPTION 'attachment ciphertext does not match its declared length' USING ERRCODE='CC004';
         END IF;
     ELSIF NEW.blob_id IS NULL THEN
         RAISE EXCEPTION 'an attachment requires a retained payload reference' USING ERRCODE='CC004';
@@ -298,7 +305,7 @@ DECLARE last_reference integer;
 BEGIN
     IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'compartments are never removed' USING ERRCODE='CC003'; END IF;
     SELECT COALESCE(max(effect_index),-1) INTO last_reference FROM claimcore.ledger_effects WHERE operation_sequence=OLD.operation_sequence AND compartment=OLD.ordinal;
-    IF NEW.nonce IS NOT NULL OR NEW.payload IS NOT NULL OR
+    IF NEW.nonce IS NOT NULL OR NEW.nonce_fingerprint IS NOT NULL OR NEW.payload IS NOT NULL OR
        (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.commitment)
        IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.commitment)
        OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.erases_kind=OLD.owner_kind AND erased.erases_id=OLD.owner_id
@@ -311,15 +318,10 @@ $$;
 CREATE TRIGGER compartments_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.compartment_guard();
 CREATE TRIGGER compartments_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_compartments FOR EACH STATEMENT EXECUTE FUNCTION claimcore.compartment_guard();
 
--- The codec owns the descriptor. Storage extracts only its payload reference and integrity values.
-CREATE FUNCTION claimcore.attachment_descriptor(payload bytea,effect_index integer)
-RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-    SELECT convert_from(payload,'UTF8')::jsonb->'values'->(effect_index::text)
-$$;
-
 CREATE FUNCTION claimcore.complete_attachment_effect(root_sequence bigint)
 RETURNS void LANGUAGE plpgsql SET search_path=pg_catalog AS $$
-DECLARE effect claimcore.ledger_effects%ROWTYPE; link claimcore.attachment_references%ROWTYPE; blob claimcore.attachment_blobs%ROWTYPE; descriptor jsonb; erased boolean; introduces boolean;
+DECLARE effect claimcore.ledger_effects%ROWTYPE; link claimcore.attachment_references%ROWTYPE; blob claimcore.attachment_blobs%ROWTYPE;
+        compartment_present boolean; erased boolean; introduces boolean;
 BEGIN
     FOR effect IN SELECT * FROM claimcore.ledger_effects
         WHERE operation_sequence=root_sequence AND part_kind='ATTACHMENT'
@@ -342,8 +344,7 @@ BEGIN
                 RAISE EXCEPTION 'attachment evidence must bind to its accepting effect and family' USING ERRCODE='CC004';
             END IF;
 
-            SELECT claimcore.attachment_descriptor(c.payload,effect.effect_index)
-              INTO descriptor FROM claimcore.ledger_compartments c
+            SELECT c.payload IS NOT NULL INTO compartment_present FROM claimcore.ledger_compartments c
               WHERE (c.operation_sequence,c.ordinal)=(root_sequence,effect.compartment);
             SELECT EXISTS(SELECT 1 FROM claimcore.ledger_effects e
                 WHERE e.erases_kind='FAMILY' AND e.erases_id=effect.aggregate_id
@@ -351,16 +352,13 @@ BEGIN
               INTO erased;
 
             IF erased THEN
-                IF link.blob_id IS NOT NULL OR descriptor IS NOT NULL OR (introduces AND blob.payload IS NOT NULL) THEN
+                IF link.blob_id IS NOT NULL OR compartment_present IS TRUE OR (introduces AND blob.payload IS NOT NULL) THEN
                     RAISE EXCEPTION 'erased attachment evidence retains private values' USING ERRCODE='CC003';
                 END IF;
             ELSE
                 SELECT * INTO blob FROM claimcore.attachment_blobs b
                   WHERE (b.case_id,b.blob_id)=(effect.aggregate_id,link.blob_id);
-                IF blob.payload IS NULL OR descriptor IS NULL
-                   OR blob.blob_id IS DISTINCT FROM (descriptor->>'blob')::uuid
-                   OR blob.length IS DISTINCT FROM (descriptor->>'length')::bigint
-                   OR blob.digest IS DISTINCT FROM decode(descriptor->>'digest','hex')
+                IF blob.payload IS NULL OR compartment_present IS NOT TRUE
                    OR (introduces AND (blob.operation_sequence,blob.effect_index) IS DISTINCT FROM (effect.operation_sequence,effect.effect_index))
                    OR (NOT introduces AND (blob.operation_sequence,blob.effect_index)>=(effect.operation_sequence,effect.effect_index)) THEN
                     RAISE EXCEPTION 'attachment reference must agree with its retained payload' USING ERRCODE='CC004';
@@ -430,7 +428,8 @@ CREATE TABLE claimcore.case_attachments (
 CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_aggregate_kind text,p_task text,p_structure jsonb,p_effects jsonb,p_compartments jsonb,p_attachment_payload bytea DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
-        effect claimcore.ledger_effects%ROWTYPE; descriptor jsonb; blob_identity uuid; consumed_payload boolean:=false;
+        effect claimcore.ledger_effects%ROWTYPE; attachment_link jsonb; blob_identity uuid;
+        blob_length bigint; blob_digest bytea; consumed_payload boolean:=false;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
@@ -445,7 +444,9 @@ BEGIN
     FOR n IN 0..jsonb_array_length(p_effects)-1 LOOP
         item:=p_effects->n;
         IF jsonb_typeof(item) IS DISTINCT FROM 'object' OR NOT item ?& ARRAY['aggregate','part','revision']
-           OR item-ARRAY['aggregate','part','revision','naturalKey','retained','erases','compartment']<>'{}'::jsonb
+           OR item-ARRAY['aggregate','part','revision','naturalKey','retained','erases','compartment','attachmentLink']<>'{}'::jsonb
+           OR (item ? 'attachmentLink' AND
+               (item#>>'{part,kind}' IS DISTINCT FROM 'ATTACHMENT' OR item#>'{retained,withdrawn}'='true'::jsonb))
            OR NOT claimcore.json_shape(item->'aggregate',ARRAY['kind','id']) OR NOT claimcore.json_shape(item->'part',ARRAY['kind','id'])
            OR jsonb_typeof(item->'revision') IS DISTINCT FROM 'number' OR item->>'revision' !~ $integer$\A[0-9]+\Z$integer$
            OR (item ? 'erases' AND NOT claimcore.json_shape(item->'erases',ARRAY['kind','id'])) THEN
@@ -455,18 +456,20 @@ BEGIN
         VALUES(p_sequence,n,item->'aggregate'->>'kind',(item->'aggregate'->>'id')::uuid,item->'part'->>'kind',(item->'part'->>'id')::uuid,(item->>'revision')::bigint,item->>'naturalKey',item->'retained',item->'erases'->>'kind',(item->'erases'->>'id')::uuid,(item->>'compartment')::integer);
     END LOOP;
     FOR item IN SELECT value FROM jsonb_array_elements(p_compartments) LOOP
-        IF NOT claimcore.json_shape(item,ARRAY['ordinal','owner','commitment','nonce','payload']) OR NOT claimcore.json_shape(item->'owner',ARRAY['kind','id'])
+        IF NOT claimcore.json_shape(item,ARRAY['ordinal','owner','commitment','nonce','nonceFingerprint','payload']) OR NOT claimcore.json_shape(item->'owner',ARRAY['kind','id'])
            OR jsonb_typeof(item->'ordinal') IS DISTINCT FROM 'number' OR item->>'ordinal' !~ $integer$\A[0-9]+\Z$integer$
            OR jsonb_typeof(item->'commitment') IS DISTINCT FROM 'string' OR item->>'commitment' !~ $hash$\A[0-9a-f]{64}\Z$hash$
-           OR jsonb_typeof(item->'nonce') IS DISTINCT FROM 'string' OR item->>'nonce' !~ $hash$\A[0-9a-f]{64}\Z$hash$
-           OR jsonb_typeof(item->'payload') IS DISTINCT FROM 'string' OR length(item->>'payload') NOT BETWEEN 2 AND 65536 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]' THEN
+           OR jsonb_typeof(item->'nonce') IS DISTINCT FROM 'string' OR item->>'nonce' !~ $salt$\A[0-9a-f]{120}\Z$salt$
+           OR jsonb_typeof(item->'nonceFingerprint') IS DISTINCT FROM 'string' OR item->>'nonceFingerprint' !~ $hash$\A[0-9a-f]{64}\Z$hash$
+           OR jsonb_typeof(item->'payload') IS DISTINCT FROM 'string' OR length(item->>'payload') NOT BETWEEN 58 AND 65592 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]' THEN
             RAISE EXCEPTION 'invalid owner compartment' USING ERRCODE='CC004';
         END IF;
         IF item->'owner'->>'kind'='FAMILY' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind=item->'owner'->>'kind' AND e.erases_id=(item->'owner'->>'id')::uuid AND e.operation_sequence<p_sequence) THEN
             RAISE EXCEPTION 'a cleared permanent owner cannot acquire private values' USING ERRCODE='CC004';
         END IF;
-        INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload)
-        VALUES(p_sequence,(item->>'ordinal')::integer,item->'owner'->>'kind',(item->'owner'->>'id')::uuid,decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
+        INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload)
+        VALUES(p_sequence,(item->>'ordinal')::integer,item->'owner'->>'kind',(item->'owner'->>'id')::uuid,
+               decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'nonceFingerprint','hex'),decode(item->>'payload','hex'));
     END LOOP;
     FOR effect IN SELECT * FROM claimcore.ledger_effects
         WHERE operation_sequence=p_sequence AND part_kind='ATTACHMENT' ORDER BY effect_index
@@ -474,22 +477,38 @@ BEGIN
         IF effect.retained->'withdrawn'='true'::jsonb THEN
             DELETE FROM claimcore.case_attachments WHERE (case_id,attachment_id)=(effect.aggregate_id,effect.part_id);
         ELSE
-            SELECT claimcore.attachment_descriptor(c.payload,effect.effect_index)
-              INTO descriptor FROM claimcore.ledger_compartments c
-              WHERE (c.operation_sequence,c.ordinal)=(p_sequence,effect.compartment);
-            blob_identity:=(descriptor->>'blob')::uuid;
-
-            IF blob_identity IS NULL THEN
-                RAISE EXCEPTION 'attachment addition requires a retained descriptor' USING ERRCODE='CC004';
+            -- These fields bind to the stored evidence at append time and are never
+            -- copied into the permanent effect. Native verification authenticates the contents.
+            attachment_link:=p_effects->effect.effect_index->'attachmentLink';
+            IF (CASE WHEN jsonb_typeof(attachment_link)='object'
+                     THEN claimcore.json_shape(attachment_link,ARRAY['blobId','length','keyedDigest'])
+                     ELSE false END) IS NOT TRUE
+               OR jsonb_typeof(attachment_link->'blobId') IS DISTINCT FROM 'string'
+               OR attachment_link->>'blobId' !~ $uuid$\A[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\Z$uuid$
+               OR jsonb_typeof(attachment_link->'length') IS DISTINCT FROM 'number'
+               OR attachment_link->>'length' !~ $length$\A[0-9]{1,16}\Z$length$
+               OR jsonb_typeof(attachment_link->'keyedDigest') IS DISTINCT FROM 'string'
+               OR attachment_link->>'keyedDigest' !~ $hash$\A[0-9a-f]{64}\Z$hash$ THEN
+                RAISE EXCEPTION 'attachment addition requires a structural blob link' USING ERRCODE='CC004';
             END IF;
+            blob_identity:=(attachment_link->>'blobId')::uuid;
+            blob_length:=(attachment_link->>'length')::bigint;
+            blob_digest:=decode(attachment_link->>'keyedDigest','hex');
+
             IF effect.retained->'introducesBlob'='true'::jsonb THEN
-                IF consumed_payload OR p_attachment_payload IS NULL THEN
-                    RAISE EXCEPTION 'attachment addition requires its exact payload' USING ERRCODE='CC004';
+                IF consumed_payload OR p_attachment_payload IS NULL OR blob_identity<>effect.part_id THEN
+                    RAISE EXCEPTION 'attachment addition requires its own declared blob' USING ERRCODE='CC004';
                 END IF;
                 INSERT INTO claimcore.attachment_blobs(case_id,blob_id,operation_sequence,effect_index,length,digest,payload)
-                  VALUES(effect.aggregate_id,effect.part_id,p_sequence,effect.effect_index,
-                         (descriptor->>'length')::bigint,decode(descriptor->>'digest','hex'),p_attachment_payload);
+                  VALUES(effect.aggregate_id,blob_identity,p_sequence,effect.effect_index,blob_length,blob_digest,p_attachment_payload);
                 consumed_payload:=true;
+            ELSIF NOT EXISTS(
+                SELECT 1 FROM claimcore.attachment_blobs b
+                  WHERE (b.case_id,b.blob_id)=(effect.aggregate_id,blob_identity)
+                    AND (b.operation_sequence,b.effect_index)<(effect.operation_sequence,effect.effect_index)
+                    AND b.length=blob_length AND b.digest=blob_digest AND b.payload IS NOT NULL
+            ) THEN
+                RAISE EXCEPTION 'attachment link does not match the earlier blob in its family' USING ERRCODE='CC004';
             END IF;
             INSERT INTO claimcore.attachment_references(case_id,attachment_id,operation_sequence,effect_index,blob_id)
               VALUES(effect.aggregate_id,effect.part_id,p_sequence,effect.effect_index,blob_identity);
@@ -511,7 +530,7 @@ BEGIN
     SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects
       WHERE erases_kind=target_kind AND erases_id=target_id ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
     IF frontier IS NULL THEN RAISE EXCEPTION 'owner has no accepted erasure' USING ERRCODE='CC002'; END IF;
-    UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL
+    UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL
       WHERE c.owner_kind=target_kind AND c.owner_id=target_id AND c.payload IS NOT NULL
         AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(frontier,erase_index);
     GET DIAGNOSTICS erased=ROW_COUNT;

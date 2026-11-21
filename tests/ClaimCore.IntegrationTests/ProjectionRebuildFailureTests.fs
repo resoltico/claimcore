@@ -100,6 +100,7 @@ let private corruptHistory mutation database =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -127,6 +128,7 @@ let private corruptHead database =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -163,6 +165,7 @@ let private unsupportedBaseline database =
             let! _ =
                 ProjectionRebuild.rebuild
                     database.OwnerSource
+                    database.MasterKey
                     checkpoint
                     (MaintenanceHandle.create
                         1L
@@ -191,6 +194,7 @@ let private stagingFailure database =
             let! _ =
                 ProjectionRebuild.rebuild
                     database.OwnerSource
+                    database.MasterKey
                     checkpoint
                     (MaintenanceHandle.create
                         1L
@@ -220,6 +224,7 @@ let private validationFailure database =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -255,6 +260,7 @@ let private cancelledStaging database =
         let rebuilding =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -290,6 +296,7 @@ let private writerRace database =
         let rebuilding =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -364,6 +371,7 @@ let private commitLoss drop landed database =
             let! _ =
                 ProjectionRebuild.rebuild
                     source
+                    database.MasterKey
                     checkpoint
                     (MaintenanceHandle.create
                         1L

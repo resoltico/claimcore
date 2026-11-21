@@ -27,9 +27,9 @@ module internal PeopleReads =
 
     let peopleHistoryPage (tx: ReadTx) (query: TransactionPages.PeopleHistoryQuery) =
         let connection = tx.Connection
-        let installation = tx.InstallationId
+        let cipher = tx.Cipher
         let token = tx.CancellationToken
-        TransactionPages.peopleHistory connection installation query token
+        TransactionPages.peopleHistory connection cipher query token
 
     let accessRequestPage (tx: ReadTx) (query: AccessRequests.PageQuery) =
         let connection = tx.Connection

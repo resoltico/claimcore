@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Start a [fresh installation](docs/operating.md#data-at-rest-keys) with a private 32-byte master key file. Back it up separately from database backups.
+- Attachment bytes and private ledger compartments use per-installation encryption. Rotate the master key with `claimcore-server rotate-master-key`.
 - Register the Web origin plus `/` as the OIDC post-logout redirect URI. Ordinary Web sign-out now ends the provider session. Regenerate consumers for the logout location reply.
 - Compose requires a fresh database, a separate `postgres/superuser.password`, and verified TLS. Owner commands require a dedicated non-superuser database owner.
 - Format 8 requires a [fresh installation](docs/operating.md#install-a-fresh-register) on PostgreSQL 19 with UTF8, built-in C.UTF-8 and data checksums.

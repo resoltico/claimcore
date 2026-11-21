@@ -5,6 +5,8 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 
 open System
+open System.IO
+open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
@@ -52,6 +54,9 @@ type internal Database =
         OwnerSource: NpgsqlDataSource
         SuperuserSource: NpgsqlDataSource
         RuntimeSource: NpgsqlDataSource
+        MasterKey: MasterKey
+        Cipher: InstallationCipher
+        DataKeyFile: string
         Fixture: Fixture
     }
 
@@ -60,6 +65,36 @@ type internal Database =
             InstallationId = this.Fixture.InstallationId
             BusinessTimeZone = this.Fixture.Calendar.TimeZoneId
         }
+
+let private withKeyBytes action =
+    let bytes = RandomNumberGenerator.GetBytes MasterKey.Size
+
+    try
+        action bytes
+    finally
+        CryptographicOperations.ZeroMemory bytes
+
+let internal newMasterKey () =
+    withKeyBytes (MasterKey.admit >> Option.get)
+
+let internal writeDataKeyFile path =
+    withKeyBytes (fun bytes ->
+        use file =
+            new FileStream(
+                path,
+                FileStreamOptions(
+                    Mode = FileMode.CreateNew,
+                    Access = FileAccess.Write,
+                    UnixCreateMode = (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+                )
+            )
+
+        file.Write bytes
+        MasterKey.admit bytes |> Option.get)
+
+let internal writeKeyFile path =
+    use _key = writeDataKeyFile path
+    ()
 
 let private ownerRole = "claimcore_owner"
 let private ownerPassword = "synthetic-owner-only"
@@ -216,12 +251,17 @@ let private admittedDatabase
     installationId
     owner
     timeZone
+    cipher
+    masterKey
+    keyFile
+    keyDisposal
     =
     let ownerSource = connections.Owner
     let runtime = connections.Runtime
 
     let dispose () =
-        disposalSteps container sources |> ClaimCore.TestSupport.FixtureDisposal.finish
+        disposalSteps container sources @ keyDisposal
+        |> ClaimCore.TestSupport.FixtureDisposal.finish
 
     let fixture =
         {
@@ -232,6 +272,7 @@ let private admittedDatabase
                         InstallationId = installationId
                         BusinessTimeZone = timeZone
                     },
+                    cipher,
                     Transactions.timeouts
                 )
                 :> IStore
@@ -247,6 +288,9 @@ let private admittedDatabase
         OwnerSource = ownerSource
         SuperuserSource = connections.Superuser
         RuntimeSource = runtime
+        MasterKey = masterKey
+        Cipher = cipher
+        DataKeyFile = keyFile
         Fixture = fixture
     }
 
@@ -259,6 +303,7 @@ let private createInZone seeded configure owner timeZone poolCapacity =
                 Task.FromResult(fixtureContainer configure)
 
         let mutable sources: NpgsqlDataSource list = []
+        let mutable keyDisposal: (unit -> unit) list = []
         let mutable stage = SetupStage.ContainerReadiness
         let mutable ownedId = "CREATED_EVENT_NOT_OBSERVED"
         container.Created.AddHandler(EventHandler(fun _ _ -> ownedId <- container.Id))
@@ -275,11 +320,20 @@ let private createInZone seeded configure owner timeZone poolCapacity =
 
             stage <- SetupStage.SchemaInitialization
 
+            let owned = Directory.CreateTempSubdirectory "claimcore-data-key-"
+            let keyFile = Path.Combine(owned.FullName, "data.key")
+
+            keyDisposal <- [ (fun () -> File.Delete keyFile); (fun () -> owned.Delete()) ]
+
+            let masterKey = writeDataKeyFile keyFile
+            keyDisposal <- (fun () -> (masterKey :> IDisposable).Dispose()) :: keyDisposal
+
             let! installationId =
                 SchemaAdministration.initialize
                     ownerSource
+                    masterKey
                     timeZone
-                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                     CancellationToken.None
 
             stage <- SetupStage.RuntimeAdmission
@@ -287,7 +341,11 @@ let private createInZone seeded configure owner timeZone poolCapacity =
             poolCapacity |> Option.iter (fun capacity -> settings.MaxPoolSize <- capacity)
             let runtime = NpgsqlDataSource.Create(settings.ConnectionString)
             sources <- runtime :: sources
-            let! admitted = InstallationCheck.openRuntime runtime CancellationToken.None
+
+            let! admitted, cipher =
+                InstallationCheck.openRuntime runtime masterKey CancellationToken.None
+
+            keyDisposal <- (fun () -> (cipher :> IDisposable).Dispose()) :: keyDisposal
 
             if admitted.InstallationId <> installationId then
                 invalidOp "InstallationCheck changed identity."
@@ -304,6 +362,10 @@ let private createInZone seeded configure owner timeZone poolCapacity =
                     installationId
                     owner
                     admitted.BusinessTimeZone
+                    cipher
+                    masterKey
+                    keyFile
+                    keyDisposal
         with error ->
             // A broken diagnostic sink must not bypass owned cleanup or replace setup failure.
             try
@@ -316,7 +378,7 @@ let private createInZone seeded configure owner timeZone poolCapacity =
             | :? IO.IOException
             | :? ObjectDisposedException -> ()
 
-            disposalSteps container sources
+            disposalSteps container sources @ keyDisposal
             |> ClaimCore.TestSupport.FixtureDisposal.afterFailure error
 
             return Unchecked.defaultof<Database>

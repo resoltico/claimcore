@@ -37,6 +37,7 @@ let private nameProjection (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 before
                 (ClaimCore.Application.Contracts.MaintenanceHandle.create
                     1L
@@ -103,6 +104,7 @@ let private contactProjection (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 before
                 (ClaimCore.Application.Contracts.MaintenanceHandle.create
                     1L

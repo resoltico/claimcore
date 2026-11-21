@@ -21,7 +21,7 @@ let private handle generation pause =
     MaintenanceHandle.create generation pause |> Option.get
 
 let private change (database: PostgresFixture.Database) action =
-    RegisterMaintenanceStore.change database.OwnerSource action token
+    RegisterMaintenanceStore.change database.OwnerSource database.MasterKey action token
 
 let private conflict (pending: Task<'a>) =
     task {
@@ -63,7 +63,7 @@ let private fencedLifecycle (database: PostgresFixture.Database) =
 
         do! conflict (change database (MaintenanceChange.Resume(handle 1L pauseA)))
         do! conflict (change database (MaintenanceChange.Takeover(handle 1L pauseA, pauseC)))
-        let! status = InstallationStatus.read database.OwnerSource token
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             status.Maintenance
@@ -79,7 +79,7 @@ let private fencedLifecycle (database: PostgresFixture.Database) =
 
         do! conflict (change database (MaintenanceChange.Acquire(0L, pauseA)))
         do! conflict (change database (MaintenanceChange.Resume(handle 2L pauseB)))
-        let! status = InstallationStatus.read database.OwnerSource token
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             status.Maintenance
@@ -133,7 +133,7 @@ let private lostAcknowledgement transition drop landed (database: PostgresFixtur
         let mutable unknown = false
 
         try
-            let! _ = RegisterMaintenanceStore.change source requested token
+            let! _ = RegisterMaintenanceStore.change source database.MasterKey requested token
             ()
         with :? AdministrationOutcomeUnknownException ->
             unknown <- true
@@ -144,7 +144,7 @@ let private lostAcknowledgement transition drop landed (database: PostgresFixtur
             proxy.Intercepted.IsCompleted
             "The protocol relay reached the actual commit boundary"
 
-        let! status = InstallationStatus.read database.OwnerSource token
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             status.Maintenance
@@ -266,13 +266,25 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
             if rebuild then
                 task {
                     let! _ =
-                        ProjectionRebuild.rebuild commandSource trusted (handle 1L pauseA) token
+                        ProjectionRebuild.rebuild
+                            commandSource
+                            database.MasterKey
+                            trusted
+                            (handle 1L pauseA)
+                            token
 
                     return ()
                 }
             else
                 task {
-                    let! _ = RestoreAdmission.admit commandSource restored (handle 1L pauseA) token
+                    let! _ =
+                        RestoreAdmission.admit
+                            commandSource
+                            database.MasterKey
+                            restored
+                            (handle 1L pauseA)
+                            token
+
                     return ()
                 }
 
@@ -297,7 +309,7 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
             before
             "Queued stale work changes no projection, ticket, expiry frontier or ledger head"
 
-        let! status = InstallationStatus.read database.OwnerSource token
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
 
         Expect.equal
             status.Maintenance
@@ -306,13 +318,25 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
         // A fresh command with the exact successor handle proves the earlier refusal was fencing, not unusable input.
         if rebuild then
             let! result =
-                ProjectionRebuild.rebuild commandSource trusted (handle 2L pauseB) token
+                ProjectionRebuild.rebuild
+                    commandSource
+                    database.MasterKey
+                    trusted
+                    (handle 2L pauseB)
+                    token
 
             Expect.isOk result "The actual current handle can rebuild the same valid history"
             let! _ = verified database
             ()
         else
-            let! result = RestoreAdmission.admit commandSource restored (handle 2L pauseB) token
+            let! result =
+                RestoreAdmission.admit
+                    commandSource
+                    database.MasterKey
+                    restored
+                    (handle 2L pauseB)
+                    token
+
             let report = result |> Result.defaultWith (string >> failtest)
 
             Expect.equal

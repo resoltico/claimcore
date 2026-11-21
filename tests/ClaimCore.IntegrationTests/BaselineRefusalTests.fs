@@ -59,8 +59,8 @@ let private install identifier format (bytes: byte array) (source: NpgsqlDataSou
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1)"
-                [| box format |]
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,$2)"
+                [| box format; box (Array.zeroCreate<byte> 60) |]
                 token
 
         do! transaction.CommitAsync()
@@ -87,6 +87,7 @@ let private refusedInstallation identifier format load =
             use bootstrap = NpgsqlDataSource.Create(database.GetConnectionString())
             do! PostgresFixture.createRoles bootstrap token |> Async.AwaitTask
             use source = NpgsqlDataSource.Create(PostgresFixture.ownerConnection database)
+            use key = PostgresFixture.newMasterKey ()
             do! install identifier format (load ()) source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
@@ -96,8 +97,9 @@ let private refusedInstallation identifier format load =
                         let! _ =
                             Baseline.initialize
                                 source
+                                key
                                 "Etc/UTC"
-                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                                 token in
 
                         return ()
@@ -109,7 +111,7 @@ let private refusedInstallation identifier format load =
             settings.Password <- "synthetic-only"
 
             let! admission =
-                Runtime.openConnection settings.ConnectionString token |> Async.AwaitTask
+                Runtime.openConnection settings.ConnectionString key token |> Async.AwaitTask
 
             match admission with
             | Error RuntimeOpenFault.SchemaMismatch -> ()

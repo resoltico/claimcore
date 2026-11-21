@@ -58,7 +58,11 @@ let private databaseProfile (database: PostgresFixture.Database) =
         ownerSettings.Database <- "claimcore_libc"
 
         use administration =
-            new Administration(ownerSettings.ConnectionString, BuildIdentity.current.Version)
+            new Administration(
+                ownerSettings.ConnectionString,
+                BuildIdentity.current.Version,
+                database.MasterKey
+            )
 
         let handle =
             MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000001")
@@ -101,7 +105,9 @@ let private databaseProfile (database: PostgresFixture.Database) =
             Npgsql.NpgsqlConnectionStringBuilder(PostgresFixture.runtimeConnectionString database)
 
         runtimeSettings.Database <- ownerSettings.Database
-        let! startup = Runtime.openConnection runtimeSettings.ConnectionString token
+
+        let! startup =
+            Runtime.openConnection runtimeSettings.ConnectionString database.MasterKey token
 
         match startup with
         | Error RuntimeOpenFault.UnsupportedDatabase -> ()
@@ -121,7 +127,8 @@ let private ownerAdmission (database: PostgresFixture.Database) =
         use owner =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let! status = owner.Status token
@@ -199,7 +206,8 @@ let private ownerAdmission (database: PostgresFixture.Database) =
         use impersonating =
             new Administration(
                 impersonatingSettings.ConnectionString,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         do!
@@ -210,7 +218,8 @@ let private ownerAdmission (database: PostgresFixture.Database) =
         use runtime =
             new Administration(
                 PostgresFixture.runtimeConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         do! refusesOwner "A role that does not own the database is refused" runtime
@@ -248,8 +257,9 @@ let tests =
                                     (fun () ->
                                         SchemaAdministration.initialize
                                             database.OwnerSource
+                                            database.MasterKey
                                             zone
-                                            (fun _ _ ->
+                                            (fun _ _ _ ->
                                                 System.Threading.Tasks.Task.FromResult(()))
                                             token)
                                     "A nonempty schema is never adopted or changed"
@@ -280,18 +290,29 @@ let tests =
                                 expected.ExpiredBefore
                             |> Option.get
 
-                        let! prefix = Verification.verify database.OwnerSource (Some older) token
+                        let! prefix =
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some older)
+                                token
 
                         Expect.equal
                             prefix
                             (VerificationResult.Verified expected.Position)
                             "A valid older checkpoint prefix remains admissible"
 
-                        let! _ = Verification.verify database.OwnerSource (Some expected) token
+                        let! _ =
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some expected)
+                                token
 
                         let! wrong =
                             Verification.verify
                                 database.OwnerSource
+                                database.MasterKey
                                 (Some(
                                     InstallationCheckpoint.create
                                         expected.InstallationId
@@ -308,6 +329,7 @@ let tests =
                         let! future =
                             Verification.verify
                                 database.OwnerSource
+                                database.MasterKey
                                 (Some(
                                     InstallationCheckpoint.create
                                         expected.InstallationId
@@ -351,7 +373,10 @@ let tests =
                             do!
                                 refused
                                     (fun () ->
-                                        InstallationCheck.openRuntime database.RuntimeSource token)
+                                        InstallationCheck.openRuntime
+                                            database.RuntimeSource
+                                            database.MasterKey
+                                            token)
                                     $"{name} rejected"
                         }))
             testCase "runtime admission refuses remote connections without verified TLS" (fun () ->
@@ -404,7 +429,13 @@ let tests =
                             receipt.Position
                             "Checkpoint preserves the accepted root proof"
 
-                        let! _ = Verification.verify database.OwnerSource (Some expected) token
+                        let! _ =
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some expected)
+                                token
+
                         do! sql database "DROP SCHEMA claimcore CASCADE"
 
                         do!
@@ -425,7 +456,11 @@ let tests =
                         let! _ = verify database
 
                         let! restored =
-                            Verification.verify database.OwnerSource (Some expected) token
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some expected)
+                                token
 
                         diverged VerificationFinding.ExpectedPosition restored
                     }))
@@ -445,7 +480,8 @@ let tests =
                         use administration =
                             new Administration(
                                 PostgresFixture.ownerConnectionString database,
-                                BuildIdentity.current.Version
+                                BuildIdentity.current.Version,
+                                database.MasterKey
                             )
 
                         do!
@@ -523,7 +559,12 @@ let tests =
                             receipt.Position
                             "Checkpoint preserves the accepted root proof"
 
-                        let! _ = Verification.verify database.OwnerSource (Some expected) token
+                        let! _ =
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some expected)
+                                token
 
                         do!
                             sql
@@ -531,7 +572,11 @@ let tests =
                                 "UPDATE claimcore.cases SET case_reference='forged-reference' WHERE case_reference='synthetic-a'"
 
                         let! changed =
-                            Verification.verify database.OwnerSource (Some expected) token
+                            Verification.verify
+                                database.OwnerSource
+                                database.MasterKey
+                                (Some expected)
+                                token
 
                         diverged VerificationFinding.CaseProjection changed
                     }))
@@ -582,7 +627,10 @@ let tests =
                             do!
                                 refused
                                     (fun () ->
-                                        InstallationCheck.openRuntime database.RuntimeSource token)
+                                        InstallationCheck.openRuntime
+                                            database.RuntimeSource
+                                            database.MasterKey
+                                            token)
                                     "Owner people is refused"
                         }))
         ]

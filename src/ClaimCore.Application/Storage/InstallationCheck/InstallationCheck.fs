@@ -70,7 +70,7 @@ module internal InstallationCheck =
             | _ -> raise (InstallationRefusal RuntimeOpenFault.HeadMismatch)
         }
 
-    let openRuntime (source: NpgsqlDataSource) token =
+    let openRuntime (source: NpgsqlDataSource) masterKey token =
         task {
             transport (NpgsqlConnectionStringBuilder source.ConnectionString)
 
@@ -82,12 +82,14 @@ module internal InstallationCheck =
                         do! role connection token
                         let! id, zone = Baseline.require connection token
                         do! head connection token
+                        let! cipher = Baseline.loadCipher connection id masterKey token
 
                         return
                             {
                                 InstallationId = id
                                 BusinessTimeZone = zone
-                            }
+                            },
+                            cipher
                     })
         }
 

@@ -81,12 +81,14 @@ let private freshOwner () =
             ownerSettings.Username <- "claimcore_schema_owner"
             ownerSettings.Password <- "synthetic-owner-only"
             use owner = NpgsqlDataSource.Create(ownerSettings.ConnectionString)
+            use key = PostgresFixture.newMasterKey ()
 
             let! installed =
                 SchemaAdministration.initialize
                     owner
+                    key
                     "Etc/UTC"
-                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                     token
                 |> Async.AwaitTask
 
@@ -96,8 +98,9 @@ let private freshOwner () =
                         let! _ =
                             SchemaAdministration.initialize
                                 owner
+                                key
                                 "Etc/UTC"
-                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                                 token
 
                         return false
@@ -155,7 +158,8 @@ let private freshOwner () =
             use runtimeSource = NpgsqlDataSource.Create(runtimeSettings.ConnectionString)
 
             let! admitted =
-                Runtime.openConnection runtimeSettings.ConnectionString token |> Async.AwaitTask
+                Runtime.openConnection runtimeSettings.ConnectionString key token
+                |> Async.AwaitTask
 
             match admitted with
             | Ok runtime -> runtime.Dispose()
@@ -204,7 +208,8 @@ let private freshOwner () =
                 |> Async.AwaitTask
 
             let! rejected =
-                Runtime.openConnection runtimeSettings.ConnectionString token |> Async.AwaitTask
+                Runtime.openConnection runtimeSettings.ConnectionString key token
+                |> Async.AwaitTask
 
             match rejected with
             | Error RuntimeOpenFault.SchemaMismatch -> ()
@@ -219,8 +224,9 @@ let private freshOwner () =
                         let! _ =
                             SchemaAdministration.initialize
                                 owner
+                                key
                                 "Etc/UTC"
-                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                                 token
 
                         return false
@@ -252,7 +258,8 @@ let private freshOwner () =
                 "Restoring the checksum retains installation identity"
 
             let! reopened =
-                Runtime.openConnection runtimeSettings.ConnectionString token |> Async.AwaitTask
+                Runtime.openConnection runtimeSettings.ConnectionString key token
+                |> Async.AwaitTask
 
             match reopened with
             | Ok runtime -> runtime.Dispose()
@@ -498,6 +505,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L

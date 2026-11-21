@@ -101,6 +101,7 @@ let tests =
                         let! rebuilt =
                             ProjectionRebuild.rebuild
                                 database.OwnerSource
+                                database.MasterKey
                                 checkpoint
                                 (MaintenanceHandle.create
                                     1L

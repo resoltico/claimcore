@@ -35,7 +35,7 @@ let private run action =
 
 let private verified (database: PostgresFixture.Database) =
     task {
-        let! result = Verification.verify database.OwnerSource None token
+        let! result = Verification.verify database.OwnerSource database.MasterKey None token
 
         match result with
         | VerificationResult.Verified _ -> ()

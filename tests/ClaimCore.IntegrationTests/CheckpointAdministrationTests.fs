@@ -33,7 +33,8 @@ let private checkpoints () =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         let older = administration.Head token |> sync

@@ -215,11 +215,14 @@ let private peopleRevisions (database: PostgresFixture.Database) =
         let! _ = acceptedChange owner (people (19) (7L) "people.eraseProfile" (Map.empty))
         let! _ = verified database
         do! enterMaintenance database
-        let! checkpoint = LedgerAdministration.head database.OwnerSource token
+
+        let! checkpoint =
+            LedgerAdministration.head database.OwnerSource database.MasterKey token
 
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -250,7 +253,8 @@ let private peopleRevisions (database: PostgresFixture.Database) =
                     retained.Root.Structure.Compartments)
 
 
-        let! detected = Verification.verify database.OwnerSource None token
+        let! detected =
+            Verification.verify database.OwnerSource database.MasterKey None token
 
         match detected with
         | VerificationResult.Diverged failure ->
@@ -497,11 +501,14 @@ let private familyReview (database: PostgresFixture.Database) =
 
         let! _ = verified database
         do! enterMaintenance database
-        let! checkpoint = LedgerAdministration.head database.OwnerSource token
+
+        let! checkpoint =
+            LedgerAdministration.head database.OwnerSource database.MasterKey token
 
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L

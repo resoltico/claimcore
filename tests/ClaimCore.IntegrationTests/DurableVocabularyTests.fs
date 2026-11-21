@@ -74,7 +74,7 @@ let private rawEntry database =
     rawRead database (fun connection ->
         StoredEntries.operation
             connection
-            database.Fixture.InstallationId
+            database.Cipher
             (CaseFixtures.operationId (id database.Fixture 10))
             token)
 
@@ -109,7 +109,7 @@ let private rejectsUnknown mutate read raw =
                 (Error StoreFailure.Integrity)
                 "The public store boundary reports integrity failure"
 
-            let! result = Verification.verify database.OwnerSource None token
+            let! result = Verification.verify database.OwnerSource database.MasterKey None token
 
             match result with
             | VerificationResult.Diverged _ -> ()

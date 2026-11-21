@@ -25,12 +25,21 @@ module internal OperationStorage =
         | CompartmentOwner.Family id -> "FAMILY", CaseId.value id
         | CompartmentOwner.Profile id -> "PROFILE", ActorId.value id
 
-    let parameters (root: OperationRoot) =
+    let private parametersWithLink
+        (cipher: InstallationCipher)
+        attachmentLink
+        (root: OperationRoot)
+        =
         let header = root.Header
 
         let effects =
             OperationRoot.effectBytes root
             |> List.map (snd >> json)
+            |> function
+                | [ JsonValue.Object members ] when Option.isSome attachmentLink ->
+                    [ JsonValue.Object(("attachmentLink", Option.get attachmentLink) :: members) ]
+                | rows when Option.isNone attachmentLink -> rows
+                | _ -> invalidOp "An attachment link must belong to one accepting effect."
             |> JsonValue.Array
             |> text
 
@@ -40,12 +49,33 @@ module internal OperationStorage =
                 let descriptor = compartment.Descriptor
                 let kind, identity = owner descriptor.Owner
 
-                let nonce, payload =
+                let nonce, fingerprint, payload =
                     match Compartment.content compartment with
                     | Some(nonce, payload) ->
-                        JsonValue.String(Convert.ToHexStringLower nonce),
-                        JsonValue.String(Convert.ToHexStringLower payload)
-                    | None -> JsonValue.Null, JsonValue.Null
+                        let sequence = Sequence.value header.Sequence
+
+                        let salt =
+                            cipher.EncryptCompartmentSalt(
+                                sequence,
+                                descriptor.Ordinal,
+                                kind,
+                                identity,
+                                nonce
+                            )
+
+                        let bytes =
+                            cipher.EncryptCompartment(
+                                sequence,
+                                descriptor.Ordinal,
+                                kind,
+                                identity,
+                                payload
+                            )
+
+                        JsonValue.String(Convert.ToHexStringLower salt),
+                        JsonValue.String(Convert.ToHexStringLower(cipher.SaltFingerprint nonce)),
+                        JsonValue.String(Convert.ToHexStringLower bytes)
+                    | None -> JsonValue.Null, JsonValue.Null, JsonValue.Null
 
                 JsonValue.Object
                     [
@@ -59,6 +89,7 @@ module internal OperationStorage =
                         "commitment",
                         JsonValue.String(Convert.ToHexStringLower compartment.Commitment)
                         "nonce", nonce
+                        "nonceFingerprint", fingerprint
                         "payload", payload
                     ])
             |> JsonValue.Array
@@ -94,23 +125,63 @@ module internal OperationStorage =
             box compartments
         |]
 
-    let private appendWithPayload connection root (payload: VerifiedAttachment option) token =
-        let binary =
-            match payload with
-            | Some attachment -> box ((VerifiedAttachment.bytes attachment).ToArray())
-            | None -> DatabaseSession.nullValue
+    let parameters cipher root = parametersWithLink cipher None root
 
+    let attachmentParameters
+        (cipher: InstallationCipher)
+        (entry: RetainedOperation)
+        (attachment: VerifiedAttachment)
+        =
+        match entry.Changes with
+        | [ {
+                Aggregate = AggregateReference.Family caseId
+                Value = PartValue.Attachment(AttachmentEffect.Added(introduces, Some descriptor))
+            } ] ->
+            let verified = VerifiedAttachment.intent attachment
+            let length = AttachmentIntent.length descriptor.Intent
+
+            if
+                length <> AttachmentIntent.length verified
+                || AttachmentIntent.digest descriptor.Intent <> AttachmentIntent.digest verified
+            then
+                invalidOp "Verified bytes do not agree with the accepted attachment descriptor."
+
+            let bytes = (VerifiedAttachment.bytes attachment).ToArray()
+            let blobId = AttachmentId.value descriptor.Blob
+
+            let link =
+                JsonValue.Object
+                    [
+                        "blobId", JsonValue.String(blobId.ToString("D"))
+                        "length", JsonValue.Integer length
+                        "keyedDigest",
+                        JsonValue.String(Convert.ToHexStringLower(cipher.AttachmentDigest bytes))
+                    ]
+
+            let binary =
+                if introduces then
+                    box (cipher.EncryptBlob(CaseId.value caseId, blobId, bytes))
+                else
+                    DatabaseSession.nullValue
+
+            Array.append (parametersWithLink cipher (Some link) entry.Root) [| binary |]
+        | _ -> invalidOp "Verified attachment bytes require an accepted attachment descriptor."
+
+    let private appendParameters connection values token =
         DatabaseSession.execute
             connection
             "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7::uuid,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb,$15::bytea)"
-            (Array.append (parameters root) [| binary |])
+            values
             token
 
-    let append connection root token =
-        appendWithPayload connection root None token
+    let append connection cipher root token =
+        appendParameters
+            connection
+            (Array.append (parameters cipher root) [| DatabaseSession.nullValue |])
+            token
 
-    let appendWithAttachment connection root attachment token =
-        appendWithPayload connection root (Some attachment) token
+    let appendWithAttachment connection cipher entry attachment token =
+        appendParameters connection (attachmentParameters cipher entry attachment) token
 
     let private corrupt () =
         raise (RecordCorruptException "Invalid retained operation structure or contents.")
@@ -118,25 +189,42 @@ module internal OperationStorage =
     let private admitted result =
         Result.defaultWith (fun _ -> corrupt ()) result
 
-    let private compartment row =
+    let private compartment (cipher: InstallationCipher option) sequence row =
         let identity = DatabaseSession.value<Guid> 2 row
+        let kind = DatabaseSession.value<string> 1 row
 
         let owner =
-            match DatabaseSession.value<string> 1 row with
+            match kind with
             | "FAMILY" -> CompartmentOwner.Family(DatabaseSession.admitted CaseId.create identity)
             | "PROFILE" ->
                 CompartmentOwner.Profile(DatabaseSession.admitted ActorId.create identity)
             | _ -> corrupt ()
 
-        let descriptor =
-            CompartmentDescriptor.create (DatabaseSession.value<int> 0 row) owner
-            |> admitted
+        let ordinal = DatabaseSession.value<int> 0 row
+        let descriptor = CompartmentDescriptor.create ordinal owner |> admitted
 
-        Compartment.restore
-            descriptor
-            (DatabaseSession.value<byte array> 3 row)
-            (DatabaseSession.optional<byte array> 4 row)
-            (DatabaseSession.optional<byte array> 5 row)
+        let nonce, payload =
+            match
+                DatabaseSession.optional<byte array> 4 row,
+                DatabaseSession.optional<byte array> 5 row,
+                DatabaseSession.optional<byte array> 6 row
+            with
+            | None, None, None -> None, None
+            | Some salt, Some fingerprint, Some payload ->
+                match cipher with
+                | None -> corrupt ()
+                | Some cipher ->
+                    let nonce =
+                        cipher.DecryptCompartmentSalt(sequence, ordinal, kind, identity, salt)
+
+                    if cipher.SaltFingerprint nonce <> fingerprint then
+                        corrupt ()
+                    else
+                        Some nonce,
+                        Some(cipher.DecryptCompartment(sequence, ordinal, kind, identity, payload))
+            | _ -> corrupt ()
+
+        Compartment.restore descriptor (DatabaseSession.value<byte array> 3 row) nonce payload
         |> admitted
 
     let private rootColumns =
@@ -149,11 +237,11 @@ module internal OperationStorage =
 
     let private contentColumns includePrivate =
         if includePrivate then
-            "ordinal,owner_kind,owner_id,commitment,nonce,payload"
+            "ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload"
         else
-            "ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea"
+            "ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea,NULL::bytea"
 
-    let private restoreRecord installation operation row effectRows contentRows =
+    let private restoreRecord installation cipher operation row effectRows contentRows =
         if DatabaseSession.value<int16> 3 row <> int16 InstallationFormat.Current then
             corrupt ()
 
@@ -191,13 +279,13 @@ module internal OperationStorage =
             (DatabaseSession.value<string> 8 row)
             (Encoding.UTF8.GetBytes(DatabaseSession.value<string> 7 row))
             effects
-            (List.map compartment contentRows)
+            (List.map (compartment cipher (Sequence.value header.Sequence)) contentRows)
             hash
         |> admitted
         |> RetainedOperation.restore
         |> admitted
 
-    let private read includePrivate connection installation operation token =
+    let private read (cipher: InstallationCipher option) connection installation operation token =
         task {
             let! rows =
                 DatabaseSession.rows
@@ -225,25 +313,25 @@ module internal OperationStorage =
                     DatabaseSession.rows
                         connection
                         ("SELECT "
-                         + contentColumns includePrivate
+                         + contentColumns cipher.IsSome
                          + " FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal")
                         parameters
                         token
 
-                return Some(restoreRecord installation operation row effects contents)
+                return Some(restoreRecord installation cipher operation row effects contents)
             | _ -> return corrupt ()
         }
 
-    let find connection installation operation token =
-        read true connection installation operation token
+    let find connection (cipher: InstallationCipher) operation token =
+        read (Some cipher) connection cipher.InstallationId operation token
 
     /// Commitments authenticate public structure without acquiring private compartment bytes.
     let findStructure connection installation operation token =
-        read false connection installation operation token
+        read None connection installation operation token
 
     /// A selected metadata page hydrates full authenticated records in a fixed number of
     /// queries. Attachment binary payloads belong to a separate store and are not acquired here.
-    let findMany connection installation (operations: OperationId list) token =
+    let findMany connection (cipher: InstallationCipher) (operations: OperationId list) token =
         task {
             let identities =
                 operations |> List.distinct |> List.map OperationId.value |> List.toArray
@@ -294,7 +382,7 @@ module internal OperationStorage =
                         List.groupBy (DatabaseSession.value<int64> ordinal) >> Map.ofList
 
                     let effectsBySequence = group 2 effects
-                    let contentsBySequence = group 6 contents
+                    let contentsBySequence = group 7 contents
 
                     let records =
                         roots
@@ -311,7 +399,14 @@ module internal OperationStorage =
                             let compartments =
                                 Map.tryFind sequence contentsBySequence |> Option.defaultValue []
 
-                            operation, restoreRecord installation operation root rows compartments)
+                            operation,
+                            restoreRecord
+                                cipher.InstallationId
+                                (Some cipher)
+                                operation
+                                root
+                                rows
+                                compartments)
                         |> Map.ofList
 
                     if records.Count <> roots.Length then
@@ -320,7 +415,7 @@ module internal OperationStorage =
                         return records
         }
 
-    let previous connection installation (change: PartChange) token =
+    let previous connection cipher (change: PartChange) token =
         task {
             if change.Revision = Revision.first then
                 return None
@@ -342,7 +437,7 @@ module internal OperationStorage =
                         DatabaseSession.value<Guid> 0 row
                         |> DatabaseSession.admitted OperationId.create
 
-                    let! record = find connection installation operation token
+                    let! record = find connection cipher operation token
 
                     let previous =
                         record

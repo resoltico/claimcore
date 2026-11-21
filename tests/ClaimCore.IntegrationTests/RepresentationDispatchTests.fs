@@ -152,7 +152,7 @@ let private dispatch () =
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let head () =
-            LedgerAdministration.head database.OwnerSource token |> sync
+            LedgerAdministration.head database.OwnerSource database.MasterKey token |> sync
 
         let before = head ()
         let human = prepared.Invoke Representation.Human (Some service) token ignore |> sync
@@ -324,7 +324,8 @@ let private dispatch () =
         use administration =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
-                BuildIdentity.current.Version
+                BuildIdentity.current.Version,
+                database.MasterKey
             )
 
         administration.Maintenance(

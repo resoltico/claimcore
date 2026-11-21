@@ -108,7 +108,7 @@ let private retarget () =
             use proxy = new RetargetingProxy(nonNull settings.Host, settings.Port)
             settings.Host <- "127.0.0.1"
             settings.Port <- proxy.Port
-            let! opened = Runtime.openConnection settings.ConnectionString token
+            let! opened = Runtime.openConnection settings.ConnectionString first.MasterKey token
 
             use runtime =
                 opened
@@ -314,7 +314,9 @@ let private retarget () =
                     "Foreign absence did not advance expiry"
 
                 let settingsB = connection second
-                let! openedB = Runtime.openConnection settingsB.ConnectionString token
+
+                let! openedB =
+                    Runtime.openConnection settingsB.ConnectionString second.MasterKey token
 
                 use runtimeB =
                     openedB |> Result.defaultWith (fun _ -> failtest "Matching B admission")
@@ -364,7 +366,9 @@ let private retargetConfirmation () =
                 use proxy = new RetargetingProxy(nonNull settings.Host, settings.Port)
                 settings.Host <- "127.0.0.1"
                 settings.Port <- proxy.Port
-                let! admitted = Runtime.openConnection settings.ConnectionString token
+
+                let! admitted =
+                    Runtime.openConnection settings.ConnectionString first.MasterKey token
 
                 use runtime =
                     admitted |> Result.defaultWith (fun fault -> failtestf "Admission: %A" fault)

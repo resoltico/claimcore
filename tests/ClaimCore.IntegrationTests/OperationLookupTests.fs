@@ -222,7 +222,10 @@ let tests =
                             "One tick after deadline commits final absence"
 
                         let! precise =
-                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
 
                         Expect.equal
                             precise.ExpiredBefore
@@ -233,7 +236,10 @@ let tests =
                             "No millisecond cutoff truncation"
 
                         let! before =
-                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
 
                         let! final = lookup service pendingId
 
@@ -241,7 +247,11 @@ let tests =
                         | Outcome.Succeeded OperationLookupResult.NotAccepted -> ()
                         | other -> failtestf "Expected final absence: %A" other
 
-                        let! after = LedgerAdministration.head db.OwnerSource CancellationToken.None
+                        let! after =
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
 
                         Expect.equal
                             after.Position
@@ -466,7 +476,10 @@ let tests =
                             "Controlled forward provider observation confirms absence"
 
                         let! checkpoint =
-                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
 
                         Expect.equal
                             checkpoint.ExpiredBefore
@@ -491,7 +504,12 @@ let tests =
                             (Outcome.Succeeded OperationLookupResult.NotAccepted)
                             "Read-only recovery survives rollback"
 
-                        let! after = LedgerAdministration.head db.OwnerSource CancellationToken.None
+                        let! after =
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
+
                         Expect.equal after checkpoint "Rollback neither appends nor lowers expiry"
                     }
             }
@@ -563,7 +581,10 @@ let tests =
                         | other -> failtestf "Queued writer must observe durable frontier: %A" other
 
                         let! checkpoint =
-                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+                            LedgerAdministration.head
+                                db.OwnerSource
+                                db.MasterKey
+                                CancellationToken.None
 
                         Expect.equal
                             checkpoint.Position.Sequence

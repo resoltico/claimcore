@@ -129,7 +129,14 @@ services:
       - DATA_STEWARD
     environment:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
+      CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
     volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/data.key
+        target: /run/claimcore/data.key
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR}/administration
         target: /etc/claimcore
@@ -158,6 +165,12 @@ services:
     ports:
       - 127.0.0.1:${CLAIMCORE_HOST_PORT:-5443}:5443
     volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/data.key
+        target: /run/claimcore/data.key
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR}/web
         target: /etc/claimcore/runtime

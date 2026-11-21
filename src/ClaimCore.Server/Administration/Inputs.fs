@@ -21,6 +21,7 @@ open ClaimCore.RecordFormat
 type Command =
     | Initialize of timeZone: string * owner: InitialOwner * skipExisting: bool
     | RecoverOwner of OwnerRecoveryInput
+    | RotateMasterKey of newKeyFile: string
     | Verify of InstallationCheckpoint option
     | Rebuild of InstallationCheckpoint * MaintenanceHandle
     | AdmitRestoredInstallation of InstallationCheckpoint * MaintenanceHandle
@@ -34,6 +35,7 @@ type Command =
 type CommandName =
     | Initialize
     | RecoverOwner
+    | RotateMasterKey
     | Verify
     | Rebuild
     | AdmitRestoredInstallation
@@ -61,6 +63,7 @@ module Command =
         function
         | Initialize _ -> CommandName.Initialize
         | RecoverOwner _ -> CommandName.RecoverOwner
+        | RotateMasterKey _ -> CommandName.RotateMasterKey
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
         | AdmitRestoredInstallation _ -> CommandName.AdmitRestoredInstallation
@@ -110,6 +113,7 @@ module CommandName =
                 CommandArgument.Optional("--owner-name", "NAME")
                 CommandArgument.Optional("--actor-id", "ID")
             ]
+        | CommandName.RotateMasterKey -> [ CommandArgument.Operand "--new-key-file FILE" ]
         | CommandName.Verify -> [ CommandArgument.Optional("--checkpoint", "FILE") ]
         | CommandName.Rebuild ->
             [
@@ -366,6 +370,10 @@ module Inputs =
         | CommandName.Version -> noArguments Version arguments |> usage
         | CommandName.Initialize -> initialize arguments |> usage
         | CommandName.RecoverOwner -> recoverOwner arguments |> usage
+        | CommandName.RotateMasterKey ->
+            match arguments with
+            | [ "--new-key-file"; path ] -> Ok(RotateMasterKey path)
+            | _ -> Error(UsageProblem(UsageError.MissingOperand "--new-key-file FILE"))
         | CommandName.Head -> noArguments Head arguments |> usage
         | CommandName.Status -> noArguments Status arguments |> usage
         | CommandName.Maintenance -> maintenance arguments |> usage
@@ -432,3 +440,15 @@ module Inputs =
                         Error OperatorFault.ConnectionFileInvalid
                 finally
                     CryptographicOperations.ZeroMemory bytes
+
+    let keyFile path =
+        ClaimCore.Server.MasterKeyFile.read path
+        |> Option.map Ok
+        |> Option.defaultValue (Error OperatorFault.DataKeyFileInvalid)
+
+    let masterKey () =
+        Environment.GetEnvironmentVariable ClaimCore.Server.MasterKeyFile.setting
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.map keyFile
+        |> Option.defaultValue (Error OperatorFault.DataKeyFileRequired)

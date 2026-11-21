@@ -106,7 +106,7 @@ let internal populated (database: PostgresFixture.Database) =
     }
 
 let internal verify (database: PostgresFixture.Database) =
-    Verification.verify database.OwnerSource None token
+    Verification.verify database.OwnerSource database.MasterKey None token
 
 let internal erasureFixture (database: PostgresFixture.Database) =
     task {
@@ -185,8 +185,9 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
                             let! id =
                                 Baseline.initialize
                                     database.OwnerSource
+                                    database.MasterKey
                                     "Etc/UTC"
-                                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                                     token
 
                             return Some id
@@ -229,7 +230,11 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
         Expect.isTrue waiting "Every initializer waits before namespace discovery"
         Expect.isFalse namespacePresent "No installation work precedes the administration lock"
         Expect.equal (ids |> Array.distinct |> Array.length) 1 "One installed identity"
-        let! installation = InstallationCheck.openRuntime database.RuntimeSource token
+
+        let! installation, openedCipher =
+            InstallationCheck.openRuntime database.RuntimeSource database.MasterKey token
+
+        use _openedCipher = openedCipher
 
         Expect.equal
             installation.InstallationId
@@ -256,8 +261,9 @@ let internal initializationRollback (database: PostgresFixture.Database) =
                 (fun () ->
                     Baseline.initialize
                         database.OwnerSource
+                        database.MasterKey
                         "Etc/UTC"
-                        (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                        (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                         token)
                 "Missing runtime role makes the baseline fail after DDL"
 
@@ -288,8 +294,9 @@ let internal initializationRollback (database: PostgresFixture.Database) =
         let! _ =
             Baseline.initialize
                 database.OwnerSource
+                database.MasterKey
                 "Etc/UTC"
-                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
                 token
 
         let! _ = Baseline.require connection token

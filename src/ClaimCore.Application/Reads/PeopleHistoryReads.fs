@@ -35,8 +35,7 @@ module internal PeopleHistoryReads =
                         |]
                         tx.CancellationToken
 
-                let! prefix =
-                    StoredEntries.bind tx.Connection tx.InstallationId rows tx.CancellationToken
+                let! prefix = StoredEntries.bind tx.Connection tx.Cipher rows tx.CancellationToken
 
                 let wanted = entries |> List.map _.Position |> Set.ofList
 

@@ -87,6 +87,7 @@ let private repairs database =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -160,6 +161,7 @@ let private checkpointRefusal database =
         let! refused =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 wrong
                 (MaintenanceHandle.create
                     1L
@@ -197,6 +199,7 @@ let private readerSnapshot database =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -304,7 +307,8 @@ let private erasedIdentity database =
             [ "1.6" ]
             "Full dump restores the required module before its dependent indexes"
 
-        let! restored = Verification.verify database.OwnerSource (Some checkpoint) token
+        let! restored =
+            Verification.verify database.OwnerSource database.MasterKey (Some checkpoint) token
 
         Expect.equal
             restored
@@ -319,6 +323,7 @@ let private erasedIdentity database =
         let! result =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L
@@ -397,6 +402,7 @@ let private databaseCommands database =
                 AdministrationProcess.invoke
                     binary
                     connection
+                    database.DataKeyFile
                     [ "verify"; "--checkpoint"; expected ]
                     0
 
@@ -412,6 +418,7 @@ let private databaseCommands database =
                 AdministrationProcess.invoke
                     binary
                     connection
+                    database.DataKeyFile
                     [
                         "rebuild"
                         "--checkpoint"
@@ -432,6 +439,7 @@ let private databaseCommands database =
                 AdministrationProcess.invoke
                     binary
                     connection
+                    database.DataKeyFile
                     [ "verify"; "--checkpoint"; expected ]
                     0
 
@@ -461,7 +469,7 @@ let private grantSource database =
                 "UPDATE claimcore.grants SET granted_sequence=(SELECT max(sequence) FROM claimcore.ledger)"
                 [||]
 
-        let! damaged = Verification.verify database.OwnerSource None token
+        let! damaged = Verification.verify database.OwnerSource database.MasterKey None token
 
         match damaged with
         | VerificationResult.Diverged finding ->
@@ -476,6 +484,7 @@ let private grantSource database =
         let! rebuilt =
             ProjectionRebuild.rebuild
                 database.OwnerSource
+                database.MasterKey
                 checkpoint
                 (MaintenanceHandle.create
                     1L

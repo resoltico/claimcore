@@ -41,6 +41,7 @@ uuid() {
 project="claimcore-$(openssl rand -hex 8)"
 mkdir -m 700 "${configuration}"
 mkdir -m 700 "${configuration}/key-ring"
+openssl rand -out "${configuration}/data.key" 32
 for directory in postgres identity identity/realm web administration; do mkdir -m 755 "${configuration}/${directory}"; done
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 365 -subj '/CN=ClaimCore local evaluation CA' \
   -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' \
@@ -85,6 +86,7 @@ cat >"${configuration}/identity/realm/claimcore.json" <<JSON
 JSON
 cat >"${configuration}/web.env" <<ENV
 CLAIMCORE_CONNECTION_FILE=/etc/claimcore/runtime/runtime.connection
+CLAIMCORE_DATA_KEY_FILE=/run/claimcore/data.key
 CLAIMCORE_WEB_CERTIFICATE_PATH=/etc/claimcore/runtime/server.pfx
 CLAIMCORE_WEB_KEY_RING_DIRECTORY=/var/lib/claimcore/key-ring
 CLAIMCORE_WEB_ORIGIN=https://localhost:${web_port}

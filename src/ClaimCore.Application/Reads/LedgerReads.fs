@@ -12,18 +12,18 @@ open Npgsql
 module internal LedgerReads =
     let timelinePage (tx: ReadTx) (query: TimelineStorage.PageQuery) =
         let connection = tx.Connection
-        let installation = tx.InstallationId
+        let cipher = tx.Cipher
         let token = tx.CancellationToken
-        TimelineStorage.page connection installation query token
+        TimelineStorage.page connection cipher query token
 
     let previousEntries (tx: ReadTx) entries =
         let connection = tx.Connection
-        let installation = tx.InstallationId
+        let cipher = tx.Cipher
         let token = tx.CancellationToken
-        TimelineStorage.previous connection installation entries token
+        TimelineStorage.previous connection cipher entries token
 
     let findOperation (tx: ReadTx) id =
         let connection = tx.Connection
-        let installation = tx.InstallationId
+        let cipher = tx.Cipher
         let token = tx.CancellationToken
-        StoredEntries.operation connection installation id token
+        StoredEntries.operation connection cipher id token

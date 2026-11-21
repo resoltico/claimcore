@@ -16,7 +16,7 @@ module internal OperationQueries =
     let private receipt (services: ServiceContext) (tx: ReadTx) operation discloseForeign =
         task {
             let! entry =
-                OperationStorage.find tx.Connection tx.InstallationId operation tx.CancellationToken
+                OperationStorage.find tx.Connection tx.Cipher operation tx.CancellationToken
 
             let! person = AggregateStorage.principal tx services.Principal
 
