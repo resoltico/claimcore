@@ -10,8 +10,10 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
 open ClaimCore.Domain
+open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.Wire
 open Expecto
 
 let private token = CancellationToken.None
@@ -330,6 +332,136 @@ let private failClosed (database: PostgresFixture.Database) =
         Expect.isEmpty actual "The injected audit failure wrote no rows"
     }
 
+let private postgresFailureAtHttpBoundary () =
+    async {
+        let principal =
+            PrincipalKey.human TestServerFixture.oidc.Issuer.AbsoluteUri "synthetic-human"
+            |> Result.defaultWith (fun _ -> failtest "Synthetic principal")
+
+        let! database = PostgresFixture.createFor principal |> Async.AwaitTask
+
+        try
+            do!
+                task {
+                    let fixture = database.Fixture
+                    let! owner = VerificationSupport.populated database
+                    let! attachment = upload fixture owner
+
+                    use host =
+                        new TestServerFixture.Host(
+                            true,
+                            installationId = fixture.InstallationId,
+                            forActor = core fixture
+                        )
+
+                    let! _ = host.Login()
+                    let! credential = host.Token()
+                    let caseBody = Codec.encode Api.caseGet.Input { Target = target }
+
+                    let attachmentBody =
+                        Codec.encode AttachmentTransport.request (attachmentRequest attachment)
+
+                    let caseFault =
+                        Codec.encode
+                            Api.caseGet.Output
+                            (RepresentationReply.Data(Outcome.Failed CoreFault.SchemaMismatch))
+
+                    let transferFault =
+                        Codec.encode
+                            AttachmentTransport.failure
+                            (AttachmentTransferFailure.Failed CoreFault.SchemaMismatch)
+
+                    let requests =
+                        [
+                            "case.get", caseBody, "application/json", caseFault
+                            "attachment.download",
+                            attachmentBody,
+                            "application/octet-stream",
+                            transferFault
+                            "attachment.preview", attachmentBody, "application/pdf", transferFault
+                        ]
+
+                    let call endpoint body =
+                        host.CallResponse(
+                            endpoint,
+                            body,
+                            credential,
+                            representation = Representation.Data
+                        )
+
+                    for endpoint, body, media, _ in requests do
+                        use! response = call endpoint body
+                        let! bytes = response.Content.ReadAsByteArrayAsync()
+
+                        Expect.equal
+                            (int response.StatusCode)
+                            200
+                            (endpoint + " can release content")
+
+                        Expect.equal
+                            (nonNull response.Content.Headers.ContentType).MediaType
+                            media
+                            endpoint
+
+                        if endpoint = "case.get" then
+                            match
+                                Codec.decode Limits.MaximumResponseBytes Api.caseGet.Output bytes
+                            with
+                            | Ok(RepresentationReply.Data(Outcome.Succeeded _)) -> ()
+                            | _ ->
+                                failtest "The case read must succeed before the fault is injected."
+                        else
+                            Expect.sequenceEqual
+                                bytes
+                                (Encoding.ASCII.GetBytes "%PDF-1.7\n")
+                                endpoint
+
+                    let! before = allEvents fixture
+                    Expect.equal before.Length 3 "The positive HTTP reads each record a disclosure"
+
+                    use! connection = database.OwnerSource.OpenConnectionAsync(token)
+
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "ALTER TABLE claimcore.disclosure_trail RENAME TO disclosure_trail_unavailable"
+                            [||]
+                            token
+
+                    try
+                        for endpoint, body, _, fault in requests do
+                            use! response = call endpoint body
+                            let! bytes = response.Content.ReadAsByteArrayAsync()
+
+                            Expect.equal
+                                (nonNull response.Content.Headers.ContentType).MediaType
+                                "application/json"
+                                (endpoint + " uses the failure media type")
+
+                            Expect.isNull response.Content.Headers.ContentDisposition endpoint
+                            Expect.isFalse (response.Headers.Contains "Content-Digest") endpoint
+
+                            Expect.sequenceEqual
+                                bytes
+                                fault
+                                (endpoint + " releases only the typed store fault")
+                    finally
+                        DatabaseSession.execute
+                            connection
+                            "ALTER TABLE claimcore.disclosure_trail_unavailable RENAME TO disclosure_trail"
+                            [||]
+                            token
+                        |> _.GetAwaiter().GetResult()
+                        |> ignore
+
+                    let! after = allEvents fixture
+                    Expect.equal after before "The failed PostgreSQL inserts added no events"
+                }
+                |> Async.AwaitTask
+        finally
+            database.Fixture.Dispose()
+    }
+
 let private retainedReplies (database: PostgresFixture.Database) =
     task {
         let fixture = database.Fixture
@@ -423,6 +555,9 @@ let tests =
             testCaseAsync
                 "an audit write failure blocks every case and attachment result"
                 (ApplicationFixtures.run (fun database _ -> failClosed database))
+            testCaseAsync
+                "PostgreSQL disclosure insert failure withholds case, download and preview HTTP content"
+                (postgresFailureAtHttpBoundary ())
             testCaseAsync
                 "receipt replays and revision conflicts audit retained disclosures"
                 (ApplicationFixtures.run (fun database _ -> retainedReplies database))
