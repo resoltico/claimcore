@@ -15,6 +15,10 @@ import {
   expectPreferences,
 } from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
+
+// The provider navigation and logout reply carry an ID token hint.
+test.use({ trace: "off" });
+
 test("updates supplied records without refetching while receipt disclosure refreshes after Settings", async ({
   page,
 }) => {
@@ -72,69 +76,65 @@ test("updates supplied records without refetching while receipt disclosure refre
   expect(receiptReads.length).toBeGreaterThan(0);
   expect(new Set(receiptReads)).toEqual(new Set([opening.operationId]));
 });
-test.describe("RP-initiated sign-out", () => {
-  // The provider navigation and logout reply carry an ID token hint.
-  test.use({ trace: "off" });
-  test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
-    page,
-  }) => {
-    test.setTimeout(freshLoginWorkflowTimeout * 2);
-    // This workflow owns the server-side ticket that logout revokes.
-    await page.goto("/", {
-      waitUntil: "commit",
-    });
-    await login(page);
-    await selectFormat(page, "lv-LV");
-    await selectLanguage(page, "ar");
-    await showAccountActions(page);
-    const control = page.getByRole("button", {
-      name: ui("ar", "ui.signOut"),
-      exact: true,
-    });
-    await signOut(page, control);
-    await expect(
-      page.getByRole("link", {
-        name: ui("ar", "ui.signIn"),
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expect(
-      page.getByText(ui("ar", "ui.loginInstructions"), {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expectPreferences(page, {
-      displayLocale: "lv-LV",
-    });
-    await login(page, ui("ar", "label.cases"), ui("ar", "ui.signIn"));
-    await expectPreferences(page, {
-      language: "ar",
-    });
-    await expectPreferences(page, {
-      displayLocale: "lv-LV",
-    });
-    await expect(
-      page.getByRole("heading", {
-        name: ui("ar", "label.cases"),
-        exact: true,
-        level: 1,
-      }),
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
-        preferenceKey,
-      ),
-    ).toEqual({
-      version: 3,
-      language: "ar",
-      displayLocale: "lv-LV",
-      mode: "system",
-      accent: "blue" as const,
-    });
-    await selectLanguage(page, "en");
-    await logout(page);
+test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout * 2);
+  // This workflow owns the server-side ticket that logout revokes.
+  await page.goto("/", {
+    waitUntil: "commit",
   });
+  await login(page);
+  await selectFormat(page, "lv-LV");
+  await selectLanguage(page, "ar");
+  await showAccountActions(page);
+  const control = page.getByRole("button", {
+    name: ui("ar", "ui.signOut"),
+    exact: true,
+  });
+  await signOut(page, control);
+  await expect(
+    page.getByRole("link", {
+      name: ui("ar", "ui.signIn"),
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(ui("ar", "ui.loginInstructions"), {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expectPreferences(page, {
+    displayLocale: "lv-LV",
+  });
+  await login(page, ui("ar", "label.cases"), ui("ar", "ui.signIn"));
+  await expectPreferences(page, {
+    language: "ar",
+  });
+  await expectPreferences(page, {
+    displayLocale: "lv-LV",
+  });
+  await expect(
+    page.getByRole("heading", {
+      name: ui("ar", "label.cases"),
+      exact: true,
+      level: 1,
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
+      preferenceKey,
+    ),
+  ).toEqual({
+    version: 3,
+    language: "ar",
+    displayLocale: "lv-LV",
+    mode: "system",
+    accent: "blue" as const,
+  });
+  await selectLanguage(page, "en");
+  await logout(page);
 });
 test("keeps exact old and new facts in the real timeline view", async ({ page }) => {
   await openAuthenticated(page);

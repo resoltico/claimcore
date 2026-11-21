@@ -23,6 +23,10 @@ import {
   type NarrowRole,
   type RoleFixture,
 } from "./narrow-role-fixture";
+
+// The provider navigation and logout reply carry an ID token hint.
+test.use({ trace: "off" });
+
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>> | undefined;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
@@ -203,42 +207,38 @@ for (const [name, role, scoped] of cases) {
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });
 }
-test.describe("RP-initiated sign-out", () => {
-  // The provider navigation and logout reply carry an ID token hint.
-  test.use({ trace: "off" });
-  test("a fresh steward session does not restore a revoked ticket", async ({
-    page,
-    browser,
-    baseURL,
-  }) => {
-    test.setTimeout(freshLoginWorkflowTimeout);
-    const revoked = await authenticateSteward(browser, baseURL);
-    const context = page.context();
-    await openAuthenticated(page, "Cases", revoked);
-    await logout(page);
-    const expectAuthenticated = async (expected: boolean) => {
-      const reply = await browserRequest(page, "/api/session");
-      expect(reply.status).toBe(200);
-      const sessionReply = reply.payload as ResponseByEndpoint["session"];
-      if (sessionReply.outcome.kind !== "SUCCEEDED") {
-        throw new Error("E2E_STEWARD_SESSION_RESPONSE_INVALID");
-      }
-      expect(sessionReply.outcome.data.authenticated).toBe(expected);
-    };
-    await context.addCookies(revoked);
-    await page.goto("/", {
-      waitUntil: "commit",
-    });
-    await expect(page.locator(".login-card h1")).toBeVisible();
-    await expectAuthenticated(false);
-    const fresh = await authenticateSteward(browser, baseURL);
-    await openAuthenticated(page, "Cases", fresh);
-    await expectAuthenticated(true);
-    await context.addCookies(revoked);
-    await page.goto("/", {
-      waitUntil: "commit",
-    });
-    await expect(page.locator(".login-card h1")).toBeVisible();
-    await expectAuthenticated(false);
+test("a fresh steward session does not restore a revoked ticket", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  const revoked = await authenticateSteward(browser, baseURL);
+  const context = page.context();
+  await openAuthenticated(page, "Cases", revoked);
+  await logout(page);
+  const expectAuthenticated = async (expected: boolean) => {
+    const reply = await browserRequest(page, "/api/session");
+    expect(reply.status).toBe(200);
+    const sessionReply = reply.payload as ResponseByEndpoint["session"];
+    if (sessionReply.outcome.kind !== "SUCCEEDED") {
+      throw new Error("E2E_STEWARD_SESSION_RESPONSE_INVALID");
+    }
+    expect(sessionReply.outcome.data.authenticated).toBe(expected);
+  };
+  await context.addCookies(revoked);
+  await page.goto("/", {
+    waitUntil: "commit",
   });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
+  const fresh = await authenticateSteward(browser, baseURL);
+  await openAuthenticated(page, "Cases", fresh);
+  await expectAuthenticated(true);
+  await context.addCookies(revoked);
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
 });
