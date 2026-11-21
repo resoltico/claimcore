@@ -145,8 +145,9 @@ is checked again when deletion runs. A confirmed result reports the number of st
 removed; an unconfirmed result reports no count. Do not repeat an unconfirmed request automatically:
 a later attempt can also end newer sessions.
 
-Identity-provider sessions, credentials and independent bearer tokens remain valid. Previously
-admitted work can finish; new sessions created after deletion commits may survive. Disabling and
+The two bulk actions affect ClaimCore browser tickets only. Identity-provider sessions, credentials
+and independent bearer tokens remain valid. Previously admitted work can finish, and sessions
+created after deletion commits may survive. Disabling and
 re-enabling an account never restores deleted tickets. See the [session lock and commit contract](operating.md#access-review-and-sessions).
 
 The CLI exposes the same nonledger commands:

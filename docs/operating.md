@@ -303,17 +303,18 @@ Hosts sharing the database, key ring and application identity can share sessions
 across hosts, though previously admitted work may finish. Session deadlines survive restart. Storage
 or key failures close authentication; inspect sanitized diagnostics.
 
-**End my ClaimCore browser sessions** in Settings deletes every stored browser ticket for the
-currently authenticated principal, including before registration or without roles. An Owner can use
-**End this person’s ClaimCore browser sessions** on the selected person's page. The application
-rechecks ManageAccess against its locked action state; a displayed control does not authorize a later
-request. Ordinary Sign out still ends only the current session.
+**End my ClaimCore browser sessions** in Settings or on the access screen deletes every stored
+browser ticket for the currently authenticated principal, including before registration or without
+roles. An Owner can use **End this person’s ClaimCore browser sessions** to delete every stored
+browser ticket for the selected person. The application rechecks ManageAccess against its locked
+action state before deletion. Both actions are limited to ClaimCore browser tickets.
+Identity-provider sessions, credentials and independent bearer tokens remain valid, and neither
+action creates a ledger operation.
 
-These actions do not end identity-provider sessions, revoke credentials or independent bearer tokens,
-or create ledger operations. Confirmed counts report deleted stored tickets, including expired ones
-that had not yet been pruned. An unconfirmed acknowledgement reports no count and is not retried
-automatically: repeating deletion could also end sessions created since the original attempt. Inspect
-the outcome before deliberately starting another request; there is no operation.get recovery record.
+Confirmed counts report deleted stored tickets, including expired ones that had not yet been
+pruned. Inspect an unconfirmed acknowledgement before deliberately starting another request.
+It reports no count, and repeating deletion could also end sessions created since the original
+attempt. These actions have no operation.get recovery record.
 
 Ordinary Sign out deletes the current browser ticket and sends the browser to the identity provider
 to end its session. The provider returns the browser to the signed-out page after logout. Complete
