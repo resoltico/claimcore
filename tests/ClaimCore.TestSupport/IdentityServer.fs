@@ -1,11 +1,13 @@
 module internal ClaimCore.TestSupport.IdentityServer
 
 open System
+open System.IO
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Text
 open System.Net.Http
 open System.Text.Json
+open System.Text.RegularExpressions
 open System.Threading
 open System.Threading.Tasks
 open DotNet.Testcontainers.Builders
@@ -72,7 +74,31 @@ let internal metadataMatches issuer (bytes: ReadOnlyMemory<byte>) =
     with :? JsonException ->
         false
 
+let private keycloakImage (lines: seq<string>) =
+    let stage =
+        Regex(
+            @"\A\s*FROM\s+(.+?)\s+AS\s+keycloak\s*\z",
+            RegexOptions.IgnoreCase
+            ||| RegexOptions.CultureInvariant
+            ||| RegexOptions.NonBacktracking
+        )
+
+    let pin =
+        @"\Aquay\.io/keycloak/keycloak:[A-Za-z0-9_][A-Za-z0-9_.-]*@sha256:[0-9a-f]{64}\z"
+
+    match lines |> Seq.map stage.Match |> Seq.filter _.Success |> Seq.tryExactlyOne with
+    | Some declaration when Regex.IsMatch(declaration.Groups[1].Value, pin) ->
+        declaration.Groups[1].Value
+    | _ ->
+        invalidOp
+            "deployment/Dockerfile must declare one digest-pinned Keycloak image in its keycloak stage."
+
 type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.Account list) =
+    let image =
+        Path.Combine(RepositoryRoot.find (), "deployment", "Dockerfile")
+        |> File.ReadLines
+        |> keycloakImage
+
     let realm: IdentityRealm.Definition =
         {
             Name = "synthetic"
@@ -92,9 +118,6 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
     let foreignSecret = secret ()
 
     let runId = Guid.NewGuid().ToString "N"
-
-    let image =
-        "quay.io/keycloak/keycloak:26.8.2@sha256:c68e286cacd87b942ac1939a0a1481461109d6acd3a57dc496969a319a76bbf0"
 
     let container =
         ContainerBuilder(image)

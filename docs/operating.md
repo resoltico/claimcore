@@ -16,7 +16,21 @@ files with `docker cp`. The human CLI is distributed separately.
 
 Choose one version from [GitHub Releases](https://github.com/resoltico/claimcore/releases). Use the
 server image digest from its notes and download `SOURCE.tar.gz` and the CLI archive for your platform.
-Check each download against its entry in the release's `SHA256SUMS` before extracting it.
+Verify the image and each downloaded archive against the release workflow before use. Authenticate
+GitHub CLI to GitHub and your Docker client to GHCR. Replace `IMAGE_SHA256` with the 64 hexadecimal
+digits from the release notes and select the CLI archive for your platform.
+
+```sh
+claimcore_release_workflow=resoltico/claimcore/.github/workflows/release.yml
+gh attestation verify oci://ghcr.io/resoltico/claimcore-server@sha256:IMAGE_SHA256 \
+  --repo resoltico/claimcore --signer-workflow "$claimcore_release_workflow"
+gh attestation verify SOURCE.tar.gz \
+  --repo resoltico/claimcore --signer-workflow "$claimcore_release_workflow"
+gh attestation verify claimcore-cli-linux-x64.tar.gz \
+  --repo resoltico/claimcore --signer-workflow "$claimcore_release_workflow"
+```
+
+Check each archive against its entry in the release's `SHA256SUMS` before extracting it.
 
 | Platform | CLI archive |
 | --- | --- |

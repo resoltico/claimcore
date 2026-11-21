@@ -304,6 +304,14 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
+
+[Dependabot](../.github/dependabot.yml) checks the deployment Dockerfile and both Compose files.
+The Keycloak fixture reads its image pin from the Dockerfile's `keycloak` stage. Update the
+[Mailpit fixture](../tests/ClaimCore.TestSupport/MailpitFixture.fs) and
+[actionlint](../eng/verify.sh) image pins by hand. When Dependabot proposes a PostgreSQL image
+update, update both Compose files and [the PostgreSQL baseline](../db/postgresql-baseline.json)
+together. CI checks those pins against the baseline.
+
 [The React Aria source repair](../web/scripts/patch-react-aria.mjs) checks the locked package before
 Vite builds the workspace. Review it when updating React Aria and run the Chromium Trusted Types
 acceptance checks. The workspace policy requires Trusted Types and disallows creating policies.
@@ -337,8 +345,10 @@ gh workflow run release.yml --ref main -f tag="$claimcore_release_tag" -f expect
 ```
 
 Publication checks the annotated tag, expected SHA, main-branch CI evidence and all offered translations.
-Confirm the workflow succeeded and the public release contains the dated changelog section, the
-archive checksums and the server image digest. For a new GHCR package, set visibility to Public
+The tag must match the commit on `main` when publication is dispatched, because the attestation
+identifies that commit. Confirm the workflow succeeded and the public release contains the dated
+changelog section, archive checksums and server image digest. Verify the image and archive
+attestations using the [release installation instructions](operating.md#install-from-release-artifacts). For a new GHCR package, set visibility to Public
 after publication. Verify an anonymous pull of the recorded digest with an empty Docker client
 configuration. [GitHub personal-account package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account).
 Keep public reports free of private inputs.
