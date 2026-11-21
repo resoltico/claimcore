@@ -121,7 +121,7 @@ let private services (builder: WebApplicationBuilder) sessions =
     builder.Services.AddAuthorization() |> ignore
     RateLimits.configure limits builder.Services
 
-let private pipeline assets (application: WebApplication) sink readiness =
+let private pipeline files (application: WebApplication) sink readiness =
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(fun context next ->
             context.Connection.RemoteIpAddress <- IPAddress.Loopback
@@ -141,7 +141,7 @@ let private pipeline assets (application: WebApplication) sink readiness =
     )
     |> ignore
 
-    let publicFiles = HostRoutes.publicAssets assets application
+    let publicFiles = HostRoutes.publicAssets files application
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
@@ -195,8 +195,20 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
 
     File.WriteAllBytes(Path.Combine(directory, "attachment-preview.viewer"), html)
 
+    let documents =
+        [
+            "index.html", "<!doctype html><title>Synthetic ClaimCore</title>"
+            "auth-recovery.html", "<!doctype html><main>Synthetic recovery</main>"
+            "LICENSE.txt", "Synthetic license"
+            "PROJECT-NOTICE.md", "# Synthetic project notice"
+            "LICENSE-COMMERCIAL.md", "# Synthetic commercial notice"
+            "THIRD-PARTY-NOTICES.txt", "Synthetic dependency notices"
+            "SOURCE.tar.gz", "Synthetic source bytes"
+        ]
+        |> List.map (fun (path, text) -> path, Encoding.UTF8.GetBytes text)
+
     let assets =
-        buildAssets
+        documents @ buildAssets
         |> Map.ofList
         |> Map.toList
         |> List.map (fun (path, bytes) ->
@@ -244,11 +256,6 @@ type Host
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     do
-        File.WriteAllText(
-            Path.Combine(assets, "index.html"),
-            "<!doctype html><title>Synthetic ClaimCore</title>"
-        )
-
         let inventory =
             (Directory.GetFiles(Path.Combine(RepositoryRoot.find (), "web", "locales"), "*.json")
              |> Array.map (fun path -> "locales/" + Path.GetFileName path, File.ReadAllBytes path)
@@ -258,14 +265,15 @@ type Host
         publishedInventory assets inventory
         services builder sessions
 
+    let files = PublicAssets.Inventory assets
     let application = builder.Build()
 
     do
-        pipeline assets application sink (fun () -> Task.FromResult ready)
+        pipeline files application sink (fun () -> Task.FromResult ready)
         application.MapPost("/__test/login", RequestDelegate login) |> ignore
 
         HostRoutes.map
-            assets
+            files
             (configuration certificate)
             (if forActor.IsSome then
                  ClaimCore.Server.ApiRoutes.route

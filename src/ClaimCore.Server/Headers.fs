@@ -25,12 +25,42 @@ module HttpHeaders =
         + "base-uri 'none'; frame-ancestors 'none'; frame-src "
         + frameSource
         + "; form-action 'self'; "
-        + "manifest-src 'self'; media-src 'none'; worker-src 'none'"
+        + "manifest-src 'self'; media-src 'none'; worker-src 'none'; "
+        + "require-trusted-types-for 'script'; trusted-types 'none'"
 
     let private viewerPolicy scriptHash styleHash =
         $"sandbox allow-scripts; default-src 'none'; script-src 'sha256-{scriptHash}' 'wasm-unsafe-eval'; "
         + $"style-src 'sha256-{styleHash}'; img-src blob: data:; connect-src 'none'; "
         + "worker-src blob:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"
+
+    let private permissionsPolicy =
+        [
+            "accelerometer=()"
+            "ambient-light-sensor=()"
+            "autoplay=()"
+            "bluetooth=()"
+            "browsing-topics=()"
+            "camera=()"
+            "clipboard-read=()"
+            "display-capture=()"
+            "encrypted-media=()"
+            "geolocation=()"
+            "gyroscope=()"
+            "hid=()"
+            "idle-detection=()"
+            "local-fonts=()"
+            "magnetometer=()"
+            "microphone=()"
+            "midi=()"
+            "payment=()"
+            "publickey-credentials-create=()"
+            "publickey-credentials-get=()"
+            "screen-wake-lock=()"
+            "serial=()"
+            "usb=()"
+            "xr-spatial-tracking=()"
+        ]
+        |> String.concat ", "
 
     let internal apply (origin: Uri) (context: HttpContext) =
         let headers = context.Response.Headers
@@ -56,7 +86,8 @@ module HttpHeaders =
 
         headers.XContentTypeOptions <- "nosniff"
         headers.["Referrer-Policy"] <- "no-referrer"
-        headers.["Permissions-Policy"] <- "camera=(), geolocation=(), microphone=(), payment=()"
+        headers.["Strict-Transport-Security"] <- "max-age=31536000"
+        headers.["Permissions-Policy"] <- permissionsPolicy
         headers.["Cross-Origin-Opener-Policy"] <- "same-origin"
         headers.["Cross-Origin-Resource-Policy"] <- "same-origin"
         headers.["X-Robots-Tag"] <- "noindex, nofollow"

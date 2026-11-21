@@ -8,7 +8,7 @@ import {
   noCaseWorkspace,
   opaqueCaseRefusal,
 } from "./narrow-role-oracles";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   openAuthenticated,
   authenticateSteward,

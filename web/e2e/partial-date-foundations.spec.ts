@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator } from "./fixtures";
 import { observeRuntime, seed } from "./presentation-probe";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { ui } from "./localization-support";

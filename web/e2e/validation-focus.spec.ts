@@ -1,7 +1,7 @@
 import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { startOpen } from "./case-workflow";
 import {

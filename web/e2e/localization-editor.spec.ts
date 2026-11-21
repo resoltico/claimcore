@@ -5,7 +5,7 @@ import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, humanFormatIssues } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,

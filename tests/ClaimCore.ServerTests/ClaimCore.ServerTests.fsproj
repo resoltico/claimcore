@@ -23,6 +23,7 @@
     <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="OidcLiveKeys.fs" />
     <Compile Include="OidcLiveTokens.fs" />
+    <Compile Include="SecurityHeaderTests.fs" />
     <Compile Include="OidcLiveBrowser.fs" />
     <Compile Include="OidcLiveApi.fs" />
     <Compile Include="OidcHostFixture.fs" />

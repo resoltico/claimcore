@@ -2,7 +2,7 @@ import { expectCaseReadsSettled } from "./case-readiness";
 import { join } from "node:path";
 import { matrixEvidenceDirectory } from "./design-matrix-checks";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { noHorizontalOverflow } from "./layout-support";

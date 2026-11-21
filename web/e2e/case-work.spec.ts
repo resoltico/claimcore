@@ -1,7 +1,7 @@
 import type { ResponseFor } from "@contracts/client";
 import { recordWorkReview, workRequest } from "./work-workflow";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { openCase, recordReviewed, reviewDraft, startAct } from "./case-workflow";
 import {
   browserRequest,

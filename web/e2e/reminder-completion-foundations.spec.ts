@@ -11,7 +11,7 @@ import { humanReviewEnvelope } from "../tests/support/human-review-response.fixt
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { writeFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { expectAccessible } from "./session-helpers";
 import { casePath } from "../src/routing/routes";

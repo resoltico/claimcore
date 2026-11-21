@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { syntheticPdf } from "./attachment-pdf-fixtures";
 import { uploadAttachment } from "./attachment-workflow";
 import { openCase } from "./case-workflow";

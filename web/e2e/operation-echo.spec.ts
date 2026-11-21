@@ -1,6 +1,6 @@
 import { type ResponseByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { operationId } from "../src/operation/operationId";
 import { startOpen } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { selectLanguage } from "./localization-support";

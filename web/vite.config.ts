@@ -6,6 +6,12 @@ import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import type { InlineConfig } from "vitest/node";
 import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
+import {
+  patchReactAriaLiveAnnouncer,
+  reactAriaLiveAnnouncerBanner,
+} from "./scripts/patch-react-aria.mjs";
+
+patchReactAriaLiveAnnouncer();
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
@@ -30,6 +36,7 @@ export default {
         recovery: fileURLToPath(new URL("./auth-recovery.html", import.meta.url)),
       },
       output: {
+        postBanner: reactAriaLiveAnnouncerBanner,
         codeSplitting: {
           groups: [{ name: "workspace", test: /\/web\/src\//u, entriesAware: true }],
         },

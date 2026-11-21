@@ -2,7 +2,7 @@ import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";

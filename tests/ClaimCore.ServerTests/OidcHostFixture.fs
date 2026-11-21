@@ -102,6 +102,7 @@ type Host
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
     do TestServerFixture.publishedInventory assets []
+    let files = PublicAssets.Inventory assets
 
     let builder =
         stage "host builder"
@@ -113,6 +114,7 @@ type Host
     do
         stage "host services"
         configure configuration root idToken builder
+        builder.Services.AddSingleton files |> ignore
 
     let application =
         stage "host build"
@@ -136,7 +138,7 @@ type Host
         application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
         |> ignore
 
-        HostRoutes.publicAssets assets application |> ignore
+        HostRoutes.publicAssets files application |> ignore
         RateLimits.authentication application
         application.UseRateLimiter() |> ignore
         application.UseAuthorization() |> ignore
@@ -150,7 +152,7 @@ type Host
         stage "host routes"
 
         HostRoutes.map
-            assets
+            files
             web
             (defaultArg handlers ClaimCore.Server.ApiRoutes.route)
             (fun principal action ->

@@ -1,7 +1,7 @@
 import { type ResponseFor } from "@contracts/client";
 import { fillBusinessField } from "./typed-entry";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { startOpen } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { trackForegroundRequests } from "./localization-support";

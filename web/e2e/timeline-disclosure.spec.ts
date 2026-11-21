@@ -2,7 +2,7 @@ import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
 

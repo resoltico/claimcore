@@ -4,7 +4,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page, type BrowserContext } from "@playwright/test";
+import { expect, test, type Page, type BrowserContext } from "./fixtures";
 
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {

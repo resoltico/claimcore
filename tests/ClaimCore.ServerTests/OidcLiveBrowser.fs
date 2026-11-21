@@ -173,6 +173,7 @@ let login (local: HttpClient) (identity: HttpClient) (credentials: JsonElement) 
         stage "challenge"
         use! challenge = local.GetAsync("/auth/login")
         requireStatus 302 challenge
+        SecurityHeaderTests.assertPolicies "the OIDC challenge redirect" challenge
         let authorize = location challenge
 
         if

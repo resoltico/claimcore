@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expectAccessible, expectHostFailure, login, progress } from "./session-helpers";

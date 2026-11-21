@@ -199,7 +199,7 @@ let internal configuredBuilder
     builder
 
 let private configureRoutes
-    assets
+    (files: PublicAssets.Inventory)
     (configuration: WebConfiguration)
     (runtime: IRuntime)
     (application: WebApplication)
@@ -224,7 +224,7 @@ let private configureRoutes
     )
     |> ignore
 
-    let publicFiles = HostRoutes.publicAssets assets application
+    let publicFiles = HostRoutes.publicAssets files application
 
     let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
 
@@ -243,7 +243,7 @@ let private configureRoutes
     application.UseAuthorization() |> ignore
 
     HostRoutes.map
-        assets
+        publicFiles
         configuration
         ClaimCore.Server.ApiRoutes.route
         (fun principal action -> runtime.WithActor(principal, action))
@@ -307,6 +307,7 @@ let private runAsync (ct: CancellationToken) =
         do! verifyOidcMetadata oidc ct
 
         let assets = assetDirectory ()
+        let files = PublicAssets.Inventory assets
 
         let! runtime = openRuntime configuration ct
 
@@ -315,8 +316,9 @@ let private runAsync (ct: CancellationToken) =
                 try
                     ct.ThrowIfCancellationRequested()
                     let builder = configuredBuilder assets configuration oidc runtime
+                    builder.Services.AddSingleton files |> ignore
                     use application = builder.Build()
-                    configureRoutes assets configuration runtime application
+                    configureRoutes files configuration runtime application
 
                     Console.WriteLine(
                         "ClaimCore Web login URL: "

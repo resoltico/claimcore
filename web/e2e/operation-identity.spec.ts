@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { reviewDraft, startOpen } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";

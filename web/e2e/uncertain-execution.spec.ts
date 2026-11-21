@@ -3,7 +3,7 @@ import { acceptedSubject, observedAccess } from "./work-workflow";
 import type { ResponseFor, HumanDocument } from "@contracts/client";
 import { settingsNavigation } from "./localization-support";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated } from "./session-helpers";
 import { openCase, startClose, reviewDraft } from "./case-workflow";
 const dropFirstReply = async (

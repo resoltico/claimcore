@@ -2,7 +2,7 @@ import { fillNamedField } from "./typed-entry";
 import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { startOpen, reviewDraft, recordReviewed } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 

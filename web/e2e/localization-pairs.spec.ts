@@ -1,6 +1,6 @@
 import { pseudolocalizeLiteral } from "../src/presentation/templates";
 import { showAccountActions } from "./workspace-navigation";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openApplication, openAuthenticated } from "./session-helpers";
 import {
   expectPreferences,

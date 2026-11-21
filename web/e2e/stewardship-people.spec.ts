@@ -10,7 +10,7 @@ import { type Language, defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openCase, startAct, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,

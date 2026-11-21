@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import type { ResponseFor } from "@contracts/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, startOpen } from "./case-workflow";

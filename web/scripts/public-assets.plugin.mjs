@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile, readdir, mkdir, copyFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { writeAttachmentViewer } from "./attachment-viewer.mjs";
+import { writeLegalAssets } from "./generate-third-party-notices.mjs";
 
 /** Inventory only actual bundler outputs, after their final bytes have been written.
  * @returns {import("vite").Plugin}
@@ -26,9 +27,11 @@ export default function publicAssets() {
           ),
         ),
       );
+      const legalFiles = writeLegalAssets(directory);
       const entries = [
         ...Object.values(bundle).filter((entry) => entry.fileName.startsWith("assets/")),
         { fileName: "react-aria-pressable.css" },
+        ...["index.html", "auth-recovery.html", ...legalFiles].map((fileName) => ({ fileName })),
         ...catalogFiles.map((name) => ({ fileName: `locales/${name}` })),
       ];
       const assets = await Promise.all(

@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { test as base } from "@playwright/test";
+import { test as base } from "./fixtures";
 
 type RedirectEvidence = Readonly<{ originals: number; destinations: number; reply?: unknown }>;
 type RedirectResponse = Readonly<{

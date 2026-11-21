@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 
 import { openCase } from "./case-workflow";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import {
   noHorizontalOverflow,

@@ -3,7 +3,7 @@ import { selectedActor, applyPeople } from "./people-setup";
 import { prefixedInputs } from "../tests/support/submission-inputs";
 import type { RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft } from "./case-workflow";
 import { acceptedSubject, workRequest } from "./work-workflow";
