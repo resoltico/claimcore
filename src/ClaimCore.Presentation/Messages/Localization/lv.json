@@ -1363,6 +1363,122 @@
     "text": "Īpašniekam jāuzņem šis konts, pirms tas var piekļūt ClaimCore.",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "Piekļuves un eksporta žurnāls",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "Pārskatiet reģistrētās piekļuves, eksportus un atteikumus.",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "Skatīt piekļuves un eksporta žurnālu",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "Lietas skatīšana",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "Pielikuma lejupielāde",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "Pielikuma priekšskatīšana",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "Eksports",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "Piekļuves un eksporta žurnāla skatīšana",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "Piekļuve atteikta",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "Izdevās",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "Atteikts",
+    "source": "66b873543aeb"
+  },
+  "input.disclosureKind.label": {
+    "text": "Notikuma veids",
+    "source": "7e047de1d852"
+  },
+  "input.disclosureKind.hint": {
+    "text": "Atlasiet notikuma veidu, lai filtrētu žurnālu.",
+    "source": "c3a76737f118"
+  },
+  "input.disclosureKind.rule": {
+    "text": "Izmantojiet derīgu izpaušanas notikuma veidu.",
+    "source": "164fcd0efd4a"
+  },
+  "input.disclosureCaseId.label": {
+    "text": "Lietas ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.disclosureCaseId.hint": {
+    "text": "Ievadiet lietas ID, lai filtrētu žurnālu.",
+    "source": "d23a16269a61"
+  },
+  "input.disclosureCaseId.rule": {
+    "text": "Ievadiet lietas ID UUID formātā.",
+    "source": "172a4f1fca6b"
+  },
+  "input.disclosureFrom.label": {
+    "text": "No (ieskaitot)",
+    "source": "0186c425ca2e"
+  },
+  "input.disclosureFrom.hint": {
+    "text": "Izmantojiet UTC ar sešām ciparzīmēm sekundes daļā, piemēram, 2026-11-21T09:30:00.000000Z.",
+    "source": "e36c1c702d68"
+  },
+  "input.disclosureFrom.rule": {
+    "text": "Izmantojiet UTC laiku, kas nav vēlāks par diapazona beigām.",
+    "source": "406c5d1a2c26"
+  },
+  "input.disclosureUntil.label": {
+    "text": "Līdz (neieskaitot)",
+    "source": "fac51096ac56"
+  },
+  "input.disclosureUntil.hint": {
+    "text": "Ievadiet diapazona beigas UTC ar sešām ciparzīmēm sekundes daļā.",
+    "source": "747373b6c910"
+  },
+  "input.disclosureUntil.rule": {
+    "text": "Izmantojiet UTC laiku, kas nav agrāks par diapazona sākumu.",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "Visi notikumu veidi",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "Iznākums",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "Eksporta vaicājums",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "Eksporta atlase",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "Eksportētās rindas",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "Nav atbilstošu reģistrētu notikumu.",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "Piekļuves pieprasījumi",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "Skata lietas un to pilnu vēsturi. Ar šo lomu visām lietām skata arī personas un piekļuvi. Nevar neko mainīt.",
-    "source": "5c16effd2666"
+    "text": "Skata lietas un to pilnu vēsturi. Ar šo lomu visām lietām skata arī personas, piekļuvi un piekļuves un eksporta žurnālu. Nevar neko mainīt.",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "Atbildība par lietu piešķirta: {person}",

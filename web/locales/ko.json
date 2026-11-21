@@ -311,6 +311,14 @@
     "text": "청구 건 더 불러오기",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "기록 새로고침",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "이벤트 더 불러오기",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "활동 더 불러오기",
     "source": "e3f0587b4839"

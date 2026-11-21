@@ -19,6 +19,7 @@
   "cli.failure.INVALID_RESPONSE": "The service response is invalid.",
   "cli.failure.RECOVERY_UNAVAILABLE": "Not sent: the local record of unconfirmed changes cannot be saved. Check free space and permissions for the configured recovery state directory, then try again.",
   "cli.failure.SERVICE_UNAVAILABLE": "The service is unavailable.",
+  "cli.family.disclosure": "View the access and export log.",
   "cli.family.people": "People and access",
   "cli.family.call": "Send one structured request.",
   "cli.family.case": "Case facts and decisions",

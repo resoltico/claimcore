@@ -79,6 +79,10 @@
     "text": "الخدمة غير متاحة.",
     "source": "6468ac9f9bca"
   },
+  "cli.family.disclosure": {
+    "text": "عرض سجل الوصول والتصدير.",
+    "source": "370be36fbfc0"
+  },
   "cli.family.people": {
     "text": "الأشخاص والوصول",
     "source": "1e133caaec46"

@@ -73,6 +73,8 @@ module internal Housekeeping =
                             [| box oldest |]
                             token
 
+                    let! _ = DisclosureStorage.prune connection instant token
+
                     do! DatabaseSession.commit transaction token
 
                     return

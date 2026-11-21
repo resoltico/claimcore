@@ -87,6 +87,7 @@
     <Compile Include="ReminderSelectionResultTests.fs" />
     <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />
+    <Compile Include="DisclosureReadTests.fs" />
     <Compile Include="TimelineStorageTests.fs" />
     <Compile Include="TimelineQueryTests.fs" />
     <Compile Include="RevisionConflictTests.fs" />

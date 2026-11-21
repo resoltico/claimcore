@@ -26,7 +26,7 @@ module internal AttachmentReads =
                 |> DatabaseSession.admitted Sequence.create
         }
 
-    let private withReadable (services: ServiceContext) target token read =
+    let private withReadable (services: ServiceContext) target token capture read =
         task {
             match CaseRecords.validateSelector target with
             | Error refusal -> return! RequestRefusals.read services token refusal
@@ -40,24 +40,29 @@ module internal AttachmentReads =
                                     task {
                                         let! view = CaseReadContext.load services tx target
 
-                                        match view.Case with
-                                        | Some parent when
-                                            AttachmentAccess.read
-                                                services.Principal
-                                                view.Actor
-                                                parent.Snapshot
-                                            |> Result.isOk
-                                            ->
-                                            return! read tx view parent
-                                        | _ -> return QueryResults.unavailable
+                                        let! outcome =
+                                            match view.Case with
+                                            | Some parent when
+                                                AttachmentAccess.read
+                                                    services.Principal
+                                                    view.Actor
+                                                    parent.Snapshot
+                                                |> Result.isOk
+                                                ->
+                                                read tx view parent
+                                            | _ ->
+                                                System.Threading.Tasks.Task.FromResult
+                                                    QueryResults.unavailable
+
+                                        return capture view outcome
                                     }
                         }
 
-                return QueryResults.readResult result
+                return! DisclosureReads.complete services token result
         }
 
     let page (services: ServiceContext) target token =
-        withReadable services target token (fun tx view parent ->
+        withReadable services target token (fun _ outcome -> outcome, None) (fun tx view parent ->
             task {
                 let! changes = AttachmentStorage.list tx parent.CaseId
                 let! basis = disclosure tx parent.CaseId
@@ -118,8 +123,26 @@ module internal AttachmentReads =
                     |> Outcome.ofResult
             })
 
-    let content preview services (request: AttachmentReadRequest) token =
-        withReadable services request.Target token (fun tx view parent ->
+    let content preview (services: ServiceContext) (request: AttachmentReadRequest) token =
+        let kind =
+            if preview then
+                DisclosureKind.AttachmentPreview
+            else
+                DisclosureKind.AttachmentDownload
+
+        let capture (view: CaseReadFacts) outcome =
+            let caseId =
+                DisclosureReads.target request.Target (view.Case |> Option.map _.CaseId)
+
+            DisclosureReads.observe
+                services.Principal
+                view.Actor
+                kind
+                caseId
+                (Some request.AttachmentId)
+                outcome
+
+        withReadable services request.Target token capture (fun tx view parent ->
             task {
                 let! current = AttachmentStorage.current tx parent.CaseId request.AttachmentId
 

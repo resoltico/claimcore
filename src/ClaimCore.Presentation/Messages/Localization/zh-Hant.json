@@ -1363,6 +1363,122 @@
     "text": "所有者需要先批准加入此帳戶，才能存取 ClaimCore。",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "存取和匯出日誌",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "檢視已記錄的存取、匯出和拒絕。",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "檢視存取和匯出日誌",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "案件讀取",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "附件下載",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "附件預覽",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "匯出",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "存取和匯出日誌讀取",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "存取遭拒",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "成功",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "已拒絕",
+    "source": "66b873543aeb"
+  },
+  "input.disclosureKind.label": {
+    "text": "事件類型",
+    "source": "7e047de1d852"
+  },
+  "input.disclosureKind.hint": {
+    "text": "選擇事件類型以篩選日誌。",
+    "source": "c3a76737f118"
+  },
+  "input.disclosureKind.rule": {
+    "text": "請使用受支援的揭露事件類型。",
+    "source": "164fcd0efd4a"
+  },
+  "input.disclosureCaseId.label": {
+    "text": "案件 ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.disclosureCaseId.hint": {
+    "text": "輸入案件 ID 以篩選日誌。",
+    "source": "d23a16269a61"
+  },
+  "input.disclosureCaseId.rule": {
+    "text": "請以 UUID 格式輸入案件 ID。",
+    "source": "172a4f1fca6b"
+  },
+  "input.disclosureFrom.label": {
+    "text": "起始（含）",
+    "source": "0186c425ca2e"
+  },
+  "input.disclosureFrom.hint": {
+    "text": "請使用帶六位小數秒的 UTC，例如 2026-11-21T09:30:00.000000Z。",
+    "source": "e36c1c702d68"
+  },
+  "input.disclosureFrom.rule": {
+    "text": "請使用不晚於範圍結束時間的 UTC 時刻。",
+    "source": "406c5d1a2c26"
+  },
+  "input.disclosureUntil.label": {
+    "text": "結束（不含）",
+    "source": "fac51096ac56"
+  },
+  "input.disclosureUntil.hint": {
+    "text": "請以帶六位小數秒的 UTC 輸入範圍結束時間。",
+    "source": "747373b6c910"
+  },
+  "input.disclosureUntil.rule": {
+    "text": "請使用不早於範圍開始時間的 UTC 時刻。",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "所有事件類型",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "結果",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "匯出查詢",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "匯出選項",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "匯出列數",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "沒有相符的已記錄事件。",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "存取申請",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "查看案件及其完整歷史記錄。擁有此角色的所有案件權限時，還可查看人員和存取權限。不能更改任何內容。",
-    "source": "5c16effd2666"
+    "text": "查看案件及其完整歷史記錄。擁有此角色的所有案件權限時，還可查看人員、存取權限和存取和匯出日誌。不能更改任何內容。",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "已指定 {person} 負責",

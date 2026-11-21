@@ -35,6 +35,8 @@ type private HeldReads(storage: IStore) =
     member _.Reads = Volatile.Read(&reads)
 
     interface IStore with
+        member _.RecordDisclosure(event, token) = storage.RecordDisclosure(event, token)
+
         member _.Context operation =
             task {
                 let count = Interlocked.Increment(&reads)
@@ -209,6 +211,9 @@ let private confirmationBudget () =
             fixture.Actor principal
             |> Service.mapStore (fun storage ->
                 { new IStore with
+                    member _.RecordDisclosure(event, token) =
+                        storage.RecordDisclosure(event, token)
+
                     member _.Context query = storage.Context query
                     member _.Read operation = storage.Read operation
 

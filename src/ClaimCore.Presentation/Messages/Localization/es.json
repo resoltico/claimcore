@@ -1363,6 +1363,122 @@
     "text": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "Registro de acceso y exportación",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "Revise los accesos, las exportaciones y las denegaciones registrados.",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "Ver el registro de acceso y exportación",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "Consulta de expediente",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "Descarga de adjunto",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "Vista previa de adjunto",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "Exportación",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "Consulta del registro de acceso y exportación",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "Acceso denegado",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "Correcto",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "Denegado",
+    "source": "66b873543aeb"
+  },
+  "input.disclosureKind.label": {
+    "text": "Tipo de evento",
+    "source": "7e047de1d852"
+  },
+  "input.disclosureKind.hint": {
+    "text": "Elija un tipo de evento para filtrar el registro.",
+    "source": "c3a76737f118"
+  },
+  "input.disclosureKind.rule": {
+    "text": "Use un tipo de evento de divulgación reconocido.",
+    "source": "164fcd0efd4a"
+  },
+  "input.disclosureCaseId.label": {
+    "text": "ID de expediente",
+    "source": "e0aed7cf64e8"
+  },
+  "input.disclosureCaseId.hint": {
+    "text": "Introduzca el ID de expediente para filtrar el registro.",
+    "source": "d23a16269a61"
+  },
+  "input.disclosureCaseId.rule": {
+    "text": "Introduzca un ID de expediente en formato UUID.",
+    "source": "172a4f1fca6b"
+  },
+  "input.disclosureFrom.label": {
+    "text": "Desde (inclusive)",
+    "source": "0186c425ca2e"
+  },
+  "input.disclosureFrom.hint": {
+    "text": "Use UTC con seis decimales de segundo, por ejemplo 2026-11-21T09:30:00.000000Z.",
+    "source": "e36c1c702d68"
+  },
+  "input.disclosureFrom.rule": {
+    "text": "Use un instante UTC anterior o igual al final del intervalo.",
+    "source": "406c5d1a2c26"
+  },
+  "input.disclosureUntil.label": {
+    "text": "Hasta (exclusive)",
+    "source": "fac51096ac56"
+  },
+  "input.disclosureUntil.hint": {
+    "text": "Introduzca el final del intervalo en UTC con seis decimales de segundo.",
+    "source": "747373b6c910"
+  },
+  "input.disclosureUntil.rule": {
+    "text": "Use un instante UTC posterior o igual al inicio del intervalo.",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "Todos los tipos de evento",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "Resultado",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "Consulta de exportación",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "Selección de exportación",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "Filas exportadas",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "No hay eventos registrados que coincidan.",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "Solicitudes de acceso",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "Ve expedientes y su historial completo. Con este rol para todos los expedientes, también ve personas y acceso. No puede cambiar nada.",
-    "source": "5c16effd2666"
+    "text": "Ve expedientes y su historial completo. Con este rol para todos los expedientes, también ve personas, acceso y el registro de acceso y exportación. No puede cambiar nada.",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "Se asignó la responsabilidad a {person}",

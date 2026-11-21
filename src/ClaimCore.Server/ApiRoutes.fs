@@ -88,6 +88,11 @@ module internal ApiRoutes =
                 Api.peopleRequests
                 HumanReadDocuments.requests
                 Service.accessRequests
+        | ActorEndpoint.Query QueryTaskId.DisclosureTrail ->
+            Route.representedRead
+                Api.disclosureTrail
+                HumanReadDocuments.disclosureTrail
+                Service.disclosureTrail
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             Route.representedRead
                 Api.peopleRequestsDismiss

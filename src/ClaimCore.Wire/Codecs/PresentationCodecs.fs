@@ -126,6 +126,8 @@ module PresentationCodecs =
             codeVariant many Role.vocabulary
             codeVariant many ScopeKind.vocabulary
             codeVariant many Capability.vocabulary
+            codeVariant many DisclosureKind.vocabulary
+            codeVariant many DisclosureOutcome.vocabulary
             codeVariant many ReminderState.vocabulary
             codeVariant many PresentedBoolean.vocabulary
             codeVariant many CorrectionGroupAction.vocabulary
@@ -502,6 +504,13 @@ module PresentationCodecs =
                     | Link.PeopleRequests value -> Some value
                     | _ -> None)
                     RequestCodecs.accessRequestsRequest
+                query
+                    QueryTaskId.DisclosureTrail
+                    Link.DisclosureTrail
+                    (function
+                    | Link.DisclosureTrail value -> Some value
+                    | _ -> None)
+                    RequestCodecs.disclosureTrailRequest
             ]
             |> Map.ofList
 

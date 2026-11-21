@@ -1,5 +1,6 @@
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expect, test, type Page, type Response } from "./fixtures";
+import { expect, test, type Page } from "./fixtures";
+import type { APIResponse } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { recoveryRecords } from "./recovery-storage";
@@ -121,7 +122,7 @@ const expectAnonymousSession = async (page: Page) => {
 };
 
 const checkSignOutLocation = async (
-  reply: Response,
+  reply: APIResponse,
   providerRequest: string,
   landing: URL,
   cookies: string,
@@ -142,7 +143,7 @@ const checkSignOutLocation = async (
   expect(reply.headers()["referrer-policy"]).toBe("no-referrer");
   const otherBody = { ...payload, outcome: { ...payload.outcome, data: otherData } };
   expect(JSON.stringify(otherBody).includes(hint)).toBe(false);
-  expect(JSON.stringify(await reply.headersArray()).includes(hint)).toBe(false);
+  expect(JSON.stringify(reply.headersArray()).includes(hint)).toBe(false);
   expect(cookies.includes(hint)).toBe(false);
 };
 
@@ -176,8 +177,23 @@ test("signs out of ClaimCore and Keycloak before asking for credentials again @e
   const endpoint = new URL(`${issuer}/protocol/openid-connect/logout`);
   const before = await page.context().cookies();
   expect(before.some((cookie) => cookie.name === "KEYCLOAK_IDENTITY")).toBe(true);
+  // Capture the network reply independently of the document WebKit unloads on sign-out.
+  const captured = Promise.withResolvers<APIResponse>();
+  await page.route(
+    (url) => url.origin === landing.origin && url.pathname === "/api/session.logout",
+    async (route) => {
+      try {
+        const response = await route.fetch({ maxRedirects: 0 });
+        await route.fulfill({ response });
+        captured.resolve(response);
+      } catch {
+        captured.reject(new Error("The Sign out reply could not be captured."));
+      }
+    },
+    { times: 1 },
+  );
   const [reply, endSession] = await Promise.all([
-    logout(page),
+    captured.promise,
     page.waitForRequest((request) => {
       const url = new URL(request.url());
       return (
@@ -187,6 +203,7 @@ test("signs out of ClaimCore and Keycloak before asking for credentials again @e
         url.pathname === endpoint.pathname
       );
     }),
+    logout(page),
   ]);
   const after = await page.context().cookies();
   expect(after.some((cookie) => cookie.name === "KEYCLOAK_IDENTITY")).toBe(false);

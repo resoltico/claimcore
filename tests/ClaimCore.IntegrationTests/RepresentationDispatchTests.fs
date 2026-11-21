@@ -57,6 +57,9 @@ let private dispatch () =
 
         let observed =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
 
                 member _.Read query =

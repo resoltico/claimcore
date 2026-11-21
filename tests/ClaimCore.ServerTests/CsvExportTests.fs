@@ -14,11 +14,12 @@ open ClaimCore.Server
 
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 
-let private page text count next =
+let private page records count next =
     Ok
         {
-            ExportPage.Chunks = Seq.singleton (bytes text)
+            ExportPage.Rows = records |> Seq.map bytes
             ItemCount = count
+            CaseId = None
             NextCursor = next
         }
 
@@ -53,21 +54,41 @@ let tests =
             testCaseAsync
                 "empty authorized selection is header-only and starts without a cursor"
                 (async {
-                    let! result, requests = run 100 [ page "" 0 None ] |> Async.AwaitTask
-                    Expect.equal result (Ok(bytes "header\r\n")) "Complete header-only file"
+                    let! result, requests = run 100 [ page [] 0 None ] |> Async.AwaitTask
+
+                    Expect.equal
+                        result
+                        (Ok
+                            {
+                                Bytes = bytes "header\r\n"
+                                RowCount = 0
+                                CaseId = None
+                            })
+                        "Complete header-only file with zero data rows"
+
                     Expect.equal requests [ None ] "Fresh traversal"
                 })
             testCaseAsync
                 "pages retain order and count encoded expansion rather than source items"
                 (async {
                     let! result, requests =
-                        run 100 [ page "a,b\r\n" 1 (Some "next"); page "c,d\r\ne,f\r\n" 1 None ]
+                        run
+                            100
+                            [
+                                page [ "a,b\r\n" ] 1 (Some "next")
+                                page [ "c,d\r\n"; "e,f\r\n" ] 1 None
+                            ]
                         |> Async.AwaitTask
 
                     Expect.equal
                         result
-                        (Ok(bytes "header\r\na,b\r\nc,d\r\ne,f\r\n"))
-                        "All expanded rows"
+                        (Ok
+                            {
+                                Bytes = bytes "header\r\na,b\r\nc,d\r\ne,f\r\n"
+                                RowCount = 3
+                                CaseId = None
+                            })
+                        "All expanded rows counted independently of source item count"
 
                     Expect.equal requests [ None; Some "next" ] "Continuation from core only"
                 })
@@ -77,7 +98,7 @@ let tests =
                     let failure = ExportFailure.Failed CoreFault.StoreUnavailable
 
                     let! result, _ =
-                        run 100 [ page "first\r\n" 1 (Some "next"); Error failure ]
+                        run 100 [ page [ "first\r\n" ] 1 (Some "next"); Error failure ]
                         |> Async.AwaitTask
 
                     Expect.equal result (Error failure) "No successful partial document"
@@ -95,9 +116,10 @@ let tests =
                                     Task.FromResult(
                                         Ok
                                             {
-                                                ExportPage.Chunks =
+                                                ExportPage.Rows =
                                                     Seq.singleton (Array.create count (byte 'x'))
                                                 ItemCount = 1
+                                                CaseId = None
                                                 NextCursor = None
                                             }
                                     )
@@ -113,7 +135,7 @@ let tests =
                     match exact with
                     | Ok value ->
                         Expect.equal
-                            value.Length
+                            value.Bytes.Length
                             Limits.MaximumResponseBytes
                             "Exact encoded ceiling"
                     | Error value -> failtestf "%A" value
@@ -135,10 +157,14 @@ let tests =
                 (async {
                     for pages in
                         [
-                            [ page "a" 1 (Some "x"); page "b" 1 (Some "x") ]
-                            [ page "a" 1 (Some "x"); page "b" 1 (Some "y"); page "c" 1 (Some "x") ]
-                            [ page "" 0 (Some "x") ]
-                            [ page "" 1 (Some "x") ]
+                            [ page [ "a" ] 1 (Some "x"); page [ "b" ] 1 (Some "x") ]
+                            [
+                                page [ "a" ] 1 (Some "x")
+                                page [ "b" ] 1 (Some "y")
+                                page [ "c" ] 1 (Some "x")
+                            ]
+                            [ page [] 0 (Some "x") ]
+                            [ page [] 1 (Some "x") ]
                         ] do
                         let! result, _ = run 100 pages |> Async.AwaitTask
 
@@ -175,8 +201,9 @@ let tests =
                                     Task.FromResult(
                                         Ok
                                             {
-                                                ExportPage.Chunks = chunks
+                                                ExportPage.Rows = chunks
                                                 ItemCount = 1
+                                                CaseId = None
                                                 NextCursor = None
                                             }
                                     )
@@ -265,6 +292,9 @@ let private cancellationLease kind =
 
         let store =
             { new ClaimCore.Application.Storage.IStore with
+                member _.RecordDisclosure(_, _) =
+                    Task.FromResult(Error ClaimCore.Application.Storage.StoreFailure.Unavailable)
+
                 member _.Context _ =
                     Task.FromResult(Error ClaimCore.Application.Storage.StoreFailure.Unavailable)
 
@@ -401,6 +431,11 @@ let cancellationTests =
                 (async {
                     let unavailableStore =
                         { new ClaimCore.Application.Storage.IStore with
+                            member _.RecordDisclosure(_, _) =
+                                Task.FromResult(
+                                    Error ClaimCore.Application.Storage.StoreFailure.Unavailable
+                                )
+
                             member _.Context _ =
                                 Task.FromResult(
                                     Error ClaimCore.Application.Storage.StoreFailure.Unavailable

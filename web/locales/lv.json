@@ -347,6 +347,14 @@
     "text": "Ielādēt vēl lietas",
     "source": "cd681597c17e"
   },
+  "ui.disclosureReload": {
+    "text": "Pārlādēt žurnālu",
+    "source": "b2ef51cf8a3b"
+  },
+  "ui.disclosureMore": {
+    "text": "Ielādēt vēl notikumus",
+    "source": "96f2482de866"
+  },
   "ui.moreHistory": {
     "text": "Ielādēt vairāk aktivitātes",
     "source": "e3f0587b4839"

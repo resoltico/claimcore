@@ -553,6 +553,96 @@ module ResponseCodecs =
         |> build
         |> named "AccessRequestPage"
 
+    let private disclosureSelection =
+        let pair =
+            record (fun key value -> key, value)
+            |> field "key" fst text
+            |> field "value" snd text
+            |> build
+
+        list 64 pair
+        |> Codec.interpret
+            (fun path values ->
+                let selection = Map.ofList values
+
+                if selection.Count = values.Length then
+                    Ok selection
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Disclosure selection keys must be unique."
+                        })
+            Map.toList
+
+    let private disclosureExport =
+        (record (fun query selection count ->
+            {
+                DisclosureExport.Query = query
+                Selection = selection
+                RowCount = count
+            })
+        : Fields<DisclosureExport, _>)
+        |> field "query" _.Query text
+        |> field "selection" _.Selection disclosureSelection
+        |> field "rowCount" _.RowCount (integer 0L (int64 Int32.MaxValue) |> map int int64)
+        |> build
+        |> named "DisclosureExport"
+
+    let private disclosureEvent =
+        let attachmentId =
+            uuid |> map (AttachmentId.create >> Option.get) AttachmentId.value
+
+        (record (fun actor kind caseId attachment outcome export ->
+            {
+                DisclosureEvent.ActorId = actor
+                Kind = kind
+                CaseId = caseId
+                AttachmentId = attachment
+                Outcome = outcome
+                Export = export
+            })
+        : Fields<DisclosureEvent, _>)
+        |> field "actorId" _.ActorId actorId
+        |> field "kind" _.Kind (VocabularyCodec.create DisclosureKind.vocabulary)
+        |> field "caseId" _.CaseId (nullable caseId)
+        |> field "attachmentId" _.AttachmentId (nullable attachmentId)
+        |> field "outcome" _.Outcome (VocabularyCodec.create DisclosureOutcome.vocabulary)
+        |> field "export" _.Export (nullable disclosureExport)
+        |> build
+        |> named "DisclosureEvent"
+
+    let private recordedDisclosure =
+        (record (fun id instant event ->
+            {
+                RecordedDisclosure.Id = id
+                RecordedAt = instant
+                Event = event
+            })
+        : Fields<RecordedDisclosure, _>)
+        |> field "id" _.Id (integer 1L JsonValue.MaximumInteger)
+        |> field "recordedAt" _.RecordedAt instant
+        |> field "event" _.Event disclosureEvent
+        |> build
+        |> named "RecordedDisclosure"
+
+    let disclosureTrailPage =
+        (record (fun basis items cursor ->
+            {
+                DisclosureTrailPage.Basis = basis
+                Items = items
+                NextCursor = cursor
+            })
+        : Fields<DisclosureTrailPage, _>)
+        |> field "basis" _.Basis workDateBasis
+        |> field "items" _.Items (list Paging.MaximumPageSize recordedDisclosure)
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumDisclosureTrailCursorCharacters))
+        |> build
+        |> named "DisclosureTrailPage"
+
     let position = LedgerCodecs.position
 
     let private reviewChanges =

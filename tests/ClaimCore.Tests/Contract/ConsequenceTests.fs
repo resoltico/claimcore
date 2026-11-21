@@ -71,6 +71,7 @@ let private queries =
         QueryTaskId.PeopleGrants, Consequence.Routine
         QueryTaskId.PeopleHistory, Consequence.Routine
         QueryTaskId.PeopleRequests, Consequence.Routine
+        QueryTaskId.DisclosureTrail, Consequence.Routine
         QueryTaskId.Context, Consequence.Routine
     ]
 

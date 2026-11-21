@@ -89,6 +89,10 @@ module CommandGrammar =
         | TaskInputId.ReminderView -> "view"
         | TaskInputId.ResponsibleActorFilter -> "responsibleActor"
         | TaskInputId.RoleFilter -> "role"
+        | TaskInputId.DisclosureCaseId -> "caseId"
+        | TaskInputId.DisclosureKind -> "kind"
+        | TaskInputId.DisclosureFrom -> "from"
+        | TaskInputId.DisclosureUntil -> "until"
         | TaskInputId.ReminderDue -> "due"
         | TaskInputId.DeadlineOutcomeFilter -> "deadline-outcome"
         | TaskInputId.ReminderKindFilter

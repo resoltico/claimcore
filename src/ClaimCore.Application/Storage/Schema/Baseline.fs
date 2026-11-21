@@ -90,12 +90,17 @@ module internal Baseline =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT installation_id,business_time_zone,installation_format FROM claimcore.installation"
+                    ("SELECT installation_id,business_time_zone,installation_format, "
+                     + "(SELECT months FROM claimcore.disclosure_retention WHERE singleton) "
+                     + "FROM claimcore.installation")
                     [||]
                     token
 
             match rows with
             | [ row ] when DatabaseSession.value<int16> 2 row = int16 InstallationFormat.Current ->
+                if DatabaseSession.optional<int> 3 row <> Some DisclosureTrail.retentionMonths then
+                    raise (InstallationConfigurationException())
+
                 return DatabaseSession.value<Guid> 0 row, DatabaseSession.value<string> 1 row
             | [ _ ] -> return raise (OperatorFaultException OperatorFault.FormatMismatch)
             | _ -> return raise (InstallationConfigurationException())
@@ -152,6 +157,13 @@ module internal Baseline =
                     connection
                     "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ($1,$2,$3)"
                     [| box id; box timeZone; box (int16 InstallationFormat.Current) |]
+                    token
+
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.disclosure_retention(months) VALUES ($1)"
+                    [| box DisclosureTrail.retentionMonths |]
                     token
 
             return id

@@ -15,8 +15,9 @@ open ClaimCore.Wire.Export
 [<NoEquality; NoComparison>]
 type internal ExportPage =
     {
-        Chunks: seq<byte array>
+        Rows: seq<byte array>
         ItemCount: int
+        CaseId: CaseId option
         NextCursor: string option
     }
 
@@ -25,6 +26,13 @@ type internal ExportTraversal =
     {
         Header: byte array
         Read: string option -> CancellationToken -> Task<Result<ExportPage, ExportFailure>>
+    }
+
+type internal MaterializedExport =
+    {
+        Bytes: byte array
+        RowCount: int
+        CaseId: CaseId option
     }
 
 /// Materialize the whole authorized traversal before any success bytes or headers are sent.
@@ -52,6 +60,8 @@ module internal CsvExport =
                 let mutable cursor = None
                 let mutable finished = false
                 let mutable failure = None
+                let mutable rowCount = 0
+                let mutable caseId = None
 
                 while not finished && failure.IsNone do
                     token.ThrowIfCancellationRequested()
@@ -62,12 +72,18 @@ module internal CsvExport =
                     | Error error -> failure <- Some error
                     | Ok page ->
                         let before = bytes.Length
+                        caseId <- caseId |> Option.orElse page.CaseId
 
                         let fits =
-                            page.Chunks
-                            |> Seq.forall (fun chunk ->
+                            page.Rows
+                            |> Seq.forall (fun row ->
                                 token.ThrowIfCancellationRequested()
-                                append chunk)
+                                let appended = append row
+
+                                if appended then
+                                    rowCount <- rowCount + 1
+
+                                appended)
 
                         if not fits then
                             failure <- Some limit
@@ -86,20 +102,29 @@ module internal CsvExport =
                 return
                     match failure with
                     | Some failure -> Error failure
-                    | None -> Ok(bytes.ToArray())
+                    | None ->
+                        Ok
+                            {
+                                Bytes = bytes.ToArray()
+                                RowCount = rowCount
+                                CaseId = caseId
+                            }
         }
 
-    let private page encode count next outcome =
+    let private page encode count caseId next outcome =
         match outcome with
         | Outcome.Succeeded value ->
             Ok
                 {
-                    Chunks = encode value
+                    Rows = encode value
                     ItemCount = count value
+                    CaseId = caseId value
                     NextCursor = next value
                 }
         | Outcome.Rejected refusal -> Error(ExportFailure.Rejected(HumanReplies.rejection refusal))
         | Outcome.Failed fault -> Error(ExportFailure.Failed fault)
+
+    let private noCase _ = None
 
     let private english =
         lazy
@@ -135,6 +160,7 @@ module internal CsvExport =
                                     (fun (value: CaseSummaryPage) ->
                                         CaseCsv.csvChunks value.Basis value.Items)
                                     (fun value -> value.Items.Length)
+                                    noCase
                                     _.NextCursor
                                     result
                         }
@@ -162,6 +188,7 @@ module internal CsvExport =
                                 page
                                     CaseSummaryCsv.chunks
                                     (fun result -> result.Rows.Length)
+                                    noCase
                                     _.NextCursor
                                     result
                         }
@@ -173,7 +200,7 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.timeline
+                                Service.timelineForExport
                                     services
                                     { selection with
                                         AfterCursor = cursor
@@ -185,6 +212,7 @@ module internal CsvExport =
                                 page
                                     TimelineCsv.csvChunks
                                     (fun (value: CaseTimelinePage) -> value.Items.Length)
+                                    (fun value -> Some value.CaseId)
                                     _.NextCursor
                                     result
                         }
@@ -209,6 +237,14 @@ module internal CsvExport =
                                     (fun (value: ReminderPage) ->
                                         ReminderCsv.csvChunks render value.Items)
                                     (fun value -> value.Items.Length)
+                                    (fun value ->
+                                        match selection.Target with
+                                        | None -> None
+                                        | Some(CaseSelector.Id id) -> Some id
+                                        | Some(CaseSelector.Reference _) ->
+                                            value.Items
+                                            |> List.tryHead
+                                            |> Option.map (fun row -> Reminder.caseId row.Reminder))
                                     _.NextCursor
                                     result
                         }
@@ -233,6 +269,7 @@ module internal CsvExport =
                                     (fun (value: PeopleHistoryPage) ->
                                         PeopleHistoryCsv.csvChunks render value.Entries)
                                     (fun value -> value.Entries.Length)
+                                    noCase
                                     _.NextCursor
                                     result
                         }

@@ -1151,6 +1151,8 @@ let private readAcrossWithdrawal (database: PostgresFixture.Database) =
             owner
             |> Service.mapStore (fun _ ->
                 { new IStore with
+                    member _.RecordDisclosure(event, token) = inner.RecordDisclosure(event, token)
+
                     member _.Context query = inner.Context query
                     member _.Write operation = inner.Write operation
 

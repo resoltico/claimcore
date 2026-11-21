@@ -283,6 +283,10 @@ let internal peopleFieldPresentation () =
             | TaskInputId.CaseView
             | TaskInputId.ResponsibleActorFilter
             | TaskInputId.RoleFilter
+            | TaskInputId.DisclosureCaseId
+            | TaskInputId.DisclosureKind
+            | TaskInputId.DisclosureFrom
+            | TaskInputId.DisclosureUntil
             | TaskInputId.ReminderView
             | TaskInputId.TimelineFilter
             | TaskInputId.Order

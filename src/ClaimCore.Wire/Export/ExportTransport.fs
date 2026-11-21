@@ -5,15 +5,6 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Json
 
-/// CSV is an exchange media type, not a third semantic representation.
-[<RequireQualifiedAccess>]
-type ExportSelection =
-    | Cases of CaseListFilter<string>
-    | CaseSummary of CaseSummarySelection
-    | Timeline of CaseTimelineRequest
-    | Reminders of ReminderListRequest
-    | PeopleHistory of PeopleHistoryRequest
-
 [<RequireQualifiedAccess>]
 type ExportFailure =
     | Rejected of HumanRejection
@@ -130,12 +121,4 @@ module ExportTransport =
     let filenames = filenamesByQuery |> Map.values |> Seq.toList
 
     let filename selection =
-        let query =
-            match selection with
-            | ExportSelection.Cases _ -> QueryTaskId.CaseList
-            | ExportSelection.CaseSummary _ -> QueryTaskId.CaseSummary
-            | ExportSelection.Timeline _ -> QueryTaskId.CaseTimeline
-            | ExportSelection.Reminders _ -> QueryTaskId.ReminderList
-            | ExportSelection.PeopleHistory _ -> QueryTaskId.PeopleHistory
-
-        filenamesByQuery[QueryTaskId.key query]
+        filenamesByQuery[ExportSelection.query selection |> QueryTaskId.key]

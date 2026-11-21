@@ -1363,6 +1363,122 @@
     "text": "Ein Inhaber muss dieses Konto zulassen, bevor es auf ClaimCore zugreifen kann.",
     "source": "9f93027815d5"
   },
+  "endpoint.disclosure.trail.label": {
+    "text": "Zugriffs- und Exportprotokoll",
+    "source": "2876eee333ad"
+  },
+  "endpoint.disclosure.trail.meaning": {
+    "text": "Zeigen Sie protokollierte Zugriffe, Exporte und Ablehnungen an.",
+    "source": "547dfe102ef2"
+  },
+  "capability.READ_DISCLOSURE_TRAIL.label": {
+    "text": "Zugriffs- und Exportprotokoll anzeigen",
+    "source": "637731605ab4"
+  },
+  "disclosureKind.CASE_READ.label": {
+    "text": "Fall gelesen",
+    "source": "2d7778153461"
+  },
+  "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
+    "text": "Anhang heruntergeladen",
+    "source": "ba23685b28f6"
+  },
+  "disclosureKind.ATTACHMENT_PREVIEW.label": {
+    "text": "Anhang in Vorschau angezeigt",
+    "source": "01b3a2e62a0d"
+  },
+  "disclosureKind.EXPORT.label": {
+    "text": "Export",
+    "source": "3664895579f0"
+  },
+  "disclosureKind.TRAIL_READ.label": {
+    "text": "Zugriffs- und Exportprotokoll gelesen",
+    "source": "42bd45e7fe95"
+  },
+  "disclosureKind.ACCESS_REFUSED.label": {
+    "text": "Zugriff verweigert",
+    "source": "07edbc210200"
+  },
+  "disclosureOutcome.SUCCEEDED.label": {
+    "text": "Erfolgreich",
+    "source": "6d9a6f97a5fd"
+  },
+  "disclosureOutcome.REFUSED.label": {
+    "text": "Abgelehnt",
+    "source": "66b873543aeb"
+  },
+  "input.disclosureKind.label": {
+    "text": "Ereignisart",
+    "source": "7e047de1d852"
+  },
+  "input.disclosureKind.hint": {
+    "text": "Wählen Sie eine Ereignisart aus, um das Protokoll zu filtern.",
+    "source": "c3a76737f118"
+  },
+  "input.disclosureKind.rule": {
+    "text": "Verwenden Sie eine gültige Offenlegungsereignisart.",
+    "source": "164fcd0efd4a"
+  },
+  "input.disclosureCaseId.label": {
+    "text": "Fall-ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.disclosureCaseId.hint": {
+    "text": "Geben Sie die Fall-ID ein, um das Protokoll zu filtern.",
+    "source": "d23a16269a61"
+  },
+  "input.disclosureCaseId.rule": {
+    "text": "Geben Sie eine Fall-ID im UUID-Format ein.",
+    "source": "172a4f1fca6b"
+  },
+  "input.disclosureFrom.label": {
+    "text": "Ab (einschließlich)",
+    "source": "0186c425ca2e"
+  },
+  "input.disclosureFrom.hint": {
+    "text": "Verwenden Sie UTC mit sechs Nachkommastellen, zum Beispiel 2026-11-21T09:30:00.000000Z.",
+    "source": "e36c1c702d68"
+  },
+  "input.disclosureFrom.rule": {
+    "text": "Verwenden Sie einen UTC-Zeitpunkt bis einschließlich zum Ende des Zeitraums.",
+    "source": "406c5d1a2c26"
+  },
+  "input.disclosureUntil.label": {
+    "text": "Bis (ausschließlich)",
+    "source": "fac51096ac56"
+  },
+  "input.disclosureUntil.hint": {
+    "text": "Geben Sie das Ende des Zeitraums in UTC mit sechs Nachkommastellen ein.",
+    "source": "747373b6c910"
+  },
+  "input.disclosureUntil.rule": {
+    "text": "Verwenden Sie einen UTC-Zeitpunkt ab einschließlich dem Beginn des Zeitraums.",
+    "source": "65efce282118"
+  },
+  "label.disclosureAnyKind": {
+    "text": "Alle Ereignisarten",
+    "source": "2dcabacd08dc"
+  },
+  "label.disclosureOutcome": {
+    "text": "Ergebnis",
+    "source": "4e80abb5b146"
+  },
+  "label.disclosureExportQuery": {
+    "text": "Exportabfrage",
+    "source": "9facf63acd8f"
+  },
+  "label.disclosureExportSelection": {
+    "text": "Exportauswahl",
+    "source": "c015ee6b5e6e"
+  },
+  "label.disclosureExportRowCount": {
+    "text": "Exportierte Zeilen",
+    "source": "eed4b8cd8379"
+  },
+  "label.disclosureEmpty": {
+    "text": "Es gibt keine passenden protokollierten Ereignisse.",
+    "source": "dd4c737e416c"
+  },
   "endpoint.people.requests.label": {
     "text": "Zugriffsanfragen",
     "source": "34185554f83d"
@@ -2272,8 +2388,8 @@
     "source": "9dcf59f71051"
   },
   "role.AUDITOR.meaning": {
-    "text": "Sieht Fälle und ihren vollständigen Verlauf. Mit dieser Rolle für alle Fälle sieht die Person auch Personen und Zugriff. Kann nichts ändern.",
-    "source": "5c16effd2666"
+    "text": "Sieht Fälle und ihren vollständigen Verlauf. Mit dieser Rolle für alle Fälle sieht die Person auch Personen, Zugriffsrechte und das Zugriffs- und Exportprotokoll. Kann nichts ändern.",
+    "source": "cc1e93613910"
   },
   "timeline.event.responsibilityAssigned": {
     "text": "Zuständigkeit zugewiesen: {person}",

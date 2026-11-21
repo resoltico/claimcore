@@ -23,6 +23,7 @@
     <Compile Include="Storage/InstallationCheck/ServerSupport.fs" />
     <Compile Include="Storage/FailureDiagnostics.fs" />
     <Compile Include="Storage/DatabaseSession.fs" />
+    <Compile Include="Storage/DisclosureStorage.fs" />
     <Compile Include="Storage/InstallationCheck/DatabaseProfile.fs" />
     <Compile Include="Storage/InstallationCheck/OwnerAdmission.fs" />
     <Compile Include="Storage/PrincipalLock.fs" />
@@ -70,6 +71,7 @@
     <Compile Include="ServiceContext.fs" />
     <Compile Include="Work/CaseWorkReadModels.fs" />
     <Compile Include="Reads/QueryResults.fs" />
+    <Compile Include="Reads/DisclosureReads.fs" />
     <Compile Include="Reads/CaseRecords.fs" />
     <Compile Include="Reads/RequestRefusals.fs" />
     <Compile Include="Reads/ReceiptReads.fs" />

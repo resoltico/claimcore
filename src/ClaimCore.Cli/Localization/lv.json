@@ -79,6 +79,10 @@
     "text": "Pakalpojums nav pieejams.",
     "source": "6468ac9f9bca"
   },
+  "cli.family.disclosure": {
+    "text": "Skatīt piekļuves un eksporta žurnālu.",
+    "source": "370be36fbfc0"
+  },
   "cli.family.people": {
     "text": "Personas un piekļuve",
     "source": "1e133caaec46"

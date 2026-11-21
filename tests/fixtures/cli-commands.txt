@@ -77,3 +77,4 @@ case summary --group-by received-month --format csv
 case attachments R-1
 attachment add R-1 --file tests/fixtures/attachment-original.txt --operation-id 11111111-2222-7333-8444-555555555555
 attachment withdraw R-1 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+disclosure trail --actor-id 10000000-0000-7000-8000-000000000001 --case-id 20000000-0000-7000-8000-000000000001 --kind attachment-download --from 2026-11-04T10:30:00.000000Z --until 2026-11-04T11:30:00.000000Z --limit 1 --all

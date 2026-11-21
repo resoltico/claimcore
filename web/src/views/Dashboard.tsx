@@ -39,11 +39,14 @@ import { useFocusActivation, useRoute } from "../routing/useRoute";
 import { type Route, casePath } from "../routing/routes";
 
 import { navigate, takeRouteFocus, setRouteFocusOwner } from "../routing/navigation";
-const category = (route: Route): "cases" | "people" | "recovery" | "peopleHistory" | "settings" => {
+const category = (
+  route: Route,
+): "cases" | "people" | "recovery" | "peopleHistory" | "disclosureTrail" | "settings" => {
   switch (route.screen) {
     case "people":
     case "recovery":
     case "peopleHistory":
+    case "disclosureTrail":
     case "settings":
       return route.screen;
     default:
@@ -63,6 +66,8 @@ const availableRoute = (
       return views.includes(apiEndpoints.peopleList);
     case "peopleHistory":
       return tasks.includes(apiEndpoints.peopleHistory);
+    case "disclosureTrail":
+      return views.includes(apiEndpoints.disclosureTrail);
     case "cases":
       return views.includes(apiEndpoints.caseList);
   }
@@ -310,6 +315,8 @@ const WorkspaceUnavailable = ({ route }: { route: Route }) => {
     title = p.text("label.caseDetail");
   } else if (route.screen === "peopleHistory") {
     title = p.text("endpoint.people.history.label");
+  } else if (route.screen === "disclosureTrail") {
+    title = p.text("endpoint.disclosure.trail.label");
   } else if (route.screen === "people") {
     title = p.text("view.PEOPLE.label");
   }

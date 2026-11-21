@@ -45,4 +45,8 @@ type internal ContextFacts =
 type internal IStore =
     abstract Context: ContextQuery -> Task<Result<ContextFacts, StoreFailure>>
     abstract Read: ReadOperation<'result> -> Task<Result<'result, StoreFailure>>
+
+    abstract RecordDisclosure:
+        DisclosureEvent * CancellationToken -> Task<Result<unit, StoreFailure>>
+
     abstract Write: WriteOperation<'result> -> Task<Result<Verdict<'result>, StoreFailure>>

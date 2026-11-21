@@ -64,6 +64,7 @@ let internal expectedRoles =
             Capability.ReadHistory
             Capability.ReadHistoryFull
             Capability.ReadAccess
+            Capability.ReadDisclosureTrail
         ]
     ]
 
@@ -82,6 +83,7 @@ let internal allCapabilities =
         Capability.Steward
         Capability.ManageAccess
         Capability.ReadAccess
+        Capability.ReadDisclosureTrail
     ]
 
 type internal PermissionRule =
@@ -96,7 +98,13 @@ let internal expectedPermission (rule: PermissionRule) principal grant resource 
     let humanRole = List.contains role humanRoles
 
     let installationOnly =
-        capability = Capability.ManageAccess || capability = Capability.ReadAccess
+        List.contains
+            capability
+            [
+                Capability.ManageAccess
+                Capability.ReadAccess
+                Capability.ReadDisclosureTrail
+            ]
 
     let scope =
         match grant, resource with

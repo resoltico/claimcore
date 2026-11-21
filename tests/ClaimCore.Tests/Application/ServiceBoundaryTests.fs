@@ -52,6 +52,10 @@ type private FailingStore() =
             calls <- calls + 1
             Task.FromResult(Error StoreFailure.Unavailable)
 
+        member this.RecordDisclosure(_, _) =
+            calls <- calls + 1
+            Task.FromResult(Error this.WriteFailure)
+
         member this.Write _ =
             calls <- calls + 1
             Task.FromResult(Error this.WriteFailure)

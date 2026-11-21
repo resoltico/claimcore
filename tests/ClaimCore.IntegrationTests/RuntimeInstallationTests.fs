@@ -376,6 +376,9 @@ let private retargetConfirmation () =
 
                 let wrapper =
                     { new IStore with
+                        member _.RecordDisclosure(event, token) =
+                            inner.RecordDisclosure(event, token)
+
                         member _.Context query = inner.Context query
 
                         member _.Read operation =

@@ -414,6 +414,9 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
 
         let store =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    database.Fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = database.Fixture.Store.Context query
                 member _.Read operation = database.Fixture.Store.Read operation
 

@@ -946,6 +946,34 @@
       "scalar": null
     },
     {
+      "name": "disclosureCaseId",
+      "labelId": "input.disclosureCaseId.label",
+      "hintId": "input.disclosureCaseId.hint",
+      "ruleId": "input.disclosureCaseId.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureKind",
+      "labelId": "input.disclosureKind.label",
+      "hintId": "input.disclosureKind.hint",
+      "ruleId": "input.disclosureKind.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureFrom",
+      "labelId": "input.disclosureFrom.label",
+      "hintId": "input.disclosureFrom.hint",
+      "ruleId": "input.disclosureFrom.rule",
+      "scalar": null
+    },
+    {
+      "name": "disclosureUntil",
+      "labelId": "input.disclosureUntil.label",
+      "hintId": "input.disclosureUntil.hint",
+      "ruleId": "input.disclosureUntil.rule",
+      "scalar": null
+    },
+    {
       "name": "reminderView",
       "labelId": "input.reminderView.label",
       "hintId": null,
@@ -1315,6 +1343,16 @@
     },
     {
       "capability": "READ_ACCESS",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION"
+      ]
+    },
+    {
+      "capability": "READ_DISCLOSURE_TRAIL",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"

@@ -38,6 +38,10 @@ import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
 
+const loadDisclosureTrail = () =>
+  import("./DisclosureTrail").then((module) => module.DisclosureTrail);
+const DisclosureTrail = () => <ViewModule load={loadDisclosureTrail} viewProps={{}} />;
+
 const loadPeopleHistory = () =>
   import("./people/PeopleHistory").then((module) => module.PeopleHistory);
 const PeopleHistory = (props: ComponentProps<typeof PeopleHistoryType>) => (
@@ -325,6 +329,8 @@ const AreaContent = ({
       return <ReminderQueue onLockChange={setLocked} disclosureAvailable={caseAvailable} />;
     case "recovery":
       return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
+    case "disclosureTrail":
+      return <DisclosureTrail />;
     case "peopleHistory":
       return <PeopleHistory key={route.actorId} actorId={route.actorId} />;
     case "missing":

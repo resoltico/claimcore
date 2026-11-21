@@ -304,6 +304,15 @@ let private exercise (database: PostgresFixture.Database) =
                     do! transaction.CommitAsync()
                 })
 
+        let actor = id 99
+
+        let! _ =
+            DatabaseSession.execute
+                runtime
+                "INSERT INTO claimcore.disclosure_trail(actor_id,kind,case_id,attachment_id,outcome) VALUES ($1,'ATTACHMENT_DOWNLOAD',$2,$3,'SUCCEEDED')"
+                [| box actor; box firstCase; box second |]
+                token
+
         use! erased = runtime.BeginTransactionAsync()
         do! erase runtime
 
@@ -343,6 +352,31 @@ let private exercise (database: PostgresFixture.Database) =
             "Both added attachment identities remain"
 
         Expect.equal (DatabaseSession.value<int64> 2 row) 1L "Distinct case's exact bytes remain"
+
+        let! disclosure =
+            DatabaseSession.rows
+                owner
+                """
+                SELECT actor_id,case_id,attachment_id,kind,outcome,row_to_json(t)::text
+                FROM claimcore.disclosure_trail t
+                """
+                [||]
+                token
+
+        let preserved = List.exactlyOne disclosure
+
+        Expect.equal
+            (DatabaseSession.value<Guid> 0 preserved,
+             DatabaseSession.value<Guid> 1 preserved,
+             DatabaseSession.value<Guid> 2 preserved,
+             DatabaseSession.value<string> 3 preserved,
+             DatabaseSession.value<string> 4 preserved)
+            (actor, firstCase, second, "ATTACHMENT_DOWNLOAD", "SUCCEEDED")
+            "Whole-case erasure preserves the disclosure identity and outcome"
+
+        Expect.isFalse
+            ((DatabaseSession.value<string> 5 preserved).Contains "synthetic.bin")
+            "Operational disclosure evidence carries no attachment name"
 
         do!
             rejection "CC004" (fun () ->

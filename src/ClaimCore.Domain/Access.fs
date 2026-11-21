@@ -39,6 +39,7 @@ module Access =
                 Capability.ReadHistory
                 Capability.ReadHistoryFull
                 Capability.ReadAccess
+                Capability.ReadDisclosureTrail
             ]
 
     let roles = Role.all
@@ -50,7 +51,8 @@ module Access =
     let capabilityScopes =
         function
         | Capability.ManageAccess
-        | Capability.ReadAccess -> [ ScopeKind.Installation ]
+        | Capability.ReadAccess
+        | Capability.ReadDisclosureTrail -> [ ScopeKind.Installation ]
         | Capability.ReadCase
         | Capability.ReadHistory
         | Capability.ReadHistoryFull
@@ -80,7 +82,8 @@ module Access =
         | Capability.Decide
         | Capability.RecordPayment
         | Capability.Close
-        | Capability.ReadAccess -> false
+        | Capability.ReadAccess
+        | Capability.ReadDisclosureTrail -> false
 
     let humanOnlyRole =
         function

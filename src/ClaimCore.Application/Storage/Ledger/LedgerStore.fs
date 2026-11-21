@@ -75,6 +75,14 @@ type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, 
                     return! work (ReadTx(connection, installationId, observedAt, token))
                 })
 
+        member _.RecordDisclosure(event, token) =
+            Transactions.write source settings token (fun connection ->
+                task {
+                    do! Baseline.requireExpected installation connection token
+                    let! _ = DisclosureStorage.append connection event token
+                    return (), true
+                })
+
         member _.Write
             ({
                  WriteOperation.Work = work

@@ -553,6 +553,13 @@ module Api =
             "AccessRequestsReply"
             ResponseCodecs.accessRequestsPage
 
+    let disclosureTrail =
+        actorRead
+            QueryTaskId.DisclosureTrail
+            RequestCodecs.disclosureTrailRequest
+            "DisclosureTrailReply"
+            ResponseCodecs.disclosureTrailPage
+
     let peopleRequestsDismiss =
         { actorEndpoint
               (ActorEndpoint.Command CommandTaskId.DismissAccessRequest)
@@ -657,6 +664,8 @@ module Api =
         | (ActorEndpoint.Query QueryTaskId.PeopleHistory) -> EndpointDefinition.create peopleHistory
         | (ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
             EndpointDefinition.create peopleRequests
+        | ActorEndpoint.Query QueryTaskId.DisclosureTrail ->
+            EndpointDefinition.create disclosureTrail
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             EndpointDefinition.create peopleRequestsDismiss
         | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->

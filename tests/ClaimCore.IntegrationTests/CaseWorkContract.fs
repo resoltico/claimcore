@@ -141,6 +141,9 @@ let internal assignmentAndDisclosure fixture =
 
         let observedStore =
             { new IStore with
+                member _.RecordDisclosure(event, token) =
+                    fixture.Store.RecordDisclosure(event, token)
+
                 member _.Context query = fixture.Store.Context query
                 member _.Write operation = fixture.Store.Write operation
 

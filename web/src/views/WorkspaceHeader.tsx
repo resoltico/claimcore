@@ -34,6 +34,12 @@ const areas = [
     label: "endpoint.people.history.label",
     icon: "history",
   },
+  {
+    name: "disclosureTrail",
+    path: "/disclosure-trail",
+    label: "endpoint.disclosure.trail.label",
+    icon: "history",
+  },
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
 ] as const;
 type Area = (typeof areas)[number];
@@ -287,6 +293,7 @@ export const WorkspaceHeader = ({
     reminders: cases,
     people: views.includes(apiEndpoints.peopleList),
     peopleHistory: tasks.includes(apiEndpoints.peopleHistory),
+    disclosureTrail: views.includes(apiEndpoints.disclosureTrail),
     recovery: true,
     settings: true,
   };

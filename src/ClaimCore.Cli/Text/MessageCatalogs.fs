@@ -103,6 +103,7 @@ module internal MessageCatalogs =
             | "reminder" -> CliMessage.ReminderCommands
             | "session" -> CliMessage.BrowserSessions
             | "people" -> CliMessage.PeopleFamily
+            | "disclosure" -> CliMessage.DisclosureFamily
             | "operation" -> CliMessage.OperationFamily
             | "context" -> CliMessage.ContextFamily
             | name -> invalidOp ("Missing command-family meaning: " + name)

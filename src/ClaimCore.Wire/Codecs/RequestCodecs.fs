@@ -24,9 +24,10 @@ module RequestCodecs =
 
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let caseSelector =
-        let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+    let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+    let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
 
+    let caseSelector =
         Codec.tagged
             RequestSchemas.CaseSelector
             [
@@ -119,6 +120,26 @@ module RequestCodecs =
         : Fields<PageRequest, _>)
         |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
         |> finishRead RequestSchemas.AccessRequestsRequest
+
+    let disclosureTrailRequest =
+        (record (fun actor caseId kind from until cursor limit ->
+            {
+                DisclosureTrailRequest.ActorId = actor
+                CaseId = caseId
+                Kind = kind
+                From = from
+                Until = until
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : Fields<DisclosureTrailRequest, _>)
+        |> optionalField "actorId" _.ActorId actorId
+        |> optionalField "caseId" _.CaseId caseId
+        |> optionalField "kind" _.Kind (VocabularyCodec.create DisclosureKind.vocabulary)
+        |> optionalField "from" _.From instant
+        |> optionalField "until" _.Until instant
+        |> pageWith Paging.MaximumDisclosureTrailCursorCharacters _.AfterCursor _.Limit
+        |> finishRead "DisclosureTrailRequest"
 
     let accessRequestDismissRequest =
         (record (fun kind issuer subject ->
