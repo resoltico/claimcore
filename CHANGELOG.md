@@ -2,34 +2,30 @@
 
 ## [Unreleased]
 
-- Refresh the Keycloak 26.8.2 and Java 21 LTS image pins; rebuild evaluation images to use the new digests. Dependabot no longer proposes JDK major updates.
-- Start a [fresh installation](docs/operating.md#data-at-rest-keys) with a private 32-byte master key file. Back it up separately from database backups.
-- Attachment bytes and private ledger compartments use per-installation encryption. Rotate the master key with `claimcore-server rotate-master-key`.
-- Register the Web origin plus `/` as the OIDC post-logout redirect URI. Ordinary Web sign-out now ends the provider session. Regenerate consumers for the logout location reply.
-- Compose requires a fresh database, a separate `postgres/superuser.password`, and verified TLS. Owner commands require a dedicated non-superuser database owner.
-- Format 8 requires a [fresh installation](docs/operating.md#install-a-fresh-register) on PostgreSQL 19 with UTF8, built-in C.UTF-8 and data checksums.
-- Preserve databases from earlier unreleased format-8 builds with their original build and use a [fresh installation](docs/operating.md#install-a-fresh-register) for this build.
-- Installation-wide Auditors can page through the [disclosure trail](docs/operating.md#disclosure-trail). Covered reads and exports return a store fault if recording fails.
+## [0.21.0] - 2026-11-22
+
+- Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 8. It requires PostgreSQL 19, UTF8, built-in C.UTF-8 and data checksums; older databases have no migration.
+- Production Compose requires a separate `postgres/superuser.password`, a dedicated non-superuser database owner and verified TLS for database access.
+- Provide a private 32-byte [`data.key`](docs/operating.md#data-at-rest-keys) to Web and administration. Back it up separately from database backups and WAL, including older recovery points.
+- Configure an HTTPS OIDC `end_session_endpoint` and register the Web origin plus `/` as the post-logout redirect URI. Keep the logout ID token hint out of provider and proxy logs.
+- Attachment bytes and private ledger compartments are encrypted per installation. Rotate the master key with `claimcore-server rotate-master-key`; keep prior keys for older recovery points.
 - Add, download and withdraw [case attachments](docs/case-work.md#add-download-and-withdraw-attachments) in Web or CLI. Archive refused file types before attaching them.
-- Preview supported static PNG and JPEG images and PDFs in the browser. Download the original bytes even if preview is unavailable.
-- Withdrawal hides private file details from receipts and history. Retained bytes count toward case limits until whole-case erasure.
-- Confirm the exact sign-in subject to admit a person in Web or CLI. Access requests show the issuer, subject and email verification status.
-- Regenerate clients for typed attachment controls and disclosure facts, new refusals and the `filename*`-only download disposition.
-- Regenerate clients for affordance `editable` types restricted to each task's declared editable inputs.
-- The non-root Web container can read public assets in images built from checkouts with private file permissions.
-- Web startup failures appear as complete JSON lines in Compose log tails.
-- Regenerate HUMAN clients for typed history targets and field comparisons. CLI `version --json` now includes the consumer contract identity.
-- Fresh Web preferences and the evaluation sign-in provider use Blue. Refused browser callbacks offer a fresh sign-in and preserve the original return path.
-- Search within a Cases view or across all readable cases. Apply report date pairs together. Case report refreshes after Settings and retains its selection when returning to Cases.
-- Scan Activity and Access history by event, target and changed fields. Open Details for before-and-after values and technical records.
-- Compact navigation includes Access history and Unconfirmed changes. Back restores the link or focuses the heading if access removed the link, even while Cases is loading.
-- Settings separate current-session sign-out from ending all ClaimCore browser sessions.
+- Preview supported static PNG and JPEG images and PDFs in the browser; the original remains downloadable. Withdrawal hides private file details but retained bytes count until case erasure.
+- Installation-wide Auditors can page through the [disclosure trail](docs/operating.md#disclosure-trail). Covered reads and exports fail if the required disclosure record cannot be written.
+- Confirm the exact sign-in subject before admitting a person in Web or CLI. Access requests show issuer, subject and email verification status.
+- Ordinary Web Sign out now ends both the ClaimCore ticket and identity-provider session. Settings distinguish it from ending all ClaimCore browser sessions.
+- Regenerate clients for the logout location reply, typed attachment and disclosure facts, new refusals and the `filename*`-only download disposition.
+- Regenerate HUMAN clients for typed history targets, field comparisons and task-specific editable inputs. CLI `version --json` includes the consumer contract identity.
+- Fresh Web preferences and the evaluation sign-in provider use Blue. Refused callbacks offer a fresh sign-in while retaining the original return path.
+- Search within a Cases view or across readable cases. Report date pairs apply together; reports refresh after Settings and retain their selection when returning to Cases.
+- Scan Activity and Access history by event, target and changed field; Details shows before-and-after values and technical records.
+- Compact navigation includes Access history and Unconfirmed changes. Back restores the prior link or focuses the heading if access removed that link.
 - Stale case and party reviews offer an authorized case-ID read and fresh review. Attachment review refuses a retained duplicate before upload.
-- CLI details retain full notes and pair full related references with exact read commands. Text and CSV contract mismatch diagnostics can identify both builds.
-- The server image uses chiseled Ubuntu 26.04 with no shell. Local Compose initializes or skips an existing installation through the server command.
-- Web serves verified startup copies of workspace and sign-in recovery pages, assets, and legal files. Responses add HSTS and a stricter browser Permissions Policy.
+- CLI details retain full notes and exact read commands for related references. Text and CSV contract mismatch diagnostics can identify both builds.
+- The server image uses shell-free chiseled Ubuntu 26.04; non-root Web can read public assets. Local Compose initializes or skips an existing matching installation.
+- Web serves verified startup copies of pages, assets and legal files. Responses add HSTS and a stricter Permissions Policy; startup failures appear as complete JSON lines.
 - The workspace enforces Trusted Types. Date editing uses DOM operations for live announcements.
-- Dependabot proposes updates for Docker builds and both Compose deployments. Identity tests use the Keycloak image pinned by the Dockerfile.
+- Refresh Keycloak 26.8.2 and Java 21 LTS image digests. Dependabot proposes Docker updates but ignores Temurin major updates; identity tests use the Dockerfile Keycloak pin.
 - Releases attest the server image and archives. Publication requires the annotated tag to match the workflow dispatch commit.
 
 ## [0.20.0] - 2026-11-19
