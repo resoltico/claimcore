@@ -308,6 +308,8 @@ Use locked restore and `npm ci`; update affected consumers, notices and checks t
 
 [Dependabot](../.github/dependabot.yml) checks the deployment Dockerfile and both Compose files.
 The Keycloak fixture reads its image pin from the Dockerfile's `keycloak` stage. Update the
+[Dockerfile](../deployment/Dockerfile) JDK major deliberately when Keycloak's runtime Java changes;
+Dependabot ignores `eclipse-temurin` major updates but still proposes Keycloak majors. Update the
 [Mailpit fixture](../tests/ClaimCore.TestSupport/MailpitFixture.fs) and
 [actionlint](../eng/verify.sh) image pins by hand. When Dependabot proposes a PostgreSQL image
 update, update both Compose files and [the PostgreSQL baseline](../db/postgresql-baseline.json)

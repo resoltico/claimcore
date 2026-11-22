@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Refresh the Keycloak 26.8.2 and Java 21 LTS image pins; rebuild evaluation images to use the new digests. Dependabot no longer proposes JDK major updates.
 - Start a [fresh installation](docs/operating.md#data-at-rest-keys) with a private 32-byte master key file. Back it up separately from database backups.
 - Attachment bytes and private ledger compartments use per-installation encryption. Rotate the master key with `claimcore-server rotate-master-key`.
 - Register the Web origin plus `/` as the OIDC post-logout redirect URI. Ordinary Web sign-out now ends the provider session. Regenerate consumers for the logout location reply.

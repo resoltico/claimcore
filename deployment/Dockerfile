@@ -25,8 +25,8 @@ RUN node deployment/identity-theme/generate.mjs /theme \
     && find /theme -type d -exec chmod 0755 {} + \
     && find /theme -type f -exec chmod 0644 {} +
 
-FROM quay.io/keycloak/keycloak:26.8.2@sha256:c68e286cacd87b942ac1939a0a1481461109d6acd3a57dc496969a319a76bbf0 AS keycloak
-FROM eclipse-temurin:21-jdk@sha256:db5cc6341a1d7bc40cdb51e1f0d9824f3bb2cc8107d29da421dc4df7d11f05f1 AS identity-locale
+FROM quay.io/keycloak/keycloak:26.8.2@sha256:7e66a96e4739239070aeaf72e4c5decf0f7f682cfc725b9f7ea2b336eaba38b3 AS keycloak
+FROM eclipse-temurin:21-jdk@sha256:8ad118b146aa92da815b576441acd6b42b38236797ad0b6edc8c200b85bb0734 AS identity-locale
 COPY --from=keycloak /opt/keycloak/lib/lib/main /keycloak-lib
 COPY --from=source /source/deployment/identity-locale/ /locale/
 RUN mkdir /classes \
