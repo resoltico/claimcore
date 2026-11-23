@@ -378,10 +378,10 @@ let private peoplePreview () =
                                        }) ->
             Expect.equal id fresh "HUMAN echoes the same command identity"
 
-            Expect.isTrue
+            Expect.isFalse
                 (review.Presentation.Changes
                  |> List.exists (fun change -> change.LabelId = "label.enabled"))
-                "The actual ApiRoutes adapter supplies core changes"
+                "HUMAN omits the account's creation default"
 
             Expect.isTrue
                 (review.Presentation.Changes

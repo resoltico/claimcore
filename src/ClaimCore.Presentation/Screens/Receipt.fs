@@ -436,7 +436,7 @@ module ReceiptScreen =
 
         let markEntry (entry: Entry) =
             { entry with
-                Recorded = if isRecorded entry.LabelId then Some true else None
+                Recorded = Some(isRecorded entry.LabelId)
             }
 
         let markSection (section: Section) =

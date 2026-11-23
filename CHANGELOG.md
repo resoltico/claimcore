@@ -5,6 +5,7 @@
 - Regenerate HUMAN clients for state detail, region empty labels, row recommendations and view prominence.
 - Regenerate clients for collection labels, review modes and the code tone table.
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
+- If the CLI cannot launch a browser, it prints the sign-in address to stderr and waits for you to open it.
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
 
 ## [0.21.0] - 2026-11-22

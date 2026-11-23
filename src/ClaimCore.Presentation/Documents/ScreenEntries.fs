@@ -288,7 +288,9 @@ module ScreenEntries =
                         | PresentedValue.Absent _ -> false
                         | _ -> true
 
-                    { entry with Recorded = Some recorded })
+                    { entry with
+                        Recorded = entry.Recorded |> Option.orElse (Some recorded)
+                    })
             else
                 entries
 
