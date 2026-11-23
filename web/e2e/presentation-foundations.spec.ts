@@ -103,6 +103,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
       requests.push(path);
     }
   });
+  await seedSignedOut(page);
   await page.goto("/", {
     waitUntil: "commit",
   });
@@ -1192,7 +1193,15 @@ for (const language of ["en", "ar"] as const) {
     const timeline = page.locator(".case-timeline-panel");
     await expect(timeline.locator(".region-timeline > li")).toHaveCount(1);
     await expect(timeline).toContainText("Timeline recorder");
-    await expect(timeline).toContainText(entryOperationId);
+    await timeline
+      .getByRole("button", { name: ui(language, "ui.viewDetails"), exact: true })
+      .click();
+    const details = page.getByRole("dialog", { name: ui(language, "ui.viewDetails"), exact: true });
+    await expect(details).toContainText(entryOperationId);
+    await details
+      .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+      .first()
+      .click();
     expect(reads).toBe(1);
     expect(retired).toEqual([]);
     await expectAccessible(page);
@@ -2445,7 +2454,7 @@ test("case panels follow compact reading order while a work draft survives respo
     await page
       .locator(".case-work-rail")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual(["case-work", "case-reminders screen-region"]);
+  ).toEqual(["case-work", "case-reminders", "screen-view"]);
   await expect(page.locator('.case-main-column [data-region="FACTS"]')).toHaveCount(1);
   await expectAccessible(page);
   await page.locator("#case-work-summary").click();

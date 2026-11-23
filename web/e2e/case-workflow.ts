@@ -139,9 +139,9 @@ export const startOpen = async (
   };
   page.on("response", failedAsset);
   await page
-    .getByRole("link", {
-      name: title,
-    })
+    .getByRole("link", { name: title, exact: true })
+    .or(page.locator(".phone-app-bar").getByRole("button", { name: title, exact: true }))
+    .filter({ visible: true })
     .click();
   await progress("open-editor");
   await page

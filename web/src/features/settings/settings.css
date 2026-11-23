@@ -2,7 +2,9 @@
   .settings-panel {
     container-type: inline-size;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-5);
+    min-inline-size: 0;
     max-inline-size: var(--width-settings);
   }
   .settings-options {
@@ -10,6 +12,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-3);
     padding: 0;
+    min-inline-size: 0;
     margin-block: var(--space-5);
     border: none;
   }
@@ -88,7 +91,7 @@
     display: block;
     inline-size: 100%;
   }
-  .accent-card {
+  .settings-option.accent-card {
     display: grid;
     grid-template-rows: auto auto minmax(1rem, auto);
     align-content: start;

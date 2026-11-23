@@ -1264,7 +1264,10 @@ test("confirmed withdrawal stays hidden through a list fault and a delayed timel
   const { row, receipt } = await upload(page, panel, name, name, "image/png", png);
   const { img } = await previewImage(row, name);
   const history = page.locator(".case-timeline-panel");
-  await expect(history).toContainText(name);
+  await history.getByRole("button", { name: "View details", exact: true }).first().click();
+  const details = page.getByRole("dialog", { name: "View details", exact: true });
+  await expect(details).toContainText(name);
+  await details.getByRole("button", { name: "Close", exact: true }).first().click();
   await row.getByRole("button", { name: "Withdraw attachment", exact: true }).click();
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toBeEnabled();
   const timeline = Promise.withResolvers<void>();

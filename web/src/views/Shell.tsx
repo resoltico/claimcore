@@ -283,7 +283,7 @@ export const Shell = ({
       id={iconOnly ? "workspace-phone-find" : "workspace-find"}
       variant="quiet"
       isDisabled={locked}
-      aria-label={p.text("ui.findCase")}
+      {...(iconOnly ? { "aria-label": p.text("ui.findCase") } : {})}
       aria-keyshortcuts={apple ? "Meta+K" : "Control+K"}
       className="shell-find"
       onPress={() => {

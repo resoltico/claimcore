@@ -95,10 +95,11 @@ const useInitialAllowedRoute = (
 };
 const routeFocusTarget = (root: HTMLElement, id: string | null) => {
   const elementAtId = id === null ? null : document.getElementById(id);
-  const requested = elementAtId?.closest("[hidden],[inert]") === null ? elementAtId : null;
+  const requested =
+    elementAtId?.closest('[hidden],[inert],[aria-hidden="true"]') === null ? elementAtId : null;
   const heading =
     [...root.querySelectorAll<HTMLElement>("h1")].find(
-      (candidate) => candidate.closest("[hidden],[inert]") === null,
+      (candidate) => candidate.closest('[hidden],[inert],[aria-hidden="true"]') === null,
     ) ?? null;
   const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
   return { element: requested ?? dialog ?? heading, restored: requested !== null };
@@ -169,9 +170,9 @@ const useRouteHeading = (
       ) {
         return false;
       }
-      intent.complete = true;
       moveRouteFocus(element, restored ? scrollY : null);
-      return true;
+      intent.complete = document.activeElement === element;
+      return intent.complete;
     };
     if (focus()) {
       return;
@@ -195,7 +196,7 @@ const useRouteHeading = (
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["aria-busy", "hidden", "inert"],
+      attributeFilter: ["aria-busy", "aria-hidden", "hidden", "inert"],
     });
     return () => {
       observer.disconnect();

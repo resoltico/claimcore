@@ -44,7 +44,7 @@ test("notes use one-step unversioned writes, latest three, paging, removal and A
   await notes.getByRole("button", { name: "Show all notes", exact: true }).click();
   await expect(notes.locator(".note-list > li")).toHaveCount(4);
   const removed = notes.locator(".note-list > li").filter({ hasText: "Handling note 2" });
-  await removed.locator('button[aria-haspopup="menu"]').click();
+  await removed.locator("button[aria-haspopup]").click();
   await page.getByRole("menuitem", { name: "Remove note", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const confirm = dialog.locator("button[data-confirm-operation]");
