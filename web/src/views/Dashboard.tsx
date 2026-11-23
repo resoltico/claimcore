@@ -151,8 +151,8 @@ const useRouteHeading = (
     }
     const { id, scrollY } = intent;
     const focus = () => {
-      // The departure guard is portaled and can outlive the route render.
-      if (loading || document.querySelector("[data-navigation-guard]") !== null) {
+      // A departing sheet or guard can still own focus during the route render.
+      if (loading || document.querySelector("[data-navigation-guard], .shell-more") !== null) {
         return false;
       }
       const { element, restored } = routeFocusTarget(target, id);

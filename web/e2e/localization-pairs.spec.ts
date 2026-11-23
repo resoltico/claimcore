@@ -83,7 +83,7 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
   } else {
     await expect(
       page.getByRole("link", {
-        name: ui(language, "ui.signIn"),
+        name: ui(language, "label.signInAgain"),
         exact: true,
       }),
     ).toBeVisible();

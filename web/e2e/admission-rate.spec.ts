@@ -49,7 +49,7 @@ test("bounds repeated published login admission and recovers after its window", 
   test.setTimeout(freshLoginWorkflowTimeout);
   await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in again" })).toBeVisible();
   await progress("rate-probing");
   await exhaustLoginWindow(page);
   await progress("rate-window-recovery-start");

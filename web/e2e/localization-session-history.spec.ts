@@ -95,7 +95,7 @@ test("preserves language and independent display preferences through real logout
   await signOut(page, control);
   await expect(
     page.getByRole("link", {
-      name: ui("ar", "ui.signIn"),
+      name: ui("ar", "label.signInAgain"),
       exact: true,
     }),
   ).toBeVisible();

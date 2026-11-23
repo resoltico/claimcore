@@ -12,6 +12,7 @@ import {
   login,
   logout,
   sessionToken,
+  seedSignedOut,
   signOut,
 } from "./session-helpers";
 
@@ -200,7 +201,7 @@ test("signs out of ClaimCore and Keycloak before asking for credentials again @e
     (url) => url.origin === landing.origin && url.pathname === "/signin-oidc",
     (route) => route.abort(),
   );
-  await awaitLoginAdmission(page, "Sign in", landing.origin).catch(() => {
+  await awaitLoginAdmission(page, "Sign in again", landing.origin).catch(() => {
     throw new Error("Keycloak did not present a fresh sign-in challenge.");
   });
   await expect(page.locator('input[name="username"]')).toBeVisible();
@@ -406,6 +407,7 @@ test("owner termination ends the selected person's existing ticket and preserves
   if (baseURL === undefined) {
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
+  await seedSignedOut(page);
   await page.goto("/");
   await login(page);
   const other = await browser.newContext({
@@ -415,6 +417,7 @@ test("owner termination ends the selected person's existing ticket and preserves
   });
   try {
     const person = await other.newPage();
+    await seedSignedOut(person);
     await person.goto("/");
     await login(person, "Cases", "Sign in", "synthetic-steward");
     const principal = await syntheticPrincipals();

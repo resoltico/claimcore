@@ -470,7 +470,7 @@ export const login = async (
   const applicationOrigin = requestedAddress.origin;
   const owner = await syntheticCredentials(username);
   if (!(await providerForm.isVisible())) {
-    const explicit = page.locator(".login-link");
+    const explicit = page.locator(".login-link, #restart-sign-in");
     const label = (await explicit.textContent())?.trim() ?? signIn;
     await awaitLoginAdmission(page, label, applicationOrigin);
   }
