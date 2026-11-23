@@ -12,6 +12,21 @@ export const noHorizontalOverflow = async (
     scrollWidth: document.documentElement.scrollWidth,
   }));
   if (scrollWidth > clientWidth + 1) {
-    throw new Error(`E2E_LAYOUT_${stage.toUpperCase()}_OVERFLOW`);
+    const outside = await page.evaluate(() => {
+      const width = document.documentElement.clientWidth;
+      return [...document.querySelectorAll("body *")]
+        .flatMap((element) => {
+          const { left, right, width: size } = element.getBoundingClientRect();
+          const excess = Math.max(-left, right - width);
+          return size > 0 && excess > 1
+            ? [{ tag: element.localName, className: element.getAttribute("class"), excess }]
+            : [];
+        })
+        .toSorted((a, b) => b.excess - a.excess)
+        .slice(0, 6);
+    });
+    throw new Error(
+      `E2E_LAYOUT_${stage.toUpperCase()}_OVERFLOW ${scrollWidth}/${clientWidth} ${JSON.stringify(outside)}`,
+    );
   }
 };

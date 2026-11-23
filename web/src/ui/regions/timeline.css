@@ -18,7 +18,15 @@
   .timeline-event {
     display: inline-flex;
     flex-wrap: wrap;
+    min-inline-size: 0;
+    max-inline-size: 100%;
     gap: var(--space-1);
+    overflow-wrap: anywhere;
+  }
+
+  .timeline-event :is(a, .identifier-value) {
+    min-inline-size: 0;
+    white-space: inherit;
   }
 
   .region-timeline time {
