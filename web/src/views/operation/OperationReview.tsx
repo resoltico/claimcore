@@ -1,3 +1,4 @@
+import { TextInput } from "../../ui/TextField";
 import type { apiEndpoints } from "../../api/service";
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
@@ -118,7 +119,7 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
           <bdi dir="ltr">{expected}</bdi>
         </p>
         <label htmlFor={id}>{label}</label>
-        <input
+        <TextInput
           id={id}
           type="text"
           autoComplete="off"

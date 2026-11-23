@@ -6,22 +6,20 @@
   }
 
   .region-timeline > li {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) auto;
     align-items: baseline;
     gap: var(--space-2);
-    flex-wrap: wrap;
     min-block-size: var(--size-row);
     padding: var(--space-2) 0;
     border-block-end: var(--border-width) solid var(--border-subtle);
   }
 
   .timeline-event {
-    display: inline-flex;
-    flex-wrap: wrap;
     min-inline-size: 0;
     max-inline-size: 100%;
     gap: var(--space-1);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .timeline-event :is(a, .identifier-value) {
@@ -34,8 +32,10 @@
     font-size: var(--text-xs);
   }
 
-  .region-timeline > li > button {
-    margin-inline-start: auto;
+  .region-timeline > li:has(.timeline-subject) {
+    grid-template-columns:
+      minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) minmax(min-content, 1fr)
+      auto;
   }
 
   .timeline-comparison dd {

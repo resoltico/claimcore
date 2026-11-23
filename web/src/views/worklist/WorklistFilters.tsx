@@ -1,3 +1,5 @@
+import { Button } from "../../ui/Button";
+import { TextInput, ChoiceControl } from "../../ui/TextField";
 import { apiEndpoints } from "../../api/service";
 import { Select } from "../../ui/Select";
 import { Dialog } from "../../ui/Dialog";
@@ -53,37 +55,31 @@ const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[
   const values = selectedValues(query, input.key);
   const label = renderCatalogKey(p, input.labelId);
   return (
-    <details>
-      <summary>
-        {label}
-        {values.length ? ` (${p.integer(values.length)})` : ""}
-      </summary>
-      <fieldset>
-        <legend className="sr-only">{label}</legend>
-        {options.map((option) => (
-          <label key={option}>
-            <input
-              type="checkbox"
-              checked={values.includes(option)}
-              onChange={(event) => {
-                onChange(
-                  selectSet(
-                    query,
-                    input.key,
-                    event.target.checked
-                      ? [...values, option]
-                      : values.filter((value) => value !== option),
-                  ),
-                );
-              }}
-            />
-            {vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, option)
-              ? p.term(vocabulary, option)
-              : option}
-          </label>
-        ))}
-      </fieldset>
-    </details>
+    <fieldset>
+      <legend>{label}</legend>
+      {options.map((option) => (
+        <label key={option}>
+          <ChoiceControl
+            type="checkbox"
+            checked={values.includes(option)}
+            onChange={(event) => {
+              onChange(
+                selectSet(
+                  query,
+                  input.key,
+                  event.target.checked
+                    ? [...values, option]
+                    : values.filter((value) => value !== option),
+                ),
+              );
+            }}
+          />
+          {vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, option)
+            ? p.term(vocabulary, option)
+            : option}
+        </label>
+      ))}
+    </fieldset>
   );
 };
 const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)[number] }) => {
@@ -94,6 +90,7 @@ const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)
   const selected = input.key === "assignment" ? query.assignment : query.due;
   return (
     <Select
+      inlineLabel
       label={renderCatalogKey(p, input.labelId)}
       value={selected ?? ""}
       options={[
@@ -125,6 +122,7 @@ const OrderControl = ({ query, onChange }: Props) => {
   const options = queryInput(apiEndpoints.caseList, "input:order").choices;
   return (
     <Select
+      inlineLabel
       label={p.text("input.order.label")}
       value={query.order ?? "REFERENCE"}
       options={options
@@ -154,7 +152,7 @@ const ReportDates = ({
           <div key={field}>
             <label>
               {renderCatalogKey(p, input.labelId)}
-              <input
+              <TextInput
                 type="date"
                 value={query[field] ?? ""}
                 aria-invalid={invalid === field || undefined}
@@ -212,16 +210,16 @@ export const WorklistFilters = ({ query, onChange }: Props) => {
           <WorkChoice key={input.key} input={input} query={query} onChange={onChange} />
         ))}
       <OrderControl query={query} onChange={onChange} />
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         aria-haspopup="dialog"
-        onClick={() => {
+        onPress={() => {
           changeDraft(query);
         }}
       >
         {p.text("ui.filters")}
         {active === 0 ? "" : ` (${p.integer(active)})`}
-      </button>
+      </Button>
       <Dialog
         title={p.text("ui.filters")}
         closeLabel={p.text("ui.close")}

@@ -65,7 +65,6 @@ export const ReminderList = ({
   );
   return (
     <section className="reminder-list" aria-busy={result.loading}>
-      {target === undefined ? <p>{p.text("label.reminderQueueHint")}</p> : null}
       {result.message === null ? null : (
         <p role="alert">
           <NoticeView value={result.message} />

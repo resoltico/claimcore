@@ -471,10 +471,6 @@
     "text": "Rakstzīmes: {count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "Meklēt",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "Atlasītais konts",
     "source": "8b63d9475c25"
@@ -510,10 +506,6 @@
   "ui.signOut": {
     "text": "Izrakstīties",
     "source": "48f0d3d397d4"
-  },
-  "ui.stage.noDate": {
-    "text": "Datums nav pieejams",
-    "source": "a0aa75ba71d2"
   },
   "ui.submitting": {
     "text": "Reģistrē…",
@@ -587,10 +579,6 @@
     "text": "Ierakstiet piezīmi…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "Parādītas: {shown} no {total}",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "Rādīt visas piezīmes",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "Vairāk maksājumu",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "Parādīti: {shown} no {total}",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "Rādīt visus maksājumus",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "Mēģināt vēlreiz",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "Filtri",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "Filtri ({count})",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}: {row}",
+    "source": "87eab2e0b1df"
   }
 }

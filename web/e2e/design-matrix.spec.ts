@@ -15,6 +15,8 @@ import {
   displayLocaleFor,
   visitRoute,
   matrixEvidenceDirectory,
+  headingOffset,
+  headingOffsetFailures,
 } from "./design-matrix-checks";
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
 if (!["chromium", "firefox", "webkit"].includes(engine)) {
@@ -47,19 +49,18 @@ const recordFrame = async (run: Run, frame: string) => {
 };
 const expandedFilters = async (run: Run) => {
   await settledWorkspaceHeader(run.page);
-  const grid = run.page.locator(".worklist-toolbar .worklist-filter-controls");
+  const main = run.page.locator(".worklist-toolbar");
+  if (run.dimension.width < 640 || run.dimension.reflowScale !== undefined) {
+    await main.getByRole("button").last().click();
+  }
+  const grid = run.page.locator(".worklist-filter-controls");
   const trigger = grid.locator('button[aria-haspopup="dialog"]');
   await expect(trigger).toHaveCount(1);
   await expect(grid.locator('[role="combobox"][value="RECENT"]')).toHaveCount(1);
   await trigger.focus();
   await trigger.press("Enter");
-  const panel = run.page.getByRole("dialog");
+  const panel = run.page.getByRole("dialog").last();
   await expect(panel.locator(".report-date-fields")).toBeVisible();
-  const groups = panel.locator(".worklist-filters details > summary");
-  await expect(groups).toHaveCount(3);
-  for (const group of await groups.all()) {
-    await group.click();
-  }
   await expect(panel.locator(".worklist-filters input:checked")).toHaveCount(3);
   await recordFrame(run, "cases-filter-panel");
   await run.page.keyboard.press("Escape");
@@ -184,9 +185,22 @@ const registerDimension = (dimension: Dimension) => {
     await page.context().addCookies(dataset.cookies);
     await configureDimension(page, dimension);
     const run: Run = { page, info, dimension };
+    const offsets: number[] = [];
+    const measured = new Set([
+      "cases-all",
+      "reminders",
+      "people-list",
+      "people-history",
+      "settings",
+    ]);
     for (const route of dataset.routes) {
       await performRoute(route, run);
+      if (measured.has(route.id)) {
+        offsets.push(await headingOffset(page));
+      }
     }
+    expect(offsets).toHaveLength(measured.size);
+    expect(headingOffsetFailures(offsets), JSON.stringify(offsets)).toEqual([]);
   });
 };
 test.describe("adopted work surface design matrix", () => {

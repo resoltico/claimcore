@@ -21,7 +21,7 @@
   }
   .access-state dd {
     margin: 0 0 var(--space-4);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .access-state section > button {
     margin-block-start: var(--space-4);

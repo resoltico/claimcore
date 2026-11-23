@@ -8,12 +8,10 @@ import {
 } from "../../operation/affordances";
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { RoutedReminder } from "./SelectedReminder";
-import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { Affordance, TaskId, OperationBinding } from "@contracts/client";
-import type { OperationReceipt, CurrentCase } from "../../protocol/types";
+import type { CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
 
 import type { FormValues } from "../../protocol/forms";
@@ -57,7 +55,6 @@ export const useCaseWorkPanels = ({
   const noteDraft = useInlineNoteDraft();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const recorded = useAcceptedOperation();
   const returnFocus = useRef<string | null>(null);
   const focusPending = useRef(false);
   useEffect(() => {
@@ -74,7 +71,6 @@ export const useCaseWorkPanels = ({
   );
   const open = (next: Editor, { anchorToTrigger = true } = {}) => {
     returnFocus.current = editorOrigin(next);
-    recorded.clear();
     setEditor({
       ...next,
       ...(anchorToTrigger && returnFocus.current !== null ? { anchor: returnFocus.current } : {}),
@@ -84,11 +80,10 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
+  const accepted = (noteIntent?: NoteIntent) => {
     if (noteIntent !== undefined) {
       noteDraft.accepted(noteIntent);
     }
-    recorded.accept(operationId, receiptOutcomeMessage(receipt));
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -119,62 +114,50 @@ export const useCaseWorkPanels = ({
       action.blocked === null,
   );
   const work = disclosureAvailable ? (
-    <>
-      <CaseWork
-        canAssign={
-          workAction?.editable.some((input) => input === "field:responsibleActor") === true
-        }
-        canUpdateSummary={
-          workAction?.editable.some((input) => input === "field:handlingSummary") === true
-        }
-        timeZone={current.basis.observation.timeZone}
-        {...(current.screen.regions.find((region) => region.role === "WORK") === undefined
-          ? {}
-          : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
-        {...(editor === null && workAction !== undefined
-          ? {
-              onAssign: (origin: string) => {
-                open(
-                  {
-                    subject: "WORK",
-                    action: workAction,
-                    kind: workAction.task,
-                    identity: "work",
-                    origin,
-                    prefill: {
-                      "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
-                    },
+    <CaseWork
+      canAssign={workAction?.editable.some((input) => input === "field:responsibleActor") === true}
+      canUpdateSummary={
+        workAction?.editable.some((input) => input === "field:handlingSummary") === true
+      }
+      timeZone={current.basis.observation.timeZone}
+      {...(current.screen.regions.find((region) => region.role === "WORK") === undefined
+        ? {}
+        : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
+      {...(editor === null && workAction !== undefined
+        ? {
+            onAssign: (origin: string) => {
+              open(
+                {
+                  subject: "WORK",
+                  action: workAction,
+                  kind: workAction.task,
+                  identity: "work",
+                  origin,
+                  prefill: {
+                    "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
                   },
-                  { anchorToTrigger: false },
-                );
-              },
-              onSummary: (origin: string) => {
-                open(
-                  {
-                    subject: "WORK",
-                    action: workAction,
-                    kind: workAction.task,
-                    identity: "work",
-                    origin,
-                    prefill: {
-                      "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
-                    },
+                },
+                { anchorToTrigger: false },
+              );
+            },
+            onSummary: (origin: string) => {
+              open(
+                {
+                  subject: "WORK",
+                  action: workAction,
+                  kind: workAction.task,
+                  identity: "work",
+                  origin,
+                  prefill: {
+                    "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
                   },
-                  { anchorToTrigger: false },
-                );
-              },
-            }
-          : {})}
-      />
-      {recorded.operationId === null ? null : (
-        <ReceiptFeedback
-          key={recorded.operationId}
-          operationId={recorded.operationId}
-          messageId={recorded.messageId}
-          dismiss={recorded.clear}
-        />
-      )}
-    </>
+                },
+                { anchorToTrigger: false },
+              );
+            },
+          }
+        : {})}
+    />
   ) : null;
   const onReminder: ReminderActHandler = (action, originId, implicit = false) => {
     const { binding } = action;
@@ -239,8 +222,8 @@ export const useCaseWorkPanels = ({
         binding={editor.binding}
         tasks={editor.tasks}
         onClose={close}
-        onRecorded={(receipt, id) => {
-          accepted(receipt, id, editor.noteIntent);
+        onRecorded={() => {
+          accepted(editor.noteIntent);
         }}
         onLockChange={onLockChange}
         onDisclosureRefused={onChanged}

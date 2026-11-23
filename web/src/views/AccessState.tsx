@@ -1,3 +1,4 @@
+import { Page } from "../ui/Page";
 import { renderCatalogKey } from "../presentation/messages";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
@@ -45,15 +46,10 @@ export const AccessState = ({
   return (
     <main className="access-state">
       <span className="product-name">
-        <span className="product-mark" aria-hidden="true">
-          C
-        </span>
+        <img className="product-mark" src="/brand.svg" alt="" />
         ClaimCore
       </span>
-      <section>
-        <h1 tabIndex={-1} ref={heading}>
-          {renderCatalogKey(p, titleId)}
-        </h1>
+      <Page id="access-state-title" title={renderCatalogKey(p, titleId)} headingRef={heading}>
         <ScreenView
           view={view}
           timeZone={
@@ -81,7 +77,7 @@ export const AccessState = ({
         >
           {p.text("ui.signOut")}
         </Button>
-      </section>
+      </Page>
     </main>
   );
 };

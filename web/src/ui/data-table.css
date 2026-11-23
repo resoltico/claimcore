@@ -1,7 +1,7 @@
 @layer components {
   .data-table {
     --table-row-size: var(--size-row);
-    --table-reference-limit: var(--width-table-reference);
+    --table-layout: wide;
     min-inline-size: 0;
     overflow-x: auto;
     contain: paint;
@@ -20,10 +20,11 @@
 
   .data-table :is(td, th) {
     min-inline-size: 0;
-    padding: var(--space-2) var(--space-3);
+    padding-block: var(--space-1);
+    padding-inline: calc(var(--space-1) * 0.75);
     text-align: start;
     vertical-align: middle;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
   }
 
   .data-table thead th {
@@ -52,7 +53,16 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .data-table :is([data-reference] .data-table-cell > :is(a, bdi), time, [data-money] bdi) {
+  .data-table [data-reference] .data-table-cell > :is(a, bdi) {
+    white-space: var(--table-reference-wrap, nowrap);
+  }
+
+  .data-table [data-reference] .identifier-value {
+    font-family: inherit;
+    font-size: var(--text-xs);
+  }
+
+  .data-table time {
     white-space: nowrap;
   }
 
@@ -60,22 +70,12 @@
     overflow-wrap: normal;
   }
 
-  .data-table [data-reference] .data-table-cell > :is(a, bdi) {
-    display: inline-block;
-    max-inline-size: var(--table-reference-limit);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: bottom;
-  }
-
   .data-table-cell {
     min-inline-size: 0;
-    max-block-size: var(--table-cell-limit);
-    overflow: var(--table-cell-overflow, hidden);
   }
 
   .data-table-cell-label {
-    display: var(--table-cell-label-display, none);
+    display: none;
     text-align: start;
     color: var(--text-secondary);
     font-size: var(--text-xs);
@@ -89,7 +89,7 @@
 
   .data-table-actions {
     position: relative;
-    display: flex;
+    display: var(--table-controls-display, flex);
     justify-content: flex-end;
     align-items: center;
     gap: var(--space-1);
@@ -109,6 +109,10 @@
   .data-table-stack > div {
     display: flex;
     gap: var(--space-1);
+  }
+
+  .data-table-stack dt::after {
+    content: ":";
   }
 
   .data-table-stack dd {

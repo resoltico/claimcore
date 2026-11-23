@@ -157,6 +157,9 @@ export const adaptAriaLayout = (path, source) => {
     throw new Error(`Review the React Aria layout adaptation for ${path} before updating it.`);
   }
 
+  if (path === "react-aria-components/dist/private/FileTrigger") {
+    return source.replace(/style: \{\n {12}display: 'none'\n {8}\}/u, "hidden: true");
+  }
   return replaceLayoutEffects(path, source);
 };
 

@@ -1,8 +1,6 @@
+import { Page } from "../ui/Page";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
-import { attachmentFragment, coreLinkPath } from "../routing/coreLinks";
 import { followLink } from "../routing/followLink";
-import { navigate } from "../routing/navigation";
-import { renderCatalogKey } from "../presentation/messages";
 import { isNarrativeCreationId, type ActKind } from "../operation/metadata";
 import type { Affordance, CaseSelector, HumanDocument, Screen } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
@@ -12,13 +10,8 @@ import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
-import { ButtonControl as Button } from "../ui/ButtonControl";
-import {
-  apiEndpoints,
-  type CurrentCase,
-  type CatalogDocument,
-  isCurrentCase,
-} from "../api/service";
+import { Button } from "../ui/Button";
+import { type CurrentCase, type CatalogDocument, isCurrentCase } from "../api/service";
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { ScreenView } from "../ui/ScreenView";
@@ -28,14 +21,13 @@ import "./case.css";
 
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseFactRegions } from "./case/CaseFactRegions";
-import { CaseIdentity } from "./case/CaseIdentity";
+import { CaseIdentity, CaseTitleStrip } from "./case/CaseIdentity";
 import { RegionView } from "../ui/regions/RegionView";
 import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 
 type CaseDetailProps = {
   target: CaseSelector;
   unavailableAct?: ActKind;
-  feedback?: ReactNode;
   reloadSignal: number;
   disclosureAvailable?: boolean;
   authoringAvailable?: boolean;
@@ -121,7 +113,7 @@ const CurrentPresentation = ({
           {panels.attachments}
           {timeline}
         </div>
-        <aside className="case-work-rail">
+        <div className="case-work-rail">
           {panels.work}
           {panels.nextActions}
           {view === null || !disclosureAvailable ? null : (
@@ -135,7 +127,7 @@ const CurrentPresentation = ({
               }}
             />
           )}
-        </aside>
+        </div>
       </div>
       {panels.operation}
     </>
@@ -166,6 +158,8 @@ const CloseReminderSelection = ({ onBack }: Pick<CaseDetailProps, "onBack">) => 
   }
   return (
     <Button
+      variant="secondary"
+      compact
       onPress={() => {
         onBack();
       }}
@@ -190,7 +184,7 @@ const CaseHeader = ({
   const attention = state?.screen.regions.find((region) => region.role === "ATTENTION");
   const breadcrumb = breadcrumbReference(target, identity);
   return (
-    <>
+    <div className="case-page-header">
       <nav className="case-breadcrumb" aria-label={p.text("ui.breadcrumb")}>
         <a
           href={back}
@@ -216,63 +210,35 @@ const CaseHeader = ({
         requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
         timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
         renderIdentity={(heading, facts) => (
-          <>
-            <div className="case-title-sticky" data-region="IDENTITY">
-              {heading}
-            </div>
-            <section className="case-header-card">
-              <div className="case-heading">
-                {facts === null ? null : <div className="case-identity">{facts}</div>}
-                {current?.links
-                  .filter(({ link }) => link.endpoint !== apiEndpoints.reminderList)
-                  .map((named) => {
-                    const href = coreLinkPath(named.link);
-                    return href === undefined ? null : (
-                      <a
-                        key={JSON.stringify(named.link)}
-                        href={href}
-                        onClick={(event) => {
-                          followLink(event, () => {
-                            if (named.link.endpoint === apiEndpoints.caseAttachments) {
-                              const panel = document.getElementById(attachmentFragment);
-                              panel?.focus();
-                              panel?.scrollIntoView();
-                            } else {
-                              navigate(href);
-                            }
-                          });
-                        }}
-                      >
-                        {renderCatalogKey(p, named.labelId)}
-                      </a>
-                    );
-                  })}
-                {current === null ? null : (
-                  <div className="case-header-actions">
-                    <CaseActions
-                      current={current}
-                      phonePrimary
-                      onAct={(act) => {
-                        onAct(current, act);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              {state === null ? null : (
-                <ScreenView
-                  view={state.screen}
-                  roles={["PROGRESS"]}
-                  timeZone={
-                    state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"
-                  }
-                />
+          <section className="case-header-card">
+            <CaseTitleStrip>{heading}</CaseTitleStrip>
+            <div className="case-heading">
+              {facts === null ? null : <div className="case-identity">{facts}</div>}
+              {current === null ? null : (
+                <div className="case-header-actions">
+                  <CaseActions
+                    current={current}
+                    phonePrimary
+                    onAct={(act) => {
+                      onAct(current, act);
+                    }}
+                  />
+                </div>
               )}
-            </section>
-          </>
+            </div>
+            {state === null ? null : (
+              <ScreenView
+                view={state.screen}
+                roles={["PROGRESS"]}
+                timeZone={
+                  state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"
+                }
+              />
+            )}
+          </section>
         )}
       />
-    </>
+    </div>
   );
 };
 
@@ -294,6 +260,7 @@ const UnavailableAct = ({
       </p>
       {current === null ? null : (
         <CaseActions
+          hideRecommendation
           current={current}
           onAct={(act) => {
             onAct(current, act);
@@ -386,7 +353,6 @@ const caseReadPresentation = (
 };
 const CaseDisclosure = ({
   target,
-  feedback,
   onBack,
   onAct,
   onMutationLockChange = ignoreMutationLock,
@@ -412,9 +378,10 @@ const CaseDisclosure = ({
     current.revalidate,
   );
   return (
-    <section className="case-detail" aria-labelledby="case-detail-title">
-      <CaseHeader target={target} state={state} onAct={onAct} onBack={onBack} />
-      {feedback}
+    <Page
+      className="case-detail"
+      header={<CaseHeader target={target} state={state} onAct={onAct} onBack={onBack} />}
+    >
       <CurrentFeedback
         message={current.message}
         loading={current.loading}
@@ -449,7 +416,7 @@ const CaseDisclosure = ({
         />
       )}
       {mounted === null ? timeline : null}
-    </section>
+    </Page>
   );
 };
 

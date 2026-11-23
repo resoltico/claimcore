@@ -11,6 +11,6 @@
     margin: 0;
   }
   .reminder-case-target bdi {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 }

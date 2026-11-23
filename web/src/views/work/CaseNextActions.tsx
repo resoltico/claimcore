@@ -19,6 +19,14 @@ import "./case-next-actions.css";
 
 type Table = Extract<Region["content"], { kind: "TABLE" }>;
 
+const recommendationName = (p: ReturnType<typeof usePresentation>, labelId: string, row: string) =>
+  p.text("ui.rowActionLabel", { action: renderCatalogKey(p, labelId), row });
+
+const reminderCaption = (
+  p: ReturnType<typeof usePresentation>,
+  message: RegionRow["values"][number] | undefined,
+) => (message?.kind === "TEXT" ? message.value : p.text("label.nextActions"));
+
 const ReminderCard = ({
   row,
   table,
@@ -39,6 +47,7 @@ const ReminderCard = ({
   const timing = value("timing");
   const controls = (row.actions ?? []).filter(isOperationAffordance);
   const recommended = controls.find((action) => action.task === row.recommended);
+  const rowLabel = reminderCaption(p, message);
   const actionId = `reminder-${row.key}-actions`;
   const primaryId = `reminder-${row.key}-primary`;
   return (
@@ -59,12 +68,15 @@ const ReminderCard = ({
         {recommended === undefined ? null : (
           <Button
             id={primaryId}
+            variant="secondary"
             compact
+            isDisabled={recommended.blocked !== null}
+            aria-label={recommendationName(p, recommended.labelId, rowLabel)}
             onPress={() => {
               onReminder(recommended, primaryId, true);
             }}
           >
-            {renderCatalogKey(p, recommended.labelId)}
+            {renderCatalogKey(p, recommended.shortLabelId ?? recommended.labelId)}
           </Button>
         )}
         {controls.length === 0 ? null : (
@@ -72,7 +84,7 @@ const ReminderCard = ({
             id={actionId}
             icon
             label={p.text("ui.actionsFor", {
-              row: message?.kind === "TEXT" ? message.value : p.text("label.nextActions"),
+              row: rowLabel,
             })}
             items={controls.map((action) => ({
               id: action.task,
@@ -152,7 +164,7 @@ export const CaseNextActions = ({
     return null;
   }
   const create = canCreate ? (
-    <Button id="case-reminder-add" variant="quiet" compact onPress={onCreate}>
+    <Button id="case-reminder-add" variant="secondary" compact onPress={onCreate}>
       {p.text("task.reminder.create.label")}
     </Button>
   ) : undefined;

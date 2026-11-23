@@ -1,3 +1,4 @@
+import { Section } from "../../ui/Section";
 import { PresentedValue } from "../../components/PresentedValue";
 import { renderCatalogKey } from "../../presentation/messages";
 import { assembleCommand } from "../../api/commandControl";
@@ -185,10 +186,12 @@ const AvailableRequests = ({
     renderCatalogKey(p, selected?.definition[part] ?? "label.accessRequest");
   const disabled = busy || pending;
   return (
-    <section className="access-requests" aria-labelledby="access-requests-title">
-      <h2 id="access-requests-title">
-        {p.text("endpoint.people.requests.label")} · {p.integer(page.items.length)}
-      </h2>
+    <Section
+      className="access-requests"
+      id="access-requests-title"
+      title={p.text("endpoint.people.requests.label")}
+      count={page.page?.screen.regions.find((region) => region.role === "RESULTS")?.count}
+    >
       <RequestFeedback
         loading={page.loading}
         completion={completion}
@@ -317,7 +320,7 @@ const AvailableRequests = ({
           />
         )}
       </Dialog>
-    </section>
+    </Section>
   );
 };
 /** Availability and the session epoch bound all disclosed request data and in-flight mutations. */

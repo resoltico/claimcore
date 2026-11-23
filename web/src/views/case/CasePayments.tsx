@@ -1,7 +1,9 @@
+import { Section } from "../../ui/Section";
+import { EmptyState } from "../../ui/EmptyState";
 import type { Affordance, Region } from "@contracts/client";
 import { useState } from "react";
 import { CasePaymentPages } from "./CasePaymentPages";
-import { PaymentRows, PaymentsShown } from "./PaymentRows";
+import { PaymentRows } from "./PaymentRows";
 
 import type { CurrentCase } from "../../protocol/types";
 import { usePresentation } from "../../presentation/context";
@@ -33,7 +35,6 @@ const PaymentPreview = ({
       ) : (
         <PaymentRows content={content} zone={zone} onAction={onAction} />
       )}
-      {total === null ? null : <PaymentsShown shown={content.rows.length} total={total} />}
       {total !== null && total > content.rows.length ? (
         <Button variant="secondary" onPress={onExpand}>
           {p.text("ui.showAllPayments")}
@@ -67,26 +68,30 @@ export const CasePayments = ({
   const total = count?.kind === "COUNT" ? count.value : null;
   const zone = current.basis.observation.timeZone;
   return (
-    <section
-      className="screen-region case-payments"
+    <Section
+      id="case-payments-title"
+      className="case-payments"
       data-region="PAYMENTS"
-      aria-labelledby="case-payments-title"
+      count={region.count}
+      title={renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
+      actions={<TaskControls actions={region.actions ?? []} compact onAction={onAct} />}
     >
-      <div className="region-heading">
-        <h2 id="case-payments-title">
-          {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
-        </h2>
-        <TaskControls actions={region.actions ?? []} compact onAction={onAct} />
-      </div>
-      <Entries
-        entries={(content.sections ?? []).flatMap((section) => section.entries)}
-        timeZone={zone}
-      />
+      {(content.sections ?? []).map((section) => {
+        const entries = section.entries.filter(
+          (entry) => entry.recorded !== false && entry.key !== "paymentCount",
+        );
+        if (entries.length > 0) {
+          return <Entries key={section.titleId} entries={entries} timeZone={zone} />;
+        }
+        return section.emptyId === undefined ? null : (
+          <EmptyState key={section.titleId} messageId={section.emptyId} />
+        );
+      })}
       {meter === undefined ? null : (
         <MoneyMeter meter={meter} timeZone={zone} label={p.text("label.paid")} />
       )}
       {expanded === owner && total !== null ? (
-        <CasePaymentPages current={current} total={total} onAction={onAct} onChanged={onChanged} />
+        <CasePaymentPages current={current} onAction={onAct} onChanged={onChanged} />
       ) : (
         <PaymentPreview
           content={content}
@@ -98,6 +103,6 @@ export const CasePayments = ({
           }}
         />
       )}
-    </section>
+    </Section>
   );
 };

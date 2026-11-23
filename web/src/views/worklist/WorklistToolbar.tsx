@@ -1,3 +1,4 @@
+import { SearchField } from "../../ui/SearchField";
 import { Toolbar } from "../../ui/Toolbar";
 import { useRef, useState, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
@@ -32,52 +33,30 @@ const WorklistSearch = ({
   const correction = submittedDraft === search ? issue : undefined;
 
   return (
-    <form
-      role="search"
-      aria-label={p.text("ui.worklistSearch")}
-      className="worklist-search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (issue !== undefined) {
-          setSubmittedDraft(search);
-          input.current?.focus();
-        } else if (search !== (query.text ?? "")) {
-          onChange(searchSelection(query, search));
-        }
-      }}
-    >
-      <label htmlFor="worklist-search" className="worklist-search-scope">
-        {p.text("ui.worklistSearch")} ·{" "}
-        {query.view === undefined ? p.term("caseView", "ALL") : p.term("caseView", query.view)}
-      </label>
-      <input
+    <div className="worklist-search">
+      <SearchField
         id="worklist-search"
-        type="search"
-        ref={input}
+        inputRef={input}
+        label={p.text("ui.worklistSearch")}
+        clearLabel={p.text("ui.clearFilters")}
         value={search}
-        aria-invalid={correction === undefined ? undefined : true}
-        aria-describedby={correction === undefined ? undefined : "worklist-search-correction"}
-        onChange={(event) => {
-          setSubmittedDraft(null);
-          onSearch(event.target.value);
-        }}
-        placeholder={p.text("ui.worklistSearch")}
-        autoComplete="off"
-        dir="auto"
-      />
-      {search === "" ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            onSearch("");
-            setSubmittedDraft(null);
-            onChange(searchSelection(query, ""));
+        invalid={correction !== undefined}
+        onSubmit={() => {
+          if (issue !== undefined) {
+            setSubmittedDraft(search);
             input.current?.focus();
-          }}
-        >
-          {p.text("ui.clearFilters")}
-        </button>
-      )}
+          } else if (search !== (query.text ?? "")) {
+            onChange(searchSelection(query, search));
+          }
+        }}
+        onChange={(text) => {
+          setSubmittedDraft(null);
+          onSearch(text);
+        }}
+        onClear={() => {
+          onChange(searchSelection(query, ""));
+        }}
+      />
       {correction === undefined ? null : (
         <p id="worklist-search-correction" className="worklist-search-correction" role="alert">
           {correction === "diagnostic.TOO_LONG"
@@ -85,17 +64,30 @@ const WorklistSearch = ({
             : p.text(correction)}
         </p>
       )}
-    </form>
+    </div>
   );
 };
 export const WorklistToolbar = (props: Props) => (
-  <Toolbar className="worklist-toolbar">
-    <WorklistSearch
-      query={props.query}
-      onChange={props.onChange}
-      search={props.search}
-      onSearch={props.onSearch}
-    />
+  <Toolbar
+    className="worklist-toolbar"
+    filter={
+      <WorklistSearch
+        query={props.query}
+        onChange={props.onChange}
+        search={props.search}
+        onSearch={props.onSearch}
+      />
+    }
+    activeFilters={
+      Object.entries(props.query).filter(
+        ([key, value]) =>
+          key !== "view" &&
+          key !== "text" &&
+          value !== "" &&
+          (!Array.isArray(value) || value.length > 0),
+      ).length
+    }
+  >
     <WorklistFilters query={props.query} onChange={props.onChange} />
     {props.exportAction}
   </Toolbar>

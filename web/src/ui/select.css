@@ -5,15 +5,21 @@
     min-inline-size: 0;
   }
   .ui-select-trigger {
-    inline-size: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    cursor: pointer;
     min-inline-size: 0;
     justify-content: space-between;
     text-align: start;
     font-weight: 400;
   }
+  .select-inline-label {
+    color: var(--text-secondary);
+  }
   .ui-select-trigger > span {
     min-inline-size: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .ui-select-popover {
     --select-max-block-size: var(--width-sidebar-detail);
@@ -51,7 +57,7 @@
     padding: var(--space-3);
     border: var(--border-width) solid transparent;
     border-radius: var(--radius-sm);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     cursor: pointer;
   }
   .ui-select-option[data-selected] {

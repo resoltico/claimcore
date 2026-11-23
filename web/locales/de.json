@@ -431,10 +431,6 @@
     "text": "Zeichen: {count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "Suchen",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "Ausgewähltes Konto",
     "source": "8b63d9475c25"
@@ -539,10 +535,6 @@
     "text": "Zugriff prüfen",
     "source": "abb9a172a69b"
   },
-  "ui.stage.noDate": {
-    "text": "Datum nicht verfügbar",
-    "source": "a0aa75ba71d2"
-  },
   "ui.conflict.kept": {
     "text": "Ihr Entwurf bleibt erhalten. Prüfen Sie die Änderungen, bevor Sie ihn auf Grundlage der neuesten Version vorbereiten.",
     "source": "8613834e4066"
@@ -587,10 +579,6 @@
     "text": "Notiz schreiben…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "Angezeigt: {shown} von {total}",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "Alle Notizen anzeigen",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "Weitere Zahlungen",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "Angezeigt: {shown} von {total}",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "Alle Zahlungen anzeigen",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "Erneut versuchen",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "Filter",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "Filter ({count})",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}: {row}",
+    "source": "87eab2e0b1df"
   }
 }

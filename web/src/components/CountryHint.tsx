@@ -22,10 +22,10 @@ export const CountryHint = ({ code, field }: { code: string; field: FieldCatalog
       }).of(code)
     : undefined;
   return (
-    <small aria-live="polite">
+    <span className="field-hint" aria-live="polite">
       {name === undefined
         ? p.text("ui.countryUnassigned", { code })
         : p.text("ui.countryName", { code, name })}
-    </small>
+    </span>
   );
 };

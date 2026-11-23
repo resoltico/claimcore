@@ -137,18 +137,8 @@
     min-block-size: var(--control-target);
     padding: var(--space-3);
   }
-  .directory-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: start;
-    gap: var(--space-3);
-    margin-block: var(--space-4);
-  }
-  .directory-filters .text-field {
-    flex: 1 1 18rem;
-  }
-  .directory-filters .ui-select-field {
-    flex: 0 1 15rem;
+  .directory-toolbar {
+    margin-block: var(--space-3);
   }
   .account-roles {
     display: block;

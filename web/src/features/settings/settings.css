@@ -62,10 +62,10 @@
   }
   .settings-preview {
     color: var(--text-secondary);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .settings-card dd {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     margin-inline-start: 0;
     margin-block-end: var(--space-3);
   }
@@ -100,7 +100,7 @@
   }
   .settings-option > span {
     min-inline-size: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   @container (width < 20rem) {
     .settings-accents {

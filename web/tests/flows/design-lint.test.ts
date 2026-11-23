@@ -29,6 +29,14 @@ const inspect = (text: string): string => {
 };
 it.each([
   ['<select aria-label="Choice"></select>', "native select"],
+  ['<input type="text" />', "form controls and small elements belong in src/ui"],
+  ["<textarea />", "form controls and small elements belong in src/ui"],
+  ["<small>Caption</small>", "form controls and small elements belong in src/ui"],
+  ["@layer components {.control {overflow-wrap:anywhere}}", "word wrapping anywhere is restricted"],
+  [
+    "@layer components {.identifier-value {overflow-wrap:anywhere}}",
+    "word wrapping anywhere is restricted",
+  ],
   [".control {color: rgb(1 2 3)}", "colour literals"],
   [".control {color: rebeccapurple}", "named colour literal"],
   [".control {color: var(--green-700)}", "semantic colours"],

@@ -1,3 +1,4 @@
+import { Section } from "../../ui/Section";
 import { CsvExportButton } from "../../components/CsvExportButton";
 import { useEndpointCache } from "../../hooks/EndpointProvider";
 import type { PresentedPage } from "../../protocol/types";
@@ -142,6 +143,9 @@ const TimelineCsvExport = ({
     <CsvExportButton selection={selection} available={page !== null && !suppressed && !loading} />
   );
 };
+const activityCount = (page: TimelinePage | null) =>
+  page?.screen.regions.find((region) => region.role === "ACTIVITY")?.count;
+
 export const CaseTimeline = ({
   target,
   onDisclosureChanged,
@@ -180,16 +184,22 @@ export const CaseTimeline = ({
   const views = visibleViews(result.loading, result.views);
 
   return (
-    <section
+    <Section
       className="case-timeline-panel"
-      aria-labelledby="timeline-title"
+      id="timeline-title"
+      title={p.text("ui.timeline.title")}
       aria-busy={result.loading}
+      count={activityCount(result.page)}
+      actions={
+        <TimelineCsvExport
+          target={target}
+          filter={filter}
+          page={result.page}
+          suppressed={suppressed}
+          loading={result.loading}
+        />
+      }
     >
-      <div className="section-heading">
-        <h2 id="timeline-title" tabIndex={-1}>
-          {p.text("ui.timeline.title")}
-        </h2>
-      </div>
       <ViewTabs
         items={[
           { id: "ALL", label: p.text("ui.timeline.all"), count: "" },
@@ -227,13 +237,6 @@ export const CaseTimeline = ({
           <p>{p.text("ui.timeline.empty")}</p>
         ) : null}
         <div className="worklist-actions" role="group" aria-label={p.text("ui.timeline.title")}>
-          <TimelineCsvExport
-            target={target}
-            filter={filter}
-            page={result.page}
-            suppressed={suppressed}
-            loading={result.loading}
-          />
           {result.message === null ? null : (
             <Button
               isDisabled={result.loading}
@@ -258,6 +261,6 @@ export const CaseTimeline = ({
           )}
         </div>
       </ViewTabs>
-    </section>
+    </Section>
   );
 };

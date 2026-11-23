@@ -57,9 +57,10 @@ it("lists primary and secondary cells, preserves the absent value label and omit
   expect(screen.getAllByRole("columnheader")).toHaveLength(3);
   expect(screen.queryByText("unlisted-revision")).not.toBeInTheDocument();
   const stacked = container.querySelector(".data-table-stack");
-  expect(stacked).toHaveTextContent("Due date");
-  expect(stacked).toHaveTextContent("Not recorded");
-  expect(stacked?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
+  expect(stacked?.textContent).toBe("");
+  const due = container.querySelector('[data-column="due"]');
+  expect(due).toHaveTextContent("Not recorded");
+  expect(due?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
 });
 
 it("shows the selected row's details in a dialog and removes them when the read withdraws the row", async () => {

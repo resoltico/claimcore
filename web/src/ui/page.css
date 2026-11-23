@@ -1,7 +1,8 @@
 @layer components {
   .page {
     display: grid;
-    gap: var(--space-4);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--page-gap);
     min-inline-size: 0;
   }
 
@@ -11,7 +12,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--space-3);
-    margin-block-end: var(--space-1);
+    margin: 0;
   }
 
   .page-heading :is(h1, p) {

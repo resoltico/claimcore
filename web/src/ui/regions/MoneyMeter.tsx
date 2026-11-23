@@ -7,11 +7,10 @@ import "./meter.css";
 export const MoneyMeter = ({
   meter,
   timeZone,
-  label,
 }: {
   meter: PresentedMoneyMeter;
   timeZone: string;
-  label: string;
+  label?: string;
 }) => {
   const caption = useId();
   const target = Number(meter.target.amount);
@@ -24,8 +23,7 @@ export const MoneyMeter = ({
         min={0}
         max={maximum}
         value={value}
-        aria-label={label}
-        aria-describedby={caption}
+        aria-labelledby={caption}
       />
       <p id={caption}>
         <SuppliedMessage message={meter.description} timeZone={timeZone} />

@@ -1,3 +1,6 @@
+import { Page } from "../../ui/Page";
+import { ChoiceControl } from "../../ui/TextField";
+import { SearchField } from "../../ui/SearchField";
 import { NoticeView } from "../../presentation/Message";
 import { apiEndpoints } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
@@ -58,41 +61,17 @@ const ReminderSearch = ({
     change(text === "" ? rest : { ...rest, text });
   };
   return (
-    <form
-      className="worklist-search"
-      role="search"
-      aria-label={p.text("ui.worklistSearch")}
-      onSubmit={(event) => {
-        event.preventDefault();
-        apply(draft);
+    <SearchField
+      id="reminder-search"
+      label={p.text("ui.worklistSearch")}
+      clearLabel={p.text("ui.clearFilters")}
+      value={draft}
+      onChange={onDraft}
+      onSubmit={apply}
+      onClear={() => {
+        apply("");
       }}
-    >
-      <label className="worklist-search-scope" htmlFor="reminder-search">
-        {p.text("ui.worklistSearch")}
-      </label>
-      <input
-        id="reminder-search"
-        type="search"
-        value={draft}
-        autoComplete="off"
-        dir="auto"
-        onChange={(event) => {
-          onDraft(event.target.value);
-        }}
-      />
-      {draft === "" ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            onDraft("");
-            apply("");
-            document.getElementById("reminder-search")?.focus();
-          }}
-        >
-          {p.text("ui.clearFilters")}
-        </button>
-      )}
-    </form>
+    />
   );
 };
 const ReminderCaseTarget = ({
@@ -243,7 +222,7 @@ const ReminderAdvancedFilters = ({
               />
             </div>
             <label className="field-toggle">
-              <input
+              <ChoiceControl
                 type="checkbox"
                 checked={effectiveReminderSelection({ ...other, ...draft }).includeInactive}
                 onChange={(event) => {
@@ -294,9 +273,22 @@ const ReminderFilters = ({
   const p = usePresentation();
   const effective = effectiveReminderSelection(query);
   return (
-    <Toolbar className="worklist-toolbar">
-      <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
+    <Toolbar
+      className="worklist-toolbar"
+      filter={<ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />}
+      activeFilters={
+        Object.entries(query).filter(
+          ([key, value]) =>
+            key !== "view" &&
+            key !== "text" &&
+            key !== "target" &&
+            value !== "ANY" &&
+            value !== false,
+        ).length
+      }
+    >
       <Select
+        inlineLabel
         label={renderCatalogKey(p, stateChoice.labelId)}
         value={effective.state}
         options={stateChoice.choices
@@ -309,7 +301,9 @@ const ReminderFilters = ({
         }}
       />
       <Select
+        inlineLabel
         label={renderCatalogKey(p, dueChoice.labelId)}
+        description={p.text("label.reminderQueueHint")}
         value={query.due ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
@@ -330,6 +324,7 @@ const ReminderFilters = ({
         }}
       />
       <Select
+        inlineLabel
         label={renderCatalogKey(p, assignmentChoice.labelId)}
         value={query.assignment ?? ""}
         options={[
@@ -400,10 +395,7 @@ const ReadyReminderQueue = ({
     />
   );
   return (
-    <section className="reminder-queue" aria-labelledby="reminder-queue-title">
-      <h1 id="reminder-queue-title" tabIndex={-1}>
-        {p.text("label.reminders")}
-      </h1>
+    <Page className="reminder-queue" id="reminder-queue-title" title={p.text("label.reminders")}>
       <WorkspaceViewsStatus area="reminders" />
       <ReminderCaseTarget query={query} change={change} />
       {manual ? (
@@ -440,7 +432,7 @@ const ReadyReminderQueue = ({
           {work}
         </ViewTabs>
       )}
-    </section>
+    </Page>
   );
 };
 export const ReminderQueue = (props: QueueProps) => {
@@ -456,8 +448,7 @@ export const ReminderQueue = (props: QueueProps) => {
   const views = useWorkspaceViews().reminders;
   if (parsed === null) {
     return (
-      <section aria-labelledby="reminder-queue-title">
-        <h1 id="reminder-queue-title">{p.text("label.reminders")}</h1>
+      <Page id="reminder-queue-title" title={p.text("label.reminders")}>
         <p role="alert">
           <NoticeView value={{ kind: "local", reason: "invalidInput" }} />
         </p>
@@ -469,7 +460,7 @@ export const ReminderQueue = (props: QueueProps) => {
         >
           {p.text("ui.clearFilters")}
         </button>
-      </section>
+      </Page>
     );
   }
   const { query, manual } = parsed;

@@ -33,14 +33,14 @@ export const ReviewPresentation = ({
             ) : (
               <dd className="review-comparison">
                 <div className="review-before">
-                  <small>{p.text("label.before")}</small>
+                  <span className="field-hint">{p.text("label.before")}</span>
                   <PresentedValue value={entry.before} timeZone={timeZone} />
                 </div>
                 <span className="review-arrow" aria-hidden="true">
                   →
                 </span>
                 <div className="review-after">
-                  <small>{p.text("label.after")}</small>
+                  <span className="field-hint">{p.text("label.after")}</span>
                   <PresentedValue value={entry.after} timeZone={timeZone} />
                 </div>
               </dd>

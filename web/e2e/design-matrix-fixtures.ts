@@ -346,6 +346,11 @@ const routes = (data: {
     },
   },
   {
+    id: "settings",
+    path: "/settings",
+    ready: "#settings-page",
+  },
+  {
     id: "not-found",
     path: "/not-a-claimcore-page",
     ready: ".missing-page h1",

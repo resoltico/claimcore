@@ -431,10 +431,6 @@
     "text": "字符数：{count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "搜索",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "所选账户",
     "source": "8b63d9475c25"
@@ -539,10 +535,6 @@
     "text": "检查访问权限",
     "source": "abb9a172a69b"
   },
-  "ui.stage.noDate": {
-    "text": "日期不可用",
-    "source": "a0aa75ba71d2"
-  },
   "ui.conflict.kept": {
     "text": "已保留您的草稿。请先审阅更改，再基于最新版本准备请求。",
     "source": "8613834e4066"
@@ -587,10 +579,6 @@
     "text": "撰写备注…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "已显示：{shown} / {total}",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "显示所有备注",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "更多付款",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "已显示：{shown} / {total}",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "显示所有付款",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "重试",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "筛选条件",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "筛选条件（{count}）",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}：{row}",
+    "source": "87eab2e0b1df"
   }
 }

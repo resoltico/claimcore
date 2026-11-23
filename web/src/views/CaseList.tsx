@@ -1,4 +1,9 @@
-import { PageHeading } from "../ui/Page";
+import type { ReactNode } from "react";
+import { Button } from "../ui/Button";
+import { EmptyState } from "../ui/EmptyState";
+import { PhoneAction } from "../ui/PhoneAction";
+import { Icon } from "../ui/icons";
+import { Page, PageHeading } from "../ui/Page";
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
@@ -85,36 +90,48 @@ const useWorklist = (query: WorklistQuery) => {
     change,
   };
 };
-type Page = ReturnType<typeof useWorklist>;
-const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
+type CaseListPage = ReturnType<typeof useWorklist>;
+const pageIsEmpty = (page: CaseListPage) =>
+  page.page !== null && !page.loading && page.message === null && page.items.length === 0;
+
+const worklistHeaderAction = (page: CaseListPage, empty: boolean, primary: ReactNode) =>
+  empty || page.page === null ? null : primary;
+
+const WorklistEmpty = ({
+  page,
+  filtered,
+  action,
+}: {
+  page: CaseListPage;
+  filtered: boolean;
+  action: ReactNode;
+}) => {
   const p = usePresentation();
-  const emptyId = page.page?.screen.regions.find(({ role }) => role === "RESULTS")?.emptyId;
-  const emptyMessage = renderCatalogKey(p, emptyId ?? "label.noCasesForView");
+  const emptyId = page.page?.screen.regions.find((region) => region.role === "RESULTS")?.emptyId;
   return (
-    <p>
-      {emptyMessage}{" "}
-      {filtered ? (
-        <button
-          type="button"
-          onClick={() => {
-            page.change(page.query.view === undefined ? {} : { view: page.query.view });
-          }}
-        >
-          {p.text("ui.clearFilters")}
-        </button>
-      ) : null}
-    </p>
+    <EmptyState
+      messageId={emptyId ?? "label.noCasesForView"}
+      action={
+        <>
+          {action}
+          {filtered ? (
+            <Button
+              variant="secondary"
+              onPress={() => {
+                page.change(page.query.view === undefined ? {} : { view: page.query.view });
+              }}
+            >
+              {p.text("ui.clearFilters")}
+            </Button>
+          ) : null}
+        </>
+      }
+    />
   );
 };
-const WorklistFeedback = ({ page }: { page: Page }) => {
+const WorklistFeedback = ({ page, action }: { page: CaseListPage; action: ReactNode }) => {
   const p = usePresentation();
   const filtered = Object.keys(page.query).some((key) => key !== "view");
-  const customEmpty = filtered || page.query.view !== undefined;
-  const empty = customEmpty ? (
-    <WorklistEmpty page={page} filtered={filtered} />
-  ) : (
-    <p>{p.text("label.noCases")}</p>
-  );
   return (
     <>
       {page.message === null ? null : (
@@ -130,13 +147,16 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
           </button>
         </div>
       )}
-      {page.page === null || page.loading || page.message !== null || page.items.length > 0
-        ? null
-        : empty}
+      {page.page === null ||
+      page.loading ||
+      page.message !== null ||
+      page.items.length > 0 ? null : (
+        <WorklistEmpty page={page} filtered={filtered} action={action} />
+      )}
     </>
   );
 };
-const WorklistLoading = ({ page }: { page: Page }) => {
+const WorklistLoading = ({ page }: { page: CaseListPage }) => {
   const p = usePresentation();
   return page.loading ? (
     <>
@@ -151,7 +171,7 @@ const WorklistResults = ({
   reassign,
   editing,
 }: {
-  page: Page;
+  page: CaseListPage;
   onSelect: Props["onSelect"];
   reassign: (row: CaseListControl) => void;
   editing: boolean;
@@ -228,7 +248,7 @@ const WorklistResults = ({
     </>
   );
 };
-const CaseListHeading = ({
+const CaseCreation = ({
   onOpenCase,
   available,
 }: {
@@ -236,7 +256,35 @@ const CaseListHeading = ({
   available: boolean;
 }) => {
   const p = usePresentation();
-  const creation = useCaseCreationControl();
+  const action = useCaseCreationControl();
+  if (action === undefined || onOpenCase === undefined) {
+    return null;
+  }
+  const task = operationTask(action.task);
+  const label = renderCatalogKey(p, action.labelId);
+  const link = (phone: boolean) => (
+    <a
+      id="open-case"
+      className="ui-button ui-button--primary open-case-link"
+      href="/cases/new"
+      aria-label={label}
+      aria-disabled={!available || undefined}
+      onClick={(event) => {
+        followLink(event, () => {
+          if (available) {
+            onOpenCase();
+          }
+        });
+      }}
+    >
+      {phone && task.creates ? <Icon name="add" /> : label}
+    </a>
+  );
+  return <PhoneAction renderCompact={() => link(true)}>{link(false)}</PhoneAction>;
+};
+
+const CaseListHeading = ({ action }: { action: ReactNode }) => {
+  const p = usePresentation();
   const views = useWorkspaceViews().cases.data;
   const all = views?.items.find(({ view }) => view === "ALL")?.count;
   const needed = views?.navigation;
@@ -252,25 +300,7 @@ const CaseListHeading = ({
       id="case-list-title"
       title={p.text("label.cases")}
       subtitle={summary}
-      primaryAction={
-        creation === undefined || onOpenCase === undefined ? null : (
-          <a
-            id="open-case"
-            className="ui-button ui-button--primary open-case-link"
-            href="/cases/new"
-            aria-disabled={!available || undefined}
-            onClick={(event) => {
-              followLink(event, () => {
-                if (available) {
-                  onOpenCase();
-                }
-              });
-            }}
-          >
-            {renderCatalogKey(p, operationTask(creation.task).labelId)}
-          </a>
-        )
-      }
+      primaryAction={action}
     />
   );
 };
@@ -317,9 +347,14 @@ const ReadyCaseList = ({
   const activeView = quickViews.find(({ view }) => view === page.query.view)?.view ?? "";
   const source = page.query.text ?? "";
   const [search, setSearch] = useSearchDraft(source);
+  const empty = pageIsEmpty(page);
+  const primary = <CaseCreation onOpenCase={onOpenCase} available={disclosureAvailable} />;
   return (
-    <section aria-labelledby="case-list-title" className="worklist" aria-busy={page.loading}>
-      <CaseListHeading onOpenCase={onOpenCase} available={disclosureAvailable} />
+    <Page
+      className="worklist"
+      busy={page.loading}
+      header={<CaseListHeading action={worklistHeaderAction(page, empty, primary)} />}
+    >
       <WorkspaceViewsStatus area="cases" />
 
       <ViewTabs
@@ -373,7 +408,7 @@ const ReadyCaseList = ({
             setSelection({ row, readId: crypto.randomUUID() });
           }}
         />
-        <WorklistFeedback page={page} />
+        <WorklistFeedback page={page} action={primary} />
       </ViewTabs>
       {selection === null ? null : (
         <CaseReassignment
@@ -388,7 +423,7 @@ const ReadyCaseList = ({
           recorded={close}
         />
       )}
-    </section>
+    </Page>
   );
 };
 

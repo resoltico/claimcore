@@ -2,8 +2,6 @@ import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints, type CurrentCase, isCurrentCase } from "../../api/service";
 import type { BoundOperationAffordance, OperationAffordance } from "../../operation/affordances";
 
-import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState, type ReactNode } from "react";
 import { useSessionContext } from "../../session/SessionContext";
@@ -118,7 +116,6 @@ const AvailableReminderQueueWork = ({
   const p = usePresentation();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const done = useAcceptedOperation();
   const [masked, setMasked] = useState(false);
   const focus = useRef<string | null>(null);
   const close = () => {
@@ -137,14 +134,6 @@ const AvailableReminderQueueWork = ({
           available={disclosureAvailable && !masked}
         />,
       )}
-      {done.operationId === null || !disclosureAvailable || masked ? null : (
-        <ReceiptFeedback
-          key={done.operationId}
-          operationId={done.operationId}
-          messageId={done.messageId}
-          dismiss={done.clear}
-        />
-      )}
       {disclosureAvailable && !masked ? (
         <ReminderList
           key={refresh}
@@ -153,7 +142,6 @@ const AvailableReminderQueueWork = ({
             focus.current =
               originId ??
               (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
-            done.clear();
             if (isReminderAction(action)) {
               setSelection({
                 action,
@@ -186,8 +174,7 @@ const AvailableReminderQueueWork = ({
           refused={() => {
             setMasked(true);
           }}
-          recorded={(receipt, operationId) => {
-            done.accept(operationId, receiptOutcomeMessage(receipt));
+          recorded={() => {
             setMasked(false);
             setRefresh((value) => value + 1);
             close();

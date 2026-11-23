@@ -17,6 +17,8 @@ export default {
     "ce28f39ef0f5b4f84ac20a3fa918e87b139e4a3a2ea9203a796d5e28ab9e4f79",
   "react-aria/dist/private/visually-hidden/VisuallyHidden":
     "4eb71d22a62ed266adc00f5abadaf15f938044f414c8a2123f40dc59c58a392e",
+  "react-aria-components/dist/private/FileTrigger":
+    "a944c0bbb360c2e1d91ab7246bb0c8cbdbda585bad39d2cad4d815a748219300",
   "react-aria-components/dist/private/Modal":
     "2ef7f5b0580f96d4e1c8aeb3af60da9d035982de65f316cf411f711e0b849535",
   "react-aria-components/dist/private/Popover":

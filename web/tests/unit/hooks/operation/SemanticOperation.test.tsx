@@ -290,7 +290,10 @@ it("connects the actual form, Core review and journal-before-send to one exact p
     inputs: { "field:outcome": "OTHER" },
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
-  expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
+  expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(
+    receipt,
+    f.getModel().prepared?.input.operationId,
+  );
 });
 it("retries an uncertain attempt with its original bytes and identity", async () => {
   const f = fixture(true);
@@ -353,5 +356,8 @@ it("connects the actual dialog with supplied target content, Core review and fin
     expect(f.getModel().phase).toBe("ACCEPTED");
   });
   expect(f.bodies[1]).toBe(f.bodies[0]);
-  expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
+  expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(
+    receipt,
+    f.getModel().prepared?.input.operationId,
+  );
 });

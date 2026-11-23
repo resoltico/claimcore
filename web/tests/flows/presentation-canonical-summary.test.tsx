@@ -65,7 +65,7 @@ it.each(["en", "lv", "ar"])(
       language: resolveLanguage(language),
       displayLocale: "ar-EG",
     });
-    await user.click(screen.getByText(p.text("subject.CASE.label")));
+    await user.click(screen.getByRole("button", { name: p.text("label.technicalDetails") }));
     await user.click(
       screen.getByRole("button", {
         name: p.text("ui.copy", { label: p.text("label.technicalDetails") }),

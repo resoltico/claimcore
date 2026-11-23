@@ -9,6 +9,7 @@ export type Dimension = {
 /** Cover layout risks separately instead of multiplying every independent preference. */
 export const dimensions = (engine: string): Dimension[] => {
   const shared: Dimension[] = [
+    { width: 390, language: "en", mode: "light", accent: "blue" },
     { width: 1280, language: "en", mode: "light", accent: "green" },
     { width: 320, language: "ar", mode: "dark", accent: "blue" },
   ];

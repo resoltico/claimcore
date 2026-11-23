@@ -1,5 +1,6 @@
 @layer components {
   .chip {
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     min-block-size: var(--size-chip);

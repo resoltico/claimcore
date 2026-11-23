@@ -1,3 +1,5 @@
+import { useAcceptedOperation } from "../hooks/useAcceptedOperation";
+import { Page, PhoneTitleTarget } from "../ui/Page";
 import { PhoneActionTarget } from "../ui/PhoneAction";
 import { hasStaticMessage } from "../presentation/messages";
 import { apiEndpoints, type CaseLinkedReceipt, type ServiceResponse } from "../api/service";
@@ -8,7 +10,7 @@ import type { Link, TaskId, Region, Screen } from "@contracts/client";
 
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
-import { ReceiptFeedback, receiptOutcomeMessage } from "./operation/ReceiptFeedback";
+import { OperationFeedback, receiptOutcomeMessage } from "./operation/ReceiptFeedback";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
@@ -29,15 +31,7 @@ import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
 import { isWorkspaceLinkId, Shell } from "./Shell";
 import { RoutedContent } from "./RoutedContent";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
@@ -48,6 +42,13 @@ import { useFocusActivation, useRoute } from "../routing/useRoute";
 import { type Route, casePath } from "../routing/routes";
 
 import { navigate, takeRouteFocus, setRouteFocusOwner } from "../routing/navigation";
+const feedbackDenied = (
+  owner: unknown,
+  requester: RequesterDocument | null,
+  refused: boolean,
+  routeAvailable: boolean,
+) => owner === null || refused || (requester !== null && !routeAvailable);
+
 const category = (
   route: Route,
 ): "cases" | "people" | "recovery" | "peopleHistory" | "disclosureTrail" | "settings" => {
@@ -233,35 +234,6 @@ const WorkspaceStatus = ({
     </>
   );
 };
-const AcceptedReceipt = ({
-  route,
-  receipt,
-  close,
-  shouldFocus,
-}: {
-  route: Route;
-  shouldFocus: () => boolean;
-  receipt: { caseId: string; operationId: string; messageId: string | undefined } | null;
-  close: () => void;
-}) => {
-  if (
-    receipt === null ||
-    route.screen !== "case" ||
-    route.target.kind !== "ID" ||
-    route.target.caseId !== receipt.caseId
-  ) {
-    return null;
-  }
-  return (
-    <ReceiptFeedback
-      key={receipt.operationId}
-      operationId={receipt.operationId}
-      messageId={receipt.messageId}
-      dismiss={close}
-      shouldFocus={shouldFocus}
-    />
-  );
-};
 const succeededRequester = (response: ServiceResponse<typeof apiEndpoints.context> | null) =>
   response?.outcome.kind === "SUCCEEDED" &&
   hasDocumentSubject(response.outcome.document, "REQUESTER")
@@ -334,12 +306,11 @@ const WorkspaceUnavailable = ({ route }: { route: Route }) => {
     title = p.text("view.PEOPLE.label");
   }
   return (
-    <section>
-      <h1 tabIndex={-1}>{title}</h1>
+    <Page id="workspace-unavailable-title" title={title}>
       <p role="alert">
         <Message id="diagnostic.RESOURCE_UNAVAILABLE" />
       </p>
-    </section>
+    </Page>
   );
 };
 /** Visibility can change without destroying a scoped draft; verified identity changes replace its owner. */
@@ -358,6 +329,7 @@ const WorkspaceContents = ({
   fallback: ReactNode;
   children: ReactNode;
 }) => {
+  const p = usePresentation();
   const [opened, setOpened] = useState(advertised);
   if (advertised && !opened) {
     setOpened(true);
@@ -370,9 +342,9 @@ const WorkspaceContents = ({
   }
   if (noViews) {
     return (
-      <h1 tabIndex={-1}>
-        <Message id="ui.noViews" />
-      </h1>
+      <Page id="workspace-no-views-title" title={p.text("ui.noViews")}>
+        {null}
+      </Page>
     );
   }
   return known ? fallback : null;
@@ -420,73 +392,6 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
   </SettingsWorkspace>
 );
 type WorkspaceOwner = OwnerScope & { credential: string };
-/** Feedback is a disclosure owned by this verified requester and session generation. */
-const useAcceptanceFeedback = (
-  owner: WorkspaceOwner | null,
-  requester: RequesterDocument | null,
-  refused: boolean,
-) => {
-  const [accepted, setAccepted] = useState<{
-    owner: object;
-    receipt: { caseId: string; operationId: string; messageId: string | undefined };
-  } | null>(null);
-  const focusedOperation = useRef<string | null>(null);
-  const available =
-    owner !== null &&
-    requester !== null &&
-    isActiveRequester(requester) &&
-    requester.links.some(
-      (named) => named.rel === "VIEW" && named.link.endpoint === apiEndpoints.caseList,
-    ) &&
-    requester.subject.actorId === owner.actorId &&
-    requester.subject.installationId === owner.installationId;
-  const denied = refused || (requester !== null && !available);
-  // A missing read masks display without replacing the verified identity. Known denial does.
-  const feedbackOwner = useMemo(
-    () => (owner === null || denied ? null : { identity: owner }),
-    [owner, denied],
-  );
-  const latestFeedbackOwner = useRef(feedbackOwner);
-  useLayoutEffect(() => {
-    latestFeedbackOwner.current = feedbackOwner;
-    return () => {
-      latestFeedbackOwner.current = null;
-    };
-  }, [feedbackOwner]);
-  const shouldFocus = useCallback(() => {
-    if (
-      accepted === null ||
-      accepted.owner !== latestFeedbackOwner.current ||
-      focusedOperation.current === accepted.receipt.operationId
-    ) {
-      return false;
-    }
-    focusedOperation.current = accepted.receipt.operationId;
-    return true;
-  }, [accepted]);
-  return {
-    owner: feedbackOwner,
-    shouldFocus,
-    receipt: available && accepted?.owner === feedbackOwner ? accepted.receipt : null,
-    clear: () => {
-      setAccepted(null);
-    },
-    accept: (receipt: CaseLinkedReceipt, operationId: string) => {
-      if (feedbackOwner === null || latestFeedbackOwner.current !== feedbackOwner) {
-        return false;
-      }
-      setAccepted({
-        owner: feedbackOwner,
-        receipt: {
-          caseId: receipt.caseId,
-          operationId,
-          messageId: receiptOutcomeMessage(receipt.document),
-        },
-      });
-      return true;
-    },
-  };
-};
 const BusinessDateNotice = ({ date, refresh }: { date: string; refresh: () => void }) => {
   const p = usePresentation();
   return (
@@ -618,10 +523,25 @@ export const Dashboard = () => {
   }, [focusScope]);
   const lockOwner = matchingLockOwner(owner, session, requester);
   const requesterRefused = context.result !== null && isDisclosureRefused(context.result);
-  const feedback = useAcceptanceFeedback(lockOwner, requester, requesterRefused);
+  const feedback = useAcceptedOperation(
+    requester,
+    feedbackDenied(
+      lockOwner,
+      requester,
+      requesterRefused,
+      availableRoute(route, views, requesterTasks(actorContext)),
+    ),
+  );
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
+  const [phoneTitle, setPhoneTitle] = useState<{ path: string; title: string } | null>(null);
+  const publishPhoneTitle = useCallback((title: string) => {
+    const path = location.pathname + location.search;
+    setPhoneTitle((previous) =>
+      previous?.path === path && previous.title === title ? previous : { path, title },
+    );
+  }, []);
   const [phoneAction, setPhoneAction] = useState<HTMLDivElement | null>(null);
   const content = useRouteHeading(route, focusScope, {
     loading: context.loading,
@@ -630,7 +550,13 @@ export const Dashboard = () => {
   const businessDate = useBusinessDate(actorContext);
   const tasks = requesterTasks(actorContext);
   const committed = (receipt: CaseLinkedReceipt, operationId: string) => {
-    if (!feedback.accept(receipt, operationId)) {
+    if (
+      !feedback.accept(
+        operationId,
+        receiptOutcomeMessage(receipt.document),
+        casePath(receipt.caseId),
+      )
+    ) {
       return;
     }
     if (receipt.document.disclosure === "ERASED") {
@@ -664,47 +590,48 @@ export const Dashboard = () => {
                   tasks={tasks}
                   locked={locked}
                   phoneActionRef={setPhoneAction}
+                  phoneTitle={
+                    phoneTitle?.path === location.pathname + location.search
+                      ? phoneTitle.title
+                      : undefined
+                  }
                 />
-                <PhoneActionTarget value={phoneAction}>
-                  <main className="workspace-main">
-                    <RecoveryBanner />
-                    {businessDate.changedDate === null ? null : (
-                      <BusinessDateNotice
-                        date={businessDate.changedDate}
-                        refresh={businessDate.refresh}
-                      />
-                    )}
-                    <WorkspaceStatus context={context} />
-                    {presentation === null ? null : (
-                      <ScreenView view={presentation} roles={["NOTICE"]} />
-                    )}
-                    <div ref={content}>
-                      <LinkNavigationContext value={caseNavigation.linkNavigation}>
-                        <WorkspaceRoute
-                          key={ownerIdentity}
-                          route={route}
-                          caseFeedback={
-                            <AcceptedReceipt
+                <PhoneTitleTarget value={publishPhoneTitle}>
+                  <PhoneActionTarget value={phoneAction}>
+                    <OperationFeedback feedback={feedback}>
+                      <main className="workspace-main">
+                        <RecoveryBanner />
+                        {businessDate.changedDate === null ? null : (
+                          <BusinessDateNotice
+                            date={businessDate.changedDate}
+                            refresh={businessDate.refresh}
+                          />
+                        )}
+                        <WorkspaceStatus context={context} />
+                        {presentation === null ? null : (
+                          <ScreenView view={presentation} roles={["NOTICE"]} />
+                        )}
+                        <div ref={content}>
+                          <LinkNavigationContext value={caseNavigation.linkNavigation}>
+                            <WorkspaceRoute
+                              key={ownerIdentity}
                               route={route}
-                              receipt={feedback.receipt}
-                              close={feedback.clear}
-                              shouldFocus={feedback.shouldFocus}
+                              caseNavigation={caseNavigation}
+                              views={views}
+                              noViews={noViews}
+                              tasks={tasks}
+                              known={actorContext !== null}
+                              checking={context.loading}
+                              setLocked={setLocked}
+                              committed={committed}
+                              refresh={refresh}
                             />
-                          }
-                          caseNavigation={caseNavigation}
-                          views={views}
-                          noViews={noViews}
-                          tasks={tasks}
-                          known={actorContext !== null}
-                          checking={context.loading}
-                          setLocked={setLocked}
-                          committed={committed}
-                          refresh={refresh}
-                        />
-                      </LinkNavigationContext>
-                    </div>
-                  </main>
-                </PhoneActionTarget>
+                          </LinkNavigationContext>
+                        </div>
+                      </main>
+                    </OperationFeedback>
+                  </PhoneActionTarget>
+                </PhoneTitleTarget>
               </div>
             </WorkspaceViewsProvider>
           </RecoveryProvider>

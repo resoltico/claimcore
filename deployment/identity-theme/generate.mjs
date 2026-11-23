@@ -22,6 +22,8 @@ const cardRadius = tokens.foundation["radius-md"].$value;
 const control = tokens.foundation["size-control-touch"].$value;
 
 mkdirSync(join(target, "resources/css"), { recursive: true });
+mkdirSync(join(target, "resources/img"), { recursive: true });
+copyFileSync(new URL("../../web/public/brand.svg", import.meta.url), join(target, "resources/img/brand.svg"));
 mkdirSync(join(target, "messages"), { recursive: true });
 copyFileSync(new URL("./messages/messages_en.properties", import.meta.url), join(target, "messages/messages_en.properties"));
 copyFileSync(new URL("./theme.properties", import.meta.url), join(target, "theme.properties"));
@@ -50,14 +52,13 @@ ${variables("dark")}
   text-transform: none;
 }
 #kc-header-wrapper::before {
-  content: "C" / "";
+  content: "";
   display: grid;
   place-items: center;
   inline-size: ${control};
   block-size: ${control};
   border-radius: ${radius};
-  color: var(--cc-on-accent-solid);
-  background: var(--cc-accent-solid);
+  background: url("../img/brand.svg") center / contain no-repeat;
 }
 .pf-v5-c-login__main, #kc-content {
   color: var(--cc-text-primary);

@@ -1,3 +1,4 @@
+import { feedbackFailures } from "./design-matrix-checks";
 import { noHorizontalOverflow } from "./layout-support";
 import {
   acceptedSubject,
@@ -1087,4 +1088,30 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
     await expect(selected.getByRole("button")).toHaveCount(0);
     page.off("request", count);
   }
+});
+
+test("completing a list reminder focuses its receipt banner", async ({ page }) => {
+  await openAuthenticated(page);
+  const reference = `FEEDBACK-${randomUUID()}`;
+  await openCase(page, reference);
+  const action = "Confirm the synthetic delivery";
+  const operationId = mintOperationId();
+  const reply = await workRequest(page, "operation.execute", {
+    operationId,
+    task: "reminder.create",
+    binding: { kind: "REMINDER", target: { kind: "REFERENCE", caseReference: reference } },
+    inputs: {
+      "input:reminderAction": action,
+      "input:reminderDueDate": "2026-01-01",
+    },
+  });
+  expect(reply.outcome.kind).toBe("ACCEPTED");
+  await page.goto(`/reminders?view=PENDING&q=${encodeURIComponent(reference)}`);
+  const row = page.getByRole("row").filter({ hasText: action });
+  await row.getByRole("button", { name: /^Complete reminder:/u }).click();
+  await expect.poll(() => feedbackFailures(page, "Reminder completed.")).toEqual([]);
+  await expect(row).toHaveCount(0);
+  await expect(
+    page.locator(".page > .status-banner").getByRole("button", { name: "View receipt" }),
+  ).toBeVisible();
 });

@@ -12,8 +12,8 @@ export const CharacterWarning = ({
   const points =
     value === null ? [] : suspiciousCodePoints(allowLineFeed ? value.replaceAll("\n", "") : value);
   return points.length === 0 ? null : (
-    <small className="character-warning">
+    <span className="character-warning">
       {p.text("label.characterWarning", { characters: points.join(", ") })}
-    </small>
+    </span>
   );
 };

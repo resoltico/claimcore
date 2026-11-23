@@ -1,10 +1,10 @@
+import { TextInput } from "../ui/TextField";
+import { TextArea } from "../ui/TextArea";
 import { NoticeView } from "../presentation/Message";
 import { Field, FieldRule } from "../ui/Field";
 import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
-import { TextArea } from "react-aria-components/TextArea";
-import { Input } from "react-aria-components/Input";
 import type { FieldCatalogEntry } from "../api/service";
 import type { Notice } from "../protocol/notices";
 import { usePresentation } from "../presentation/context";
@@ -17,6 +17,7 @@ type CatalogFieldProps = {
   error?: Notice | undefined;
   sharedErrorId?: string | undefined;
   disabled?: boolean;
+  optional?: boolean | undefined;
   onChange: (value: string) => void;
 };
 const referenceAppearance = (field: FieldCatalogEntry) =>
@@ -39,7 +40,7 @@ const ScalarControl = ({ field, name }: { field: FieldCatalogEntry; name: string
       autoComplete="off"
     />
   ) : (
-    <Input
+    <TextInput
       name={name}
       {...referenceAppearance(field)}
       data-field-name={field.name}
@@ -58,7 +59,7 @@ const ScalarCounter = ({ field, value }: { field: FieldCatalogEntry; value: stri
   }
   const count = Array.from(value).length;
   return (
-    <small
+    <span
       className="scalar-counter"
       data-over-limit={count > field.scalar.maximumScalars || undefined}
     >
@@ -66,7 +67,7 @@ const ScalarCounter = ({ field, value }: { field: FieldCatalogEntry; value: stri
         count: p.integer(count),
         maximum: p.integer(field.scalar.maximumScalars),
       })}
-    </small>
+    </span>
   );
 };
 export const CatalogField = ({
@@ -77,11 +78,21 @@ export const CatalogField = ({
   error,
   sharedErrorId,
   disabled = false,
+  optional,
   onChange,
 }: CatalogFieldProps) => {
   const p = usePresentation();
   const name = inputName ?? field.name;
-  const typed = { field, value, inputName: name, disabled, error, sharedErrorId, onChange };
+  const typed = {
+    field,
+    value,
+    inputName: name,
+    disabled,
+    error,
+    sharedErrorId,
+    onChange,
+    optional,
+  };
   if (isDate(field)) {
     return <CatalogDate {...typed} />;
   }
@@ -92,6 +103,7 @@ export const CatalogField = ({
     <Field
       id={`field-${name}`}
       label={p.fieldLabel(field.name)}
+      optional={optional === true ? p.text("label.optional") : undefined}
       {...(error === undefined || sharedErrorId === undefined
         ? {}
         : { "aria-describedby": sharedErrorId })}
@@ -101,7 +113,7 @@ export const CatalogField = ({
       onChange={onChange}
       description={
         <>
-          <small>{description ?? p.hint(field)}</small>{" "}
+          <span className="field-hint">{description ?? p.hint(field)}</span>{" "}
           <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
           <ScalarCounter field={field} value={value} />
           {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}

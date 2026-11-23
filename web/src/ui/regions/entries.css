@@ -16,11 +16,11 @@
     margin-block-end: var(--space-1);
     color: var(--text-secondary);
     font-size: var(--text-xs);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .entries-view dd {
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
   }

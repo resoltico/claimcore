@@ -1,7 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ComboBox, Popover } from "react-aria-components/ComboBox";
-import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
+import { TextField, TextInput } from "../ui/TextField";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { Autocomplete } from "react-aria-components/Autocomplete";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import type { CaseSummary, PresentedScalar_STATE } from "@contracts/client";
 import { apiEndpoints, requestEndpoint, resultNotice, service } from "../api/service";
@@ -43,7 +42,15 @@ const referenceGrammar =
 const isExactReference = (query: string) =>
   referenceGrammar !== null && new RegExp(`^(?:${referenceGrammar})$`, "u").test(query);
 
-const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusId: string }) => {
+const FindControl = ({
+  close,
+  returnFocusId,
+  titleId,
+}: {
+  close: () => void;
+  returnFocusId: string;
+  titleId: string;
+}) => {
   const p = usePresentation();
   const { state } = useSessionContext();
   const credential = state.kind === "authenticated" ? state.token : null;
@@ -56,6 +63,7 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
   const exactRequest = useRef<AbortController | null>(null);
   const flight = useRef<Promise<void>>(Promise.resolve());
   const search = query.value;
+  const suggestionsId = `${titleId}-suggestions`;
 
   useEffect(() => {
     const request = new AbortController();
@@ -144,7 +152,7 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
 
   return (
     <div className="find-control">
-      <ComboBox
+      <Autocomplete
         inputValue={query.value}
         onInputChange={(value) => {
           exactRequest.current?.abort();
@@ -153,43 +161,56 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
           setSuggestionFailed(false);
           setResults([]);
         }}
-        items={results}
-        allowsCustomValue
-        menuTrigger="focus"
-        onChange={(key) => {
-          const selection = results.find(({ id }) => id === key);
-          if (selection !== undefined) {
-            open(selection.path);
-          }
-        }}
       >
-        <Label>{p.text("ui.findCase")}</Label>
-        <Input
-          className="find-input"
-          ref={field}
-          onKeyDownCapture={(event) => {
-            if (
-              event.key === "Enter" &&
-              event.currentTarget.getAttribute("aria-activedescendant") === null
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
-              void exactOrFilter();
+        <TextField aria-labelledby={titleId}>
+          <TextInput
+            aria-labelledby={titleId}
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls={suggestionsId}
+            className="find-input"
+            ref={field}
+            onKeyDownCapture={(event) => {
+              if (
+                (event.ctrlKey || event.metaKey) &&
+                !event.altKey &&
+                event.key.toLowerCase() === "k"
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.select();
+              } else if (
+                event.key === "Enter" &&
+                event.currentTarget.getAttribute("aria-activedescendant") === null
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                void exactOrFilter();
+              }
+            }}
+          />
+        </TextField>
+        <ListBox<Suggestion>
+          className="find-options"
+          id={suggestionsId}
+          aria-labelledby={titleId}
+          items={results}
+          onAction={(key) => {
+            const selection = results.find(({ id }) => id === key);
+            if (selection !== undefined) {
+              open(selection.path);
             }
           }}
-        />
-        <Popover className="find-options" placement="bottom start">
-          <ListBox<Suggestion>>
-            {(item) => (
-              <ListBoxItem id={item.id} textValue={item.reference} className="find-option">
-                <bdi className="identifier-value">{item.reference}</bdi>
-                {item.claimant === null ? null : <bdi>{item.claimant}</bdi>}
-                {item.state === null ? null : <Chip value={item.state} />}
-              </ListBoxItem>
-            )}
-          </ListBox>
-        </Popover>
-      </ComboBox>
+        >
+          {(item) => (
+            <ListBoxItem id={item.id} textValue={item.reference} className="find-option">
+              <bdi className="identifier-value">{item.reference}</bdi>
+              {item.claimant === null ? null : <bdi>{item.claimant}</bdi>}
+              {item.state === null ? null : <Chip value={item.state} />}
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Autocomplete>
       {suggestionFailed ? (
         <Button
           variant="quiet"
@@ -221,9 +242,13 @@ export const FindCase = ({
   setOpen: (open: boolean) => void;
 }) => {
   const p = usePresentation();
+  const titleId = useId();
   return (
     <Dialog
       title={p.text("ui.findCase")}
+      headingId={titleId}
+      closeInHeader
+      placement="top"
       closeLabel={p.text("ui.close")}
       isOpen={open}
       isDismissable
@@ -232,6 +257,7 @@ export const FindCase = ({
       {open ? (
         <FindControl
           returnFocusId={returnFocusId}
+          titleId={titleId}
           close={() => {
             setOpen(false);
           }}

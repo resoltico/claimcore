@@ -1,3 +1,4 @@
+import { Page } from "../../src/ui/Page";
 import { requesterLinks, activeRequester } from "../support/human-requester.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { beforeEach, expect, it, vi, afterEach } from "vitest";
@@ -11,7 +12,6 @@ import { linkedCaseReceipt, type CaseLinkedReceipt } from "../../src/protocol/ty
 import { wireReply } from "../support/reply.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { casePath } from "../../src/routing/routes";
-import type { ReactNode } from "react";
 import type { SessionState } from "../../src/session/useSession";
 
 beforeEach(() => {
@@ -48,15 +48,12 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
 vi.mock("../../src/views/RoutedContent", () => ({
   RoutedContent: ({
     committed,
-    caseFeedback,
   }: {
-    caseFeedback?: ReactNode;
     committed: (receipt: CaseLinkedReceipt, operationId: string) => void;
   }) => {
     audit.callbacks.push(committed);
     return (
-      <>
-        {caseFeedback}
+      <Page id="acceptance-test-title" title="Case">
         <button
           onClick={() => {
             committed(audit.receipt!, "10000000-0000-7000-8000-000000000001");
@@ -64,7 +61,7 @@ vi.mock("../../src/views/RoutedContent", () => ({
         >
           Simulate admitted acceptance
         </button>
-      </>
+      </Page>
     );
   },
 }));

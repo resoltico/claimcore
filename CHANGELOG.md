@@ -13,9 +13,13 @@
 - Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
 - If the CLI cannot launch a browser, it prints the sign-in address to stderr and waits for you to open it.
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
-- Find a case cancels stale lookups on query changes or close. The redesigned workspace adds the Cases breadcrumb, compact row menus, and About ClaimCore.
-- Narrow lists keep row values readable. Reminders and history put filters alongside their list controls.
-- Pending reminders show the supplied timing alongside the due date.
+- The redesigned workspace adds the Cases breadcrumb, compact row menus, and About ClaimCore.
+- List controls share one height. Phone lists keep search visible, put filters in a sheet, and scroll the view tabs horizontally.
+- Case sections share a layout and show supplied counts. Read views omit unrecorded values, and technical details open in dialogs.
+- Accepted operations show a focused banner with View receipt, including reminder completion from a list.
+- Wide lists keep words intact. Stacked rows omit absent secondary values, and grouped reminders show timing in the group header.
+- Find opens with an empty query and inline suggestions. The shortcut selects the query when open. Editing or closing cancels stale lookups.
+- The app bar and browser tab follow the current page. The workspace, signed-out page and realm sign-in use the same brand mark.
 
 ## [0.21.0] - 2026-11-22
 

@@ -1,3 +1,4 @@
+import { Button } from "../ui/Button";
 import { ActionMenu } from "../ui/ActionMenu";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ExportRequest } from "@contracts/client";
@@ -123,17 +124,19 @@ export const CsvExportButton = ({
   return (
     <div className="csv-export">
       {menu === undefined ? (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
+        <Button
+          variant="secondary"
+          isDisabled={disabled}
+          onPress={() => {
             void download();
           }}
         >
           {p.text(label)}
-        </button>
+        </Button>
       ) : (
         <ActionMenu
+          variant="secondary"
+          compact={false}
           label={menu.label}
           items={[
             {

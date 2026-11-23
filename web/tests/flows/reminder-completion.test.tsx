@@ -1,3 +1,5 @@
+import { within } from "@testing-library/react";
+import { Page } from "../../src/ui/Page";
 import { selectRowAction } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
@@ -209,12 +211,14 @@ const setup = () => {
   );
   const lock = vi.fn();
   render(
-    <ReminderQueueWork
-      renderToolbar={(exportAction) => exportAction}
-      filter={{ view: "PENDING" }}
-      onLockChange={lock}
-      disclosureAvailable
-    />,
+    <Page id="reminders-test-title" title="Reminders">
+      <ReminderQueueWork
+        renderToolbar={(exportAction) => exportAction}
+        filter={{ view: "PENDING" }}
+        onLockChange={lock}
+        disclosureAvailable
+      />
+    </Page>,
   );
   return { list, read, preview, execute, lock };
 };
@@ -253,7 +257,11 @@ it("opens a dated completion draft from a row action and writes only after revie
     expect(screen.queryByRole("dialog")).toBeNull();
   });
   await user.click(await screen.findByRole("button", { name: "View receipt" }));
-  expect(await screen.findByText("Reminder completed.")).toBeVisible();
+  expect(
+    await within(screen.getByRole("dialog", { name: "View receipt" })).findByText(
+      "Reminder completed.",
+    ),
+  ).toBeVisible();
   await user.keyboard("{Escape}");
   expect(screen.queryByText("Call the claimant")).toBeNull();
 });
@@ -327,7 +335,7 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
 it("completes the recommended reminder without waiting for review consent", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await user.click(await screen.findByRole("button", { name: /^Complete reminder:/u }));
   await waitFor(() => {
     expect(execute).toHaveBeenCalledOnce();
   });
@@ -336,5 +344,9 @@ it("completes the recommended reminder without waiting for review consent", asyn
   expect(execute.mock.calls[0]![0]).toBe(preview.mock.calls[0]![0]);
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   await user.click(await screen.findByRole("button", { name: "View receipt" }));
-  expect(await screen.findByText("Reminder completed.")).toBeVisible();
+  expect(
+    await within(screen.getByRole("dialog", { name: "View receipt" })).findByText(
+      "Reminder completed.",
+    ),
+  ).toBeVisible();
 });

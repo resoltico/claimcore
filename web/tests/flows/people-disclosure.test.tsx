@@ -532,11 +532,9 @@ it.each(["lost", "unknown"] as const)(
     await waitFor(() => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
-    const identifier = await screen.findByText(pending.input.operationId, { exact: true });
-    expect(identifier.closest(".screen-details")).not.toBeNull();
-    expect(identifier).not.toBeVisible();
+    const receipt = await screen.findByRole("button", { name: "View receipt" });
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Recorded change" })).toHaveFocus();
+      expect(receipt.closest(".status-banner")).toHaveFocus();
     });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);

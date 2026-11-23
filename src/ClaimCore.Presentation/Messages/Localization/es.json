@@ -288,8 +288,8 @@
     "source": "14d33bd014e6"
   },
   "attention.ASSIGNEE_UNAVAILABLE.label": {
-    "text": "Persona responsable no disponible",
-    "source": "f5a70e0c561b"
+    "text": "Responsable no disponible",
+    "source": "4606d45b02f8"
   },
   "attention.DUE_TODAY.label": {
     "text": "Vence hoy",
@@ -4566,5 +4566,17 @@
   "label.paymentDecision": {
     "text": "Decisión de pago",
     "source": "57372fefe301"
+  },
+  "label.person": {
+    "text": "Persona",
+    "source": "6007db63e18e"
+  },
+  "label.useAccountId": {
+    "text": "Usar el ID de cuenta {id}",
+    "source": "2114d74198b7"
+  },
+  "label.optional": {
+    "text": "(opcional)",
+    "source": "0059798b7f70"
   }
 }

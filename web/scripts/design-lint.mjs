@@ -79,6 +79,26 @@ const inspectCss = (sheet, path, layers, selectors, add) => {
         }
       }
     }
+    rule.walkDecls(/^(overflow-wrap|word-wrap)$/iu, (decl) => {
+      if (decl.value.trim().toLowerCase() !== "anywhere") {
+        return;
+      }
+      const stacked =
+        rule.parent?.type === "atrule" &&
+        rule.parent.name === "container" &&
+        rule.parent.params === "data-table (width < 30rem)";
+      if (
+        !rule.selectors.every(
+          (selector) =>
+            selector === ".ui-dialog .identifier-value" ||
+            (stacked && selector === ".data-table .identifier-value"),
+        )
+      ) {
+        add(
+          `word wrapping anywhere is restricted to identifiers in stacked tables and dialogs: ${rule.selector}`,
+        );
+      }
+    });
     if (/\[data-(?:code|headline|act)\s*=/u.test(rule.selector)) {
       add(`domain identity selector: ${rule.selector}`);
     }
@@ -97,10 +117,22 @@ const inspectCss = (sheet, path, layers, selectors, add) => {
  * @param {string} text
  * @param {(reason: string) => void} add
  */
-const inspectSource = (path, text, add) => {
+const inspectControls = (path, text, add) => {
+  if (!path.startsWith("ui/") && /<(?:input|textarea|select|small)(?:\s|\/?>)/u.test(text)) {
+    add("form controls and small elements belong in src/ui");
+  }
   if (/<select(?:\s|>)/u.test(text) || /["']react-aria-components\/Select["']/u.test(text)) {
     add("native select and HiddenSelect violate qualified WebKit CSP; use ui/Select");
   }
+};
+
+/**
+ * @param {string} path
+ * @param {string} text
+ * @param {(reason: string) => void} add
+ */
+const inspectSource = (path, text, add) => {
+  inspectControls(path, text, add);
   if (/(?:#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\s*\()/iu.test(text)) {
     add("colour literals belong in theme/tokens.json");
   }

@@ -5,7 +5,7 @@ import { render, screen } from "../../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { ScreenView } from "../../../src/ui/ScreenView";
 
-it("renders an opaque core document without reconstructing its facts", () => {
+it("renders an opaque core document without reconstructing its facts", async () => {
   const view = render(
     <ScreenView
       view={{
@@ -43,8 +43,9 @@ it("renders an opaque core document without reconstructing its facts", () => {
     />,
   );
   expect(screen.getByText("Core-only caption Ω")).toBeVisible();
-  const technical = screen.getByText("opaque-operation-identity");
-  expect(technical.closest("details")).not.toHaveAttribute("open");
+  expect(screen.queryByText("opaque-operation-identity")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Technical details" }));
+  expect(screen.getByText("opaque-operation-identity").closest('[role="dialog"]')).not.toBeNull();
   expect(view.container.querySelector('[data-region="FACTS"]')).not.toHaveTextContent(
     "opaque-operation-identity",
   );

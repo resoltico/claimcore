@@ -9,6 +9,11 @@
     box-shadow: var(--shadow-2);
   }
 
+  .action-menu-description {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+  }
   .action-menu-item {
     display: flex;
     align-items: center;

@@ -431,10 +431,6 @@
     "text": "文字数：{count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "検索",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "選択したアカウント",
     "source": "8b63d9475c25"
@@ -539,10 +535,6 @@
     "text": "アクセス権限を確認",
     "source": "abb9a172a69b"
   },
-  "ui.stage.noDate": {
-    "text": "日付なし",
-    "source": "a0aa75ba71d2"
-  },
   "ui.conflict.kept": {
     "text": "下書きは保持されています。最新版に基づいて準備する前に、変更内容を確認してください。",
     "source": "8613834e4066"
@@ -587,10 +579,6 @@
     "text": "メモを入力…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "表示：{total}件中{shown}件",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "すべてのメモを表示",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "さらに支払いを表示",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "表示：{total}件中{shown}件",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "すべての支払いを表示",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "再試行",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "絞り込み",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "絞り込み（{count}）",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}：{row}",
+    "source": "87eab2e0b1df"
   }
 }

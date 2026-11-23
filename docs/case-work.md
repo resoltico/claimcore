@@ -1,6 +1,6 @@
 # Case work
 
-Use **Find a case** from the sidebar or the phone toolbar. Press Ctrl+K, or Command+K on Apple
+Use **Find a case** from the sidebar or the phone toolbar. Suggestions appear inside the dialog. Press Ctrl+K, or Command+K on Apple
 platforms. Choose a suggestion, enter an exact reference, or search All with your text. **Filter this
 view** limits the current worklist. Use the **Cases** breadcrumb to return to your last worklist.
 
@@ -20,6 +20,8 @@ ClaimCore records assertions; it does not decide coverage or transfer money. Use
 ## Find work
 
 Cases opens at **Needs attention**. Use the view tabs, **More views**, and **Filter this view** to narrow the results.
+On phones, swipe the view tabs to reach More views or open **Filters** for the list filters and export.
+
 **Mine** follows explicit responsibility. **Unassigned** finds active open cases with nobody responsible.
 **Decided and not fully paid** includes partly paid cases. Paid cases ready to close need attention too.
 A case with several attention reasons counts once.

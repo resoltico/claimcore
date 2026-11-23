@@ -1,7 +1,6 @@
 @layer views {
   .worklist {
     min-inline-size: 0;
-    padding-block: var(--space-4);
   }
   .worklist-filters {
     display: flex;
@@ -10,36 +9,9 @@
     align-items: center;
     min-inline-size: 0;
   }
-  .worklist-search {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: center;
-    min-inline-size: 0;
-    flex: 1 1 28rem;
-  }
-  .worklist-search input {
-    flex: 1 1 16rem;
-    inline-size: auto;
-    min-inline-size: var(--target-minimum);
-    padding: var(--space-3);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-sm);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-  }
   .worklist-search-correction {
     flex-basis: 100%;
     margin: 0;
-  }
-  .worklist-filters details {
-    position: relative;
-  }
-  .worklist-filters summary {
-    padding: var(--space-2);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
   }
   .worklist-filters fieldset {
     display: grid;
@@ -131,7 +103,7 @@
     font-variant-numeric: tabular-nums;
   }
   .summary-totals bdi {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .observation-basis {
     color: var(--text-secondary);
@@ -163,7 +135,7 @@
 
   .case-selection-repair {
     margin-block: var(--space-4);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .case-selection-values {
     display: grid;
@@ -196,22 +168,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    align-items: end;
+    align-items: start;
     min-inline-size: 0;
-    margin-block: var(--space-3);
+    margin-block: var(--toolbar-page-margin);
   }
 
   .worklist-filter-controls {
     display: contents;
   }
 
-  .worklist-toolbar .worklist-search {
-    flex: 1 1 var(--width-worklist-filter);
-    min-inline-size: 0;
-  }
-  .worklist-search-scope {
-    flex-basis: 100%;
-  }
   .worklist-actions {
     display: flex;
     flex-wrap: wrap;

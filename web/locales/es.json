@@ -431,10 +431,6 @@
     "text": "Caracteres: {count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "Buscar",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "Cuenta seleccionada",
     "source": "8b63d9475c25"
@@ -539,10 +535,6 @@
     "text": "Comprobar el acceso",
     "source": "abb9a172a69b"
   },
-  "ui.stage.noDate": {
-    "text": "Fecha no disponible",
-    "source": "a0aa75ba71d2"
-  },
   "ui.conflict.kept": {
     "text": "Se conserva tu borrador. Revisa los cambios antes de prepararlo con respecto a la última versión.",
     "source": "8613834e4066"
@@ -587,10 +579,6 @@
     "text": "Escriba una nota…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "Mostradas: {shown} de {total}",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "Mostrar todas las notas",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "Más pagos",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "Mostrados: {shown} de {total}",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "Mostrar todos los pagos",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "Reintentar",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "Filtros",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "Filtros ({count})",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}: {row}",
+    "source": "87eab2e0b1df"
   }
 }

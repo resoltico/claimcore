@@ -431,10 +431,6 @@
     "text": "문자 수: {count}/{maximum}",
     "source": "907b0d890dff"
   },
-  "ui.search": {
-    "text": "검색",
-    "source": "49c266baaaa7"
-  },
   "ui.selectedAccount": {
     "text": "선택한 계정",
     "source": "8b63d9475c25"
@@ -539,10 +535,6 @@
     "text": "접근 권한 확인",
     "source": "abb9a172a69b"
   },
-  "ui.stage.noDate": {
-    "text": "날짜 정보 없음",
-    "source": "a0aa75ba71d2"
-  },
   "ui.conflict.kept": {
     "text": "초안은 유지됩니다. 최신 버전을 기준으로 준비하기 전에 변경 사항을 검토하세요.",
     "source": "8613834e4066"
@@ -587,10 +579,6 @@
     "text": "메모 작성…",
     "source": "14d759598e8e"
   },
-  "ui.notesShown": {
-    "text": "표시: {total}개 중 {shown}개",
-    "source": "3c0788d85a9a"
-  },
   "ui.showAllNotes": {
     "text": "모든 메모 보기",
     "source": "28d554a1cdb1"
@@ -610,10 +598,6 @@
   "ui.morePayments": {
     "text": "지급 더 보기",
     "source": "a5bbc385d875"
-  },
-  "ui.paymentsShown": {
-    "text": "표시: {total}개 중 {shown}개",
-    "source": "3c0788d85a9a"
   },
   "ui.showAllPayments": {
     "text": "모든 지급 보기",
@@ -758,5 +742,17 @@
   "ui.retryRefresh": {
     "text": "다시 시도",
     "source": "942087cc2d41"
+  },
+  "ui.filtersSheet": {
+    "text": "필터",
+    "source": "546ebb8eb993"
+  },
+  "ui.filtersSheetCount": {
+    "text": "필터 ({count})",
+    "source": "da897ba78973"
+  },
+  "ui.rowActionLabel": {
+    "text": "{action}: {row}",
+    "source": "87eab2e0b1df"
   }
 }

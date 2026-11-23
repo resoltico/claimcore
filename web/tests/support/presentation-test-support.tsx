@@ -1,3 +1,5 @@
+import { OperationFeedback } from "../../src/views/operation/ReceiptFeedback";
+import { useAcceptedOperation } from "../../src/hooks/useAcceptedOperation";
 import { vi } from "vitest";
 import { InlineNoteDraftProvider } from "../../src/views/case/InlineNoteDraft";
 import { WorkspaceViewsContext } from "../../src/views/WorkspaceViews";
@@ -43,6 +45,10 @@ export const testWorkspaceIdentity = {
   credential: testSession.token,
   sessionEpoch: testSession.epoch,
 };
+const TestFeedback = ({ children }: { children: ReactNode }) => {
+  const feedback = useAcceptedOperation();
+  return <OperationFeedback feedback={feedback}>{children}</OperationFeedback>;
+};
 export const TestProviders = ({ children }: { children: ReactNode }) => (
   <JournalContext value={testJournal}>
     <PresentationProvider>
@@ -57,7 +63,9 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
         <InlineNoteDraftProvider owner={testWorkspaceIdentity}>
           <EndpointProvider>
             <RequesterContext value={requester}>
-              <WorkspaceViewsContext value={testWorkspaceViews}>{children}</WorkspaceViewsContext>
+              <WorkspaceViewsContext value={testWorkspaceViews}>
+                <TestFeedback>{children}</TestFeedback>
+              </WorkspaceViewsContext>
             </RequesterContext>
           </EndpointProvider>
         </InlineNoteDraftProvider>

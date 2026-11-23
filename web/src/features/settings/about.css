@@ -2,7 +2,7 @@
   .about-panel {
     display: grid;
     gap: var(--space-3);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .about-panel p {

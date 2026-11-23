@@ -30,7 +30,7 @@
     max-inline-size: var(--dialog-width);
     max-block-size: calc(var(--viewport-block) - var(--space-6));
     overflow: auto;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     padding: var(--space-5);
     border: var(--border-width) solid var(--border-control);
     border-radius: var(--radius-md);

@@ -1,6 +1,9 @@
+import { OperationFeedbackContext } from "../../hooks/OperationFeedbackContext";
+import type { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
+import { PageBanner } from "../../ui/Page";
 import type { OperationReceipt } from "../../protocol/types";
 import { renderCatalogKey } from "../../presentation/messages";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
@@ -58,3 +61,33 @@ export const ReceiptFeedback = ({
     </>
   );
 };
+
+export const OperationFeedback = ({
+  feedback,
+  children,
+}: {
+  feedback: ReturnType<typeof useAcceptedOperation>;
+  children: ReactNode;
+}) => (
+  <OperationFeedbackContext
+    value={(receipt, operationId) => {
+      feedback.accept(operationId, receiptOutcomeMessage(receipt));
+    }}
+  >
+    <PageBanner
+      value={
+        feedback.operationId === null ? null : (
+          <ReceiptFeedback
+            key={feedback.operationId}
+            operationId={feedback.operationId}
+            messageId={feedback.messageId}
+            dismiss={feedback.clear}
+            shouldFocus={feedback.shouldFocus}
+          />
+        )
+      }
+    >
+      {children}
+    </PageBanner>
+  </OperationFeedbackContext>
+);

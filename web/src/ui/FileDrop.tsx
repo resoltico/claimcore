@@ -1,50 +1,74 @@
-import { useState, type ReactNode } from "react";
+import { useRef } from "react";
+import { DropZone } from "react-aria-components/DropZone";
+import { FileTrigger } from "react-aria-components/FileTrigger";
+import { Button } from "./Button";
 import "./file-drop.css";
 
 export const FileDrop = ({
   enabled,
   choose,
-  children,
+  label,
+  hint,
+  busy,
 }: {
   enabled: boolean;
   choose: (file: File) => void;
-  children: ReactNode;
+  label: string;
+  hint: string;
+  busy: boolean;
 }) => {
-  const [dragOver, setDragOver] = useState(false);
+  const held = useRef<number | null>(null);
   return (
-    <div
+    <DropZone
       className="file-drop"
-      data-drag-over={dragOver || undefined}
-      onDragOver={(event) => {
-        if (!enabled || !event.dataTransfer.types.includes("Files")) {
-          return;
+      aria-label={hint}
+      isDisabled={!enabled}
+      data-pending={busy || undefined}
+      onPointerDownCapture={(event) => {
+        held.current = busy ? event.pointerId : null;
+        if (busy) {
+          event.preventDefault();
+          event.stopPropagation();
         }
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-        setDragOver(true);
       }}
-      onDragLeave={(event) => {
+      onPointerCancel={(event) => {
+        if (event.pointerId === held.current) {
+          held.current = null;
+        }
+      }}
+      onClickCapture={(event) => {
         if (
-          !(event.relatedTarget instanceof Node) ||
-          !event.currentTarget.contains(event.relatedTarget)
+          event.nativeEvent instanceof PointerEvent &&
+          event.nativeEvent.pointerId === held.current
         ) {
-          setDragOver(false);
+          held.current = null;
+          event.preventDefault();
+          event.stopPropagation();
         }
       }}
       onDrop={(event) => {
-        if (!enabled || !event.dataTransfer.types.includes("Files")) {
-          return;
-        }
-        event.preventDefault();
-        setDragOver(false);
-        const file =
-          event.dataTransfer.files.length === 1 ? event.dataTransfer.files.item(0) : null;
-        if (file !== null) {
-          choose(file);
+        const [item] = event.items;
+        if (enabled && !busy && event.items.length === 1 && item?.kind === "file") {
+          void item.getFile().then((file) => {
+            choose(file);
+          });
         }
       }}
     >
-      {children}
-    </div>
+      <p>{hint}</p>
+      <FileTrigger
+        aria-label={label}
+        onSelect={(files) => {
+          const file = files?.item(0);
+          if (enabled && !busy && file !== undefined && file !== null) {
+            choose(file);
+          }
+        }}
+      >
+        <Button variant="secondary" isDisabled={!enabled} isPending={busy}>
+          <span>{label}</span>
+        </Button>
+      </FileTrigger>
+    </DropZone>
   );
 };

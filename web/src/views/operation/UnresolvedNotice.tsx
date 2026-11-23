@@ -1,3 +1,4 @@
+import { TechnicalDetails } from "../../ui/TechnicalDetails";
 import type { Screen } from "@contracts/client";
 import type { RecoveryRecord } from "../../protocol/recoveryJournal";
 import { casePath } from "../../routing/routes";
@@ -50,8 +51,7 @@ const RecoveryIdentity = ({
     return null;
   }
   return (
-    <details data-region="DETAILS">
-      <summary>{p.text("label.technicalDetails")}</summary>
+    <TechnicalDetails>
       <dl>
         <dt>{p.fieldLabel("operationId")}</dt>
         <dd>
@@ -59,7 +59,7 @@ const RecoveryIdentity = ({
           <CopyValue label={p.fieldLabel("operationId")} value={operationId} />
         </dd>
       </dl>
-    </details>
+    </TechnicalDetails>
   );
 };
 const RecoveryControls = ({

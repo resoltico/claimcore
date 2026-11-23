@@ -1,7 +1,7 @@
 import { NoticeView } from "../presentation/Message";
 import { DateEntryDraft } from "./DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
-import { FieldRule } from "../ui/Field";
+import { FieldGroup, FieldRule } from "../ui/Field";
 import { parseDate } from "@internationalized/date";
 import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
 import { Calendar, CalendarGrid, CalendarCell } from "react-aria-components/Calendar";
@@ -27,6 +27,7 @@ export type TypedFieldProps = {
   value: string;
   inputName: string;
   disabled: boolean;
+  optional?: boolean | undefined;
   error?: Notice | undefined;
   sharedErrorId?: string | undefined;
   onChange: (value: string) => void;
@@ -69,49 +70,69 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
     </DialogTrigger>
   );
 };
-const DateEntry = ({ field, value, inputName, disabled, error, onChange }: TypedFieldProps) => {
+const DateEntry = ({
+  field,
+  value,
+  inputName,
+  disabled,
+  error,
+  onChange,
+  optional,
+}: TypedFieldProps) => {
   const p = usePresentation();
   return (
-    <DateField
-      id={`field-${inputName}`}
-      name={inputName}
-      className="text-field"
-      data-field-name={field.name}
-      value={dateValue(value)}
-      onChange={(next) => {
-        onChange(next?.toString() ?? "");
-      }}
-      isDisabled={disabled}
-      isInvalid={error !== undefined}
-      validationBehavior="aria"
-    >
-      <DateEntryDraft path={inputName} canonical={value} disabled={disabled} />
-      <div className="field-label-row">
-        <Label>{p.fieldLabel(field.name)}</Label>
-      </div>
-      <DateInput lang={p.displayLocale} aria-invalid={error !== undefined || undefined}>
-        {(segment) => <DateSegment segment={segment} />}
-      </DateInput>
-      <Text slot="description" className="field-description">
-        <small>{p.hint(field)}</small>{" "}
-        <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
-      </Text>
-      {error === undefined ? null : (
-        <FieldError>
-          <NoticeView value={error} />
-        </FieldError>
-      )}
-    </DateField>
+    <FieldGroup>
+      <DateField
+        id={`field-${inputName}`}
+        name={inputName}
+        className="text-field"
+        data-field-name={field.name}
+        value={dateValue(value)}
+        onChange={(next) => {
+          onChange(next?.toString() ?? "");
+        }}
+        isDisabled={disabled}
+        isInvalid={error !== undefined}
+        validationBehavior="aria"
+      >
+        <DateEntryDraft path={inputName} canonical={value} disabled={disabled} />
+        <div className="field-label-row">
+          <Label>{p.fieldLabel(field.name)}</Label>
+          {optional === true ? (
+            <span className="field-hint">{p.text("label.optional")}</span>
+          ) : null}
+        </div>
+        <div className="control-box field-control-group">
+          <DateInput lang={p.displayLocale} aria-invalid={error !== undefined || undefined}>
+            {(segment) => <DateSegment segment={segment} />}
+          </DateInput>
+          <CalendarPopup
+            field={field}
+            value={value}
+            inputName={inputName}
+            disabled={disabled}
+            error={error}
+            onChange={onChange}
+          />
+        </div>
+        <Text slot="description" className="field-description">
+          <span className="field-hint">{p.hint(field)}</span>{" "}
+          <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+        </Text>
+        {error === undefined ? null : (
+          <FieldError>
+            <NoticeView value={error} />
+          </FieldError>
+        )}
+      </DateField>
+    </FieldGroup>
   );
 };
 export const CatalogDate = (props: TypedFieldProps) => {
   const p = usePresentation();
   return (
-    <div className="date-control">
-      <I18nProvider locale={p.displayLocale}>
-        <DateEntry {...props} />
-      </I18nProvider>
-      <CalendarPopup {...props} />
-    </div>
+    <I18nProvider locale={p.displayLocale}>
+      <DateEntry {...props} />
+    </I18nProvider>
   );
 };
