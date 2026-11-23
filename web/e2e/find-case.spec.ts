@@ -38,6 +38,6 @@ test("Find uses a modifier shortcut, debounces suggestions and routes exact and 
     (url) =>
       url.pathname === "/cases" &&
       url.searchParams.get("view") === "ALL" &&
-      url.searchParams.get("text") === "Synthetic claimant",
+      url.searchParams.get("q") === "Synthetic claimant",
   );
 });

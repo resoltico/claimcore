@@ -283,7 +283,12 @@ export const CaseNotes = ({
       {current.actions.some(
         (action) => isNarrativeCreationId(action.task) && action.blocked === null,
       ) ? (
-        <div className="note-composer" hidden={!authoringAvailable} inert={!authoringAvailable}>
+        <div
+          className="note-composer"
+          data-expanded={text.length > 0 || undefined}
+          hidden={!authoringAvailable}
+          inert={!authoringAvailable}
+        >
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
             id={`${id}-text`}

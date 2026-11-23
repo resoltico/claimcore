@@ -259,7 +259,7 @@
     font-size: var(--text-case-heading);
   }
 
-  .note-composer textarea:focus {
+  .note-composer:is(:focus-within, [data-expanded]) textarea {
     min-block-size: var(--height-notes);
   }
 }
