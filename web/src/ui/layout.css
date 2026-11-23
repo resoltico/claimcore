@@ -3,6 +3,7 @@
     --gutter: var(--space-6);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
+    --drawer-block-size: 100%;
   }
 
   @media (width < 64rem) {

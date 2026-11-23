@@ -59,7 +59,7 @@
   .ui-dialog-overlay--end [role="dialog"] {
     display: var(--drawer-flow, flex);
     flex-direction: column;
-    block-size: var(--drawer-block-size, 100%);
+    block-size: var(--drawer-block-size);
     min-block-size: 0;
   }
   .ui-dialog-overlay--end .ui-dialog-header {
