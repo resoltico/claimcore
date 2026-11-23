@@ -1,3 +1,4 @@
+import { markSignedOut } from "../../src/routing/signInAttempt";
 import { localNotice } from "../../src/protocol/notices";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -36,13 +37,15 @@ it("renders loading and refreshable session failures", async () => {
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
 });
 
-it("renders OIDC sign-in and authenticated dashboard paths", async () => {
+it("renders signed-out, rejected and authenticated dashboard paths", async () => {
+  markSignedOut(window.sessionStorage);
   const anonymous = await renderState({ kind: "anonymous", token: null, message: null, epoch: 2 });
-  expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
+  expect(await screen.findByRole("link", { name: "Sign in again" })).toHaveAttribute(
     "href",
     "/auth/login?language=en",
   );
   anonymous.unmount();
+  window.sessionStorage.clear();
   const rejected = await renderState({
     kind: "anonymous",
     token: "anonymous",

@@ -1,3 +1,5 @@
+import { workspaceSignOut } from "../support/workspace-actions";
+import { markSignedOut } from "../../src/routing/signInAttempt";
 import { caseSubject, caseDocumentInput } from "../support/case-document.fixtures";
 import { operationAffordance } from "../support/affordances.fixtures";
 
@@ -175,12 +177,13 @@ describe("metadata-driven operation acceptance", () => {
   );
 });
 const sessionLifecycle = async () => {
+  markSignedOut(window.sessionStorage);
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(sessionReply(false, "anonymous"));
   const anonymous = render(<App />);
   const signIn = await screen.findByRole("link", {
-    name: "Sign in",
+    name: "Sign in again",
   });
   expect(signIn).toHaveAttribute("href", "/auth/login?language=en");
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -207,11 +210,10 @@ const sessionLifecycle = async () => {
       name: "Cases",
     }),
   ).toBeVisible();
-  await user.click(document.querySelector(".account-menu > summary")!);
-  await user.click(getButton("Sign out"));
+  await user.click(await workspaceSignOut(user));
   expect(
     await screen.findByRole("heading", {
-      name: "Sign in to the case register",
+      name: "You signed out",
     }),
   ).toBeVisible();
 };

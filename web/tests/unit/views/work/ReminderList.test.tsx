@@ -251,6 +251,7 @@ const actionRow = (): AuthoredReminder => {
   return {
     row: {
       ...item.row,
+      recommended: "reminder.complete",
       actions: [
         operationAffordance("reminder.complete", {
           kind: "REMINDER",
@@ -275,7 +276,7 @@ it("delegates the supplied completion control without previewing or writing in t
   );
   render(<ReminderList filter={{}} onAct={onAct} />);
   await userEvent.click(await screen.findByRole("button", { name: "Complete reminder" }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith(item.row.actions![0], expect.any(String));
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(item.row.actions![0], expect.any(String), true);
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
 });

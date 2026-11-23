@@ -99,6 +99,7 @@ const TableRowControls = ({
 }) => {
   const p = usePresentation();
   const trigger = useId();
+  const primary = useId();
   const offered = row.actions ?? [];
   const recommended = offered.find((action) => action.task === row.recommended);
   const items: MenuItem[] =
@@ -134,10 +135,11 @@ const TableRowControls = ({
       <div className="data-table-actions">
         {recommended === undefined || onAction === undefined ? null : (
           <Button
+            id={primary}
             compact
             isDisabled={actionsDisabled === true || recommended.blocked !== null}
             onPress={() => {
-              onAction(recommended, row, trigger, true);
+              onAction(recommended, row, primary, true);
             }}
           >
             {renderCatalogKey(p, recommended.labelId)}

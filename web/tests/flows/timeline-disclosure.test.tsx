@@ -1,7 +1,6 @@
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -85,22 +84,18 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
   const timeline = mockEndpoint("case.timeline")
     .mockResolvedValueOnce(succeeded("FULL"))
     .mockReturnValueOnce(pending);
-  render(
+  const tree = (reloadSignal: number) => (
     <CaseDetail
       target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
-      reloadSignal={0}
+      reloadSignal={reloadSignal}
       definition={definition.catalog}
       onBack={vi.fn()}
       onAct={vi.fn()}
-    />,
+    />
   );
+  const view = render(tree(0));
   expect(await screen.findAllByText("PRIOR_FULL_PAYLOAD_CANARY")).toHaveLength(1);
-  const user = userEvent.setup();
-  const controls = document.querySelector(".case-reminder-controls")!;
-  expect(controls).not.toHaveAttribute("open");
-  await user.click(controls.querySelector("summary")!);
-  expect(controls).toHaveAttribute("open");
-  await user.click(screen.getByRole("button", { name: "Refresh work" }));
+  view.rerender(tree(1));
   await waitFor(() => {
     expect(timeline).toHaveBeenCalledTimes(2);
   });

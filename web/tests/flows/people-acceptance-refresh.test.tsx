@@ -201,7 +201,7 @@ const selectEnabled = async () => {
   });
   const user = userEvent.setup();
   await user.click(await screen.findByRole("link", { name: /Synthetic existing person/u }));
-  await user.click(await screen.findByRole("button", { name: /^Disable account/u }));
+  await user.click(await screen.findByRole("button", { name: "Disable account" }));
 };
 
 it.each(["context", "listing"] as const)(

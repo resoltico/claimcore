@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { ViewTabs } from "../../../src/ui/ViewTabs";
 it("preserves core order, moves keyboard focus without dispatch and commits on Enter", async () => {
   const changed = vi.fn();

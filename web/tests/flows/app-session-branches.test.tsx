@@ -1,3 +1,4 @@
+import { markSignedOut } from "../../src/routing/signInAttempt";
 import { localNotice } from "../../src/protocol/notices";
 import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -31,14 +32,15 @@ it("renders a recoverable session failure and invokes its refresh action", async
   expect(state.refresh).toHaveBeenCalledOnce();
 });
 
-it("renders an OIDC sign-in link without collecting a credential", () => {
+it("offers OIDC sign-in after explicit sign-out without collecting a credential", () => {
+  markSignedOut(window.sessionStorage);
   useSession.mockReturnValue({
     state: { kind: "anonymous", token: null, message: null, epoch: 2 },
     ...actions(),
   });
   render(<App />);
-  expect(screen.getByRole("heading", { name: "Sign in to the case register" })).toBeVisible();
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+  expect(screen.getByRole("heading", { name: "You signed out" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Sign in again" })).toHaveAttribute(
     "href",
     "/auth/login?language=en",
   );

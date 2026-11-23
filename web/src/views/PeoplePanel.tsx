@@ -280,6 +280,7 @@ const PeopleWorkspace = ({
       {additions.length === 0 ? null : (
         <ActionMenu
           label={p.text("label.addPerson")}
+          disabled={blocked}
           items={additions.map((action) => ({
             id: action.task,
             label: renderCatalogKey(p, action.labelId),

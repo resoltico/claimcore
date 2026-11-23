@@ -145,8 +145,11 @@ it("uses the supplied event timeline and appends pages in core order", async () 
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
   await screen.findByText("Timeline recorder");
-  expect(view.container).toHaveTextContent("Core before");
-  expect(view.container).toHaveTextContent("Core after");
+  await user.click(screen.getByRole("button", { name: "View details" }));
+  const details = screen.getByRole("dialog", { name: "View details" });
+  expect(details).toHaveTextContent("Core before");
+  expect(details).toHaveTextContent("Core after");
+  await user.keyboard("{Escape}");
   expect(fetch).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {

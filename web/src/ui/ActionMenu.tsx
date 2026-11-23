@@ -20,6 +20,7 @@ export const ActionMenu = ({
   icon = false,
   trigger,
   id,
+  disabled = false,
 }: {
   label: string;
   items: ReadonlyArray<Item>;
@@ -27,6 +28,7 @@ export const ActionMenu = ({
   icon?: boolean;
   trigger?: ReactNode;
   id?: string;
+  disabled?: boolean;
 }) => {
   const routine = items.filter(
     ({ consequence }) => consequence !== "STEWARDSHIP" && consequence !== "IRREVERSIBLE",
@@ -49,7 +51,13 @@ export const ActionMenu = ({
   );
   return (
     <MenuTrigger>
-      <Button {...(id === undefined ? {} : { id })} variant="quiet" compact aria-label={label}>
+      <Button
+        {...(id === undefined ? {} : { id })}
+        variant="quiet"
+        compact
+        aria-label={label}
+        isDisabled={disabled}
+      >
         {trigger ?? (icon ? <span aria-hidden="true">⋯</span> : label)}
       </Button>
       <Popover className="action-menu-popover" placement="bottom end">

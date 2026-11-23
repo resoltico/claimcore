@@ -1,3 +1,4 @@
+import { openPersonEditor } from "../support/people-drawer.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { fireEvent, within } from "@testing-library/react";
@@ -87,8 +88,7 @@ it("protects dirty and prepared registration until explicit discard creates a di
     within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" })[0]!,
   );
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
-  await user.click(await screen.findByRole("button", { name: "Add person" }));
-  await screen.findByRole("dialog", { name: "Add person" });
+  await openPersonEditor();
   author("new-admission");
   await user.click(screen.getByRole("radio", { name: "Case reader" }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
@@ -131,8 +131,7 @@ it("cannot switch uncertain registration and preserves its exact reviewed reques
     within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" })[0]!,
   );
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
-  await user.click(await screen.findByRole("button", { name: "Add person" }));
-  await screen.findByRole("dialog", { name: "Add person" });
+  await openPersonEditor();
   author("after-explicit-uncertain-discard");
   await user.click(screen.getByRole("radio", { name: "Case reader" }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));

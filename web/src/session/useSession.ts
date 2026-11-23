@@ -8,7 +8,7 @@ import {
 } from "../api/service";
 import { consumerContractIdentity } from "@contracts/client";
 import { localNotice, type Notice } from "../protocol/notices";
-import { markSignedOut } from "../routing/signInAttempt";
+import { markSignedOut, resetSignIn } from "../routing/signInAttempt";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -69,7 +69,11 @@ export const useSession = () => {
       return;
     }
     const value = snapshot(result);
-    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
+    const next = stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch));
+    if (next.kind === "authenticated") {
+      resetSignIn(window.sessionStorage);
+    }
+    setState(next);
   }, []);
 
   useEffect(() => {
@@ -110,6 +114,7 @@ export const useSession = () => {
     }
     requestSerial.current += 1;
     read.current?.abort();
+    markSignedOut(window.sessionStorage);
     setState(
       stateFor(
         {

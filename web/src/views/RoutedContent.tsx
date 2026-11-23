@@ -305,7 +305,7 @@ const NewCaseEditor = ({
       definition={productMetadata}
       current={null}
       initialAct={initial}
-      disclosureAvailable={disclosureAvailable}
+      disclosureAvailable={disclosureAvailable && action?.task === initial}
       onClose={onClose}
       onCommitted={committed}
       onMutationLockChange={setLocked}

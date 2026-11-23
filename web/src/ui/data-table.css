@@ -49,8 +49,12 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .data-table [data-reference] {
+  .data-table :is([data-reference], time, [data-money] > bdi) {
     white-space: nowrap;
+  }
+
+  .data-table .chip {
+    overflow-wrap: normal;
   }
 
   .data-table .row-link::after {
