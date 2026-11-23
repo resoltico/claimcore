@@ -72,7 +72,7 @@ export const SelectedReminder = ({
         !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(
           read.message.advice.action,
         )) ? null : (
-        <Button isDisabled={read.loading} onPress={read.reload}>
+        <Button variant="secondary" isDisabled={read.loading} onPress={read.reload}>
           {p.text("ui.tryAgain")}
         </Button>
       )}

@@ -57,7 +57,9 @@ const CurrentFeedback = ({
       {message === null ||
       (message.kind === "human" &&
         !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(message.advice.action)) ? null : (
-        <Button onPress={onRetry}>{p.text("ui.tryAgain")}</Button>
+        <Button variant="secondary" onPress={onRetry}>
+          {p.text("ui.tryAgain")}
+        </Button>
       )}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
     </>
