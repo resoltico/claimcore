@@ -205,7 +205,7 @@ const CaseHeader = ({
         {breadcrumb === undefined ? null : (
           <>
             <span aria-hidden="true"> › </span>
-            <bdi>{breadcrumb}</bdi>
+            <bdi title={breadcrumb}>{breadcrumb}</bdi>
           </>
         )}
       </nav>

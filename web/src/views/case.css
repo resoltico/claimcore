@@ -227,10 +227,26 @@
   }
 
   .case-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
     margin-block-end: 0;
     color: var(--text-secondary);
     font-size: var(--text-xs);
     line-height: var(--line-heading);
+  }
+
+  .case-breadcrumb > a {
+    min-block-size: 0;
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .case-breadcrumb > bdi {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .case-title-line h1 {
