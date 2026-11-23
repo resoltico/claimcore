@@ -8,7 +8,7 @@ import { useEndpoint } from "../../hooks/useEndpoint";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import { ButtonControl as Button } from "../../ui/ButtonControl";
+import { Button } from "../../ui/Button";
 import { ScreenView } from "../../ui/ScreenView";
 import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 
