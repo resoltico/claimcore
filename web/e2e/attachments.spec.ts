@@ -247,7 +247,8 @@ test("keeps the PDF pager usable in narrow Arabic and forced colors @engine", as
   await page.emulateMedia({ forcedColors: "active" });
 
   const panel = page.getByRole("region", { name: "المرفقات", exact: true });
-  await expect(panel.getByLabel("اختر ملفًا", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "اختر ملفًا", exact: true })).toBeVisible();
+  await expect(panel.locator('input[type="file"]')).toBeHidden();
   const row = panel.locator(".data-table tbody").filter({ hasText: pdfName });
   const preview = row.getByRole("button", { name: "معاينة", exact: true });
   await preview.focus();
