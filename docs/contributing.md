@@ -274,7 +274,7 @@ dotnet test --project tests/ClaimCore.AcceptanceTests --configuration Release --
 The file selector passes directly to Playwright. Retain the acceptance settings' one-worker bound so
 fixture setup, authentication and teardown do not overlap. Chromium covers the complete journeys;
 Firefox/WebKit cover CSP, sessions, IndexedDB, keyboard interaction, RTL and forced colours. The design
-matrix uses six representative Chromium contexts and desktop English/narrow Arabic on the other engines.
+matrix uses eight representative Chromium contexts and 1280-pixel and phone frames on the other engines.
 Its 200% equivalent reflow case uses the resulting 320-CSS-pixel viewport, including responsive media
 queries; it does not inject CSS `zoom` or claim actual browser zoom coverage. See
 [Reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html).

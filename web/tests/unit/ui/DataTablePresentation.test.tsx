@@ -63,6 +63,34 @@ it("lists primary and secondary cells, preserves the absent value label and omit
   expect(due?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
 });
 
+it("uses the supplied empty message for a table section with no recorded entries", () => {
+  render(
+    <DataTable
+      view={{
+        ...view,
+        sections: [
+          {
+            titleId: "label.paymentDecision",
+            emptyId: "empty.paymentDecision",
+            entries: [
+              {
+                key: "paymentDecisionDate",
+                labelId: "field.paymentDecisionDate.label",
+                prominence: "PRIMARY",
+                value: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                recorded: false,
+              },
+            ],
+          },
+        ],
+      }}
+    />,
+  );
+  const decision = within(screen.getByRole("group", { name: "Payment decision" }));
+  expect(decision.getByText("No payment decision yet")).toBeVisible();
+  expect(decision.queryByText("Not recorded")).not.toBeInTheDocument();
+});
+
 it("shows the selected row's details in a dialog and removes them when the read withdraws the row", async () => {
   const user = userEvent.setup();
   const { rerender } = render(<DataTable view={view} />);

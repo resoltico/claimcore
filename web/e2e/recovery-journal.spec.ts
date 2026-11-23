@@ -475,14 +475,22 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       await module.createIndexedJournal(indexedDB).put(record);
     }
   }, passive);
-  const pendingCard = cards.locator(".recovery-attempt").filter({
-    hasText: passive[0]!.operationId,
-  });
-  const absentCard = cards.locator(".recovery-attempt").filter({
-    hasText: passive[1]!.operationId,
-  });
-  await expect(pendingCard.locator('[data-state="CHECKING"]')).toBeVisible();
-  await expect(absentCard.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+  for (const [state, record] of [
+    ["CHECKING", passive[0]!],
+    ["NOT_RECORDED", passive[1]!],
+  ] as const) {
+    const card = cards.locator(".recovery-attempt").filter({
+      has: replacement.locator(`[data-state="${state}"]`),
+    });
+    await expect(card.locator(`[data-state="${state}"]`)).toBeVisible();
+    await expect(card).not.toContainText(record.operationId);
+    await card.getByRole("button", { name: "Technical details" }).click();
+    const details = replacement.getByRole("dialog", { name: "Technical details" });
+    await expect(details.getByText(record.operationId, { exact: true })).toBeVisible();
+    await details.getByRole("button", { name: "Close" }).click();
+    await expect(details).toBeHidden();
+  }
+  await expect(cards.getByText("No payment decision yet")).toBeVisible();
   await expect(cards.locator("time")).not.toHaveCount(0);
   await expect(
     cards.getByRole("button", {

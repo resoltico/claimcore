@@ -436,12 +436,7 @@ module ReceiptScreen =
 
         let markEntry (entry: Entry) =
             { entry with
-                Recorded = Some(isRecorded entry.LabelId)
-            }
-
-        let markSection (section: Section) =
-            { section with
-                Entries = List.map markEntry section.Entries
+                Recorded = Some(entry.Recorded <> Some false && isRecorded entry.LabelId)
             }
 
         Screen.mapContent
@@ -460,7 +455,6 @@ module ReceiptScreen =
                                     { column with
                                         Recorded = isRecorded column.LabelId
                                     })
-                            Sections = List.map markSection table.Sections
                         }
                 | content -> content)
             screen

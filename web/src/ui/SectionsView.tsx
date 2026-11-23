@@ -4,6 +4,7 @@ import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import type { RowLink } from "./regions/interaction";
 import { Entries } from "./regions/Entries";
+import { EmptyState } from "./EmptyState";
 const EntrySection = ({
   section,
   timeZone,
@@ -18,14 +19,18 @@ const EntrySection = ({
   const p = usePresentation();
   const heading = useId();
   const Heading = ({ 2: "h2", 3: "h3", 4: "h4" } as const)[headingLevel];
+  const entries = section.entries.filter((entry) => entry.recorded !== false);
+  if (entries.length === 0 && section.emptyId === undefined) {
+    return null;
+  }
   return (
     <div role="group" data-section={section.titleId} aria-labelledby={heading}>
       <Heading id={heading}>{renderCatalogKey(p, section.titleId)}</Heading>
-      <Entries
-        entries={section.entries}
-        timeZone={timeZone}
-        {...(link === undefined ? {} : { link })}
-      />
+      {entries.length === 0 && section.emptyId !== undefined ? (
+        <EmptyState messageId={section.emptyId} />
+      ) : (
+        <Entries entries={entries} timeZone={timeZone} {...(link === undefined ? {} : { link })} />
+      )}
     </div>
   );
 };
