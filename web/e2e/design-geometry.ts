@@ -76,7 +76,7 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
       [
         "G7",
         document.querySelector(
-          ".legal-notice, .data-table tbody details, .case-detail > .screen-view > details",
+          ".legal-notice, .data-table tbody details, .case-detail details[data-region='DETAILS']",
         ) !== null,
       ],
     ];

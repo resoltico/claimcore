@@ -200,11 +200,7 @@ const AvailableRequests = ({
         observed.screen.regions.flatMap(({ content }) =>
           content.kind === "TABLE"
             ? content.rows.map((row) => (
-                <article
-                  className="access-request-card"
-                  // oxlint-disable-next-line react/no-array-index-key -- Issued page positions are stable until reload; row handles are page-local.
-                  key={`${pageIndex}:${row.key}`}
-                >
+                <article className="access-request-card" key={`${pageIndex}:${row.key}`}>
                   <dl>
                     {content.columns.flatMap((column, index) => {
                       const field = row.values[index];

@@ -158,6 +158,23 @@ const breadcrumbReference = (
   }
   return undefined;
 };
+const CloseReminderSelection = ({ onBack }: Pick<CaseDetailProps, "onBack">) => {
+  const p = usePresentation();
+  const route = useContentRoute();
+  if (route.screen !== "case" || route.reminderId === undefined) {
+    return null;
+  }
+  return (
+    <Button
+      onPress={() => {
+        onBack();
+      }}
+    >
+      {p.text("ui.close")}
+    </Button>
+  );
+};
+
 const CaseHeader = ({
   target,
   state,
@@ -167,8 +184,6 @@ const CaseHeader = ({
   state: HumanDocument | null;
 }) => {
   const p = usePresentation();
-  const route = useContentRoute();
-  const showingReminder = route.screen === "case" && route.reminderId !== undefined;
   const back = lastWorklist();
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
@@ -194,15 +209,7 @@ const CaseHeader = ({
           </>
         )}
       </nav>
-      {showingReminder ? (
-        <Button
-          onPress={() => {
-            onBack();
-          }}
-        >
-          {p.text("ui.close")}
-        </Button>
-      ) : null}
+      <CloseReminderSelection onBack={onBack} />
       <section className="case-header-card">
         <div className="case-heading">
           <CaseIdentity

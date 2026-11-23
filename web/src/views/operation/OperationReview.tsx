@@ -28,7 +28,7 @@ const ReviewBody = ({ review, creation }: { review: HumanReview; creation: boole
     return null;
   }
   const basis = review.document.basis.observation;
-  const subject = review.document.subject;
+  const { subject } = review.document;
   const stewardship = subject.kind === "REVIEW" && subject.consequence !== "ROUTINE";
   const ordinary = review.document.screen.regions.filter(
     ({ role }) => role === "IDENTITY" || role === "NOTICE" || (stewardship && role === "FACTS"),

@@ -140,7 +140,11 @@ const assertListPresentation = async (
     }
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
-    await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
+    const material = table.columns.filter(({ prominence }) => prominence !== "DETAIL");
+    await expect(row.locator("td[data-column]")).toHaveCount(material.length);
+    for (const column of table.columns.filter(({ prominence }) => prominence === "DETAIL")) {
+      await expect(row.locator(`td[data-column="${column.key}"]`)).toHaveCount(0);
+    }
   }
   if (route.expectedReference === undefined) {
     return;

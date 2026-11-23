@@ -1,3 +1,4 @@
+import type { Region, RegionRow, Link } from "@contracts/client";
 import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
 import { operationTask } from "../../protocol/taskCatalog";
@@ -16,6 +17,117 @@ import { EmptyState } from "../../ui/EmptyState";
 import type { ReminderActHandler } from "./reminderActions";
 import "./case-next-actions.css";
 
+type Table = Extract<Region["content"], { kind: "TABLE" }>;
+
+const ReminderCard = ({
+  row,
+  table,
+  zone,
+  onReminder,
+}: {
+  row: RegionRow;
+  table: Table;
+  zone: string;
+  onReminder: ReminderActHandler;
+}) => {
+  const p = usePresentation();
+  const value = (key: string) =>
+    row.values[table.columns.findIndex((column) => column.key === key)];
+  const message = value("action");
+  const due = value("due");
+  const kind = value("kind");
+  const controls = (row.actions ?? []).filter(isOperationAffordance);
+  const recommended = controls.find((action) => action.task === row.recommended);
+  const actionId = `reminder-${row.key}-actions`;
+  const primaryId = `reminder-${row.key}-primary`;
+  return (
+    <li>
+      {message === undefined ? null : (
+        <strong>
+          <PresentedValue value={message} timeZone={zone} />
+        </strong>
+      )}
+      {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
+      {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
+      <div className="next-action-controls">
+        {recommended === undefined ? null : (
+          <Button
+            id={primaryId}
+            compact
+            onPress={() => {
+              onReminder(recommended, primaryId, true);
+            }}
+          >
+            {renderCatalogKey(p, recommended.labelId)}
+          </Button>
+        )}
+        {controls.length === 0 ? null : (
+          <ActionMenu
+            id={actionId}
+            icon
+            label={p.text("ui.actionsFor", {
+              row: message?.kind === "TEXT" ? message.value : p.text("label.nextActions"),
+            })}
+            items={controls.map((action) => ({
+              id: action.task,
+              label: renderCatalogKey(
+                p,
+                operationTask(action.task).reviewedLabelId ?? action.labelId,
+              ),
+              disabled: action.blocked !== null,
+              select: () => {
+                onReminder(action, actionId);
+              },
+            }))}
+          />
+        )}
+      </div>
+    </li>
+  );
+};
+
+const ReminderCards = ({
+  region,
+  zone,
+  onReminder,
+}: {
+  region: Region | undefined;
+  zone: string;
+  onReminder: ReminderActHandler;
+}) => {
+  if (region?.content.kind !== "TABLE") {
+    return null;
+  }
+  const { content } = region;
+  if (content.rows.length === 0 && region.emptyId !== undefined) {
+    return <EmptyState messageId={region.emptyId} />;
+  }
+  return (
+    <ul className="next-action-cards">
+      {content.rows.map((row) => (
+        <ReminderCard key={row.key} row={row} table={content} zone={zone} onReminder={onReminder} />
+      ))}
+    </ul>
+  );
+};
+
+const ReminderLink = ({ labelId, link }: { labelId: string; link: Link }) => {
+  const p = usePresentation();
+  const href = coreLinkPath(link);
+  return href === undefined ? null : (
+    <a
+      href={href}
+      onClick={(event) => {
+        followLink(event, () => {
+          navigate(href);
+        });
+      }}
+    >
+      {renderCatalogKey(p, labelId)}
+    </a>
+  );
+};
+
 export const CaseNextActions = ({
   current,
   canCreate,
@@ -30,15 +142,9 @@ export const CaseNextActions = ({
   const p = usePresentation();
   const region = current.screen.regions.find((item) => item.role === "NEXT_ACTIONS");
   const all = current.links.find(({ link }) => link.endpoint === apiEndpoints.reminderList);
-  const table = region?.content.kind === "TABLE" ? region.content : null;
-  if (table === null && all === undefined) {
+  if (region === undefined && all === undefined) {
     return null;
   }
-  const zone = current.basis.observation.timeZone;
-  const actionIndex = table?.columns.findIndex(({ key }) => key === "action") ?? -1;
-  const dueIndex = table?.columns.findIndex(({ key }) => key === "due") ?? -1;
-  const kindIndex = table?.columns.findIndex(({ key }) => key === "kind") ?? -1;
-  const allPath = all === undefined ? undefined : coreLinkPath(all.link);
   const create = canCreate ? (
     <Button id="case-reminder-add" variant="quiet" compact onPress={onCreate}>
       {p.text("task.reminder.create.label")}
@@ -51,76 +157,12 @@ export const CaseNextActions = ({
         title={renderCatalogKey(p, region?.titleId ?? "label.nextActions")}
         actions={create}
       >
-        {table === null ? null : table.rows.length === 0 && region?.emptyId !== undefined ? (
-          <EmptyState messageId={region.emptyId} />
-        ) : (
-          <ul className="next-action-cards">
-            {table.rows.map((row) => {
-              const message = row.values[actionIndex];
-              const due = row.values[dueIndex];
-              const kind = row.values[kindIndex];
-              const controls = (row.actions ?? []).filter(isOperationAffordance);
-              const recommended = controls.find((action) => action.task === row.recommended);
-              const actionId = `reminder-${row.key}-actions`;
-              return (
-                <li key={row.key}>
-                  {message === undefined ? null : (
-                    <strong>
-                      <PresentedValue value={message} timeZone={zone} />
-                    </strong>
-                  )}
-                  {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
-                  {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
-                  <div className="next-action-controls">
-                    {recommended === undefined ? null : (
-                      <Button
-                        compact
-                        onPress={() => {
-                          onReminder(recommended, actionId, true);
-                        }}
-                      >
-                        {renderCatalogKey(p, recommended.labelId)}
-                      </Button>
-                    )}
-                    {controls.length === 0 ? null : (
-                      <ActionMenu
-                        id={actionId}
-                        icon
-                        label={p.text("ui.actionsFor", {
-                          row:
-                            message?.kind === "TEXT" ? message.value : p.text("label.nextActions"),
-                        })}
-                        items={controls.map((action) => ({
-                          id: action.task,
-                          label: renderCatalogKey(
-                            p,
-                            operationTask(action.task).reviewedLabelId ?? action.labelId,
-                          ),
-                          disabled: action.blocked !== null,
-                          select: () => {
-                            onReminder(action, actionId);
-                          },
-                        }))}
-                      />
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {all === undefined || allPath === undefined ? null : (
-          <a
-            href={allPath}
-            onClick={(event) => {
-              followLink(event, () => {
-                navigate(allPath);
-              });
-            }}
-          >
-            {renderCatalogKey(p, all.labelId)}
-          </a>
-        )}
+        <ReminderCards
+          region={region}
+          zone={current.basis.observation.timeZone}
+          onReminder={onReminder}
+        />
+        {all === undefined ? null : <ReminderLink {...all} />}
       </Section>
     </div>
   );

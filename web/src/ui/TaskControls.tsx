@@ -80,10 +80,13 @@ export const TaskControls = ({
     <ActionMenu
       id={id}
       label={p.text("ui.moreCaseActions")}
-      items={described.map((item) => ({
-        ...item,
+      items={described.map(({ id: key, label, consequence, disabled: itemDisabled, select }) => ({
+        id: key,
+        label,
+        consequence,
+        disabled: itemDisabled,
         select: () => {
-          item.select(id);
+          select(id);
         },
       }))}
       stewardshipLabel={p.text("label.dataStewardship")}
