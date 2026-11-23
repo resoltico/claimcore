@@ -476,12 +476,13 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     }
   }, passive);
   for (const [state, record] of [
-    ["CHECKING", passive[0]!],
     ["NOT_RECORDED", passive[1]!],
+    ["CHECKING", passive[0]!],
   ] as const) {
     const card = cards.locator(".recovery-attempt").filter({
       has: replacement.locator(`[data-state="${state}"]`),
     });
+    await expect(card).toHaveCount(1);
     await expect(card.locator(`[data-state="${state}"]`)).toBeVisible();
     await expect(card).not.toContainText(record.operationId);
     await card.getByRole("button", { name: "Technical details" }).click();
