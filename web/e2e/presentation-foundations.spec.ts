@@ -2272,17 +2272,16 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       })
       .click();
     const review = page.getByRole("dialog");
-    await expect(review.locator("[data-region=FACTS]")).toHaveCount(4);
-    await expect(
-      review.locator(".review-values").getByText("SYNTHETIC-1", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expect(
-      review.locator("[data-region=FACTS]").getByText("SYNTHETIC-1", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await expect(review.locator("[data-region=FACTS]")).toHaveCount(0);
+    await expect(review.locator(".review-values dd")).toHaveText([
+      "Yes",
+      "Admission person",
+      "Owner",
+      "All cases",
+      "Case reader",
+      "One case",
+      "SYNTHETIC-1",
+    ]);
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();
       await page
