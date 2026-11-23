@@ -1,3 +1,5 @@
+import type { OperationReceipt } from "../../protocol/types";
+import { renderCatalogKey } from "../../presentation/messages";
 import { useState } from "react";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "../../ui/Button";
@@ -5,11 +7,17 @@ import { Dialog } from "../../ui/Dialog";
 import { StatusBanner } from "../../ui/StatusBanner";
 import { ObservedReceipt } from "./ObservedReceipt";
 
+export const receiptOutcomeMessage = ({ screen }: OperationReceipt) =>
+  screen.regions.flatMap(({ content }) => (content.kind === "NOTICE" ? content.notices : []))[0]
+    ?.messageId;
+
 export const ReceiptFeedback = ({
   operationId,
+  messageId,
   dismiss,
 }: {
   operationId: string;
+  messageId?: string | undefined;
   dismiss: () => void;
 }) => {
   const p = usePresentation();
@@ -33,7 +41,7 @@ export const ReceiptFeedback = ({
           </Button>
         }
       >
-        {p.text("label.recordedChange")}
+        {renderCatalogKey(p, messageId ?? "label.recordedChange")}
       </StatusBanner>
       <Dialog
         title={title}

@@ -1,24 +1,24 @@
 @layer layout {
-  :root {
+  html:root {
     --gutter: var(--space-6);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
   }
 
   @media (width < 64rem) {
-    :root {
+    html:root {
       --gutter: var(--space-5);
     }
   }
 
   @media (width < 40rem) {
-    :root {
+    html:root {
       --gutter: var(--space-4);
     }
   }
 
   @media (pointer: coarse) {
-    :root {
+    html:root {
       --control-target: var(--size-control-touch);
       --compact-target: var(--size-control-touch);
     }

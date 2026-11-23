@@ -7,7 +7,7 @@ import type { Link, TaskId, Region, Screen } from "@contracts/client";
 
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
-import { ReceiptFeedback } from "./operation/ReceiptFeedback";
+import { ReceiptFeedback, receiptOutcomeMessage } from "./operation/ReceiptFeedback";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
@@ -226,7 +226,7 @@ const AcceptedReceipt = ({
   close,
 }: {
   route: Route;
-  receipt: { caseId: string; operationId: string } | null;
+  receipt: { caseId: string; operationId: string; messageId: string | undefined } | null;
   close: () => void;
 }) => {
   if (
@@ -238,7 +238,12 @@ const AcceptedReceipt = ({
     return null;
   }
   return (
-    <ReceiptFeedback key={receipt.operationId} operationId={receipt.operationId} dismiss={close} />
+    <ReceiptFeedback
+      key={receipt.operationId}
+      operationId={receipt.operationId}
+      messageId={receipt.messageId}
+      dismiss={close}
+    />
   );
 };
 const succeededRequester = (response: ServiceResponse<typeof apiEndpoints.context> | null) =>
@@ -407,7 +412,7 @@ const useAcceptanceFeedback = (
 ) => {
   const [accepted, setAccepted] = useState<{
     owner: object;
-    receipt: { caseId: string; operationId: string };
+    receipt: { caseId: string; operationId: string; messageId: string | undefined };
   } | null>(null);
   const available =
     owner !== null &&
@@ -443,7 +448,11 @@ const useAcceptanceFeedback = (
       }
       setAccepted({
         owner: feedbackOwner,
-        receipt: { caseId: receipt.caseId, operationId },
+        receipt: {
+          caseId: receipt.caseId,
+          operationId,
+          messageId: receiptOutcomeMessage(receipt.document),
+        },
       });
       return true;
     },
