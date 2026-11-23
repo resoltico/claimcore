@@ -108,7 +108,7 @@ test("refuses retained attachment metadata before confirmation or upload @engine
   });
   await expect(page.getByRole("dialog").locator("[data-confirm-operation]")).toHaveCount(0);
   expect(uploads).toEqual([]);
-  await expect(attachments.locator(".attachment-list > li")).toHaveCount(1);
+  await expect(attachments.locator(".data-table tbody")).toHaveCount(1);
 });
 
 test("renders and pages through PDFs inside the opaque viewer @engine", async ({
@@ -253,7 +253,7 @@ test("keeps the PDF pager usable in narrow Arabic and forced colors @engine", as
 
   const panel = page.getByRole("region", { name: "المرفقات", exact: true });
   await expect(panel.getByLabel("اختر ملفًا", { exact: true })).toBeVisible();
-  const row = panel.locator(".attachment-list > li").filter({ hasText: pdfName });
+  const row = panel.locator(".data-table tbody").filter({ hasText: pdfName });
   const preview = row.getByRole("button", { name: "معاينة", exact: true });
   await preview.focus();
   await page.keyboard.press("Enter");
@@ -1012,7 +1012,7 @@ test("settles a lost upload acknowledgement with an identity-only recovery recor
   await consent.click();
   await observed;
   await expect.poll(() => recoveryRecords(page)).toEqual([]);
-  await expect(panel.locator(".attachment-list > li")).toHaveCount(1);
+  await expect(panel.locator(".data-table tbody")).toHaveCount(1);
   await expect(panel).toContainText("recovery_canary.bin");
   expect(sends).toBe(1);
 });
@@ -1071,7 +1071,7 @@ test("drops a preview verified after observing withdrawal in another tab", async
 
   const withdrawal = await page.context().newPage();
   await withdrawal.goto(page.url());
-  const withdrawalRow = withdrawal.locator(".attachment-list > li").filter({ hasText: name });
+  const withdrawalRow = withdrawal.locator(".data-table tbody").filter({ hasText: name });
   await withdrawalRow.getByRole("button", { name: "Withdraw attachment", exact: true }).click();
   await confirm(withdrawal, "/api/operation.execute");
   await expect(withdrawalRow).toHaveCount(0);
@@ -1171,7 +1171,7 @@ test("withdrawal closes a pending PDF frame and discards its queued page reply @
 
   const withdrawal = await page.context().newPage();
   await withdrawal.goto(page.url());
-  const withdrawalRow = withdrawal.locator(".attachment-list > li").filter({ hasText: pdfName });
+  const withdrawalRow = withdrawal.locator(".data-table tbody").filter({ hasText: pdfName });
   await withdrawalRow.getByRole("button", { name: "Withdraw attachment", exact: true }).click();
   await confirm(withdrawal, "/api/operation.execute");
   await withdrawal.close();

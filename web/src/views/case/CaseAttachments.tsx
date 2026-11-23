@@ -27,7 +27,7 @@ import {
 } from "../../api/attachments";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { apiEndpoints, type CurrentCase } from "../../api/service";
-import { PresentedValue } from "../../components/PresentedValue";
+import { DataTable } from "../../ui/DataTable";
 import { useEndpointCache } from "../../hooks/EndpointProvider";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
@@ -444,40 +444,6 @@ type AttachmentTable = Extract<
   HumanDocument["screen"]["regions"][number]["content"],
   { kind: "TABLE" }
 >;
-type AttachmentRowProps = {
-  row: RegionRow;
-  columns: AttachmentTable["columns"];
-  zone: string;
-  interaction: Interaction;
-  editing: boolean;
-  onWithdraw: Props["onWithdraw"];
-};
-const AttachmentRow = ({ row, columns, zone, interaction, ...controls }: AttachmentRowProps) => {
-  const p = usePresentation();
-  const { preview } = interaction;
-  return (
-    <li>
-      <dl className="attachment-metadata">
-        {row.values.map((value, index) => {
-          const column = columns[index];
-          return column === undefined ? null : (
-            <div key={column.key}>
-              <dt>{renderCatalogKey(p, column.labelId)}</dt>
-              <dd>
-                <PresentedValue value={value} timeZone={zone} />
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
-      <AttachmentControls {...controls} row={row} interaction={interaction} />
-      {preview === null || preview.id !== row.key ? null : (
-        <AttachmentPreview key={preview.generation} preview={preview} interaction={interaction} />
-      )}
-    </li>
-  );
-};
-
 const AttachmentPicker = ({
   enabled,
   busy,
@@ -560,22 +526,42 @@ const attachmentRegion = (document: HumanDocument | null) =>
 
 const AttachmentRows = ({
   table,
+  emptyId,
   zone,
-  ...controls
-}: Omit<AttachmentRowProps, "row" | "columns"> & { table: AttachmentTable | null }) => {
-  const p = usePresentation();
+  editing,
+  interaction,
+  onWithdraw,
+}: {
+  table: AttachmentTable | null;
+  emptyId: string | undefined;
+  zone: string;
+  interaction: Interaction;
+  editing: boolean;
+  onWithdraw: Props["onWithdraw"];
+}) => {
   if (table === null) {
     return null;
   }
-  if (table.rows.length === 0) {
-    return <p>{p.text("ui.attachments.empty")}</p>;
-  }
+  const { preview } = interaction;
   return (
-    <ul className="attachment-list">
-      {table.rows.map((row) => (
-        <AttachmentRow key={row.key} row={row} columns={table.columns} zone={zone} {...controls} />
-      ))}
-    </ul>
+    <DataTable
+      view={table}
+      timeZone={zone}
+      emptyId={emptyId ?? "ui.attachments.empty"}
+      renderControls={(row) => (
+        <AttachmentControls
+          row={row}
+          interaction={interaction}
+          editing={editing}
+          onWithdraw={onWithdraw}
+        />
+      )}
+      renderSupplement={(row) =>
+        preview === null || preview.id !== row.key ? null : (
+          <AttachmentPreview key={preview.generation} preview={preview} interaction={interaction} />
+        )
+      }
+    />
   );
 };
 
@@ -624,7 +610,8 @@ const AttachmentWorkspace = ({
     onRefusal,
     clearRefusal,
   );
-  const content = attachmentRegion(document)?.content;
+  const region = attachmentRegion(document);
+  const content = region?.content;
   const table = content?.kind === "TABLE" ? content : null;
   const add = addOffer(document);
   const editing = props.editing || !props.authoringAvailable;
@@ -648,6 +635,7 @@ const AttachmentWorkspace = ({
       )}
       <AttachmentRows
         table={table}
+        emptyId={region?.emptyId}
         zone={props.current.basis.observation.timeZone}
         editing={editing}
         interaction={interaction}

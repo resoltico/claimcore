@@ -1,4 +1,4 @@
-import { useContext, useId, useState } from "react";
+import { Fragment, useContext, useId, useState, type ReactNode } from "react";
 import { taskDefinitions, type RegionContent, type RegionRow } from "@contracts/client";
 import { PresentedValue } from "../components/PresentedValue";
 import { usePresentation } from "../presentation/context";
@@ -159,6 +159,13 @@ const TableRowControls = ({
   );
 };
 
+const RowControls = (props: Parameters<typeof TableRowControls>[0]) =>
+  props.renderControls === undefined ? (
+    <TableRowControls {...props} />
+  ) : (
+    <td>{props.renderControls(props.row)}</td>
+  );
+
 const linkedValue = (link: RowLink | undefined, value: Value, timeZone: string) => {
   const cell = <Cell value={value} timeZone={timeZone} />;
   return link === undefined ? (
@@ -227,11 +234,33 @@ const DataRow = ({
         );
       })}
       {controls ? (
-        <TableRowControls row={row} caption={caption} showDetails={showDetails} {...interaction} />
+        <RowControls row={row} caption={caption} showDetails={showDetails} {...interaction} />
       ) : null}
     </tr>
   );
 };
+
+const RowSupplement = ({ columns, content }: { columns: number; content: ReactNode }) =>
+  content === null || content === undefined ? null : (
+    <tr>
+      <td colSpan={columns}>{content}</td>
+    </tr>
+  );
+
+const DataGridBody = ({
+  rows,
+  renderRow,
+  isolateRows,
+}: {
+  rows: TableContent["rows"];
+  renderRow: (row: RegionRow) => ReactNode;
+  isolateRows: boolean;
+}) =>
+  isolateRows ? (
+    rows.map((row) => <tbody key={row.key}>{renderRow(row)}</tbody>)
+  ) : (
+    <tbody>{rows.map(renderRow)}</tbody>
+  );
 
 const DataGrid = ({
   view,
@@ -246,27 +275,35 @@ const DataGrid = ({
   const columns = view.columns.flatMap((column, index) =>
     column.prominence === "DETAIL" ? [] : [{ ...column, index }],
   );
-  const controls = view.rows.some(
-    (row) =>
-      row.detail !== undefined ||
-      (interaction.onAction !== undefined && (row.actions?.length ?? 0) > 0),
-  );
+  const controls =
+    interaction.renderControls !== undefined ||
+    view.rows.some(
+      (row) =>
+        row.detail !== undefined ||
+        (interaction.onAction !== undefined && (row.actions?.length ?? 0) > 0),
+    );
   const columnsCount = columns.length + Number(controls);
   const rows = new Map(view.rows.map((row) => [row.key, row]));
   const renderRow = (row: RegionRow) => (
-    <DataRow
-      key={row.key}
-      row={row}
-      columns={columns}
-      timeZone={timeZone}
-      controls={controls}
-      showDetails={showDetails}
-      {...interaction}
-    />
+    <Fragment key={row.key}>
+      <DataRow
+        row={row}
+        columns={columns}
+        timeZone={timeZone}
+        controls={controls}
+        showDetails={showDetails}
+        {...interaction}
+      />
+      <RowSupplement columns={columnsCount} content={interaction.renderSupplement?.(row)} />
+    </Fragment>
   );
   const body =
     (view.groups ?? []).length === 0 ? (
-      <tbody>{view.rows.map(renderRow)}</tbody>
+      <DataGridBody
+        rows={view.rows}
+        renderRow={renderRow}
+        isolateRows={interaction.renderSupplement !== undefined}
+      />
     ) : (
       view.groups?.map((group) => (
         <tbody key={group.titleId}>
