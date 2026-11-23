@@ -57,11 +57,7 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
-  await page.getByRole("link", { name: "Search cases", exact: true }).click();
-  const search = page.getByRole("searchbox", { name: /^Filter this view · /u });
-  await expect(search).toBeFocused();
-  await search.fill(second.caseReference);
-  await search.press("Enter");
+  await page.goto(`/cases?view=ALL&q=${encodeURIComponent(second.caseReference)}`);
   const link = page.locator(".table-view").getByRole("link", {
     name: second.caseReference,
     exact: true,
@@ -118,7 +114,7 @@ test("case inspection restores the live work query, selected row focus and scrol
     },
   });
 });
-test("historical exact search follows the encoded selector and restores its link focus", async ({
+test("historical exact Find admits the encoded reference and restores shortcut focus", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -138,31 +134,29 @@ test("historical exact search follows the encoded selector and restores its link
   expect(changed.outcome.kind).toBe("ACCEPTED");
   const expectedHref = `/cases/reference/${earlier.slice(0, -5)}%2B%3A%2F%3F%23`;
   await page.goto(expectedHref, { waitUntil: "commit" });
-  const changedFrom = page.locator('[data-entry="matchedReference"]');
   await expect(page.locator("#case-detail-title")).toHaveText(current);
-  await expect(changedFrom).toContainText(earlier);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(earlier);
 
-  await page.getByRole("link", { name: "Search cases", exact: true }).click();
-  const search = page.getByRole("searchbox", { name: /^Filter this view · /u });
+  await page.goto("/cases?view=ALL");
+  const before = page.url();
+  const trigger = page.locator("#workspace-find");
+  await trigger.press("Enter");
+  const search = page.getByRole("dialog").getByRole("combobox", { name: "Find a case" });
   await expect(search).toBeFocused();
   await search.fill(earlier);
+  const selected = page.waitForRequest((request) => {
+    if (new URL(request.url()).pathname !== "/api/case.get") {
+      return false;
+    }
+    return (request.postDataJSON() as { target?: CaseSelector }).target?.kind === "REFERENCE";
+  });
   await search.press("Enter");
-  const exact = page.getByRole("group", { name: "Exact reference match", exact: true });
-  await expect(exact).toContainText(earlier);
-  const link = exact.getByRole("link", { name: current, exact: true });
-  await expect(link).toHaveAttribute("href", expectedHref);
-  const before = page.url();
-  const selected = page.waitForRequest(
-    (request) => new URL(request.url()).pathname === "/api/case.get",
-  );
-  await link.click();
   expect((await selected).postDataJSON()).toEqual({
     target: { kind: "REFERENCE", caseReference: earlier },
   });
+  await expect(page).toHaveURL(/\/cases\/id\//u);
   await expect(page.locator("#case-detail-title")).toHaveText(current);
-  await expect(changedFrom).toContainText(earlier);
-
   await page.goBack();
   await expect(page).toHaveURL(before);
-  await expect(link).toBeFocused();
+  await expect(trigger).toBeFocused();
 });

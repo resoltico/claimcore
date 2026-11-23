@@ -295,6 +295,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   if (baseURL === undefined) {
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
+  await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
   await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
   await page.setViewportSize({ width: 320, height: 900 });
@@ -310,6 +311,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   });
   try {
     const second = await other.newPage();
+    await seedSignedOut(second);
     await second.goto("/", { waitUntil: "commit" });
     await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await signOut(page, page.getByRole("button", { name: "Sign out", exact: true }));
@@ -369,6 +371,7 @@ test("reports a dispatched session termination with a lost reply only once @engi
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
+  await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
   await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
   const action = "End my ClaimCore browser sessions";

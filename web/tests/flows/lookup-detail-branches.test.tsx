@@ -206,7 +206,7 @@ it("opens a literal filter for padded input and reserves exact reads for valid r
     notice: { kind: "local", reason: "unreachable" },
   });
   const user = userEvent.setup();
-  const view = render(<FindCase open setOpen={vi.fn()} />);
+  const view = render(<FindCase open returnFocusId="workspace-find" setOpen={vi.fn()} />);
   const input = screen.getByRole("combobox", { name: "Find a case" });
   await user.click(input);
   await user.keyboard("{Enter}");
@@ -215,7 +215,7 @@ it("opens a literal filter for padded input and reserves exact reads for valid r
   expect(get).not.toHaveBeenCalled();
   expect(new URLSearchParams(location.search).get("q")).toBe(" REF ");
   view.unmount();
-  render(<FindCase open setOpen={vi.fn()} />);
+  render(<FindCase open returnFocusId="workspace-find" setOpen={vi.fn()} />);
   await user.type(screen.getByRole("combobox", { name: "Find a case" }), "REF{Enter}");
   await waitFor(() => {
     expect(get).toHaveBeenCalledExactlyOnceWith("REF", "token", expect.any(AbortSignal));

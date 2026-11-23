@@ -200,6 +200,22 @@ export const acceptedSubject = async (
   return reply.outcome.data.receipt.subject;
 };
 
+const expectRecordedWorkInputs = async (
+  current: ReturnType<Page["locator"]>,
+  inputs: Readonly<Record<string, unknown>>,
+) => {
+  for (const [field, entry] of [
+    ["field:responsibleActor", "responsible"],
+    ["field:handlingSummary", "handlingSummary"],
+  ] as const) {
+    if (typeof inputs[field] === "string" && inputs[field] !== "") {
+      await expect(
+        current.locator(`.case-work .entries-view [data-entry="${entry}"]`),
+      ).toBeVisible();
+    }
+  }
+};
+
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
   const language = await languageOf(page);
@@ -278,12 +294,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
     }
   }
-  await expect(
-    current.locator(".case-work .entries-view [data-entry='responsible']"),
-  ).toBeVisible();
-  await expect(
-    current.locator(".case-work .entries-view [data-entry='handlingSummary']"),
-  ).toBeVisible();
+  await expect(current.locator(".case-work")).toBeVisible();
+  await expectRecordedWorkInputs(current, input.inputs);
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
   return {

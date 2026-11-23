@@ -43,7 +43,7 @@ const referenceGrammar =
 const isExactReference = (query: string) =>
   referenceGrammar !== null && new RegExp(`^(?:${referenceGrammar})$`, "u").test(query);
 
-const FindControl = ({ close }: { close: () => void }) => {
+const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusId: string }) => {
   const p = usePresentation();
   const { state } = useSessionContext();
   const credential = state.kind === "authenticated" ? state.token : null;
@@ -51,6 +51,7 @@ const FindControl = ({ close }: { close: () => void }) => {
   const [results, setResults] = useState<ReadonlyArray<Suggestion>>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [suggestionFailed, setSuggestionFailed] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   const flight = useRef<Promise<void>>(Promise.resolve());
   const search = query.value;
@@ -92,8 +93,11 @@ const FindControl = ({ close }: { close: () => void }) => {
     };
   }, [query, credential]);
 
+  useEffect(() => {
+    field.current?.focus();
+  }, []);
   const open = (path: string) => {
-    if (navigate(path)) {
+    if (navigate(path, false, undefined, undefined, returnFocusId)) {
       close();
     }
   };
@@ -157,6 +161,7 @@ const FindControl = ({ close }: { close: () => void }) => {
         <Label>{p.text("ui.findCase")}</Label>
         <Input
           className="find-input"
+          ref={field}
           onKeyDownCapture={(event) => {
             if (
               event.key === "Enter" &&
@@ -203,9 +208,11 @@ const FindControl = ({ close }: { close: () => void }) => {
 
 export const FindCase = ({
   open,
+  returnFocusId,
   setOpen,
 }: {
   open: boolean;
+  returnFocusId: string;
   setOpen: (open: boolean) => void;
 }) => {
   const p = usePresentation();
@@ -219,6 +226,7 @@ export const FindCase = ({
     >
       {open ? (
         <FindControl
+          returnFocusId={returnFocusId}
           close={() => {
             setOpen(false);
           }}

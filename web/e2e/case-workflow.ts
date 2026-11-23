@@ -206,7 +206,7 @@ export const caseActionButton = async (
   const p = createPresenter({ ...defaults, language });
   const primary = page
     .locator(
-      `.case-header-actions button[data-act="${kind}"], .phone-primary-action button[data-act="${kind}"]`,
+      `.case-detail button[data-act="${kind}"], .phone-primary-action button[data-act="${kind}"]`,
     )
     .filter({ visible: true });
   const more = caseActionMenuTrigger(page);

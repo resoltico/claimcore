@@ -152,7 +152,10 @@ const useRouteHeading = (
     const { id, scrollY } = intent;
     const focus = () => {
       // A departing sheet or guard can still own focus during the route render.
-      if (loading || document.querySelector("[data-navigation-guard], .shell-more") !== null) {
+      if (
+        loading ||
+        document.querySelector("[data-navigation-guard], .shell-more, .find-control") !== null
+      ) {
         return false;
       }
       const { element, restored } = routeFocusTarget(target, id);

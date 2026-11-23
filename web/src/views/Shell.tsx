@@ -280,9 +280,11 @@ export const Shell = ({
   );
   const find = (iconOnly: boolean) => (
     <Button
+      id={iconOnly ? "workspace-phone-find" : "workspace-find"}
       variant="quiet"
       isDisabled={locked}
-      aria-label={iconOnly ? p.text("ui.findCase") : `${p.text("ui.findCase")} ${shortcut}`}
+      aria-label={p.text("ui.findCase")}
+      aria-keyshortcuts={apple ? "Meta+K" : "Control+K"}
       className="shell-find"
       onPress={() => {
         setFindOrigin(route);
@@ -292,7 +294,7 @@ export const Shell = ({
       {iconOnly ? null : (
         <>
           <span className="shell-link-label">{p.text("ui.findCase")}</span>
-          <kbd>{shortcut}</kbd>
+          <kbd aria-hidden="true">{shortcut}</kbd>
         </>
       )}
     </Button>
@@ -392,10 +394,9 @@ export const Shell = ({
                   key={item.id}
                   href={item.path}
                   aria-disabled={locked || undefined}
-                  data-route-focus-return="workspace-more"
                   onClick={(event) => {
                     followLink(event, () => {
-                      navigate(item.path);
+                      navigate(item.path, false, undefined, undefined, "workspace-more");
                     });
                   }}
                 >
@@ -412,6 +413,7 @@ export const Shell = ({
       ) : null}
       <FindCase
         open={findOrigin === route}
+        returnFocusId={compact ? "workspace-phone-find" : "workspace-find"}
         setOpen={(open) => {
           setFindOrigin(open ? route : null);
         }}

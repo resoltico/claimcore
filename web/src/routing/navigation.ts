@@ -110,12 +110,11 @@ export const setRouteFocusOwner = (owner: string | null) => {
     cancelPendingNavigation(true);
   }
 };
-const capturePosition = (): DeparturePosition | null => {
+const capturePosition = (returnTo?: string): DeparturePosition | null => {
   if (active === null || focusOwner === null) {
     return null;
   }
   const element = document.activeElement;
-  const returnTo = element?.getAttribute("data-route-focus-return");
   return {
     key: active.key,
     epoch: departureEpoch,
@@ -274,6 +273,7 @@ export const navigate = (
   replace = false,
   focusId?: string,
   scrollY?: number,
+  returnFocusId?: string,
 ): boolean => {
   const target = new URL(path, window.location.origin);
   if (target.origin !== window.location.origin) {
@@ -283,7 +283,7 @@ export const navigate = (
   if (destination === current && focusId === undefined) {
     return true;
   }
-  const position = capturePosition();
+  const position = capturePosition(returnFocusId);
   return guardedDeparture(() => {
     requestedFocus = { id: focusId ?? null, scrollY: scrollY ?? null };
     if (focusId !== undefined) {

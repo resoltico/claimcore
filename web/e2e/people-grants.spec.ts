@@ -127,7 +127,9 @@ test("selected people grants use bounded core pages and survive presentation cha
     throw new Error("Core directory table required");
   }
   const table = page.locator('table[aria-labelledby="people-title"]');
-  await expect(table.getByRole("columnheader")).toHaveCount(content.columns.length);
+  await expect(table.getByRole("columnheader")).toHaveCount(
+    content.columns.filter((column) => column.prominence !== "DETAIL").length,
+  );
   await expect(table.locator("thead")).toBeVisible();
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();

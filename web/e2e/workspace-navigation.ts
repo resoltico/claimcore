@@ -75,13 +75,7 @@ export const openRecovery = async (page: Page): Promise<void> => {
 /** General receipt observation is secondary to the actor's dedicated recovery list. */
 export const showOperationLookup = async (page: Page): Promise<Locator> => {
   const input = page.locator('section[aria-labelledby="operation-lookup-title"] input');
-  if (!(await input.isVisible())) {
-    await page
-      .locator("details")
-      .filter({ has: page.locator("#operation-lookup-title") })
-      .locator(":scope > summary")
-      .click();
-  }
+  await input.waitFor({ state: "visible" });
   return input;
 };
 

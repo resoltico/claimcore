@@ -335,7 +335,12 @@ for (const language of ["en", "ar"] as const) {
       }
       const mobile = width === 320;
       await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
-      await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
+      const sidebar = page.locator(".workspace-sidebar nav");
+      if (mobile) {
+        await expect(sidebar).toBeHidden();
+      } else {
+        await expect(sidebar).toBeVisible();
+      }
       await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
       if (mobile) {
         const trigger = page.locator("#workspace-more");
@@ -712,12 +717,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await expect(page.locator(".table-view tbody")).toContainText("Paid");
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
-  await expect(
-    page.getByRole("group", {
-      name: "Exact reference match",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find a case", exact: true })).toBeVisible();
   expect(requests).toEqual([
     {
       limit: 50,

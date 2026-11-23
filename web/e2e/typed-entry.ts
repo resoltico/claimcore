@@ -40,7 +40,9 @@ export const fillNamedField = async (page: Page, name: string, value: string): P
     await selection.check();
   }
   await page.getByLabel(name, { exact: true }).first().waitFor({ state: "visible" });
-  const group = page.getByRole("group", { name, exact: true, includeHidden: true });
+  const group = page
+    .getByRole("group", { name, exact: true, includeHidden: true })
+    .filter({ has: page.locator('[data-type="year"]') });
   const combo = page.getByRole("combobox", { name, exact: true, includeHidden: true });
   if ((await group.count()) === 1) {
     await fillControl(group, value);
@@ -50,7 +52,7 @@ export const fillNamedField = async (page: Page, name: string, value: string): P
     await fillControl(combo, value);
     return;
   }
-  await fillControl(page.getByLabel(name, { exact: true }), value);
+  await fillControl(page.getByRole("textbox", { name, exact: true }), value);
 };
 export const fillBusinessField = (page: Page, name: string, value: string): Promise<void> =>
   fillControl(page.locator(`[data-field-name="${name}"]:not(.field-row)`), value);
