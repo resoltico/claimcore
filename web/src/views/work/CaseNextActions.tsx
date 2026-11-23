@@ -36,6 +36,7 @@ const ReminderCard = ({
   const message = value("action");
   const due = value("due");
   const kind = value("kind");
+  const timing = value("timing");
   const controls = (row.actions ?? []).filter(isOperationAffordance);
   const recommended = controls.find((action) => action.task === row.recommended);
   const actionId = `reminder-${row.key}-actions`;
@@ -49,6 +50,11 @@ const ReminderCard = ({
       )}
       {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
       {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
+      {timing?.kind === "CODE" ? (
+        <span data-column="timing">
+          <Chip value={timing} />
+        </span>
+      ) : null}
       <div className="next-action-controls">
         {recommended === undefined ? null : (
           <Button

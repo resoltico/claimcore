@@ -230,12 +230,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const second = page.locator(".worklist tbody tr").filter({
     hasText: references[1],
   });
-  await expect(
-    second.getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    }),
-  ).toBeVisible();
+  const secondActions = second.getByRole("button", { name: /^Actions for/u });
+  await expect(secondActions).toBeVisible();
   const concurrent = await workRequest(page, "operation.execute", {
     operationId: operationId(),
     task: "work.update",
@@ -251,12 +247,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   });
   expect(concurrent.outcome.kind).toBe("ACCEPTED");
   const writtenBeforeReview = writes;
-  await second
-    .getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    })
-    .click();
+  await secondActions.click();
+  await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
   await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
   const stale = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",

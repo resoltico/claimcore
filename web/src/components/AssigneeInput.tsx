@@ -1,7 +1,7 @@
 import { allActions } from "../operation/affordances";
 import { FieldRule } from "../ui/Field";
 import { PresentedValue } from "./PresentedValue";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
@@ -106,6 +106,8 @@ const discoveredPage = (value: HumanReadReply | null) =>
 /** Discovery is advisory; authoritative writes independently check the selected ActorId. */
 export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) => {
   const p = usePresentation();
+  const hintId = useId();
+  const ruleId = `${hintId}-rule`;
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
@@ -134,14 +136,14 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
   );
   const page = discoveredPage(result.value);
   return (
-    <fieldset id={`field-${props.inputName}`} className="assignee-input" disabled={props.disabled}>
+    <fieldset
+      id={`field-${props.inputName}`}
+      className="assignee-input"
+      disabled={props.disabled}
+      aria-describedby={props.field.ruleId === null ? hintId : `${hintId} ${ruleId}`}
+    >
       <legend>{p.fieldLabel(props.field.name)}</legend>
-      <p>{p.hint(props.field)}</p>
-      <FieldRule
-        name={props.field.name}
-        ruleId={props.field.ruleId}
-        invalid={props.error !== undefined}
-      />
+      <p id={hintId}>{p.hint(props.field)}</p>
       <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {result.message === null ? null : (
@@ -179,6 +181,12 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
       <button type="button" disabled={result.loading} onClick={result.reload}>
         {p.text("ui.refreshAccounts")}
       </button>
+      <FieldRule
+        id={ruleId}
+        name={props.field.name}
+        ruleId={props.field.ruleId}
+        invalid={props.error !== undefined}
+      />
       {props.error === undefined ? null : (
         <p role="alert">
           <NoticeView value={props.error} />

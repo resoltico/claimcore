@@ -2779,7 +2779,8 @@ test("People uses core roles and state without row reads and forwards known-zero
     .click();
   await expect.poll(() => listInputs.length).toBe(1);
   expect(summaryInputs).toEqual([]);
-  await page.getByRole("link", { name: "Case report", exact: true }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Case report", exact: true }).click();
   await expect.poll(() => summaryInputs.length).toBe(1);
   expect(listInputs).toEqual([
     {
