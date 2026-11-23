@@ -8,7 +8,8 @@
   }
 
   .toolbar > .toolbar-filter {
-    flex: 1 1 var(--width-worklist-filter);
+    flex: 1 1 0;
+    min-inline-size: var(--toolbar-filter-min);
   }
 
   .toolbar-sheet .ui-select-trigger {

@@ -3,6 +3,7 @@
     --gutter: var(--space-6);
     --page-gap: var(--space-4);
     --toolbar-page-margin: var(--space-3);
+    --toolbar-filter-min: 12rem;
     --dialog-overlay-top: var(--space-4);
     --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
@@ -255,6 +256,7 @@
     .workspace-main {
       --page-gap: var(--space-2);
       --toolbar-page-margin: 0;
+      --toolbar-filter-min: 0;
       margin-block: var(--shell-top-height) var(--shell-bottom-height);
       padding-block-start: var(--space-4);
     }
@@ -469,13 +471,8 @@
 
 @layer layout {
   @media (width < 40rem) {
-    .toolbar > .toolbar-filter {
-      flex-basis: 0;
-    }
-
-    .region-timeline > li,
-    .region-timeline > li:has(.timeline-subject) {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    .region-timeline > li {
+      --timeline-columns: minmax(0, 1fr);
     }
   }
 }
