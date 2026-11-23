@@ -379,6 +379,8 @@ const CaseDisclosure = ({
   );
   return (
     <Page
+      as="section"
+      labelledBy="case-detail-title"
       className="case-detail"
       header={<CaseHeader target={target} state={state} onAct={onAct} onBack={onBack} />}
     >

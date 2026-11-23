@@ -158,7 +158,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   const banner = acceptanceBanner(page);
   await expect(banner).toContainText("Case opened.");
   await expect(banner).toBeFocused();
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
   const receipt = await openAcceptedReceipt(page);
   await expect(receipt).toContainText("Case opened.");
   await receipt.getByRole("button", { name: "Close", exact: true }).click();

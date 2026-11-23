@@ -246,7 +246,7 @@ test("preserves historical profile contact and distinguishes global and case rol
   });
   await page.goto("/people");
   await page.locator("#people-search").fill(subject);
-  await page.locator(".directory-filters button[type='submit']").click();
+  await page.locator("#people-search").press("Enter");
   const row = page.locator(".table-view tbody > tr").filter({
     hasText: subject,
   });

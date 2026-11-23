@@ -152,7 +152,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
     "A\u0308 / العربية",
   );
   expect(requests).toEqual(["POST /api/operation.preview"]);
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
   await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {

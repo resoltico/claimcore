@@ -56,6 +56,8 @@ export const PageHeading = ({ id, title, headingRef, subtitle, primaryAction }: 
 export const Page = ({
   className,
   busy,
+  as: Element = "div",
+  labelledBy,
   tabs,
   toolbar,
   children,
@@ -63,18 +65,24 @@ export const Page = ({
 }: ({ header: ReactNode } | HeadingProps) & {
   className?: string;
   busy?: boolean;
+  as?: "div" | "section";
+  labelledBy?: string;
   tabs?: ReactNode;
   toolbar?: ReactNode;
   children: ReactNode;
 }) => {
   const banner = useContext(PageBanner);
   return (
-    <div className={["page", className].filter(Boolean).join(" ")} aria-busy={busy}>
+    <Element
+      className={["page", className].filter(Boolean).join(" ")}
+      aria-busy={busy}
+      aria-labelledby={labelledBy}
+    >
       {"header" in head ? head.header : <PageHeading {...head} />}
       {banner}
       {tabs}
       {toolbar}
       {children}
-    </div>
+    </Element>
   );
 };

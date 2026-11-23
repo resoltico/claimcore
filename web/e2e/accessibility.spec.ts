@@ -78,7 +78,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expect(page.locator("#kc-page-title")).toBeVisible();
   await expect(page.locator('input[name="username"]')).toBeVisible();
   await expect(page.locator("#case-detail-title")).toHaveCount(0);
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);
 });

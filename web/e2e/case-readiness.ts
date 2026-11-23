@@ -8,7 +8,7 @@ const presenterFor = async (page: Page) =>
   );
 
 export const acceptanceBanner = (page: Page) =>
-  page.locator('.case-detail .status-banner[data-tone="success"]');
+  page.locator('.page > .status-banner[data-tone="success"]');
 
 export const openAcceptedReceipt = async (page: Page) => {
   const p = await presenterFor(page);
