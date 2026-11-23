@@ -130,6 +130,11 @@ const editorLayout = async (page: Page) => {
   } else {
     expect(received!.y).toBeGreaterThan(date!.y);
   }
+  const parties = page.locator(".task-collection");
+  await parties.getByRole("button").last().click();
+  const party = parties.locator(".collection-item").last();
+  await expect(party.locator(".segmented-choice").getByRole("radio").first()).toBeVisible();
+  await party.getByRole("button").last().click();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {

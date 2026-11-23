@@ -163,7 +163,9 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   });
   await actions.click();
   await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
-  await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
+  const selectedAssignee = page.locator(`.assignee-input input[type=radio][value="${actor}"]`);
+  await selectedAssignee.click();
+  await expect(selectedAssignee).toBeChecked();
   await expect(
     page.getByRole("dialog").getByRole("textbox", {
       name: "Handling summary",

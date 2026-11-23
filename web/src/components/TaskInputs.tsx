@@ -110,51 +110,55 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
       ? offered
       : [...offered, selected];
   const optional = input.mode === "OPTIONAL";
+  const segmented = options.length + Number(optional) <= 5;
   return (
     <fieldset
+      className="task-choice"
       id={`field-${errorKey}`}
       disabled={props.disabled}
       aria-invalid={error !== undefined || undefined}
       aria-describedby={helpIds(metadata.hintId, error, errorKey)}
     >
       <legend>{label}</legend>
-      {optional ? (
-        <label>
-          <input
-            type="radio"
-            name={errorKey}
-            value=""
-            checked={selected === ""}
-            onChange={() => {
-              props.onChange(input.id, "");
-            }}
-          />
-          {p.text("ui.leaveUnchanged")}
-        </label>
-      ) : null}
-      {options.map((value) => {
-        const hint = choiceHint(input, props, offered, value);
-        const hintId = `${errorKey}-${value}-admission`;
-        return (
-          <span key={value} className="choice-option">
-            <label>
-              <input
-                type="radio"
-                name={errorKey}
-                value={value}
-                disabled={props.disabled || hint !== null}
-                aria-describedby={hint === null ? undefined : hintId}
-                checked={selected === value}
-                onChange={() => {
-                  props.onChange(input.id, value);
-                }}
-              />
-              {caption(p, input.id, value)}
-            </label>
-            {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
-          </span>
-        );
-      })}
+      <div className={segmented ? "segmented-choice" : "radio-choice"}>
+        {optional ? (
+          <label className={selected === "" ? "selected" : undefined}>
+            <input
+              type="radio"
+              name={errorKey}
+              value=""
+              checked={selected === ""}
+              onChange={() => {
+                props.onChange(input.id, "");
+              }}
+            />
+            {p.text("ui.leaveUnchanged")}
+          </label>
+        ) : null}
+        {options.map((value) => {
+          const hint = choiceHint(input, props, offered, value);
+          const hintId = `${errorKey}-${value}-admission`;
+          return (
+            <span key={value} className="choice-option">
+              <label className={selected === value ? "selected" : undefined}>
+                <input
+                  type="radio"
+                  name={errorKey}
+                  value={value}
+                  disabled={props.disabled || hint !== null}
+                  aria-describedby={hint === null ? undefined : hintId}
+                  checked={selected === value}
+                  onChange={() => {
+                    props.onChange(input.id, value);
+                  }}
+                />
+                {caption(p, input.id, value)}
+              </label>
+              {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
+            </span>
+          );
+        })}
+      </div>
       {input.id === "input:role" && selected === "" ? <p>{p.text("label.chooseRole")}</p> : null}
       <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
     </fieldset>

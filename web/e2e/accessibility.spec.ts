@@ -58,7 +58,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
     await expect(meter).toHaveAccessibleName(/.+/u);
     expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");
   }
-  await expect(page.locator(".case-title-line .chip-list")).toContainText("Open");
+  await expect(page.locator(".case-title-line .chip-list")).toContainText("Undecided");
   const timeline = page.locator(".case-timeline-panel");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
   const facts = timeline.getByRole("tab", { name: "Case facts", exact: true });

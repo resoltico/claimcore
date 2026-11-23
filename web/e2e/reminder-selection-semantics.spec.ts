@@ -122,14 +122,18 @@ test("a Completed view shows its owner inactive default and explicit false remov
     limit: 50,
   });
   const queue = page.locator(".reminder-queue");
-  const inactive = queue.getByRole("checkbox", { name: "Include inactive case work" });
+  const filters = queue.locator('button[aria-haspopup="dialog"]');
+  const sheet = page.locator(".filter-sheet").getByRole("dialog");
+  await filters.click();
+  const inactive = sheet.getByRole("checkbox", { name: "Include inactive case work" });
   await expect(inactive).toBeChecked();
   await expect(inactive).toBeEnabled();
-  await expect(queue.getByRole("combobox", { name: "Reminder state" })).toHaveText("Any");
   await expect(queue.getByText(opened, { exact: true })).toBeVisible();
   await expect(queue.getByText(closed, { exact: true })).toBeVisible();
   const restricted = nextRead(page);
   await inactive.uncheck();
+  await sheet.locator('button[type="submit"]').click();
+  await expect(queue.getByRole("combobox", { name: "Reminder state" })).toHaveText("Any");
   expect((await restricted).request().postDataJSON()).toEqual({
     view: "COMPLETED",
     text: marker,
@@ -146,6 +150,8 @@ test("a Completed view shows its owner inactive default and explicit false remov
     includeInactive: false,
     limit: 50,
   });
+  await filters.click();
   await expect(inactive).not.toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(queue.getByText(closed, { exact: true })).toHaveCount(0);
 });

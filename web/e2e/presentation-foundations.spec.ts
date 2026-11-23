@@ -388,7 +388,7 @@ for (const language of ["de", "ar"] as const) {
     await expect(page.locator("html")).toHaveAttribute("lang", language);
     const menu = page.locator(".shell-more");
     const trigger = page.locator("#workspace-more");
-    const recovery = menu.getByRole("link", { name: new RegExp(ui(language, "ui.recovery"), "u") });
+    const recovery = menu.locator('a[href="/recovery"]');
     await trigger.press("Enter");
     await expect(recovery).toBeVisible();
     await recovery.press("Enter");

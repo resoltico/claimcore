@@ -29,7 +29,9 @@ test("discovers a case reminder queue, retains visible context through filters a
   });
   await expect(page.getByRole("heading", { name: "Reminders", exact: true })).toBeVisible();
   await expect(page.getByText(reference, { exact: true })).toBeVisible();
+  await page.locator('.reminder-queue button[aria-haspopup="dialog"]').click();
   await expect(page.getByRole("checkbox", { name: "Include inactive case work" })).toBeChecked();
+  await page.keyboard.press("Escape");
   await page.getByRole("combobox", { name: "Reminder due", exact: true }).click();
   const due = reminderResponse(page);
   await page.getByRole("option", { name: "Today", exact: true }).click();
