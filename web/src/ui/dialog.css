@@ -57,9 +57,9 @@
     padding: var(--space-3);
   }
   .ui-dialog-overlay--end [role="dialog"] {
-    display: flex;
+    display: var(--drawer-flow, flex);
     flex-direction: column;
-    block-size: 100%;
+    block-size: var(--drawer-block-size, 100%);
     min-block-size: 0;
   }
   .ui-dialog-overlay--end .ui-dialog-header {
@@ -68,7 +68,7 @@
   .ui-dialog-overlay--end .ui-dialog-body {
     flex: 1;
     min-block-size: 0;
-    overflow: auto;
+    overflow: var(--drawer-body-overflow, auto);
     padding-block: var(--space-3);
     scroll-padding-block: var(--space-3);
   }

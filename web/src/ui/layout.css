@@ -305,15 +305,10 @@
   }
 
   @media (height < 36rem) {
-    .ui-dialog-overlay--end .ui-dialog {
-      overflow-y: auto;
-    }
-    .ui-dialog-overlay--end [role="dialog"] {
-      display: block;
-      block-size: auto;
-    }
-    .ui-dialog-overlay--end .ui-dialog-body {
-      overflow: visible;
+    .ui-dialog-overlay--end {
+      --drawer-flow: block;
+      --drawer-block-size: auto;
+      --drawer-body-overflow: visible;
     }
   }
 
