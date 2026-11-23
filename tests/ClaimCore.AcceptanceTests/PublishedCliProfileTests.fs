@@ -185,7 +185,7 @@ let private terminal root directory cli =
 
     Expect.stringContains
         (Encoding.UTF8.GetString refused.StandardError)
-        "Use session for piped requests."
+        "Use batch for piped requests."
         "The usage error offers the piped interface"
 
 [<Tests>]
