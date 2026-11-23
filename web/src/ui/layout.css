@@ -322,6 +322,12 @@
 }
 
 @layer layout {
+  @container data-table (width >= 64rem) {
+    .data-table table {
+      --table-chip-list-min-inline-size: 13rem;
+    }
+  }
+
   @container data-table (width < 64rem) {
     .data-table table {
       --table-layout: medium;

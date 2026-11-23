@@ -21,6 +21,11 @@
     text-align: center;
     text-decoration: none;
   }
+  .lookup .ui-button {
+    line-height: 1.15;
+    overflow-wrap: normal;
+  }
+
   .ui-button--secondary {
     --button-bg: var(--bg-surface);
     --button-text: var(--text-primary);

@@ -70,6 +70,10 @@
     overflow-wrap: normal;
   }
 
+  .data-table .chip-list:has(> li:nth-child(3)) {
+    min-inline-size: var(--table-chip-list-min-inline-size, 0);
+  }
+
   .data-table-cell {
     min-inline-size: 0;
   }
