@@ -304,7 +304,8 @@ test("paints a filled PDF widget into the canvas without interactive elements @e
     await frame
       .locator("body")
       .evaluate((body) => Array.from(body.children, (element) => element.localName).toSorted()),
-  ).toEqual(["canvas", "script"]);
+  ).toEqual(["script", "svg"]);
+  await expect(frame.locator("style, [style]")).toHaveCount(0);
 });
 
 for (const moveFocusOutside of [false, true]) {

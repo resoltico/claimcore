@@ -112,19 +112,16 @@ export const writeAttachmentViewer = async (directory) => {
       },
     },
   ]);
-  const style = (
-    await readFile(new URL("../src/views/case/pdf/viewer.css", import.meta.url), "utf8")
-  ).replaceAll("\r\n", "\n");
-  if (/<\/script/iu.test(script) || /<\/style/iu.test(style)) {
-    throw new Error("The attachment viewer inline content contains a closing tag.");
+  if (/<\/script/iu.test(script)) {
+    throw new Error("The attachment viewer script contains a closing tag.");
   }
   const html =
-    `<!doctype html><html data-pdf-viewer><head><meta charset="utf-8"><style>${style}</style></head>` +
-    `<body data-pdf-viewer><canvas></canvas><script>${script}</script></body></html>`;
+    '<!doctype html><html><head><meta charset="utf-8"></head><body>' +
+    '<svg display="block" width="1" height="1"><foreignObject><canvas></canvas></foreignObject></svg>' +
+    `<script>${script}</script></body></html>`;
   await writeFile(resolve(directory, "attachment-preview.viewer"), html);
   return {
     sha256: createHash("sha256").update(html).digest("hex"),
     scriptSha256: createHash("sha256").update(script).digest("base64"),
-    styleSha256: createHash("sha256").update(style).digest("base64"),
   };
 };

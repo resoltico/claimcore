@@ -192,10 +192,9 @@ let private login (context: HttpContext) : Task =
 let publishedInventory directory (buildAssets: (string * byte array) list) =
     let sha256 (bytes: byte array) = SHA256.HashData bytes
     let script = "document.querySelector('canvas').width = 1;"
-    let style = "canvas { display: block; }"
 
     let html =
-        $"<!doctype html><html><head><style>{style}</style></head><body><canvas></canvas><script>{script}</script></body></html>"
+        $"<!doctype html><html><head></head><body><canvas></canvas><script>{script}</script></body></html>"
         |> Encoding.UTF8.GetBytes
 
     File.WriteAllBytes(Path.Combine(directory, "attachment-preview.viewer"), html)
@@ -230,15 +229,13 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
         Path.Combine(directory, "public-assets.json"),
         JsonSerializer.SerializeToUtf8Bytes
             {|
-                schema = 2
+                schema = 3
                 assets = assets
                 viewer =
                     {|
                         sha256 = sha256 html |> Convert.ToHexStringLower
                         scriptSha256 =
                             script |> Encoding.UTF8.GetBytes |> sha256 |> Convert.ToBase64String
-                        styleSha256 =
-                            style |> Encoding.UTF8.GetBytes |> sha256 |> Convert.ToBase64String
                     |}
             |}
     )

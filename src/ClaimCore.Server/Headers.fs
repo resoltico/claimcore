@@ -16,8 +16,8 @@ module HttpHeaders =
     let internal publicAsset (context: HttpContext) =
         context.Items[publicAssetKey] <- box true
 
-    let internal viewer scriptHash styleHash (context: HttpContext) =
-        context.Items[viewerKey] <- box (scriptHash, styleHash)
+    let internal viewer scriptHash (context: HttpContext) =
+        context.Items[viewerKey] <- box scriptHash
 
     let private contentSecurityPolicy frameSource =
         "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; "
@@ -28,9 +28,9 @@ module HttpHeaders =
         + "manifest-src 'self'; media-src 'none'; worker-src 'none'; "
         + "require-trusted-types-for 'script'; trusted-types 'none'"
 
-    let private viewerPolicy scriptHash styleHash =
+    let private viewerPolicy scriptHash =
         $"sandbox allow-scripts; default-src 'none'; script-src 'sha256-{scriptHash}' 'wasm-unsafe-eval'; "
-        + $"style-src 'sha256-{styleHash}'; img-src blob: data:; connect-src 'none'; "
+        + "style-src 'none'; img-src blob: data:; connect-src 'none'; "
         + "worker-src blob:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"
 
     let private permissionsPolicy =
@@ -66,9 +66,8 @@ module HttpHeaders =
         let headers = context.Response.Headers
 
         match context.Items.TryGetValue viewerKey with
-        | true, (:? (string * string) as hashes) ->
-            let scriptHash, styleHash = hashes
-            headers.ContentSecurityPolicy <- viewerPolicy scriptHash styleHash
+        | true, (:? string as scriptHash) ->
+            headers.ContentSecurityPolicy <- viewerPolicy scriptHash
             headers.Remove "X-Frame-Options" |> ignore
         | _ ->
             let frameSource =

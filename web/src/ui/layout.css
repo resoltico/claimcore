@@ -485,3 +485,21 @@
     }
   }
 }
+
+@layer views {
+  [data-cc-overlay] {
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: var(--layer-dialog);
+    max-block-size: min(var(--viewport-block), var(--select-max-block-size, 100%));
+  }
+
+  [data-cc-overlay][data-cc-positioned] {
+    position: absolute;
+    /* React Aria measures physical offsets in the overlay's containing block. */
+    inset: attr(data-cc-top px, auto) attr(data-cc-right px, auto) attr(data-cc-bottom px, auto)
+      attr(data-cc-left px, auto);
+    --cc-overlay-height: attr(data-cc-max-height px, 100dvh);
+    max-block-size: min(var(--cc-overlay-height), var(--select-max-block-size, 100%));
+  }
+}

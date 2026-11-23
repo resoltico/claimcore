@@ -1,3 +1,4 @@
+import "./ui/aria-layout.css";
 import "virtual:claimcore-theme.css";
 import "./theme/boot";
 import { PresentationProvider } from "./presentation/PresentationProvider";

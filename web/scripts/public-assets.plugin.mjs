@@ -48,7 +48,7 @@ export default function publicAssets() {
       const viewer = await writeAttachmentViewer(directory);
       await writeFile(
         resolve(directory, "public-assets.json"),
-        JSON.stringify({ schema: 2, assets, viewer }),
+        JSON.stringify({ schema: 3, assets, viewer }),
       );
     },
   };

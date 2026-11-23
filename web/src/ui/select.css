@@ -20,7 +20,8 @@
     display: flex;
     flex-direction: column;
     z-index: var(--layer-dialog);
-    inline-size: var(--trigger-width, auto);
+    --trigger-width: attr(data-cc-trigger-width px, auto);
+    inline-size: var(--trigger-width);
     max-inline-size: calc(var(--viewport-inline) - var(--space-4));
     max-block-size: var(--select-max-block-size);
     overflow: hidden;

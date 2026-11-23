@@ -1,3 +1,4 @@
+import reactAriaLayout, { reactAriaLayoutBanner } from "./scripts/react-aria-layout.plugin.mjs";
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import { themeCss } from "./scripts/generate-theme.mjs";
@@ -27,11 +28,12 @@ export default {
   plugins: [
     themeStylesheet,
     reactAriaLiveAnnouncer(),
+    reactAriaLayout(),
     react(),
     attachmentPreviewResources(),
     publicAssets(),
   ],
-  optimizeDeps: { rolldownOptions: { plugins: [reactAriaLiveAnnouncer()] } },
+  optimizeDeps: { rolldownOptions: { plugins: [reactAriaLiveAnnouncer(), reactAriaLayout()] } },
   resolve: {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
@@ -51,7 +53,8 @@ export default {
         recovery: fileURLToPath(new URL("./auth-recovery.html", import.meta.url)),
       },
       output: {
-        postBanner: reactAriaLiveAnnouncerBanner,
+        postBanner: (chunk) =>
+          [reactAriaLiveAnnouncerBanner(chunk), reactAriaLayoutBanner(chunk)].join("\n"),
         codeSplitting: {
           groups: [{ name: "workspace", test: /\/web\/src\//u, entriesAware: true }],
         },

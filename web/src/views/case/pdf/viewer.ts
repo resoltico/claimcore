@@ -5,15 +5,28 @@ import { isPositiveInteger, messageRecord, previewChannel } from "./channel";
 
 const pixels = attachmentTransport.maximumPreviewPixels;
 const canvas = document.querySelector("canvas")!;
+const surface = document.querySelector("svg")!;
+const content = document.querySelector("foreignObject")!;
+
+// The SVG viewport fits the intrinsic canvas without a stylesheet or a subresource.
+const fitSurface = () => {
+  const bounds = document.body.getBoundingClientRect();
+  const height = Math.max(1, window.innerHeight - 2 * bounds.top);
+  surface.setAttribute("width", String(bounds.width));
+  surface.setAttribute("height", String(height));
+  return { width: bounds.width, height };
+};
+window.addEventListener("resize", fitSurface);
 
 const pageCanvas = (width: number, height: number) => {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     throw new Error("Invalid PDF page geometry.");
   }
+  const viewport = fitSurface();
   const singleSide = Math.floor(Math.sqrt(pixels));
   const scale = Math.min(
-    (window.innerWidth * window.devicePixelRatio) / width,
-    (window.innerHeight * window.devicePixelRatio) / height,
+    (viewport.width * window.devicePixelRatio) / width,
+    (viewport.height * window.devicePixelRatio) / height,
     singleSide / width,
     singleSide / height,
   );
@@ -100,6 +113,9 @@ const initialize = (port: MessagePort, bytes: ArrayBuffer) => {
     try {
       await render.promise;
       if (requestId === request) {
+        content.setAttribute("width", String(result.width));
+        content.setAttribute("height", String(result.height));
+        surface.setAttribute("viewBox", `0 0 ${result.width} ${result.height}`);
         visible.replaceWith(result);
         visible = result;
         port.postMessage({ requestId, page, pageCount: pdf.numPages });

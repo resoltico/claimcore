@@ -1,0 +1,66 @@
+@layer views {
+  [data-cc-underlay] {
+    position: fixed;
+    inset: 0;
+  }
+
+  [data-cc-portal-group] {
+    display: contents;
+  }
+
+  html[data-cc-scroll-lock] {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  html[data-cc-scroll-lock="touch"] * {
+    overscroll-behavior: contain;
+  }
+
+  [data-cc-no-selection] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  [data-cc-enter-pending] {
+    opacity: 0;
+    clip-path: inset(50%);
+  }
+
+  [data-cc-visually-hidden],
+  [data-live-announcer] {
+    position: absolute;
+    inline-size: var(--border-width);
+    block-size: var(--border-width);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  [data-cc-visually-hidden="fixed"] {
+    position: fixed;
+    inset: 0 auto auto 0;
+  }
+
+  [data-cc-dismiss] {
+    inline-size: var(--border-width);
+    block-size: var(--border-width);
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+
+  [data-cc-date-field] {
+    unicode-bidi: isolate;
+  }
+
+  [data-cc-date-segment] {
+    caret-color: transparent;
+  }
+
+  [data-cc-date-segment="embed"] {
+    unicode-bidi: embed;
+  }
+}
