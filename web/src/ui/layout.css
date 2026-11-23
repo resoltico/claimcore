@@ -257,13 +257,12 @@
       --page-gap: var(--space-2);
       --toolbar-page-margin: 0;
       --toolbar-filter-min: 0;
-      margin-block: var(--shell-top-height) var(--shell-bottom-height);
+      margin-block-end: var(--shell-bottom-height);
       padding-block-start: var(--space-4);
     }
 
     .phone-app-bar,
     .workspace-mobile-tabs {
-      position: fixed;
       z-index: var(--layer-dialog);
       inset-inline: 0;
       display: flex;
@@ -274,6 +273,7 @@
     }
 
     .phone-app-bar {
+      position: sticky;
       inset-block-start: 0;
       min-block-size: var(--shell-top-height);
       border-block-end: var(--border-width) solid var(--border-subtle);
@@ -286,7 +286,19 @@
       font-weight: 650;
     }
 
+    .phone-primary-action {
+      min-inline-size: 0;
+      max-inline-size: 45%;
+    }
+
+    .phone-primary-action button {
+      max-inline-size: 100%;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
     .workspace-mobile-tabs {
+      position: fixed;
       display: grid;
       grid-template-columns: repeat(3, minmax(max-content, 1fr));
       overflow-x: auto;
@@ -333,7 +345,7 @@
 @layer layout {
   @container data-table (width >= 64rem) {
     .data-table table {
-      --table-chip-list-min-inline-size: 13rem;
+      --table-chip-list-min-inline-size: 15rem;
     }
   }
 

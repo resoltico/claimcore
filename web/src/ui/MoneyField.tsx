@@ -59,6 +59,7 @@ export const MoneyField = ({
           <ComboBox
             compact
             id={currency.id}
+            inputName={currency.id}
             label={currency.label}
             invalid={invalid}
             describedBy={invalid ? `${currencyHintId} ${errorId}` : currencyHintId}

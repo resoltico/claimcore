@@ -257,7 +257,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   );
   await recordReviewed(page);
   expect((await execution).request().postData()).toBe(reviewed.request().postData());
-  await expect(payments.locator('[data-entry="paymentCount"] dd')).toHaveText("54");
+  await expect(payments.locator(".section-count")).toHaveText("54 payments");
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("54.00 EUR");
   await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(payments.locator("tbody tr")).toHaveCount(3);

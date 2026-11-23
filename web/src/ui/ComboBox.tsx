@@ -18,6 +18,7 @@ export const ComboBox = ({
   disabled,
   compact = false,
   fieldName,
+  inputName,
   invalid = false,
   describedBy,
   onSubmit,
@@ -32,6 +33,7 @@ export const ComboBox = ({
   disabled?: boolean | undefined;
   compact?: boolean;
   fieldName?: string | undefined;
+  inputName?: string | undefined;
   invalid?: boolean;
   describedBy?: string | undefined;
   onSubmit?: (() => void) | undefined;
@@ -56,6 +58,7 @@ export const ComboBox = ({
   >
     <TextInput
       id={id}
+      name={inputName}
       data-field-name={fieldName}
       aria-label={label}
       aria-description={hint}

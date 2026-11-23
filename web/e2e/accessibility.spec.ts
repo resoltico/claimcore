@@ -53,7 +53,8 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expectAccessible(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
   const meters = page.locator(".case-stage-list meter");
-  await expect(meters).toHaveCount(4);
+  await expect(meters).toHaveCount(1);
+  await expect(meters).toHaveAccessibleName("Opened");
   for (const meter of await meters.all()) {
     await expect(meter).toHaveAccessibleName(/.+/u);
     expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");

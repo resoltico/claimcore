@@ -7,6 +7,10 @@
     min-inline-size: 0;
     max-inline-size: var(--width-settings);
   }
+  .settings-panel .section-card-heading h2 {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
   .settings-options {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

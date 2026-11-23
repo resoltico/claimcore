@@ -85,7 +85,7 @@ export const Dialog = ({
     >
       {({ close }) => (
         <InsideDialog value>
-          <header className="ui-dialog-header">
+          <div className="ui-dialog-header">
             <div className="ui-dialog-heading">
               <div className="ui-dialog-title-group">
                 {titleIcon}
@@ -108,7 +108,7 @@ export const Dialog = ({
             </div>
             {identity}
             {description === undefined || anchorRef !== undefined ? null : <p>{description}</p>}
-          </header>
+          </div>
           <div
             ref={bodyRef}
             className="ui-dialog-body"

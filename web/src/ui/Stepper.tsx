@@ -57,14 +57,8 @@ export const Stepper = ({
             aria-current={step.stage === content.current ? "step" : undefined}
             data-complete={step.reached}
           >
-            {step.meter === undefined ? (
-              <meter
-                className="progress-meter"
-                min={0}
-                max={1}
-                value={step.reached ? 1 : 0}
-                aria-label={label}
-              />
+            {step.reached && step.meter === undefined ? (
+              <meter className="progress-meter" min={0} max={1} value={1} aria-label={label} />
             ) : null}
             <strong>
               {link === undefined ? (
