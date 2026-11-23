@@ -5,7 +5,7 @@
   .case-header-card {
     display: grid;
     gap: var(--space-4);
-    padding: var(--space-1) var(--space-5) var(--space-4);
+    padding: 0 var(--space-5) var(--space-4);
     border: var(--border-width) solid var(--border-subtle);
     border-radius: var(--radius-md);
     background: var(--bg-surface);
@@ -30,7 +30,7 @@
     min-inline-size: 0;
   }
   .case-title-line .identifier-value {
-    font-family: var(--font-body);
+    font-family: inherit;
     white-space: normal;
   }
   .case-header-state {
@@ -227,7 +227,7 @@
   }
 
   .case-breadcrumb {
-    margin-block-end: var(--space-1);
+    margin-block-end: 0;
     color: var(--text-secondary);
     font-size: var(--text-xs);
     line-height: var(--line-heading);

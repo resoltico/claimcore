@@ -11,7 +11,7 @@
   .note-composer textarea {
     min-block-size: var(--control-target);
     inline-size: 100%;
-    min-block-size: var(--height-notes);
+    min-block-size: var(--control-target);
     resize: vertical;
   }
   .note-list {
