@@ -47,7 +47,7 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   }
   const { reminderId } = target.effects.reminder;
   expect(reminderId).toBe(receipt.operationId);
-  await expect(page.locator(`[id="reminder-${reminderId}-reminder.complete"]`)).toBeVisible();
+  await expect(page.locator(`[id="reminder-${reminderId}-primary"]`)).toBeVisible();
   return receipt;
 };
 test("stores exact optional LF incident text and clears it without a financial assertion", async ({
@@ -120,7 +120,9 @@ test("supports multiple independently revised reminders, terminal records, reope
   const second = await plan(page, "Ask insurer", "9999-12-31");
   expect(first.operationId).not.toBe(second.operationId);
   await expect(
-    page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
+    page.locator(
+      ".case-reminders .next-action-controls, .reminder-list .table-view tbody > tr:not(.table-group)",
+    ),
   ).toHaveCount(2);
   await expect(
     page
@@ -436,7 +438,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
-      const heading = await page.locator(".case-heading").boundingBox();
+      const heading = await page.locator(".case-title-sticky").boundingBox();
       const title = await page.locator("#case-detail-title").boundingBox();
       expect(heading).not.toBeNull();
       expect(title).not.toBeNull();

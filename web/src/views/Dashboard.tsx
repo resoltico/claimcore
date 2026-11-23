@@ -29,7 +29,15 @@ import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
 import { isWorkspaceLinkId, Shell } from "./Shell";
 import { RoutedContent } from "./RoutedContent";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
@@ -229,8 +237,10 @@ const AcceptedReceipt = ({
   route,
   receipt,
   close,
+  shouldFocus,
 }: {
   route: Route;
+  shouldFocus: () => boolean;
   receipt: { caseId: string; operationId: string; messageId: string | undefined } | null;
   close: () => void;
 }) => {
@@ -248,6 +258,7 @@ const AcceptedReceipt = ({
       operationId={receipt.operationId}
       messageId={receipt.messageId}
       dismiss={close}
+      shouldFocus={shouldFocus}
     />
   );
 };
@@ -419,6 +430,7 @@ const useAcceptanceFeedback = (
     owner: object;
     receipt: { caseId: string; operationId: string; messageId: string | undefined };
   } | null>(null);
+  const focusedOperation = useRef<string | null>(null);
   const available =
     owner !== null &&
     requester !== null &&
@@ -441,8 +453,20 @@ const useAcceptanceFeedback = (
       latestFeedbackOwner.current = null;
     };
   }, [feedbackOwner]);
+  const shouldFocus = useCallback(() => {
+    if (
+      accepted === null ||
+      accepted.owner !== latestFeedbackOwner.current ||
+      focusedOperation.current === accepted.receipt.operationId
+    ) {
+      return false;
+    }
+    focusedOperation.current = accepted.receipt.operationId;
+    return true;
+  }, [accepted]);
   return {
     owner: feedbackOwner,
+    shouldFocus,
     receipt: available && accepted?.owner === feedbackOwner ? accepted.receipt : null,
     clear: () => {
       setAccepted(null);
@@ -664,6 +688,7 @@ export const Dashboard = () => {
                               route={route}
                               receipt={feedback.receipt}
                               close={feedback.clear}
+                              shouldFocus={feedback.shouldFocus}
                             />
                           }
                           caseNavigation={caseNavigation}

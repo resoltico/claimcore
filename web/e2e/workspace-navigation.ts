@@ -32,6 +32,10 @@ export const workspaceSettingsNavigation = async (page: Page): Promise<Locator> 
   await showAccountActions(page);
   return page.locator('[data-menu-item="settings"], .shell-more a[href="/settings"]');
 };
+export const startPeopleCreation = async (page: Page, label = "Add person") => {
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.locator('[data-menu-item="people.admit"]').click();
+};
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
 export const choiceGroup = (page: Page, name: string): Locator =>

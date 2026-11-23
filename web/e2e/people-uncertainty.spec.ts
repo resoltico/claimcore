@@ -1,7 +1,7 @@
 import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { chooseChoice, goToView } from "./workspace-navigation";
+import { startPeopleCreation, chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type BrowserContext } from "./fixtures";
@@ -39,7 +39,7 @@ const ownerGrant = async (page: Page, active: boolean) => {
   });
 };
 const prepareAdmission = async (page: Page, issuer: string, subject: string) => {
-  await page.getByRole("button", { name: "⟦ÀÀdd pëërsöön⟧", exact: true }).first().click();
+  await startPeopleCreation(page, "⟦ÀÀdd pëërsöön⟧");
   const dialog = page.getByRole("dialog");
   await chooseChoice(page, "input:principal.kind", "SERVICE");
   await expect(dialog.locator('[name="input:principal.issuer"]')).toHaveValue(issuer);

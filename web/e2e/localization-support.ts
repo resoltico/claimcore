@@ -87,7 +87,7 @@ const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
       kind: "CURRENT",
     };
   }
-  const footer = page.locator(".login-footer button");
+  const footer = page.locator(".login-footer button.ui-button--secondary");
   if (await footer.isVisible()) {
     await footer.click();
     await expect(panel).toBeVisible();

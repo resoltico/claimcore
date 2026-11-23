@@ -1,4 +1,4 @@
-import { goToView } from "./workspace-navigation";
+import { startPeopleCreation, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { startOpen, reviewDraft } from "./case-workflow";
 import { expect, test, type Page } from "./fixtures";
@@ -106,11 +106,7 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await reloadDocument(page);
   await expect(page.getByRole("heading", { name: "People and access", exact: true })).toBeVisible();
   await expect(page.locator(".people-panel")).toBeVisible();
-  const addPerson = page
-    .getByRole("button", { name: "Add person", exact: true })
-    .and(page.locator(".people-panel > button"));
-  await expect(addPerson).toHaveCount(1);
-  await addPerson.click();
+  await startPeopleCreation(page);
   await expect(page.locator('[name="input:principal.subject"]')).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });

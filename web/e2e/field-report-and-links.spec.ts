@@ -367,7 +367,8 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(prefix)}`);
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
   const cases = page.getByRole("tabpanel", { name: /^Case view All\b/u });
-  await cases.getByRole("link", { name: "Case report", exact: true }).press("Enter");
+  await cases.getByRole("button", { name: "Export", exact: true }).press("Enter");
+  await page.getByRole("menuitem", { name: "Case report", exact: true }).press("Enter");
   await expect(page).toHaveURL(/\/cases\/report\?/u);
   const report = page.getByRole("region", { name: "Case report" });
   await expect(report.locator('[data-region="RESULTS"]')).toBeVisible();

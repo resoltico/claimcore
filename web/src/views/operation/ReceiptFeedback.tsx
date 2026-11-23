@@ -15,10 +15,12 @@ export const ReceiptFeedback = ({
   operationId,
   messageId,
   dismiss,
+  shouldFocus,
 }: {
   operationId: string;
   messageId?: string | undefined;
   dismiss: () => void;
+  shouldFocus?: (() => boolean) | undefined;
 }) => {
   const p = usePresentation();
   const [open, setOpen] = useState(false);
@@ -27,6 +29,7 @@ export const ReceiptFeedback = ({
     <>
       <StatusBanner
         tone="success"
+        shouldFocus={shouldFocus}
         dismissLabel={p.text("ui.close")}
         dismiss={dismiss}
         action={

@@ -9,22 +9,26 @@ export const StatusBanner = ({
   action,
   dismissLabel,
   dismiss,
+  shouldFocus,
 }: {
   tone: "success" | "info";
   children: ReactNode;
   action?: ReactNode;
   dismissLabel?: string;
   dismiss?: () => void;
+  shouldFocus?: (() => boolean) | undefined;
 }) => {
   const banner = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const focus = requestAnimationFrame(() => {
-      banner.current?.focus();
+      if (shouldFocus?.() !== false) {
+        banner.current?.focus();
+      }
     });
     return () => {
       cancelAnimationFrame(focus);
     };
-  }, []);
+  }, [shouldFocus]);
   return (
     <div className="status-banner" data-tone={tone} role="status" tabIndex={-1} ref={banner}>
       <Icon name={tone === "success" ? "check" : "info"} />

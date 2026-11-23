@@ -430,6 +430,34 @@ const applicationAddress = (page: Page): URL => {
   const configured = new URL(base);
   return configured.origin === start.origin ? start : configured;
 };
+const recoverLimitedLogin = async (page: Page, origin: string): Promise<boolean> => {
+  const current = new URL(page.url());
+  if (current.origin !== origin || current.pathname !== "/auth/login") {
+    return false;
+  }
+  const retry = await page.evaluate(() => {
+    try {
+      const failure = JSON.parse(document.body.textContent ?? "") as {
+        hostFailure?: { code?: string };
+      } | null;
+      if (failure?.hostFailure?.code === "RATE_LIMITED") {
+        sessionStorage.setItem("claimcore.signedOut", "true");
+        return sessionStorage.getItem("claimcore.loginReturn") ?? "/";
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+  if (retry === null) {
+    return false;
+  }
+  const destination = new URL(retry, origin);
+  await page.goto(destination.origin === origin ? destination.href : origin, {
+    waitUntil: "commit",
+  });
+  return true;
+};
 export const login = async (
   page: Page,
   workspaceHeading: string | null = "Cases",
@@ -448,18 +476,20 @@ export const login = async (
         });
   const requestedAddress = applicationAddress(page);
   const providerForm = page.locator('input[name="username"]');
+  const visible = authenticated
+    .or(providerForm)
+    .or(page.locator(".login-card h1, #sign-in-incomplete"))
+    .first();
   try {
-    await authenticated
-      .or(providerForm)
-      .or(page.locator(".login-card h1, #sign-in-incomplete"))
-      .first()
-      .waitFor({
-        timeout: 5_000,
-      });
+    await visible.waitFor({ timeout: 5_000 });
   } catch {
-    const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
-    const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
-    throw new Error(`E2E_LOGIN_VIEW_${kind.toUpperCase().replace(/-/gu, "_")}`);
+    if (await recoverLimitedLogin(page, requestedAddress.origin)) {
+      await visible.waitFor({ timeout: 5_000 });
+    } else {
+      const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
+      const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
+      throw new Error(`E2E_LOGIN_VIEW_${kind.toUpperCase().replace(/-/gu, "_")}`);
+    }
   }
   if (await authenticated.isVisible()) {
     await progress("login-auth");

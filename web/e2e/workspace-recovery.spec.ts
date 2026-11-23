@@ -1,6 +1,6 @@
 import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { goToView } from "./workspace-navigation";
+import { startPeopleCreation, goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
@@ -142,15 +142,9 @@ test("people refusal preserves authored input through Settings and needs a fresh
     },
   });
   const requests = trackForegroundRequests(page);
-  await page
-    .getByRole("button", {
-      name: "Add person",
-      exact: true,
-    })
-    .first()
-    .click();
+  await startPeopleCreation(page);
   const editor = page.getByRole("dialog", {
-    name: "Add person",
+    name: "Add from access request",
     exact: true,
   });
   const issuer = editor.locator('[name="input:principal.issuer"]');

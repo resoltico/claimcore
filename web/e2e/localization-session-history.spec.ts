@@ -25,10 +25,9 @@ test("updates supplied records without refetching while receipt disclosure refre
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
-  const history = page
-    .locator(`.case-timeline-panel .region-timeline > li[data-effect$=".${opening.operationId}"]`)
-    .filter({ has: page.locator('[data-change-label="field.claimedAmount.label"]') });
-  await expect(history.locator(".timeline-changed-fields")).toContainText("Claimed amount");
+  const history = page.locator(
+    `.case-timeline-panel .region-timeline > li[data-effect$=".${opening.operationId}"]`,
+  );
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
   await selectFormat(page, "ar-EG");
@@ -57,7 +56,7 @@ test("updates supplied records without refetching while receipt disclosure refre
       }),
     ).toBeVisible();
     await expect(
-      page.locator(".case-actions > summary").filter({
+      page.locator(".case-header-actions button[aria-haspopup]").filter({
         hasText: ui(language, "ui.moreCaseActions"),
       }),
     ).toBeVisible();
@@ -65,12 +64,18 @@ test("updates supplied records without refetching while receipt disclosure refre
     await expectPreferences(page, {
       displayLocale: "ar-EG",
     });
-    await history.locator("details > summary").click();
-    await expect(history).toContainText("١٬٢٠٠٫٥٠");
+    await history
+      .getByRole("button", { name: ui(language, "ui.viewDetails"), exact: true })
+      .click();
+    const details = page.getByRole("dialog", { name: ui(language, "ui.viewDetails"), exact: true });
+    await expect(details).toContainText("١٬٢٠٠٫٥٠");
     await expect(
-      history.locator('[data-change-label="field.claimedAmount.label"] [data-side="after"]'),
+      details.locator('[data-change-label="field.claimedAmount.label"] [data-side="after"]'),
     ).toContainText("١٬٢٠٠٫٥٠");
-    await history.locator("details > summary").click();
+    await details
+      .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+      .first()
+      .click();
   }
   expect(requests.filter((request) => request !== "POST /api/operation.get")).toEqual([]);
   expect(receiptReads.length).toBeGreaterThan(0);
@@ -154,8 +159,9 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
     },
     inputs: { "field:incidentDescription": "Earlier browser history\nOriginal exact paragraph" },
   });
+  const edit = mintOperationId();
   await applyPeople(page, {
-    operationId: mintOperationId(),
+    operationId: edit,
     task: "case.amendRegistration",
     binding: {
       kind: "CASE",
@@ -174,11 +180,10 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
     },
   });
   await page.reload();
-  const row = page.locator(".case-timeline-panel .region-timeline > li").filter({
-    hasText: "9,876.5432 EUR",
-  });
-  await expect(row).toHaveCount(1);
-  await row.locator("details > summary").click();
+  const event = page.locator(`.case-timeline-panel .region-timeline > li[data-effect$=".${edit}"]`);
+  await expect(event).toHaveCount(1);
+  await event.getByRole("button", { name: "View details", exact: true }).click();
+  const row = page.getByRole("dialog", { name: "View details", exact: true });
   await expect(row).toContainText("1,200.50 EUR");
   await expect(row).toContainText("9,876.5432 EUR");
   await expect(row).toContainText("01/09/2026");

@@ -8,7 +8,12 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { type Language, defaults } from "../src/presentation/preferences";
 
 import { createPresenter } from "../src/presentation/presenter";
-import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
+import {
+  startPeopleCreation,
+  goToView,
+  showExactLookup,
+  chooseChoice,
+} from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import { openCase, startAct, recordReviewed } from "./case-workflow";
@@ -253,15 +258,9 @@ const openAdmission = async (
   name: string,
   reference: string,
 ) => {
-  await page
-    .getByRole("button", {
-      name: "Add person",
-      exact: true,
-    })
-    .first()
-    .click();
+  await startPeopleCreation(page);
   const dialog = page.getByRole("dialog", {
-    name: "Add person",
+    name: "Add from access request",
     exact: true,
   });
   await peopleTarget(page, issuer, subject);

@@ -34,7 +34,11 @@ import {
 } from "@contracts/client";
 import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../tests/support/themeContrast";
-import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
+import {
+  startPeopleCreation,
+  chooseOption,
+  settlePopupTriggerScroll,
+} from "./workspace-navigation";
 import { expectAccessible, seedSignedOut } from "./session-helpers";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
@@ -67,7 +71,7 @@ const signInSettings = async (page: Page) => {
   await page.goto("/", {
     waitUntil: "commit",
   });
-  await page.locator(".login-footer button").click();
+  await page.locator(".login-footer button.ui-button--secondary").click();
   await expect(page.getByRole("dialog")).toBeVisible();
 };
 const hexColor = (rgb: string, background?: string): string => {
@@ -151,7 +155,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
   await page.reload();
-  await page.locator(".login-footer button").click();
+  await page.locator(".login-footer button.ui-button--secondary").click();
   await expect(page.locator('.settings-panel [role="combobox"]')).toHaveAttribute("value", "en-US");
   await expect(page.locator('.settings-panel input[value="blue"]')).toBeChecked();
   await expect(page.locator('.settings-panel input[value="dark"]')).toBeChecked();
@@ -1510,12 +1514,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.goto("/people", {
     waitUntil: "commit",
   });
-  await page
-    .getByRole("button", {
-      name: "Add person",
-      exact: true,
-    })
-    .click();
+  await startPeopleCreation(page);
   await expect(page.locator('[name="input:principal.issuer"]')).toHaveValue(
     "https://issuer.example/",
   );
@@ -2186,12 +2185,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.goto("/people", {
       waitUntil: "commit",
     });
-    await page
-      .getByRole("button", {
-        name: "Add person",
-        exact: true,
-      })
-      .click();
+    await startPeopleCreation(page);
     await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
     await page.locator('[name="input:principal.subject"]').fill("admission-person");
     await page.locator('[name="input:profile.displayName"]').fill("Admission person");
