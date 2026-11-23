@@ -168,6 +168,7 @@ const linkedValue = (link: RowLink | undefined, value: Value, timeZone: string) 
       href={link.href}
       id={link.id}
       aria-label={link.label}
+      title={value.kind === "REFERENCE" ? value.value : undefined}
       className="row-link"
       onClick={(event) => {
         followLink(event, link.follow);
@@ -216,7 +217,9 @@ const DataRow = ({
             data-money={column.isMoney || undefined}
             data-reference={value.kind === "REFERENCE" || undefined}
           >
-            {linkedValue(position === linkAt ? link : undefined, value, timeZone)}
+            <div className="data-table-cell">
+              {linkedValue(position === linkAt ? link : undefined, value, timeZone)}
+            </div>
             {position === firstPrimary ? (
               <SecondaryCells row={row} columns={columns} timeZone={timeZone} />
             ) : null}
@@ -333,6 +336,7 @@ export const DataTable = ({
   view,
   timeZone = "UTC",
   sectionLink,
+  showTableSections = true,
   emptyId,
   ...interaction
 }: TableProps) => {
@@ -349,7 +353,7 @@ export const DataTable = ({
       ) : (
         <DataGrid view={view} timeZone={timeZone} showDetails={setDetailKey} {...interaction} />
       )}
-      {view.sections === undefined ? null : (
+      {!showTableSections || view.sections === undefined ? null : (
         <SectionsView
           sections={view.sections}
           headingLevel={2}

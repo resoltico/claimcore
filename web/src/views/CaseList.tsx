@@ -163,6 +163,7 @@ const WorklistResults = ({
     <>
       {page.items.length === 0 && exact === null ? null : (
         <ResultPages
+          showTableSections={false}
           views={page.views}
           roles={["RESULTS"]}
           actionPresentation={(action) => {

@@ -54,20 +54,6 @@
     gap: var(--space-2);
     align-items: center;
   }
-  .exact-lookup {
-    margin-block: var(--space-3);
-  }
-  .exact-lookup summary {
-    cursor: pointer;
-    color: var(--accent-text);
-  }
-  .exact-lookup form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: center;
-    padding-block: var(--space-3);
-  }
   .worklist-table {
     display: block;
     inline-size: 100%;
@@ -207,10 +193,12 @@
   }
   .summary-band {
     display: block;
-    border-block: var(--border-width) solid var(--border-control);
-    padding: var(--space-3) 0;
-    margin-block: var(--space-4);
+    padding-block-end: var(--space-3);
+    margin-block-end: var(--space-4);
     font-size: var(--text-sm);
+  }
+  .summary-band > h1 {
+    margin-block: 0 var(--space-2);
   }
   .summary-band > .record-view {
     display: grid;

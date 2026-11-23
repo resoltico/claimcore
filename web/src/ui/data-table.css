@@ -50,7 +50,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .data-table :is([data-reference] > :is(a, bdi), time, [data-money] > bdi) {
+  .data-table :is([data-reference] .data-table-cell > :is(a, bdi), time, [data-money] bdi) {
     white-space: nowrap;
   }
 
@@ -58,12 +58,17 @@
     overflow-wrap: normal;
   }
 
-  .data-table [data-reference] > :is(a, bdi) {
+  .data-table [data-reference] .data-table-cell > :is(a, bdi) {
     display: inline-block;
-    max-inline-size: var(--width-reference-filter);
+    max-inline-size: var(--width-table-reference);
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: bottom;
+  }
+
+  .data-table-cell {
+    max-block-size: var(--table-cell-limit);
+    overflow: hidden;
   }
 
   .data-table .row-link::after {

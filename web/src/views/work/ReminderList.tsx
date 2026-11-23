@@ -76,6 +76,7 @@ export const ReminderList = ({
         <p>{p.text("label.noReminders")}</p>
       ) : null}
       <ResultPages
+        showTableSections={false}
         views={result.views}
         actionPresentation={reminderActionPresentation}
         {...(onAct === undefined

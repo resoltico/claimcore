@@ -446,6 +446,12 @@
 }
 
 @layer layout {
+  @container data-table (width >= 48rem) {
+    .data-table-cell {
+      --table-cell-limit: calc(var(--size-row) + var(--space-1));
+    }
+  }
+
   @container data-table (width < 48rem) {
     .data-table :is(td, th)[data-prominence="SECONDARY"] {
       --secondary-cell-display: none;

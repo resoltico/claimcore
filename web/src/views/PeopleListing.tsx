@@ -75,6 +75,7 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
   return (
     <section>
       <ResultPages
+        showTableSections={false}
         labelledBy={props.titleId ?? "people-actors-title"}
         views={page.views}
         linkNavigation={(link) => {

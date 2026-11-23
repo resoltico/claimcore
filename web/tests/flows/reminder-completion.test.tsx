@@ -318,3 +318,18 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   expect(execute.mock.calls[2]![0]).toBe(execute.mock.calls[0]![0]);
 });
+
+it("completes the recommended reminder without waiting for review consent", async () => {
+  const { read, preview, execute } = setup();
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await waitFor(() => {
+    expect(execute).toHaveBeenCalledOnce();
+  });
+  expect(read).toHaveBeenCalledOnce();
+  expect(preview).toHaveBeenCalledOnce();
+  expect(execute.mock.calls[0]![0]).toBe(preview.mock.calls[0]![0]);
+  expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
+  await user.click(await screen.findByRole("button", { name: "View receipt" }));
+  expect(await screen.findByText("Reminder completed.")).toBeVisible();
+});

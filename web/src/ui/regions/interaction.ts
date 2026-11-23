@@ -20,4 +20,5 @@ export type RegionInteraction = {
   countLink?: RowLink;
   labelledBy?: string;
   headerActions?: ReactNode;
+  showTableSections?: boolean;
 };
