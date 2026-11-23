@@ -38,7 +38,7 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
         highlights: [],
         sections: [
           {
-            titleId: "label.recordDetails",
+            titleId: "label.technicalDetails",
             entries: [
               {
                 key: "paymentId",

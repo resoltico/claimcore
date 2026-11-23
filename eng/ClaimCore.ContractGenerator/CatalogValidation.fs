@@ -21,7 +21,7 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "reviewedLabelId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                    | ("labelId" | "shortLabelId" | "reviewedLabelId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
                       JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []
@@ -55,9 +55,14 @@ module CatalogValidation =
         matches "headline.withDetail" (set [ "state"; "detail" ])
         matches "label.reviewNotEntered" (set [ "fields" ])
 
-        for KeyValue(_, categories) in ListCounts.messages do
+        for KeyValue(_, categories) in Seq.append ListCounts.messages ListCounts.sectionMessages do
             for KeyValue(_, message) in categories do
                 matches message (set [ "count" ])
+
+        for KeyValue(_, key) in Affordance.shortLabelIds do
+            matches key Set.empty
+
+        matches "task.case.decide.changeShortLabel" Set.empty
 
         for collection in
             TaskDeclarations.all

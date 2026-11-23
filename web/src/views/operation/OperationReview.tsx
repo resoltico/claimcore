@@ -186,7 +186,7 @@ const ReviewContents = ({
         (entry) => entry.before.kind === "IDENTIFIER" || entry.after.kind === "IDENTIFIER",
       ) ? (
         <details className="review-request">
-          <summary>{p.text("label.recordDetails")}</summary>
+          <summary>{p.text("label.technicalDetails")}</summary>
           <ReviewPresentation
             value={review.presentation}
             timeZone={basis.timeZone}

@@ -83,5 +83,4 @@ module PeopleScreen =
             (fun row -> Some(Link.person row.Actor.ActorId), [])
             rows
 
-    let view (reply: ActorReviewPage) =
-        page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
+    let view (reply: ActorReviewPage) = rows reply.Items

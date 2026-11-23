@@ -225,6 +225,17 @@ let tests =
             testCase
                 "missing Latvian key, extra Arabic hole and English ICU plural each stop generation"
                 invalidCatalogs
+            testCase "timeline captions reject a terminal full stop" (fun () ->
+                for key in [ "change.PARTY.recorded"; "task.people.grant.label" ] do
+                    let authored = AuthoredMessages.all ()
+                    Expect.isTrue (authored["en"] |> List.exists (fst >> (=) key)) "Caption exists"
+
+                    Expect.throws
+                        (fun () ->
+                            sameMutationEveryLanguage key (fun text -> text + ".")
+                            |> CatalogValidation.validateCatalogs
+                            |> ignore)
+                        "Generator rejects caption punctuation")
             testCase "identical all-language producer mutations stop generation" producerMutations
             testCase "actual CLI producers render with their own argument contracts" actualProducers
             testCase "catalog key sets, placeholders and template grammar remain valid" structure

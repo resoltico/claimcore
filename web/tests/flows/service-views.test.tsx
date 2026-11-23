@@ -260,7 +260,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
               regions: [
                 {
                   role: "DETAILS",
-                  titleId: "label.recordDetails",
+                  titleId: "label.technicalDetails",
                   content: {
                     kind: "ENTRIES",
                     entries: [
@@ -285,7 +285,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   expect(await screen.findByRole("heading", { name: "General operation lookup" })).toBeVisible();
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
-  await user.click(await screen.findByText("Record details", { selector: "summary" }));
+  await user.click(await screen.findByText("Technical details", { selector: "summary" }));
   expect(screen.getByText(operationId, { selector: ".identifier-value" })).toBeVisible();
 });
 it("reports a failed list as a request-local error without manufacturing rows", async () => {

@@ -399,11 +399,6 @@ let assigneePresentation =
 
                 Expect.stringContains text "Anna Ozola" "The supplied current name is visible"
 
-                Expect.stringContains
-                    text
-                    (MessageCatalogs.render language "label.shown" Map.empty + ": 1")
-                    "Actual bounded row count"
-
                 Expect.stringContains text "next-page" "Opaque continuation is retained"
 
                 let date =
@@ -434,7 +429,7 @@ let assigneePresentation =
                     instants |> List.exists (fun instant -> output.Contains instant)
 
                 Expect.isTrue
-                    (includesObservation text)
+                    (includesObservation (text.Split('\n') |> Array.last))
                     (sprintf
                         "Actual supplied observation retains the exact date, time and business-zone offset. Expected one of %A in %s"
                         instants

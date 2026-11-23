@@ -25,6 +25,7 @@ type TaskDeclaration =
         Creates: bool
         Family: ActFamily
         Consequence: Consequence
+        Review: TaskReview
         ReviewsFamilySequence: bool
         Execution: TaskExecution
         // Potential capability needs; input-dependent requirements stay with the task.
@@ -130,6 +131,7 @@ type Availability =
         Selections: Set<Map<TaskInputId, InputValue>>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
+        Applicable: bool
         Blocked: Refusal option
         Recommendation: int option
     }

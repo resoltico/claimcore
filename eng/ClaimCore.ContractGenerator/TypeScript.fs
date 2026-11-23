@@ -165,6 +165,9 @@ module TypeScript =
             "export const listCountMessages = "
             + JsonSerializer.Serialize(ListCounts.messages)
             + " as const;"
+            "export const sectionCountMessages = "
+            + JsonSerializer.Serialize(ListCounts.sectionMessages)
+            + " as const;"
             "export const codeTones = "
             + JsonSerializer.Serialize(Tones.codeTones)
             + " as const;"

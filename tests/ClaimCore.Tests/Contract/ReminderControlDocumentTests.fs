@@ -4,6 +4,7 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.Cli
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
@@ -90,6 +91,20 @@ let tests =
                     table.Rows.Head.Recommended
                     (Some(TaskId.ofLiteral "reminder.complete"))
                     "A pending row recommends its offered completion"
+
+                let action =
+                    table.Rows.Head.Actions
+                    |> List.find (fun action -> Some action.Task = table.Rows.Head.Recommended)
+
+                Expect.equal
+                    action.ShortLabelId
+                    (Some "task.reminder.complete.shortLabel")
+                    "The recommendation supplies a compact label"
+
+                for language in LocalizationPolicy.languages do
+                    let catalog = MessageCatalogs.render language
+                    let shortLabel = catalog "task.reminder.complete.shortLabel" Map.empty
+                    Expect.isNonEmpty shortLabel "Every offered language renders the short label"
             | _ -> failtest "Reminder results are a table"
 
             let controls = Screen.affordances document.Screen

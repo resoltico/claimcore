@@ -44,7 +44,7 @@ export const NoticeView = ({ value }: { value: Notice }) => {
             {p.text("label.recorded")}
           </span>
           <details data-region="DETAILS">
-            <summary>{p.text("label.recordDetails")}</summary>
+            <summary>{p.text("label.technicalDetails")}</summary>
             <IdentifierValue value={value.operationId} />
             <CopyValue label={p.fieldLabel("operationId")} value={value.operationId} />
           </details>

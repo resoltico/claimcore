@@ -66,16 +66,13 @@ module DisclosureTrailScreen =
                         {
                             Summary = None
                             Highlights = []
-                            Sections = [ section "label.recordDetails" (entries columns item) ]
+                            Sections = [ section "label.technicalDetails" (entries columns item) ]
                         })
                 columns
                 value.Items
 
-        let screen =
-            Screen.create
-                [
-                    region RegionRole.Results None (RegionContent.Table rows)
-                    |> withEmpty "empty.disclosureTrail"
-                ]
-
-        page value.Basis value.Items.Length value.NextCursor screen
+        Screen.create
+            [
+                region RegionRole.Results None (RegionContent.Table rows)
+                |> withEmpty "empty.disclosureTrail"
+            ]

@@ -55,17 +55,29 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        ReminderScreen.view { Basis = dateBasis; Item = value }
-        ReminderListScreen.view
-            None
-            None
+        HumanReadDocuments.reminder { Basis = dateBasis; Item = value }
+        HumanReadDocuments.reminders
+            {
+                View = None
+                Target = None
+                State = None
+                Kind = None
+                DeadlineOutcome = None
+                Due = None
+                Assignment = None
+                Text = None
+                AfterCursor = None
+                Limit = 50
+                IncludeInactive = None
+            }
             {
                 Basis = dateBasis
                 Items = [ value ]
                 NextCursor = None
             }
     ]
-    |> List.map (fun screen -> ViewText.renderSelected true language screen |> String.concat "\n")
+    |> List.map (fun document ->
+        ViewText.renderDocument true language document |> String.concat "\n")
 
 
 [<Tests>]
@@ -108,6 +120,27 @@ let tests =
                         (column.Read(item true ReminderState.Pending None))
                         (PresentedValue.Date due)
                         "The presentation does not infer an absent timing code")
+            testCase
+                "the reminder group carries timing once, and its row preserves the due date"
+                (fun () ->
+                    let rows = [ item true ReminderState.Pending (Some ReminderDue.Overdue) ]
+                    let screen = ReminderListScreen.rows None None rows
+
+                    match screen.Regions.Head.Content with
+                    | RegionContent.Table table ->
+                        let group = List.exactlyOne table.Groups
+                        let row = List.exactlyOne table.Rows
+
+                        Expect.equal
+                            group.TitleId
+                            "reminderDue.OVERDUE.label"
+                            "The group declares timing"
+
+                        Expect.equal
+                            row.Values.Head
+                            (PresentedValue.Date(Reminder.due rows.Head.Reminder))
+                            "The row keeps the date"
+                    | _ -> failtest "Expected a grouped reminders table")
             testCase "inactive parent case uses a state label without inventing status" (fun () ->
                 let value = item false ReminderState.Pending None
                 let entries = ReminderScreen.reminder value |> List.collect _.Entries

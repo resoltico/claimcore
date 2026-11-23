@@ -61,7 +61,11 @@ type Entry =
     }
 
 type Section =
-    { TitleId: string; Entries: Entry list }
+    {
+        TitleId: string
+        Entries: Entry list
+        EmptyMessageId: string option
+    }
 
 type Column =
     {
@@ -94,6 +98,7 @@ type Affordance =
     {
         Task: TaskId
         LabelId: string
+        ShortLabelId: string option
         Control: ActionControl
         Seeds: Map<TaskInputId, InputValue>
         Editable: TaskInputId list
@@ -107,6 +112,11 @@ type Affordance =
         | ActionControl.Command _ -> None
 
 module Affordance =
+    let shortLabelIds =
+        [ "reminder.complete"; "case.close"; "case.decide"; "case.recordPayment" ]
+        |> List.map (fun task -> task, "task." + task + ".shortLabel")
+        |> Map.ofList
+
     let valid value =
         let definition = TaskDeclarations.find (TaskId.token value.Task)
 
@@ -182,6 +192,7 @@ module Affordance =
                          "task.")
                     + TaskId.token task
                     + ".label"
+                ShortLabelId = Map.tryFind (TaskId.token task) shortLabelIds
                 Control = control
                 Seeds = seeds
                 Editable = editable
@@ -376,11 +387,14 @@ type RegionContent =
     | Notice of RegionNotice list
     | Timeline of RegionTimelineEntry list
 
+type RegionCount = { CountKind: string; Quantity: int64 }
+
 type Region =
     {
         Role: RegionRole
         TitleId: string option
         EmptyId: string option
+        Count: RegionCount option
         Content: RegionContent
         Link: Link option
         Actions: Affordance list
@@ -449,7 +463,8 @@ module Screen =
                                 && (row.Recommended
                                     |> Option.forall (fun task ->
                                         row.Actions
-                                        |> List.exists (fun action -> action.Task = task)))))
+                                        |> List.exists (fun action ->
+                                            action.Task = task && action.ShortLabelId.IsSome)))))
                         && (table.Groups
                             |> List.forall (fun group -> group.Count >= int64 group.RowKeys.Length))
                         && (table.Groups.IsEmpty || Set.ofList keys = Set.ofList grouped)

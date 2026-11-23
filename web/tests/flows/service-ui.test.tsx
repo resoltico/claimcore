@@ -125,7 +125,7 @@ const acceptsOperation = async (): Promise<void> => {
                 },
                 {
                   role: "DETAILS",
-                  titleId: "label.recordDetails",
+                  titleId: "label.technicalDetails",
                   content: {
                     kind: "ENTRIES",
                     entries: [

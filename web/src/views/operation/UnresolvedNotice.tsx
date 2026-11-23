@@ -51,7 +51,7 @@ const RecoveryIdentity = ({
   }
   return (
     <details data-region="DETAILS">
-      <summary>{p.text("label.recordDetails")}</summary>
+      <summary>{p.text("label.technicalDetails")}</summary>
       <dl>
         <dt>{p.fieldLabel("operationId")}</dt>
         <dd>

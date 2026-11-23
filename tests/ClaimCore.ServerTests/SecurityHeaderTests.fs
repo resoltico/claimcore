@@ -8,7 +8,7 @@ open ClaimCore.Wire
 open Expecto
 
 let private permissions =
-    "accelerometer=(), ambient-light-sensor=(), autoplay=(), bluetooth=(), browsing-topics=(), camera=(), "
+    "accelerometer=(), autoplay=(), bluetooth=(), browsing-topics=(), camera=(), "
     + "clipboard-read=(), display-capture=(), encrypted-media=(), geolocation=(), gyroscope=(), hid=(), "
     + "idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), "
     + "publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"

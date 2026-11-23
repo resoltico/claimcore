@@ -162,6 +162,16 @@ let tests =
                     ))
                     "The actual producer covers the literal act inventory"
 
+                let subjectActions =
+                    let document = ClaimCore.Presentation.HumanCaseDocument.ofCore current
+                    document.Actions @ ClaimCore.Presentation.Screen.affordances document.Screen
+
+                for inapplicable in [ "case.open"; "case.reopen"; "case.reinstate" ] do
+                    Expect.isFalse
+                        (subjectActions
+                         |> List.exists (fun action -> TaskId.token action.Task = inapplicable))
+                        ("An open case does not offer " + inapplicable)
+
                 let! refused =
                     write (11) (owner) (1L) "case.withdrawDecision" Map.empty |> Async.AwaitTask
 

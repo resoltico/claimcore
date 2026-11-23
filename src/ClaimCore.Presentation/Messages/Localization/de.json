@@ -2287,9 +2287,9 @@
     "text": "Sie haben keinen Zugriff auf diese Angaben.",
     "source": "d23b2f106566"
   },
-  "label.recordDetails": {
-    "text": "Eintragsdetails",
-    "source": "1c9b48608e25"
+  "label.technicalDetails": {
+    "text": "Technische Details",
+    "source": "890ab358a55d"
   },
   "label.recorded": {
     "text": "Erfasst.",
@@ -2506,14 +2506,6 @@
   "field.insurerClaimReference.hint": {
     "text": "Die Referenz, die der Versicherer für diesen Anspruch verwendet.",
     "source": "7686a3e64d99"
-  },
-  "label.page": {
-    "text": "Seite",
-    "source": "0a30a815d67d"
-  },
-  "label.shown": {
-    "text": "Angezeigt",
-    "source": "6ba2a0e0afd0"
   },
   "label.observedAt": {
     "text": "Beobachtet am",
@@ -3144,8 +3136,8 @@
     "source": "dfa82f21b3f3"
   },
   "change.PARTY.recorded": {
-    "text": "Änderung an einer Partei erfasst.",
-    "source": "a5d0522684d4"
+    "text": "Änderung an einer Partei erfasst",
+    "source": "c7a2307e491a"
   },
   "partyRole.CLAIMANT.short": {
     "text": "Anspruchsteller",
@@ -4196,8 +4188,8 @@
     "source": "634de1147750"
   },
   "change.ATTACHMENT.recorded": {
-    "text": "Änderung am Anhang erfasst.",
-    "source": "9c5ab3a2b28f"
+    "text": "Änderung am Anhang erfasst",
+    "source": "b2b61553b5df"
   },
   "endpoint.attachment.download.label": {
     "text": "Herunterladen",
@@ -4426,5 +4418,153 @@
   "empty.workViews": {
     "text": "Es sind keine Arbeitsansichten verfügbar.",
     "source": "3e86bd3913b7"
+  },
+  "task.reminder.complete.shortLabel": {
+    "text": "Abschließen",
+    "source": "143b270a3260"
+  },
+  "task.case.close.shortLabel": {
+    "text": "Fall schließen",
+    "source": "dd2b37d18a3e"
+  },
+  "task.case.decide.shortLabel": {
+    "text": "Entscheidung erfassen",
+    "source": "0eb246db5087"
+  },
+  "task.case.recordPayment.shortLabel": {
+    "text": "Zahlung erfassen",
+    "source": "1ef3fba4680a"
+  },
+  "task.case.decide.changeShortLabel": {
+    "text": "Entscheidung ändern",
+    "source": "a77099b9ff99"
+  },
+  "empty.paymentDecision": {
+    "text": "Noch keine Zahlungsentscheidung",
+    "source": "fe604fb9208a"
+  },
+  "label.count.payments.zero": {
+    "text": "{count} Zahlungen",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.one": {
+    "text": "{count} Zahlung",
+    "source": "0c8035196655"
+  },
+  "label.count.payments.two": {
+    "text": "{count} Zahlungen",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.few": {
+    "text": "{count} Zahlungen",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.many": {
+    "text": "{count} Zahlungen",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.other": {
+    "text": "{count} Zahlungen",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.notes.zero": {
+    "text": "{count} Notizen",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.one": {
+    "text": "{count} Notiz",
+    "source": "abc682d2bab5"
+  },
+  "label.count.notes.two": {
+    "text": "{count} Notizen",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.few": {
+    "text": "{count} Notizen",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.many": {
+    "text": "{count} Notizen",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.other": {
+    "text": "{count} Notizen",
+    "source": "ea8395656e1d"
+  },
+  "label.count.attachments.zero": {
+    "text": "{count} Anhänge",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.one": {
+    "text": "{count} Anhang",
+    "source": "0ebf8f55aef6"
+  },
+  "label.count.attachments.two": {
+    "text": "{count} Anhänge",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.few": {
+    "text": "{count} Anhänge",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.many": {
+    "text": "{count} Anhänge",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.other": {
+    "text": "{count} Anhänge",
+    "source": "7bb1847693bc"
+  },
+  "label.count.activity.zero": {
+    "text": "{count} Aktivitätseinträge",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.one": {
+    "text": "{count} Aktivitätseintrag",
+    "source": "0d9c66b5ba2e"
+  },
+  "label.count.activity.two": {
+    "text": "{count} Aktivitätseinträge",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.few": {
+    "text": "{count} Aktivitätseinträge",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.many": {
+    "text": "{count} Aktivitätseinträge",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.other": {
+    "text": "{count} Aktivitätseinträge",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.accessRequests.zero": {
+    "text": "{count} Zugriffsanfragen",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.one": {
+    "text": "{count} Zugriffsanfrage",
+    "source": "83cc6ef40e92"
+  },
+  "label.count.accessRequests.two": {
+    "text": "{count} Zugriffsanfragen",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.few": {
+    "text": "{count} Zugriffsanfragen",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.many": {
+    "text": "{count} Zugriffsanfragen",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.other": {
+    "text": "{count} Zugriffsanfragen",
+    "source": "43a0751e47d9"
+  },
+  "label.paymentDecision": {
+    "text": "Zahlungsentscheidung",
+    "source": "57372fefe301"
   }
 }

@@ -4729,6 +4729,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.ATTACHMENT.new"
           },
@@ -4783,6 +4788,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.ATTACHMENT"
           },
@@ -4827,6 +4837,11 @@
             "const": "case.amendRegistration"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -4890,6 +4905,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE"
           },
@@ -4936,6 +4956,11 @@
             "const": "case.close"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -4989,6 +5014,11 @@
             "const": "case.correct"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5058,6 +5088,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE.payment"
           },
@@ -5111,6 +5146,11 @@
             "const": "case.decide"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5170,6 +5210,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE.erase"
           },
@@ -5214,6 +5259,11 @@
             "const": "case.open"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5279,6 +5329,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE"
           },
@@ -5336,6 +5391,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE"
           },
@@ -5386,6 +5446,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE.payment"
           },
@@ -5430,6 +5495,11 @@
             "const": "case.reopen"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5484,6 +5554,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE"
           },
@@ -5534,6 +5609,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.CASE"
           },
@@ -5578,6 +5658,11 @@
             "const": "link.add"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5636,6 +5721,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.LINK"
           },
@@ -5680,6 +5770,11 @@
             "const": "note.add"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5734,6 +5829,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.NOTE"
           },
@@ -5778,6 +5878,11 @@
             "const": "party.add"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5836,6 +5941,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.PARTY"
           },
@@ -5880,6 +5990,11 @@
             "const": "party.update"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5934,6 +6049,11 @@
             "const": "people.admit"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -5995,6 +6115,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.PEOPLE"
           },
@@ -6048,6 +6173,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.PEOPLE"
           },
@@ -6092,6 +6222,11 @@
             "const": "people.enable"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6144,6 +6279,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.PEOPLE"
           },
@@ -6188,6 +6328,11 @@
             "const": "people.grant"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6243,6 +6388,11 @@
             "const": "people.register"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6303,6 +6453,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/CommandBinding.people.requests.dismiss"
           },
@@ -6353,6 +6508,11 @@
             "const": "people.revoke"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6412,6 +6572,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.PEOPLE"
           },
@@ -6462,6 +6627,11 @@
             "const": "people.terminateSessions"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6520,6 +6690,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.REMINDER"
           },
@@ -6564,6 +6739,11 @@
             "const": "reminder.complete"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6614,6 +6794,11 @@
             "const": "reminder.completeAndPlanNext"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6673,6 +6858,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.REMINDER.new"
           },
@@ -6727,6 +6917,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/Binding.REMINDER"
           },
@@ -6773,6 +6968,11 @@
             "const": "reminder.update"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -6831,6 +7031,11 @@
             "minLength": 1,
             "maxLength": 160
           },
+          "shortLabelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
           "binding": {
             "$ref": "#/components/schemas/CommandBinding.session.terminateOwn"
           },
@@ -6881,6 +7086,11 @@
             "const": "work.update"
           },
           "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "shortLabelId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 160
@@ -24354,6 +24564,12 @@
             },
             "minItems": 0,
             "maxItems": 327
+          },
+          "emptyId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
           }
         },
         "required": [
@@ -25131,6 +25347,9 @@
             "minLength": 1,
             "maxLength": 256
           },
+          "count": {
+            "$ref": "#/components/schemas/RegionCount"
+          },
           "content": {
             "$ref": "#/components/schemas/RegionContent"
           },
@@ -25353,6 +25572,30 @@
         "required": [
           "kind",
           "entries"
+        ]
+      },
+      "RegionCount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "accessRequests",
+              "activity",
+              "attachments",
+              "notes",
+              "payments"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "value"
         ]
       },
       "RegionRow": {

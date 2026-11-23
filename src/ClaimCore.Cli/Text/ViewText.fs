@@ -263,7 +263,40 @@ module internal ViewText =
             |> List.map (fun (label, link) ->
                 ReplyTextFormat.label rendering label + ": " + ControlHints.link link)
 
-        body @ actions @ links
+        let continuation =
+            document.NextCursor
+            |> Option.map (ReplyTextFormat.line rendering "label.nextCursor")
+            |> Option.toList
+
+        let observation =
+            match document.Subject, document.Basis with
+            | (DocumentSubject.List | DocumentSubject.Person _), ObservationBasis.Snapshot basis when
+                not (
+                    screen.Regions
+                    |> List.exists (fun region ->
+                        match region.Content with
+                        | RegionContent.Entries entries ->
+                            entries |> List.exists (fun entry -> entry.Key = "observedAt")
+                        | _ -> false)
+                )
+                ->
+                [
+                    [
+                        ReplyTextFormat.line
+                            rendering
+                            "label.businessDate"
+                            (ReplyTextFormat.calendarDate rendering basis.BusinessDate)
+                        ReplyTextFormat.line rendering "label.timeZone" basis.TimeZoneId
+                        ReplyTextFormat.line
+                            rendering
+                            "label.observedAt"
+                            (ReplyTextFormat.instantIn rendering zone basis.ObservedAt)
+                    ]
+                    |> String.concat " · "
+                ]
+            | _ -> []
+
+        body @ actions @ links @ continuation @ observation
 
     let renderDocumentWithHeader options includeHeader includeDetails rendering document =
         renderDocumentCore true options includeHeader includeDetails rendering document

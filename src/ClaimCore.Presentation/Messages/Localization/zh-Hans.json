@@ -2287,9 +2287,9 @@
     "text": "您无权访问这些信息。",
     "source": "d23b2f106566"
   },
-  "label.recordDetails": {
-    "text": "记录详情",
-    "source": "1c9b48608e25"
+  "label.technicalDetails": {
+    "text": "技术详情",
+    "source": "890ab358a55d"
   },
   "label.recorded": {
     "text": "已记录。",
@@ -2506,14 +2506,6 @@
   "field.insurerClaimReference.hint": {
     "text": "保险公司用于此索赔的参考编号。",
     "source": "7686a3e64d99"
-  },
-  "label.page": {
-    "text": "页",
-    "source": "0a30a815d67d"
-  },
-  "label.shown": {
-    "text": "已显示",
-    "source": "6ba2a0e0afd0"
   },
   "label.observedAt": {
     "text": "观测时间",
@@ -3144,8 +3136,8 @@
     "source": "dfa82f21b3f3"
   },
   "change.PARTY.recorded": {
-    "text": "已记录当事方变更。",
-    "source": "a5d0522684d4"
+    "text": "已记录当事方变更",
+    "source": "c7a2307e491a"
   },
   "partyRole.CLAIMANT.short": {
     "text": "索赔人",
@@ -4196,8 +4188,8 @@
     "source": "634de1147750"
   },
   "change.ATTACHMENT.recorded": {
-    "text": "已记录附件变更。",
-    "source": "9c5ab3a2b28f"
+    "text": "已记录附件变更",
+    "source": "b2b61553b5df"
   },
   "endpoint.attachment.download.label": {
     "text": "下载",
@@ -4426,5 +4418,153 @@
   "empty.workViews": {
     "text": "没有可用的工作视图。",
     "source": "3e86bd3913b7"
+  },
+  "task.reminder.complete.shortLabel": {
+    "text": "完成",
+    "source": "143b270a3260"
+  },
+  "task.case.close.shortLabel": {
+    "text": "关闭案件",
+    "source": "dd2b37d18a3e"
+  },
+  "task.case.decide.shortLabel": {
+    "text": "记录决定",
+    "source": "0eb246db5087"
+  },
+  "task.case.recordPayment.shortLabel": {
+    "text": "记录付款",
+    "source": "1ef3fba4680a"
+  },
+  "task.case.decide.changeShortLabel": {
+    "text": "更改决定",
+    "source": "a77099b9ff99"
+  },
+  "empty.paymentDecision": {
+    "text": "尚无付款决定",
+    "source": "fe604fb9208a"
+  },
+  "label.count.payments.zero": {
+    "text": "{count}笔付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.one": {
+    "text": "{count}笔付款",
+    "source": "0c8035196655"
+  },
+  "label.count.payments.two": {
+    "text": "{count}笔付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.few": {
+    "text": "{count}笔付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.many": {
+    "text": "{count}笔付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.other": {
+    "text": "{count}笔付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.notes.zero": {
+    "text": "{count}条备注",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.one": {
+    "text": "{count}条备注",
+    "source": "abc682d2bab5"
+  },
+  "label.count.notes.two": {
+    "text": "{count}条备注",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.few": {
+    "text": "{count}条备注",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.many": {
+    "text": "{count}条备注",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.other": {
+    "text": "{count}条备注",
+    "source": "ea8395656e1d"
+  },
+  "label.count.attachments.zero": {
+    "text": "{count}个附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.one": {
+    "text": "{count}个附件",
+    "source": "0ebf8f55aef6"
+  },
+  "label.count.attachments.two": {
+    "text": "{count}个附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.few": {
+    "text": "{count}个附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.many": {
+    "text": "{count}个附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.other": {
+    "text": "{count}个附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.activity.zero": {
+    "text": "{count}条活动记录",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.one": {
+    "text": "{count}条活动记录",
+    "source": "0d9c66b5ba2e"
+  },
+  "label.count.activity.two": {
+    "text": "{count}条活动记录",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.few": {
+    "text": "{count}条活动记录",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.many": {
+    "text": "{count}条活动记录",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.other": {
+    "text": "{count}条活动记录",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.accessRequests.zero": {
+    "text": "{count}项访问请求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.one": {
+    "text": "{count}项访问请求",
+    "source": "83cc6ef40e92"
+  },
+  "label.count.accessRequests.two": {
+    "text": "{count}项访问请求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.few": {
+    "text": "{count}项访问请求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.many": {
+    "text": "{count}项访问请求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.other": {
+    "text": "{count}项访问请求",
+    "source": "43a0751e47d9"
+  },
+  "label.paymentDecision": {
+    "text": "付款决定",
+    "source": "57372fefe301"
   }
 }

@@ -54,10 +54,7 @@ module AssigneesScreen =
                     Prominence.Detail
                     (PresentedValue.Identifier(ActorId.format actor.ActorId)))
 
-        let screen =
-            Screen.create (
-                screen.Regions
-                @ [ entryRegion RegionRole.Details (Some "label.recordDetails") details ]
-            )
-
-        page reply.Basis reply.Items.Length reply.NextCursor screen
+        Screen.create (
+            screen.Regions
+            @ [ entryRegion RegionRole.Details (Some "label.technicalDetails") details ]
+        )

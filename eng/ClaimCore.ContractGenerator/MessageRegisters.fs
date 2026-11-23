@@ -85,10 +85,24 @@ module MessageRegisters =
         let english = authored["en"] |> Map.ofList
         let wire = @"YYYY|ASCII|UTF(?:-?\d+)?|\\[dDsSwW]|\[0-9"
 
+        let accessSummaries =
+            ClaimCore.Domain.Tasks.Registry.clientDeclarations
+            |> List.filter (fun task -> task.Target = ClaimCore.Domain.ActSubject.People)
+            |> List.map (fun task -> "task." + ClaimCore.Domain.TaskId.token task.Id + ".label")
+            |> Set.ofList
+
         for KeyValue(language, entries) in authored do
             let catalog = entries |> Map.ofList
 
             for key, text in entries do
+                if
+                    (key.StartsWith("change.", StringComparison.Ordinal)
+                     || Set.contains key accessSummaries)
+                    && (text.TrimEnd().EndsWith(".", StringComparison.Ordinal)
+                        || text.TrimEnd().EndsWith("。", StringComparison.Ordinal))
+                then
+                    invalidOp ("Timeline caption ends with a full stop: " + language + " " + key)
+
                 if
                     key.EndsWith(".hint", StringComparison.Ordinal)
                     && Regex.IsMatch(text, wire, RegexOptions.IgnoreCase)
@@ -144,7 +158,7 @@ module MessageRegisters =
                 && not (technicalRecordKey key || roleScopeKey key)
                 && Regex.IsMatch(text, @"\bscope\b", RegexOptions.IgnoreCase)
             then
-                invalidOp ("Scope outside role or record details: " + key)
+                invalidOp ("Scope outside role or technical details: " + key)
 
     let validate authored =
         validateGlossary (glossary ()) authored

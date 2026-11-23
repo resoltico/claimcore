@@ -8,12 +8,13 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 
 let declaration =
-    family
+    familyWithReview
         "reminder.complete"
         ActSubject.Reminder
         false
         ActFamily.Business
         Consequence.Routine
+        TaskReview.Implicit
         [ Capability.ManageCaseWork ]
         (operation :: caseTarget :: ReminderRules.identityInputs
          @ [ ReminderRules.doneOnInput ])

@@ -73,25 +73,42 @@ module internal FamilyRules =
         capability
         gate
         =
+        // Resolve the selected state once. Read affordances need its applicability even
+        // when the execution-precedence reason is a permission refusal.
+        let stateCheck =
+            lazy
+                (match state with
+                 | None -> Error unavailable
+                 | Some state ->
+                     target state binding
+                     |> Result.bind (fun () ->
+                         gate state |> Option.map Error |> Option.defaultValue (Ok())))
+
         let result =
             match state with
             | None -> Error unavailable
             | Some state ->
                 permission environment (Scope.Case state.Id) capability
-                |> Result.bind (fun () -> target state binding)
-                |> Result.bind (fun () ->
-                    gate state |> Option.map Error |> Option.defaultValue (Ok()))
+                |> Result.bind (fun () -> stateCheck.Value)
                 |> Result.bind (fun () ->
                     if environment.Maintenance then
                         Error Refusal.RegisterMaintenance
                     else
                         Ok())
 
-        Declarations.availability
-            declaration
-            (match result with
-             | Ok() -> None
-             | Error refusal -> Some refusal)
+        let blocked =
+            match result with
+            | Ok() -> None
+            | Error refusal -> Some refusal
+
+        let availability = Declarations.availability declaration blocked
+
+        { availability with
+            Applicable =
+                match stateCheck.Value with
+                | Ok() -> availability.Applicable
+                | Error refusal -> not (Refusal.inapplicableForOffer refusal)
+        }
 
     let admitPermission
         (context: TaskContext)

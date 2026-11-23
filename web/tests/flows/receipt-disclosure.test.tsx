@@ -22,7 +22,7 @@ it("renders the supplied receipt view without assuming a case snapshot", async (
               regions: (
                 [
                   {
-                    titleId: "label.recordDetails",
+                    titleId: "label.technicalDetails",
                     entries: [
                       {
                         key: "future-actor",

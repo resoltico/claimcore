@@ -169,8 +169,10 @@ module internal Advice =
                     |> List.choose (fun ((declaration, binding), available) ->
                         if TaskDeclaration.bindingShape declaration = BindingShape.CasePayment then
                             None
+                        elif declaration.Creates then
+                            Some(TaskOffer.Declared declaration.Id)
                         else
-                            Some(TaskOffer.Available(declaration.Id, binding, available)))
+                            Some(TaskOffer.forBinding declaration.Id binding available))
 
                 let offers =
                     offers

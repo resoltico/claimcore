@@ -96,7 +96,7 @@ export const RegionView = ({
   );
   return region.role === "DETAILS" ? (
     <details className="screen-details" data-region={region.role}>
-      <summary>{renderCatalogKey(p, region.titleId ?? "label.recordDetails")}</summary>
+      <summary>{renderCatalogKey(p, region.titleId ?? "label.technicalDetails")}</summary>
       {body}
     </details>
   ) : (

@@ -165,11 +165,34 @@ module ReminderListScreen =
                             RowKeys = keys
                         })
 
+        let dueGroups =
+            groups
+            |> List.collect (fun group -> group.RowKeys |> List.map (fun key -> key, group.TitleId))
+            |> Map.ofList
+
+        let data =
+            { data with
+                Groups = groups
+                Rows =
+                    data.Rows
+                    |> List.map (fun row ->
+                        { row with
+                            Values =
+                                row.Values
+                                |> List.map (function
+                                    | PresentedValue.DateWithCode(date, (vocabulary, token)) when
+                                        Map.tryFind row.Key dueGroups =
+                                            Some(vocabulary + "." + token + ".label")
+                                        ->
+                                        PresentedValue.Date date
+                                    | value -> value)
+                        })
+            }
+
         Screen.create
             [
-                region RegionRole.Results None (RegionContent.Table { data with Groups = groups })
+                region RegionRole.Results None (RegionContent.Table data)
                 |> withEmpty "label.noReminders"
             ]
 
-    let view selection state (reply: ReminderPage) =
-        page reply.Basis reply.Items.Length reply.NextCursor (rows selection state reply.Items)
+    let view selection state (reply: ReminderPage) = rows selection state reply.Items

@@ -11,3 +11,12 @@ type Consequence =
 module Consequence =
     let vocabulary =
         Vocabulary.ofUnion<Consequence> "consequence" TokenCasing.ScreamingSnake None
+
+[<RequireQualifiedAccess>]
+type TaskReview =
+    | Required
+    | Implicit
+
+module TaskReview =
+    let vocabulary =
+        Vocabulary.ofUnion<TaskReview> "review" TokenCasing.ScreamingSnake None

@@ -91,7 +91,7 @@ module PaymentsScreen =
                             Sections =
                                 [
                                     section
-                                        "label.recordDetails"
+                                        "label.technicalDetails"
                                         [
                                             value
                                                 "reference"
@@ -141,46 +141,57 @@ module PaymentsScreen =
                 controls
                 entries
 
+        let decision =
+            section
+                "label.paymentDecision"
+                ([
+                    value
+                        "paymentDecisionDate"
+                        "field.paymentDecisionDate.label"
+                        Prominence.Primary
+                        (position.Decision
+                         |> Option.map Decision.date
+                         |> optional PresentedValue.Date)
+                    value
+                        "payable"
+                        "field.payableAmount.label"
+                        Prominence.Primary
+                        (totals |> Option.map _.Payable |> optional PresentedValue.money)
+                    value
+                        "decisionBasis"
+                        "field.decisionBasis.label"
+                        Prominence.Detail
+                        (position.Decision
+                         |> Option.bind Decision.basis
+                         |> optional (NoteText.format >> PresentedValue.Narrative))
+                 ]
+                 |> List.map withRecorded)
+
+        let paymentTotals =
+            section
+                "label.paymentTotals"
+                [
+                    value
+                        "paymentCount"
+                        "label.payments"
+                        Prominence.Primary
+                        (PresentedValue.Count position.PaymentCount)
+                    for KeyValue(currency, buckets) in position.CurrencyTotals do
+                        value
+                            ("netPaid." + Currency.format currency)
+                            "label.netPaid"
+                            Prominence.Primary
+                            (PresentedValue.moneyTotal currency (CurrencyPaymentTotals.net buckets))
+                ]
+
         { table with
             Meter = meter position
             Sections =
                 [
-                    section
-                        "label.paymentTotals"
-                        [
-                            value
-                                "paymentCount"
-                                "label.payments"
-                                Prominence.Primary
-                                (PresentedValue.Count position.PaymentCount)
-                            value
-                                "paymentDecisionDate"
-                                "field.paymentDecisionDate.label"
-                                Prominence.Primary
-                                (position.Decision
-                                 |> Option.map Decision.date
-                                 |> optional PresentedValue.Date)
-                            value
-                                "payable"
-                                "field.payableAmount.label"
-                                Prominence.Primary
-                                (totals |> Option.map _.Payable |> optional PresentedValue.money)
-                            value
-                                "decisionBasis"
-                                "field.decisionBasis.label"
-                                Prominence.Detail
-                                (position.Decision
-                                 |> Option.bind Decision.basis
-                                 |> optional (NoteText.format >> PresentedValue.Narrative))
-                            for KeyValue(currency, buckets) in position.CurrencyTotals do
-                                value
-                                    ("netPaid." + Currency.format currency)
-                                    "label.netPaid"
-                                    Prominence.Primary
-                                    (PresentedValue.moneyTotal
-                                        currency
-                                        (CurrencyPaymentTotals.net buckets))
-                        ]
+                    paymentTotals
+                    { decision with
+                        EmptyMessageId = Some "empty.paymentDecision"
+                    }
                 ]
         }
 
@@ -270,6 +281,7 @@ module PaymentsScreen =
                                 value.Payees
                                 value.Items
                         ))
+                    |> ScreenEntries.withCount "payments" position.PaymentCount
                 ]
 
         Screen.create (

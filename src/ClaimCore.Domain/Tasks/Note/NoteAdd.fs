@@ -8,12 +8,13 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 
 let declaration =
-    family
+    familyWithReview
         "note.add"
         ActSubject.Note
         true
         ActFamily.Business
         Consequence.Routine
+        TaskReview.Implicit
         [ Capability.ManageCaseWork ]
         [ operation; caseTarget; required (target InputTarget.NoteText) ]
 

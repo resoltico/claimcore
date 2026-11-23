@@ -2287,9 +2287,9 @@
     "text": "ليس لديك صلاحية الوصول إلى هذه التفاصيل.",
     "source": "d23b2f106566"
   },
-  "label.recordDetails": {
-    "text": "تفاصيل السجل",
-    "source": "1c9b48608e25"
+  "label.technicalDetails": {
+    "text": "التفاصيل الفنية",
+    "source": "890ab358a55d"
   },
   "label.recorded": {
     "text": "تم التسجيل.",
@@ -2506,14 +2506,6 @@
   "field.insurerClaimReference.hint": {
     "text": "المرجع الذي تستخدمه شركة التأمين لهذه المطالبة.",
     "source": "7686a3e64d99"
-  },
-  "label.page": {
-    "text": "الصفحة",
-    "source": "0a30a815d67d"
-  },
-  "label.shown": {
-    "text": "المعروض",
-    "source": "6ba2a0e0afd0"
   },
   "label.observedAt": {
     "text": "وقت المعاينة",
@@ -3144,8 +3136,8 @@
     "source": "dfa82f21b3f3"
   },
   "change.PARTY.recorded": {
-    "text": "تم تسجيل تغيير في بيانات الطرف.",
-    "source": "a5d0522684d4"
+    "text": "تم تسجيل تغيير في بيانات الطرف",
+    "source": "c7a2307e491a"
   },
   "partyRole.CLAIMANT.short": {
     "text": "المطالب",
@@ -4196,8 +4188,8 @@
     "source": "634de1147750"
   },
   "change.ATTACHMENT.recorded": {
-    "text": "تم تسجيل تغيير في المرفق.",
-    "source": "9c5ab3a2b28f"
+    "text": "تم تسجيل تغيير في المرفق",
+    "source": "b2b61553b5df"
   },
   "endpoint.attachment.download.label": {
     "text": "تنزيل",
@@ -4426,5 +4418,153 @@
   "empty.workViews": {
     "text": "لا تتوفر طرق عرض للعمل.",
     "source": "3e86bd3913b7"
+  },
+  "task.reminder.complete.shortLabel": {
+    "text": "إكمال",
+    "source": "143b270a3260"
+  },
+  "task.case.close.shortLabel": {
+    "text": "إغلاق الملف",
+    "source": "dd2b37d18a3e"
+  },
+  "task.case.decide.shortLabel": {
+    "text": "تسجيل القرار",
+    "source": "0eb246db5087"
+  },
+  "task.case.recordPayment.shortLabel": {
+    "text": "تسجيل الدفعة",
+    "source": "1ef3fba4680a"
+  },
+  "task.case.decide.changeShortLabel": {
+    "text": "تغيير القرار",
+    "source": "a77099b9ff99"
+  },
+  "empty.paymentDecision": {
+    "text": "لا يوجد قرار دفع بعد",
+    "source": "fe604fb9208a"
+  },
+  "label.count.payments.zero": {
+    "text": "{count} دفعات",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.one": {
+    "text": "{count} دفعة",
+    "source": "0c8035196655"
+  },
+  "label.count.payments.two": {
+    "text": "{count} دفعتان",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.few": {
+    "text": "{count} دفعات",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.many": {
+    "text": "{count} دفعةً",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.other": {
+    "text": "{count} دفعة",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.notes.zero": {
+    "text": "{count} ملاحظات",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.one": {
+    "text": "{count} ملاحظة",
+    "source": "abc682d2bab5"
+  },
+  "label.count.notes.two": {
+    "text": "{count} ملاحظتان",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.few": {
+    "text": "{count} ملاحظات",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.many": {
+    "text": "{count} ملاحظةً",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.other": {
+    "text": "{count} ملاحظة",
+    "source": "ea8395656e1d"
+  },
+  "label.count.attachments.zero": {
+    "text": "{count} مرفقات",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.one": {
+    "text": "{count} مرفق",
+    "source": "0ebf8f55aef6"
+  },
+  "label.count.attachments.two": {
+    "text": "{count} مرفقان",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.few": {
+    "text": "{count} مرفقات",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.many": {
+    "text": "{count} مرفقًا",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.other": {
+    "text": "{count} مرفق",
+    "source": "7bb1847693bc"
+  },
+  "label.count.activity.zero": {
+    "text": "{count} سجلات نشاط",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.one": {
+    "text": "{count} سجل نشاط",
+    "source": "0d9c66b5ba2e"
+  },
+  "label.count.activity.two": {
+    "text": "{count} سجلا نشاط",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.few": {
+    "text": "{count} سجلات نشاط",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.many": {
+    "text": "{count} سجل نشاط",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.other": {
+    "text": "{count} سجل نشاط",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.accessRequests.zero": {
+    "text": "{count} طلبات وصول",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.one": {
+    "text": "{count} طلب وصول",
+    "source": "83cc6ef40e92"
+  },
+  "label.count.accessRequests.two": {
+    "text": "{count} طلبا وصول",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.few": {
+    "text": "{count} طلبات وصول",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.many": {
+    "text": "{count} طلب وصول",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.other": {
+    "text": "{count} طلب وصول",
+    "source": "43a0751e47d9"
+  },
+  "label.paymentDecision": {
+    "text": "قرار الدفع",
+    "source": "57372fefe301"
   }
 }

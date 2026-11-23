@@ -43,7 +43,21 @@ module internal Declarations =
                     mode = TaskInputMode.Update && (BusinessField.describe field).AllowsAbsence
             })
 
-    let create token aggregate target creates family consequence capabilities inputs collections =
+    let private createWithReview
+        token
+        aggregate
+        target
+        creates
+        family
+        consequence
+        review
+        capabilities
+        inputs
+        collections
+        =
+        if review = TaskReview.Implicit && consequence <> Consequence.Routine then
+            invalidArg (nameof review) "Implicit review requires a routine task."
+
         {
             Id = TaskId.ofLiteral token
             Exposure = TaskExposure.Client
@@ -52,6 +66,7 @@ module internal Declarations =
             Creates = creates
             Family = family
             Consequence = consequence
+            Review = review
             ReviewsFamilySequence = false
             Execution = TaskExecution.Structured
             Capabilities = capabilities
@@ -59,8 +74,42 @@ module internal Declarations =
             Collections = collections
         }
 
+    let create token aggregate target creates family consequence capabilities inputs collections =
+        createWithReview
+            token
+            aggregate
+            target
+            creates
+            family
+            consequence
+            TaskReview.Required
+            capabilities
+            inputs
+            collections
+
+    let familyWithReview token target creates family consequence review capabilities inputs =
+        createWithReview
+            token
+            AggregateKind.Family
+            target
+            creates
+            family
+            consequence
+            review
+            capabilities
+            inputs
+            []
+
     let family token target creates family consequence capabilities inputs =
-        create token AggregateKind.Family target creates family consequence capabilities inputs []
+        familyWithReview
+            token
+            target
+            creates
+            family
+            consequence
+            TaskReview.Required
+            capabilities
+            inputs
 
     let signInIdentity =
         [ InputTarget.PrincipalIssuer; InputTarget.PrincipalSubject ]
@@ -119,6 +168,7 @@ module internal Declarations =
             Selections = Set.empty
             Editable = TaskDeclaration.editableInputs declaration
             Choices = Map.empty
+            Applicable = not (Option.exists Refusal.inapplicableForOffer blocked)
             Blocked = blocked
             Recommendation = None
         }

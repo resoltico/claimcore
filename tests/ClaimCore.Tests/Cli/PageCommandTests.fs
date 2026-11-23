@@ -1013,15 +1013,11 @@ let tests =
                 Expect.equal
                     (lines
                      |> Array.filter (fun line ->
-                         line.StartsWith("Observed ", StringComparison.Ordinal))
+                         line.StartsWith("Business date: ", StringComparison.Ordinal)
+                         && line.Contains(" · Observed at: ", StringComparison.Ordinal))
                      |> Array.length)
-                    0
-                    "Default text omits technical observation details"
-
-                Expect.equal
-                    (lines |> Array.filter ((=) "Shown: 1") |> Array.length)
                     2
-                    "Each real page has its own count")
+                    "Each page has one observation footer from its basis")
             testCase "only declared paged readers accept CSV and all options" (fun () ->
                 for args in
                     [

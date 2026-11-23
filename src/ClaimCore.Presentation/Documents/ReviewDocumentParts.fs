@@ -146,7 +146,7 @@ module internal ReviewDocumentParts =
                        [
                            ScreenEntries.entryRegion
                                RegionRole.Details
-                               (Some "label.recordDetails")
+                               (Some "label.technicalDetails")
                                details
                        ])
             )

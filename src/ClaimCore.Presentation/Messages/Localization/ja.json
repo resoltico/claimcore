@@ -2287,9 +2287,9 @@
     "text": "これらの情報へのアクセス権がありません。",
     "source": "d23b2f106566"
   },
-  "label.recordDetails": {
-    "text": "記録の詳細",
-    "source": "1c9b48608e25"
+  "label.technicalDetails": {
+    "text": "技術情報",
+    "source": "890ab358a55d"
   },
   "label.recorded": {
     "text": "記録しました。",
@@ -2506,14 +2506,6 @@
   "field.insurerClaimReference.hint": {
     "text": "この請求について保険会社が使用する参照番号です。",
     "source": "7686a3e64d99"
-  },
-  "label.page": {
-    "text": "ページ",
-    "source": "0a30a815d67d"
-  },
-  "label.shown": {
-    "text": "表示件数",
-    "source": "6ba2a0e0afd0"
   },
   "label.observedAt": {
     "text": "観測日時",
@@ -3144,8 +3136,8 @@
     "source": "dfa82f21b3f3"
   },
   "change.PARTY.recorded": {
-    "text": "関係者の変更を記録しました。",
-    "source": "a5d0522684d4"
+    "text": "関係者の変更を記録しました",
+    "source": "c7a2307e491a"
   },
   "partyRole.CLAIMANT.short": {
     "text": "請求者",
@@ -4196,8 +4188,8 @@
     "source": "634de1147750"
   },
   "change.ATTACHMENT.recorded": {
-    "text": "添付ファイルの変更を記録しました。",
-    "source": "9c5ab3a2b28f"
+    "text": "添付ファイルの変更を記録しました",
+    "source": "b2b61553b5df"
   },
   "endpoint.attachment.download.label": {
     "text": "ダウンロード",
@@ -4426,5 +4418,153 @@
   "empty.workViews": {
     "text": "利用できる作業ビューはありません。",
     "source": "3e86bd3913b7"
+  },
+  "task.reminder.complete.shortLabel": {
+    "text": "完了",
+    "source": "143b270a3260"
+  },
+  "task.case.close.shortLabel": {
+    "text": "案件を終了",
+    "source": "dd2b37d18a3e"
+  },
+  "task.case.decide.shortLabel": {
+    "text": "決定を記録",
+    "source": "0eb246db5087"
+  },
+  "task.case.recordPayment.shortLabel": {
+    "text": "支払いを記録",
+    "source": "1ef3fba4680a"
+  },
+  "task.case.decide.changeShortLabel": {
+    "text": "決定を変更",
+    "source": "a77099b9ff99"
+  },
+  "empty.paymentDecision": {
+    "text": "支払決定はまだありません",
+    "source": "fe604fb9208a"
+  },
+  "label.count.payments.zero": {
+    "text": "{count}件の支払い",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.one": {
+    "text": "{count}件の支払い",
+    "source": "0c8035196655"
+  },
+  "label.count.payments.two": {
+    "text": "{count}件の支払い",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.few": {
+    "text": "{count}件の支払い",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.many": {
+    "text": "{count}件の支払い",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.other": {
+    "text": "{count}件の支払い",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.notes.zero": {
+    "text": "{count}件のメモ",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.one": {
+    "text": "{count}件のメモ",
+    "source": "abc682d2bab5"
+  },
+  "label.count.notes.two": {
+    "text": "{count}件のメモ",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.few": {
+    "text": "{count}件のメモ",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.many": {
+    "text": "{count}件のメモ",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.other": {
+    "text": "{count}件のメモ",
+    "source": "ea8395656e1d"
+  },
+  "label.count.attachments.zero": {
+    "text": "{count}件の添付ファイル",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.one": {
+    "text": "{count}件の添付ファイル",
+    "source": "0ebf8f55aef6"
+  },
+  "label.count.attachments.two": {
+    "text": "{count}件の添付ファイル",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.few": {
+    "text": "{count}件の添付ファイル",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.many": {
+    "text": "{count}件の添付ファイル",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.other": {
+    "text": "{count}件の添付ファイル",
+    "source": "7bb1847693bc"
+  },
+  "label.count.activity.zero": {
+    "text": "{count}件の活動記録",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.one": {
+    "text": "{count}件の活動記録",
+    "source": "0d9c66b5ba2e"
+  },
+  "label.count.activity.two": {
+    "text": "{count}件の活動記録",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.few": {
+    "text": "{count}件の活動記録",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.many": {
+    "text": "{count}件の活動記録",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.other": {
+    "text": "{count}件の活動記録",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.accessRequests.zero": {
+    "text": "{count}件のアクセス申請",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.one": {
+    "text": "{count}件のアクセス申請",
+    "source": "83cc6ef40e92"
+  },
+  "label.count.accessRequests.two": {
+    "text": "{count}件のアクセス申請",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.few": {
+    "text": "{count}件のアクセス申請",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.many": {
+    "text": "{count}件のアクセス申請",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.other": {
+    "text": "{count}件のアクセス申請",
+    "source": "43a0751e47d9"
+  },
+  "label.paymentDecision": {
+    "text": "支払決定",
+    "source": "57372fefe301"
   }
 }

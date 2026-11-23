@@ -12,6 +12,7 @@ module ReminderScreen =
         [
             {
                 TitleId = "label.reminder"
+                EmptyMessageId = None
                 Entries =
                     [
                         yield
@@ -132,6 +133,6 @@ module ReminderScreen =
                 entryRegion RegionRole.Facts (Some "label.reminder") body
                 entryRegion
                     RegionRole.Details
-                    (Some "label.recordDetails")
+                    (Some "label.technicalDetails")
                     (identifiers @ observationEntries reply.Basis)
             ]

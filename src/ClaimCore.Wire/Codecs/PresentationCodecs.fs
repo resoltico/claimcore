@@ -656,10 +656,11 @@ module PresentationCodecs =
             let emptyMap: Codec<Map<TaskInputId, InputValue>> = record Map.empty |> build
             let emptyChoices: Codec<Map<TaskInputId, string list>> = record Map.empty |> build
 
-            (record (fun label binding seeds editable choices blocked ->
+            (record (fun label shortLabel binding seeds editable choices blocked ->
                 {
                     Affordance.Task = task
                     LabelId = label
+                    ShortLabelId = shortLabel
                     Control = binding
                     Seeds = seeds
                     Editable = editable
@@ -668,6 +669,7 @@ module PresentationCodecs =
                 })
             : Fields<Affordance, _>)
             |> field "labelId" _.LabelId (boundedText 1 160)
+            |> optionalField "shortLabelId" _.ShortLabelId (boundedText 1 160)
             |> field "binding" _.Control (binding declaration)
             |> field
                 "seeds"
@@ -735,14 +737,16 @@ module PresentationCodecs =
         |> named "PresentedEntry"
 
     let private section =
-        (record (fun title entries ->
+        (record (fun title entries emptyId ->
             {
                 Section.TitleId = title
                 Entries = entries
+                EmptyMessageId = emptyId
             })
         : Fields<Section, _>)
         |> field "titleId" _.TitleId messageId
         |> field "entries" _.Entries (list MaximumEntries entry)
+        |> optionalField "emptyId" _.EmptyMessageId messageId
         |> build
         |> named "PresentedSection"
 
@@ -1050,20 +1054,39 @@ module PresentationCodecs =
             ]
         |> fun codec -> restrict codec.Schema PresentationStructure.content codec
 
+    let private regionCount =
+        let subjects = ListCounts.sectionMessages |> Map.keys |> Seq.toList
+
+        (record (fun subject value ->
+            {
+                RegionCount.CountKind = subject
+                Quantity = value
+            })
+        : Fields<RegionCount, _>)
+        |> field
+            "kind"
+            _.CountKind
+            (Vocabulary.define "sectionCount" subjects id |> VocabularyCodec.create)
+        |> field "value" _.Quantity (integer 0L SafeInteger.Maximum)
+        |> build
+        |> named "RegionCount"
+
     let private region =
-        (record (fun role title emptyId content link actions ->
+        (record (fun role title emptyId count content link actions ->
             {
                 Region.Role = role
                 Link = link
                 Actions = defaultArg actions []
                 TitleId = title
                 EmptyId = emptyId
+                Count = count
                 Content = content
             })
         : Fields<Region, _>)
         |> field "role" _.Role (VocabularyCodec.create RegionRole.vocabulary)
         |> optionalField "titleId" _.TitleId messageId
         |> optionalField "emptyId" _.EmptyId messageId
+        |> optionalField "count" _.Count regionCount
         |> field "content" _.Content content
         |> optionalField "link" _.Link link
         |> optionalField

@@ -106,12 +106,12 @@ let redesignDeclarations =
                             "headline", primary
                             "claimants", primary
                             "claimedAmount", secondary
-                            "payableAmount", secondary
                             "responsible", secondary
                             "nextAction", secondary
                             "nextDue", secondary
                             "attention", primary
                             "insurers", detail
+                            "payableAmount", detail
                             "changedAt", detail
                         ]
                         "Human columns are independent of the machine projection"
@@ -179,8 +179,13 @@ let redesignDeclarations =
                         "The closed headline contains the typed outcome"
 
                     Expect.isTrue
-                        (facts RegionRole.Facts |> List.forall (_.Recorded >> Option.isSome))
-                        "Every fact has presence"
+                        (regions
+                         |> List.forall (fun region ->
+                             match region.Content with
+                             | RegionContent.Entries entries ->
+                                 List.forall (fun (entry: Entry) -> entry.Recorded.IsSome) entries
+                             | _ -> true))
+                        "Every entry region declares presence"
 
                     Expect.isTrue
                         (facts RegionRole.Facts
@@ -216,6 +221,7 @@ let redesignDeclarations =
                             Selections = Set.empty
                             Editable = []
                             Choices = Map.empty
+                            Applicable = true
                             Blocked = None
                             Recommendation = None
                         }
@@ -283,6 +289,47 @@ let redesignDeclarations =
                         (actionWith changed).LabelId
                         "task.case.decide.change"
                         "Existing decision")
+            testCase
+                "current bindings omit inapplicable case tasks and retain actionable blocks"
+                (fun () ->
+                    let declaration = ClaimCore.Domain.Tasks.Case.Reopen.declaration
+
+                    let binding =
+                        Binding.Case(
+                            CaseSelector.Id ResponseExamples.snapshot.CaseId,
+                            Revision.zero
+                        )
+
+                    let offer refusal =
+                        ClaimCore.Domain.Tasks.Declarations.availability declaration (Some refusal)
+                        |> TaskOffer.forBinding declaration.Id binding
+
+                    match offer (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)) with
+                    | TaskOffer.Declared task ->
+                        Expect.equal task declaration.Id "The state makes the task inapplicable"
+                    | _ -> failtest "Reopen on an open case must not become an affordance"
+
+                    match offer Refusal.RegisterMaintenance with
+                    | TaskOffer.Available(_, _, availability) ->
+                        Expect.equal
+                            availability.Blocked
+                            (Some Refusal.RegisterMaintenance)
+                            "Keep advice for an actionable block"
+                    | _ -> failtest "Maintenance keeps the task observable")
+            testCase "task declaration rejects implicit stewardship review" (fun () ->
+                Expect.throwsT<System.ArgumentException>
+                    (fun () ->
+                        ClaimCore.Domain.Tasks.Declarations.familyWithReview
+                            "case.close"
+                            ActSubject.Case
+                            false
+                            ActFamily.Business
+                            Consequence.Stewardship
+                            TaskReview.Implicit
+                            []
+                            []
+                        |> ignore)
+                    "Review constraints are enforced at declaration construction")
             testCase
                 "only routine note addition and reminder completion allow implicit review"
                 (fun () ->
@@ -373,6 +420,7 @@ let invalidTables =
                         Role = RegionRole.Results
                         TitleId = None
                         EmptyId = None
+                        Count = None
                         Content = RegionContent.Table(table [ row "one" values ] [])
                     }
                 ]
@@ -390,6 +438,7 @@ let invalidTables =
                                 Role = RegionRole.Results
                                 TitleId = None
                                 EmptyId = None
+                                Count = None
                                 Content = RegionContent.Table value
                             }
                         ]
@@ -501,7 +550,7 @@ let tests =
                     Expect.contains
                         detailValues
                         (PresentedValue.Identifier(OperationId.format receipt.OperationId))
-                        "The operation identity is available under Record details"
+                        "The operation identity is available under Technical details"
 
                     Expect.contains
                         detailValues
@@ -528,7 +577,7 @@ let tests =
                     RegionRole.Details
                 ]
                 (fun () -> CaseScreen.view ResponseExamples.caseRead)
-            matches "case list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+            matches "case list" [ RegionRole.Results ] (fun () ->
                 data Api.caseList |> CaseListScreen.view)
             matches "paged payments" [ RegionRole.Identity; RegionRole.Payments ] (fun () ->
                 data Api.casePayments |> PaymentsScreen.page)
@@ -572,6 +621,29 @@ let tests =
                             entries.Head.Value
                             (PresentedValue.Count 0L)
                             "Known zero count"
+
+                        Expect.equal
+                            screen.Regions[1].Count
+                            (Some
+                                {
+                                    CountKind = "payments"
+                                    Quantity = 0L
+                                })
+                            "Payment count is declared on the region"
+
+                        let decision =
+                            table.Sections
+                            |> List.find (fun section -> section.TitleId = "label.paymentDecision")
+
+                        Expect.equal
+                            decision.EmptyMessageId
+                            (Some "empty.paymentDecision")
+                            "The undecided view declares its empty message"
+
+                        Expect.isTrue
+                            (decision.Entries
+                             |> List.forall (fun entry -> entry.Recorded = Some false))
+                            "Every unrecorded decision value is explicitly absent"
                     | _ -> failtest "Financial summary table required")
             matches
                 "case totals"
@@ -581,17 +653,17 @@ let tests =
                 "reminder"
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]
                 (fun () -> data Api.reminder |> ReminderScreen.view)
-            matches "reminder list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+            matches "reminder list" [ RegionRole.Results ] (fun () ->
                 data Api.reminders |> ReminderListScreen.view None None)
-            matches "timeline" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
+            matches "timeline" [ RegionRole.Activity ] (fun () ->
                 data Api.caseTimeline |> TimelineScreen.view)
-            matches "people" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+            matches "people" [ RegionRole.Results ] (fun () ->
                 data Api.peopleList |> PeopleScreen.view)
             matches
                 "person"
                 [ RegionRole.Account; RegionRole.Access; RegionRole.Details ]
                 (fun () -> data Api.peopleGrants |> PersonScreen.view)
-            matches "access history" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
+            matches "access history" [ RegionRole.Activity ] (fun () ->
                 data Api.peopleHistory |> AccessHistoryScreen.view)
             testCase
                 "empty access requests omit local scaffolding without consuming pagination metadata"

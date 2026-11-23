@@ -332,7 +332,7 @@ it("renders the affected account link and the separate recorder without revealin
       summary: { messageId: "task.people.register.label", arguments: [] },
       details: [
         {
-          titleId: "label.recordDetails",
+          titleId: "label.technicalDetails",
           entries: [
             {
               key: "subject",

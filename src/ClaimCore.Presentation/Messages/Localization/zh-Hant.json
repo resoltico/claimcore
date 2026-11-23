@@ -2287,9 +2287,9 @@
     "text": "您無權存取這些資訊。",
     "source": "d23b2f106566"
   },
-  "label.recordDetails": {
-    "text": "記錄詳情",
-    "source": "1c9b48608e25"
+  "label.technicalDetails": {
+    "text": "技術詳細資料",
+    "source": "890ab358a55d"
   },
   "label.recorded": {
     "text": "已記錄。",
@@ -2506,14 +2506,6 @@
   "field.insurerClaimReference.hint": {
     "text": "保險公司用於此索賠的參考編號。",
     "source": "7686a3e64d99"
-  },
-  "label.page": {
-    "text": "頁",
-    "source": "0a30a815d67d"
-  },
-  "label.shown": {
-    "text": "已顯示",
-    "source": "6ba2a0e0afd0"
   },
   "label.observedAt": {
     "text": "觀測時間",
@@ -3144,8 +3136,8 @@
     "source": "dfa82f21b3f3"
   },
   "change.PARTY.recorded": {
-    "text": "已記錄當事方變更。",
-    "source": "a5d0522684d4"
+    "text": "已記錄當事方變更",
+    "source": "c7a2307e491a"
   },
   "partyRole.CLAIMANT.short": {
     "text": "索賠人",
@@ -4196,8 +4188,8 @@
     "source": "634de1147750"
   },
   "change.ATTACHMENT.recorded": {
-    "text": "已記錄附件變更。",
-    "source": "9c5ab3a2b28f"
+    "text": "已記錄附件變更",
+    "source": "b2b61553b5df"
   },
   "endpoint.attachment.download.label": {
     "text": "下載",
@@ -4426,5 +4418,153 @@
   "empty.workViews": {
     "text": "沒有可用的工作檢視。",
     "source": "3e86bd3913b7"
+  },
+  "task.reminder.complete.shortLabel": {
+    "text": "完成",
+    "source": "143b270a3260"
+  },
+  "task.case.close.shortLabel": {
+    "text": "關閉案件",
+    "source": "dd2b37d18a3e"
+  },
+  "task.case.decide.shortLabel": {
+    "text": "記錄決定",
+    "source": "0eb246db5087"
+  },
+  "task.case.recordPayment.shortLabel": {
+    "text": "記錄付款",
+    "source": "1ef3fba4680a"
+  },
+  "task.case.decide.changeShortLabel": {
+    "text": "變更決定",
+    "source": "a77099b9ff99"
+  },
+  "empty.paymentDecision": {
+    "text": "尚無付款決定",
+    "source": "fe604fb9208a"
+  },
+  "label.count.payments.zero": {
+    "text": "{count}筆付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.one": {
+    "text": "{count}筆付款",
+    "source": "0c8035196655"
+  },
+  "label.count.payments.two": {
+    "text": "{count}筆付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.few": {
+    "text": "{count}筆付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.many": {
+    "text": "{count}筆付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.payments.other": {
+    "text": "{count}筆付款",
+    "source": "b6c9d62a2202"
+  },
+  "label.count.notes.zero": {
+    "text": "{count}則備註",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.one": {
+    "text": "{count}則備註",
+    "source": "abc682d2bab5"
+  },
+  "label.count.notes.two": {
+    "text": "{count}則備註",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.few": {
+    "text": "{count}則備註",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.many": {
+    "text": "{count}則備註",
+    "source": "ea8395656e1d"
+  },
+  "label.count.notes.other": {
+    "text": "{count}則備註",
+    "source": "ea8395656e1d"
+  },
+  "label.count.attachments.zero": {
+    "text": "{count}個附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.one": {
+    "text": "{count}個附件",
+    "source": "0ebf8f55aef6"
+  },
+  "label.count.attachments.two": {
+    "text": "{count}個附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.few": {
+    "text": "{count}個附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.many": {
+    "text": "{count}個附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.attachments.other": {
+    "text": "{count}個附件",
+    "source": "7bb1847693bc"
+  },
+  "label.count.activity.zero": {
+    "text": "{count}筆活動記錄",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.one": {
+    "text": "{count}筆活動記錄",
+    "source": "0d9c66b5ba2e"
+  },
+  "label.count.activity.two": {
+    "text": "{count}筆活動記錄",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.few": {
+    "text": "{count}筆活動記錄",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.many": {
+    "text": "{count}筆活動記錄",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.activity.other": {
+    "text": "{count}筆活動記錄",
+    "source": "4c01cfb945ef"
+  },
+  "label.count.accessRequests.zero": {
+    "text": "{count}項存取要求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.one": {
+    "text": "{count}項存取要求",
+    "source": "83cc6ef40e92"
+  },
+  "label.count.accessRequests.two": {
+    "text": "{count}項存取要求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.few": {
+    "text": "{count}項存取要求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.many": {
+    "text": "{count}項存取要求",
+    "source": "43a0751e47d9"
+  },
+  "label.count.accessRequests.other": {
+    "text": "{count}項存取要求",
+    "source": "43a0751e47d9"
+  },
+  "label.paymentDecision": {
+    "text": "付款決定",
+    "source": "57372fefe301"
   }
 }

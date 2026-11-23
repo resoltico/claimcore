@@ -41,7 +41,7 @@ module NotesScreen =
                             Sections =
                                 [
                                     section
-                                        "label.recordDetails"
+                                        "label.technicalDetails"
                                         [
                                             value
                                                 "noteText"
@@ -97,4 +97,5 @@ module NotesScreen =
                     (Some "section.notes.label")
                     (RegionContent.Table(table page.CaseId page.Notes))
                 |> withEmpty "empty.notes"
+                |> withCount "notes" page.Notes.Count
             ]

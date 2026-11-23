@@ -18,6 +18,7 @@ module TimelineScreen =
     let difference key label format (change: ValueChange<'value>) =
         {
             TitleId = label
+            EmptyMessageId = None
             Entries =
                 [
                     value
@@ -278,6 +279,7 @@ module TimelineScreen =
             yield
                 {
                     TitleId = "label.changes"
+                    EmptyMessageId = None
                     Entries =
                         [
                             yield
@@ -334,6 +336,7 @@ module TimelineScreen =
                 yield
                     {
                         TitleId = "label.changes"
+                        EmptyMessageId = None
                         Entries =
                             [
                                 value
@@ -347,6 +350,7 @@ module TimelineScreen =
                 yield
                     {
                         TitleId = "label.changes"
+                        EmptyMessageId = None
                         Entries =
                             [
                                 value
@@ -430,7 +434,7 @@ module TimelineScreen =
                 }
         | _ -> None
 
-    let private project target link (entry: CaseTimelineEntry) =
+    let item (entry: CaseTimelineEntry) =
         let detail = timelineDetail entry |> Option.get
 
         let summary =
@@ -482,10 +486,10 @@ module TimelineScreen =
                 EffectPosition.format entry.Position
                 + "."
                 + OperationId.format entry.OperationId
-            Target = target
+            Target = None
             Changes = comparisons
             ChangedFields = changedFields
-            Link = link
+            Link = None
             Actions = []
             When = entry.RecordedAt
             Who = PresentedValue.Actor entry.RecordedBy
@@ -501,23 +505,12 @@ module TimelineScreen =
                     other
         }
 
-    let item entry = project None None entry
-
-    let private rowsFor target link entries =
+    let rows entries =
         Screen.create
             [
-                region
-                    RegionRole.Activity
-                    None
-                    (RegionContent.Timeline(List.map (project target link) entries))
+                region RegionRole.Activity None (RegionContent.Timeline(List.map item entries))
                 |> withEmpty "empty.activity"
+                |> withCount "activity" (int64 entries.Length)
             ]
 
-    let rows entries = rowsFor None None entries
-
-    let view (reply: CaseTimelinePage) =
-        rowsFor
-            (Some(PresentedValue.Reference reply.Reference))
-            (Some(Link.caseById reply.CaseId))
-            reply.Items
-        |> page reply.Basis reply.Items.Length reply.NextCursor
+    let view (reply: CaseTimelinePage) = rows reply.Items

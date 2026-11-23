@@ -116,6 +116,7 @@ module ScreenEntries =
     let section title entries =
         {
             Section.TitleId = title
+            EmptyMessageId = None
             Entries = entries
         }
 
@@ -270,6 +271,7 @@ module ScreenEntries =
             Role = role
             TitleId = title
             EmptyId = None
+            Count = None
             Content = content
             Link = None
             Actions = []
@@ -278,23 +280,28 @@ module ScreenEntries =
     let withEmpty messageId (region: Region) =
         { region with EmptyId = Some messageId }
 
-    let entryRegion role title (entries: Entry list) =
-        let entries =
-            if role = RegionRole.Facts || role = RegionRole.Work then
-                entries
-                |> List.map (fun entry ->
-                    let recorded =
-                        match entry.Value with
-                        | PresentedValue.Absent _ -> false
-                        | _ -> true
+    let withCount subject count (region: Region) =
+        { region with
+            Count =
+                Some
+                    {
+                        CountKind = subject
+                        Quantity = count
+                    }
+        }
 
-                    { entry with
-                        Recorded = entry.Recorded |> Option.orElse (Some recorded)
-                    })
-            else
-                entries
+    let withRecorded (entry: Entry) =
+        let recorded =
+            match entry.Value with
+            | PresentedValue.Absent _ -> false
+            | _ -> true
 
-        region role title (RegionContent.Entries entries)
+        { entry with
+            Recorded = entry.Recorded |> Option.orElse (Some recorded)
+        }
+
+    let entryRegion role title entries =
+        region role title (RegionContent.Entries(List.map withRecorded entries))
 
     let headline (state: CaseHeadline) outcome =
         let detail =
@@ -415,64 +422,3 @@ module ScreenEntries =
                 Prominence.Detail
                 (PresentedValue.Instant basis.ObservedAt)
         ]
-
-    let page (basis: WorkDateBasis) shown cursor (screen: Screen) =
-        let footer =
-            section
-                "label.page"
-                [
-                    value
-                        "shown"
-                        "label.shown"
-                        Prominence.Secondary
-                        (PresentedValue.Count(int64 shown))
-                ]
-
-        let metadata =
-            observationEntries basis
-            @ [
-                yield!
-                    cursor
-                    |> Option.map (fun cursor ->
-                        value
-                            "cursor"
-                            "label.nextCursor"
-                            Prominence.Detail
-                            (PresentedValue.Identifier cursor))
-                    |> Option.toList
-            ]
-
-        let mutable foundTable = false
-
-        let regions =
-            screen.Regions
-            |> List.map (fun region ->
-                match region.Content with
-                | RegionContent.Table table when not foundTable ->
-                    foundTable <- true
-
-                    { region with
-                        Content =
-                            RegionContent.Table
-                                { table with
-                                    Sections = table.Sections @ [ footer ]
-                                }
-                    }
-                | _ -> region)
-
-        let details, body =
-            regions |> List.partition (fun region -> region.Role = RegionRole.Details)
-
-        let existing =
-            details
-            |> List.collect (fun region ->
-                match region.Content with
-                | RegionContent.Entries entries -> entries
-                | _ -> invalidOp "Page details contain entries.")
-
-        Screen.create (
-            body
-            @ [
-                entryRegion RegionRole.Details (Some "label.recordDetails") (existing @ metadata)
-            ]
-        )

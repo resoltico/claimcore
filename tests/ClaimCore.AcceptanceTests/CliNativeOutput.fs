@@ -366,7 +366,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
                             [|
                                 {|
                                     role = "DETAILS"
-                                    titleId = "label.recordDetails"
+                                    titleId = "label.technicalDetails"
                                     content =
                                         {|
                                             kind = "ENTRIES"

@@ -97,32 +97,29 @@ module PersonScreen =
                     link, actions)
                 reply.Items
 
-        let screen =
-            Screen.create (
-                [ entryRegion RegionRole.Account None (entries accountColumns actor) ]
-                @ body.Regions
-                @ [
-                    entryRegion
-                        RegionRole.Details
-                        (Some "label.recordDetails")
-                        [
-                            value
-                                "actorId"
-                                "input.actorId.label"
-                                Prominence.Detail
-                                (PresentedValue.Identifier(ActorId.format actor.Actor.ActorId))
-                            value
-                                "issuer"
-                                "field.principal.issuer.label"
-                                Prominence.Detail
-                                (PresentedValue.Identifier issuer)
-                            value
-                                "subject"
-                                "field.principal.subject.label"
-                                Prominence.Detail
-                                (PresentedValue.Identifier subject)
-                        ]
-                ]
-            )
-
-        page reply.Basis reply.Items.Length reply.NextCursor screen
+        Screen.create (
+            [ entryRegion RegionRole.Account None (entries accountColumns actor) ]
+            @ body.Regions
+            @ [
+                entryRegion
+                    RegionRole.Details
+                    (Some "label.technicalDetails")
+                    [
+                        value
+                            "actorId"
+                            "input.actorId.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier(ActorId.format actor.Actor.ActorId))
+                        value
+                            "issuer"
+                            "field.principal.issuer.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier issuer)
+                        value
+                            "subject"
+                            "field.principal.subject.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier subject)
+                    ]
+            ]
+        )

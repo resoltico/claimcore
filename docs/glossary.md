@@ -23,7 +23,7 @@ missing or stale translations. All translations are AI-assisted; native-speaker 
 | Spanish (es) | AI-assisted; human review pending |
 | German (de) | AI-assisted; human review pending |
 
-The non-English translations added for the web redesign are machine-made and await fluent review.
+The non-English translations added or changed for the web redesign and its follow-up are machine-made and await fluent review.
 
 Current Korean catalog terms are 청구 건 (case) and 후속 조치 (reminder); native-speaker review is unverified.
 Latvian uses versija for entity version, Datu pārvaldnieks for Data steward and Lietu apstrādātājs for
