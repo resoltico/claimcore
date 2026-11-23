@@ -5,8 +5,8 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 
 module internal ReviewDocumentParts =
-    let describe operationId principal (review: OperationReview) =
-        let described = ReviewScreen.operationReview review
+    let describe operationId principal inputs (review: OperationReview) =
+        let described = ReviewScreen.operationReview inputs review
 
         let identityEntries =
             [

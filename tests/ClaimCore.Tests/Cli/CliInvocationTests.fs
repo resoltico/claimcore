@@ -104,6 +104,31 @@ let private options () =
         (Frames.admit (Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}"))
         "Help example is admitted"
 
+let private descriptionPunctuation () =
+    for language in LocalizationPolicy.languages do
+        let rendering = RenderingContext.forLanguage language
+
+        let overview =
+            ContractDiscovery.helpTopic rendering (CliTopic.Help HelpTopic.Overview)
+
+        let familyHelp =
+            CommandGrammar.families
+            |> List.choose (fun family -> Discovery.commandHelp rendering [ family ])
+
+        let descriptions =
+            overview :: familyHelp
+            |> List.collect (fun text -> text.Split('\n') |> Array.toList)
+            |> List.filter (fun line -> line.Contains(" — ", StringComparison.Ordinal))
+
+        Expect.isNonEmpty descriptions "Help exposes family and verb descriptions"
+
+        for description in descriptions do
+            Expect.isFalse
+                (description.EndsWith('.')
+                 || description.EndsWith('。')
+                 || description.EndsWith('۔'))
+                "Description lines omit final full stops"
+
 [<Tests>]
 let tests =
     testList
@@ -111,6 +136,9 @@ let tests =
         [
             testCase "exact help aliases and all localized topics" aliases
             testCase "strict human versus machine option combinations" options
+            testCase
+                "family and verb descriptions have no trailing full stop"
+                descriptionPunctuation
         ]
 
 let private prepared arguments =

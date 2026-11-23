@@ -13,7 +13,7 @@ module HumanReviewDocument =
             | None, ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
 
         let screen, presentation =
-            ReviewDocumentParts.describe (Some operationId) principal review
+            ReviewDocumentParts.describe (Some operationId) principal seeds review
 
         let action = TaskAffordances.offered task (Some binding) seeds [] Map.empty
 

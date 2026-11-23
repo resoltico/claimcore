@@ -464,7 +464,7 @@ module ReviewScreen =
 
             principal @ changes @ grants, unchanged
 
-    let private authoredCreationFields =
+    let private authoredCreationFields inputs =
         function
         | PartDescription.Case value when value.Values.Before.IsNone ->
             PartDescription.Case
@@ -475,7 +475,18 @@ module ReviewScreen =
                         |> List.filter (fun change -> change.FieldName <> BusinessField.Status)
                 }
         | PartDescription.Note value -> PartDescription.Note { value with Removed = None }
-        | PartDescription.Reminder value -> PartDescription.Reminder { value with State = None }
+        | PartDescription.Reminder value ->
+            PartDescription.Reminder
+                { value with
+                    State = None
+                    Kind =
+                        if
+                            Map.containsKey (TaskInputId.Target InputTarget.ReminderPlanKind) inputs
+                        then
+                            value.Kind
+                        else
+                            None
+                }
         | PartDescription.Person value ->
             PartDescription.Person
                 { value with
@@ -484,7 +495,7 @@ module ReviewScreen =
                 }
         | description -> description
 
-    let operationReview (review: OperationReview) =
+    let operationReview inputs (review: OperationReview) =
         let creation = (TaskDeclarations.describe (TaskId.token review.Task)).Creates
 
         let changes =
@@ -492,7 +503,7 @@ module ReviewScreen =
             |> List.collect (fun part ->
                 let description =
                     if creation then
-                        authoredCreationFields part.Description
+                        authoredCreationFields inputs part.Description
                     else
                         part.Description
 

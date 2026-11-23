@@ -118,7 +118,7 @@ let reviews =
                         proposed
                         context
 
-                let delta = ReviewScreen.operationReview review
+                let delta = ReviewScreen.operationReview Map.empty review
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -201,7 +201,7 @@ let reviews =
                         proposed
                         context
 
-                let delta = ReviewScreen.operationReview (review proposed)
+                let delta = ReviewScreen.operationReview Map.empty (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -215,7 +215,9 @@ let reviews =
                     "All accepted money digits and minor units survive"
 
                 let erased =
-                    ReviewScreen.operationReview (review { before with State = CaseState.Erased })
+                    ReviewScreen.operationReview
+                        Map.empty
+                        (review { before with State = CaseState.Erased })
 
                 Expect.isTrue
                     (erased.Changes
@@ -346,7 +348,7 @@ let assignmentIdentity =
                 after
                 context
 
-        let delta = ReviewScreen.operationReview review
+        let delta = ReviewScreen.operationReview Map.empty review
 
         Expect.equal
             delta.Changes
