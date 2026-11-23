@@ -126,7 +126,7 @@ it("shows core account state and raw roles with one native person link and no ro
   expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Owner");
   expect(within(table).getAllByRole("cell")[1]).toHaveTextContent("Enabled with roles");
   expect(within(table).queryByText("No roles")).toBeNull();
-  expect(within(table).getByText("support@example.invalid")).toBeVisible();
+  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("support@example.invalid");
   expect(grants).not.toHaveBeenCalled();
   expect(link).toHaveAttribute("href", `/people/${actorId}`);
   expect(link.querySelector("bdi")).not.toBeNull();
@@ -197,7 +197,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
   };
   listing.mockResolvedValueOnce({ kind: "outcome", status: 200, value: people([selected]) });
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "More people" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   expect(listing.mock.calls[1]![1]).toEqual({ limit: 50, cursor: "opaque-next" });
   const literal = "Ａ名+س@example.invalid";
   await user.type(screen.getByRole("searchbox", { name: "Search people" }), literal);
@@ -207,7 +207,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
   expect(listing.mock.calls[2]![1]).toEqual({ limit: 50, text: literal, role: "CASE_READER" });
   expect(listing.mock.calls[1]![2]?.aborted).toBe(true);
   expect(screen.queryByText(displayName)).toBeNull();
-  expect(screen.queryByRole("button", { name: "More people" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
   await act(async () => {
     pending.resolve({
       kind: "outcome",

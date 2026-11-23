@@ -1,4 +1,4 @@
-import { ActorAvatar } from "./ActorAvatar";
+import { Avatar } from "../ui/Avatar";
 import type { ActorRef } from "@contracts/client";
 import { actorName } from "../presentation/actorName";
 import { CharacterWarning } from "./CharacterWarning";
@@ -7,7 +7,7 @@ export const ActorIdentity = ({ actor, avatar = false }: { actor: ActorRef; avat
   const p = usePresentation();
   return (
     <span className="actor-identity">
-      {avatar ? <ActorAvatar actor={actor} /> : null}
+      {avatar ? <Avatar actor={actor} /> : null}
       <bdi>{actorName(p, actor)}</bdi>
       <CharacterWarning
         value={actor.displayName.kind === "NAMED" ? actor.displayName.value : null}

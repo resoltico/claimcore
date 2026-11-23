@@ -205,7 +205,7 @@ export const WorklistFilters = ({ query, onChange }: Props) => {
     ),
   });
   return (
-    <div className="filter-field-grid">
+    <div className="worklist-filter-controls">
       {inputs
         .filter(({ key }) => key === "due" || key === "assignment")
         .map((input) => (

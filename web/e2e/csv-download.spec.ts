@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "./fixtures";
-import { settlePopupTriggerScroll, showAccountActions } from "./workspace-navigation";
+import { settlePopupTriggerScroll, workspaceSettingsNavigation } from "./workspace-navigation";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage } from "./localization-support";
 import { openCase } from "./case-workflow";
@@ -33,7 +33,11 @@ const download = async (page: Page, button: Locator, filename: string) => {
     await file.delete();
   }
 };
-const rejectParkedDownload = async (page: Page, button: Locator) => {
+const rejectParkedDownload = async (
+  page: Page,
+  button: Locator,
+  reopen?: () => Promise<Locator>,
+) => {
   const held = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   const completed = Promise.withResolvers<void>();
@@ -63,15 +67,12 @@ const rejectParkedDownload = async (page: Page, button: Locator) => {
   try {
     await button.click();
     await held.promise;
-    await showAccountActions(page);
-    if (new URL(page.url()).pathname !== "/settings") {
-      await page.getByRole("link", { name: "Settings", exact: true }).click();
-    }
+    await (await workspaceSettingsNavigation(page)).click();
     await expect(page).toHaveURL(/\/settings$/u);
     release.resolve();
     await completed.promise;
-    await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
-    await expect(button).toBeEnabled();
+    await page.goBack();
+    await expect(reopen === undefined ? button : await reopen()).toBeEnabled();
     expect(await page.locator("html").getAttribute("data-late-export-blob")).toBeNull();
   } finally {
     release.resolve();
@@ -106,17 +107,17 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
   expect(history.request).toMatchObject({ query: "case.timeline", selection: { filter: "WORK" } });
   await rejectParkedDownload(page, timeline.getByRole("button", { name: "Download CSV" }));
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(reference)}`);
-  const cases = await download(
-    page,
-    page.getByRole("button", { name: "Export case list CSV" }),
-    "claimcore-cases.csv",
-  );
+  const showCaseCsv = async () => {
+    await page.getByRole("button", { name: "Export", exact: true }).click();
+    return page.getByRole("menuitem", { name: "Case list (CSV)", exact: true });
+  };
+  const cases = await download(page, await showCaseCsv(), "claimcore-cases.csv");
   expect(cases.text).toContain(reference);
   expect(cases.request).toEqual({
     query: "case.list",
     selection: { view: "ALL", text: reference },
   });
-  await rejectParkedDownload(page, page.getByRole("button", { name: "Export case list CSV" }));
+  await rejectParkedDownload(page, await showCaseCsv(), showCaseCsv);
 
   await page.goto(`/cases/report?view=ALL&q=${encodeURIComponent(reference)}`);
   const grouping = page.getByRole("combobox", { name: "Group by" });

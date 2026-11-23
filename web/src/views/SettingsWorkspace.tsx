@@ -46,7 +46,7 @@ export const SettingsWorkspace = ({
               navigate(source.path);
             }}
           >
-            {p.text("ui.returnToWorkspace")}
+            {p.text("ui.close")}
           </Button>
           <SettingsPage />
         </>

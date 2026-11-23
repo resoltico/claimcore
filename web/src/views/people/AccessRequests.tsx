@@ -1,3 +1,4 @@
+import { PresentedValue } from "../../components/PresentedValue";
 import { renderCatalogKey } from "../../presentation/messages";
 import { assembleCommand } from "../../api/commandControl";
 import {
@@ -18,7 +19,7 @@ import { isOperationAffordance, type OperationAffordance } from "../../operation
 
 import { ScreenView } from "../../ui/ScreenView";
 import type { PresentedPage } from "../../protocol/types";
-import { pageItemIndex } from "../../ui/PageTables";
+import { pageItemIndex } from "../../ui/ResultPages";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -185,7 +186,9 @@ const AvailableRequests = ({
   const disabled = busy || pending;
   return (
     <section className="access-requests" aria-labelledby="access-requests-title">
-      <h2 id="access-requests-title">{p.text("endpoint.people.requests.label")}</h2>
+      <h2 id="access-requests-title">
+        {p.text("endpoint.people.requests.label")} · {p.integer(page.items.length)}
+      </h2>
       <RequestFeedback
         loading={page.loading}
         completion={completion}
@@ -193,63 +196,85 @@ const AvailableRequests = ({
         notice={notice}
         empty={page.page !== null && page.cursor === null && page.items.length === 0}
       />
-      {page.pages.map((observed) => (
-        <ScreenView
-          key={observed.nextCursor === null ? "END" : `NEXT:${observed.nextCursor}`}
-          view={observed.screen}
-          actionsDisabled={disabled}
-          timeZone={observed.basis.timeZone}
-          onAction={(action, row) => {
-            if (disabled) {
-              return;
-            }
-            if (isOperationAffordance(action) && operationTask(action.task).creates && mayAdmit) {
-              onAdmit(action);
-            }
-            const definition = taskDefinitions.find(
-              (task): task is Extract<TaskDefinition, { kind: "COMMAND" }> =>
-                task.id === action.task && task.kind === "COMMAND",
-            );
-            if (definition !== undefined && row !== undefined) {
-              setCompletion(null);
-              setSelected({
-                control: action,
-                definition,
-                row,
-                view: { view: observed.screen, basis: observed.basis },
-              });
-            }
-          }}
-        />
-      ))}
-
-      <Button
-        variant="secondary"
-        isDisabled={disabled || page.loading}
-        onPress={() => {
-          void page.load(null);
-        }}
-      >
-        {p.text("ui.requests.refresh")}
-      </Button>
+      {page.pages.flatMap((observed, pageIndex) =>
+        observed.screen.regions.flatMap(({ content }) =>
+          content.kind === "TABLE"
+            ? content.rows.map((row) => (
+                <article className="access-request-card" key={`${pageIndex}:${row.key}`}>
+                  <dl>
+                    {content.columns.flatMap((column, index) => {
+                      const field = row.values[index];
+                      return field === undefined || column.prominence === "DETAIL" ? (
+                        []
+                      ) : (
+                        <div key={column.key}>
+                          <dt>{renderCatalogKey(p, column.labelId)}</dt>
+                          <dd>
+                            <PresentedValue value={field} timeZone={observed.basis.timeZone} />
+                          </dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                  <div className="actions">
+                    {(row.actions ?? []).map((action) => (
+                      <Button
+                        key={action.task}
+                        variant="secondary"
+                        compact
+                        isDisabled={disabled || action.blocked !== null}
+                        onPress={() => {
+                          if (
+                            isOperationAffordance(action) &&
+                            operationTask(action.task).creates &&
+                            mayAdmit
+                          ) {
+                            onAdmit(action);
+                          }
+                          const definition = taskDefinitions.find(
+                            (task): task is Extract<TaskDefinition, { kind: "COMMAND" }> =>
+                              task.id === action.task && task.kind === "COMMAND",
+                          );
+                          if (definition !== undefined) {
+                            setCompletion(null);
+                            setSelected({
+                              control: action,
+                              definition,
+                              row,
+                              view: { view: observed.screen, basis: observed.basis },
+                            });
+                          }
+                        }}
+                      >
+                        {renderCatalogKey(p, action.labelId)}
+                      </Button>
+                    ))}
+                  </div>
+                </article>
+              ))
+            : [],
+        ),
+      )}
       {page.cursor === null ? null : (
         <Button
-          variant="secondary"
+          variant="quiet"
+          compact
           isDisabled={disabled || page.loading}
           onPress={() => {
             void page.load(page.cursor);
           }}
         >
-          {p.text("ui.requests.more")}
+          {p.text("ui.loadMore")}
         </Button>
       )}
-      {page.page === null ? null : (
-        <p className="review-basis" title={page.page.basis.observedAt}>
-          {p.text("ui.review.checked", {
-            when: p.recordedTime(page.page.basis.observedAt, page.page.basis.timeZone),
-          })}
+      {page.refreshBusy ? (
+        <p role="status">
+          {p.text("ui.refreshFailed")}{" "}
+          <Button variant="quiet" compact onPress={page.refresh}>
+            {p.text("ui.retryRefresh")}
+          </Button>
         </p>
-      )}
+      ) : null}
       <Dialog
         title={commandText("labelId")}
         description={commandText("meaningId")}

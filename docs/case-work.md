@@ -1,5 +1,18 @@
 # Case work
 
+Use **Find a case** from the sidebar or the phone toolbar. Press Ctrl+K, or Command+K on Apple
+platforms. Choose a suggestion, enter an exact reference, or search All with your text. **Filter this
+view** limits the current worklist. Use the **Cases** breadcrumb to return to your last worklist.
+
+Tables show the columns relevant to each view. Secondary values sit under the first primary value
+on narrow screens. Row menus offer additional controls and **View details** opens a dialog.
+The worklist checks for updates when you return to the window. Its footer shows the last update and
+supports a manual refresh.
+
+Adding a note and completing a reminder from its primary button record the change in one step.
+Choose **Complete with details…** in the reminder's menu to edit the completion date and review
+it. The result remains visible until you dismiss it or leave the case.
+
 Start in **Cases** to find a claim, record its facts, decide an amount, record payments or plan work.
 ClaimCore records assertions; it does not decide coverage or transfer money. Use fictional data for
 [getting started](getting-started.md).
@@ -68,7 +81,8 @@ source clears its links.
 
 The header identifies the case. The tracker shows recorded stages; Claim, Payment decision and payments,
 Notes and Activity occupy the main column. Work and Next actions sit beside them. The primary action is
-the core's recommendation; **More actions** contains other offered changes. **Record details** holds IDs,
+the core's recommendation. **More actions** groups the other offered changes, including data stewardship.
+Activity and receipt details show the recorded comparisons and IDs,
 versions and copy controls.
 
 The Paid stage uses net payments in the decision currency. It is complete when the case is Paid or Overpaid.

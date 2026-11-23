@@ -204,6 +204,43 @@ let redesignDeclarations =
                         (ViewText.renderSelected false (RenderingContext.forLanguage "en") nextOnly)
                         [ "No next actions for this case." ]
                         "CLI renders the empty message in place of the column headers")
+            testCase "an empty case party table names its own empty state" (fun () ->
+                let original = ResponseExamples.caseRead
+
+                let add =
+                    TaskOffer.Available(
+                        TaskId.ofLiteral "party.add",
+                        Binding.PartyNew(CaseSelector.Id original.Snapshot.CaseId),
+                        {
+                            Seeds = Map.empty
+                            Selections = Set.empty
+                            Editable = []
+                            Choices = Map.empty
+                            Blocked = None
+                            Recommendation = None
+                        }
+                    )
+
+                let observation =
+                    { original with
+                        Parties = []
+                        PartyOffers = [ add ]
+                    }
+
+                let screen = CaseScreen.view observation
+
+                let parties =
+                    screen.Regions |> List.find (fun region -> region.Role = RegionRole.Parties)
+
+                match parties.Content with
+                | RegionContent.Table table ->
+                    Expect.isEmpty table.Rows "No party rows are synthesized"
+
+                    Expect.equal
+                        parties.EmptyId
+                        (Some "empty.parties")
+                        "The party region owns its empty message"
+                | _ -> failtest "The party region requires a table")
             testCase
                 "payment-decision affordance uses a label for the current decision state"
                 (fun () ->

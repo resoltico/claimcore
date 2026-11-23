@@ -49,14 +49,14 @@ export const useCaseNavigation = (owner: object | null) => {
       remember("open-case");
       navigate("/cases/new");
     },
-    backToCases: () => {
+    backToCases: (worklist?: string) => {
       const owned = returnTo?.owner === owner ? returnTo : null;
-      navigate(
-        owned?.url ?? (location.pathname.includes("/reminders/") ? "/reminders" : "/cases"),
-        false,
-        owned?.focusId,
-        owned?.scrollY,
-      );
+      const next =
+        worklist ??
+        owned?.url ??
+        (location.pathname.includes("/reminders/") ? "/reminders" : "/cases");
+      const position = owned?.url === next ? owned : null;
+      navigate(next, false, position?.focusId, position?.scrollY);
     },
   };
 };

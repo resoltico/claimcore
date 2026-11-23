@@ -14,7 +14,7 @@ const originalModules = [
 
 const moduleDirectory = "dist/private/live-announcer";
 const changeNotice =
-  "/*! ClaimCore modifies React Aria to clear live announcements without parsing HTML. */";
+  "/*! ClaimCore modifies React Aria to clear live announcements without parsing HTML and to use external CSS. */";
 const review =
   "Review the React Aria LiveAnnouncer transform and the locked dependency. Run npm ci to replace an older patched installation.";
 
@@ -82,6 +82,7 @@ export default function reactAriaLiveAnnouncer() {
             "this.assertiveLog.innerHTML = '';",
             `this.assertiveLog.replaceChildren(); ${changeNotice}`,
           )
+          .replace(/Object\.assign\(this\.node\.style, \{[\s\S]*?\}\);/u, "")
           .replace("this.politeLog.innerHTML = '';", "this.politeLog.replaceChildren();"),
         map: null,
       };

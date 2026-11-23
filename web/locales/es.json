@@ -40,8 +40,8 @@
     "source": "274bd4f0d808"
   },
   "ui.about": {
-    "text": "Acerca de",
-    "source": "4efca0d10c5f"
+    "text": "Acerca de ClaimCore",
+    "source": "f0389444dc13"
   },
   "ui.accent": {
     "text": "Color de acento",
@@ -78,10 +78,6 @@
   "ui.appearance": {
     "text": "Apariencia",
     "source": "3907fa7f8072"
-  },
-  "ui.backToCases": {
-    "text": "Volver a los expedientes",
-    "source": "99d9b7b14d23"
   },
   "ui.before": {
     "text": "Antes: {value}",
@@ -126,10 +122,6 @@
   "ui.continuePeopleRequest": {
     "text": "Continuar la solicitud actual",
     "source": "ec9e7079a21a"
-  },
-  "ui.contract": {
-    "text": "Identidad del contrato",
-    "source": "002a152b2dfc"
   },
   "ui.copied": {
     "text": "Copia completada: {label}.",
@@ -195,21 +187,13 @@
     "text": "ID exacto de operación",
     "source": "dbdca09f6e48"
   },
-  "ui.exactReference": {
-    "text": "{label} (exacta): {reference}",
-    "source": "e26d7a9b269c"
-  },
-  "ui.explainFields": {
-    "text": "Explicar los campos",
-    "source": "3593737e2657"
-  },
   "ui.filters": {
-    "text": "Filtros",
-    "source": "546ebb8eb993"
+    "text": "Más filtros",
+    "source": "b1ab49a6fedc"
   },
   "ui.findCase": {
-    "text": "Abrir por referencia exacta",
-    "source": "0ff7411177ad"
+    "text": "Encontrar un expediente",
+    "source": "58d1af18c648"
   },
   "ui.formatPreview": {
     "text": "Vista previa: {date} · {amount}",
@@ -279,10 +263,6 @@
     "text": "Cargando sesión…",
     "source": "3d3c04cbc07b"
   },
-  "ui.loginInstructions": {
-    "text": "Continúa con tu proveedor de inicio de sesión para introducir las credenciales de tu organización.",
-    "source": "cdd1baf4db63"
-  },
   "ui.signInIncomplete": {
     "text": "No se pudo completar el inicio de sesión.",
     "source": "f6f1d86a127a"
@@ -299,17 +279,9 @@
     "text": "Modo de color establecido en {value}.",
     "source": "b525fa9e5b37"
   },
-  "ui.moreActors": {
-    "text": "Más personas",
-    "source": "95baf92809bb"
-  },
   "ui.moreCaseActions": {
     "text": "Más acciones",
     "source": "f8d46c2570e7"
-  },
-  "ui.moreCases": {
-    "text": "Cargar más expedientes",
-    "source": "cd681597c17e"
   },
   "ui.disclosureReload": {
     "text": "Recargar el registro",
@@ -323,10 +295,6 @@
     "text": "Cargar más actividad",
     "source": "e3f0587b4839"
   },
-  "ui.moreReminders": {
-    "text": "Más recordatorios",
-    "source": "b36b0a1b10e1"
-  },
   "ui.nextAccounts": {
     "text": "Más cuentas",
     "source": "743e1725ebd5"
@@ -334,10 +302,6 @@
   "ui.nextMonth": {
     "text": "Mes siguiente",
     "source": "74e53211fef4"
-  },
-  "ui.noAccessibleHistory": {
-    "text": "No hay actividad que mostrar.",
-    "source": "5ddccb9ef206"
   },
   "ui.noViews": {
     "text": "No hay vistas de trabajo disponibles.",
@@ -355,10 +319,6 @@
     "text": "Aún sin confirmar.",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "Se muestran todos los resultados.",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "Página no encontrada",
     "source": "a469ab4ca4e5"
@@ -366,10 +326,6 @@
   "ui.pageNotFoundDescription": {
     "text": "La dirección no identifica ninguna página de ClaimCore.",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "Hay más resultados disponibles.",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first} y {second}",
@@ -439,14 +395,6 @@
     "text": "Actualizar la tramitación",
     "source": "d8c38c942d9d"
   },
-  "ui.reloadActors": {
-    "text": "Recargar personas",
-    "source": "8a0c53553115"
-  },
-  "ui.reloadCases": {
-    "text": "Volver a cargar los expedientes",
-    "source": "1e208585b01e"
-  },
   "ui.reloadContract": {
     "text": "Recargar la página",
     "source": "437d0d63bfbd"
@@ -515,10 +463,6 @@
     "text": "Estas preferencias se aplican a este navegador. Nunca cambian los valores registrados.",
     "source": "2364c3aaf5d9"
   },
-  "ui.shell.administration": {
-    "text": "Administración",
-    "source": "4b42c6690ebe"
-  },
   "ui.shell.businessDateChanged": {
     "text": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
     "source": "efb3f0ec78c4"
@@ -526,10 +470,6 @@
   "ui.shell.checkNow": {
     "text": "Comprobar ahora",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.searchCases": {
-    "text": "Buscar expedientes",
-    "source": "22c2a4061665"
   },
   "ui.shell.unresolved": {
     "text": "Cambios sin confirmar: {count}",
@@ -579,10 +519,6 @@
     "text": "No se registra nada hasta que confirmes.",
     "source": "23eba3cab92a"
   },
-  "ui.version": {
-    "text": "Versión",
-    "source": "dd167905de0d"
-  },
   "ui.viewLoadFailed": {
     "text": "No se ha podido cargar esta vista. Reintenta la carga o recarga cuando puedas abandonar tu trabajo actual.",
     "source": "8d021b7893a2"
@@ -590,10 +526,6 @@
   "ui.viewLoading": {
     "text": "Cargando la vista…",
     "source": "a91ca23dc6a9"
-  },
-  "ui.workDateBasis": {
-    "text": "Fecha operativa {date} ({zone}).",
-    "source": "10dbbbcb3088"
   },
   "ui.worklistSearch": {
     "text": "Filtrar esta vista",
@@ -639,10 +571,6 @@
     "text": "Revisar con la última versión",
     "source": "f0124537d549"
   },
-  "ui.returnToWorkspace": {
-    "text": "Volver al espacio de trabajo",
-    "source": "02e565ef63bc"
-  },
   "ui.enterDetails": {
     "text": "Introducir los datos",
     "source": "ebaf73345eea"
@@ -650,14 +578,6 @@
   "ui.review.checked": {
     "text": "Comprobado {when}.",
     "source": "e249af3ff82a"
-  },
-  "ui.requests.more": {
-    "text": "Cargar más solicitudes de acceso",
-    "source": "ffd6062030c9"
-  },
-  "ui.requests.refresh": {
-    "text": "Actualizar las solicitudes de acceso",
-    "source": "0777c623824e"
   },
   "ui.manualFilters": {
     "text": "Filtros manuales",
@@ -764,16 +684,12 @@
     "source": "e80db00f5ef1"
   },
   "ui.exportCasesCsv": {
-    "text": "Exportar lista de expedientes en CSV",
-    "source": "87a0ff3f5f6b"
+    "text": "Lista de expedientes (CSV)",
+    "source": "cfbfb0d221c6"
   },
   "ui.exportReportCsv": {
     "text": "Exportar informe en CSV",
     "source": "59502c05a50e"
-  },
-  "ui.currentBrowserSession": {
-    "text": "Sesión actual del navegador",
-    "source": "75cad0cd2868"
   },
   "ui.browserSessions": {
     "text": "Sesiones de ClaimCore en navegadores",
@@ -790,5 +706,77 @@
   "ui.accountAccessHistory": {
     "text": "Historial de acceso de la cuenta",
     "source": "ed6a3714adfd"
+  },
+  "ui.legalLicense": {
+    "text": "Licencia",
+    "source": "c011d6097bfb"
+  },
+  "ui.legalSource": {
+    "text": "Código fuente de esta compilación",
+    "source": "a952e15e6036"
+  },
+  "ui.legalProjectNotice": {
+    "text": "Detalles de licencia y código fuente",
+    "source": "f43f39d1928d"
+  },
+  "ui.legalThirdParty": {
+    "text": "Avisos de terceros",
+    "source": "8fadbc8de273"
+  },
+  "ui.legalCommercial": {
+    "text": "Condiciones comerciales",
+    "source": "9854bf4c0f5d"
+  },
+  "ui.legalTechnical": {
+    "text": "Detalles técnicos",
+    "source": "890ab358a55d"
+  },
+  "ui.more": {
+    "text": "Más",
+    "source": "d47d7cb0e4f8"
+  },
+  "ui.viewDetails": {
+    "text": "Ver detalles",
+    "source": "d1bf045bb524"
+  },
+  "ui.actionsFor": {
+    "text": "Acciones para {row}",
+    "source": "87c9115d0ea0"
+  },
+  "ui.moreViews": {
+    "text": "Más vistas",
+    "source": "76c7269afa9f"
+  },
+  "ui.loadMore": {
+    "text": "Cargar más",
+    "source": "ac8991ef0101"
+  },
+  "ui.updatedAt": {
+    "text": "Actualizado a las {time}",
+    "source": "2f87419441e6"
+  },
+  "ui.refresh": {
+    "text": "Actualizar",
+    "source": "0e9161011702"
+  },
+  "ui.breadcrumb": {
+    "text": "Ruta de navegación",
+    "source": "2bd873d6c734"
+  },
+  "ui.viewReceipt": {
+    "text": "Ver recibo",
+    "source": "3e6385652ed9"
+  },
+  "ui.export": {
+    "text": "Exportar",
+    "source": "3664895579f0"
+  },
+  "ui.refreshFailed": {
+    "text": "No se pudo actualizar",
+    "source": "df136418e4cc"
+  },
+  "ui.retryRefresh": {
+    "text": "Reintentar",
+    "source": "942087cc2d41"
   }
 }

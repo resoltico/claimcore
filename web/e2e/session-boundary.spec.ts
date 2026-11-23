@@ -12,6 +12,7 @@ import {
   login,
   logout,
   sessionToken,
+  seedSignedOut,
   signOut,
 } from "./session-helpers";
 
@@ -25,49 +26,32 @@ type SessionEnvelope = {
 type HostFailure = { hostFailure: { code: string; phase: string | null } };
 type ApiReply<T> = { status: number; cacheControl: string | null; payload: T };
 
-const readSession = (page: Page) =>
-  page.evaluate(async (fingerprint) => {
-    const response = await fetch("/api/session", {
-      credentials: "same-origin",
-      headers: { "ClaimCore-Contract": fingerprint },
-    });
-    return {
-      status: response.status,
-      cacheControl: response.headers.get("cache-control"),
-      payload: (await response.json()) as SessionEnvelope,
-    } satisfies ApiReply<SessionEnvelope>;
-  }, consumerContractIdentity);
+const apiReply = async <T>(response: APIResponse): Promise<ApiReply<T>> => ({
+  status: response.status(),
+  cacheControl: response.headers()["cache-control"] ?? null,
+  payload: (await response.json()) as T,
+});
 
-const readUnknownEndpoint = (page: Page) =>
-  page.evaluate(async () => {
-    const response = await fetch("/api/service/not-present", { credentials: "same-origin" });
-    return {
-      status: response.status,
-      cacheControl: response.headers.get("cache-control"),
-      payload: (await response.json()) as HostFailure,
-    } satisfies ApiReply<HostFailure>;
-  });
+const readSession = async (page: Page) =>
+  apiReply<SessionEnvelope>(
+    await page.request.get("/api/session", {
+      headers: { "ClaimCore-Contract": consumerContractIdentity },
+    }),
+  );
 
-const readProtectedList = (page: Page, token: string) =>
-  page.evaluate(
-    async ({ antiforgeryToken, fingerprint }) => {
-      const response = await fetch("/api/case.list", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "ClaimCore-Contract": fingerprint,
-          "Content-Type": "application/json",
-          "X-ClaimCore-Antiforgery": antiforgeryToken,
-        },
-        body: JSON.stringify({ limit: 1 }),
-      });
-      return {
-        status: response.status,
-        cacheControl: response.headers.get("cache-control"),
-        payload: (await response.json()) as HostFailure,
-      } satisfies ApiReply<HostFailure>;
-    },
-    { antiforgeryToken: token, fingerprint: consumerContractIdentity },
+const readUnknownEndpoint = async (page: Page) =>
+  apiReply<HostFailure>(await page.request.get("/api/service/not-present"));
+
+const readProtectedList = async (page: Page, token: string, origin: string) =>
+  apiReply<HostFailure>(
+    await page.request.post("/api/case.list", {
+      headers: {
+        "ClaimCore-Contract": consumerContractIdentity,
+        "X-ClaimCore-Antiforgery": token,
+        Origin: origin,
+      },
+      data: { limit: 1 },
+    }),
   );
 
 const expectAnonymousSessionBoundary = async (page: Page) => {
@@ -92,8 +76,8 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
   return session.payload.outcome.data.antiforgeryToken;
 };
 
-const expectSessionRejection = async (page: Page, token: string) => {
-  const rejected = await readProtectedList(page, token);
+const expectSessionRejection = async (page: Page, token: string, origin: string) => {
+  const rejected = await readProtectedList(page, token, origin);
   expect(rejected).toMatchObject({
     status: 401,
     cacheControl: expect.stringContaining("no-store"),
@@ -149,16 +133,27 @@ const checkSignOutLocation = async (
 
 test("signs out of ClaimCore and Keycloak before asking for credentials again @engine", async ({
   page,
+  baseURL,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout * 2);
-  await page.goto("/", { waitUntil: "commit" });
-  const landing = new URL("/", page.url());
-  await expect(
-    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  if (baseURL === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  const landing = new URL("/", baseURL);
+  const admission = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/auth/login" &&
+      response.request().isNavigationRequest(),
+  );
+  await page.goto(landing.href, { waitUntil: "commit" });
+  if ((await admission).status() === 429) {
+    // Another synthetic journey may have used the shared admission window.
+    await page.waitForTimeout(61_000);
+    await page.goto(landing.href, { waitUntil: "commit" });
+  }
+  await expect(page.locator('input[name="username"]')).toBeVisible();
   const antiforgeryToken = await expectAnonymousSessionBoundary(page);
-  await expectSessionRejection(page, antiforgeryToken);
+  await expectSessionRejection(page, antiforgeryToken, landing.origin);
   await expectAbsentRoute(page);
   await login(page);
   await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
@@ -220,7 +215,7 @@ test("signs out of ClaimCore and Keycloak before asking for credentials again @e
     (url) => url.origin === landing.origin && url.pathname === "/signin-oidc",
     (route) => route.abort(),
   );
-  await awaitLoginAdmission(page, "Sign in", landing.origin).catch(() => {
+  await awaitLoginAdmission(page, "Sign in again", landing.origin).catch(() => {
     throw new Error("Keycloak did not present a fresh sign-in challenge.");
   });
   await expect(page.locator('input[name="username"]')).toBeVisible();
@@ -232,9 +227,10 @@ test("a refused callback offers a fresh same-origin restart without copying the 
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  await page.goto("/cases?view=ALL", { waitUntil: "commit" });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
+    if (location.pathname !== "/signin-oidc") {
+      return;
+    }
     sessionStorage.setItem("claimcore.loginReturn", "/cases?view=ALL");
     localStorage.setItem(
       "claimcore.presentation.v3",
@@ -271,8 +267,10 @@ for (const dependency of ["catalog", "script"] as const) {
   test(`a refused callback retains its static retry when only the ${dependency} fails @engine`, async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.evaluate(() => {
+    await page.addInitScript(() => {
+      if (location.pathname !== "/signin-oidc") {
+        return;
+      }
       sessionStorage.removeItem("claimcore.loginReturn");
       localStorage.setItem(
         "claimcore.presentation.v3",
@@ -311,6 +309,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   if (baseURL === undefined) {
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
+  await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
   await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
   await page.setViewportSize({ width: 320, height: 900 });
@@ -326,6 +325,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   });
   try {
     const second = await other.newPage();
+    await seedSignedOut(second);
     await second.goto("/", { waitUntil: "commit" });
     await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await signOut(page, page.getByRole("button", { name: "Sign out", exact: true }));
@@ -364,15 +364,11 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
       },
     });
     expect(payload).not.toHaveProperty("operationId");
-    await expect(
-      page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-    ).toBeVisible();
     await expectAnonymousSession(page);
     await expectAnonymousSession(second);
+    await second.route("**/auth/login?*", (route) => route.fulfill({ status: 204 }));
     await second.reload({ waitUntil: "commit" });
-    await expect(
-      second.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-    ).toBeVisible();
+    await expectAnonymousSession(second);
     // ClaimCore deletion did not revoke the identity-provider session or prevent later login.
     await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await expect(readSession(page)).resolves.toMatchObject({
@@ -389,6 +385,7 @@ test("reports a dispatched session termination with a lost reply only once @engi
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
+  await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
   await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
   const action = "End my ClaimCore browser sessions";
@@ -427,6 +424,7 @@ test("owner termination ends the selected person's existing ticket and preserves
   if (baseURL === undefined) {
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
+  await seedSignedOut(page);
   await page.goto("/");
   await login(page);
   const other = await browser.newContext({
@@ -436,6 +434,7 @@ test("owner termination ends the selected person's existing ticket and preserves
   });
   try {
     const person = await other.newPage();
+    await seedSignedOut(person);
     await person.goto("/");
     await login(person, "Cases", "Sign in", "synthetic-steward");
     const principal = await syntheticPrincipals();

@@ -14,6 +14,7 @@ const owner: RegionTimelineEntry = {
   when: "2026-01-01T22:30:00.000000Z",
   who: { kind: "ACTOR", value: context.self },
   summary: { messageId: "task.people.provisionOwner.label", arguments: [] },
+  target: { kind: "ACTOR", value: context.self },
   highlights: [
     {
       titleId: "label.recordedFacts",
@@ -97,7 +98,7 @@ it.each([
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("people.provisionOwner")).toBeNull();
     expect(screen.getAllByText("Named account", { exact: true })).toHaveLength(2);
-    const instant = view.container.querySelector(".region-timeline > li > p time");
+    const instant = view.container.querySelector(".region-timeline > li > time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);
     expect(instant).toHaveAttribute("dateTime", owner.when);

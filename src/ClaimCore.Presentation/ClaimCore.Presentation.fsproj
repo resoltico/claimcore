@@ -8,6 +8,7 @@
     <Compile Include="Messages/DiagnosticMetadata.fs" />
     <Compile Include="Catalog/Prominence.fs" />
     <Compile Include="Catalog/Tones.fs" />
+    <Compile Include="Catalog/ListCounts.fs" />
     <Compile Include="Documents/Links.fs" />
     <Compile Include="Documents/ReplyPresentation.fs" />
     <Compile Include="Documents/Values.fs" />

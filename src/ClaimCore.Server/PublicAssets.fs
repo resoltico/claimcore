@@ -17,7 +17,6 @@ module internal PublicAssets =
         {
             Bytes: byte array
             ScriptHash: string
-            StyleHash: string
         }
 
     let private digest bytes =
@@ -57,7 +56,6 @@ module internal PublicAssets =
         {
             Bytes = bytes
             ScriptHash = hash "script" "scriptSha256"
-            StyleHash = hash "style" "styleSha256"
         }
 
     type private Asset =
@@ -105,7 +103,7 @@ module internal PublicAssets =
         let manifest = Path.Combine(directory, "public-assets.json")
         use document = JsonDocument.Parse(File.ReadAllBytes manifest)
 
-        if document.RootElement.GetProperty("schema").GetInt32() <> 2 then
+        if document.RootElement.GetProperty("schema").GetInt32() <> 3 then
             invalidOp "Unsupported public inventory."
 
         let viewer = readViewer directory document.RootElement
@@ -127,6 +125,7 @@ module internal PublicAssets =
                     not (
                         path.StartsWith("/assets/", StringComparison.Ordinal)
                         || path = "/react-aria-pressable.css"
+                        || path = "/styles.css"
                         || path.StartsWith("/locales/", StringComparison.Ordinal)
                         || requiredPaths.Contains path
                     )

@@ -6,7 +6,7 @@ import { useEndpointPage } from "../hooks/useEndpointPage";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { isTerm } from "../presentation/terms";
-import { PageTables } from "../ui/PageTables";
+import { ResultPages } from "../ui/ResultPages";
 import { Select } from "../ui/Select";
 
 const endpoint = apiEndpoints.disclosureTrail;
@@ -147,7 +147,7 @@ export const DisclosureTrail = () => {
       {page.page !== null && page.items.length === 0 ? (
         <p>{p.text("label.disclosureEmpty")}</p>
       ) : null}
-      <PageTables views={page.views} />
+      <ResultPages views={page.views} />
       <div className="worklist-actions">
         <button
           type="button"

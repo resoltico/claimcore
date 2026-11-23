@@ -22,6 +22,7 @@ afterEach(() => {
   clearRecoveryFixtures();
   if (typeof document !== "undefined") {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     navigate("/cases", true);
     document.documentElement.lang = "en";
     document.documentElement.dir = "ltr";

@@ -82,6 +82,21 @@ const syntheticCredentials = async (
   };
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
+export const seedSignedOut = async (page: Page): Promise<void> => {
+  await page.context().clearCookies();
+  const base = process.env["CLAIMCORE_WEB_BASE_URL"];
+  if (base === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  await page.addInitScript(
+    ({ origin }) => {
+      if (location.origin === origin) {
+        sessionStorage.setItem("claimcore.signedOut", "true");
+      }
+    },
+    { origin: new URL(base).origin },
+  );
+};
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
   const errors: string[] = [];
@@ -406,6 +421,43 @@ export const awaitLoginAdmission = async (
   );
   await acceptedNavigation;
 };
+const applicationAddress = (page: Page): URL => {
+  const start = new URL(page.url());
+  const base = process.env["CLAIMCORE_WEB_BASE_URL"];
+  if (base === undefined) {
+    return start;
+  }
+  const configured = new URL(base);
+  return configured.origin === start.origin ? start : configured;
+};
+const recoverLimitedLogin = async (page: Page, origin: string): Promise<boolean> => {
+  const current = new URL(page.url());
+  if (current.origin !== origin || current.pathname !== "/auth/login") {
+    return false;
+  }
+  const retry = await page.evaluate(() => {
+    try {
+      const failure = JSON.parse(document.body.textContent ?? "") as {
+        hostFailure?: { code?: string };
+      } | null;
+      if (failure?.hostFailure?.code === "RATE_LIMITED") {
+        sessionStorage.setItem("claimcore.signedOut", "true");
+        return sessionStorage.getItem("claimcore.loginReturn") ?? "/";
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+  if (retry === null) {
+    return false;
+  }
+  const destination = new URL(retry, origin);
+  await page.goto(destination.origin === origin ? destination.href : origin, {
+    waitUntil: "commit",
+  });
+  return true;
+};
 export const login = async (
   page: Page,
   workspaceHeading: string | null = "Cases",
@@ -416,20 +468,28 @@ export const login = async (
   await retainResponseBodies(page);
   const authenticated =
     workspaceHeading === null
-      ? page.locator(".workspace-header")
+      ? page.locator(".workspace-shell")
       : page.getByRole("heading", {
           name: workspaceHeading,
           exact: true,
           level: 1,
         });
+  const requestedAddress = applicationAddress(page);
+  const providerForm = page.locator('input[name="username"]');
+  const visible = authenticated
+    .or(providerForm)
+    .or(page.locator(".login-card h1, #sign-in-incomplete"))
+    .first();
   try {
-    await authenticated.or(page.locator(".login-card h1, #sign-in-incomplete")).first().waitFor({
-      timeout: 5_000,
-    });
+    await visible.waitFor({ timeout: 5_000 });
   } catch {
-    const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
-    const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
-    throw new Error(`E2E_LOGIN_VIEW_${kind.toUpperCase().replace(/-/gu, "_")}`);
+    if (await recoverLimitedLogin(page, requestedAddress.origin)) {
+      await visible.waitFor({ timeout: 5_000 });
+    } else {
+      const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
+      const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
+      throw new Error(`E2E_LOGIN_VIEW_${kind.toUpperCase().replace(/-/gu, "_")}`);
+    }
   }
   if (await authenticated.isVisible()) {
     await progress("login-auth");
@@ -437,10 +497,13 @@ export const login = async (
     return;
   }
   await progress("login-anon");
-  const requestedAddress = new URL(page.url());
   const applicationOrigin = requestedAddress.origin;
   const owner = await syntheticCredentials(username);
-  await awaitLoginAdmission(page, signIn, applicationOrigin);
+  if (!(await providerForm.isVisible())) {
+    const explicit = page.locator(".login-link, #restart-sign-in");
+    const label = (await explicit.textContent())?.trim() ?? signIn;
+    await awaitLoginAdmission(page, label, applicationOrigin);
+  }
   await page.locator('input[name="username"]').or(authenticated).first().waitFor();
   if (await authenticated.isVisible()) {
     await progress("login-ready");
@@ -501,24 +564,19 @@ export const signOut = async (page: Page, button: Locator): Promise<Response> =>
 
 export const logout = async (page: Page): Promise<Response> => {
   await showAccountActions(page);
-  const control = page.getByRole("button", {
-    name: "Sign out",
-    exact: true,
-  });
-  if (!(await control.isVisible())) {
-    await page.locator('a[href="/settings"]').click();
-    await expect(page.locator(".settings-panel")).toBeVisible();
-  }
+  const control = page
+    .getByRole("menuitem", { name: "Sign out", exact: true })
+    .or(page.getByRole("button", { name: "Sign out", exact: true }));
   const response = await signOut(page, control);
   await expect(
     page.getByRole("heading", {
-      name: "Sign in to the case register",
+      name: "You signed out",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "Sign in",
+      name: "Sign in again",
     }),
   ).toBeVisible();
   const reply = await browserRequest(page, "/api/session");

@@ -142,12 +142,11 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
     },
   );
   const date = page.locator('[data-field-name="incidentDate"]');
-  await expect(date.getByRole("spinbutton").first()).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
-  // The precise rule is available through its actual info tip, not duplicated in the ordinary hint.
-  await date.locator(".field-help > summary").click();
-  await expect(date.locator(".field-help p")).toHaveText(calendarRules[language]);
-  await page.keyboard.press("Escape");
-  await expect(date.locator(".field-help")).not.toHaveAttribute("open");
+  await expect(date.getByRole("spinbutton").first()).toHaveAccessibleDescription(/YYYY/u);
+  const rule = date.locator(".field-rule");
+  await expect(rule).toBeVisible();
+  await expect(rule).toHaveText(calendarRules[language]);
+  await expect(date.locator(".field-help")).toHaveCount(0);
   await expect(date.locator('input[type="hidden"]')).toHaveValue("");
   await expect(page.locator('input[data-field-name="policyNumber"]')).toHaveValue(
     "A\u0308 / العربية",

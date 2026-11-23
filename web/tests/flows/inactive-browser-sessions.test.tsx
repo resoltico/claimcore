@@ -113,9 +113,9 @@ it.each(["NOT_REGISTERED", "NO_ROLES"] as const)(
     });
     expect(transport.mock.calls[0]?.[0]).toBe("/api/session.terminateOwn");
     expect(transport.mock.calls[0]?.[1]?.body).toBe("{}");
-    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Sign in again" })).toBeNull();
     gate.resolve(succeeded());
-    expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Sign in again" })).toHaveAttribute(
       "href",
       "/auth/login?language=en",
     );

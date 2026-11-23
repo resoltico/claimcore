@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "Pievienot personu",
-    "source": "66848b5361f4"
+    "text": "Pievienot no piekļuves pieprasījuma",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "Pievienot personu vai pakalpojuma kontu ar vārdu un pirmajām lomām.",
@@ -4298,5 +4298,137 @@
   "label.reminderCancelledInactive": {
     "text": "Atcelts (neaktīvs darbs)",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "Jūs izrakstījāties",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "Pierakstīties vēlreiz",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "Pierakstīšanās netika pabeigta.",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "Administrēšana",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "{count} jāizpilda",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "Neapstiprinātās izmaiņas ({count})",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "Datu pārvaldība",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "Parādīts {count} lietu",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "Parādīta {count} lieta",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "Parādītas {count} lietas",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "Parādītas {count} lietas",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "Parādītas {count} lietas",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "Parādītas {count} lietas",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "Parādīts {count} atgādņu",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "Parādīta {count} atgādne",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "Parādītas {count} atgādnes",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "Parādītas {count} atgādnes",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "Parādītas {count} atgādnes",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "Parādītas {count} atgādnes",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "Parādīts {count} personu",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "Parādīta {count} persona",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "Parādītas {count} personas",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "Parādītas {count} personas",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "Parādītas {count} personas",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "Parādītas {count} personas",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "Pabeigt, norādot informāciju…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "Nav ievadīts: {fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "Pievienot personu",
+    "source": "66848b5361f4"
+  },
+  "label.caseWorklistCaption": {
+    "text": "{attention} jāpievērš uzmanība · Kopā {total}",
+    "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "Nav reģistrēta neviena puse.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "Neviena lietu grupa neatbilst šai atlasei.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "Nav pieejams neviens darba skats.",
+    "source": "3e86bd3913b7"
   }
 }

@@ -315,7 +315,12 @@ let tests =
                     let review =
                         { review with
                             Document = { review.Document with Screen = opaque }
-                            Presentation = { Changes = []; Unchanged = [] }
+                            Presentation =
+                                {
+                                    Changes = []
+                                    Unchanged = []
+                                    NotEntered = []
+                                }
                         }
 
                     let reply =

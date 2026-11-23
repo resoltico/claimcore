@@ -136,10 +136,10 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   );
   const { onAdmit } = setup();
   await screen.findByText("Unverified hint");
-  expect(screen.getByRole("columnheader", { name: "Name hint" })).toBeVisible();
+  expect(screen.getByText("Name hint", { selector: "dt" })).toBeVisible();
   expect(onAdmit).not.toHaveBeenCalled();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Load more access requests" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(screen.getAllByText("Unverified hint")).toHaveLength(2);
   });
@@ -147,7 +147,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     { limit: 50 },
     { limit: 50, cursor: "next-request-page" },
   ]);
-  await user.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
+  await user.click(screen.getAllByRole("button", { name: "Add from access request" })[0]!);
   expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.admit",
@@ -162,7 +162,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     }),
   );
   onAdmit.mockClear();
-  await user.click(screen.getAllByRole("button", { name: "Add person" })[1]!);
+  await user.click(screen.getAllByRole("button", { name: "Add from access request" })[1]!);
   expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.admit",
@@ -230,7 +230,7 @@ it("keeps a retained people draft from being overwritten or dismissed", async ()
   mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
   const { onAdmit } = setup(true, true);
   await screen.findByText("Unverified hint");
-  expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Add from access request" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Dismiss access request" })).toBeDisabled();
   expect(onAdmit).not.toHaveBeenCalled();
 });
@@ -362,7 +362,7 @@ it("clears an open dismissal dialog on a paging disclosure refusal before a pare
   );
   const { onDisclosureRefused } = setup();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Load more access requests" }));
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
   await user.click(screen.getByRole("button", { name: "Dismiss access request" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   await act(async () => {
@@ -419,7 +419,7 @@ it("reviews and dismisses the selected page-local request without reusing an ear
   });
   setup();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Load more access requests" }));
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByText("LATER_REQUEST_CAPTION");
   await user.click(screen.getAllByRole("button", { name: "Dismiss access request" })[1]!);
   const dialog = screen.getByRole("dialog");

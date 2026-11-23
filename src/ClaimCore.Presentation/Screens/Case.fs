@@ -138,6 +138,7 @@ module CaseScreen =
 
         { region RegionRole.Parties (Some "field.parties.label") (RegionContent.Table table) with
             Actions = List.choose TaskAffordances.fromOffer reply.PartyOffers
+            EmptyId = Some "empty.parties"
         }
 
     let private relatedCaseRegions (reply: CaseReadModel) =
@@ -271,7 +272,38 @@ module CaseScreen =
         let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
         let groups = caseFacts reply.Snapshot
 
-        let headlines = identityFacts reply.Snapshot
+        let identitySummary =
+            [
+                yield! identityFacts reply.Snapshot
+                for role, key, label in
+                    [
+                        PartyRole.Claimant, "claimants", "label.claimants"
+                        PartyRole.Insurer, "insurers", "label.insurers"
+                    ] do
+                    let names =
+                        reply.Parties
+                        |> List.filter (fun party -> party.Content.Role = role)
+                        |> List.choose (fun party ->
+                            party.Content.Name |> Option.map PartyName.format)
+
+                    if not names.IsEmpty then
+                        yield
+                            value
+                                key
+                                label
+                                Prominence.Primary
+                                (PresentedValue.Text(String.concat "; " names))
+
+                match reply.Work.Responsible with
+                | Some actor ->
+                    yield
+                        value
+                            "responsible"
+                            "field.responsibleActor.label"
+                            Prominence.Primary
+                            (PresentedValue.Actor actor)
+                | None -> ()
+            ]
 
         let outcome =
             CaseState.fields reply.Snapshot.State
@@ -334,7 +366,7 @@ module CaseScreen =
                             "label.caseState"
                             Prominence.Primary
                             (headline reply.Headline outcome)
-                yield! headlines
+                yield! identitySummary
             ]
 
         let notice =

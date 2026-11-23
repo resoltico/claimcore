@@ -133,10 +133,14 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
       return node!.textContent;
     });
   expect(description.join(" ")).toContain(hint);
-  const expected = invalid
-    ? `${hint} ${locale.diagnostic["diagnostic.REFERENCE_FORMAT.gui"]}`
-    : hint;
-  expect(reference).toHaveAccessibleDescription(expected);
+  expect(reference).toHaveAccessibleDescription(new RegExp(RegExp.escape(hint), "u"));
+  // The precise rule follows the hint on focus and invalid input.
+  expect(reference).toHaveAccessibleDescription(/ASCII/u);
+  if (invalid) {
+    expect(reference).toHaveAccessibleDescription(
+      new RegExp(RegExp.escape(locale.diagnostic["diagnostic.REFERENCE_FORMAT.gui"]), "u"),
+    );
+  }
   expect(reference).toHaveAccessibleName(locale.label);
 };
 afterEach(() => vi.restoreAllMocks());

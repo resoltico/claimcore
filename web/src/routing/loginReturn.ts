@@ -1,3 +1,4 @@
+import { resetSignIn } from "./signInAttempt";
 import { navigate } from "./navigation";
 const key = "claimcore.loginReturn";
 const sameOriginPath = (path: string): boolean => {
@@ -22,6 +23,7 @@ export const rememberLoginReturn = (): void => {
 };
 export const restoreLoginReturn = (): void => {
   try {
+    resetSignIn(window.sessionStorage);
     const path = sessionStorage.getItem(key);
     sessionStorage.removeItem(key);
     if (path !== null && sameOriginPath(path)) {

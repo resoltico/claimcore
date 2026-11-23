@@ -305,7 +305,7 @@ const NewCaseEditor = ({
       definition={productMetadata}
       current={null}
       initialAct={initial}
-      disclosureAvailable={disclosureAvailable}
+      disclosureAvailable={disclosureAvailable && action?.task === initial}
       onClose={onClose}
       onCommitted={committed}
       onMutationLockChange={setLocked}
@@ -348,6 +348,7 @@ export const RoutedContent = ({
   caseAvailable = true,
   caseAuthoringAvailable = caseAvailable,
   caseNavigation,
+  caseFeedback,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
@@ -355,6 +356,7 @@ export const RoutedContent = ({
   caseAvailable?: boolean;
   caseAuthoringAvailable?: boolean;
   caseNavigation: ReturnType<typeof useCaseNavigation>;
+  caseFeedback?: React.ReactNode;
 }) => {
   const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
@@ -373,6 +375,7 @@ export const RoutedContent = ({
       return (
         <CaseDetail
           target={route.target}
+          feedback={caseFeedback}
           reloadSignal={refresh}
           disclosureAvailable={caseAvailable}
           authoringAvailable={caseAuthoringAvailable}

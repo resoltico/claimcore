@@ -157,7 +157,7 @@ for (const status of ["CLOSED"] as const) {
           },
         });
         await expect(page.locator("#case-detail-title")).toBeVisible();
-        await expect(page.locator(".accepted-receipt")).toBeVisible();
+        await expect(page.locator('.status-banner[data-tone="success"]')).toBeVisible();
         if (registration === "UPDATE") {
           await expectRecordedClaimantWarning(page, language);
         }

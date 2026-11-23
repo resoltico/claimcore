@@ -2,7 +2,7 @@ import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
-import { WorkspaceHeader } from "../../../src/views/WorkspaceHeader";
+import { Shell } from "../../../src/views/Shell";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
@@ -360,7 +360,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   render(
     <RecoveryProvider identity={testWorkspaceIdentity}>
       <WorkspaceViewsProvider>
-        <WorkspaceHeader
+        <Shell
           route={{
             screen: "cases",
             query: "",
@@ -383,7 +383,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   ).toBeGreaterThan(0);
   expect(
     screen.getAllByRole("link", {
-      name: "Reminders 3",
+      name: "Reminders 3 due",
     }).length,
   ).toBeGreaterThan(0);
   expect(
@@ -393,7 +393,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("link", {
-      name: "Reminders 23",
+      name: "Reminders 23 due",
     }),
   ).not.toBeInTheDocument();
 });

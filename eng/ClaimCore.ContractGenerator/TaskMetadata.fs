@@ -76,6 +76,13 @@ module TaskMetadata =
                     ledger
                     |> Option.map (fun declaration ->
                         TaskReview.mode declaration.Id |> Vocabulary.token TaskReview.vocabulary)
+                reviewedLabelId =
+                    ledger
+                    |> Option.bind (fun declaration ->
+                        if declaration.Id = ClientCompositions.reminderCompletion then
+                            Some "task.reminder.complete.reviewed"
+                        else
+                            None)
                 paged = paged
                 csv = csv
                 execution =

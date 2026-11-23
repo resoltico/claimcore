@@ -5,7 +5,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { CatalogField } from "../../src/components/CatalogField";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { preferenceKey } from "../../src/presentation/preferences";
-it("uses core widget hints and keeps precise formatting rules behind explicit help", async () => {
+it("describes precise formatting rules when a field receives focus", async () => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
@@ -45,10 +45,11 @@ it("uses core widget hints and keeps precise formatting rules behind explicit he
   )[0]!;
   expect(segment).toHaveAccessibleDescription(/When the incident happened/u);
   expect(segment).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
-  const help = screen.getByLabelText("Explain fields: Claimed amount", { exact: true });
-  await userEvent.click(help);
-  expect(help.closest("details")).toHaveAttribute("open");
-  expect(help.closest("details")).toHaveTextContent(
-    "up to 18 digits before the decimal point and up to 4 after it",
+  expect(screen.queryByLabelText("Explain fields: Claimed amount")).toBeNull();
+  await userEvent.click(input);
+  expect(input).toHaveAccessibleDescription(
+    /up to 18 digits before the decimal point and up to 4 after it/u,
   );
+  await userEvent.tab();
+  expect(input).toHaveAccessibleDescription("How much the claimant is asking for.");
 });

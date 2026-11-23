@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 import { noHorizontalOverflow } from "./layout-support";
 import { gunzipSync } from "node:zlib";
 
-test("offers public terms and the published build source before sign-in @engine", async ({
+test("offers public terms and published source from the signed-out screen @engine", async ({
   browser,
   baseURL,
 }) => {
@@ -13,14 +13,18 @@ test("offers public terms and the published build source before sign-in @engine"
   try {
     const page = await context.newPage();
     await page.setViewportSize({ width: 320, height: 720 });
+    await page.addInitScript(() => {
+      sessionStorage.setItem("claimcore.signedOut", "true");
+    });
     await page.goto("/");
+    await expect(page.getByRole("heading", { name: "You signed out" })).toBeVisible();
     await noHorizontalOverflow(page, "login");
-    await page.getByText("ClaimCore · AGPL-3.0-only · License and source", { exact: true }).click();
+    await page.getByRole("button", { name: "About ClaimCore", exact: true }).click();
     await expect(page.getByRole("link", { name: "Source for this build" })).toBeVisible();
     await noHorizontalOverflow(page, "narrow");
-    const footer = page.getByRole("complementary", { name: "License and source" });
+    const about = page.getByRole("dialog", { name: "About ClaimCore" });
     const readLink = async (name: string) => {
-      const href = await footer.getByRole("link", { name, exact: true }).getAttribute("href");
+      const href = await about.getByRole("link", { name, exact: true }).getAttribute("href");
       if (href === null || !href.startsWith("/") || href.startsWith("//")) {
         throw new Error(`Expected a same-origin footer link for ${name}.`);
       }
@@ -33,7 +37,9 @@ test("offers public terms and the published build source before sign-in @engine"
     expect(await license.text()).toContain("GNU AFFERO GENERAL PUBLIC LICENSE");
     const notice = await readLink("Licensing and source details");
     expect(await notice.text()).toContain("AGPL");
-    const commercial = await readLink("Commercial terms pending");
+    const notices = await readLink("Third-party notices");
+    expect(await notices.text()).toContain("Package: react@");
+    const commercial = await readLink("Commercial terms");
     expect(commercial.status()).toBe(200);
     expect((await commercial.text()).replace(/\s+/gu, " ")).toContain(
       "This file grants no exception, sublicense, warranty or waiver of AGPL obligations or third-party terms.",

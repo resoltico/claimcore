@@ -7,7 +7,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
-import { act } from "@testing-library/react";
+import { act, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ActorRef, RegionTimelineEntry, DataRejection } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
@@ -33,30 +33,19 @@ const entry = (actorId = first, sequence = 31): HistoryRow => ({
     when: "2026-09-01T10:30:00.000000Z",
     who: { kind: "ACTOR", value: author },
     summary: { messageId: "task.people.disable.label", arguments: [] },
-    highlights: [
-      {
-        titleId: "label.recordedFacts",
-        entries: [
-          {
-            key: "target",
-            labelId: "label.targetAccount",
-            prominence: "PRIMARY",
-            value: {
-              kind: "ACTOR",
-              value: {
-                actorId,
-                displayName: {
-                  kind: "NAMED",
-                  value: `Current target ${actorId === first ? "one" : "two"}`,
-                },
-                principalKind: "HUMAN",
-                availability: "AVAILABLE",
-              },
-            },
-          },
-        ],
+    target: {
+      kind: "ACTOR",
+      value: {
+        actorId,
+        displayName: {
+          kind: "NAMED",
+          value: `Current target ${actorId === first ? "one" : "two"}`,
+        },
+        principalKind: "HUMAN",
+        availability: "AVAILABLE",
       },
-    ],
+    },
+    highlights: [],
     details: [],
   },
 });
@@ -334,10 +323,12 @@ it("renders the affected account link and the separate recorder without revealin
     `/people/${first}`,
   );
   expect(screen.getByText("Current target two")).toBeVisible();
-  expect(screen.getByText("PRIVATE_PRINCIPAL_CANARY", { exact: true })).not.toBeVisible();
+  expect(screen.queryByText("PRIVATE_PRINCIPAL_CANARY", { exact: true })).toBeNull();
+  const row = screen.getByText("Current target two").closest("li")!;
+  await userEvent.click(within(row).getByRole("button", { name: "View details" }));
   expect(
     screen.getByText("PRIVATE_PRINCIPAL_CANARY", { exact: true }).closest(".identifier-value"),
-  ).not.toBeNull();
+  ).toBeVisible();
   expect(fetch).toHaveBeenCalledOnce();
 });
 

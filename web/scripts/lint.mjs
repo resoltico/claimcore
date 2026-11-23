@@ -5,20 +5,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import { taskDefinitions, endpoints } from "../../contracts/client.ts";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { themeCss } from "./generate-theme.mjs";
 import { designFindings } from "./design-lint.mjs";
 import { lintProjects } from "./lint-projects.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const oxlint = fileURLToPath(new URL("../node_modules/oxlint/bin/oxlint", import.meta.url));
 
-const theme = spawnSync(
-  process.execPath,
-  [resolve(root, "scripts/generate-theme.mjs"), "--check"],
-  { stdio: "inherit" },
-);
-if (theme.status !== 0) {
-  process.exit(1);
-}
 // Core declarations own task tokens; endpoint bindings belong to the transport and routing adapters.
 /** @type {Set<string>} */
 const operationIdentifiers = new Set(
@@ -56,7 +49,7 @@ if (identifierFindings.length > 0) {
   process.exit(1);
 }
 
-const findings = designFindings(root);
+const findings = designFindings(root, themeCss);
 if (findings.length > 0) {
   process.stderr.write(`${findings.join("\n")}\n`);
   process.exit(1);

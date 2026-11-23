@@ -85,7 +85,7 @@ const CurrentObservation = ({
     />
     <ScreenView
       view={current.screen}
-      roles={["NOTICE", "PROGRESS", "FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS", "DETAILS"]}
+      roles={["NOTICE", "PROGRESS", "FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS"]}
       timeZone={current.basis.observation.timeZone}
     />
   </section>

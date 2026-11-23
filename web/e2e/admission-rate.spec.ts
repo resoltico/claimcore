@@ -1,7 +1,13 @@
 import { expect, test, type Page } from "./fixtures";
 
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { expectAccessible, expectHostFailure, login, progress } from "./session-helpers";
+import {
+  expectAccessible,
+  expectHostFailure,
+  login,
+  progress,
+  seedSignedOut,
+} from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -41,8 +47,9 @@ test("bounds repeated published login admission and recovers after its window", 
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
+  await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in again" })).toBeVisible();
   await progress("rate-probing");
   await exhaustLoginWindow(page);
   await progress("rate-window-recovery-start");

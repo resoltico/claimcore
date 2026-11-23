@@ -537,4 +537,5 @@ type ReviewPresentation =
     {
         Changes: PresentedChange list
         Unchanged: PresentedField list
+        NotEntered: string list
     }

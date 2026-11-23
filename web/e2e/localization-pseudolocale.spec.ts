@@ -1,8 +1,7 @@
 import { acceptedSubject, workRequest } from "./work-workflow";
 import type { ResponseFor } from "@contracts/client";
-import { expectCaseReadsSettled } from "./case-readiness";
+import { acceptanceBanner, expectCaseReadsSettled, openAcceptedReceipt } from "./case-readiness";
 
-import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
@@ -147,7 +146,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   }
   expect(current.outcome.data.state.fields.registration.claimedAmount).toBe("1");
   await expect(page.locator("section.case-detail")).toBeVisible();
-  await expect(page.locator(".accepted-receipt")).toBeVisible();
+  await expect(acceptanceBanner(page)).toBeVisible();
   await page.setViewportSize({
     width: 320,
     height: 720,
@@ -155,11 +154,8 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.setViewportSize({
-    width: 640,
-    height: 900,
-  });
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = "2";
+    width: 320,
+    height: 450,
   });
   await noHorizontalOverflow(page, "zoom");
   await page.evaluate(() =>
@@ -170,15 +166,18 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
       },
     }),
   );
-  const reference = (await showCaseRecordDetails(page)).locator("[data-entry=caseReference]");
-  await reference.getByRole("button").focus();
-  await reference.getByRole("button").click();
-  await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
-  const toast = await page.locator(".accepted-receipt").textContent();
+  const receipt = await openAcceptedReceipt(page);
+  await receipt.locator('[data-region="DETAILS"] > summary').click();
+  const operation = receipt.locator("[data-entry=operationId]");
+  await operation.getByRole("button").focus();
+  await operation.getByRole("button").click();
+  await expect(operation.getByRole("textbox")).toHaveValue(operationExecuteReply.operationId);
+  await page.keyboard.press("Escape");
+  await expect(receipt).toHaveCount(0);
+  const toast = await acceptanceBanner(page).textContent();
   await selectLanguage(page, "en");
-  await expect(page.locator(".accepted-receipt")).toContainText("Case opened.");
+  await expect(page.locator("#case-detail-title")).toHaveText(values.caseReference);
   expect(toast).not.toBeNull();
-  await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
   await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
     "١٫٠٠ EUR",
   );

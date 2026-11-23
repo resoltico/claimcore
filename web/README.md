@@ -1,5 +1,7 @@
 # Browser development
 
+See the [web UI guide](../docs/web-ui.md) for building blocks and CSS ownership.
+
 The React browser uses the authenticated HTTPS service, with no database access. See
 [Integrating](../docs/integrating.md) for wire contracts and
 [Operating](../docs/operating.md#identity-and-hosting) for host configuration.

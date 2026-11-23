@@ -1,3 +1,4 @@
+import { MoneyField } from "../ui/MoneyField";
 import { Select } from "../ui/Select";
 import { grantFields, grantScope, grantTarget } from "../operation/grantTargetDraft";
 import { affordanceSeed, type OperationAffordance } from "../operation/affordances";
@@ -84,7 +85,7 @@ const TaskInputHelp = ({
   );
 };
 type InputProps = Props & { defaults: FormValues };
-type ControlProps = InputProps & { input: Input; errorKey?: string };
+type ControlProps = InputProps & { input: Input; errorKey?: string; sharedErrorId?: string };
 const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, value: string) => {
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
@@ -109,57 +110,61 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
       ? offered
       : [...offered, selected];
   const optional = input.mode === "OPTIONAL";
+  const segmented = options.length + Number(optional) <= 5;
   return (
     <fieldset
+      className="task-choice"
       id={`field-${errorKey}`}
       disabled={props.disabled}
       aria-invalid={error !== undefined || undefined}
       aria-describedby={helpIds(metadata.hintId, error, errorKey)}
     >
       <legend>{label}</legend>
-      {optional ? (
-        <label>
-          <input
-            type="radio"
-            name={errorKey}
-            value=""
-            checked={selected === ""}
-            onChange={() => {
-              props.onChange(input.id, "");
-            }}
-          />
-          {p.text("ui.leaveUnchanged")}
-        </label>
-      ) : null}
-      {options.map((value) => {
-        const hint = choiceHint(input, props, offered, value);
-        const hintId = `${errorKey}-${value}-admission`;
-        return (
-          <span key={value} className="choice-option">
-            <label>
-              <input
-                type="radio"
-                name={errorKey}
-                value={value}
-                disabled={props.disabled || hint !== null}
-                aria-describedby={hint === null ? undefined : hintId}
-                checked={selected === value}
-                onChange={() => {
-                  props.onChange(input.id, value);
-                }}
-              />
-              {caption(p, input.id, value)}
-            </label>
-            {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
-          </span>
-        );
-      })}
+      <div className={segmented ? "segmented-choice" : "radio-choice"}>
+        {optional ? (
+          <label className={selected === "" ? "selected" : undefined}>
+            <input
+              type="radio"
+              name={errorKey}
+              value=""
+              checked={selected === ""}
+              onChange={() => {
+                props.onChange(input.id, "");
+              }}
+            />
+            {p.text("ui.leaveUnchanged")}
+          </label>
+        ) : null}
+        {options.map((value) => {
+          const hint = choiceHint(input, props, offered, value);
+          const hintId = `${errorKey}-${value}-admission`;
+          return (
+            <span key={value} className="choice-option">
+              <label className={selected === value ? "selected" : undefined}>
+                <input
+                  type="radio"
+                  name={errorKey}
+                  value={value}
+                  disabled={props.disabled || hint !== null}
+                  aria-describedby={hint === null ? undefined : hintId}
+                  checked={selected === value}
+                  onChange={() => {
+                    props.onChange(input.id, value);
+                  }}
+                />
+                {caption(p, input.id, value)}
+              </label>
+              {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
+            </span>
+          );
+        })}
+      </div>
       {input.id === "input:role" && selected === "" ? <p>{p.text("label.chooseRole")}</p> : null}
       <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
     </fieldset>
   );
 };
-const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) => {
+const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: ControlProps) => {
   const p = usePresentation();
   const metadata =
     props.task.subject === "PEOPLE" && input.id === "field:caseReference"
@@ -181,6 +186,7 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
       value: formValueText(props.values[input.id]),
       disabled: props.disabled,
       error,
+      sharedErrorId,
       onChange: (value: string) => {
         if (props.task.creates && input.mode === "OPTIONAL" && value === "") {
           props.onFieldsChange({}, [input.id]);
@@ -384,48 +390,122 @@ const GrantTargetInput = ({
 };
 const isGrantInput = (input: Input) =>
   ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
-const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input> }) => {
+const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; peer: Input }) => {
+  const p = usePresentation();
+  const amountError = props.errors[input.id];
+  const currencyError = props.errors[peer.id];
+  return (
+    <MoneyField
+      label={renderCatalogKey(p, taskInput(input.id).labelId)}
+      {...(amountError === undefined && currencyError === undefined
+        ? {}
+        : {
+            error: (
+              <>
+                <ErrorText value={amountError} />
+                <ErrorText value={currencyError} />
+              </>
+            ),
+          })}
+    >
+      {(sharedErrorId) => (
+        <>
+          <InputControl
+            input={input}
+            {...props}
+            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
+          />
+          <InputControl
+            input={peer}
+            {...props}
+            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
+          />
+        </>
+      )}
+    </MoneyField>
+  );
+};
+const isPairedCurrency = (
+  field: (typeof productMetadata.catalog.fields)[number] | undefined,
+  inputs: ReadonlyArray<Input>,
+) =>
+  field?.scalar.kind === "CURRENCY" &&
+  inputs.some((input) =>
+    productMetadata.catalog.fields.some(
+      (owner) => owner.name === taskInput(input.id).key && owner.pairs === field.name,
+    ),
+  );
+
+const catalogField = (input: Input) =>
+  productMetadata.catalog.fields.find((field) => field.name === taskInput(input.id).key);
+
+const Fields = ({
+  inputs,
+  showSections = false,
+  ...props
+}: InputProps & { inputs: ReadonlyArray<Input>; showSections?: boolean }) => {
+  const p = usePresentation();
   const render = (input: Input) => {
-    const field = productMetadata.catalog.fields.find(
-      (candidate) => candidate.name === taskInput(input.id).key,
-    );
-    const peer =
-      field?.pairs === null || field?.pairs === undefined
-        ? undefined
-        : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = !props.task.creates && selectsValue(input, props.task.subject);
-    if (
-      selectable &&
-      field?.scalar.kind === "CURRENCY" &&
-      inputs.some(
-        (candidate) =>
-          selectsValue(candidate, props.task.subject) &&
-          productMetadata.catalog.fields.some(
-            (owner) => owner.name === taskInput(candidate.id).key && owner.pairs === field.name,
-          ),
-      )
-    ) {
+    const field = catalogField(input);
+    if (isPairedCurrency(field, inputs)) {
       return null;
     }
-    return selectable ? (
-      <SelectedValue
-        key={input.id}
-        input={input}
-        {...(peer === undefined ? {} : { peer })}
-        {...props}
-      />
-    ) : (
-      <InputControl key={input.id} input={input} {...props} />
+    const peer = inputs.find((candidate) => taskInput(candidate.id).key === field?.pairs);
+    if (!props.task.creates && selectsValue(input, props.task.subject)) {
+      return (
+        <div key={input.id} className="task-field-wide">
+          <SelectedValue input={input} {...(peer === undefined ? {} : { peer })} {...props} />
+        </div>
+      );
+    }
+    if (peer !== undefined) {
+      return (
+        <div key={input.id}>
+          <PairedInputs input={input} peer={peer} {...props} />
+        </div>
+      );
+    }
+    const scalar = taskScalar(input.id)?.scalar;
+    const narrative = scalar?.kind === "PLAIN_TEXT" && scalar.allowsLineFeed;
+    const wide = input.choices.length > 0 || narrative;
+    return (
+      <div key={input.id} className={wide ? "task-field-wide" : undefined}>
+        <InputControl input={input} {...props} />
+      </div>
     );
   };
   const hasGrantTarget =
     props.task.subject === "PEOPLE" &&
     props.task.inputs.some((input) => input.id === "input:scope") &&
     inputs.some(isGrantInput);
+  const sections = new Map<NonNullable<ReturnType<typeof catalogField>>["section"], Input[]>();
+  for (const input of inputs) {
+    if (hasGrantTarget && isGrantInput(input)) {
+      continue;
+    }
+    const section = showSections ? (catalogField(input)?.section ?? null) : null;
+    const fields = sections.get(section);
+    if (fields === undefined) {
+      sections.set(section, [input]);
+    } else {
+      fields.push(input);
+    }
+  }
   return (
     <>
       {hasGrantTarget && <GrantTargetInput {...props} inputs={props.task.inputs} />}
-      {inputs.filter((input) => !hasGrantTarget || !isGrantInput(input)).map(render)}
+      {[...sections].map(([section, fields]) =>
+        section === null ? (
+          <div className="task-field-grid" key="ungrouped">
+            {fields.map(render)}
+          </div>
+        ) : (
+          <section className="task-field-section" key={section}>
+            <h3>{p.term("section", section)}</h3>
+            <div className="task-field-grid">{fields.map(render)}</div>
+          </section>
+        ),
+      )}
     </>
   );
 };
@@ -441,10 +521,14 @@ const CollectionRows = ({
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
   };
   return (
-    <fieldset id={`field-${collection.id}`} disabled={props.disabled}>
-      <legend>{renderCatalogKey(p, collection.labelId)}</legend>
+    <section
+      className="task-collection"
+      id={`field-${collection.id}`}
+      aria-labelledby={`label-${collection.id}`}
+    >
+      <h3 id={`label-${collection.id}`}>{renderCatalogKey(p, collection.labelId)}</h3>
       {rows.map((row, index) => (
-        <fieldset key={row.key}>
+        <fieldset key={row.key} disabled={props.disabled} className="collection-item">
           <legend>{p.text(collection.itemLabelId, { number: p.integer(index + 1) })}</legend>
           {hasGrantTarget && (
             <GrantTargetInput
@@ -516,7 +600,7 @@ const CollectionRows = ({
       >
         {renderCatalogKey(p, collection.addLabelId)}
       </button>
-    </fieldset>
+    </section>
   );
 };
 export const TaskInputs = (props: Props) => {
@@ -529,7 +613,7 @@ export const TaskInputs = (props: Props) => {
   );
   return (
     <>
-      <Fields inputs={ordinary} {...inputProps} />
+      <Fields inputs={ordinary} showSections {...inputProps} />
       {groups.map((group) => {
         const metadata = taskInput(group.id);
         const children = visible.filter(

@@ -1,14 +1,10 @@
 import { NoticeView } from "../presentation/Message";
-import { FieldHelp } from "./FieldHelp";
+import { Field, FieldRule } from "../ui/Field";
 import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
-import { FieldError } from "react-aria-components/FieldError";
 import { TextArea } from "react-aria-components/TextArea";
 import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
-import { Text } from "react-aria-components/Text";
-import { TextField } from "react-aria-components/TextField";
 import type { FieldCatalogEntry } from "../api/service";
 import type { Notice } from "../protocol/notices";
 import { usePresentation } from "../presentation/context";
@@ -19,6 +15,7 @@ type CatalogFieldProps = {
   inputName?: string;
   description?: string;
   error?: Notice | undefined;
+  sharedErrorId?: string | undefined;
   disabled?: boolean;
   onChange: (value: string) => void;
 };
@@ -78,12 +75,13 @@ export const CatalogField = ({
   inputName,
   description,
   error,
+  sharedErrorId,
   disabled = false,
   onChange,
 }: CatalogFieldProps) => {
   const p = usePresentation();
   const name = inputName ?? field.name;
-  const typed = { field, value, inputName: name, disabled, error, onChange };
+  const typed = { field, value, inputName: name, disabled, error, sharedErrorId, onChange };
   if (isDate(field)) {
     return <CatalogDate {...typed} />;
   }
@@ -91,29 +89,29 @@ export const CatalogField = ({
     return <CatalogCode {...typed} />;
   }
   return (
-    <TextField
+    <Field
       id={`field-${name}`}
-      className="text-field"
+      label={p.fieldLabel(field.name)}
+      {...(error === undefined || sharedErrorId === undefined
+        ? {}
+        : { "aria-describedby": sharedErrorId })}
       isInvalid={error !== undefined}
       isDisabled={disabled}
       value={value}
       onChange={onChange}
+      description={
+        <>
+          <small>{description ?? p.hint(field)}</small>{" "}
+          <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+          <ScalarCounter field={field} value={value} />
+          {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
+        </>
+      }
+      {...(error === undefined || sharedErrorId !== undefined
+        ? {}
+        : { error: <NoticeView value={error} /> })}
     >
-      <div className="field-label-row">
-        <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
-      </div>
       <ScalarControl field={field} name={name} />
-      <Text slot="description" className="field-description">
-        <small>{description ?? p.hint(field)}</small>
-        <ScalarCounter field={field} value={value} />
-        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
-      </Text>
-      {error === undefined ? null : (
-        <FieldError>
-          <NoticeView value={error} />
-        </FieldError>
-      )}
-    </TextField>
+    </Field>
   );
 };

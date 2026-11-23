@@ -1,342 +1,363 @@
-.worklist {
-  min-inline-size: 0;
-  padding-block: var(--space-4);
-}
-.worklist-toolbar,
-.worklist-search,
-.worklist-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  min-inline-size: 0;
-}
-.worklist-search {
-  flex: 1 1 28rem;
-}
-.worklist-search input {
-  flex: 1 1 16rem;
-  inline-size: auto;
-  min-inline-size: var(--target-minimum);
-  padding: var(--space-3);
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-.worklist-search-correction {
-  flex-basis: 100%;
-  margin: 0;
-}
-.worklist-filters details {
-  position: relative;
-}
-.worklist-filters summary {
-  padding: var(--space-2);
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-.worklist-filters fieldset {
-  display: grid;
-  gap: var(--space-2);
-  background: var(--bg-surface);
-  padding: var(--space-3);
-  margin: 0;
-  border: 1px solid var(--border-control);
-}
-.worklist-filters label {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-}
-.exact-lookup {
-  margin-block: var(--space-3);
-}
-.exact-lookup summary {
-  cursor: pointer;
-  color: var(--accent-text);
-}
-.exact-lookup form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  padding-block: var(--space-3);
-}
-.worklist-table {
-  display: block;
-  inline-size: 100%;
-  min-inline-size: 0;
-  max-inline-size: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-.worklist-columns {
-  display: block;
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-.worklist-rows {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
-.worklist-rows .worklist-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin-block: var(--space-3);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-md);
-}
-.worklist-row > td {
-  display: block;
-  min-inline-size: 0;
-  padding: 0;
-  overflow-wrap: anywhere;
-}
-.worklist-reference {
-  grid-column: 1;
-  grid-row: 1;
-}
-.reference {
-  display: block;
-  min-block-size: var(--target-minimum);
-  max-inline-size: 100%;
-  color: var(--accent-text);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  white-space: nowrap;
-}
+@layer views {
+  .worklist {
+    min-inline-size: 0;
+    padding-block: var(--space-4);
+  }
+  .worklist-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    min-inline-size: 0;
+  }
+  .worklist-search {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    min-inline-size: 0;
+    flex: 1 1 28rem;
+  }
+  .worklist-search input {
+    flex: 1 1 16rem;
+    inline-size: auto;
+    min-inline-size: var(--target-minimum);
+    padding: var(--space-3);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+  .worklist-search-correction {
+    flex-basis: 100%;
+    margin: 0;
+  }
+  .worklist-filters details {
+    position: relative;
+  }
+  .worklist-filters summary {
+    padding: var(--space-2);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .worklist-filters fieldset {
+    display: grid;
+    gap: var(--space-2);
+    background: var(--bg-surface);
+    padding: var(--space-3);
+    margin: 0;
+    border: 1px solid var(--border-control);
+  }
+  .worklist-filters label {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .worklist-table {
+    display: block;
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+  }
+  .worklist-columns {
+    display: block;
+    position: absolute;
+    inline-size: var(--border-width);
+    block-size: var(--border-width);
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .worklist-rows {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+  .worklist-rows .worklist-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-block: var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+  }
+  .worklist-row > td {
+    display: block;
+    min-inline-size: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+  .worklist-reference {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .reference {
+    display: block;
+    min-block-size: var(--target-minimum);
+    max-inline-size: 100%;
+    color: var(--accent-text);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    white-space: nowrap;
+  }
 
-.row-reference-text {
-  display: block;
-  max-inline-size: min(100%, 26ch);
-  white-space: nowrap;
-}
-.reference-prefix {
-  display: inline-block;
-  max-inline-size: 65%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: bottom;
-}
-.reference-suffix {
-  display: inline-flex;
-  max-inline-size: 35%;
-  justify-content: end;
-  overflow: hidden;
-  vertical-align: bottom;
-}
-.worklist-row:focus-within {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-.worklist-row:hover {
-  background: var(--accent-soft-bg);
-}
-.worklist-person,
-.worklist-person > small {
-  display: block;
-  min-inline-size: 0;
-  overflow-wrap: anywhere;
-}
-.worklist-person {
-  margin-block-start: var(--space-2);
-  font-size: var(--text-sm);
-  text-align: start;
-}
-.worklist-row small {
-  display: block;
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-.worklist-money {
-  grid-row: 2;
-  grid-column: 1 / -1;
-  font-variant-numeric: tabular-nums;
-}
-.worklist-payable {
-  margin-block-start: var(--space-1);
-}
-.worklist-badges {
-  grid-column: 2;
-  grid-row: 1;
-  text-align: end;
-}
-.badge {
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  background: var(--bg-sunken);
-  font-size: var(--text-xs);
-}
-.worklist-next-action {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  font-size: var(--text-sm);
-}
-.worklist-responsible {
-  grid-column: 1 / -1;
-  grid-row: 4;
-  font-size: var(--text-sm);
-}
-.worklist-changed {
-  grid-column: 1 / -1;
-  grid-row: 5;
-  font-size: var(--text-sm);
-}
-.worklist-cell-label {
-  display: block;
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  margin-block-end: var(--space-1);
-}
-.worklist-skeleton {
-  min-block-size: 8rem;
-  margin-block: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--bg-sunken);
-}
-.summary-band {
-  display: block;
-  border-block: var(--border-width) solid var(--border-control);
-  padding: var(--space-3) 0;
-  margin-block: var(--space-4);
-  font-size: var(--text-sm);
-}
-.summary-band > .record-view {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-  gap: var(--space-4);
-}
-.summary-band .record-view h2 {
-  font-size: var(--text-sm);
-}
-.summary-band .record-view dl > div {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-details.summary-band {
-  display: block;
-}
-.summary-band > summary {
-  cursor: pointer;
-}
-.summary-totals,
-.work-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin: 0;
-}
-.summary-totals > div,
-.work-counts > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-.summary-totals dd,
-.work-counts dd {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-variant-numeric: tabular-nums;
-}
-.summary-totals bdi {
-  overflow-wrap: anywhere;
-}
-.observation-basis {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-.filter-sheet {
-  inline-size: 100%;
-  max-inline-size: var(--sheet-max-inline-size);
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-}
-.worklist-exact-match {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-block: var(--space-4);
-  padding: var(--space-4);
-  border: var(--border-width) solid var(--accent-text);
-  border-radius: var(--radius-md);
-  background: var(--accent-soft-bg);
-}
-.worklist-exact-match > p {
-  margin: 0;
-  font-weight: 650;
-}
+  .row-reference-text {
+    display: block;
+    max-inline-size: var(--width-reference-filter);
+    white-space: nowrap;
+  }
+  .reference-prefix {
+    display: inline-block;
+    max-inline-size: 65%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+  .reference-suffix {
+    display: inline-flex;
+    max-inline-size: 35%;
+    justify-content: end;
+    overflow: hidden;
+    vertical-align: bottom;
+  }
+  .worklist-row:focus-within {
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+  .worklist-row:hover {
+    background: var(--accent-soft-bg);
+  }
+  .worklist-person > small {
+    display: block;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+  .worklist-person {
+    display: block;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    margin-block-start: var(--space-2);
+    font-size: var(--text-sm);
+    text-align: start;
+  }
+  .worklist-row small {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+  }
+  .worklist-money {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    font-variant-numeric: tabular-nums;
+  }
+  .worklist-payable {
+    margin-block-start: var(--space-1);
+  }
+  .worklist-badges {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: end;
+  }
+  .worklist-next-action {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: var(--text-sm);
+  }
+  .worklist-responsible {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    font-size: var(--text-sm);
+  }
+  .worklist-changed {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    font-size: var(--text-sm);
+  }
+  .worklist-cell-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    margin-block-end: var(--space-1);
+  }
+  .worklist-skeleton {
+    min-block-size: var(--height-expanded-editor);
+    margin-block: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--bg-sunken);
+  }
+  .summary-band {
+    display: block;
+    padding-block-end: var(--space-3);
+    margin-block-end: var(--space-4);
+    font-size: var(--text-sm);
+  }
+  .summary-band > h1 {
+    margin-block: 0 var(--space-2);
+  }
+  .summary-band > .record-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-4);
+  }
+  .summary-band .record-view h2 {
+    font-size: var(--text-sm);
+  }
+  .summary-band .record-view dl > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  details.summary-band {
+    display: block;
+  }
+  .summary-band > summary {
+    cursor: pointer;
+  }
+  .summary-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0;
+  }
+  .work-counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--space-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0;
+  }
+  .summary-totals > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .work-counts > div {
+    padding: var(--space-3);
+    border: 1px solid var(--border-control);
+    border-radius: 0.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .summary-totals dd {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .work-counts dd {
+    font-size: var(--text-heading);
+    margin: var(--space-1) 0 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-totals bdi {
+    overflow-wrap: anywhere;
+  }
+  .observation-basis {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+  }
+  .filter-sheet {
+    inline-size: 100%;
+    max-inline-size: var(--width-drawer);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+  .worklist-exact-match {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-block: var(--space-4);
+    padding: var(--space-4);
+    border: var(--border-width) solid var(--accent-text);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft-bg);
+  }
+  .worklist-exact-match > p {
+    margin: 0;
+    font-weight: 650;
+  }
 
-.case-selection-repair {
-  margin-block: var(--space-4);
-  overflow-wrap: anywhere;
-}
-.case-selection-values {
-  display: grid;
-  gap: var(--space-2);
-  margin-block: var(--space-2);
-}
-.case-selection-values label {
-  display: grid;
-  gap: var(--space-1);
-}
-.case-selection-values input {
-  min-inline-size: 0;
-}
+  .case-selection-repair {
+    margin-block: var(--space-4);
+    overflow-wrap: anywhere;
+  }
+  .case-selection-values {
+    display: grid;
+    gap: var(--space-2);
+    margin-block: var(--space-2);
+  }
+  .case-selection-values label {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .case-selection-values input {
+    min-inline-size: 0;
+  }
 
-.case-selection-choices {
-  display: grid;
-  gap: var(--space-2);
-  min-inline-size: 0;
-}
-.case-selection-choices label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.case-selection-choices label bdi {
-  min-inline-size: 0;
-}
+  .case-selection-choices {
+    display: grid;
+    gap: var(--space-2);
+    min-inline-size: 0;
+  }
+  .case-selection-choices label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .case-selection-choices label bdi {
+    min-inline-size: 0;
+  }
 
-.worklist-toolbar {
-  display: grid;
-  align-items: start;
-  gap: var(--space-3);
-  margin-block: var(--space-3);
-}
-.worklist-search-scope {
-  flex-basis: 100%;
-}
-.worklist-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  margin-block: var(--space-3);
-}
-.report-date-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-  gap: var(--space-3);
-  margin-block: var(--space-3);
-}
-.report-date-fields label {
-  display: grid;
-  gap: var(--space-1);
+  .worklist-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: end;
+    min-inline-size: 0;
+    margin-block: var(--space-3);
+  }
+
+  .worklist-filter-controls {
+    display: contents;
+  }
+
+  .worklist-toolbar .worklist-search {
+    flex: 1 1 var(--width-worklist-filter);
+    min-inline-size: var(--width-worklist-filter);
+  }
+  .worklist-search-scope {
+    flex-basis: 100%;
+  }
+  .worklist-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block: var(--space-3);
+  }
+  .report-date-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: var(--space-3);
+    margin-block: var(--space-3);
+  }
+  .report-date-fields label {
+    display: grid;
+    gap: var(--space-1);
+  }
 }

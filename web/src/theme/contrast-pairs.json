@@ -23,11 +23,6 @@
   ["--warning-text", "--warning-bg", 4.5, "warning text"],
   ["--warning-text", "--bg-surface", 4.5, "warning text on card"],
   ["--success-text", "--success-bg", 4.5, "success text"],
-  ["--state-open-text", "--state-open-bg", 4.5, "Undecided pill"],
-  ["--state-decided-text", "--state-decided-bg", 4.5, "Decided pill"],
-  ["--state-paid-text", "--state-paid-bg", 4.5, "Paid pill"],
-  ["--state-closed-text", "--state-closed-bg", 4.5, "Closed pill"],
-  ["--state-void-text", "--state-void-bg", 4.5, "Voided pill"],
   ["--avatar-1-text", "--avatar-1-bg", 4.5, "avatar 1 initials"],
   ["--avatar-2-text", "--avatar-2-bg", 4.5, "avatar 2 initials"],
   ["--avatar-3-text", "--avatar-3-bg", 4.5, "avatar 3 initials"],
@@ -40,5 +35,11 @@
   ["--text-secondary", "--bg-raised", 4.5, "secondary text on raised surface"],
   ["--border-control", "--bg-raised", 3, "raised control boundary"],
   ["--focus-ring", "--bg-raised", 3, "focus on raised surface"],
-  ["--accent-solid", "--meter-track", 3.0, "meter fill against track"]
+  ["--accent-solid", "--meter-track", 3.0, "meter fill against track"],
+  ["--tone-neutral-text", "--tone-neutral-bg", 4.5, "neutral chip label"],
+  ["--tone-info-text", "--tone-info-bg", 4.5, "info chip label"],
+  ["--tone-progress-text", "--tone-progress-bg", 4.5, "progress chip label"],
+  ["--tone-success-text", "--tone-success-bg", 4.5, "success chip label"],
+  ["--tone-warning-text", "--tone-warning-bg", 4.5, "warning chip label"],
+  ["--tone-danger-text", "--tone-danger-bg", 4.5, "danger chip label"]
 ]

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
 import { operationAffordance, withRecommendation } from "../../../support/affordances.fixtures";
 import { current } from "../../../support/operation-form.fixtures";
-import { CaseActions, CaseActionAlternatives } from "../../../../src/views/case/CaseActions";
+import { CaseActions } from "../../../../src/views/case/CaseActions";
 const primary = operationAffordance(
   "case.amendRegistration",
   { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-1" }, expectedRevision: 4 },
@@ -20,19 +20,19 @@ it("renders the supplied recommendation and passes its control", async () => {
       onAct={onAct}
     />,
   );
-  expect(view.container.querySelector("button.primary")).toHaveAttribute(
-    "data-act",
-    "case.amendRegistration",
+  expect(view.container.querySelector(".ui-button--primary")).toHaveTextContent(
+    "Update claim details",
   );
-  await userEvent.setup().click(screen.getByRole("button", { name: /^Update claim details:/u }));
+  await userEvent.setup().click(screen.getByRole("button", { name: "Update claim details" }));
   expect(onAct).toHaveBeenCalledExactlyOnceWith(primary);
 });
-it("does not invent a primary", () => {
+it("does not invent a primary", async () => {
   const view = render(
-    <CaseActionAlternatives current={{ ...current, actions: [alternative] }} onAct={vi.fn()} />,
+    <CaseActions current={{ ...current, actions: [alternative] }} onAct={vi.fn()} />,
   );
-  expect(view.container.querySelector("button.primary")).toBeNull();
-  expect(screen.getByRole("button", { name: /^Record payment decision:/u })).toBeVisible();
+  expect(view.container.querySelector(".ui-button--primary")).toBeNull();
+  await userEvent.setup().click(screen.getByRole("button", { name: "More actions" }));
+  expect(screen.getByRole("menuitem", { name: "Record payment decision" })).toBeVisible();
 });
 it("withdraws controls when Core withdraws the offer", () => {
   const onAct = vi.fn();
@@ -46,9 +46,9 @@ it("withdraws controls when Core withdraws the offer", () => {
   expect(screen.queryByRole("button")).toBeNull();
   expect(onAct).not.toHaveBeenCalled();
 });
-it("disables an offered action with Core refusal advice", () => {
+it("disables an offered action with Core refusal advice", async () => {
   render(
-    <CaseActionAlternatives
+    <CaseActions
       current={{
         ...current,
         actions: [
@@ -64,7 +64,11 @@ it("disables an offered action with Core refusal advice", () => {
       onAct={vi.fn()}
     />,
   );
-  expect(screen.getByRole("button", { name: /^Record payment decision:/u })).toBeDisabled();
+  await userEvent.setup().click(screen.getByRole("button", { name: "More actions" }));
+  expect(screen.getByRole("menuitem", { name: "Record payment decision" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
 });
 
 it("keeps a supplied nonrecommended action reachable through the overflow control", async () => {
@@ -75,8 +79,8 @@ it("keeps a supplied nonrecommended action reachable through the overflow contro
       onAct={onAct}
     />,
   );
-  await userEvent.setup().click(screen.getByText("More actions", { selector: "summary" }));
-  const action = screen.getByRole("button", { name: /^Record payment decision:/u });
+  await userEvent.setup().click(screen.getByRole("button", { name: "More actions" }));
+  const action = screen.getByRole("menuitem", { name: "Record payment decision" });
   expect(action).toBeVisible();
   await userEvent.setup().click(action);
   expect(onAct).toHaveBeenCalledExactlyOnceWith(alternative);

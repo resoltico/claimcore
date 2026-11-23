@@ -171,11 +171,11 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       onAct={vi.fn()}
     />,
   );
-  assertSafe(view.container.querySelector(".case-header-card")!, value, points);
+  assertSafe(view.container.querySelector(".case-title-sticky")!, value, points);
 
   await waitFor(() => {
     expect(view.container.querySelectorAll('.case-timeline > p[role="status"]')).toHaveLength(0);
-    const directStatus = view.container.querySelectorAll(".case-header-state .badge");
+    const directStatus = view.container.querySelectorAll(".case-title-line .chip");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(

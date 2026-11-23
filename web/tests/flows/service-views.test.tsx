@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
@@ -198,16 +199,10 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
     kind: "ID",
     caseId: "20000000-0000-4000-8000-000000000001",
   });
-  await user.click(getButton("Load more cases"));
+  await user.click(getButton("Load more"));
   expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
-  await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
-  await user.click(getButton("Open by exact reference"));
+  await user.click(getButton("Refresh"));
   expect(select).toHaveBeenCalledTimes(1);
-  await user.type(screen.getByLabelText("Case reference (exact)"), "CASE-9");
-  await user.click(getButton("Open by exact reference"));
-  expect(select).toHaveBeenCalledTimes(2);
-  expect(select).toHaveBeenLastCalledWith({ kind: "REFERENCE", caseReference: "CASE-9" });
-  await user.click(getButton("Reload cases"));
 });
 const historyWithTwoReceipts = () =>
   timelineDocument([openedTimelineEntry, { ...openedTimelineEntry, key: "2/0" }], "next");
@@ -233,7 +228,7 @@ it("shows current fields, server act labels, full expandable history and retryab
       onAct={act}
     />,
   );
-  expect(await screen.findByText("CASE-1")).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "CASE-1" })).toBeVisible();
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(
     expect.objectContaining(current),
@@ -242,7 +237,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");
   await user.click(getButton("Load more"));
-  await user.click(getButton("Back to cases"));
+  await user.click(casesBreadcrumb());
   expect(back).toHaveBeenCalledOnce();
 });
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
@@ -287,7 +282,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   );
   navigate("/recovery");
   render(<Dashboard />);
-  await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
+  expect(await screen.findByRole("heading", { name: "General operation lookup" })).toBeVisible();
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
   await user.click(await screen.findByText("Record details", { selector: "summary" }));
@@ -471,13 +466,13 @@ beforeEach(() => {
   stubWorklistSummary();
 });
 
-it("opens clean All and focuses search only after a guarded activation, including at the same URL", async () => {
+it("retains the current worklist draft during a guarded Find navigation", async () => {
   navigate("/cases?view=ALL&status=OPENED", true);
   const user = userEvent.setup();
   render(<Dashboard />);
   await screen.findByRole("tab", { name: /^All /u, selected: true });
-  await user.type(screen.getByRole("searchbox"), "unsent draft");
-  expect(screen.getByRole("searchbox")).toHaveValue("unsent draft");
+  const original = screen.getByRole("searchbox");
+  await user.type(original, "unsent draft");
 
   let confirm: (() => void) | undefined;
   const unregister = setNavigationBlocker((proceed) => {
@@ -485,9 +480,13 @@ it("opens clean All and focuses search only after a guarded activation, includin
     return false;
   });
   try {
-    await user.click(screen.getByRole("link", { name: "Search cases" }));
+    await user.click(screen.getByRole("button", { name: /^Find a case/u }));
+    await user.type(
+      screen.getByRole("combobox", { name: "Find a case" }),
+      "matching claimants{Enter}",
+    );
     expect(location.search).toBe("?view=ALL&status=OPENED");
-    expect(screen.getByRole("searchbox")).toHaveValue("unsent draft");
+    expect(original).toHaveValue("unsent draft");
     expect(confirm).toBeTypeOf("function");
 
     await flush(() =>
@@ -496,23 +495,12 @@ it("opens clean All and focuses search only after a guarded activation, includin
       }),
     );
     await waitFor(() => {
-      expect(location.search).toBe("?view=ALL");
-      expect(screen.getByRole("searchbox")).toHaveValue("");
-      expect(screen.getByRole("searchbox")).toHaveFocus();
-    });
-
-    await user.type(screen.getByRole("searchbox"), "new draft");
-    await user.click(screen.getByRole("link", { name: "Search cases" }));
-    expect(screen.getByRole("searchbox")).toHaveValue("new draft");
-    await flush(() =>
-      Promise.resolve().then(() => {
-        confirm?.();
-      }),
-    );
-    await waitFor(() => {
-      expect(location.search).toBe("?view=ALL");
-      expect(screen.getByRole("searchbox")).toHaveValue("");
-      expect(screen.getByRole("searchbox")).toHaveFocus();
+      expect(screen.queryByRole("dialog", { name: "Find a case" })).toBeNull();
+      const query = new URLSearchParams(location.search);
+      expect(query.get("view")).toBe("ALL");
+      expect(query.get("q")).toBe("matching claimants");
+      expect(query.has("status")).toBe(false);
+      expect(screen.getByRole("searchbox")).toHaveValue("matching claimants");
     });
   } finally {
     unregister();
@@ -542,7 +530,7 @@ it.each(["clear", "apply"])("%s of the last viewless filter keeps All", async (a
   if (action === "clear") {
     await user.click(await screen.findByRole("button", { name: "Clear filters" }));
   } else {
-    await user.click(await screen.findByRole("button", { name: "Filters (1)" }));
+    await user.click(await screen.findByRole("button", { name: "More filters (1)" }));
     await user.click(screen.getByText("Status filter (1)", { selector: "summary" }));
     await user.click(screen.getByRole("checkbox", { name: "Closed" }));
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
@@ -553,7 +541,7 @@ it.each(["clear", "apply"])("%s of the last viewless filter keeps All", async (a
 });
 
 it.each([
-  ["case.list", "/cases?view=ALL", "Export case list CSV"],
+  ["case.list", "/cases?view=ALL", "Case list (CSV)"],
   ["case.summary", "/cases/report?view=ALL", "Export report CSV"],
   ["people.history", "/people-history", "Download CSV"],
   ["case.timeline", "/cases/id/20000000-0000-4000-8000-000000000001", "Download CSV"],
@@ -629,11 +617,24 @@ it.each([
     await user.click(await screen.findByRole("combobox", { name: "Group by" }));
     await user.click(await screen.findByRole("option", { name: "Received month" }));
   }
-  const exportButton = () => screen.getByRole("button", { name: label });
-  await waitFor(() => {
-    expect(exportButton()).toBeEnabled();
-  });
-  await user.click(exportButton());
+  const startExport = async () => {
+    if (endpoint === "case.list") {
+      await screen.findByText("0 cases shown");
+      await user.click(await screen.findByRole("button", { name: "Export" }));
+      const item = await screen.findByRole("menuitem", { name: label });
+      await waitFor(() => {
+        expect(item).not.toHaveAttribute("aria-disabled", "true");
+      });
+      await user.click(item);
+    } else {
+      const button = await screen.findByRole("button", { name: label });
+      await waitFor(() => {
+        expect(button).toBeEnabled();
+      });
+      await user.click(button);
+    }
+  };
+  await startExport();
   await waitFor(() => {
     expect(pending).toHaveLength(1);
   });
@@ -646,7 +647,7 @@ it.each([
     expect(create).toHaveBeenCalledTimes(1);
   });
 
-  await user.click(exportButton());
+  await startExport();
   await waitFor(() => {
     expect(pending).toHaveLength(2);
   });
@@ -670,7 +671,16 @@ it.each([
     }),
   );
   expect(create).toHaveBeenCalledTimes(1);
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: label })).toBeEnabled();
-  });
+  if (endpoint === "case.list") {
+    await user.click(await screen.findByRole("button", { name: "Export" }));
+    expect(await screen.findByRole("menuitem", { name: label })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await user.keyboard("{Escape}");
+  } else {
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: label })).toBeEnabled();
+    });
+  }
 });

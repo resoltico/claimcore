@@ -20,13 +20,10 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   page,
 }) => {
   await openAuthenticated(page);
-  await expect(page.getByRole("button", { name: "Reload cases", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled();
   const lookup = await showExactLookup(page);
   const requests = trackForegroundRequests(page);
   await lookup.fill("");
-  await expect(
-    page.getByRole("button", { name: "Open by exact reference", exact: true }),
-  ).toBeDisabled();
   await lookup.press("Enter");
   expect(requests).toHaveLength(0);
   await openRecovery(page);
@@ -64,8 +61,9 @@ test("keeps absent cases private and unknown operation outcomes pending", async 
   await openAuthenticated(page);
   await (await showExactLookup(page)).fill(`ABSENT-${randomUUID()}`);
   await (await showExactLookup(page)).press("Enter");
-  await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.getByRole("alert").first()).toBeVisible();
+  const find = page.getByRole("dialog", { name: "Find a case" });
+  await expect(find.getByRole("alert")).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toHaveCount(0);
   await expect(page.getByText("Case was not found.", { exact: true })).toHaveCount(0);
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);

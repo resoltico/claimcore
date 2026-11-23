@@ -1,3 +1,4 @@
+import { PageHeading } from "../ui/Page";
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
@@ -6,6 +7,8 @@ import type { RegionRow, CaseSelector } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
+import { rememberWorklist } from "../routing/lastWorklist";
+import { ListFooter } from "../ui/ListFooter";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import {} from "./worklist/worklist.css";
@@ -17,7 +20,6 @@ import { useRequesterContext, useCaseCreationControl } from "../hooks/useRequest
 import { operationTask } from "../protocol/taskCatalog";
 import { renderCatalogKey } from "../presentation/messages";
 import { followLink } from "../routing/followLink";
-import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 
@@ -33,7 +35,7 @@ import {
 } from "../routing/worklistQuery";
 import { CaseSelectionRecovery } from "./worklist/CaseSelectionRecovery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
-import { PageTables } from "../ui/PageTables";
+import { ResultPages } from "../ui/ResultPages";
 import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
@@ -108,6 +110,11 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
   const p = usePresentation();
   const filtered = Object.keys(page.query).some((key) => key !== "view");
   const customEmpty = filtered || page.query.view !== undefined;
+  const empty = customEmpty ? (
+    <WorklistEmpty page={page} filtered={filtered} />
+  ) : (
+    <p>{p.text("label.noCases")}</p>
+  );
   return (
     <>
       {page.message === null ? null : (
@@ -123,20 +130,9 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
           </button>
         </div>
       )}
-      {page.page !== null && !page.loading && page.message === null ? (
-        <>
-          {page.items.length === 0 && customEmpty ? null : (
-            <PageStatus
-              empty={page.items.length === 0}
-              cursor={page.cursor}
-              emptyMessage="label.noCases"
-            />
-          )}
-          {page.items.length === 0 && customEmpty ? (
-            <WorklistEmpty page={page} filtered={filtered} />
-          ) : null}
-        </>
-      ) : null}
+      {page.page === null || page.loading || page.message !== null || page.items.length > 0
+        ? null
+        : empty}
     </>
   );
 };
@@ -160,14 +156,14 @@ const WorklistResults = ({
   reassign: (row: CaseListControl) => void;
   editing: boolean;
 }) => {
-  const p = usePresentation();
   const current = page.page;
   const exact = current?.exactTarget ?? null;
   const exactOrigin = "case-exact-match";
   return (
     <>
       {page.items.length === 0 && exact === null ? null : (
-        <PageTables
+        <ResultPages
+          showTableSections={false}
           views={page.views}
           roles={["RESULTS"]}
           actionPresentation={(action) => {
@@ -194,35 +190,40 @@ const WorklistResults = ({
           }}
         />
       )}
-      {current === null || !current.screen.regions.some(({ role }) => role === "FACTS") ? null : (
+      {current === null || exact === null ? null : (
         <ScreenView
-          view={current.screen}
+          view={{
+            regions: current.screen.regions.filter(
+              ({ content }) =>
+                content.kind === "ENTRIES" &&
+                content.entries.some(({ key }) => key === "exactReference"),
+            ),
+          }}
           timeZone={current.basis.timeZone}
           roles={["FACTS"]}
-          {...(exact === null
-            ? {}
-            : {
-                sectionLink: {
-                  column: "exactReference",
-                  id: exactOrigin,
-                  href: caseTargetPath(exact),
-                  follow: () => {
-                    onSelect(exact, exactOrigin);
-                  },
-                },
-              })}
+          sectionLink={{
+            column: "exactReference",
+            id: exactOrigin,
+            href: caseTargetPath(exact),
+            follow: () => {
+              onSelect(exact, exactOrigin);
+            },
+          }}
         />
       )}
-      {page.cursor === null ? null : (
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            void page.load(page.cursor);
+      {page.page === null ? null : (
+        <ListFooter
+          subject="cases"
+          count={page.items.length}
+          basis={page.page.basis}
+          continuation={page.cursor}
+          loading={page.loading}
+          load={(cursor) => {
+            void page.load(cursor);
           }}
-        >
-          {p.text("ui.moreCases")}
-        </button>
+          busy={page.refreshBusy}
+          refresh={page.refresh}
+        />
       )}
     </>
   );
@@ -236,32 +237,41 @@ const CaseListHeading = ({
 }) => {
   const p = usePresentation();
   const creation = useCaseCreationControl();
+  const views = useWorkspaceViews().cases.data;
+  const all = views?.items.find(({ view }) => view === "ALL")?.count;
+  const needed = views?.navigation;
+  const summary =
+    all?.kind === "COUNT" && needed?.kind === "COUNT"
+      ? p.text("label.caseWorklistCaption", {
+          attention: p.integer(needed.value),
+          total: p.integer(all.value),
+        })
+      : undefined;
   return (
-    <div className="section-heading">
-      <div>
-        <h1 id="case-list-title" tabIndex={-1}>
-          {p.text("label.cases")}
-        </h1>
-        <p className="page-description">{p.text("label.queueDescription")}</p>
-      </div>
-      {creation === undefined || onOpenCase === undefined ? null : (
-        <a
-          id="open-case"
-          className="shell-open-case"
-          href="/cases/new"
-          aria-disabled={!available || undefined}
-          onClick={(event) => {
-            followLink(event, () => {
-              if (available) {
-                onOpenCase();
-              }
-            });
-          }}
-        >
-          {renderCatalogKey(p, operationTask(creation.task).labelId)}
-        </a>
-      )}
-    </div>
+    <PageHeading
+      id="case-list-title"
+      title={p.text("label.cases")}
+      subtitle={summary}
+      primaryAction={
+        creation === undefined || onOpenCase === undefined ? null : (
+          <a
+            id="open-case"
+            className="ui-button ui-button--primary open-case-link"
+            href="/cases/new"
+            aria-disabled={!available || undefined}
+            onClick={(event) => {
+              followLink(event, () => {
+                if (available) {
+                  onOpenCase();
+                }
+              });
+            }}
+          >
+            {renderCatalogKey(p, operationTask(creation.task).labelId)}
+          </a>
+        )
+      }
+    />
   );
 };
 const useSearchDraft = (source: string) => {
@@ -285,6 +295,10 @@ const ReadyCaseList = ({
 }: Props & { query: WorklistQuery }) => {
   const p = usePresentation();
   const page = useWorklist(query);
+  useEffect(() => {
+    rememberWorklist(worklistPath(query));
+  }, [query]);
+
   const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
   const close = () => {
     const id =
@@ -309,8 +323,13 @@ const ReadyCaseList = ({
       <WorkspaceViewsStatus area="cases" />
 
       <ViewTabs
-        items={quickViews.map(({ view, label, count }) => ({
+        items={quickViews.map(({ view, label, count, prominence }) => ({
           id: view,
+          prominence,
+          menuLabel:
+            label.kind === "MESSAGE" && count.kind === "COUNT"
+              ? `${renderCatalogKey(p, label.messageId)} · ${p.integer(count.value)}`
+              : undefined,
           label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
           count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
         }))}
@@ -328,38 +347,23 @@ const ReadyCaseList = ({
             search={search}
             onSearch={setSearch}
             onChange={page.change}
-            onSelect={(caseReference) => {
-              onSelect({ kind: "REFERENCE", caseReference });
-            }}
+            exportAction={
+              <CsvExportButton
+                selection={{ query: apiEndpoints.caseList, selection: page.query }}
+                available={disclosureAvailable && !page.loading && page.page !== null}
+                label="ui.exportCasesCsv"
+                menu={{
+                  label: p.text("ui.export"),
+                  report: p.text("ui.caseReport"),
+                  onReport: () => {
+                    navigate(worklistPath(page.query, "/cases/report"));
+                  },
+                }}
+              />
+            }
           />
         }
       >
-        <div className="worklist-actions">
-          <a
-            href={worklistPath(page.query, "/cases/report")}
-            onClick={(event) => {
-              followLink(event, () => {
-                navigate(worklistPath(page.query, "/cases/report"));
-              });
-            }}
-          >
-            {p.text("ui.caseReport")}
-          </a>
-          <button
-            type="button"
-            disabled={page.loading}
-            onClick={() => {
-              void page.load(null);
-            }}
-          >
-            {p.text("ui.reloadCases")}
-          </button>
-          <CsvExportButton
-            selection={{ query: apiEndpoints.caseList, selection: page.query }}
-            available={disclosureAvailable && !page.loading && page.page !== null}
-            label="ui.exportCasesCsv"
-          />
-        </div>
         <WorklistLoading page={page} />
         <WorklistResults
           page={page}

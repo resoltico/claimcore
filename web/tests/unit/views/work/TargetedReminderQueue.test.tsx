@@ -84,6 +84,7 @@ it("navigates from the supplied case workspace link into a visible targeted queu
   await userEvent.click(link);
   expect(await screen.findByRole("heading", { name: "Reminders" })).toBeVisible();
   expect(screen.getByText(reference)).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
   expect(screen.getByRole("checkbox", { name: "Include inactive case work" })).toBeChecked();
   await waitFor(() => {
     expect(reads.mock.calls.at(-1)?.[1]).toEqual({
@@ -118,7 +119,7 @@ it.each<CaseSelector>([
     expect(screen.getByText(text)).toBeVisible();
     expect(screen.getByText(text).closest("bdi")).not.toBeNull();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "More reminders" }));
+    await user.click(screen.getByRole("button", { name: "Load more" }));
     await waitFor(() => {
       expect(reads.mock.calls.at(-1)?.[1]).toMatchObject({ cursor: "opaque-next", target });
     });

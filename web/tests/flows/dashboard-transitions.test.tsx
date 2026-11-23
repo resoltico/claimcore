@@ -1,3 +1,4 @@
+import { casesBreadcrumb, workspaceSignOut } from "../support/workspace-actions";
 import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
@@ -151,7 +152,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
       name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
-  await user.click(getButton("Back to cases"));
+  await user.click(casesBreadcrumb());
   expect(
     await screen.findByRole("heading", {
       name: "Cases",
@@ -197,8 +198,8 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
       name: "Close",
     })[0]!,
   );
-  await user.click(document.querySelector(".account-menu > summary")!);
-  expect(getButton("Sign out")).not.toBeDisabled();
+  expect(await workspaceSignOut(user)).not.toHaveAttribute("aria-disabled", "true");
+  await user.keyboard("{Escape}");
   expect(
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",

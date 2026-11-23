@@ -14,10 +14,11 @@ test("confirmed compact departure focuses Recovery and restores the initiating l
   const draft = page.locator('[data-region="NOTES"]').getByRole("textbox", { name: "Note" });
   await draft.fill("Keep this unsaved note until departure is confirmed.");
   const caseUrl = page.url();
-  const menu = page.locator(".compact-navigation");
+  const menu = page.locator(".shell-more");
+  const trigger = page.locator("#workspace-more");
   const recovery = menu.getByRole("link", { name: /^Unconfirmed changes/u });
   const guard = page.getByRole("dialog", { name: "Discard these draft changes?" });
-  await menu.locator(":scope > summary").press("Enter");
+  await trigger.press("Enter");
   await recovery.press("Enter");
   await expect(guard).toBeVisible();
   await guard.getByRole("button", { name: "Keep editing" }).press("Enter");
@@ -37,23 +38,23 @@ test("confirmed compact departure focuses Recovery and restores the initiating l
   await page.goBack();
   await expect(page).toHaveURL(caseUrl);
   await expect(draft).toHaveValue("");
-  await expect(recovery).toBeFocused();
-  await expect(menu).toHaveAttribute("open", "");
+  await expect(trigger).toBeFocused();
+  await expect(menu).toBeHidden();
 });
 
-test("Back restores a compact link before an unrelated Cases read finishes @engine", async ({
+test("Back returns focus to More before an unrelated Cases read finishes @engine", async ({
   page,
-  browserName,
 }) => {
   await openAuthenticated(page);
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto("/cases?view=ALL");
   const queue = page.locator(".worklist");
   await expect(queue).toHaveAttribute("aria-busy", "false");
-  const menu = page.locator(".compact-navigation");
+  const menu = page.locator(".shell-more");
+  const trigger = page.locator("#workspace-more");
   const recovery = menu.getByRole("link", { name: /^Unconfirmed changes/u });
   const people = menu.getByRole("link", { name: "People and access", exact: true });
-  await menu.locator(":scope > summary").press("Enter");
+  await trigger.press("Enter");
   await recovery.press("Enter");
   await expect(
     page.getByRole("heading", { name: "Unconfirmed changes", exact: true }),
@@ -72,10 +73,10 @@ test("Back restores a compact link before an unrelated Cases read finishes @engi
     await page.goBack();
     await held.promise;
     await expect(queue).toHaveAttribute("aria-busy", "true");
-    await expect(menu).toHaveAttribute("open", "");
-    await expect(recovery).toBeFocused();
-    // On macOS WebKit includes links in tab order with Option+Tab.
-    await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
+    await expect(trigger).toBeFocused();
+    await trigger.press("Enter");
+    await expect(people).toBeVisible();
+    await people.focus();
     await expect(people).toBeFocused();
   } finally {
     release.resolve();
@@ -95,15 +96,14 @@ test("Back focuses the Cases heading while loading when a refreshed requester lo
   await page.goto("/cases?view=ALL");
   const queue = page.locator(".worklist");
   await expect(queue).toHaveAttribute("aria-busy", "false");
-  const menu = page.locator(".compact-navigation");
+  const menu = page.locator(".shell-more");
+  const trigger = page.locator("#workspace-more");
   const people = menu.locator('a[href="/people"]');
   const history = menu.locator('a[href="/people-history"]');
-  await menu.locator(":scope > summary").press("Enter");
+  await trigger.press("Enter");
   await expect(history).toBeVisible();
   await people.press("Enter");
   await expect(page).toHaveURL(/\/people$/u);
-  const reload = page.getByRole("button", { name: "Reload people", exact: true });
-  await expect(reload).toBeEnabled();
 
   await page.route("**/api/people.list", (route) =>
     route.fulfill({
@@ -149,7 +149,8 @@ test("Back focuses the Cases heading while loading when a refreshed requester lo
   const refresh = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/context",
   );
-  await reload.press("Enter");
+  await page.clock.setFixedTime(new Date(Date.now() + 31_000));
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   expect((await refresh).status()).toBe(200);
   // Cases is offered only after the refreshed requester has settled.
   await expect(page.locator('.workspace-mobile-tabs a[href="/cases"]')).toBeVisible();
@@ -171,7 +172,7 @@ test("Back focuses the Cases heading while loading when a refreshed requester lo
     await held.promise;
     await expect(queue).toHaveAttribute("aria-busy", "true");
     await expect(queue.getByRole("heading", { name: "Cases", exact: true })).toBeFocused();
-    await expect(menu).not.toHaveAttribute("open");
+    await expect(menu).toBeHidden();
     await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
     await expect(all).toBeFocused();
   } finally {

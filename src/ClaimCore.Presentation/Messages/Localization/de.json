@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "Person hinzufügen",
-    "source": "66848b5361f4"
+    "text": "Aus Zugriffsanfrage hinzufügen",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "Eine Person oder ein Dienstkonto mit Namen und ersten Rollen hinzufügen.",
@@ -4298,5 +4298,137 @@
   "label.reminderCancelledInactive": {
     "text": "Abgebrochen (inaktive Bearbeitung)",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "Sie haben sich abgemeldet",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "Erneut anmelden",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "Die Anmeldung wurde nicht abgeschlossen.",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "Verwaltung",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "{count} fällig",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "Unbestätigte Änderungen ({count})",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "Datenverwaltung",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "{count} Fälle angezeigt",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "{count} Fall angezeigt",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "{count} Fälle angezeigt",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "{count} Fälle angezeigt",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "{count} Fälle angezeigt",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "{count} Fälle angezeigt",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "{count} Wiedervorlagen angezeigt",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "{count} Wiedervorlage angezeigt",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "{count} Wiedervorlagen angezeigt",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "{count} Wiedervorlagen angezeigt",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "{count} Wiedervorlagen angezeigt",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "{count} Wiedervorlagen angezeigt",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "{count} Personen angezeigt",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "{count} Person angezeigt",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "{count} Personen angezeigt",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "{count} Personen angezeigt",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "{count} Personen angezeigt",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "{count} Personen angezeigt",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "Mit Angaben abschließen…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "Nicht eingegeben: {fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "Person hinzufügen",
+    "source": "66848b5361f4"
+  },
+  "label.caseWorklistCaption": {
+    "text": "{attention} benötigen Aufmerksamkeit · {total} insgesamt",
+    "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "Es sind keine Beteiligten erfasst.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "Keine Fallgruppen entsprechen dieser Auswahl.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "Es sind keine Arbeitsansichten verfügbar.",
+    "source": "3e86bd3913b7"
   }
 }

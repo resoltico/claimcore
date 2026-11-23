@@ -24,7 +24,7 @@ export const MissingPage = () => {
           });
         }}
       >
-        {p.text("ui.backToCases")}
+        {p.text("label.cases")}
       </a>
     </main>
   );

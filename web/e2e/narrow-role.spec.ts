@@ -1,3 +1,4 @@
+import { referencePath } from "../src/routing/routes";
 import { type ResponseByEndpoint } from "@contracts/client";
 import { showCaseActionMenu, caseActionButton } from "./case-workflow";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -16,6 +17,7 @@ import {
   browserRequest,
   sessionToken,
   expectAccessible,
+  seedSignedOut,
 } from "./session-helpers";
 import {
   prepareRoleFixture,
@@ -39,13 +41,9 @@ const openNarrowSession = (page: Page, heading: string): Promise<void> => {
   return openAuthenticated(page, heading, stewardCookies);
 };
 const findCase = async (page: Page, reference: string) => {
-  await (await showExactLookup(page)).fill(reference);
-  await page
-    .getByRole("button", {
-      name: "Open by exact reference",
-      exact: true,
-    })
-    .click();
+  const lookup = await showExactLookup(page);
+  await lookup.fill(reference);
+  await lookup.press("Enter");
 };
 const expectContextAccess = async (page: Page) => {
   const token = await sessionToken(page);
@@ -73,26 +71,30 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     }),
   ).toHaveCount(0);
   await findCase(page, fixture.reference);
-  await expect(page.locator(".case-header-state")).toBeVisible();
+  await expect(page.locator(".case-title-line .chip-list")).toBeVisible();
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   const history = page.locator(".case-timeline-panel");
   await expect(history.locator(".region-timeline > li")).toHaveCount(1);
-  if (role !== "CASE_HANDLER") {
-    await expect(history).toContainText("You do not have access to these changes.");
-    await expect(history).not.toContainText("Synthetic claimant");
-    await expect(history).not.toContainText("Synthetic insurer");
-  }
-  await showCaseActionMenu(page);
+  await history.getByRole("button", { name: "View details", exact: true }).click();
+  const details = page.getByRole("dialog", { name: "View details", exact: true });
   if (role === "CASE_HANDLER") {
-    await expect(history.locator(".timeline-comparison [data-side=after]").first()).toBeAttached();
+    await expect(details.locator(".timeline-comparison [data-side=after]").first()).toBeAttached();
+  } else {
+    await expect(details).toContainText("You do not have access to these changes.");
+    await expect(details).not.toContainText("Synthetic claimant");
+    await expect(details).not.toContainText("Synthetic insurer");
+  }
+  await details.getByRole("button", { name: "Close", exact: true }).first().click();
+  if (role === "CASE_HANDLER") {
     await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   } else {
-    await expect(
-      page.getByRole("button").and(page.locator('button[data-act="case.close"]')).filter({
-        visible: true,
-      }),
-    ).toBeDisabled();
+    await showCaseActionMenu(page);
+    const usableClose = page.locator(
+      '[data-menu-item="case.close"]:not([aria-disabled="true"]), button[data-act="case.close"]:enabled',
+    );
+    await expect(usableClose).toHaveCount(0);
   }
+  await page.keyboard.press("Escape");
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator(".timeline-comparison [data-side]")).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);
@@ -100,18 +102,17 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   if (scoped) {
     await page
-      .getByRole("button", {
-        name: "Back to cases",
-        exact: true,
-      })
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "Cases", exact: true })
       .click();
-    await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
+    await refusedRead(page, "case.get", async () => {
+      await page.goto(referencePath(fixture.unrelated), { waitUntil: "commit" });
+    });
     await expect(
       page.locator(
-        ".case-header-state [data-region], .entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
+        ".case-title-line .chip-list, .entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
       ),
     ).toHaveCount(0);
-    await expect(page.locator(".case-header-state")).toBeEmpty();
     await expect(page.locator("#case-detail-title")).toHaveText(fixture.unrelated);
   }
 };
@@ -180,9 +181,11 @@ for (const [name, role, scoped] of cases) {
       await narrow.goto("/people-history");
       const navigation = narrow.locator(".workspace-mobile-tabs");
       await expect(navigation.getByRole("link", { name: /^Cases/u })).toBeVisible();
-      await navigation.locator(".compact-navigation > summary").press("Enter");
-      await expect(navigation.getByRole("link", { name: /^Unconfirmed changes/u })).toBeVisible();
-      await expect(navigation.getByRole("link", { name: "Access history" })).toHaveCount(0);
+      await narrow.locator("#workspace-more").press("Enter");
+      const more = narrow.locator(".shell-more");
+      await expect(more.getByRole("link", { name: /^Unconfirmed changes/u })).toBeVisible();
+      await expect(more.getByRole("link", { name: "Access history" })).toHaveCount(0);
+      await narrow.keyboard.press("Escape");
       await expect(
         narrow.getByRole("heading", { name: "Access history", exact: true }),
       ).toBeVisible();
@@ -226,6 +229,7 @@ test("a fresh steward session does not restore a revoked ticket", async ({
     }
     expect(sessionReply.outcome.data.authenticated).toBe(expected);
   };
+  await seedSignedOut(page);
   await context.addCookies(revoked);
   await page.goto("/", {
     waitUntil: "commit",

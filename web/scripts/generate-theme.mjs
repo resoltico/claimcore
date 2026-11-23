@@ -1,6 +1,6 @@
 // The DTCG source owns tokens; the generator checks its OKLCH ramps and emits deterministic CSS.
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import { format } from "prettier";
 import prettierOptions from "../prettier.config.mjs";
 
@@ -98,14 +98,15 @@ for (const [name, item] of Object.entries(tokens.semantic)) {
     `  --${name}: light-dark(${reference(item.$value.light)}, ${reference(item.$value.dark)});`,
   );
 }
-lines.push("  --gutter: var(--space-4);", "}");
+for (const step of steps) {
+  lines.push(`  --accent-${step}: var(--${configuration.defaultAccent}-${step});`);
+}
+lines.push("}");
 if (!configuration.accents.includes(configuration.defaultAccent)) {
   throw new Error("Unknown default accent.");
 }
 for (const accent of configuration.accents) {
-  lines.push(
-    `${accent === configuration.defaultAccent ? ":root, " : ""}:root[data-accent="${accent}"] {`,
-  );
+  lines.push(`:root[data-accent="${accent}"] {`);
   for (const step of steps) {
     lines.push(`  --accent-${step}: var(--${accent}-${step});`);
   }
@@ -130,22 +131,23 @@ lines.push(`:root[data-mode="light"] { color-scheme: light; }
     --accent-soft-bg: Canvas; --accent-soft-text: LinkText; --accent-soft-border: Highlight;
     --focus-ring: Highlight; --shadow-1: none; --shadow-2: none;
     ${Object.keys(tokens.semantic)
-      .filter((name) => /^(?:state-|avatar-|danger-|warning-|success-)/u.test(name))
+      .filter((name) => /^(?:tone-|avatar-|danger-|warning-|success-)/u.test(name))
       .map((name) => `--${name}: ${forcedColor(name)};`)
       .join("\n    ")}
   }
   button, input, select, textarea, [role="button"], [role="tab"] { border-color: ButtonText; }
   [aria-current], [aria-selected="true"] { outline: 2px solid Highlight; }
-  :root .badge, :root .pill, :root .due-chip, :root .settings-option { border: 1px solid ButtonText; }
+  :root .chip, :root .settings-option { border: var(--border-width) solid ButtonText; }
   :root .settings-option:has(input:checked) { border-color: Highlight; }
 }
 @media (prefers-reduced-motion: reduce) { :root { --motion: none; } }`);
-const output = await format(`${lines.join("\n")}\n`, { ...prettierOptions, parser: "css" });
-if (process.argv.includes("--check")) {
-  if (readFileSync(outputPath, "utf8") !== output) {
-    process.stderr.write(`Stale theme: run npm run theme (${fileURLToPath(outputPath)}).\n`);
-    process.exitCode = 1;
+export const themeCss = await format(`@layer tokens {\n${lines.join("\n")}\n}\n`, {
+  ...prettierOptions,
+  parser: "css",
+});
+
+if (process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  if (!process.argv.includes("--check")) {
+    writeFileSync(outputPath, themeCss);
   }
-} else {
-  writeFileSync(outputPath, output);
 }

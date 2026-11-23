@@ -209,8 +209,8 @@ it("binds request admission identity while profile hints stay editable through r
   expect(
     screen.getByText("The identity provider supplied this information without verifying it."),
   ).toBeVisible();
-  await user.click(screen.getAllByRole("button", { name: "Add person" }).at(-1)!);
-  await screen.findByRole("dialog", { name: "Add person" });
+  await user.click(screen.getByRole("button", { name: "Add from access request" }));
+  await screen.findByRole("dialog", { name: "Add from access request" });
   for (const name of [
     "input:principal.kind",
     "input:principal.issuer",

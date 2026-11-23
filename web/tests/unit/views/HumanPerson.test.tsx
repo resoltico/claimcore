@@ -1,3 +1,4 @@
+import { selectRowAction } from "../../support/workspace-actions";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -166,10 +167,10 @@ it("renders an opaque Core person title and binds revoke/navigation to typed con
       name: /17/u,
     }),
   ).not.toBeInTheDocument();
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: /revoke/iu,
-    }),
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /Core grant caption/u }),
+    "Revoke role",
   );
   expect(revoke).toHaveBeenCalledExactlyOnceWith(
     document.screen.regions.flatMap((region) =>

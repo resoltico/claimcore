@@ -46,7 +46,7 @@ const recordFrame = async (run: Run, frame: string) => {
 };
 const expandedFilters = async (run: Run) => {
   await settledWorkspaceHeader(run.page);
-  const grid = run.page.locator(".worklist-toolbar .filter-field-grid");
+  const grid = run.page.locator(".worklist-toolbar .worklist-filter-controls");
   const trigger = grid.locator('button[aria-haspopup="dialog"]');
   await expect(trigger).toHaveCount(1);
   await expect(grid.locator('[role="combobox"][value="RECENT"]')).toHaveCount(1);
@@ -110,9 +110,38 @@ const recordPaymentReview = async (run: Run) => {
 const historyComparison = async (page: Page) => {
   await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
 };
+const editorLayout = async (page: Page) => {
+  const section = page.locator(".task-field-section").filter({
+    has: page.locator('[data-field-name="incidentDate"]'),
+  });
+  await expect(section.getByRole("heading")).toBeVisible();
+  const date = await section.locator('[data-field-name="incidentDate"]').boundingBox();
+  const received = await section.locator('[data-field-name="receivedDate"]').boundingBox();
+  const narrative = await section.locator('[data-field-name="incidentDescription"]').boundingBox();
+  expect(date).not.toBeNull();
+  expect(received).not.toBeNull();
+  expect(narrative).not.toBeNull();
+  if ((page.viewportSize()?.width ?? 0) >= 640) {
+    const drawer = await page.locator(".drawer").boundingBox();
+    expect(drawer?.width).toBeGreaterThanOrEqual(640);
+    expect(Math.abs(date!.y - received!.y)).toBeLessThan(2);
+    expect(Math.abs(date!.x - received!.x)).toBeGreaterThan(date!.width);
+    expect(narrative!.width).toBeGreaterThan(date!.width * 1.5);
+  } else {
+    expect(received!.y).toBeGreaterThan(date!.y);
+  }
+  const parties = page.locator(".task-collection");
+  await parties.getByRole("button").last().click();
+  const party = parties.locator(".collection-item").last();
+  await expect(party.locator(".segmented-choice").getByRole("radio").first()).toBeVisible();
+  await party.getByRole("button").last().click();
+};
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {
     await visitRoute(run.page, route, run.dimension);
+    if (route.id === "editor-open") {
+      await editorLayout(run.page);
+    }
     if (route.id === "paid-correction-review") {
       await paidCorrectionReview(run);
     }

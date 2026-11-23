@@ -1,6 +1,6 @@
 import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { goToView, chooseChoice } from "./workspace-navigation";
+import { startPeopleCreation, goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "./fixtures";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./people-setup";
@@ -51,13 +51,7 @@ const openPeople = async (page: Page, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
 };
 const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
-  await page
-    .getByRole("button", {
-      name: ui(language, "task.people.admit.label"),
-      exact: true,
-    })
-    .first()
-    .click();
+  await startPeopleCreation(page, ui(language, "label.addPerson"));
   const dialog = page.getByRole("dialog", {
     name: ui(language, "task.people.admit.label"),
     exact: true,
@@ -65,12 +59,12 @@ const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
   await dialog
     .locator('[name="input:profile.displayName"]')
     .fill("Authored accessibility candidate");
-  await dialog
-    .getByRole("radio", {
-      name: ui(language, "role.CASE_READER.label"),
-      exact: true,
-    })
-    .check();
+  const reader = dialog.getByRole("radio", {
+    name: ui(language, "role.CASE_READER.label"),
+    exact: true,
+  });
+  await reader.click();
+  await expect(reader).toBeChecked();
   return dialog;
 };
 const malformedIssuerBoundary = async (page: Page, issuer: string, subject: string) => {
@@ -190,16 +184,16 @@ for (const language of ["en", "lv", "ar"] as const) {
     });
     for (const kind of ["people.grant", "people.revoke"] as const) {
       await expect(person).toBeVisible();
-      const name = p.text("ui.actDescription", {
-        label: p.peopleLabel(kind),
-        meaning: p.peopleMeaning(kind),
-      });
-      const action = person.getByRole("button", {
-        name,
-        exact: true,
-      });
-      await expect(action).toHaveText(ui(language, `task.${kind}.label`));
-      await action.click();
+      const name = ui(language, `task.${kind}.label`);
+      const direct = person.getByRole("button", { name, exact: true });
+      if (await direct.isVisible()) {
+        await direct.click();
+      } else {
+        await person
+          .getByRole("button", { name: ui(language, "ui.moreCaseActions"), exact: true })
+          .click();
+        await page.getByRole("menuitem", { name, exact: true }).click();
+      }
       const dialog = page.getByRole("dialog", {
         name: ui(language, `task.${kind}.label`),
         exact: true,
@@ -214,8 +208,10 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expect(reference).toHaveAccessibleName(
         inputMessage(language, "field.caseReference.label"),
       );
+      const rule = dialog.locator(".field-rule").filter({ visible: true, hasText: /ASCII/u });
+      await expect(rule).toBeVisible();
       await expect(reference).toHaveAccessibleDescription(
-        `${inputMessage(language, "label.existingCaseSelectionHint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+        `${inputMessage(language, "label.existingCaseSelectionHint")} ${(await rule.textContent())?.trim() ?? ""} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
       );
       await reference.fill("Synthetic reference");
       await expect(reference).not.toHaveAttribute("aria-invalid");

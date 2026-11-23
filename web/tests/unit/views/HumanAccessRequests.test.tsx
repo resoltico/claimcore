@@ -95,7 +95,7 @@ it("binds Core request row keys to unverified admission controls without reconst
   const admit = vi.fn();
   render(<AccessRequests available busy={false} onAdmit={admit} onDisclosureRefused={vi.fn()} />);
   await screen.findByText("Core second caption Ω");
-  await userEvent.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
+  await userEvent.click(screen.getAllByRole("button", { name: "Add from access request" })[0]!);
   expect(admit).toHaveBeenCalledWith(handles[1]);
   expect(screen.queryByText("second unverified hint")).not.toBeInTheDocument();
 });

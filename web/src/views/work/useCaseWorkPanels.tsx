@@ -1,4 +1,3 @@
-import { effectiveReminderSelection } from "../../routing/reminderQuery";
 import { clientCompositions } from "@contracts/client";
 import { operationTask } from "../../protocol/taskCatalog";
 import { isNarrativeCreationId, narrativeCreationInput } from "../../operation/metadata";
@@ -10,10 +9,10 @@ import {
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { RoutedReminder } from "./SelectedReminder";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ObservedReceipt } from "../operation/ObservedReceipt";
+import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { Affordance, TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
+import type { Affordance, TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
 
@@ -24,9 +23,9 @@ import { CaseAttachments } from "../case/CaseAttachments";
 import { CaseNotes } from "../case/CaseNotes";
 import { CaseWork } from "../case/CaseWork";
 
-type ReminderStateFilter = ReminderListRequest["state"];
 type Editor = {
   noteIntent?: NoteIntent;
+  implicit?: boolean;
   upload?: File;
   action: OperationAffordance;
   subject: "WORK" | "REMINDER" | "NOTE" | "LINK" | "ATTACHMENT";
@@ -56,8 +55,6 @@ export const useCaseWorkPanels = ({
   onLockChange: MutationLockChange;
 }) => {
   const noteDraft = useInlineNoteDraft();
-  const [browsing, setBrowsing] = useState(false);
-  const [state, setState] = useState<ReminderStateFilter>(undefined);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
   const recorded = useAcceptedOperation();
@@ -75,10 +72,6 @@ export const useCaseWorkPanels = ({
     () => ({ kind: "ID" as const, caseId: current.subject.caseId }),
     [current.subject.caseId],
   );
-  const filter = useMemo(
-    () => ({ ...(state === undefined ? {} : { state }), includeInactive: true }),
-    [state],
-  );
   const open = (next: Editor, { anchorToTrigger = true } = {}) => {
     returnFocus.current = editorOrigin(next);
     recorded.clear();
@@ -91,11 +84,11 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (_receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
+  const accepted = (receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
     if (noteIntent !== undefined) {
       noteDraft.accepted(noteIntent);
     }
-    recorded.accept(operationId);
+    recorded.accept(operationId, receiptOutcomeMessage(receipt));
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -174,11 +167,16 @@ export const useCaseWorkPanels = ({
           : {})}
       />
       {recorded.operationId === null ? null : (
-        <ObservedReceipt key={recorded.operationId} operationId={recorded.operationId} />
+        <ReceiptFeedback
+          key={recorded.operationId}
+          operationId={recorded.operationId}
+          messageId={recorded.messageId}
+          dismiss={recorded.clear}
+        />
       )}
     </>
   ) : null;
-  const onReminder: ReminderActHandler = (action, originId) => {
+  const onReminder: ReminderActHandler = (action, originId, implicit = false) => {
     const { binding } = action;
     const identity =
       binding.kind === "REMINDER" && "reminderId" in binding ? binding.reminderId : action.task;
@@ -189,6 +187,7 @@ export const useCaseWorkPanels = ({
       action,
       binding,
       prefill: {},
+      implicit,
       ...(originId === undefined ? {} : { origin: originId }),
     });
   };
@@ -219,18 +218,6 @@ export const useCaseWorkPanels = ({
             }
           }}
           onReminder={onReminder}
-          state={effectiveReminderSelection(filter).state}
-          setState={setState}
-          browsing={browsing}
-          setBrowsing={setBrowsing}
-          refresh={refresh}
-          target={target}
-          filter={filter}
-          onChanged={onChanged}
-          onRefresh={() => {
-            setRefresh((value) => value + 1);
-            onChanged();
-          }}
         />
       ) : null}
     </>
@@ -241,6 +228,7 @@ export const useCaseWorkPanels = ({
         key={`${editor.subject}:${editor.kind}:${editor.identity}`}
         current={current}
         noteIntent={editor.noteIntent}
+        implicit={editor.implicit}
         upload={editor.upload}
         subject={editor.subject}
         kind={editor.kind}
@@ -278,6 +266,7 @@ export const useCaseWorkPanels = ({
           kind: noteAdd.task,
           identity: "add",
           noteIntent: intent,
+          implicit: true,
           prefill: { [input.id]: intent.text },
         });
       }}

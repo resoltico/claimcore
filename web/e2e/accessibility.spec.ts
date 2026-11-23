@@ -18,9 +18,8 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   await progress("a11y-media-ready");
   await page.goto("/", { waitUntil: "commit", timeout: 10_000 });
   await progress("a11y-document-ready");
-  await expect(
-    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator("#kc-page-title")).toBeVisible();
+  await expect(page.locator('input[name="username"]')).toBeVisible();
 };
 
 test("keeps published login, editor, review, receipt and history accessible at narrow and zoom-equivalent reflow viewports @engine", async ({
@@ -59,7 +58,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
     await expect(meter).toHaveAccessibleName(/.+/u);
     expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");
   }
-  await expect(page.locator(".case-header-state")).toContainText("Open");
+  await expect(page.locator(".case-title-line .chip-list")).toContainText("Undecided");
   const timeline = page.locator(".case-timeline-panel");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
   const facts = timeline.getByRole("tab", { name: "Case facts", exact: true });
@@ -76,10 +75,8 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();
   await page.reload({ waitUntil: "commit" });
-  await expect(
-    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.locator("#kc-page-title")).toBeVisible();
+  await expect(page.locator('input[name="username"]')).toBeVisible();
   await expect(page.locator("#case-detail-title")).toHaveCount(0);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await progress("a11y-expired-session");

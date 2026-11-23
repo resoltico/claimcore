@@ -1,3 +1,4 @@
+import { settledWorkspaceHeader } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { join } from "node:path";
 import { matrixEvidenceDirectory } from "./design-matrix-checks";
@@ -7,7 +8,7 @@ import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { noHorizontalOverflow } from "./layout-support";
 
-test("notes use reviewed unversioned writes, latest three, paging, removal and Activity @engine", async ({
+test("notes use one-step unversioned writes, latest three, paging, removal and Activity @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -23,23 +24,19 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
     await notes
       .getByRole("textbox", { name: "Note", exact: true })
       .fill(`Handling note ${number}\nSecond line`);
-    const preview = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/operation.preview",
+    const execution = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/operation.execute",
     );
     await notes.getByRole("button", { name: "Add note", exact: true }).click();
-    const reviewed = await preview;
-    expect(reviewed.request().postDataJSON()).toMatchObject({
+    const recorded = await execution;
+    expect(recorded.request().postDataJSON()).toMatchObject({
       task: "note.add",
       binding: { kind: "NOTE" },
       inputs: { "input:noteText": `Handling note ${number}\nSecond line` },
     });
-    expect(reviewed.request().postDataJSON()).not.toHaveProperty("expectedRevision");
-    const dialog = page.getByRole("dialog");
-    const confirm = dialog.locator("button[data-confirm-operation]");
-    await expect(confirm).toBeEnabled();
-    expect(writes).toBe(number - 1);
-    await confirm.click();
-    await expect(dialog).toHaveCount(0);
+    expect(recorded.request().postDataJSON()).not.toHaveProperty("expectedRevision");
+    expect(writes).toBe(number);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await expectCaseReadsSettled(page);
     await expect(notes.getByText(`Handling note ${number}`, { exact: false })).toBeVisible();
   }
@@ -48,7 +45,8 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
   await notes.getByRole("button", { name: "Show all notes", exact: true }).click();
   await expect(notes.locator(".note-list > li")).toHaveCount(4);
   const removed = notes.locator(".note-list > li").filter({ hasText: "Handling note 2" });
-  await removed.getByRole("button", { name: "Remove note", exact: true }).click();
+  await removed.locator("button[aria-haspopup]").click();
+  await page.getByRole("menuitem", { name: "Remove note", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const confirm = dialog.locator("button[data-confirm-operation]");
   await expect(confirm).toBeEnabled();
@@ -81,6 +79,7 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
   const evidence = await matrixEvidenceDirectory();
   await page.screenshot({ path: join(evidence, "notes-en-1280.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 900 });
+  await settledWorkspaceHeader(page);
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.screenshot({ path: join(evidence, "notes-en-320.png"), fullPage: true });

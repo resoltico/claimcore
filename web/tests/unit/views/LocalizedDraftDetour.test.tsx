@@ -105,7 +105,7 @@ it.each([
     );
     await userEvent.click(
       screen.getByRole("button", {
-        name: "Return to workspace",
+        name: "Close",
       }),
     );
     expect(

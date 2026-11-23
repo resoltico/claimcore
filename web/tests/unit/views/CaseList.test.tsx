@@ -250,7 +250,7 @@ it.each([
   expect(screen.queryByText("No cases to show.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 });
-it("keeps case creation in the shell and masks rows while a fresh page loads", async () => {
+it("keeps existing rows visible during a quiet refresh", async () => {
   let finish: (value: Response) => void = () => undefined;
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -268,14 +268,10 @@ it("keeps case creation in the shell and masks rows while a fresh page loads", a
   expect(fetch.mock.calls[0]?.[0]).toBe("/api/case.list");
   fireEvent.click(
     screen.getByRole("button", {
-      name: "Reload cases",
+      name: "Refresh",
     }),
   );
-  expect(
-    screen.queryByRole("link", {
-      name: "ADVISED-CASE",
-    }),
-  ).toBeNull();
+  expect(screen.getByRole("link", { name: "ADVISED-CASE" })).toBeVisible();
   expect(
     screen.queryByRole("button", {
       name: "Open a case",
@@ -335,7 +331,7 @@ it.each(["access", "session"])(
     render(<CaseList onSelect={vi.fn()} />);
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "Load more cases",
+        name: "Load more",
       }),
     );
     await screen.findByRole("alert");
@@ -351,7 +347,7 @@ it.each(["access", "session"])(
     ).toBeNull();
     expect(
       screen.queryByRole("button", {
-        name: "Load more cases",
+        name: "Load more",
       }),
     ).toBeNull();
   },
@@ -367,7 +363,7 @@ it("retains the last accepted rows after a request-local failure", async () => {
   render(<CaseList onSelect={vi.fn()} />);
   fireEvent.click(
     await screen.findByRole("button", {
-      name: "Load more cases",
+      name: "Load more",
     }),
   );
   await waitFor(() => {

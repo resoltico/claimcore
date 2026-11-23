@@ -1,5 +1,5 @@
-import { ReferenceSummary } from "../../components/ReferenceSummary";
-import { useRef, useState } from "react";
+import { Toolbar } from "../../ui/Toolbar";
+import { useRef, useState, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
 import {
   worklistSearchIssue,
@@ -12,7 +12,7 @@ type Props = {
   search: string;
   onSearch: (value: string) => void;
   onChange: (query: WorklistQuery) => void;
-  onSelect: (reference: string) => void;
+  exportAction?: ReactNode;
 };
 const searchSelection = (query: WorklistQuery, text: string): WorklistQuery => {
   const { text: _text, ...filters } = query;
@@ -65,7 +65,19 @@ const WorklistSearch = ({
         autoComplete="off"
         dir="auto"
       />
-      <button type="submit">{p.text("ui.search")}</button>
+      {search === "" ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            onSearch("");
+            setSubmittedDraft(null);
+            onChange(searchSelection(query, ""));
+            input.current?.focus();
+          }}
+        >
+          {p.text("ui.clearFilters")}
+        </button>
+      )}
       {correction === undefined ? null : (
         <p id="worklist-search-correction" className="worklist-search-correction" role="alert">
           {correction === "diagnostic.TOO_LONG"
@@ -76,59 +88,15 @@ const WorklistSearch = ({
     </form>
   );
 };
-const ExactLookup = ({ onSelect }: Pick<Props, "onSelect">) => {
-  const p = usePresentation();
-  const [reference, setReference] = useState("");
-  return (
-    <details className="exact-lookup">
-      <summary>{p.text("ui.findCase")}</summary>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (reference !== "") {
-            onSelect(reference);
-          }
-        }}
-      >
-        <label htmlFor="case-lookup">
-          {p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })}
-        </label>
-        <input
-          id="case-lookup"
-          className="identifier-value"
-          value={reference}
-          onChange={(event) => {
-            setReference(event.target.value);
-          }}
-          autoComplete="off"
-          spellCheck={false}
-          autoCapitalize="off"
-          dir="ltr"
-        />
-        {reference === "" ? null : (
-          <ReferenceSummary
-            id="ui.exactReference"
-            values={{ label: p.fieldLabel("caseReference"), reference }}
-          />
-        )}
-        <button type="submit" disabled={reference === ""}>
-          {p.text("ui.findCase")}
-        </button>
-      </form>
-    </details>
-  );
-};
 export const WorklistToolbar = (props: Props) => (
-  <>
-    <div className="worklist-toolbar">
-      <WorklistSearch
-        query={props.query}
-        onChange={props.onChange}
-        search={props.search}
-        onSearch={props.onSearch}
-      />
-      <WorklistFilters query={props.query} onChange={props.onChange} />
-    </div>
-    <ExactLookup onSelect={props.onSelect} />
-  </>
+  <Toolbar className="worklist-toolbar">
+    <WorklistSearch
+      query={props.query}
+      onChange={props.onChange}
+      search={props.search}
+      onSearch={props.onSearch}
+    />
+    <WorklistFilters query={props.query} onChange={props.onChange} />
+    {props.exportAction}
+  </Toolbar>
 );

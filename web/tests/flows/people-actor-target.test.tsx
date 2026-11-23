@@ -1,3 +1,4 @@
+import { selectRowAction } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { chooseOption } from "../support/choice-entry";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
@@ -28,12 +29,12 @@ beforeEach(() => {
   stubViewCounts();
 });
 const grantToSelected = async () => {
-  fireEvent.click(await screen.findByRole("button", { name: /Grant role:/u }));
+  fireEvent.click(await screen.findByRole("button", { name: "Grant role" }));
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 const expectBoundActor = async (subject = firstActor.principal.subject) => {
   if (screen.queryByRole("button", { name: "Review changes" }) === null) {
-    const actions = await screen.findAllByRole("button", { name: /^(?:Grant|Revoke) role:/u });
+    const actions = await screen.findAllByRole("button", { name: /^(?:Grant|Revoke) role$/u });
     fireEvent.click(actions[0]!);
   }
   await screen.findByRole("button", { name: "Review changes" });
@@ -87,7 +88,7 @@ it("declining retarget consent retains the authored principal and returns to its
   await openActor();
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
-  expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "Add from access request" })).toBeVisible();
   expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("authored-other");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -260,7 +261,7 @@ it("opens one named person panel and prefills profile edits only from its curren
   expect(person).not.toHaveTextContent("stale-list-first");
   expect(person.querySelector(".actor-record-details")).toBeNull();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: /^Update profile:/u }));
+  await user.click(await screen.findByRole("button", { name: "Update profile" }));
   await waitFor(() => {
     expect(document.querySelector('[name="input:profile.displayName"]')).toHaveValue(
       "server-first",
@@ -357,7 +358,11 @@ it("opens a row revocation with the exact supplied principal, role and case hand
   actorRoute();
   render(<Dashboard />);
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Revoke role" }));
+  await selectRowAction(
+    user,
+    await screen.findByRole("row", { name: /CASE-FROM-GRANT/u }),
+    "Revoke role",
+  );
   expect(document.querySelector('[name="field:caseReference"]')).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {

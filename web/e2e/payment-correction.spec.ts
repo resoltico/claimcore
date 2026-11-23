@@ -45,8 +45,9 @@ test("corrects selected payment atomically with both identities in receipt timel
   await payments
     .locator("tbody tr")
     .filter({ hasText: "100.00 EUR" })
-    .getByRole("button", { name: "Correct payment entry", exact: true })
+    .locator("button[aria-haspopup]")
     .click();
+  await page.getByRole("menuitem", { name: "Correct payment entry", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
   await expect(dialog.getByRole("textbox", { name: "Payment ID", exact: true })).toHaveCount(0);

@@ -25,7 +25,7 @@ it.each([
     expect(await screen.findByRole("heading", { name: "Reminders" })).toBeVisible();
     expect(screen.getByRole("alert")).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear filters" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Account(?: · |$)/u })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Page not found" })).toBeNull();
     expect(reminders).not.toHaveBeenCalled();
   },

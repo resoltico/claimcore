@@ -1,12 +1,13 @@
+import { EmptyState } from "../EmptyState";
 import { useId } from "react";
 import type { Region, RegionContent } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { Entries } from "./Entries";
-import { Table } from "./Table";
-import { Stages } from "./Stages";
-import { Codes } from "./Codes";
-import { Actions } from "./Actions";
+import { DataTable } from "../DataTable";
+import { Stepper } from "../Stepper";
+import { ChipList, chipValues } from "../ChipList";
+import { TaskControls } from "../TaskControls";
 import { Notice } from "./Notice";
 import { Timeline } from "./Timeline";
 import type { RegionInteraction } from "./interaction";
@@ -16,15 +17,20 @@ const Content = ({
   timeZone,
   copy,
   avatars,
+  emptyId,
   ...interaction
 }: RegionInteraction & {
   content: RegionContent;
   timeZone: string;
   copy: boolean;
   avatars: boolean;
+  emptyId?: string | undefined;
 }) => {
   switch (content.kind) {
     case "ENTRIES":
+      if (content.entries.length === 0 && emptyId !== undefined) {
+        return <EmptyState messageId={emptyId} />;
+      }
       return (
         <Entries
           entries={content.entries}
@@ -36,15 +42,15 @@ const Content = ({
         />
       );
     case "TABLE":
-      return <Table view={content} timeZone={timeZone} {...interaction} />;
+      return <DataTable view={content} timeZone={timeZone} emptyId={emptyId} {...interaction} />;
     case "STAGES":
-      return <Stages content={content} timeZone={timeZone} {...interaction} />;
+      return <Stepper content={content} timeZone={timeZone} {...interaction} />;
     case "CODES":
-      return <Codes content={content} />;
+      return <ChipList values={chipValues(content)} />;
     case "NOTICE":
       return <Notice content={content} timeZone={timeZone} />;
     case "TIMELINE":
-      return <Timeline content={content} timeZone={timeZone} {...interaction} />;
+      return <Timeline content={content} timeZone={timeZone} emptyId={emptyId} {...interaction} />;
   }
 };
 const RegionActions = ({
@@ -52,7 +58,7 @@ const RegionActions = ({
   onAction,
   actionsDisabled,
 }: Pick<RegionInteraction, "onAction" | "actionsDisabled"> & { region: Region }) => (
-  <Actions
+  <TaskControls
     disabled={actionsDisabled ?? false}
     actions={region.actions ?? []}
     prominent={region.role === "RECOMMENDATION"}
@@ -64,7 +70,6 @@ const RegionActions = ({
           },
         })}
     compact
-    descriptiveLabel
   />
 );
 export const RegionView = ({
@@ -79,6 +84,7 @@ export const RegionView = ({
   const body = (
     <>
       <Content
+        emptyId={region.emptyId}
         content={region.content}
         timeZone={timeZone}
         copy={region.role === "DETAILS"}

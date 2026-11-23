@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { fields } from "../support/service-ui.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { timelineDocument } from "../support/timeline-document.fixtures";
@@ -122,21 +123,19 @@ it.each([
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
     });
-    await user.click(screen.getByRole("button", { name: "Back to cases" }));
+    await user.click(casesBreadcrumb());
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");
     });
     if (interrupt) {
-      const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;
-      await user.pointer({ target: summary, keys: "[MouseLeft>]" });
+      const filters = screen.getByRole("button", { name: "More filters" });
+      await user.pointer({ target: filters, keys: "[MouseLeft>]" });
       await act(async () => {
         pending.resolve(page(true));
         await pending.promise;
       });
-      await user.pointer({ target: summary, keys: "[/MouseLeft]" });
-      await waitFor(() => {
-        expect(document.querySelector(".exact-lookup")).toHaveAttribute("open", "");
-      });
+      await user.pointer({ target: filters, keys: "[/MouseLeft]" });
+      expect(await screen.findByRole("dialog", { name: "More filters" })).toBeVisible();
       expect(scroll).not.toHaveBeenCalled();
     } else if (retained) {
       await waitFor(() => {

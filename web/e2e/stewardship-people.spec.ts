@@ -8,7 +8,12 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { type Language, defaults } from "../src/presentation/preferences";
 
 import { createPresenter } from "../src/presentation/presenter";
-import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
+import {
+  startPeopleCreation,
+  goToView,
+  showExactLookup,
+  chooseChoice,
+} from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import { openCase, startAct, recordReviewed } from "./case-workflow";
@@ -121,9 +126,12 @@ test("browser renders void, reinstatement and live payload erasure through autho
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);
   const ownerHistory = page.locator(".case-timeline-panel");
+  await ownerHistory.getByRole("button", { name: "View details", exact: true }).first().click();
+  const ownerDetails = page.getByRole("dialog", { name: "View details", exact: true });
   await expect(
-    ownerHistory.locator(".timeline-comparison [data-side=after]").first(),
+    ownerDetails.locator(".timeline-comparison [data-side=after]").first(),
   ).toBeAttached();
+  await ownerDetails.getByRole("button", { name: "Close", exact: true }).first().click();
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
@@ -131,19 +139,11 @@ test("browser renders void, reinstatement and live payload erasure through autho
   try {
     const steward = await context.newPage();
     await openAuthenticated(steward, "Cases", stewardCookies);
-    await (await showExactLookup(steward)).fill(reference);
-    await steward
-      .getByRole("button", {
-        name: "Open by exact reference",
-        exact: true,
-      })
-      .click();
+    const lookup = await showExactLookup(steward);
+    await lookup.fill(reference);
+    await lookup.press("Enter");
     await stewardAct(steward, reference, "case.void", "Synthetic entry error");
-    await expect(
-      steward.locator(
-        '.case-header-state .code-value[data-vocabulary="lifecycle"][data-code="VOIDED"]',
-      ),
-    ).toContainText("Voided");
+    await expect(steward.locator(".case-title-line .chip-list")).toContainText("Voided");
     await stewardAct(steward, reference, "case.reinstate", "Synthetic correction");
     await stewardAct(steward, reference, "case.erase");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
@@ -151,8 +151,15 @@ test("browser renders void, reinstatement and live payload erasure through autho
     );
     await expect(steward.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
-    for (const summary of await history.locator("details > summary").all()) {
-      await summary.click();
+    const details = steward.getByRole("dialog", { name: "View details", exact: true });
+    for (const viewDetails of await history
+      .getByRole("button", { name: "View details", exact: true })
+      .all()) {
+      await viewDetails.click();
+      await expect(details).not.toContainText("Synthetic claimant");
+      await expect(details).not.toContainText("Synthetic insurer");
+      await expect(details.locator(".timeline-comparison [data-side]")).toHaveCount(0);
+      await details.getByRole("button", { name: "Close", exact: true }).first().click();
     }
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");
@@ -257,20 +264,14 @@ const openAdmission = async (
   name: string,
   reference: string,
 ) => {
-  await page
-    .getByRole("button", {
-      name: "Add person",
-      exact: true,
-    })
-    .first()
-    .click();
+  await startPeopleCreation(page);
   const dialog = page.getByRole("dialog", {
-    name: "Add person",
+    name: "Add from access request",
     exact: true,
   });
   await peopleTarget(page, issuer, subject);
   await dialog.locator('[name="input:profile.displayName"]').fill(name);
-  const grants = dialog.locator('fieldset[id="field-peopleGrants"]');
+  const grants = dialog.locator('[id="field-peopleGrants"]');
   await grants
     .getByRole("radio", {
       name: "Case reader",
@@ -332,16 +333,14 @@ const beginActorAct = async (
     name,
     exact: true,
   });
-  const button = person.getByRole("button", {
-    name: p.text("ui.actDescription", {
-      label: p.peopleLabel(kind),
-      meaning: p.peopleMeaning(kind),
-    }),
-    exact: true,
-  });
-  await expect(button).toBeVisible();
-  await expect(button).toHaveText(p.peopleLabel(kind));
-  await button.click();
+  const label = p.peopleLabel(kind);
+  const direct = person.getByRole("button", { name: label, exact: true });
+  if (await direct.isVisible()) {
+    await direct.click();
+  } else {
+    await person.getByRole("button", { name: p.text("ui.moreCaseActions"), exact: true }).click();
+    await page.getByRole("menuitem", { name: label, exact: true }).click();
+  }
   await expect(
     page.getByRole("dialog", {
       name: p.peopleLabel(kind),

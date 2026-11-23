@@ -27101,6 +27101,17 @@
             },
             "minItems": 0,
             "maxItems": 327
+          },
+          "notEntered": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "minItems": 0,
+            "maxItems": 327
           }
         },
         "required": [

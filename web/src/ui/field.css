@@ -1,0 +1,15 @@
+@layer components {
+  .field-rule {
+    display: block;
+    margin-block-start: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--tone-info-bg);
+    color: var(--tone-info-text);
+    font-size: var(--text-xs);
+  }
+
+  .field-rule[hidden] {
+    display: none;
+  }
+}

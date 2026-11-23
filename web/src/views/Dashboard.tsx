@@ -1,3 +1,4 @@
+import { PhoneActionTarget } from "../ui/PhoneAction";
 import { hasStaticMessage } from "../presentation/messages";
 import { apiEndpoints, type CaseLinkedReceipt, type ServiceResponse } from "../api/service";
 import { hasDocumentSubject, type RequesterDocument } from "../protocol/types";
@@ -7,7 +8,7 @@ import type { Link, TaskId, Region, Screen } from "@contracts/client";
 
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
-import { ObservedReceipt } from "./operation/ObservedReceipt";
+import { ReceiptFeedback, receiptOutcomeMessage } from "./operation/ReceiptFeedback";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
@@ -26,9 +27,17 @@ import {} from "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
 import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
-import { isWorkspaceLinkId, WorkspaceHeader } from "./WorkspaceHeader";
+import { isWorkspaceLinkId, Shell } from "./Shell";
 import { RoutedContent } from "./RoutedContent";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
@@ -94,10 +103,11 @@ const useInitialAllowedRoute = (
 };
 const routeFocusTarget = (root: HTMLElement, id: string | null) => {
   const elementAtId = id === null ? null : document.getElementById(id);
-  const requested = elementAtId?.closest("[hidden],[inert]") === null ? elementAtId : null;
+  const requested =
+    elementAtId?.closest('[hidden],[inert],[aria-hidden="true"]') === null ? elementAtId : null;
   const heading =
     [...root.querySelectorAll<HTMLElement>("h1")].find(
-      (candidate) => candidate.closest("[hidden],[inert]") === null,
+      (candidate) => candidate.closest('[hidden],[inert],[aria-hidden="true"]') === null,
     ) ?? null;
   const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
   return { element: requested ?? dialog ?? heading, restored: requested !== null };
@@ -150,8 +160,11 @@ const useRouteHeading = (
     }
     const { id, scrollY } = intent;
     const focus = () => {
-      // The departure guard is portaled and can outlive the route render.
-      if (loading || document.querySelector("[data-navigation-guard]") !== null) {
+      // A departing sheet or guard can still own focus during the route render.
+      if (
+        loading ||
+        document.querySelector("[data-navigation-guard], .shell-more, .find-control") !== null
+      ) {
         return false;
       }
       const { element, restored } = routeFocusTarget(target, id);
@@ -165,9 +178,9 @@ const useRouteHeading = (
       ) {
         return false;
       }
-      intent.complete = true;
       moveRouteFocus(element, restored ? scrollY : null);
-      return true;
+      intent.complete = document.activeElement === element;
+      return intent.complete;
     };
     if (focus()) {
       return;
@@ -191,7 +204,7 @@ const useRouteHeading = (
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["aria-busy", "hidden", "inert"],
+      attributeFilter: ["aria-busy", "aria-hidden", "hidden", "inert"],
     });
     return () => {
       observer.disconnect();
@@ -224,12 +237,13 @@ const AcceptedReceipt = ({
   route,
   receipt,
   close,
+  shouldFocus,
 }: {
   route: Route;
-  receipt: { caseId: string; operationId: string } | null;
+  shouldFocus: () => boolean;
+  receipt: { caseId: string; operationId: string; messageId: string | undefined } | null;
   close: () => void;
 }) => {
-  const p = usePresentation();
   if (
     receipt === null ||
     route.screen !== "case" ||
@@ -239,14 +253,13 @@ const AcceptedReceipt = ({
     return null;
   }
   return (
-    <section className="accepted-receipt receipt" aria-label={p.text("label.recordedChange")}>
-      <div className="accepted-receipt-actions">
-        <button type="button" onClick={close}>
-          {p.text("ui.close")}
-        </button>
-      </div>
-      <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
-    </section>
+    <ReceiptFeedback
+      key={receipt.operationId}
+      operationId={receipt.operationId}
+      messageId={receipt.messageId}
+      dismiss={close}
+      shouldFocus={shouldFocus}
+    />
   );
 };
 const succeededRequester = (response: ServiceResponse<typeof apiEndpoints.context> | null) =>
@@ -415,8 +428,9 @@ const useAcceptanceFeedback = (
 ) => {
   const [accepted, setAccepted] = useState<{
     owner: object;
-    receipt: { caseId: string; operationId: string };
+    receipt: { caseId: string; operationId: string; messageId: string | undefined };
   } | null>(null);
+  const focusedOperation = useRef<string | null>(null);
   const available =
     owner !== null &&
     requester !== null &&
@@ -439,8 +453,20 @@ const useAcceptanceFeedback = (
       latestFeedbackOwner.current = null;
     };
   }, [feedbackOwner]);
+  const shouldFocus = useCallback(() => {
+    if (
+      accepted === null ||
+      accepted.owner !== latestFeedbackOwner.current ||
+      focusedOperation.current === accepted.receipt.operationId
+    ) {
+      return false;
+    }
+    focusedOperation.current = accepted.receipt.operationId;
+    return true;
+  }, [accepted]);
   return {
     owner: feedbackOwner,
+    shouldFocus,
     receipt: available && accepted?.owner === feedbackOwner ? accepted.receipt : null,
     clear: () => {
       setAccepted(null);
@@ -451,7 +477,11 @@ const useAcceptanceFeedback = (
       }
       setAccepted({
         owner: feedbackOwner,
-        receipt: { caseId: receipt.caseId, operationId },
+        receipt: {
+          caseId: receipt.caseId,
+          operationId,
+          messageId: receiptOutcomeMessage(receipt.document),
+        },
       });
       return true;
     },
@@ -592,6 +622,7 @@ export const Dashboard = () => {
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
+  const [phoneAction, setPhoneAction] = useState<HTMLDivElement | null>(null);
   const content = useRouteHeading(route, focusScope, {
     loading: context.loading,
     admitted: actorContext !== null,
@@ -625,51 +656,55 @@ export const Dashboard = () => {
             <InlineNoteRecovery />
             <WorkspaceViewsProvider>
               <div className="workspace-shell">
-                <WorkspaceHeader
+                <Shell
                   route={route}
                   presentation={presentation}
                   active={route.screen === "reminders" ? "reminders" : active}
                   views={views}
                   tasks={tasks}
                   locked={locked}
+                  phoneActionRef={setPhoneAction}
                 />
-                <main className="app-shell">
-                  <AcceptedReceipt
-                    route={route}
-                    receipt={feedback.receipt}
-                    close={() => {
-                      feedback.clear();
-                    }}
-                  />
-                  <RecoveryBanner />
-                  {businessDate.changedDate === null ? null : (
-                    <BusinessDateNotice
-                      date={businessDate.changedDate}
-                      refresh={businessDate.refresh}
-                    />
-                  )}
-                  <WorkspaceStatus context={context} />
-                  {presentation === null ? null : (
-                    <ScreenView view={presentation} roles={["NOTICE"]} />
-                  )}
-                  <div ref={content}>
-                    <LinkNavigationContext value={caseNavigation.linkNavigation}>
-                      <WorkspaceRoute
-                        key={ownerIdentity}
-                        route={route}
-                        caseNavigation={caseNavigation}
-                        views={views}
-                        noViews={noViews}
-                        tasks={tasks}
-                        known={actorContext !== null}
-                        checking={context.loading}
-                        setLocked={setLocked}
-                        committed={committed}
-                        refresh={refresh}
+                <PhoneActionTarget value={phoneAction}>
+                  <main className="workspace-main">
+                    <RecoveryBanner />
+                    {businessDate.changedDate === null ? null : (
+                      <BusinessDateNotice
+                        date={businessDate.changedDate}
+                        refresh={businessDate.refresh}
                       />
-                    </LinkNavigationContext>
-                  </div>
-                </main>
+                    )}
+                    <WorkspaceStatus context={context} />
+                    {presentation === null ? null : (
+                      <ScreenView view={presentation} roles={["NOTICE"]} />
+                    )}
+                    <div ref={content}>
+                      <LinkNavigationContext value={caseNavigation.linkNavigation}>
+                        <WorkspaceRoute
+                          key={ownerIdentity}
+                          route={route}
+                          caseFeedback={
+                            <AcceptedReceipt
+                              route={route}
+                              receipt={feedback.receipt}
+                              close={feedback.clear}
+                              shouldFocus={feedback.shouldFocus}
+                            />
+                          }
+                          caseNavigation={caseNavigation}
+                          views={views}
+                          noViews={noViews}
+                          tasks={tasks}
+                          known={actorContext !== null}
+                          checking={context.loading}
+                          setLocked={setLocked}
+                          committed={committed}
+                          refresh={refresh}
+                        />
+                      </LinkNavigationContext>
+                    </div>
+                  </main>
+                </PhoneActionTarget>
               </div>
             </WorkspaceViewsProvider>
           </RecoveryProvider>

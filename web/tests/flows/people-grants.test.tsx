@@ -1,3 +1,5 @@
+import userEvent from "@testing-library/user-event";
+import { selectRowAction } from "../support/workspace-actions";
 import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import { installationActions, requesterLinks } from "../support/human-requester.fixtures";
 
@@ -588,7 +590,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
       <Dashboard />
     </>,
   );
-  fireEvent.click(await screen.findByRole("button", { name: "More people" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByText(`listed-${second}`);
   fireEvent.click(screen.getAllByRole("link", { name: /listed-/u })[1]!);
   await screen.findByText(`GRANT-${second}`);
@@ -658,7 +660,11 @@ it("binds a repeated page-local grant key to the selected page's case scope", as
   );
   fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await screen.findByText("SECOND-SCOPE");
-  fireEvent.click(screen.getAllByRole("button", { name: "Revoke role" })[1]!);
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /SECOND-SCOPE/u }),
+    "Revoke role",
+  );
   expect(revoke).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.revoke",

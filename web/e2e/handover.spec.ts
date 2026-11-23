@@ -151,12 +151,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const first = page.locator(".worklist tbody tr").filter({
     hasText: references[0],
   });
-  await expect(
-    first.getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    }),
-  ).toBeVisible();
+  const actions = first.getByRole("button", { name: /^Actions for/u });
+  await expect(actions).toBeVisible();
   await expect(first.locator('[data-column="workRevision"]')).toHaveCount(0);
   await expect(first.locator('[data-entry="workRevision"]')).not.toBeVisible();
   let writes = 0;
@@ -165,13 +161,11 @@ test("reassigns a filtered list row with its work revision and refuses stale han
       writes += 1;
     }
   });
-  await first
-    .getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    })
-    .click();
-  await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
+  await actions.click();
+  await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
+  const selectedAssignee = page.locator(`.assignee-input input[type=radio][value="${actor}"]`);
+  await selectedAssignee.click();
+  await expect(selectedAssignee).toBeChecked();
   await expect(
     page.getByRole("dialog").getByRole("textbox", {
       name: "Handling summary",
@@ -236,12 +230,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const second = page.locator(".worklist tbody tr").filter({
     hasText: references[1],
   });
-  await expect(
-    second.getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    }),
-  ).toBeVisible();
+  const secondActions = second.getByRole("button", { name: /^Actions for/u });
+  await expect(secondActions).toBeVisible();
   const concurrent = await workRequest(page, "operation.execute", {
     operationId: operationId(),
     task: "work.update",
@@ -257,12 +247,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   });
   expect(concurrent.outcome.kind).toBe("ACCEPTED");
   const writtenBeforeReview = writes;
-  await second
-    .getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    })
-    .click();
+  await secondActions.click();
+  await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
   await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
   const stale = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",

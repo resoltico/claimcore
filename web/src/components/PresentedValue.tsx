@@ -1,11 +1,11 @@
-import { Codes } from "../ui/regions/Codes";
+import { ChipList, chipValues } from "../ui/ChipList";
+import { Chip, chipTone } from "../ui/Chip";
 import type { PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { moneyWithScale } from "../presentation/format";
 import { ActorIdentity } from "./ActorIdentity";
 import { CharacterWarning } from "./CharacterWarning";
-import { StateChip } from "./StateChip";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";
 
@@ -80,15 +80,15 @@ export const PresentedValue = ({
     case "ACTOR":
       return <ActorIdentity actor={value.value} avatar={avatar} />;
     case "STATE":
-      return <StateChip value={value.token} />;
+      return <ChipList values={[value]} />;
     case "CODE":
-      return (
-        <span className="code-value" data-vocabulary={value.vocabulary} data-code={value.token}>
-          {p.term(value.vocabulary, value.token)}
-        </span>
+      return chipTone(value) === undefined ? (
+        <span>{p.term(value.vocabulary, value.token)}</span>
+      ) : (
+        <Chip value={value} />
       );
     case "CODES":
-      return <Codes content={value} />;
+      return <ChipList values={chipValues(value)} />;
     case "ABSENT":
       return <span>{renderCatalogKey(p, value.reasonId)}</span>;
     case "MESSAGE":

@@ -63,13 +63,13 @@ test("one submit reports every invalid input in summary order and links to its f
     },
   ]);
   expect(requests).toEqual(["POST /api/operation.preview"]);
-  await expect(page.getByRole("alert")).toContainText("Fields to check: 3.");
+  await expect(page.locator("[data-error-summary]")).toContainText("Fields to check: 3.");
   for (const control of [incident, amount, currency]) {
     await expect(control).toHaveAttribute("aria-invalid", "true");
     await expect(control).toHaveAttribute("aria-describedby", /\S/u);
   }
   await expect(incident).toHaveAccessibleDescription(
-    "When the incident happened. Enter a real date.",
+    "When the incident happened. Use YYYY-MM-DD, for example 2026-10-06. Enter a real date.",
   );
   await expect(amount).toHaveAccessibleDescription(/decimal/u);
   await expect(currency).toHaveAccessibleDescription(/currency/u);

@@ -86,6 +86,7 @@ module CaseTotalsScreen =
             RegionRole.Results
             (Some "label.summaryGroups")
             (RegionContent.Table(table key (fun _ -> None) columns rows))
+        |> withEmpty "empty.caseGroups"
 
     let view (reply: CaseWorklistSummary) =
         Screen.create

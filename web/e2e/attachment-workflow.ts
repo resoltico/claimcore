@@ -32,7 +32,7 @@ export const uploadAttachment = async (
   await expect(review).toContainText(portable);
   await expect(review).toContainText("new attachment ID");
   const receipt = await confirmAttachmentChange(page, "/api/attachment.upload");
-  const row = attachments.locator(".attachment-list > li").filter({ hasText: portable });
+  const row = attachments.locator(".data-table tbody").filter({ hasText: portable });
   await expect(row).toHaveCount(1);
   return { row, receipt };
 };

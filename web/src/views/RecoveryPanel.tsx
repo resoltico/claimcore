@@ -1,3 +1,5 @@
+import { Page } from "../ui/Page";
+import { Section } from "../ui/Section";
 import { usePresentation } from "../presentation/context";
 import { productMetadata } from "../protocol/productMetadata";
 import { OperationLookup } from "./OperationLookup";
@@ -7,23 +9,25 @@ export const RecoveryPanel = ({ initialOperationId }: { initialOperationId?: str
   const p = usePresentation();
   const operation = initialOperationId === "" ? undefined : initialOperationId;
   return (
-    <section className="recovery-panel" aria-labelledby="recovery-title">
-      <h1 id="recovery-title">{p.text("ui.recovery")}</h1>
-      <p className="page-description">
-        {p.text("ui.recoveryDescription", {
-          window: p.text("label.operationWindow", {
-            minutes: p.integer(productMetadata.catalog.limits.operationWindowMilliseconds / 60000),
-          }),
-        })}
-      </p>
-      <UnresolvedNotice showEmpty />
-      <details className="recovery-lookup" open={operation !== undefined}>
-        <summary>{p.text("ui.generalOperationLookup")}</summary>
-        <OperationLookup
-          definition={productMetadata}
-          {...(operation === undefined ? {} : { initialOperationId: operation })}
-        />
-      </details>
-    </section>
+    <div className="recovery-panel">
+      <Page id="recovery-title" title={p.text("ui.recovery")}>
+        <p className="page-description">
+          {p.text("ui.recoveryDescription", {
+            window: p.text("label.operationWindow", {
+              minutes: p.integer(
+                productMetadata.catalog.limits.operationWindowMilliseconds / 60000,
+              ),
+            }),
+          })}
+        </p>
+        <UnresolvedNotice showEmpty />
+        <Section id="recovery-lookup" title={p.text("ui.generalOperationLookup")}>
+          <OperationLookup
+            definition={productMetadata}
+            {...(operation === undefined ? {} : { initialOperationId: operation })}
+          />
+        </Section>
+      </Page>
+    </div>
   );
 };

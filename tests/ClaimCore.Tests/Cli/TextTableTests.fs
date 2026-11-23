@@ -60,6 +60,31 @@ let tests =
                         values)
                     [ "PRIMARY" ]
                     "Secondary goes next and Primary remains")
+            testCase "earlier columns of the same prominence survive a narrow terminal" (fun () ->
+                let columns =
+                    [
+                        column "primary" "label.action" Prominence.Primary 0
+                        column "first" "label.before" Prominence.Secondary 1
+                        column "last" "label.after" Prominence.Secondary 2
+                    ]
+
+                let rows =
+                    TextTable.rows
+                        (RenderingContext.forLanguage "en")
+                        (options 20 false)
+                        columns
+                        [
+                            [
+                                PresentedValue.Text "PRIMARY"
+                                PresentedValue.Text "FIRST"
+                                PresentedValue.Text "LAST"
+                            ]
+                        ]
+
+                Expect.equal
+                    rows
+                    [ "PRIMARY   FIRST" ]
+                    "Column order breaks ties between equal prominence")
             testCase "money is aligned by typed value rather than string shape" (fun () ->
                 let columns = [ column "money" "field.claimedAmount.label" Prominence.Primary 0 ]
 

@@ -1,3 +1,4 @@
+import { workspaceSettingsNavigation } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import {
@@ -231,8 +232,7 @@ for (const releaseOn of ["Settings", "return"] as const) {
       try {
         await page.goto(path);
         await held.promise;
-        await page.locator(".account-menu > summary").click();
-        await page.locator(".account-menu").getByRole("link", { name: "Settings" }).click();
+        await (await workspaceSettingsNavigation(page)).click();
         await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
         await execute(writer, access, {
           operationId: operationId(),
@@ -367,7 +367,8 @@ const finishBrowserReport = async (page: Page, prefix: string) => {
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(prefix)}`);
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
   const cases = page.getByRole("tabpanel", { name: /^Case view All\b/u });
-  await cases.getByRole("link", { name: "Case report", exact: true }).press("Enter");
+  await cases.getByRole("button", { name: "Export", exact: true }).press("Enter");
+  await page.getByRole("menuitem", { name: "Case report", exact: true }).press("Enter");
   await expect(page).toHaveURL(/\/cases\/report\?/u);
   const report = page.getByRole("region", { name: "Case report" });
   await expect(report.locator('[data-region="RESULTS"]')).toBeVisible();

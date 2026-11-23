@@ -121,8 +121,9 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   );
   const callout = await screen.findByRole("alert");
   expect(callout).toHaveTextContent("This action is not currently offered for this case.");
-  expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
-  await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
+  await user.click(within(callout).getByRole("button", { name: "More actions" }));
+  expect(screen.getByRole("menuitem", { name: /Correct case facts/u })).toBeVisible();
+  await user.click(screen.getByRole("menuitem", { name: /Reopen/u }));
   expect(onAct).toHaveBeenCalledWith(
     expect.objectContaining<{ subject: unknown }>({
       subject: expect.objectContaining({ revision: 4 }),

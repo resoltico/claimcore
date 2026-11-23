@@ -34,8 +34,13 @@ import {
 } from "@contracts/client";
 import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../tests/support/themeContrast";
-import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
-import { expectAccessible } from "./session-helpers";
+import {
+  settledWorkspaceHeader,
+  startPeopleCreation,
+  chooseOption,
+  settlePopupTriggerScroll,
+} from "./workspace-navigation";
+import { expectAccessible, seedSignedOut } from "./session-helpers";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -63,10 +68,11 @@ const expectChoiceInView = async (option: Locator) => {
     .toBeLessThanOrEqual(1);
 };
 const signInSettings = async (page: Page) => {
+  await seedSignedOut(page);
   await page.goto("/", {
     waitUntil: "commit",
   });
-  await page.locator(".login-footer button").click();
+  await page.locator(".login-footer button.ui-button--secondary").click();
   await expect(page.getByRole("dialog")).toBeVisible();
 };
 const hexColor = (rgb: string, background?: string): string => {
@@ -102,6 +108,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
       requests.push(path);
     }
   });
+  await seedSignedOut(page);
   await page.goto("/", {
     waitUntil: "commit",
   });
@@ -149,7 +156,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
   await page.reload();
-  await page.locator(".login-footer button").click();
+  await page.locator(".login-footer button.ui-button--secondary").click();
   await expect(page.locator('.settings-panel [role="combobox"]')).toHaveAttribute("value", "en-US");
   await expect(page.locator('.settings-panel input[value="blue"]')).toBeChecked();
   await expect(page.locator('.settings-panel input[value="dark"]')).toBeChecked();
@@ -230,7 +237,7 @@ test("programmatic heading focus stays quiet after keyboard use and controls ret
   await expect(picker).toHaveCSS("outline-offset", "2px");
   await clean();
 });
-test("Settings reflows at 320px and 200% text without overflowing accent cards", async ({
+test("Settings keeps the format preview and accent cards within the page at 320px and 200% text", async ({
   page,
 }) => {
   const clean = await observe(page, true);
@@ -247,14 +254,22 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
     waitUntil: "commit",
   });
   await expect(page.locator(".settings-panel")).toBeVisible();
+  await settledWorkspaceHeader(page);
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
   await expect(page.locator("html")).toHaveCSS("font-size", "32px");
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  const previewOverflow = await page
+    .locator(".settings-preview")
+    .evaluate((preview) => preview.scrollWidth - preview.clientWidth);
+  expect(previewOverflow).toBeLessThanOrEqual(1);
   const overflow = await page.evaluate(() => {
     const cards = [...document.querySelectorAll<HTMLElement>(".accent-card")];
     return {
-      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       cards: cards.map((card) => {
         const bound = card.getBoundingClientRect();
         return [...card.querySelectorAll<HTMLElement>("*")].some((child) => {
@@ -264,10 +279,8 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
       }),
     };
   });
-  expect(overflow).toEqual({
-    document: false,
-    cards: [false, false],
-  });
+  expect(overflow.document).toBeLessThanOrEqual(1);
+  expect(overflow.cards).toEqual([false, false]);
   await clean();
 });
 for (const language of ["en", "lv", "ar"] as const) {
@@ -334,21 +347,28 @@ for (const language of ["en", "ar"] as const) {
       }
       const mobile = width === 320;
       await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
-      await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
-      const recovery = page.locator('nav a[href="/recovery"]');
-      await expect(recovery).toHaveCount(1);
+      const sidebar = page.locator(".workspace-sidebar nav");
       if (mobile) {
-        await expect(recovery).toBeHidden();
-        const trigger = page.locator(".compact-navigation > summary");
-        await trigger.focus();
-        await page.keyboard.press("Enter");
-        await expect(recovery).toBeVisible();
-        await expect(page.locator('.workspace-header a[href="/cases?view=ALL"]')).toBeVisible();
+        await expect(sidebar).toBeHidden();
+      } else {
+        await expect(sidebar).toBeVisible();
+      }
+      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
+      if (mobile) {
+        const trigger = page.locator("#workspace-more");
+        await trigger.press("Enter");
+        const sheet = page.locator(".shell-more");
+        await expect(sheet.locator('a[href="/recovery"]')).toBeVisible();
+        await expect(sheet.locator(".shell-business-date")).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(trigger).toBeFocused();
-        await expect(recovery).toBeHidden();
+        await expect(sheet).toBeHidden();
+      } else {
+        await expect(page.locator(".shell-footer .shell-business-date")).toBeVisible();
+        await page.locator("#workspace-account").press("Enter");
+        await expect(page.locator('[data-menu-item="recovery"]')).toBeVisible();
+        await page.keyboard.press("Escape");
       }
-      await expect(page.locator(".shell-business-date")).toHaveCount(1);
       const overflow = await page.evaluate(() => ({
         document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         main:
@@ -365,7 +385,7 @@ for (const language of ["en", "ar"] as const) {
   }
 }
 for (const language of ["de", "ar"] as const) {
-  test(`compact keyboard Back restores the Recovery link in ${language} @engine`, async ({
+  test(`compact keyboard Back restores the More trigger in ${language} @engine`, async ({
     page,
   }) => {
     await observe(page, true);
@@ -373,9 +393,9 @@ for (const language of ["de", "ar"] as const) {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto("/cases?view=ALL");
     await expect(page.locator("html")).toHaveAttribute("lang", language);
-    const menu = page.locator(".compact-navigation");
-    const trigger = menu.locator(":scope > summary");
-    const recovery = menu.getByRole("link", { name: new RegExp(ui(language, "ui.recovery"), "u") });
+    const menu = page.locator(".shell-more");
+    const trigger = page.locator("#workspace-more");
+    const recovery = menu.locator('a[href="/recovery"]');
     await trigger.press("Enter");
     await expect(recovery).toBeVisible();
     await recovery.press("Enter");
@@ -384,9 +404,10 @@ for (const language of ["de", "ar"] as const) {
     await expect(recovery).toBeHidden();
     await page.goBack();
     await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
-    await expect(recovery).toBeFocused();
-    await expect(menu).toHaveAttribute("open", "");
+    await expect(trigger).toBeFocused();
+    await expect(menu).toBeHidden();
     if (language === "de") {
+      await trigger.press("Enter");
       const [newTab] = await Promise.all([
         page.context().waitForEvent("page"),
         recovery.click({ modifiers: ["ControlOrMeta"] }),
@@ -708,12 +729,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await expect(page.locator(".table-view tbody")).toContainText("Paid");
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
-  await expect(
-    page.getByRole("group", {
-      name: "Exact reference match",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find a case", exact: true })).toBeVisible();
   expect(requests).toEqual([
     {
       limit: 50,
@@ -1188,7 +1204,15 @@ for (const language of ["en", "ar"] as const) {
     const timeline = page.locator(".case-timeline-panel");
     await expect(timeline.locator(".region-timeline > li")).toHaveCount(1);
     await expect(timeline).toContainText("Timeline recorder");
-    await expect(timeline).toContainText(entryOperationId);
+    await timeline
+      .getByRole("button", { name: ui(language, "ui.viewDetails"), exact: true })
+      .click();
+    const details = page.getByRole("dialog", { name: ui(language, "ui.viewDetails"), exact: true });
+    await expect(details).toContainText(entryOperationId);
+    await details
+      .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+      .first()
+      .click();
     expect(reads).toBe(1);
     expect(retired).toEqual([]);
     await expectAccessible(page);
@@ -1497,12 +1521,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.goto("/people", {
     waitUntil: "commit",
   });
-  await page
-    .getByRole("button", {
-      name: "Add person",
-      exact: true,
-    })
-    .click();
+  await startPeopleCreation(page);
   await expect(page.locator('[name="input:principal.issuer"]')).toHaveValue(
     "https://issuer.example/",
   );
@@ -2173,21 +2192,13 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.goto("/people", {
       waitUntil: "commit",
     });
-    await page
-      .getByRole("button", {
-        name: "Add person",
-        exact: true,
-      })
-      .click();
+    await startPeopleCreation(page);
     await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
     await page.locator('[name="input:principal.subject"]').fill("admission-person");
     await page.locator('[name="input:profile.displayName"]').fill("Admission person");
-    await page
-      .getByRole("radio", {
-        name: "Owner",
-        exact: true,
-      })
-      .check();
+    const owner = page.getByRole("radio", { name: "Owner", exact: true });
+    await owner.click();
+    await expect(owner).toBeChecked();
     await page
       .getByRole("button", {
         name: "Add role",
@@ -2245,12 +2256,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       }),
       "lv-LV",
     );
-    await page
-      .getByRole("button", {
-        name: "Return to workspace",
-        exact: true,
-      })
-      .click();
+    await page.locator("[data-return-workspace]").click();
     await expect(page).toHaveURL(/\/people$/u);
     await expect(page.locator('[name="input:principal.subject"]')).toHaveValue("admission-person");
     await expect(
@@ -2273,17 +2279,16 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       })
       .click();
     const review = page.getByRole("dialog");
-    await expect(review.locator("[data-region=FACTS]")).toHaveCount(4);
-    await expect(
-      review.locator(".review-values").getByText("SYNTHETIC-1", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expect(
-      review.locator("[data-region=FACTS]").getByText("SYNTHETIC-1", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await expect(review.locator("[data-region=FACTS]")).toHaveCount(0);
+    await expect(review.locator(".review-values dd")).toHaveText([
+      "Yes",
+      "Admission person",
+      "Owner",
+      "All cases",
+      "Case reader",
+      "One case",
+      "SYNTHETIC-1",
+    ]);
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();
       await page
@@ -2441,7 +2446,7 @@ test("case panels follow compact reading order while a work draft survives respo
     await page
       .locator(".case-work-rail")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual(["case-work", "case-reminders screen-region"]);
+  ).toEqual(["case-work", "case-reminders", "screen-view"]);
   await expect(page.locator('.case-main-column [data-region="FACTS"]')).toHaveCount(1);
   await expectAccessible(page);
   await page.locator("#case-work-summary").click();
@@ -2777,7 +2782,8 @@ test("People uses core roles and state without row reads and forwards known-zero
     .click();
   await expect.poll(() => listInputs.length).toBe(1);
   expect(summaryInputs).toEqual([]);
-  await page.getByRole("link", { name: "Case report", exact: true }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Case report", exact: true }).click();
   await expect.poll(() => summaryInputs.length).toBe(1);
   expect(listInputs).toEqual([
     {

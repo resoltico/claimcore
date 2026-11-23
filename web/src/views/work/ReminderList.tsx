@@ -8,7 +8,8 @@ import type {
 } from "@contracts/client";
 import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 
-import { PageTables } from "../../ui/PageTables";
+import { ListFooter } from "../../ui/ListFooter";
+import { ResultPages } from "../../ui/ResultPages";
 import {} from "./reminder-list.css";
 import { useCallback } from "react";
 
@@ -74,41 +75,34 @@ export const ReminderList = ({
       {result.items.length === 0 && !result.loading && result.message === null ? (
         <p>{p.text("label.noReminders")}</p>
       ) : null}
-      <PageTables
+      <ResultPages
+        showTableSections={false}
         views={result.views}
         actionPresentation={reminderActionPresentation}
         {...(onAct === undefined
           ? {}
           : {
-              onAction: (action, _row, originId) => {
+              onAction: (action, _row, originId, implicit) => {
                 if (isOperationAffordance(action)) {
-                  onAct(action, originId);
+                  onAct(action, originId, implicit);
                 }
               },
             })}
       />
-      {result.cursor === null ? null : (
-        <button
-          type="button"
-          disabled={result.loading}
-          onClick={() => {
-            void result.load(result.cursor);
+      {result.page === null ? null : (
+        <ListFooter
+          subject="reminders"
+          count={result.items.length}
+          basis={result.page.basis}
+          continuation={result.cursor}
+          loading={result.loading}
+          load={(cursor) => {
+            void result.load(cursor);
           }}
-        >
-          {p.text("ui.moreReminders")}
-        </button>
+          busy={result.refreshBusy}
+          refresh={result.refresh}
+        />
       )}
-      {target === undefined ? (
-        <button
-          type="button"
-          disabled={result.loading}
-          onClick={() => {
-            void result.load(null);
-          }}
-        >
-          {p.text("ui.refreshWork")}
-        </button>
-      ) : null}
     </section>
   );
 };

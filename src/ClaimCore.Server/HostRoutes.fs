@@ -201,7 +201,7 @@ module HostRoutes =
                 HttpMethods.IsGet context.Request.Method
                 || HttpMethods.IsHead context.Request.Method
             then
-                HttpHeaders.viewer viewer.ScriptHash viewer.StyleHash context
+                HttpHeaders.viewer viewer.ScriptHash context
                 context.Response.ContentType <- "text/html; charset=utf-8"
                 context.Response.ContentLength <- Nullable(int64 viewer.Bytes.Length)
 

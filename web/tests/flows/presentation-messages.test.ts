@@ -5,7 +5,7 @@ import {
   messageShapes as shapes,
   renderKey,
   renderCatalogKey,
-  renderIsolatedValue,
+  renderIsolatedValues,
   translate,
 } from "../../src/presentation/messages";
 import { renderNotice } from "../../src/presentation/notice";
@@ -102,40 +102,35 @@ it("refuses reference message parts with missing, wrong-role or foreign holes", 
   };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };
-  expect(renderIsolatedValue(preferences, "ui.actDescription", {}, reference, "label")).toEqual(
+  expect(renderIsolatedValues(preferences, "ui.actDescription", {}, { label: reference })).toEqual(
     fallback,
   );
   expect(
-    renderIsolatedValue(
+    renderIsolatedValues(
       preferences,
       "ui.actDescription",
       { label: 1, meaning: 1 },
-      reference,
-      "label",
+      { label: reference },
     ),
   ).toEqual(fallback);
   expect(
-    renderIsolatedValue(
+    renderIsolatedValues(
       preferences,
       "ui.actDescription",
       { meaning: "S", extra: "foreign" },
-      reference,
+      { reference },
     ),
   ).toEqual(fallback);
-  expect(renderIsolatedValue(preferences, "label.action", {}, reference)).toEqual(fallback);
+  expect(renderIsolatedValues(preferences, "label.action", {}, { reference })).toEqual(fallback);
 });
 
 it("requires every supplied message argument to be an exact own property", () => {
   const inherited: Readonly<Record<string, string>> = { label: "Reference" };
   Object.setPrototypeOf(inherited, { meaning: "inherited" });
   expect(
-    renderIsolatedValue(
-      defaults,
-      "ui.actDescription",
-      inherited,
-      { exact: "inherited" },
-      "meaning",
-    ),
+    renderIsolatedValues(defaults, "ui.actDescription", inherited, {
+      meaning: { exact: "inherited" },
+    }),
   ).toEqual([renderKey(defaults, "notice.unknownDiagnostic")]);
   expect(renderKey(defaults, "ui.actDescription", { label: "Reference", meaning: "own" })).toBe(
     "Reference: own",

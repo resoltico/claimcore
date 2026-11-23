@@ -1,5 +1,9 @@
 # Integrating
 
+Regenerate HUMAN clients when changing builds. Use supplied region empty messages, row recommendations,
+view and column prominence, and typed state details. The generated client also provides review modes,
+collection labels and the presentation tone table. Creation reviews supply their missing-field labels.
+
 Use the human CLI for interactive work, structured calls for automation, or HTTPS for your own client.
 The [OpenAPI contract](../contracts/openapi.json) specifies exact requests, replies and byte bounds.
 The [catalog](../contracts/catalog.json) supplies meanings and choices. `claimcore help` derives the

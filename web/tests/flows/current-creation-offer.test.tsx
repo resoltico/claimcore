@@ -300,9 +300,10 @@ it("retains owned local creation fields through Settings while the unavailable O
   expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Settings" }));
+  await user.click(screen.getByRole("button", { name: /^Account(?: · |$)/u }));
+  await user.click(screen.getByRole("menuitem", { name: "Settings" }));
   await screen.findByRole("heading", { name: "Settings", level: 1 });
-  await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+  await user.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   await freshContext(context, true);
   expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");

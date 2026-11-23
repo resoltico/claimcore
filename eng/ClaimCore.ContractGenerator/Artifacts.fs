@@ -44,6 +44,8 @@ module ContractArtifacts =
                             {|
                                 copyright = LegalNotice.copyright
                                 rights = LegalNotice.rights
+                                productName = LegalNotice.productName
+                                licenseName = LegalNotice.licenseName
                                 license = LegalNotice.license
                                 licenseFile = LegalNotice.licenseFile
                                 sourceFile = LegalNotice.sourceFile

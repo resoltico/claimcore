@@ -171,7 +171,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Fields to check: 1.");
   expect(policy).toHaveAccessibleDescription(
-    "The policy number used by the insurer. A non-blank value is required.",
+    "The policy number used by the insurer. Up to 80 characters. A non-blank value is required.",
   );
   expect(policy).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);

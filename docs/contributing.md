@@ -207,6 +207,8 @@ Local Vitest name filters may deliberately deselect tests. The completion lint r
 todo, conditional exclusion and focused-test APIs. Required CI rejects any incomplete collected test,
 including runner deselection; run the complete selected files there.
 
+See the [web UI guide](web-ui.md) for building blocks, tokens and accessibility.
+
 ## Verification
 
 Start with the least costly check that can reject the change. Build current native inputs before

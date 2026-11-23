@@ -1,6 +1,6 @@
+import { expectCaseRevision } from "./work-workflow";
 import { type ResponseFor } from "@contracts/client";
-import { showCaseRecordDetails } from "./workspace-navigation";
-import { expectCaseReadsSettled } from "./case-readiness";
+import { expectCaseReadsSettled, acceptanceBanner } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import { openCase, reviewDraft, startClose } from "./case-workflow";
@@ -57,14 +57,9 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
-  await expect(page.locator(".accepted-receipt")).toContainText("Case closed.");
+  await expect(acceptanceBanner(page)).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
-  await showCaseRecordDetails(page);
-  await expect(
-    page.locator(
-      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
-    ),
-  ).toContainText("2");
+  await expectCaseRevision(page, 2);
 };
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
   page,
@@ -137,35 +132,18 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
   });
   try {
     const signedOutPage = await anonymous.newPage();
-    await signedOutPage.goto(destination.href, {
-      waitUntil: "commit",
-    });
-    await expect(
-      signedOutPage.getByRole("link", {
-        name: "Sign in",
-        exact: true,
-      }),
-    ).toBeVisible();
-    const session = await browserRequest(signedOutPage, "/api/session");
-    const sessionReply = session.payload as ResponseFor<"session", "DATA">;
-    if (sessionReply.outcome.kind !== "SUCCEEDED") {
-      throw new Error("E2E_DEEP_LINK_SESSION_UNAVAILABLE");
-    }
-    expect(sessionReply.outcome.data.authenticated).toBe(false);
+    const redirect = signedOutPage.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/auth/login" && response.status() === 302,
+      { timeout: freshLoginWorkflowTimeout },
+    );
+    await signedOutPage.goto(destination.href, { waitUntil: "commit" });
+    await redirect;
+    await expect(signedOutPage.locator('input[name="username"]')).toBeVisible();
     await Promise.all([
       signedOutPage.waitForResponse(
         (response) =>
-          new URL(response.url()).pathname === "/auth/login" && response.status() === 302,
-        {
-          timeout: freshLoginWorkflowTimeout,
-        },
-      ),
-      signedOutPage.waitForResponse(
-        (response) =>
           new URL(response.url()).pathname === "/signin-oidc" && response.status() === 302,
-        {
-          timeout: freshLoginWorkflowTimeout,
-        },
+        { timeout: freshLoginWorkflowTimeout },
       ),
       login(signedOutPage, null),
     ]);
@@ -208,10 +186,8 @@ test("canonical case links reload and browser back and forward preserve the case
   await page.reload();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await page
-    .getByRole("button", {
-      name: "Back to cases",
-      exact: true,
-    })
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Cases", exact: true })
     .click();
   await expect(page).toHaveURL(
     (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",

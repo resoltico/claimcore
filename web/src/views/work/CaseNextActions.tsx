@@ -1,119 +1,175 @@
+import type { Region, RegionRow, Link } from "@contracts/client";
 import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
-import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
-import { queryInput } from "../../protocol/taskCatalog";
-import { isTerm } from "../../presentation/terms";
+import { operationTask } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
+import { PresentedValue } from "../../components/PresentedValue";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { Table } from "../../ui/regions/Table";
-import { Select } from "../../ui/Select";
-import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
-import { ReminderList } from "./ReminderList";
-const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
-type State = (typeof taskChoices.reminderState)[number];
+import { coreLinkPath } from "../../routing/coreLinks";
+import { followLink } from "../../routing/followLink";
+import { navigate } from "../../routing/navigation";
+import { Chip } from "../../ui/Chip";
+import { Button } from "../../ui/Button";
+import { ActionMenu } from "../../ui/ActionMenu";
+import { Section } from "../../ui/Section";
+import { EmptyState } from "../../ui/EmptyState";
+import type { ReminderActHandler } from "./reminderActions";
+import "./case-next-actions.css";
+
+type Table = Extract<Region["content"], { kind: "TABLE" }>;
+
+const ReminderCard = ({
+  row,
+  table,
+  zone,
+  onReminder,
+}: {
+  row: RegionRow;
+  table: Table;
+  zone: string;
+  onReminder: ReminderActHandler;
+}) => {
+  const p = usePresentation();
+  const value = (key: string) =>
+    row.values[table.columns.findIndex((column) => column.key === key)];
+  const message = value("action");
+  const due = value("due");
+  const kind = value("kind");
+  const timing = value("timing");
+  const controls = (row.actions ?? []).filter(isOperationAffordance);
+  const recommended = controls.find((action) => action.task === row.recommended);
+  const actionId = `reminder-${row.key}-actions`;
+  const primaryId = `reminder-${row.key}-primary`;
+  return (
+    <li>
+      {message === undefined ? null : (
+        <strong>
+          <PresentedValue value={message} timeZone={zone} />
+        </strong>
+      )}
+      {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
+      {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
+      {timing?.kind === "CODE" ? (
+        <span data-column="timing">
+          <Chip value={timing} />
+        </span>
+      ) : null}
+      <div className="next-action-controls">
+        {recommended === undefined ? null : (
+          <Button
+            id={primaryId}
+            compact
+            onPress={() => {
+              onReminder(recommended, primaryId, true);
+            }}
+          >
+            {renderCatalogKey(p, recommended.labelId)}
+          </Button>
+        )}
+        {controls.length === 0 ? null : (
+          <ActionMenu
+            id={actionId}
+            icon
+            label={p.text("ui.actionsFor", {
+              row: message?.kind === "TEXT" ? message.value : p.text("label.nextActions"),
+            })}
+            items={controls.map((action) => ({
+              id: action.task,
+              label: renderCatalogKey(
+                p,
+                operationTask(action.task).reviewedLabelId ?? action.labelId,
+              ),
+              disabled: action.blocked !== null,
+              select: () => {
+                onReminder(action, actionId);
+              },
+            }))}
+          />
+        )}
+      </div>
+    </li>
+  );
+};
+
+const ReminderCards = ({
+  region,
+  zone,
+  onReminder,
+}: {
+  region: Region | undefined;
+  zone: string;
+  onReminder: ReminderActHandler;
+}) => {
+  if (region?.content.kind !== "TABLE") {
+    return null;
+  }
+  const { content } = region;
+  if (content.rows.length === 0 && region.emptyId !== undefined) {
+    return <EmptyState messageId={region.emptyId} />;
+  }
+  return (
+    <ul className="next-action-cards">
+      {content.rows.map((row) => (
+        <ReminderCard key={row.key} row={row} table={content} zone={zone} onReminder={onReminder} />
+      ))}
+    </ul>
+  );
+};
+
+const ReminderLink = ({ labelId, link }: { labelId: string; link: Link }) => {
+  const p = usePresentation();
+  const href = coreLinkPath(link);
+  return href === undefined ? null : (
+    <a
+      href={href}
+      onClick={(event) => {
+        followLink(event, () => {
+          navigate(href);
+        });
+      }}
+    >
+      {renderCatalogKey(p, labelId)}
+    </a>
+  );
+};
+
 export const CaseNextActions = ({
   current,
   canCreate,
   onCreate,
   onReminder,
-  state,
-  setState,
-  browsing,
-  setBrowsing,
-  refresh,
-  target,
-  filter,
-  onChanged,
-  onRefresh,
 }: {
   current: CurrentCase;
   canCreate: boolean;
   onCreate: () => void;
   onReminder: ReminderActHandler;
-  state: State;
-  setState: (state: State) => void;
-  browsing: boolean;
-  setBrowsing: (value: boolean) => void;
-  refresh: number;
-  target: CaseSelector;
-  filter: Omit<ReminderListRequest, "target" | "cursor" | "limit">;
-  onChanged: () => void;
-  onRefresh: () => void;
 }) => {
   const p = usePresentation();
-  const nextRegion = current.screen.regions.find((region) => region.role === "NEXT_ACTIONS");
-  if (nextRegion?.content.kind !== "TABLE") {
+  const region = current.screen.regions.find((item) => item.role === "NEXT_ACTIONS");
+  const all = current.links.find(({ link }) => link.endpoint === apiEndpoints.reminderList);
+  if (region === undefined && all === undefined) {
     return null;
   }
+  const create = canCreate ? (
+    <Button id="case-reminder-add" variant="quiet" compact onPress={onCreate}>
+      {p.text("task.reminder.create.label")}
+    </Button>
+  ) : undefined;
   return (
-    <section
-      className="case-reminders screen-region"
-      data-region="NEXT_ACTIONS"
-      aria-labelledby="case-reminders-title"
-    >
-      <div className="region-heading">
-        <h2 id="case-reminders-title">
-          {renderCatalogKey(p, nextRegion.titleId ?? "label.nextActions")}
-        </h2>
-        {canCreate ? (
-          <button id="case-reminder-add" type="button" onClick={onCreate}>
-            {p.text("task.reminder.create.label")}
-          </button>
-        ) : null}
-      </div>
-      {!browsing && nextRegion.content.rows.length === 0 && nextRegion.emptyId !== undefined ? (
-        <p>{renderCatalogKey(p, nextRegion.emptyId)}</p>
-      ) : null}
-      {browsing ? null : (
-        <Table
-          view={nextRegion.content}
-          actionPresentation={reminderActionPresentation}
-          timeZone={current.basis.observation.timeZone}
-          onAction={(action, _row, originId) => {
-            if (isOperationAffordance(action)) {
-              onReminder(action, originId);
-            }
-          }}
-        />
-      )}
-      <details
-        className="case-reminder-controls"
-        onToggle={(event) => {
-          setBrowsing(event.currentTarget.open);
-        }}
+    <div className="case-reminders" data-region="NEXT_ACTIONS">
+      <Section
+        id="case-reminders-title"
+        title={renderCatalogKey(p, region?.titleId ?? "label.nextActions")}
+        actions={create}
       >
-        <summary>
-          {p.text("input.reminderState.label")} · {p.term("reminderStateSelection", state)}
-        </summary>
-        <Select
-          label={renderCatalogKey(p, stateChoice.labelId)}
-          value={state}
-          options={stateChoice.choices
-            .filter((value) => isTerm("reminderStateSelection", value))
-            .map((value) => ({
-              value,
-              label: p.term("reminderStateSelection", value),
-            }))}
-          onChange={(value) => {
-            if (isTerm("reminderStateSelection", value) && stateChoice.choices.includes(value)) {
-              setState(value);
-            }
-          }}
+        <ReminderCards
+          region={region}
+          zone={current.basis.observation.timeZone}
+          onReminder={onReminder}
         />
-        {browsing ? (
-          <ReminderList
-            key={refresh}
-            target={target}
-            filter={filter}
-            onDisclosureRefused={onChanged}
-            onAct={onReminder}
-          />
-        ) : null}
-        <button type="button" onClick={onRefresh}>
-          {p.text("ui.refreshWork")}
-        </button>
-      </details>
-    </section>
+        {all === undefined ? null : <ReminderLink {...all} />}
+      </Section>
+    </div>
   );
 };

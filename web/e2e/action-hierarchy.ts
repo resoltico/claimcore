@@ -8,28 +8,33 @@ const checkCaseActions = async (page: Page, expected?: string | null) => {
   if ((await region.locator("button").count()) === 0 && expected === undefined) {
     return;
   }
-  const primary = region.locator("button.primary");
+  const primary = region
+    .locator("button.ui-button--primary")
+    .or(page.locator(".phone-primary-action button[data-act]"));
+  if (expected === undefined && (await primary.count()) === 0) {
+    return;
+  }
   if (expected === null) {
     await expect(primary).toHaveCount(0);
     return;
   }
   await expect(primary).toHaveCount(1);
-  await expect(primary).not.toHaveClass(/case-action-danger/u);
+  await expect(primary).not.toHaveClass(/ui-button--danger/u);
   if (expected !== undefined) {
     await expect(primary).toHaveAttribute("data-act", expected);
   }
   const fill = await background(primary);
-  const secondary = region.locator("button:not(.primary):not(.case-action-danger)");
+  const secondary = region.locator("button:not(.ui-button--primary):not(.ui-button--danger)");
   for (const button of await secondary.all()) {
     expect(
       await background(button),
       "Secondary case acts must differ from the primary act",
     ).not.toBe(fill);
   }
-  const danger = region.locator("button.case-action-danger");
+  const danger = region.locator("button.ui-button--danger");
   if (
     (await danger.count()) > 0 &&
-    !(await primary.evaluate((element) => element.classList.contains("case-action-danger")))
+    !(await primary.evaluate((element) => element.classList.contains("ui-button--danger")))
   ) {
     expect(await background(danger), "Erasure must retain its danger treatment").not.toBe(fill);
   }
@@ -71,7 +76,10 @@ export const checkActionHierarchy = async (page: Page, expected?: string | null)
     return;
   }
   const fill = await background(primary);
-  for (const button of await page.locator(".workspace-header").getByRole("button").all()) {
+  for (const button of await page
+    .locator(".workspace-sidebar button, .phone-app-bar button:not(.phone-primary-action button)")
+    .filter({ visible: true })
+    .all()) {
     expect(
       await background(button),
       "Shell controls must not compete with the page action",

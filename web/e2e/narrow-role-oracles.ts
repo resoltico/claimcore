@@ -88,10 +88,9 @@ export const opaqueCaseRefusal = async (page: Page, reference: string) => {
   expect(actual).toEqual(missing);
 };
 export const noCaseWorkspace = async (page: Page) => {
-  const signOut = page.getByRole("button", {
-    name: "Sign out",
-    exact: true,
-  });
+  const signOut = page
+    .getByRole("button", { name: "Sign out", exact: true })
+    .or(page.getByRole("menuitem", { name: "Sign out", exact: true }));
   if (!(await signOut.isVisible())) {
     await showAccountActions(page);
   }

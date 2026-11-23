@@ -1,0 +1,9 @@
+@layer components {
+  .drawer {
+    --dialog-width: var(--width-drawer);
+  }
+
+  .drawer .ui-dialog-actions {
+    border-block-start: var(--border-width) solid var(--border-subtle);
+  }
+}

@@ -528,6 +528,13 @@ const receiptCaseLink = {
   labelId: "label.openCase",
   link: { endpoint: "case.get", input: { target: selected } },
 } as const;
+const inspectTimelineDetails = async (text: string) => {
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "View details" }));
+  expect(await screen.findByText(text)).toBeVisible();
+  await user.keyboard("{Escape}");
+};
+
 const historyWithAttachment = () => {
   const historical = "private history filename";
   const old = timelineDocument([
@@ -657,7 +664,7 @@ test("confirmed withdrawal masks old attachments and history through a list faul
   );
   mountWithdrawableCase();
   expect(await screen.findByText(filename)).toBeVisible();
-  expect(await screen.findByText(old.historical)).toBeVisible();
+  await inspectTimelineDetails(old.historical);
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: /^Withdraw attachment$/u }));
   const confirm = await waitForReviewConfirm();
@@ -808,7 +815,7 @@ test.each([
       cache.confirmAttachmentChange(selected.caseId, 2);
     });
     expect(await screen.findByText(filename)).toBeVisible();
-    expect(await screen.findByText(historical)).toBeVisible();
+    await inspectTimelineDetails(historical);
     expect(await screen.findByText(receiptName)).toBeVisible();
     expect(cache.attachmentDisclosure(selected.caseId)).toBe(3);
     const revoke = mockLivePreview();
@@ -953,7 +960,7 @@ test("an authoritative first erased timeline page removes attachment disclosure 
   expect(cache.invalidation()).toBe(before + 1);
   expect(caseGet).toHaveBeenCalledTimes(caseReads + 1);
   expect(timeline).toHaveBeenCalledTimes(2);
-  expect(screen.getByText(structural)).toBeVisible();
+  await inspectTimelineDetails(structural);
   expect(screen.queryByText(receiptName)).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: filename })).not.toBeInTheDocument();
   expect(revoke).toHaveBeenCalledWith("blob:active-attachment");
@@ -967,7 +974,7 @@ test("an authoritative first erased timeline page removes attachment disclosure 
 
   expect(cache.invalidation()).toBe(before + 1);
   expect(timeline).toHaveBeenCalledTimes(2);
-  expect(screen.getByText(structural)).toBeVisible();
+  await inspectTimelineDetails(structural);
   expect(screen.queryByText(filename)).not.toBeInTheDocument();
   expect(screen.queryByText(receiptName)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();

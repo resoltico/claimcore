@@ -125,11 +125,3 @@ export const renderIsolatedValues = <T>(
   }
   return result;
 };
-
-export const renderIsolatedValue = <T>(
-  preferences: Preferences,
-  key: MessageKey,
-  values: Readonly<Record<string, string | number>>,
-  reference: T,
-  argument = "reference",
-): (string | T)[] => renderIsolatedValues(preferences, key, values, { [argument]: reference });

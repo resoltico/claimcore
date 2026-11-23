@@ -79,7 +79,7 @@ it("waits for the initial reminder page before restoring filtered queue focus an
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: "QUEUE-FOCUS" }));
-    await user.click(await screen.findByRole("button", { name: "Return to workspace" }));
+    await user.click(await screen.findByRole("button", { name: "Close" }));
     await waitFor(() => {
       expect(list).toHaveBeenCalledTimes(2);
     });

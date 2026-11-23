@@ -339,7 +339,7 @@ let private serveViewer () =
             (csp response)
             ("sandbox allow-scripts; default-src 'none'; "
              + "script-src 'sha256-Oez3mJJV+hbsf5/1ENpn6ZL6yHiBCLK0YcbpTojVxw0=' 'wasm-unsafe-eval'; "
-             + "style-src 'sha256-1hj0evi+8hPjf5liRRmaj505DN12cgYX64varRumCIw='; "
+             + "style-src 'none'; "
              + "img-src blob: data:; connect-src 'none'; worker-src blob:; "
              + "frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
             "The viewer has its own hash-pinned opaque sandbox"
@@ -447,8 +447,7 @@ let tests =
                         Path.Combine(directory, "attachment-preview.viewer"),
                         "changed"
                     )))
-            for key in [ "scriptSha256"; "styleSha256" ] do
-                testCase
-                    $"refuses a false {key} for an otherwise verified viewer document"
-                    (fun () -> viewerMismatch (changeInlineHash key))
+            testCase
+                "refuses a false script hash for an otherwise verified viewer document"
+                (fun () -> viewerMismatch (changeInlineHash "scriptSha256"))
         ]

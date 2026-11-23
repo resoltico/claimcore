@@ -2,19 +2,23 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { CaseTimeline } from "../../src/views/case/CaseTimeline";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { PageStatus } from "../../src/components/PageStatus";
-it("an empty short nonterminal page never claims the end of visible scope", () => {
-  const { rerender } = render(
-    <PageStatus empty cursor="synthetic-continuation" emptyMessage="label.noCases" />,
-  );
-  expect(screen.getByText("No cases to show.")).toBeVisible();
-  expect(screen.getByText("More results are available.")).toBeVisible();
+import { ListFooter } from "../../src/ui/ListFooter";
+import { workBasis } from "../support/inputs";
+it("an empty nonterminal page keeps its issued continuation available", () => {
+  const props = {
+    subject: "cases" as const,
+    count: 0,
+    basis: workBasis,
+    loading: false,
+    load: vi.fn(),
+    refresh: vi.fn(),
+  };
+  const { rerender } = render(<ListFooter {...props} continuation="synthetic-continuation" />);
+  expect(screen.getByText("0 cases shown")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Load more" })).toBeEnabled();
+  rerender(<ListFooter {...props} continuation={null} />);
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
   expect(screen.queryByText("All results shown.")).toBeNull();
-  rerender(<PageStatus empty cursor={null} emptyMessage="label.noCases" />);
-  expect(screen.getByText("No cases to show.")).toBeVisible();
-  expect(screen.queryByText("All results shown.")).toBeNull();
-  rerender(<PageStatus empty={false} cursor={null} emptyMessage="label.noCases" />);
-  expect(screen.getByText("All results shown.")).toBeVisible();
 });
 afterEach(() => {
   vi.restoreAllMocks();

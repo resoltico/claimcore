@@ -8,7 +8,6 @@ import { caseSubject, caseDocumentInput } from "../tests/support/case-document.f
 import { operationAffordance } from "../tests/support/affordances.fixtures";
 
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
-import { showCaseRecordDetails } from "./workspace-navigation";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "./fixtures";
@@ -620,7 +619,7 @@ for (const { language, accent, mode, mobile } of contexts) {
     expect(requests.filter((path) => path === "/api/reminder.list")).toHaveLength(0);
     if (mobile) {
       await expect(page.locator(".workspace-mobile-tabs")).toBeVisible();
-      const last = (await showCaseRecordDetails(page)).getByRole("button").last();
+      const last = page.locator(".case-detail").getByRole("button").last();
       await last.focus();
       await writeFile(
         testInfo.outputPath("focus-layout.json"),
@@ -662,7 +661,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         testInfo.outputPath(`populated-case-${language}-${accent}-${mode}.png`),
       );
     }
-    const trigger = page.locator(`[id="reminder-${reminders[0]!.reminderId}-reminder.complete"]`);
+    const trigger = page.locator(`[id="reminder-${reminders[0]!.reminderId}-actions"]`);
     await trigger.scrollIntoViewIfNeeded();
     await page.evaluate(
       () =>
@@ -675,15 +674,14 @@ for (const { language, accent, mode, mobile } of contexts) {
         }),
     );
     await trigger.click();
+    await page.locator('[data-menu-item="reminder.complete"]').click();
     const dialog = page.getByRole("dialog");
     await dialog
       .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
       .click();
     const confirm = dialog.locator("[data-confirm-operation]");
     await expect(confirm).toBeEnabled();
-    await expect(page.locator(".ui-completion-popover")).toBeVisible();
     await expect(dialog).toContainText("Call claimant about invoice");
-    await expect(page.locator(".ui-completion-popover")).toHaveCSS("opacity", "1");
     const geometry = await dialog.evaluate((element) => ({
       dialog: {
         top: element.getBoundingClientRect().top,

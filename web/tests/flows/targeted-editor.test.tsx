@@ -205,7 +205,7 @@ it.each([
         screen.getByRole("combobox", { name: "Date and number format" }),
         locale,
       );
-      await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+      await user.click(screen.getByRole("button", { name: "Close" }));
       await screen.findByRole("dialog");
       expect(window.location.pathname).toBe(path);
     };

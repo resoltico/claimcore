@@ -284,6 +284,10 @@ check which key authenticates the current installation before issuing another ch
 
 ## Access review and sessions
 
+For a Keycloak realm with the ClaimCore theme installed, set the realm's login theme to
+`claimcore` so both the web and native CLI clients use it.
+
+
 Use [People and access](people-and-access.md) for account, profile and role tasks. An Owner manages
 access; an Auditor with that role for all cases can review it. Inspect each account's grant pages through
 the final continuation: row summaries do not list every assignment.

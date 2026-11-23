@@ -1,7 +1,7 @@
 import type { Notice } from "../../protocol/notices";
 import { BrowserSessionCommands } from "../../features/settings/BrowserSessions";
 import { isOperationAffordance } from "../../operation/affordances";
-import { Actions } from "../../ui/regions/Actions";
+import { TaskControls } from "../../ui/TaskControls";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { PeopleTarget } from "../../hooks/operation/usePeopleTarget";
@@ -27,9 +27,9 @@ export const ActorActions = ({
   onDisclosureRefused?: ((notice?: Notice) => void) | undefined;
 }) => (
   <fieldset disabled={busy}>
-    <Actions
+    <TaskControls
+      compact
       actions={target.actions.filter(isOperationAffordance)}
-      expandOther
       onAction={(action) => {
         if (isOperationAffordance(action)) {
           target.begin(action);

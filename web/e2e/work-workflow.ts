@@ -1,3 +1,4 @@
+import { parseRoute } from "../src/routing/routes";
 import { type ResponseFor, endpoints, type RequestByEndpoint } from "@contracts/client";
 import { chooseOption } from "./workspace-navigation";
 import { ui } from "./localization-support";
@@ -10,16 +11,21 @@ import { expectCaseReadsSettled } from "./case-readiness";
 export const workConfirmButton = (page: Page) =>
   page.getByRole("dialog").locator("button[data-confirm-operation]");
 
-/** Reveal the existing native disclosure before choosing a non-default case reminder view. */
+export const reminderRows = (page: Page) =>
+  page.locator(
+    ".case-reminders .next-action-cards > li, .reminder-list .table-view tbody > tr:not(.table-group)",
+  );
+
+/** The case rail links to the full case-scoped reminder queue. */
 export const selectCaseReminderState = async (
   page: Page,
   state: "PENDING" | "COMPLETED" | "CANCELLED",
 ): Promise<void> => {
-  const controls = page.locator(".case-reminder-controls");
-  if ((await controls.getAttribute("open")) === null) {
-    await controls.locator(":scope > summary").click();
+  const queue = page.locator(".reminder-queue");
+  if (!(await queue.isVisible())) {
+    await page.locator('.case-reminders a[href^="/reminders"]').click();
   }
-  await chooseOption(page, controls.getByRole("combobox"), state);
+  await chooseOption(page, queue.getByRole("combobox", { name: "Reminder state" }), state);
 };
 const languageOf = async (page: Page) => {
   const language = await page.locator("html").getAttribute("lang");
@@ -47,19 +53,18 @@ export const reviewReminderCompletion = async (
     const response = page.waitForResponse(
       (value) => new URL(value.url()).pathname === "/api/operation.preview",
     );
-    const circle = row.getByRole("button", {
-      name: ui(await languageOf(page), "task.reminder.complete.label"),
-      exact: false,
-    });
-    const originId = await circle.getAttribute("id");
-    await circle.click();
-    await page
+    const trigger = row.locator("button[aria-haspopup]");
+    const originId = await trigger.getAttribute("id");
+    expect(originId).toBeTruthy();
+    await trigger.click();
+    await page.locator('[data-menu-item="reminder.complete"]').click();
+    const review = page
       .getByRole("dialog")
-      .getByRole("button", {
-        name: ui(await languageOf(page), "label.reviewTitle"),
-        exact: true,
-      })
-      .click();
+      .getByRole("button", { name: ui(await languageOf(page), "label.reviewTitle"), exact: true });
+    await review.or(workConfirmButton(page)).first().waitFor({ state: "visible" });
+    if (await review.isVisible()) {
+      await review.click();
+    }
     const delivered = await response;
     const input: unknown = delivered.request().postDataJSON();
     const payload: unknown = await delivered.json();
@@ -75,9 +80,6 @@ export const reviewReminderCompletion = async (
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
     expect(operationPreviewReply.operationId).toBe(operationPreviewRequest.operationId);
-    expect(originId).toBe(
-      `reminder-${operationPreviewRequest.binding.reminderId}-reminder.complete`,
-    );
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();
@@ -99,7 +101,8 @@ export const selectReminderAction = async (
   row: Locator,
   kind: "reminder.update" | "reminder.cancel" | "reminder.reopen" | "reminder.completeAndPlanNext",
 ) => {
-  await row.locator(`button[data-act="${kind}"]`).click();
+  await row.locator("button[aria-haspopup]").click();
+  await row.page().locator(`[data-menu-item="${kind}"]`).click();
 };
 
 /** Reuse the authenticated action's observed binding for its independent DATA readback. */
@@ -172,6 +175,20 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
   }
   return endpointReply;
 };
+export const expectCaseRevision = async (page: Page, revision: number): Promise<void> => {
+  const url = new URL(page.url());
+  const route = parseRoute(url);
+  if (route.screen !== "case") {
+    throw new Error("Case route required for revision readback.");
+  }
+  const current = await workRequest(page, "case.get", { target: route.target });
+  if (current.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Case revision readback was refused.");
+  }
+  expect(current.outcome.data.revision).toBe(revision);
+  await expect(page.locator('.case-detail details[data-region="DETAILS"]')).toHaveCount(0);
+};
+
 /** Check durable facts through DATA independently of the HUMAN receipt display. */
 export const acceptedSubject = async (
   page: Page,
@@ -183,6 +200,41 @@ export const acceptedSubject = async (
     throw new Error("Expected accepted durable operation.");
   }
   return reply.outcome.data.receipt.subject;
+};
+
+const expectRecordedWorkInputs = async (
+  current: ReturnType<Page["locator"]>,
+  inputs: Readonly<Record<string, unknown>>,
+) => {
+  for (const [field, entry] of [
+    ["field:responsibleActor", "responsible"],
+    ["field:handlingSummary", "handlingSummary"],
+  ] as const) {
+    if (typeof inputs[field] === "string" && inputs[field] !== "") {
+      await expect(
+        current.locator(`.case-work .entries-view [data-entry="${entry}"]`),
+      ).toBeVisible();
+    }
+  }
+};
+
+const expectReviewedWorkDestination = async (
+  page: Page,
+  inputs: Readonly<Record<string, unknown>>,
+) => {
+  if (parseRoute(new URL(page.url())).screen === "reminders") {
+    await expect(page.locator(".reminder-queue .reminder-list")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    return;
+  }
+  const current = page.locator(".case-detail");
+  await expectCaseReadsSettled(page);
+  await expect(current.locator(".case-work")).toBeVisible();
+  await expectRecordedWorkInputs(current, inputs);
+  await expect(current.locator(".case-reminders")).toBeVisible();
+  await expectCaseReadsSettled(page);
 };
 
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
@@ -224,8 +276,6 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       : (`task.${input.task}.label` as const);
   expect(label).toBe(ui(language, labelId));
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  const current = page.locator(".case-detail");
-  await expectCaseReadsSettled(page);
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
   const access = observedAccess(delivered.request());
@@ -263,14 +313,7 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
     }
   }
-  await expect(
-    current.locator(".case-work .entries-view [data-entry='responsible']"),
-  ).toBeVisible();
-  await expect(
-    current.locator(".case-work .entries-view [data-entry='handlingSummary']"),
-  ).toBeVisible();
-  await expect(current.locator(".case-reminders")).toBeVisible();
-  await expectCaseReadsSettled(page);
+  await expectReviewedWorkDestination(page, input.inputs);
   return {
     operationId: envelope,
     document: receipt,

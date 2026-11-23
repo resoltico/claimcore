@@ -151,9 +151,34 @@ module internal ReviewDocumentParts =
                        ])
             )
 
+        let declaration = TaskDeclarations.describe (TaskId.token review.Task)
+        let paired = FieldPresentation.declarations |> List.choose _.Pairs |> Set.ofList
+
+        let entered input =
+            match Map.tryFind input inputs with
+            | None
+            | Some InputValue.Null -> false
+            | Some _ -> true
+
+        let notEntered =
+            if not declaration.Creates then
+                []
+            else
+                declaration.Inputs
+                |> List.filter (fun input ->
+                    input.Mode = TaskInputMode.Optional
+                    && input.Source = InputSource.Authored
+                    && not (entered input.Input)
+                    && (match input.Input with
+                        | TaskInputId.Target(InputTarget.Field field) ->
+                            not (Set.contains field paired)
+                        | _ -> true))
+                |> List.map (fun input -> TaskInputPresentation.messageKey input.Input "label")
+
         let presentation: ReviewPresentation =
             {
                 Changes = described.Changes
+                NotEntered = notEntered
                 Unchanged =
                     described.Unchanged
                     |> List.map (fun entry ->

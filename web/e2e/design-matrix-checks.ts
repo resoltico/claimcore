@@ -1,3 +1,5 @@
+import { expectNoInlineStyles } from "./inline-styles";
+import { geometryFailures } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
@@ -90,9 +92,6 @@ const ready = async (page: Page, route: MatrixRoute) => {
   await assertQueueOrReport(page, route);
   if (route.id.startsWith("case-")) {
     await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
-    await expect(
-      page.locator('.code-value[data-vocabulary="assignment"][data-code="MINE"]'),
-    ).toHaveCount(route.id === "case-undecided" ? 1 : 0);
   }
   if (route.id === "operation-result") {
     await expect(page.locator(".entries-view [data-entry='policyNumber']")).toBeVisible();
@@ -142,7 +141,11 @@ const assertListPresentation = async (
     }
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
-    await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
+    const material = table.columns.filter(({ prominence }) => prominence !== "DETAIL");
+    await expect(row.locator("td[data-column]")).toHaveCount(material.length);
+    for (const column of table.columns.filter(({ prominence }) => prominence === "DETAIL")) {
+      await expect(row.locator(`td[data-column="${column.key}"]`)).toHaveCount(0);
+    }
   }
   if (route.expectedReference === undefined) {
     return;
@@ -317,6 +320,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await openReadRoute(page, route, dimension);
   await ready(page, route);
   if (route.id === "editor-work") {
+    expect(await geometryFailures(page)).not.toContain("G1");
     await page.locator("#case-work-summary").click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();
@@ -355,6 +359,8 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
+  expect(await geometryFailures(page)).toEqual([]);
+  await expectNoInlineStyles(page);
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
   await noHorizontalOverflow(page, dimension.reflowScale === undefined ? "narrow" : "zoom");

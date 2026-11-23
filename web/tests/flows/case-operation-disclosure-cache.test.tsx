@@ -153,7 +153,7 @@ it.each([false, true])(
     const execute = vi.spyOn(service, "execute");
     const user = userEvent.setup();
     render(<Workspace />);
-    await user.click(await screen.findByRole("button", { name: /^Close the case:/u }));
+    await user.click(await screen.findByRole("button", { name: "Close the case" }));
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     await screen.findByRole("alert");
     expect(document.body).not.toHaveTextContent("PRIOR_CASE_DISCLOSURE_CANARY");

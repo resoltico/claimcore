@@ -1,11 +1,6 @@
 import type { Language } from "../../src/presentation/preferences";
 import { expect, it } from "vitest";
-import {
-  renderKey,
-  renderCatalogKey,
-  renderIsolatedValue,
-  renderIsolatedValues,
-} from "../../src/presentation/messages";
+import { renderKey, renderCatalogKey, renderIsolatedValues } from "../../src/presentation/messages";
 import { templateParts, pseudolocalizeLiteral } from "../../src/presentation/templates";
 import vectors from "../../../tests/fixtures/message-template-vectors.json";
 
@@ -57,21 +52,19 @@ it("isolates the other reference hole in Arabic and preserves literal word order
   const reference = { exact: "A\u2069\u202E العربية" };
   const values = { label: reference.exact, meaning: "12" };
   expect(
-    renderIsolatedValue(
+    renderIsolatedValues(
       { language: "en", displayLocale: "en-GB", mode: "system", accent: "green" },
       "ui.actDescription",
       values,
-      reference,
-      "label",
+      { label: reference },
     ),
   ).toEqual([reference, ": 12"]);
   expect(
-    renderIsolatedValue(
+    renderIsolatedValues(
       { language: "ar", displayLocale: "en-GB", mode: "system", accent: "green" },
       "ui.actDescription",
       values,
-      reference,
-      "label",
+      { label: reference },
     ),
   ).toEqual([reference, ": \u206812\u2069"]);
 });

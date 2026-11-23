@@ -1,0 +1,14 @@
+@layer components {
+  .empty-state {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .empty-state p {
+    margin: 0;
+  }
+}

@@ -1,10 +1,11 @@
+import { within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { Screen, PresentedSection } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { endpointResponse } from "../../support/transport-response.fixtures";
 import { CaseTimeline } from "../../../src/views/case/CaseTimeline";
-import { Table } from "../../../src/ui/regions/Table";
+import { DataTable } from "../../../src/ui/DataTable";
 import { actorRefInput, workBasis } from "../../support/inputs";
 
 const differences: ReadonlyArray<PresentedSection> = [
@@ -126,21 +127,12 @@ it("renders exact endpoint-supplied details and typed event arguments without a 
     ),
   );
   const user = userEvent.setup();
-  const result = render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "CASE-1" }} />);
-  await screen.findByText("Server event person");
-  expect(result.container.querySelector(".row-summary")).toHaveTextContent(
-    "Server event person was made responsible",
-  );
-  const detail = result.container.querySelector("details")!;
-  expect(detail).not.toHaveAttribute("open");
-  expect(result.container.querySelector(".table-row-detail > .record-view")).toHaveTextContent(
-    "9,876.5432 EUR",
-  );
-  expect(result.container.querySelector(".table-row-detail > .record-view")).not.toHaveTextContent(
-    "03/02/2026",
-  );
-  await user.click(detail.querySelector("summary")!);
-  expect(detail).toHaveAttribute("open");
+  render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "CASE-1" }} />);
+  await user.click(await screen.findByRole("button", { name: "Actions for Results" }));
+  await user.click(screen.getByRole("menuitem", { name: "View details" }));
+  const detail = screen.getByRole("dialog", { name: "View details" });
+  expect(detail).toHaveTextContent("Server event person was made responsible");
+  expect(detail).toHaveTextContent("9,876.5432 EUR");
   expect(detail).toHaveTextContent("123.4567 EUR");
   expect(detail).toHaveTextContent("03/02/2026");
   expect(detail).toHaveTextContent("05/04/2026");
@@ -150,11 +142,11 @@ it("renders exact endpoint-supplied details and typed event arguments without a 
   expect(detail.querySelector('[data-entry="new-narrative"] bdi')?.textContent).toBe(
     "Replacement\n<script>inert</script>",
   );
-  expect(result.container.querySelector("script")).toBeNull();
+  expect(detail.querySelector("script")).toBeNull();
 });
-it("keeps supplied historical contact and mixed role scope facts in generic row details", () => {
-  const result = render(
-    <Table
+it("keeps supplied historical contact and mixed role scope facts in generic row details", async () => {
+  render(
+    <DataTable
       view={{
         ...suppliedTable,
         rows: suppliedTable.rows.map((row) => ({
@@ -197,14 +189,19 @@ it("keeps supplied historical contact and mixed role scope facts in generic row 
       }}
     />,
   );
-  expect(result.container).toHaveTextContent("past-only@example.test");
-  expect(result.container).toHaveTextContent("37");
-  expect(result.container.querySelector('[data-entry="installation"]')).toHaveTextContent("Yes");
+  const user = userEvent.setup();
+  expect(screen.queryByText("past-only@example.test")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Actions for Results" }));
+  await user.click(screen.getByRole("menuitem", { name: "View details" }));
+  const detail = screen.getByRole("dialog", { name: "View details" });
+  expect(within(detail).getByText("past-only@example.test")).toBeVisible();
+  expect(detail).toHaveTextContent("37");
+  expect(detail.querySelector('[data-entry="installation"]')).toHaveTextContent("Yes");
 });
 
 it("retains supplied page facts when the table has no rows", () => {
   const result = render(
-    <Table
+    <DataTable
       view={{
         kind: "TABLE",
         columns: [],

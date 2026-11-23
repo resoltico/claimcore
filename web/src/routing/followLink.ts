@@ -13,5 +13,9 @@ export const followLink = (event: MouseEvent<HTMLAnchorElement>, action: () => v
     return;
   }
   event.preventDefault();
+  // Some browsers leave pointer-activated links unfocused. Record the clicked origin for Back.
+  if (event.currentTarget.id !== "") {
+    event.currentTarget.focus({ preventScroll: true });
+  }
   action();
 };

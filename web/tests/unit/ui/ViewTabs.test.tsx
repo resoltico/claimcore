@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { ViewTabs } from "../../../src/ui/ViewTabs";
 it("preserves core order, moves keyboard focus without dispatch and commits on Enter", async () => {
   const changed = vi.fn();
@@ -45,4 +45,33 @@ it("preserves core order, moves keyboard focus without dispatch and commits on E
     );
   });
   expect(screen.getByRole("textbox", { name: "Filter" })).toHaveValue("literal");
+});
+
+it("moves secondary views into the menu until one is selected", async () => {
+  const Work = () => {
+    const [selected, setSelected] = useState("ALL");
+    return (
+      <ViewTabs
+        items={[
+          { id: "ALL", label: "All", count: "8", prominence: "PRIMARY" },
+          { id: "DONE", label: "Done", count: "3", prominence: "SECONDARY", menuLabel: "Done 3" },
+        ]}
+        selected={selected}
+        label="Reminder view"
+        loading={false}
+        controls={null}
+        onSelect={setSelected}
+      >
+        <output>Supplied reminders</output>
+      </ViewTabs>
+    );
+  };
+
+  render(<Work />);
+  expect(screen.queryByRole("tab", { name: "Done 3" })).toBeNull();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "More views" }));
+  await user.click(screen.getByRole("menuitem", { name: "Done 3" }));
+  expect(screen.getByRole("tab", { name: "Done 3", selected: true })).toBeVisible();
+  expect(screen.getByRole("tab", { name: "All 8", selected: false })).toBeVisible();
 });

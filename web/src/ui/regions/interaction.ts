@@ -15,9 +15,12 @@ export type RegionInteraction = {
   actionPresentation?: ActionPresentation;
   linkNavigation?: LinkNavigation;
   actionsDisabled?: boolean;
-  onAction?: (action: Affordance, row?: RegionRow, originId?: string) => void;
+  onAction?: (action: Affordance, row?: RegionRow, originId?: string, implicit?: boolean) => void;
   sectionLink?: RowLink;
   countLink?: RowLink;
   labelledBy?: string;
   headerActions?: ReactNode;
+  renderControls?: (row: RegionRow) => ReactNode;
+  renderSupplement?: (row: RegionRow) => ReactNode;
+  showTableSections?: boolean;
 };

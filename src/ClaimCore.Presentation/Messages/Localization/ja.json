@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "利用者を追加",
-    "source": "66848b5361f4"
+    "text": "アクセス申請から追加",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "名前と最初の役割を指定して個人またはサービスアカウントを追加します。",
@@ -4298,5 +4298,137 @@
   "label.reminderCancelledInactive": {
     "text": "取消（非稼働の対応）",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "サインアウトしました",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "もう一度サインイン",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "サインインが完了しませんでした。",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "管理",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "期限到来 {count}件",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "確認されていない変更（{count}件）",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "データ管理",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "案件を {count} 件表示",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "案件を {count} 件表示",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "案件を {count} 件表示",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "案件を {count} 件表示",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "案件を {count} 件表示",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "案件を {count} 件表示",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "リマインダーを {count} 件表示",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "アカウントを {count} 件表示",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "アカウントを {count} 件表示",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "アカウントを {count} 件表示",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "アカウントを {count} 件表示",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "アカウントを {count} 件表示",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "アカウントを {count} 件表示",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "詳細を指定して完了…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "未入力：{fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "利用者を追加",
+    "source": "66848b5361f4"
+  },
+  "label.caseWorklistCaption": {
+    "text": "要対応 {attention} 件 · 合計 {total} 件",
+    "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "当事者は記録されていません。",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "この選択に一致する案件グループはありません。",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "利用できる作業ビューはありません。",
+    "source": "3e86bd3913b7"
   }
 }

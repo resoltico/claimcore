@@ -1,3 +1,5 @@
+import http from "node:http";
+import { createHash, randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import https from "node:https";
@@ -298,13 +300,14 @@ const login = async (context, origin, provider) => {
     },
     { appOrigin: origin, preferred: preferences },
   );
-  await page.goto(`${origin}/cases`);
-  const signIn = page.locator(".login-link");
-  await expect(signIn).toHaveAttribute("href", "/auth/login?language=ar");
   const challenge = page.waitForRequest((request) =>
     new URL(request.url()).pathname.endsWith("/protocol/openid-connect/auth"),
   );
-  await signIn.click();
+  const loginHint = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/auth/login",
+  );
+  await page.goto(`${origin}/cases`);
+  expect(new URL((await loginHint).url()).searchParams.get("language")).toBe("ar");
   const authorization = new URL((await challenge).url());
   expect(authorization.origin).toBe(provider);
   expect(authorization.searchParams.has("request_uri")).toBe(true);
@@ -436,6 +439,14 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
       await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
       await expect(page.locator("#kc-login")).toBeVisible();
       await verifyProviderAppearance(page, language === "ar");
+      if (language === "en") {
+        await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
+        await expect(page.locator("#kc-login")).toHaveAccessibleName("Sign in");
+        const top = await page
+          .locator(".pf-v5-c-login__main")
+          .evaluate((card) => getComputedStyle(card).borderTopWidth);
+        expect(top).toBe("0px");
+      }
       process.stdout.write(
         `Rendered provider locale ${language} (form, direction, inherited and branded styles).\n`,
       );
@@ -445,6 +456,79 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
   }
   process.stdout.write(`Rendered identity provider locales: ${languages.join(", ")}.\n`);
 };
+const verifyCliTheme = async (browser, provider) => {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true, locale: "en-US" });
+  const state = randomBytes(24).toString("base64url");
+  const verifier = randomBytes(32).toString("base64url");
+  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  let authorize;
+  const callback = new Promise((resolveCode) => {
+    authorize = resolveCode;
+  });
+  const listener = http.createServer((request, response) => {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const code = url.searchParams.get("code");
+    if (url.pathname === "/" && url.searchParams.get("state") === state && code !== null) {
+      authorize(code);
+      response.writeHead(200, { "Cache-Control": "no-store" });
+      response.end("Synthetic sign-in complete");
+    } else {
+      response.writeHead(400);
+      response.end("Unexpected callback");
+    }
+  });
+  await new Promise((resolveListener) => {
+    listener.listen(0, "127.0.0.1", resolveListener);
+  });
+  const redirect = `http://127.0.0.1:${listener.address().port}`;
+  const password = readFileSync(path.join(configuration, "owner-login.password"));
+  try {
+    const page = await context.newPage();
+    const endpoint = new URL("/realms/claimcore/protocol/openid-connect/auth", provider);
+    endpoint.search = new URLSearchParams({
+      client_id: "claimcore-cli",
+      redirect_uri: redirect,
+      response_type: "code",
+      scope: "openid",
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+      state,
+      kc_locale: "en",
+    }).toString();
+    await page.goto(endpoint.href);
+    await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
+    await expect(page.locator('link[href$="/css/claimcore.css"]')).toHaveCount(1);
+    await page.locator("#username").fill("owner");
+    await page.locator("#password").fill(password.toString("utf8").trim());
+    await page.locator("#kc-login").click();
+    if (!page.url().startsWith(`${redirect}/?`)) {
+      throw new Error("The CLI client did not return to its own loopback receiver.");
+    }
+    const code = await callback;
+    const tokens = await context.request.post(
+      new URL("/realms/claimcore/protocol/openid-connect/token", provider).href,
+      {
+        form: {
+          grant_type: "authorization_code",
+          client_id: "claimcore-cli",
+          code,
+          redirect_uri: redirect,
+          code_verifier: verifier,
+        },
+      },
+    );
+    if (tokens.status() !== 200 || typeof (await tokens.json()).id_token !== "string") {
+      throw new Error("The CLI realm client refused its synthetic code exchange.");
+    }
+  } finally {
+    password.fill(0);
+    await context.close();
+    await new Promise((resolveClose) => {
+      listener.close(resolveClose);
+    });
+  }
+};
+
 const qualify = async (origin, provider, ca) => {
   const fingerprint = consumerContractIdentity;
   if (!/^[0-9a-f]{64}$/u.test(fingerprint)) {
@@ -457,6 +541,7 @@ const qualify = async (origin, provider, ca) => {
       (language) => language !== presentationPseudolanguage,
     );
     await verifyProviderTheme(browser, origin, provider, languages);
+    await verifyCliTheme(browser, provider);
     await verifyPriorRealm(browser, origin, provider);
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     await login(context, origin, provider);

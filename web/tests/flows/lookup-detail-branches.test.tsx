@@ -1,8 +1,6 @@
-import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { workBasis } from "../support/inputs";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -11,7 +9,8 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
 import { hostCases } from "../support/host-failure.fixtures";
-import { CaseList } from "../../src/views/CaseList";
+import { FindCase } from "../../src/views/FindCase";
+import { service } from "../../src/api/service";
 import { definition, fields, operationId } from "../support/service-ui.fixtures";
 const unavailable = {
   representation: "HUMAN",
@@ -73,7 +72,7 @@ it("keeps a failed history page request-local without erasing current case data"
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText("CASE-1")).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "CASE-1" })).toBeVisible();
   expect(await screen.findByRole("alert")).toBeVisible();
 });
 const readableCurrent = (history: "NONE" | "FULL" = "FULL") =>
@@ -201,32 +200,26 @@ it("focuses and describes invalid operation identity then clears the stale error
   expect(input).not.toHaveAttribute("aria-invalid", "true");
   expect(screen.queryByRole("alert")).toBeNull();
 });
-it("requires an exact nonempty reference without silently trimming lookup", async () => {
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("case.list", {
-      screen: { regions: [] },
-      subject: { kind: "LIST" },
-      actions: [
-        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
-      ],
-      links: [],
-      history: null,
-      nextCursor: null,
-      basis: { kind: "SNAPSHOT", observation: workBasis },
-      disclosure: "CURRENT",
-    }),
-  );
-  const selected = vi.fn();
-  const user = userEvent.setup();
-  render(<CaseList onSelect={selected} />);
-  const find = screen.getByRole("button", {
-    name: "Open by exact reference",
+it("opens a literal filter for padded input and reserves exact reads for valid references", async () => {
+  const get = vi.spyOn(service, "get").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
   });
-  expect(find).toBeDisabled();
-  await user.type(screen.getByLabelText("Case reference (exact)"), " REF ");
-  await user.click(find);
-  expect(selected).toHaveBeenCalledWith({ kind: "REFERENCE", caseReference: " REF " });
-  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  const user = userEvent.setup();
+  const view = render(<FindCase open returnFocusId="workspace-find" setOpen={vi.fn()} />);
+  const input = screen.getByRole("combobox", { name: "Find a case" });
+  await user.click(input);
+  await user.keyboard("{Enter}");
+  expect(get).not.toHaveBeenCalled();
+  await user.type(input, " REF {Enter}");
+  expect(get).not.toHaveBeenCalled();
+  expect(new URLSearchParams(location.search).get("q")).toBe(" REF ");
+  view.unmount();
+  render(<FindCase open returnFocusId="workspace-find" setOpen={vi.fn()} />);
+  await user.type(screen.getByRole("combobox", { name: "Find a case" }), "REF{Enter}");
+  await waitFor(() => {
+    expect(get).toHaveBeenCalledExactlyOnceWith("REF", "token", expect.any(AbortSignal));
+  });
 });
 
 beforeEach(() => {

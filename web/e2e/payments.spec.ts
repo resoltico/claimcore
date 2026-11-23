@@ -31,7 +31,7 @@ test("records instalments and removes the selected entry through one reviewed co
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("40.00 EUR");
   await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(
-    page.locator('.case-detail .code-value[data-vocabulary="progress"][data-code="PARTLY_PAID"]'),
+    page.locator(".case-title-line").getByText("Partly paid", { exact: true }),
   ).toBeVisible();
   await expect(
     page.locator(
@@ -71,11 +71,9 @@ test("records instalments and removes the selected entry through one reviewed co
     .filter({
       hasText: "40.00 EUR",
     })
-    .getByRole("button", {
-      name: "Remove payment entry",
-      exact: true,
-    })
+    .locator("button[aria-haspopup]")
     .click();
+  await page.getByRole("menuitem", { name: "Remove payment entry", exact: true }).click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
     task: "case.removePayment",
@@ -242,20 +240,14 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   if (original === undefined) {
     throw new Error("The oldest recorded payment is required.");
   }
-  const older = payments.locator("tbody tr").filter({
-    has: page.getByText(original.operationId, {
-      exact: true,
-    }),
-  });
+  const older = payments
+    .locator(".case-payment-pages tbody tr")
+    .nth(ids.indexOf(original.operationId));
   const preview = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );
-  await older
-    .getByRole("button", {
-      name: "Remove payment entry",
-      exact: true,
-    })
-    .click();
+  await older.locator("button[aria-haspopup]").click();
+  await page.getByRole("menuitem", { name: "Remove payment entry", exact: true }).click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
     task: "case.removePayment",
@@ -286,7 +278,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   expect(current.outcome.data.state.fields.finance.totals).toEqual([
     { currency: "EUR", paid: "54", returned: "0" },
   ]);
-  const acceptedNotice = page.locator(".accepted-receipt");
+  const acceptedNotice = page.locator('.status-banner[data-tone="success"]');
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice
     .getByRole("button", {
@@ -322,8 +314,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     await expand.click();
     await pending;
   }
-  await expect(payments.locator(".payment-cards > li").first()).toBeVisible();
-  await payments.locator(".payment-cards > li").first().scrollIntoViewIfNeeded();
+  const narrowRow = payments.locator(".case-payment-pages tbody tr").first();
+  await expect(narrowRow).toBeVisible();
+  await narrowRow.scrollIntoViewIfNeeded();
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.screenshot({

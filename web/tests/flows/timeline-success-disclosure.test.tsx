@@ -2,8 +2,9 @@ import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { HistoryDisclosure, Screen } from "@contracts/client";
-import { render, screen } from "../support/presentation-test-support";
+import { render, screen, waitFor } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";
+import { openedTimelineEntry, timelineDocument } from "../support/timeline-document.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { CaseTimeline } from "../../src/views/case/CaseTimeline";
 const requestBody = (init?: RequestInit): string => {
@@ -12,34 +13,14 @@ const requestBody = (init?: RequestInit): string => {
   }
   return init.body;
 };
-const supplied = (text: string, count: number): Screen => ({
-  regions: [
-    {
-      role: "RESULTS",
-      content: {
-        kind: "TABLE",
-        columns: [],
-        sections: [
-          {
-            titleId: "label.changes",
-            entries: [
-              {
-                key: "future-value",
-                labelId: "label.changes",
-                prominence: "PRIMARY",
-                value: { kind: "TEXT", value: text },
-              },
-            ],
-          },
-        ],
-        rows: Array.from({ length: count }, () => []).map((values, index) => ({
-          key: String(index),
-          values,
-        })),
-      },
-    },
-  ],
-});
+const supplied = (text: string, count: number): Screen =>
+  timelineDocument(
+    Array.from({ length: count }, (_, index) => ({
+      ...openedTimelineEntry,
+      key: `${text}/${index}`,
+      target: { kind: "TEXT", value: text },
+    })),
+  ).screen;
 it.each([
   ["FULL", false],
   ["SUMMARY", false],
@@ -91,12 +72,26 @@ it.each([
     );
     await screen.findByText("FULL_OLD_CANARY");
     await user.click(screen.getByRole("button", { name: "Load more" }));
-    await screen.findByText("NEW_2");
+    if (empty) {
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: "Load more" })).toBeEnabled();
+      });
+      expect(screen.queryByText("NEW_2")).toBeNull();
+    } else {
+      await screen.findByText("NEW_2");
+    }
     expect(screen.queryByText("FULL_OLD_CANARY") !== null).toBe(level === "FULL");
     expect(changed).toHaveBeenCalledTimes(level === "FULL" ? 0 : 1);
     await user.click(screen.getByRole("button", { name: "Load more" }));
-    await screen.findByText("NEW_3");
-    expect(screen.queryByText("NEW_2")).not.toBeNull();
+    if (empty) {
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+      });
+      expect(screen.queryByText("NEW_3")).toBeNull();
+    } else {
+      await screen.findByText("NEW_3");
+    }
+    expect(screen.queryByText("NEW_2") !== null).toBe(!empty);
     expect(inputs).toEqual([
       { target: { kind: "REFERENCE", caseReference: "CASE-1" }, limit: 50 },
       { target: { kind: "REFERENCE", caseReference: "CASE-1" }, cursor: "first-range", limit: 50 },

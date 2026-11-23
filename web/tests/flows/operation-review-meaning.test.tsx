@@ -206,7 +206,7 @@ const localized = [
   },
 ] as const;
 it.each(localized)(
-  "correction review renders supplied group labels in $language and treats authored text literally",
+  "correction review omits unchanged groups in $language and treats authored text literally",
   ({ language, groups, action, keep }) => {
     localStorage.setItem(
       preferenceKey,
@@ -241,9 +241,9 @@ it.each(localized)(
       />,
     );
     const dialog = screen.getByRole("dialog");
-    const unchanged = dialog.querySelector<HTMLElement>(".review-unchanged")!;
+    expect(dialog.querySelector(".review-unchanged")).toBeNull();
     for (const label of groups) {
-      expect(unchanged).toHaveTextContent(label);
+      expect(within(dialog).queryByText(label, { exact: true })).toBeNull();
     }
     const values = dialog.querySelector<HTMLElement>(".review-values")!;
     expect(within(values).queryByText(keep, { exact: true })).toBeNull();

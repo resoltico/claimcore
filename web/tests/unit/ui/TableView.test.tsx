@@ -1,11 +1,13 @@
+import userEvent from "@testing-library/user-event";
+import { selectRowAction } from "../../support/workspace-actions";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
-import { Table } from "../../../src/ui/regions/Table";
+import { DataTable } from "../../../src/ui/DataTable";
 import { render, screen } from "../../support/presentation-test-support";
 
-it("renders supplied columns and cells without field knowledge", () => {
+it("renders supplied columns and cells without field knowledge", async () => {
   const rendered = render(
-    <Table
+    <DataTable
       onAction={() => undefined}
       view={{
         kind: "TABLE",
@@ -26,6 +28,12 @@ it("renders supplied columns and cells without field knowledge", () => {
           {
             key: "future-absent",
             labelId: "field.paymentDate.label",
+            prominence: "SECONDARY",
+            isMoney: false,
+          },
+          {
+            key: "future-detail",
+            labelId: "field.operationId.label",
             prominence: "DETAIL",
             isMoney: false,
           },
@@ -41,6 +49,7 @@ it("renders supplied columns and cells without field knowledge", () => {
                 displayScale: 4,
               },
               { kind: "ABSENT", reasonId: "label.notRecorded" },
+              { kind: "IDENTIFIER", value: "never-in-list" },
             ],
           ] as const
         ).map((values, index) => ({
@@ -58,18 +67,19 @@ it("renders supplied columns and cells without field knowledge", () => {
       }}
     />,
   );
-  expect(screen.getAllByRole("columnheader")).toHaveLength(5);
-  expect(screen.getAllByRole("cell")).toHaveLength(5);
+  expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+  expect(screen.getAllByRole("cell")).toHaveLength(4);
+  expect(screen.queryByRole("columnheader", { name: "Operation ID" })).toBeNull();
+  expect(screen.queryByText("never-in-list")).toBeNull();
   expect(screen.getAllByRole("columnheader").at(-1)).toHaveTextContent("Available actions");
-  expect(
-    screen
-      .getAllByRole("cell")
-      .at(-1)
-      ?.contains(screen.getByRole("button", { name: "Close the case" })),
-  ).toBe(true);
-  expect(screen.getByText("Not recorded")).toBeVisible();
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /العربية/u }),
+    "Close the case",
+  );
+  expect(screen.getAllByText("Not recorded").length).toBeGreaterThan(0);
   expect(rendered.container.querySelector('bdi[dir="auto"]')).toHaveTextContent("العربية");
   expect(rendered.container.querySelector('bdi[dir="ltr"]')).toHaveTextContent("0001 EUR");
   expect(rendered.container.querySelector("script")).toBeNull();
-  expect(screen.getByRole("group", { name: "Results" })).toHaveAttribute("tabindex", "0");
+  expect(screen.getByRole("table", { name: "Results" })).toBeVisible();
 });
