@@ -109,6 +109,13 @@ module internal ViewText =
                         |> List.map (fun entry -> label entry.LabelId + ": " + text entry.Value)
                     else
                         []
+                | RegionContent.Table data when
+                    region.EmptyId.IsSome
+                    && data.Rows.IsEmpty
+                    && data.Sections.IsEmpty
+                    && data.Meter.IsNone
+                    ->
+                    []
                 | RegionContent.Table data -> table (region.Role = RegionRole.RelatedCases) data
                 | RegionContent.Stages data ->
                     data.Steps

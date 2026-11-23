@@ -447,7 +447,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let refreshed = Encoding.UTF8.GetString last.StandardOutput
 
     let currentCoverage =
-        refreshed.Contains("No next action", StringComparison.Ordinal)
+        Regex.IsMatch(refreshed, @"\bNo next action\b")
         && refreshed.Contains("No next actions for this case.", StringComparison.Ordinal)
 
     if not currentCoverage then

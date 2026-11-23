@@ -193,7 +193,17 @@ let redesignDeclarations =
                     with
                     | RegionContent.Table table ->
                         Expect.isEmpty table.Sections "Next actions excludes the old summary"
-                    | _ -> failtest "Next actions require a table")
+                    | _ -> failtest "Next actions require a table"
+
+                    let nextOnly =
+                        regions
+                        |> List.filter (fun region -> region.Role = RegionRole.NextActions)
+                        |> Screen.create
+
+                    Expect.equal
+                        (ViewText.renderSelected false (RenderingContext.forLanguage "en") nextOnly)
+                        [ "No next actions for this case." ]
+                        "CLI renders the empty message in place of the column headers")
             testCase
                 "payment-decision affordance uses a label for the current decision state"
                 (fun () ->
