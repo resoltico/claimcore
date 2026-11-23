@@ -5,11 +5,7 @@ import {
   presentationLanguageOptions,
 } from "@contracts/client";
 import { test, expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import {
-  chooseOption,
-  compactSettingsNavigation,
-  settledWorkspaceHeader,
-} from "./workspace-navigation";
+import { chooseOption, workspaceSettingsNavigation } from "./workspace-navigation";
 import type { ServiceResponse } from "../src/protocol/types";
 import { admitBytes } from "../src/protocol/schema";
 import { isHostFailure, isObject } from "../src/protocol/client";
@@ -82,25 +78,8 @@ type PreferenceVisit =
       returnUrl: string;
     };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
-export const settingsNavigation = async (page: Page): Promise<Locator> => {
-  const drawerSettings = page.locator(
-    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
-  );
-  if (await drawerSettings.isVisible()) {
-    return drawerSettings;
-  }
-  await settledWorkspaceHeader(page);
-  const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
-  if (compact) {
-    return compactSettingsNavigation(page);
-  }
-  const account = page.locator(".workspace-sidebar .account-menu");
-  if ((await account.getAttribute("open")) === null) {
-    await account.locator(":scope > summary").click();
-  }
-  const link = account.locator('a[href="/settings"]');
-  return link;
-};
+export { workspaceSettingsNavigation as settingsNavigation };
+
 const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
   const panel = page.locator(".settings-panel");
   if (await panel.isVisible()) {
@@ -116,7 +95,7 @@ const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
       kind: "DIALOG",
     };
   }
-  const navigation = await settingsNavigation(page);
+  const navigation = await workspaceSettingsNavigation(page);
   const returnUrl = page.url();
   await navigation.click();
   await expect(page).toHaveURL((url) => url.pathname === "/settings");

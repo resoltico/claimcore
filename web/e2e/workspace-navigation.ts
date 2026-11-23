@@ -8,29 +8,29 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
     .waitFor({ state: "visible" });
 };
 
-export const compactSettingsNavigation = async (page: Page): Promise<Locator> => {
-  const settings = page.getByRole("dialog").getByRole("button", { name: "Settings", exact: true });
-  if (!(await settings.isVisible())) {
-    await page.locator("#workspace-more").click();
-  }
-  await expect(settings).toBeVisible();
-  return settings;
-};
-
 export const showAccountActions = async (page: Page): Promise<void> => {
-  const drawerSettings = page.locator(
-    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
-  );
-  if (await drawerSettings.isVisible()) {
-    await drawerSettings.click();
-    return;
-  }
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
-  const trigger = page.locator(compact ? "#workspace-more" : "#workspace-account");
+  if (compact) {
+    if (!(await page.locator(".shell-more").isVisible())) {
+      await page.locator("#workspace-more").click();
+    }
+    return;
+  }
+  const trigger = page.locator("#workspace-account");
   if ((await trigger.getAttribute("aria-expanded")) !== "true") {
     await trigger.click();
   }
+};
+export const workspaceSettingsNavigation = async (page: Page): Promise<Locator> => {
+  const drawer = page.locator(
+    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
+  );
+  if (await drawer.isVisible()) {
+    return drawer;
+  }
+  await showAccountActions(page);
+  return page.locator('[data-menu-item="settings"], .shell-more a[href="/settings"]');
 };
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
@@ -58,7 +58,7 @@ export const goToView = async (
     await showAccountActions(page);
     await page
       .getByRole("menuitem", { name: /^Unconfirmed changes/u })
-      .or(page.getByRole("button", { name: /^Unconfirmed changes/u }))
+      .or(page.locator('.shell-more a[href="/recovery"]'))
       .click();
   } else if (compact) {
     await page.locator("#workspace-more").click();

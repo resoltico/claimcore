@@ -35,7 +35,7 @@ import {
 import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../tests/support/themeContrast";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
-import { expectAccessible } from "./session-helpers";
+import { expectAccessible, seedSignedOut } from "./session-helpers";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -63,6 +63,7 @@ const expectChoiceInView = async (option: Locator) => {
     .toBeLessThanOrEqual(1);
 };
 const signInSettings = async (page: Page) => {
+  await seedSignedOut(page);
   await page.goto("/", {
     waitUntil: "commit",
   });
@@ -335,20 +336,22 @@ for (const language of ["en", "ar"] as const) {
       const mobile = width === 320;
       await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
       await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
-      const recovery = page.locator('nav a[href="/recovery"]');
-      await expect(recovery).toHaveCount(1);
+      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
       if (mobile) {
-        await expect(recovery).toBeHidden();
-        const trigger = page.locator(".compact-navigation > summary");
-        await trigger.focus();
-        await page.keyboard.press("Enter");
-        await expect(recovery).toBeVisible();
-        await expect(page.locator('.workspace-header a[href="/cases?view=ALL"]')).toBeVisible();
+        const trigger = page.locator("#workspace-more");
+        await trigger.press("Enter");
+        const sheet = page.locator(".shell-more");
+        await expect(sheet.locator('a[href="/recovery"]')).toBeVisible();
+        await expect(sheet.locator(".shell-business-date")).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(trigger).toBeFocused();
-        await expect(recovery).toBeHidden();
+        await expect(sheet).toBeHidden();
+      } else {
+        await expect(page.locator(".shell-footer .shell-business-date")).toBeVisible();
+        await page.locator("#workspace-account").press("Enter");
+        await expect(page.locator('[data-menu-item="recovery"]')).toBeVisible();
+        await page.keyboard.press("Escape");
       }
-      await expect(page.locator(".shell-business-date")).toHaveCount(1);
       const overflow = await page.evaluate(() => ({
         document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         main:
@@ -365,7 +368,7 @@ for (const language of ["en", "ar"] as const) {
   }
 }
 for (const language of ["de", "ar"] as const) {
-  test(`compact keyboard Back restores the Recovery link in ${language} @engine`, async ({
+  test(`compact keyboard Back restores the More trigger in ${language} @engine`, async ({
     page,
   }) => {
     await observe(page, true);
@@ -373,8 +376,8 @@ for (const language of ["de", "ar"] as const) {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto("/cases?view=ALL");
     await expect(page.locator("html")).toHaveAttribute("lang", language);
-    const menu = page.locator(".compact-navigation");
-    const trigger = menu.locator(":scope > summary");
+    const menu = page.locator(".shell-more");
+    const trigger = page.locator("#workspace-more");
     const recovery = menu.getByRole("link", { name: new RegExp(ui(language, "ui.recovery"), "u") });
     await trigger.press("Enter");
     await expect(recovery).toBeVisible();
@@ -384,9 +387,10 @@ for (const language of ["de", "ar"] as const) {
     await expect(recovery).toBeHidden();
     await page.goBack();
     await expect(page).toHaveURL(/\/cases\?view=ALL$/u);
-    await expect(recovery).toBeFocused();
-    await expect(menu).toHaveAttribute("open", "");
+    await expect(trigger).toBeFocused();
+    await expect(menu).toBeHidden();
     if (language === "de") {
+      await trigger.press("Enter");
       const [newTab] = await Promise.all([
         page.context().waitForEvent("page"),
         recovery.click({ modifiers: ["ControlOrMeta"] }),

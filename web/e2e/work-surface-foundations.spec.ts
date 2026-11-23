@@ -132,35 +132,18 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
   });
   try {
     const signedOutPage = await anonymous.newPage();
-    await signedOutPage.goto(destination.href, {
-      waitUntil: "commit",
-    });
-    await expect(
-      signedOutPage.getByRole("link", {
-        name: "Sign in",
-        exact: true,
-      }),
-    ).toBeVisible();
-    const session = await browserRequest(signedOutPage, "/api/session");
-    const sessionReply = session.payload as ResponseFor<"session", "DATA">;
-    if (sessionReply.outcome.kind !== "SUCCEEDED") {
-      throw new Error("E2E_DEEP_LINK_SESSION_UNAVAILABLE");
-    }
-    expect(sessionReply.outcome.data.authenticated).toBe(false);
+    const redirect = signedOutPage.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/auth/login" && response.status() === 302,
+      { timeout: freshLoginWorkflowTimeout },
+    );
+    await signedOutPage.goto(destination.href, { waitUntil: "commit" });
+    await redirect;
+    await expect(signedOutPage.locator('input[name="username"]')).toBeVisible();
     await Promise.all([
       signedOutPage.waitForResponse(
         (response) =>
-          new URL(response.url()).pathname === "/auth/login" && response.status() === 302,
-        {
-          timeout: freshLoginWorkflowTimeout,
-        },
-      ),
-      signedOutPage.waitForResponse(
-        (response) =>
           new URL(response.url()).pathname === "/signin-oidc" && response.status() === 302,
-        {
-          timeout: freshLoginWorkflowTimeout,
-        },
+        { timeout: freshLoginWorkflowTimeout },
       ),
       login(signedOutPage, null),
     ]);

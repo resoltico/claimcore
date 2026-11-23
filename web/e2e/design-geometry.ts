@@ -14,6 +14,7 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
       const heading = main?.querySelector("h1");
       return (
         main !== null &&
+        main.closest('[inert], [aria-hidden="true"]') === null &&
         heading !== undefined &&
         heading !== null &&
         visible(heading) &&

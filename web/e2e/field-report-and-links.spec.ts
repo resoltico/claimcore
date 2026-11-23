@@ -1,3 +1,4 @@
+import { workspaceSettingsNavigation } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import {
@@ -231,8 +232,7 @@ for (const releaseOn of ["Settings", "return"] as const) {
       try {
         await page.goto(path);
         await held.promise;
-        await page.locator(".account-menu > summary").click();
-        await page.locator(".account-menu").getByRole("link", { name: "Settings" }).click();
+        await (await workspaceSettingsNavigation(page)).click();
         await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
         await execute(writer, access, {
           operationId: operationId(),

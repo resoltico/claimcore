@@ -25,49 +25,32 @@ type SessionEnvelope = {
 type HostFailure = { hostFailure: { code: string; phase: string | null } };
 type ApiReply<T> = { status: number; cacheControl: string | null; payload: T };
 
-const readSession = (page: Page) =>
-  page.evaluate(async (fingerprint) => {
-    const response = await fetch("/api/session", {
-      credentials: "same-origin",
-      headers: { "ClaimCore-Contract": fingerprint },
-    });
-    return {
-      status: response.status,
-      cacheControl: response.headers.get("cache-control"),
-      payload: (await response.json()) as SessionEnvelope,
-    } satisfies ApiReply<SessionEnvelope>;
-  }, consumerContractIdentity);
+const apiReply = async <T>(response: APIResponse): Promise<ApiReply<T>> => ({
+  status: response.status(),
+  cacheControl: response.headers()["cache-control"] ?? null,
+  payload: (await response.json()) as T,
+});
 
-const readUnknownEndpoint = (page: Page) =>
-  page.evaluate(async () => {
-    const response = await fetch("/api/service/not-present", { credentials: "same-origin" });
-    return {
-      status: response.status,
-      cacheControl: response.headers.get("cache-control"),
-      payload: (await response.json()) as HostFailure,
-    } satisfies ApiReply<HostFailure>;
-  });
+const readSession = async (page: Page) =>
+  apiReply<SessionEnvelope>(
+    await page.request.get("/api/session", {
+      headers: { "ClaimCore-Contract": consumerContractIdentity },
+    }),
+  );
 
-const readProtectedList = (page: Page, token: string) =>
-  page.evaluate(
-    async ({ antiforgeryToken, fingerprint }) => {
-      const response = await fetch("/api/case.list", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "ClaimCore-Contract": fingerprint,
-          "Content-Type": "application/json",
-          "X-ClaimCore-Antiforgery": antiforgeryToken,
-        },
-        body: JSON.stringify({ limit: 1 }),
-      });
-      return {
-        status: response.status,
-        cacheControl: response.headers.get("cache-control"),
-        payload: (await response.json()) as HostFailure,
-      } satisfies ApiReply<HostFailure>;
-    },
-    { antiforgeryToken: token, fingerprint: consumerContractIdentity },
+const readUnknownEndpoint = async (page: Page) =>
+  apiReply<HostFailure>(await page.request.get("/api/service/not-present"));
+
+const readProtectedList = async (page: Page, token: string, origin: string) =>
+  apiReply<HostFailure>(
+    await page.request.post("/api/case.list", {
+      headers: {
+        "ClaimCore-Contract": consumerContractIdentity,
+        "X-ClaimCore-Antiforgery": token,
+        Origin: origin,
+      },
+      data: { limit: 1 },
+    }),
   );
 
 const expectAnonymousSessionBoundary = async (page: Page) => {
@@ -92,8 +75,8 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
   return session.payload.outcome.data.antiforgeryToken;
 };
 
-const expectSessionRejection = async (page: Page, token: string) => {
-  const rejected = await readProtectedList(page, token);
+const expectSessionRejection = async (page: Page, token: string, origin: string) => {
+  const rejected = await readProtectedList(page, token, origin);
   expect(rejected).toMatchObject({
     status: 401,
     cacheControl: expect.stringContaining("no-store"),
@@ -153,12 +136,9 @@ test("signs out of ClaimCore and Keycloak before asking for credentials again @e
   test.setTimeout(freshLoginWorkflowTimeout * 2);
   await page.goto("/", { waitUntil: "commit" });
   const landing = new URL("/", page.url());
-  await expect(
-    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.locator('input[name="username"]')).toBeVisible();
   const antiforgeryToken = await expectAnonymousSessionBoundary(page);
-  await expectSessionRejection(page, antiforgeryToken);
+  await expectSessionRejection(page, antiforgeryToken, landing.origin);
   await expectAbsentRoute(page);
   await login(page);
   await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
@@ -232,9 +212,10 @@ test("a refused callback offers a fresh same-origin restart without copying the 
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  await page.goto("/cases?view=ALL", { waitUntil: "commit" });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
+    if (location.pathname !== "/signin-oidc") {
+      return;
+    }
     sessionStorage.setItem("claimcore.loginReturn", "/cases?view=ALL");
     localStorage.setItem(
       "claimcore.presentation.v3",
@@ -271,8 +252,10 @@ for (const dependency of ["catalog", "script"] as const) {
   test(`a refused callback retains its static retry when only the ${dependency} fails @engine`, async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.evaluate(() => {
+    await page.addInitScript(() => {
+      if (location.pathname !== "/signin-oidc") {
+        return;
+      }
       sessionStorage.removeItem("claimcore.loginReturn");
       localStorage.setItem(
         "claimcore.presentation.v3",
@@ -364,15 +347,11 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
       },
     });
     expect(payload).not.toHaveProperty("operationId");
-    await expect(
-      page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-    ).toBeVisible();
     await expectAnonymousSession(page);
     await expectAnonymousSession(second);
+    await second.route("**/auth/login?*", (route) => route.fulfill({ status: 204 }));
     await second.reload({ waitUntil: "commit" });
-    await expect(
-      second.getByRole("heading", { name: "Sign in to the case register", exact: true }),
-    ).toBeVisible();
+    await expectAnonymousSession(second);
     // ClaimCore deletion did not revoke the identity-provider session or prevent later login.
     await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await expect(readSession(page)).resolves.toMatchObject({

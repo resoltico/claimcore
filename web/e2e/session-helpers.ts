@@ -82,6 +82,21 @@ const syntheticCredentials = async (
   };
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
+export const seedSignedOut = async (page: Page): Promise<void> => {
+  await page.context().clearCookies();
+  const base = process.env["CLAIMCORE_WEB_BASE_URL"];
+  if (base === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  await page.addInitScript(
+    ({ origin }) => {
+      if (location.origin === origin) {
+        sessionStorage.setItem("claimcore.signedOut", "true");
+      }
+    },
+    { origin: new URL(base).origin },
+  );
+};
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
   const errors: string[] = [];

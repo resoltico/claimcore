@@ -174,9 +174,11 @@ for (const [name, role, scoped] of cases) {
       await narrow.goto("/people-history");
       const navigation = narrow.locator(".workspace-mobile-tabs");
       await expect(navigation.getByRole("link", { name: /^Cases/u })).toBeVisible();
-      await navigation.locator(".compact-navigation > summary").press("Enter");
-      await expect(navigation.getByRole("link", { name: /^Unconfirmed changes/u })).toBeVisible();
-      await expect(navigation.getByRole("link", { name: "Access history" })).toHaveCount(0);
+      await narrow.locator("#workspace-more").press("Enter");
+      const more = narrow.locator(".shell-more");
+      await expect(more.getByRole("link", { name: /^Unconfirmed changes/u })).toBeVisible();
+      await expect(more.getByRole("link", { name: "Access history" })).toHaveCount(0);
+      await narrow.keyboard.press("Escape");
       await expect(
         narrow.getByRole("heading", { name: "Access history", exact: true }),
       ).toBeVisible();

@@ -320,6 +320,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await openReadRoute(page, route, dimension);
   await ready(page, route);
   if (route.id === "editor-work") {
+    expect(await geometryFailures(page)).not.toContain("G1");
     await page.locator("#case-work-summary").click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();

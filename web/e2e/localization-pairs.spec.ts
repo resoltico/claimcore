@@ -1,7 +1,7 @@
 import { pseudolocalizeLiteral } from "../src/presentation/templates";
 import { showAccountActions } from "./workspace-navigation";
 import { expect, test, type Page } from "./fixtures";
-import { openApplication, openAuthenticated } from "./session-helpers";
+import { openApplication, openAuthenticated, seedSignedOut } from "./session-helpers";
 import {
   expectPreferences,
   selectLanguage,
@@ -22,11 +22,12 @@ import type { CatalogLanguage } from "../src/presentation/languageCatalog";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
   if (!authenticated) {
+    await seedSignedOut(page);
     await openApplication(
       page,
       source === "en-XA"
-        ? `⟦${pseudolocalizeLiteral(ui("en", "ui.signInTitle"))}⟧`
-        : ui(source, "ui.signInTitle"),
+        ? `⟦${pseudolocalizeLiteral(ui("en", "notice.signedOutTitle"))}⟧`
+        : ui(source, "notice.signedOutTitle"),
     );
     return;
   }
@@ -73,12 +74,12 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
     await expect(open).toHaveAttribute("href", "/cases/new");
     await showAccountActions(page);
     await expect(
-      page.getByRole("button", {
+      page.getByRole("menuitem", {
         name: ui(language, "ui.signOut"),
         exact: true,
       }),
     ).toBeVisible();
-    await page.locator(".account-menu > summary").click();
+    await page.keyboard.press("Escape");
   } else {
     await expect(
       page.getByRole("link", {
@@ -87,7 +88,7 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
       }),
     ).toBeVisible();
     await expect(
-      page.getByText(ui(language, "ui.signInTitle"), {
+      page.getByText(ui(language, "notice.signedOutTitle"), {
         exact: true,
       }),
     ).toBeVisible();

@@ -151,12 +151,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const first = page.locator(".worklist tbody tr").filter({
     hasText: references[0],
   });
-  await expect(
-    first.getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    }),
-  ).toBeVisible();
+  const actions = first.getByRole("button", { name: /^Actions for/u });
+  await expect(actions).toBeVisible();
   await expect(first.locator('[data-column="workRevision"]')).toHaveCount(0);
   await expect(first.locator('[data-entry="workRevision"]')).not.toBeVisible();
   let writes = 0;
@@ -165,12 +161,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
       writes += 1;
     }
   });
-  await first
-    .getByRole("button", {
-      name: "Reassign",
-      exact: true,
-    })
-    .click();
+  await actions.click();
+  await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
   await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
   await expect(
     page.getByRole("dialog").getByRole("textbox", {

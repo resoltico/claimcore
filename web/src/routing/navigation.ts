@@ -115,11 +115,12 @@ const capturePosition = (): DeparturePosition | null => {
     return null;
   }
   const element = document.activeElement;
+  const returnTo = element?.getAttribute("data-route-focus-return");
   return {
     key: active.key,
     epoch: departureEpoch,
     focus: {
-      id: element instanceof HTMLElement && element.id !== "" ? element.id : null,
+      id: returnTo ?? (element instanceof HTMLElement && element.id !== "" ? element.id : null),
       scrollY: window.scrollY,
     },
   };

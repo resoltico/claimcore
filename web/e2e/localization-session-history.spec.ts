@@ -88,7 +88,7 @@ test("preserves language and independent display preferences through real logout
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
   await showAccountActions(page);
-  const control = page.getByRole("button", {
+  const control = page.getByRole("menuitem", {
     name: ui("ar", "ui.signOut"),
     exact: true,
   });
@@ -100,7 +100,7 @@ test("preserves language and independent display preferences through real logout
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(ui("ar", "ui.signInTitle"), {
+    page.getByText(ui("ar", "notice.signedOutTitle"), {
       exact: true,
     }),
   ).toBeVisible();

@@ -201,7 +201,7 @@ export const Shell = ({
   const creation = useCaseCreationControl();
   const { logout } = useSessionContext();
   const [findOrigin, setFindOrigin] = useState<Route | null>(null);
-  const [more, setMore] = useState(false);
+  const [moreOrigin, setMoreOrigin] = useState<Route | null>(null);
   const cases = views.includes(apiEndpoints.caseList);
   const available: Record<Area["name"], boolean> = {
     cases,
@@ -228,35 +228,26 @@ export const Shell = ({
       void logout();
     });
   };
-  const visit = (path: string) => {
-    if (navigate(path)) {
-      setMore(false);
-    }
-  };
-  const accountItems = [
-    {
-      id: "settings",
-      label: p.text("ui.settings"),
-      select: () => {
-        visit("/settings");
-      },
-    },
+  const navigationItems = [
+    { id: "settings", label: p.text("ui.settings"), path: "/settings" },
     {
       id: "recovery",
       label: p.text("label.recoveryCount", { count: p.integer(recovery.operations.length) }),
-      select: () => {
-        visit("/recovery");
-      },
+      path: "/recovery",
     },
-    {
-      id: "about",
-      label: p.text("ui.about"),
+    { id: "about", label: p.text("ui.about"), path: aboutPath },
+  ];
+  const accountItems = [
+    ...navigationItems.map(({ id, label, path }) => ({
+      id,
+      label,
+      disabled: locked,
       select: () => {
-        visit(aboutPath);
+        navigate(path);
       },
-    },
-    { id: "sign-out", label: p.text("ui.signOut"), select: signOut },
-  ].map(({ id, label, select }) => ({ id, label, select, disabled: locked }));
+    })),
+    { id: "sign-out", label: p.text("ui.signOut"), disabled: locked, select: signOut },
+  ];
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
@@ -317,7 +308,7 @@ export const Shell = ({
           aria-disabled={locked || undefined}
           onClick={(event) => {
             followLink(event, () => {
-              visit("/");
+              navigate("/");
             });
           }}
         >
@@ -344,7 +335,7 @@ export const Shell = ({
             aria-disabled={locked || undefined}
             onClick={(event) => {
               followLink(event, () => {
-                visit(aboutPath);
+                navigate(aboutPath);
               });
             }}
           >
@@ -364,7 +355,7 @@ export const Shell = ({
                 compact
                 aria-label={renderCatalogKey(p, creation.labelId)}
                 onPress={() => {
-                  visit("/cases/new");
+                  navigate("/cases/new");
                 }}
               >
                 <Icon name="add" />
@@ -378,7 +369,7 @@ export const Shell = ({
               id="workspace-more"
               variant="quiet"
               onPress={() => {
-                setMore(true);
+                setMoreOrigin(route);
               }}
             >
               {p.text("ui.more")}
@@ -387,23 +378,33 @@ export const Shell = ({
           <Dialog
             title={p.text("ui.more")}
             closeLabel={p.text("ui.close")}
-            isOpen={more}
+            isOpen={moreOrigin === route}
             isDismissable
-            onOpenChange={setMore}
+            onOpenChange={(open) => {
+              setMoreOrigin(open ? route : null);
+            }}
             placement="bottom"
           >
             <div className="shell-more">
               {administrative.map(link)}
-              {accountItems.map((item) => (
-                <Button
+              {navigationItems.map((item) => (
+                <a
                   key={item.id}
-                  variant="quiet"
-                  isDisabled={item.disabled}
-                  onPress={item.select}
+                  href={item.path}
+                  aria-disabled={locked || undefined}
+                  data-route-focus-return="workspace-more"
+                  onClick={(event) => {
+                    followLink(event, () => {
+                      navigate(item.path);
+                    });
+                  }}
                 >
                   {item.label}
-                </Button>
+                </a>
               ))}
+              <Button variant="quiet" isDisabled={locked} onPress={signOut}>
+                {p.text("ui.signOut")}
+              </Button>
               <BusinessDate view={presentation} />
             </div>
           </Dialog>
