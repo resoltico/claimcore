@@ -1,4 +1,3 @@
-import { within } from "@testing-library/react";
 import { expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, fireEvent } from "../support/presentation-test-support";
@@ -81,14 +80,10 @@ it("composes target assignment due text and state through queue paging and reset
   expect(screen.queryByText("SECOND-PAGE")).toBeNull();
   await chooseOption(user, screen.getByRole("combobox", { name: "Reminder state" }), "COMPLETED");
   await chooseOption(user, screen.getByRole("combobox", { name: "Responsibility" }), "UNASSIGNED");
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search" }), {
-    target: { value: "New & exact" },
-  });
-  await user.click(
-    within(screen.getByRole("search", { name: "Reminders" })).getByRole("button", {
-      name: "Search",
-    }),
-  );
+  const search = screen.getByRole("searchbox", { name: "Filter this view" });
+  fireEvent.change(search, { target: { value: "New & exact" } });
+  await user.click(search);
+  await user.keyboard("{Enter}");
   await waitFor(() => {
     expect(list.mock.calls.at(-1)![1]).toEqual({
       ...expected,

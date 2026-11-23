@@ -112,10 +112,15 @@ const freshContext = async (
   resumeTime += 30_000;
   const now = vi.spyOn(performance, "now").mockReturnValue(resumeTime);
   try {
-    await act(async () => {
-      window.dispatchEvent(new Event("focus"));
-      await Promise.resolve();
-    });
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
+    try {
+      await act(async () => {
+        window.dispatchEvent(new Event("focus"));
+        await vi.advanceTimersByTimeAsync(32);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     await waitFor(() => {
       expect(mock).toHaveBeenCalledTimes(before + 1);
     });
@@ -165,7 +170,7 @@ const completeRegistration = async (user: ReturnType<typeof userEvent.setup>) =>
       }
     } else {
       await user.clear(control);
-      await user.type(control, value);
+      await user.paste(value);
       if (control.getAttribute("role") === "combobox") {
         await user.tab();
       }
