@@ -223,7 +223,10 @@ const expectReviewedWorkDestination = async (
   inputs: Readonly<Record<string, unknown>>,
 ) => {
   if (parseRoute(new URL(page.url())).screen === "reminders") {
-    await expect(page.locator(".reminder-queue .status-banner")).toBeVisible();
+    await expect(page.locator(".reminder-queue .reminder-list")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
     return;
   }
   const current = page.locator(".case-detail");
