@@ -53,7 +53,7 @@ const FindControl = ({ close }: { close: () => void }) => {
   const [suggestionFailed, setSuggestionFailed] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const flight = useRef<Promise<void>>(Promise.resolve());
-  const search = query.value.trim();
+  const search = query.value;
 
   useEffect(() => {
     const request = new AbortController();
@@ -98,7 +98,7 @@ const FindControl = ({ close }: { close: () => void }) => {
     }
   };
   const exactOrFilter = async () => {
-    if (search === "" || credential === null) {
+    if (search.trim() === "" || credential === null) {
       return;
     }
     if (!isExactReference(search)) {

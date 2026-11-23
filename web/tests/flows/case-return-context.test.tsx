@@ -128,16 +128,14 @@ it.each([
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");
     });
     if (interrupt) {
-      const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;
-      await user.pointer({ target: summary, keys: "[MouseLeft>]" });
+      const filters = screen.getByRole("button", { name: "More filters" });
+      await user.pointer({ target: filters, keys: "[MouseLeft>]" });
       await act(async () => {
         pending.resolve(page(true));
         await pending.promise;
       });
-      await user.pointer({ target: summary, keys: "[/MouseLeft]" });
-      await waitFor(() => {
-        expect(document.querySelector(".exact-lookup")).toHaveAttribute("open", "");
-      });
+      await user.pointer({ target: filters, keys: "[/MouseLeft]" });
+      expect(await screen.findByRole("dialog", { name: "More filters" })).toBeVisible();
       expect(scroll).not.toHaveBeenCalled();
     } else if (retained) {
       await waitFor(() => {

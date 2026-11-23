@@ -39,7 +39,7 @@ type CaseDetailProps = {
   disclosureAvailable?: boolean;
   authoringAvailable?: boolean;
   definition: CatalogDocument;
-  onBack: () => void;
+  onBack: (worklist?: string) => void;
   onMutationLockChange?: MutationLockChange;
   onAct: (current: CurrentCase, action: Affordance) => void;
 };
@@ -160,8 +160,9 @@ const breadcrumbReference = (
 const CaseHeader = ({
   target,
   state,
+  onBack,
   onAct,
-}: Pick<CaseDetailProps, "target" | "onAct"> & {
+}: Pick<CaseDetailProps, "target" | "onAct" | "onBack"> & {
   state: HumanDocument | null;
 }) => {
   const p = usePresentation();
@@ -177,7 +178,7 @@ const CaseHeader = ({
           href={back}
           onClick={(event) => {
             followLink(event, () => {
-              navigate(back);
+              onBack(back);
             });
           }}
         >
@@ -356,6 +357,7 @@ const caseReadPresentation = (
 const CaseDisclosure = ({
   target,
   feedback,
+  onBack,
   onAct,
   onMutationLockChange = ignoreMutationLock,
   unavailableAct,
@@ -381,7 +383,7 @@ const CaseDisclosure = ({
   );
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
-      <CaseHeader target={target} state={state} onAct={onAct} />
+      <CaseHeader target={target} state={state} onAct={onAct} onBack={onBack} />
       {feedback}
       <CurrentFeedback
         message={current.message}
