@@ -2936,23 +2936,23 @@
     "source": "4591c339cfa6"
   },
   "endpoint.session.terminateOwn.label": {
-    "text": "Meine ClaimCore-Browsersitzungen beenden",
+    "text": "Meine Browsersitzungen in ClaimCore beenden",
     "source": "dc0452a1ddfe"
   },
   "endpoint.session.terminateOwn.meaning": {
-    "text": "Beenden Sie alle Ihre ClaimCore-Browsersitzungen, einschließlich dieser. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
+    "text": "Beenden Sie alle Ihre Browsersitzungen in ClaimCore, einschließlich dieser. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
     "source": "ea8522212fcf"
   },
   "endpoint.people.terminateSessions.label": {
-    "text": "ClaimCore-Browsersitzungen dieser Person beenden",
+    "text": "Browsersitzungen dieser Person in ClaimCore beenden",
     "source": "ae1df620470c"
   },
   "endpoint.people.terminateSessions.meaning": {
-    "text": "Beenden Sie alle ClaimCore-Browsersitzungen dieser Person. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
+    "text": "Beenden Sie alle Browsersitzungen dieser Person in ClaimCore. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
     "source": "c04853b26aaf"
   },
   "label.sessionsTerminated": {
-    "text": "ClaimCore-Browsersitzungen beendet.",
+    "text": "Browsersitzungen in ClaimCore beendet.",
     "source": "e75ab2941cf7"
   },
   "label.browserSessionsEnded": {
@@ -2960,7 +2960,7 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "Die Anfrage wurde nicht bestätigt. Möglicherweise wurden die ClaimCore-Browsersitzungen beendet. Eine Wiederholung kann auch neuere Sitzungen beenden.",
+    "text": "Die Anfrage wurde nicht bestätigt. Möglicherweise wurden die Browsersitzungen in ClaimCore beendet. Eine Wiederholung kann auch neuere Sitzungen beenden.",
     "source": "1ef989edf86f"
   },
   "label.exportLimitExceeded": {
