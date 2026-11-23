@@ -221,6 +221,7 @@ let redesignDeclarations =
                             Selections = Set.empty
                             Editable = []
                             Choices = Map.empty
+                            Applicable = true
                             Blocked = None
                             Recommendation = None
                         }

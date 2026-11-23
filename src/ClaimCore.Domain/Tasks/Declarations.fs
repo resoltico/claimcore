@@ -168,6 +168,7 @@ module internal Declarations =
             Selections = Set.empty
             Editable = TaskDeclaration.editableInputs declaration
             Choices = Map.empty
+            Applicable = not (Option.exists Refusal.inapplicableForOffer blocked)
             Blocked = blocked
             Recommendation = None
         }

@@ -51,6 +51,7 @@ let tests =
                             Selections = Set.empty
                             Editable = editable
                             Choices = Map.empty
+                            Applicable = true
                             Blocked = None
                             Recommendation = None
                         }

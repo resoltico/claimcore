@@ -170,7 +170,7 @@ let tests =
                     Expect.isFalse
                         (subjectActions
                          |> List.exists (fun action -> TaskId.token action.Task = inapplicable))
-                        "The case subject does not offer an inapplicable task"
+                        ("An open case does not offer " + inapplicable)
 
                 let! refused =
                     write (11) (owner) (1L) "case.withdrawDecision" Map.empty |> Async.AwaitTask

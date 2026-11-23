@@ -131,6 +131,7 @@ type Availability =
         Selections: Set<Map<TaskInputId, InputValue>>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
+        Applicable: bool
         Blocked: Refusal option
         Recommendation: int option
     }

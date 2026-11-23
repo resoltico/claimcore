@@ -105,6 +105,7 @@ let offeredTask token binding seeds =
                 |> List.filter (fun input -> input.Source = InputSource.Authored)
                 |> List.map _.Input
             Choices = Map.empty
+            Applicable = true
             Blocked = None
             Recommendation = None
         }
