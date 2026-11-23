@@ -36,9 +36,10 @@
   }
 
   .region-timeline > li:has(.timeline-subject) {
-    grid-template-columns:
+    grid-template-columns: var(
+      --timeline-columns,
       minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) minmax(min-content, 1fr)
-      auto;
+    );
   }
 
   .timeline-actor {
