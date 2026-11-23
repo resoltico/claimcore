@@ -33,7 +33,11 @@ const download = async (page: Page, button: Locator, filename: string) => {
     await file.delete();
   }
 };
-const rejectParkedDownload = async (page: Page, button: Locator) => {
+const rejectParkedDownload = async (
+  page: Page,
+  button: Locator,
+  reopen?: () => Promise<Locator>,
+) => {
   const held = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   const completed = Promise.withResolvers<void>();
@@ -68,7 +72,7 @@ const rejectParkedDownload = async (page: Page, button: Locator) => {
     release.resolve();
     await completed.promise;
     await page.goBack();
-    await expect(button).toBeEnabled();
+    await expect(reopen === undefined ? button : await reopen()).toBeEnabled();
     expect(await page.locator("html").getAttribute("data-late-export-blob")).toBeNull();
   } finally {
     release.resolve();
@@ -103,17 +107,17 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
   expect(history.request).toMatchObject({ query: "case.timeline", selection: { filter: "WORK" } });
   await rejectParkedDownload(page, timeline.getByRole("button", { name: "Download CSV" }));
   await page.goto(`/cases?view=ALL&q=${encodeURIComponent(reference)}`);
-  const cases = await download(
-    page,
-    page.getByRole("button", { name: "Export case list CSV" }),
-    "claimcore-cases.csv",
-  );
+  const showCaseCsv = async () => {
+    await page.getByRole("button", { name: "Export", exact: true }).click();
+    return page.getByRole("menuitem", { name: "Case list (CSV)", exact: true });
+  };
+  const cases = await download(page, await showCaseCsv(), "claimcore-cases.csv");
   expect(cases.text).toContain(reference);
   expect(cases.request).toEqual({
     query: "case.list",
     selection: { view: "ALL", text: reference },
   });
-  await rejectParkedDownload(page, page.getByRole("button", { name: "Export case list CSV" }));
+  await rejectParkedDownload(page, await showCaseCsv(), showCaseCsv);
 
   await page.goto(`/cases/report?view=ALL&q=${encodeURIComponent(reference)}`);
   const grouping = page.getByRole("combobox", { name: "Group by" });

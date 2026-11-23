@@ -1,3 +1,4 @@
+import { settledWorkspaceHeader } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { join } from "node:path";
 import { matrixEvidenceDirectory } from "./design-matrix-checks";
@@ -78,6 +79,7 @@ test("notes use one-step unversioned writes, latest three, paging, removal and A
   const evidence = await matrixEvidenceDirectory();
   await page.screenshot({ path: join(evidence, "notes-en-1280.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 900 });
+  await settledWorkspaceHeader(page);
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.screenshot({ path: join(evidence, "notes-en-320.png"), fullPage: true });

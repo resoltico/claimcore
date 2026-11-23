@@ -71,11 +71,9 @@ test("records instalments and removes the selected entry through one reviewed co
     .filter({
       hasText: "40.00 EUR",
     })
-    .getByRole("button", {
-      name: "Remove payment entry",
-      exact: true,
-    })
+    .locator("button[aria-haspopup]")
     .click();
+  await page.getByRole("menuitem", { name: "Remove payment entry", exact: true }).click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
     task: "case.removePayment",
@@ -242,20 +240,14 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   if (original === undefined) {
     throw new Error("The oldest recorded payment is required.");
   }
-  const older = payments.locator("tbody tr").filter({
-    has: page.getByText(original.operationId, {
-      exact: true,
-    }),
-  });
+  const older = payments
+    .locator(".case-payment-pages tbody tr")
+    .nth(ids.indexOf(original.operationId));
   const preview = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );
-  await older
-    .getByRole("button", {
-      name: "Remove payment entry",
-      exact: true,
-    })
-    .click();
+  await older.locator("button[aria-haspopup]").click();
+  await page.getByRole("menuitem", { name: "Remove payment entry", exact: true }).click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
     task: "case.removePayment",
