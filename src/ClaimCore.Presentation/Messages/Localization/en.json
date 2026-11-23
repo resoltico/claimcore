@@ -1102,5 +1102,6 @@
   "label.shown.people.other": "{count} people shown",
   "task.reminder.complete.reviewed": "Complete with details…",
   "label.reviewNotEntered": "Not entered: {fields}",
-  "label.addPerson": "Add person"
+  "label.addPerson": "Add person",
+  "label.caseWorklistCaption": "{attention} need attention · {total} in total"
 }

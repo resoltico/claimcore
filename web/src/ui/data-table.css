@@ -12,7 +12,7 @@
   .data-table table {
     inline-size: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
   }
 
   .data-table :is(td, th) {

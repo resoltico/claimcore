@@ -339,12 +339,21 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    align-items: center;
+    align-items: end;
     min-inline-size: 0;
-    display: grid;
-    align-items: start;
-    gap: var(--space-3);
     margin-block: var(--space-3);
+  }
+
+  .worklist-toolbar .filter-field-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-2);
+  }
+
+  .worklist-toolbar .worklist-search {
+    flex: 1 1 var(--width-worklist-filter);
+    min-inline-size: var(--width-worklist-filter);
   }
   .worklist-search-scope {
     flex-basis: 100%;

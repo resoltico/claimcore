@@ -459,3 +459,15 @@
     }
   }
 }
+
+@layer layout {
+  @media (width < 40rem) {
+    .page-heading .open-case-link {
+      display: none;
+    }
+
+    .worklist-toolbar .worklist-search {
+      --width-worklist-filter: 100%;
+    }
+  }
+}

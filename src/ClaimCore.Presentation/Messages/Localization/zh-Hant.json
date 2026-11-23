@@ -4414,5 +4414,9 @@
   "label.addPerson": {
     "text": "添加人員",
     "source": "66848b5361f4"
+  },
+  "label.caseWorklistCaption": {
+    "text": "{attention} 項需關注 · 共 {total} 項",
+    "source": "df743b5a0f30"
   }
 }

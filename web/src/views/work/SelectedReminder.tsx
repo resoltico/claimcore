@@ -89,6 +89,7 @@ export const SelectedReminder = ({
             }}
           />
           <TaskControls
+            compact
             actions={document.actions}
             onAction={onAction}
             actionPresentation={selectedActionPresentation}

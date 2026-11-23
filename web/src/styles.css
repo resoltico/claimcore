@@ -1,6 +1,19 @@
 @layer reset, tokens, base, layout, components, views;
 
 @layer base {
+  html {
+    color: var(--text-primary);
+    background: var(--bg-canvas);
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+    font-synthesis: none;
+    font-size: 100%;
+  }
+
+  body {
+    margin: 0;
+  }
+
   * {
     box-sizing: border-box;
   }

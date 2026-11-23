@@ -28,6 +28,7 @@ export const ActorActions = ({
 }) => (
   <fieldset disabled={busy}>
     <TaskControls
+      compact
       actions={target.actions.filter(isOperationAffordance)}
       onAction={(action) => {
         if (isOperationAffordance(action)) {

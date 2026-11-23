@@ -1,3 +1,4 @@
+import { PageHeading } from "../ui/Page";
 import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
@@ -240,32 +241,41 @@ const CaseListHeading = ({
 }) => {
   const p = usePresentation();
   const creation = useCaseCreationControl();
+  const views = useWorkspaceViews().cases.data;
+  const all = views?.items.find(({ view }) => view === "ALL")?.count;
+  const needed = views?.navigation;
+  const summary =
+    all?.kind === "COUNT" && needed?.kind === "COUNT"
+      ? p.text("label.caseWorklistCaption", {
+          attention: p.integer(needed.value),
+          total: p.integer(all.value),
+        })
+      : undefined;
   return (
-    <div className="section-heading">
-      <div>
-        <h1 id="case-list-title" tabIndex={-1}>
-          {p.text("label.cases")}
-        </h1>
-        <p className="page-description">{p.text("label.queueDescription")}</p>
-      </div>
-      {creation === undefined || onOpenCase === undefined ? null : (
-        <a
-          id="open-case"
-          className="shell-open-case"
-          href="/cases/new"
-          aria-disabled={!available || undefined}
-          onClick={(event) => {
-            followLink(event, () => {
-              if (available) {
-                onOpenCase();
-              }
-            });
-          }}
-        >
-          {renderCatalogKey(p, operationTask(creation.task).labelId)}
-        </a>
-      )}
-    </div>
+    <PageHeading
+      id="case-list-title"
+      title={p.text("label.cases")}
+      subtitle={summary}
+      primaryAction={
+        creation === undefined || onOpenCase === undefined ? null : (
+          <a
+            id="open-case"
+            className="ui-button ui-button--primary open-case-link"
+            href="/cases/new"
+            aria-disabled={!available || undefined}
+            onClick={(event) => {
+              followLink(event, () => {
+                if (available) {
+                  onOpenCase();
+                }
+              });
+            }}
+          >
+            {renderCatalogKey(p, operationTask(creation.task).labelId)}
+          </a>
+        )
+      }
+    />
   );
 };
 const useSearchDraft = (source: string) => {

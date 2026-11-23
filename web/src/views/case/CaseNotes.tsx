@@ -105,7 +105,6 @@ const NoteRows = ({
           {onRemove === undefined ? null : (
             <TaskControls
               actions={row.actions ?? []}
-              compact
               onAction={(action) => {
                 if (
                   isOperationAffordance(action) &&

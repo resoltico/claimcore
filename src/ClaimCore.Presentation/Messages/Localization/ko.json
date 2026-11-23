@@ -4414,5 +4414,9 @@
   "label.addPerson": {
     "text": "사람 추가",
     "source": "66848b5361f4"
+  },
+  "label.caseWorklistCaption": {
+    "text": "주의 필요 {attention}건 · 총 {total}건",
+    "source": "df743b5a0f30"
   }
 }

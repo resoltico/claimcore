@@ -52,15 +52,16 @@ export const TaskControls = ({
       </ul>
     );
   }
-  if (prominent) {
+  if (prominent || compact) {
     return (
       <div className="actions">
         {described.map((item) => (
           <Button
             key={item.id}
             data-act={item.id}
-            aria-label={item.description}
+            aria-label={prominent ? item.description : item.label}
             compact={compact}
+            variant={prominent ? "primary" : "secondary"}
             isDisabled={item.disabled}
             onPress={item.select}
           >
