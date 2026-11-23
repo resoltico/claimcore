@@ -7,7 +7,7 @@
 
   .region-timeline > li {
     display: grid;
-    grid-template-columns: minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) auto;
+    grid-template-columns: minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr);
     align-items: baseline;
     gap: var(--space-2);
     min-block-size: var(--size-row);
@@ -36,6 +36,13 @@
     grid-template-columns:
       minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) minmax(min-content, 1fr)
       auto;
+  }
+
+  .timeline-actor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
   }
 
   .timeline-comparison dd {

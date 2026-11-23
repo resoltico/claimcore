@@ -1,3 +1,4 @@
+import { Avatar } from "../ui/Avatar";
 import { actorName } from "../presentation/actorName";
 import {
   type Screen,
@@ -169,7 +170,7 @@ const ShellAccount = ({
       items={items}
       trigger={
         <span className="shell-account-identity">
-          <Icon name="person" />
+          {identity?.kind === "ACTOR" ? <Avatar actor={identity.value} /> : <Icon name="person" />}
           {name === null ? null : <bdi>{name}</bdi>}
         </span>
       }

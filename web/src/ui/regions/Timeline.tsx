@@ -77,16 +77,16 @@ export const Timeline = ({
                 )}
                 <span className="timeline-actor">
                   <PresentedValue value={entry.who} timeZone={timeZone} />
+                  <Button
+                    variant="quiet"
+                    compact
+                    onPress={() => {
+                      setSelectedKey(entry.key);
+                    }}
+                  >
+                    {p.text("ui.viewDetails")}
+                  </Button>
                 </span>
-                <Button
-                  variant="quiet"
-                  compact
-                  onPress={() => {
-                    setSelectedKey(entry.key);
-                  }}
-                >
-                  {p.text("ui.viewDetails")}
-                </Button>
               </li>
             );
           })}

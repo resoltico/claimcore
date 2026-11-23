@@ -440,38 +440,6 @@ export const checkFrame = async (
     const appearance = await page.evaluate(() => {
       const main = document.querySelector("main");
       const title = main?.querySelector("h1");
-      const split: Array<{ token: string; element: string }> = [];
-      for (const element of document.querySelectorAll(
-        "main td, main th, .chip, button, [role=tab], nav a, main h1, main h2, main h3",
-      )) {
-        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-        const range = document.createRange();
-        for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
-          if (
-            !(text instanceof Text) ||
-            text.parentElement === null ||
-            (innerWidth < 640 && text.parentElement.closest(".identifier-value") !== null)
-          ) {
-            continue;
-          }
-          if (text.parentElement.closest(".sr-only, thead[hidden]") !== null) {
-            continue;
-          }
-          for (const word of text.data.matchAll(/\S+/gu)) {
-            range.setStart(text, word.index);
-            range.setEnd(text, word.index + word[0].length);
-            if (
-              new Set(
-                [...range.getClientRects()]
-                  .filter((rect) => rect.width > 0)
-                  .map((rect) => Math.round(rect.top)),
-              ).size > 1
-            ) {
-              split.push({ token: word[0].slice(0, 50), element: element.className.toString() });
-            }
-          }
-        }
-      }
       return {
         title: document.title,
         heading: title?.textContent.trim(),
@@ -480,7 +448,6 @@ export const checkFrame = async (
             ? null
             : title.getBoundingClientRect().top - main.getBoundingClientRect().top,
         mainPadding: main === null ? null : getComputedStyle(main).paddingBlockStart,
-        split: split.slice(0, 5),
       };
     });
     expect(violations, `${frame} ${JSON.stringify({ tableBounds, controls, appearance })}`).toEqual(
