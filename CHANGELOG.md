@@ -9,6 +9,7 @@
 - If the CLI cannot launch a browser, it prints the sign-in address to stderr and waits for you to open it.
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
 - Use Find a case, the Cases breadcrumb, compact row menus, and About ClaimCore in the redesigned workspace.
+- Find a case discards an earlier exact lookup when you change the search or close the dialog.
 
 ## [0.21.0] - 2026-11-22
 

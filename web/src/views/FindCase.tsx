@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
@@ -52,13 +52,14 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
   const [notice, setNotice] = useState<Notice | null>(null);
   const [suggestionFailed, setSuggestionFailed] = useState(false);
   const field = useRef<HTMLInputElement>(null);
-  const controller = useRef<AbortController | null>(null);
+  const suggestionRequest = useRef<AbortController | null>(null);
+  const exactRequest = useRef<AbortController | null>(null);
   const flight = useRef<Promise<void>>(Promise.resolve());
   const search = query.value;
 
   useEffect(() => {
     const request = new AbortController();
-    controller.current = request;
+    suggestionRequest.current = request;
     const text = query.value.trim();
     if (credential === null || text.length < 2) {
       return () => {
@@ -109,9 +110,10 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
       open(worklistPath({ view: "ALL", text: search }));
       return;
     }
-    controller.current?.abort();
+    suggestionRequest.current?.abort();
+    exactRequest.current?.abort();
     const exact = new AbortController();
-    controller.current = exact;
+    exactRequest.current = exact;
     await flight.current;
     if (exact.signal.aborted) {
       return;
@@ -131,11 +133,11 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
     }
   };
 
-  useEffect(
+  useLayoutEffect(
     () => () => {
-      controller.current?.abort();
+      exactRequest.current?.abort();
     },
-    [],
+    [credential],
   );
 
   return (
@@ -143,6 +145,7 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
       <ComboBox
         inputValue={query.value}
         onInputChange={(value) => {
+          exactRequest.current?.abort();
           setQuery({ value, attempt: 0 });
           setNotice(null);
           setSuggestionFailed(false);
