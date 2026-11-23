@@ -31,7 +31,7 @@ test("records instalments and removes the selected entry through one reviewed co
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("40.00 EUR");
   await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(
-    page.locator('.case-detail .code-value[data-vocabulary="progress"][data-code="PARTLY_PAID"]'),
+    page.locator(".case-title-line").getByText("Partly paid", { exact: true }),
   ).toBeVisible();
   await expect(
     page.locator(

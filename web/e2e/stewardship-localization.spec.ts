@@ -1,3 +1,4 @@
+import { openAcceptedReceipt } from "./case-readiness";
 import type { ResponseByEndpoint } from "@contracts/client";
 import { showExactLookup } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -44,12 +45,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     const lookup = await showExactLookup(steward);
     await lookup.fill(reference);
     await lookup.press("Enter");
-    await steward.locator("details.case-actions > summary").click();
-    await steward
-      .getByRole("button", {
-        name: /Vööïïd/u,
-      })
-      .click();
+    await startAct(steward, "case.void", "en-XA");
     const reason = "Exact 1.0000 العربية";
     await steward.locator('[name="input:reason"]').fill(reason);
     const preview = steward.getByRole("dialog").locator("button[type=submit]");
@@ -194,11 +190,15 @@ test("accepted void and reinstatement reasons remain historical in actual receip
       const body = await delivered;
       expect(hasExactReason(body, reason)).toBe(true);
       accepted.push({ operationId: reviewed.operationId, reason });
-      await expect(steward.locator(".accepted-receipt")).toContainText(reason);
+      const receipt = await openAcceptedReceipt(steward);
+      await expect(receipt).toContainText(reason);
+      await steward.keyboard.press("Escape");
     }
     await steward.setViewportSize({ width: 390, height: 844 });
     await selectLanguage(steward, "ar");
-    await expect(steward.locator(".accepted-receipt")).toContainText(accepted[2]!.reason);
+    const receipt = await openAcceptedReceipt(steward);
+    await expect(receipt).toContainText(accepted[2]!.reason);
+    await steward.keyboard.press("Escape");
     await noHorizontalOverflow(steward, "narrow");
     const csrf = await sessionToken(page);
     const installation = await installationId(page, csrf);

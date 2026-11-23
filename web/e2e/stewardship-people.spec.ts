@@ -126,9 +126,12 @@ test("browser renders void, reinstatement and live payload erasure through autho
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);
   const ownerHistory = page.locator(".case-timeline-panel");
+  await ownerHistory.getByRole("button", { name: "View details", exact: true }).first().click();
+  const ownerDetails = page.getByRole("dialog", { name: "View details", exact: true });
   await expect(
-    ownerHistory.locator(".timeline-comparison [data-side=after]").first(),
+    ownerDetails.locator(".timeline-comparison [data-side=after]").first(),
   ).toBeAttached();
+  await ownerDetails.getByRole("button", { name: "Close", exact: true }).first().click();
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
@@ -140,11 +143,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await lookup.fill(reference);
     await lookup.press("Enter");
     await stewardAct(steward, reference, "case.void", "Synthetic entry error");
-    await expect(
-      steward.locator(
-        '.case-header-state .code-value[data-vocabulary="lifecycle"][data-code="VOIDED"]',
-      ),
-    ).toContainText("Voided");
+    await expect(steward.locator(".case-title-line .chip-list")).toContainText("Voided");
     await stewardAct(steward, reference, "case.reinstate", "Synthetic correction");
     await stewardAct(steward, reference, "case.erase");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
@@ -152,8 +151,15 @@ test("browser renders void, reinstatement and live payload erasure through autho
     );
     await expect(steward.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
-    for (const summary of await history.locator("details > summary").all()) {
-      await summary.click();
+    const details = steward.getByRole("dialog", { name: "View details", exact: true });
+    for (const viewDetails of await history
+      .getByRole("button", { name: "View details", exact: true })
+      .all()) {
+      await viewDetails.click();
+      await expect(details).not.toContainText("Synthetic claimant");
+      await expect(details).not.toContainText("Synthetic insurer");
+      await expect(details.locator(".timeline-comparison [data-side]")).toHaveCount(0);
+      await details.getByRole("button", { name: "Close", exact: true }).first().click();
     }
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");

@@ -1084,7 +1084,7 @@ test("@engine returns from an exact reminder to its filtered queue scroll and cl
   await expect(page).toHaveURL(new RegExp(`/reminders/${last}$`, "u"));
   await expectCaseReadsSettled(page);
   await expect(page.locator(".selected-reminder")).toContainText(`${reference} row 11`);
-  await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+  await page.locator("[data-return-workspace]").click();
   await expect(page).toHaveURL(queue);
   await expect(link).toBeFocused();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(position);

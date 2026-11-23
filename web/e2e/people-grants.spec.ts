@@ -204,8 +204,9 @@ test("preserves historical profile contact and distinguishes global and case rol
     issuer: "https://historical-issuer.example/",
     subject,
   } as const;
+  const registration = mintOperationId();
   await applyPeople(page, {
-    operationId: mintOperationId(),
+    operationId: registration,
     task: "people.register",
     binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
@@ -217,8 +218,9 @@ test("preserves historical profile contact and distinguishes global and case rol
     },
   });
   const actorId = await selectedActor(page, target);
+  const profileChange = mintOperationId();
   await applyPeople(page, {
-    operationId: mintOperationId(),
+    operationId: profileChange,
     task: "people.setProfile",
     binding: await reviewedPeopleBinding(page, actorId),
     inputs: {
@@ -266,20 +268,21 @@ test("preserves historical profile contact and distinguishes global and case rol
   await page.goto("/people-history");
   const historyLink = page.getByRole("link", { name: "Access history", exact: true });
   await expect(historyLink).toHaveAttribute("aria-current", "page");
-  const historical = page.locator(".people-history .region-timeline > li").filter({
-    hasText: "historical-browser-only@example.test",
-  });
-  await expect(historical).toHaveCount(2);
-  await expect(historical).toContainText([
-    "historical-browser-only@example.test",
-    "historical-browser-only@example.test",
-  ]);
-  const registered = page.locator(".people-history .region-timeline > li").filter({
-    hasText: "https://historical-issuer.example/",
-  });
-  await expect(registered).toHaveCount(1);
-  await registered.locator("summary").click();
-  const comparison = registered.locator(".timeline-comparison");
+  const openHistoryDetails = async (operation: string) => {
+    const event = page.locator(
+      `.people-history .region-timeline > li[data-effect$=".${operation}"]`,
+    );
+    await expect(event).toHaveCount(1);
+    await event.getByRole("button", { name: "View details", exact: true }).click();
+    return page.getByRole("dialog", { name: "View details", exact: true });
+  };
+  const updated = await openHistoryDetails(profileChange);
+  await expect(updated).toContainText("historical-browser-only@example.test");
+  await expect(updated).toContainText("current-browser-only@example.test");
+  await updated.getByRole("button", { name: "Close", exact: true }).first().click();
+  const original = await openHistoryDetails(registration);
+  await expect(original).toContainText("historical-browser-only@example.test");
+  const comparison = original.locator(".timeline-comparison");
   await expect(
     comparison.locator('[data-change-label="field.principal.issuer.label"] [data-side="after"]'),
   ).toContainText("https://historical-issuer.example/");

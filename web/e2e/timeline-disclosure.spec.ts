@@ -61,7 +61,10 @@ test("successful summary continuation removes previously loaded full history aft
   try {
     await page.reload();
     const history = page.locator(".case-timeline-panel");
-    await expect(history).toContainText("PRIVATE_HISTORY_11");
+    await history.getByRole("button", { name: "View details", exact: true }).first().click();
+    const details = page.getByRole("dialog", { name: "View details", exact: true });
+    await expect(details).toContainText("PRIVATE_HISTORY_11");
+    await details.getByRole("button", { name: "Close", exact: true }).first().click();
     await history.getByRole("tab", { name: "Case facts" }).click();
     expect(await captured.promise).toContain("PRIVATE_HISTORY_11");
     await applyPeople(page, {

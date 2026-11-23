@@ -2252,12 +2252,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       }),
       "lv-LV",
     );
-    await page
-      .getByRole("button", {
-        name: "Return to workspace",
-        exact: true,
-      })
-      .click();
+    await page.locator("[data-return-workspace]").click();
     await expect(page).toHaveURL(/\/people$/u);
     await expect(page.locator('[name="input:principal.subject"]')).toHaveValue("admission-person");
     await expect(

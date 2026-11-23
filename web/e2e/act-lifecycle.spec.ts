@@ -42,12 +42,15 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await completeAct(page, "case.withdrawDecision");
   await expectRevision(page, "4");
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(4);
-  const opening = page.locator(".case-timeline-panel .region-timeline > li").filter({
-    has: page.locator('[data-entry="operationId"]').filter({ hasText: opened.operationId }),
-  });
+  const opening = page.locator(
+    `.case-timeline-panel .region-timeline > li[data-effect$=".${opened.operationId}"]`,
+  );
   await expect(opening).toHaveCount(1);
   await expect(opening).toContainText("Case facts recorded");
-  await expect(opening).toContainText(opened.operationId);
+  await opening.getByRole("button", { name: "View details", exact: true }).click();
+  const details = page.getByRole("dialog", { name: "View details", exact: true });
+  await expect(details).toContainText(opened.operationId);
+  await details.getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   await expectAccessible(page);
 
@@ -79,9 +82,11 @@ test("publishes payment, correction, close and reopen with current-case parity",
     "Payment currency": "EUR",
   });
   await page
-    .locator('.case-detail [data-region="PAYMENTS"]')
-    .getByRole("button", { name: "Remove payment entry", exact: true })
+    .locator('.case-detail [data-region="PAYMENTS"] tbody tr')
+    .filter({ hasText: "300.25 EUR" })
+    .locator("button[aria-haspopup]")
     .click();
+  await page.getByRole("menuitem", { name: "Remove payment entry", exact: true }).click();
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectCaseReadsSettled(page);

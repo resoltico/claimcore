@@ -47,7 +47,9 @@ test("records future planned work and scoped responsibility, then finds the case
   await expect(selection).toBeVisible();
   await selection.check();
   const roster = page.locator(".assignee-input");
-  await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
+  const assignee = roster.locator(`input[type="radio"][value="${actorId}"]`);
+  await assignee.click();
+  await expect(assignee).toBeChecked();
   if (browserName === "chromium") {
     await page.setViewportSize({
       width: 1440,

@@ -69,7 +69,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     }),
   ).toHaveCount(0);
   await findCase(page, fixture.reference);
-  await expect(page.locator(".case-header-state")).toBeVisible();
+  await expect(page.locator(".case-title-line .chip-list")).toBeVisible();
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   const history = page.locator(".case-timeline-panel");
   await expect(history.locator(".region-timeline > li")).toHaveCount(1);
@@ -102,10 +102,9 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
       page.locator(
-        ".case-header-state [data-region], .entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
+        ".case-title-line .chip-list, .entries-view [data-entry='policyNumber'], .case-work, .case-timeline-panel",
       ),
     ).toHaveCount(0);
-    await expect(page.locator(".case-header-state")).toBeEmpty();
     await expect(page.locator("#case-detail-title")).toHaveText(fixture.unrelated);
   }
 };

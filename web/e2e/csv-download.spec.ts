@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "./fixtures";
-import { settlePopupTriggerScroll, showAccountActions } from "./workspace-navigation";
+import { settlePopupTriggerScroll, workspaceSettingsNavigation } from "./workspace-navigation";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage } from "./localization-support";
 import { openCase } from "./case-workflow";
@@ -63,14 +63,11 @@ const rejectParkedDownload = async (page: Page, button: Locator) => {
   try {
     await button.click();
     await held.promise;
-    await showAccountActions(page);
-    if (new URL(page.url()).pathname !== "/settings") {
-      await page.getByRole("link", { name: "Settings", exact: true }).click();
-    }
+    await (await workspaceSettingsNavigation(page)).click();
     await expect(page).toHaveURL(/\/settings$/u);
     release.resolve();
     await completed.promise;
-    await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+    await page.goBack();
     await expect(button).toBeEnabled();
     expect(await page.locator("html").getAttribute("data-late-export-blob")).toBeNull();
   } finally {

@@ -50,7 +50,7 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
   };
   const current = page.locator(".case-detail");
   const header = current
-    .locator('.case-header-state, .region-notice[data-tone="FINAL"]')
+    .locator('.case-title-line .chip-list, .region-notice[data-tone="FINAL"]')
     .filter({ visible: true })
     .first();
   const main = page.locator("main");

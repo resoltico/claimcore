@@ -1,3 +1,4 @@
+import { showAccountActions } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { acceptedSubject, observedAccess } from "./work-workflow";
 import type { ResponseFor, HumanDocument } from "@contracts/client";
@@ -65,10 +66,10 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
   const returnUrl = page.url();
   await (await settingsNavigation(page)).click();
   await expect(page.locator(".settings-panel")).toBeVisible();
-  const signOut = page.getByRole("button", {
-    name: "Sign out",
-    exact: true,
-  });
+  await showAccountActions(page);
+  const signOut = page
+    .getByRole("button", { name: "Sign out", exact: true })
+    .or(page.getByRole("menuitem", { name: "Sign out", exact: true }));
   await expect(signOut).toBeEnabled();
   await signOut.click();
   const consent = page.getByRole("dialog", {
@@ -170,7 +171,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
       name: "Discard these draft changes?",
     }),
   ).toHaveCount(0);
-  await page.locator("[data-return-workspace]").click();
+  await page.goBack();
   await expect(page).toHaveURL(originalUrl);
   await expect(page.locator(".settings-panel")).toHaveCount(0);
   expect(requests).toEqual([original]);

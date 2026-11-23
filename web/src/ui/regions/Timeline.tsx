@@ -61,7 +61,7 @@ export const Timeline = ({
           {content.entries.map((entry) => {
             const link = coreRowLink(entry.link, linkNavigation);
             return (
-              <li key={entry.key}>
+              <li key={entry.key} data-effect={entry.key}>
                 <PresentedValue
                   value={{ kind: "INSTANT", value: entry.when }}
                   timeZone={timeZone}

@@ -65,12 +65,12 @@ const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
   await dialog
     .locator('[name="input:profile.displayName"]')
     .fill("Authored accessibility candidate");
-  await dialog
-    .getByRole("radio", {
-      name: ui(language, "role.CASE_READER.label"),
-      exact: true,
-    })
-    .check();
+  const reader = dialog.getByRole("radio", {
+    name: ui(language, "role.CASE_READER.label"),
+    exact: true,
+  });
+  await reader.click();
+  await expect(reader).toBeChecked();
   return dialog;
 };
 const malformedIssuerBoundary = async (page: Page, issuer: string, subject: string) => {
@@ -190,16 +190,16 @@ for (const language of ["en", "lv", "ar"] as const) {
     });
     for (const kind of ["people.grant", "people.revoke"] as const) {
       await expect(person).toBeVisible();
-      const name = p.text("ui.actDescription", {
-        label: p.peopleLabel(kind),
-        meaning: p.peopleMeaning(kind),
-      });
-      const action = person.getByRole("button", {
-        name,
-        exact: true,
-      });
-      await expect(action).toHaveText(ui(language, `task.${kind}.label`));
-      await action.click();
+      const name = ui(language, `task.${kind}.label`);
+      const direct = person.getByRole("button", { name, exact: true });
+      if (await direct.isVisible()) {
+        await direct.click();
+      } else {
+        await person
+          .getByRole("button", { name: ui(language, "ui.moreCaseActions"), exact: true })
+          .click();
+        await page.getByRole("menuitem", { name, exact: true }).click();
+      }
       const dialog = page.getByRole("dialog", {
         name: ui(language, `task.${kind}.label`),
         exact: true,
