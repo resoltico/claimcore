@@ -3,6 +3,7 @@
     --gutter: var(--space-6);
     --page-gap: var(--space-4);
     --toolbar-page-margin: var(--space-3);
+    --dialog-overlay-top: var(--space-4);
     --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
@@ -495,7 +496,7 @@
 
 @layer layout {
   .ui-dialog-overlay--top {
-    place-items: start center;
-    padding-block-start: 12vh;
+    --dialog-overlay-alignment: start center;
+    --dialog-overlay-top: 12vh;
   }
 }

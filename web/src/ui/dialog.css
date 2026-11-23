@@ -1,5 +1,5 @@
 @layer components {
-  .ui-dialog-overlay--bottom {
+  .ui-dialog-overlay.ui-dialog-overlay--bottom {
     place-items: end center;
     padding: 0;
   }
@@ -19,8 +19,9 @@
     z-index: var(--layer-dialog);
     inset: 0;
     display: grid;
-    place-items: center;
+    place-items: var(--dialog-overlay-alignment, center);
     padding: var(--space-4);
+    padding-block-start: var(--dialog-overlay-top);
     overflow: auto;
     background: var(--scrim);
     padding-inline: var(--padding-dialog);
