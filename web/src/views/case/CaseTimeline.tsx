@@ -239,6 +239,7 @@ export const CaseTimeline = ({
         <div className="worklist-actions" role="group" aria-label={p.text("ui.timeline.title")}>
           {result.message === null ? null : (
             <Button
+              variant="secondary"
               isDisabled={result.loading}
               onPress={() => {
                 document.getElementById("timeline-title")?.focus({ preventScroll: true });
@@ -250,6 +251,7 @@ export const CaseTimeline = ({
           )}
           {result.cursor === null ? null : (
             <Button
+              variant="secondary"
               isDisabled={result.loading}
               onPress={() => {
                 document.getElementById("timeline-title")?.focus({ preventScroll: true });
