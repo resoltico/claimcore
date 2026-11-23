@@ -76,10 +76,17 @@ const Feedback = () => {
     </>
   );
 };
-const workspace = (actorId = activeRequester.subject.actorId, credential = "owner-a") => (
+const workspace = (
+  actorId: string | null = activeRequester.subject.actorId,
+  credential = "owner-a",
+) => (
   <TestSession credential={credential}>
     <RequesterContext
-      value={{ ...activeRequester, subject: { ...activeRequester.subject, actorId } }}
+      value={
+        actorId === null
+          ? null
+          : { ...activeRequester, subject: { ...activeRequester.subject, actorId } }
+      }
     >
       <Feedback />
     </RequesterContext>
@@ -121,9 +128,29 @@ it("does not carry retained receipt identity into another verified actor or cred
   view.rerender(workspace("00000000-0000-4000-8000-000000000888"));
   expect(screen.queryByText("Owner private receipt")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
+  view.rerender(workspace());
+  expect(screen.queryByText("Owner private receipt")).toBeNull();
+  expect(fetch).toHaveBeenCalledTimes(1);
   view.rerender(workspace(activeRequester.subject.actorId, "owner-b"));
   expect(screen.queryByText("Owner private receipt")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it("masks feedback during requester revalidation and reads it again for the same verified owner", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("Initially verified receipt"))
+    .mockResolvedValueOnce(response("Reverified receipt"));
+  vi.stubGlobal("fetch", fetch);
+  const view = render(workspace());
+  fireEvent.click(screen.getByRole("button", { name: "Retain accepted identity" }));
+  expect(await screen.findByText("Initially verified receipt")).toBeVisible();
+  view.rerender(workspace(null));
+  expect(screen.queryByText("Initially verified receipt")).toBeNull();
+  expect(fetch).toHaveBeenCalledTimes(1);
+  view.rerender(workspace());
+  expect(await screen.findByText("Reverified receipt")).toBeVisible();
+  expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 it("keeps embedded receipt sections distinct from the current resource's landmarks", async () => {

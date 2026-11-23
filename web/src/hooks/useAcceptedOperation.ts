@@ -1,22 +1,50 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useSessionContext } from "../session/SessionContext";
-import { useRequesterContext } from "./useRequesterContext";
+import type { SessionState } from "../session/useSession";
+import type { RequesterDocument } from "../protocol/types";
+import { sameOwnerScope, type OwnerScope } from "../protocol/ownerScope";
+import { isActiveRequester, useRequesterDocument } from "./useRequesterContext";
 
-/** Retain identity, never a private receipt document, across read invalidations. */
+type VerifiedOwner = OwnerScope & { credential: string };
+
+const retainOwner = (
+  previous: VerifiedOwner | null,
+  session: SessionState,
+  requester: RequesterDocument | null,
+) => {
+  if (session.kind !== "authenticated") {
+    return null;
+  }
+  const retained =
+    previous?.sessionEpoch === session.epoch && previous.credential === session.token
+      ? previous
+      : null;
+  if (requester === null) {
+    return retained;
+  }
+  if (!isActiveRequester(requester)) {
+    return null;
+  }
+  const scope = {
+    serviceOrigin: location.origin,
+    installationId: requester.subject.installationId,
+    actorId: requester.subject.actorId,
+    sessionEpoch: session.epoch,
+  };
+  return retained !== null && sameOwnerScope(retained, scope)
+    ? retained
+    : { ...scope, credential: session.token };
+};
+
+/** Mask feedback during a requester reread. A verified owner change retires it. */
 export const useAcceptedOperation = () => {
   const { state } = useSessionContext();
-  const requester = useRequesterContext();
-  const scope =
-    state.kind === "authenticated" && requester !== null
-      ? JSON.stringify([
-          location.origin,
-          state.epoch,
-          state.token,
-          requester.subject.installationId,
-          requester.subject.actorId,
-        ])
-      : null;
-  const owner = useMemo(() => (scope === null ? null : { scope }), [scope]);
+  const requester = useRequesterDocument();
+  const [previous, setPrevious] = useState<VerifiedOwner | null>(null);
+  const owner = retainOwner(previous, state, requester);
+  if (owner !== previous) {
+    setPrevious(owner);
+  }
   const latestOwner = useRef(owner);
   useLayoutEffect(() => {
     latestOwner.current = owner;
@@ -25,11 +53,11 @@ export const useAcceptedOperation = () => {
     };
   }, [owner]);
   const [accepted, setAccepted] = useState<{
-    owner: NonNullable<typeof owner>;
+    owner: VerifiedOwner;
     operationId: string;
     messageId: string | undefined;
   } | null>(null);
-  const visible = accepted?.owner === owner ? accepted : null;
+  const visible = requester !== null && accepted?.owner === owner ? accepted : null;
   return {
     operationId: visible?.operationId ?? null,
     messageId: visible?.messageId,
