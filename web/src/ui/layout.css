@@ -416,15 +416,12 @@
 
     .workspace-mobile-tabs {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-1);
+      padding-inline: var(--space-2);
       inset-block-end: 0;
       min-block-size: var(--shell-bottom-height);
-      justify-content: space-between;
       border-block-start: var(--border-width) solid var(--border-subtle);
-    }
-
-    .workspace-mobile-tabs button {
-      white-space: nowrap;
     }
 
     .workspace-mobile-tabs .shell-link-label {
@@ -442,6 +439,15 @@
 
     html:root {
       scroll-padding-block: var(--shell-top-height) var(--shell-bottom-height);
+    }
+
+    .case-title-sticky {
+      max-block-size: 33dvh;
+      overflow: auto;
+    }
+
+    html:has(.case-title-sticky) {
+      scroll-padding-block-start: calc(var(--shell-top-height) + 33dvh);
     }
   }
 }

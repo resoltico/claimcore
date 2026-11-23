@@ -264,7 +264,7 @@ test("people refusal preserves authored input through Settings and needs a fresh
   const correctedId = operationId(corrected);
   expect(correctedId).not.toBe(operationId(refused));
   const consent = editor.locator("button[data-confirm-operation]");
-  await expect(consent).toHaveAccessibleName("Add person");
+  await expect(consent).toHaveAccessibleName("Add from access request");
   await expect(consent).toBeDisabled();
   const challenge = editor.getByRole("textbox", { name: "Enter the exact sign-in ID." });
   await challenge.fill("different-subject");

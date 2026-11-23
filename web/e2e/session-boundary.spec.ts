@@ -133,10 +133,24 @@ const checkSignOutLocation = async (
 
 test("signs out of ClaimCore and Keycloak before asking for credentials again @engine", async ({
   page,
+  baseURL,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout * 2);
-  await page.goto("/", { waitUntil: "commit" });
-  const landing = new URL("/", page.url());
+  if (baseURL === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  const landing = new URL("/", baseURL);
+  const admission = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/auth/login" &&
+      response.request().isNavigationRequest(),
+  );
+  await page.goto(landing.href, { waitUntil: "commit" });
+  if ((await admission).status() === 429) {
+    // Another synthetic journey may have used the shared admission window.
+    await page.waitForTimeout(61_000);
+    await page.goto(landing.href, { waitUntil: "commit" });
+  }
   await expect(page.locator('input[name="username"]')).toBeVisible();
   const antiforgeryToken = await expectAnonymousSessionBoundary(page);
   await expectSessionRejection(page, antiforgeryToken, landing.origin);

@@ -314,8 +314,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     await expand.click();
     await pending;
   }
-  await expect(payments.locator(".payment-cards > li").first()).toBeVisible();
-  await payments.locator(".payment-cards > li").first().scrollIntoViewIfNeeded();
+  const narrowRow = payments.locator(".case-payment-pages tbody tr").first();
+  await expect(narrowRow).toBeVisible();
+  await narrowRow.scrollIntoViewIfNeeded();
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.screenshot({

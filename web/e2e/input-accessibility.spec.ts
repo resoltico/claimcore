@@ -1,6 +1,6 @@
 import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { goToView, chooseChoice } from "./workspace-navigation";
+import { startPeopleCreation, goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "./fixtures";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./people-setup";
@@ -51,13 +51,7 @@ const openPeople = async (page: Page, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
 };
 const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
-  await page
-    .getByRole("button", {
-      name: ui(language, "task.people.admit.label"),
-      exact: true,
-    })
-    .first()
-    .click();
+  await startPeopleCreation(page, ui(language, "label.addPerson"));
   const dialog = page.getByRole("dialog", {
     name: ui(language, "task.people.admit.label"),
     exact: true,
@@ -214,8 +208,10 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expect(reference).toHaveAccessibleName(
         inputMessage(language, "field.caseReference.label"),
       );
+      const rule = dialog.locator(".field-rule").filter({ visible: true, hasText: /ASCII/u });
+      await expect(rule).toBeVisible();
       await expect(reference).toHaveAccessibleDescription(
-        `${inputMessage(language, "label.existingCaseSelectionHint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+        `${inputMessage(language, "label.existingCaseSelectionHint")} ${(await rule.textContent())?.trim() ?? ""} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
       );
       await reference.fill("Synthetic reference");
       await expect(reference).not.toHaveAttribute("aria-invalid");

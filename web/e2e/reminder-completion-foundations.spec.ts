@@ -661,7 +661,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         testInfo.outputPath(`populated-case-${language}-${accent}-${mode}.png`),
       );
     }
-    const trigger = page.locator(`[id="reminder-${reminders[0]!.reminderId}-reminder.complete"]`);
+    const trigger = page.locator(`[id="reminder-${reminders[0]!.reminderId}-actions"]`);
     await trigger.scrollIntoViewIfNeeded();
     await page.evaluate(
       () =>
@@ -674,6 +674,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         }),
     );
     await trigger.click();
+    await page.locator('[data-menu-item="reminder.complete"]').click();
     const dialog = page.getByRole("dialog");
     await dialog
       .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })

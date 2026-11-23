@@ -94,4 +94,19 @@
   .shell-warning p {
     margin: 0 0 var(--space-1);
   }
+  .workspace-mobile-tabs a:not(.product-name) {
+    flex-direction: column;
+    justify-content: center;
+    min-inline-size: 0;
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+    text-align: center;
+  }
+
+  .workspace-mobile-tabs button {
+    min-inline-size: 0;
+    padding-inline: var(--space-1);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }

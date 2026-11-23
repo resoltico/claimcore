@@ -271,7 +271,7 @@ const openAdmission = async (
   });
   await peopleTarget(page, issuer, subject);
   await dialog.locator('[name="input:profile.displayName"]').fill(name);
-  const grants = dialog.locator('fieldset[id="field-peopleGrants"]');
+  const grants = dialog.locator('[id="field-peopleGrants"]');
   await grants
     .getByRole("radio", {
       name: "Case reader",

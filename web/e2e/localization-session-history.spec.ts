@@ -1,3 +1,4 @@
+import { openAcceptedReceipt, expectReceiptReadSettled } from "./case-readiness";
 import { type RequestByEndpoint } from "@contracts/client";
 import { applyPeople } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
@@ -73,6 +74,12 @@ test("updates supplied records without refetching while receipt disclosure refre
       details.locator('[data-change-label="field.claimedAmount.label"] [data-side="after"]'),
     ).toContainText("١٬٢٠٠٫٥٠");
     await details
+      .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+      .first()
+      .click();
+    const receipt = await openAcceptedReceipt(page);
+    await expectReceiptReadSettled(page);
+    await receipt
       .getByRole("button", { name: ui(language, "ui.close"), exact: true })
       .first()
       .click();

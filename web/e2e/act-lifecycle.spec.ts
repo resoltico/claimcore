@@ -52,6 +52,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(details).toContainText(opened.operationId);
   await details.getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
+  await page.keyboard.press("Escape");
   await expectAccessible(page);
 
   await goToView(page, "recovery");
@@ -98,11 +99,16 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expectRevision(page, "6");
   const entries = page.locator(".case-timeline-panel .region-timeline > li");
   await expect(entries).toHaveCount(8);
-  await expect(
-    entries.filter({ has: page.locator(`[data-entry="${opened.operationId}.id"]`) }),
-  ).toHaveCount(6);
-  await expect(
-    entries.filter({ has: page.locator(`[data-entry="${payment.operationId}.id"]`) }),
-  ).toHaveCount(2);
+  let caseReferences = 0;
+  let paymentReferences = 0;
+  for (const entry of await entries.all()) {
+    await entry.getByRole("button", { name: "View details", exact: true }).click();
+    const details = page.getByRole("dialog", { name: "View details", exact: true });
+    caseReferences += await details.locator(`[data-entry="${opened.operationId}.id"]`).count();
+    paymentReferences += await details.locator(`[data-entry="${payment.operationId}.id"]`).count();
+    await details.getByRole("button", { name: "Close", exact: true }).first().click();
+  }
+  expect(caseReferences).toBe(6);
+  expect(paymentReferences).toBe(2);
   await expectAccessible(page);
 });

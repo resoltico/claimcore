@@ -2189,12 +2189,9 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
     await page.locator('[name="input:principal.subject"]').fill("admission-person");
     await page.locator('[name="input:profile.displayName"]').fill("Admission person");
-    await page
-      .getByRole("radio", {
-        name: "Owner",
-        exact: true,
-      })
-      .check();
+    const owner = page.getByRole("radio", { name: "Owner", exact: true });
+    await owner.click();
+    await expect(owner).toBeChecked();
     await page
       .getByRole("button", {
         name: "Add role",
