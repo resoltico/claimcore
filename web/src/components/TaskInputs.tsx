@@ -1,3 +1,5 @@
+import { codeSuggestions } from "../presentation/codeSuggestions";
+import { TextInput, ChoiceControl } from "../ui/TextField";
 import { MoneyField } from "../ui/MoneyField";
 import { Select } from "../ui/Select";
 import { grantFields, grantScope, grantTarget } from "../operation/grantTargetDraft";
@@ -123,7 +125,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
       <div className={segmented ? "segmented-choice" : "radio-choice"}>
         {optional ? (
           <label className={selected === "" ? "selected" : undefined}>
-            <input
+            <ChoiceControl
               type="radio"
               name={errorKey}
               value=""
@@ -141,7 +143,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
           return (
             <span key={value} className="choice-option">
               <label className={selected === value ? "selected" : undefined}>
-                <input
+                <ChoiceControl
                   type="radio"
                   name={errorKey}
                   value={value}
@@ -154,7 +156,11 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
                 />
                 {caption(p, input.id, value)}
               </label>
-              {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
+              {hint === null ? null : (
+                <span className="field-hint" id={hintId}>
+                  {renderCatalogKey(p, hint)}
+                </span>
+              )}
             </span>
           );
         })}
@@ -179,6 +185,7 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
   if (field !== undefined) {
     const common = {
       field,
+      optional: input.mode === "OPTIONAL",
       ...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
         ? { description: p.text("label.existingCaseSelectionHint") }
         : {}),
@@ -209,7 +216,7 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
   return (
     <div className="text-field">
       <label htmlFor={errorKey}>{label}</label>
-      <input
+      <TextInput
         id={errorKey}
         name={errorKey}
         type="text"
@@ -227,6 +234,58 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
     </div>
   );
 };
+const catalogField = (input: Input) =>
+  productMetadata.catalog.fields.find((field) => field.name === taskInput(input.id).key);
+
+const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; peer: Input }) => {
+  const p = usePresentation();
+  const amountField = catalogField(input);
+  const currencyField = catalogField(peer);
+  if (amountField === undefined || currencyField === undefined) {
+    throw new Error("Money fields require both catalog members.");
+  }
+  const amountError = props.errors[input.id];
+  const currencyError = props.errors[peer.id];
+  const currencies = codeSuggestions(p.language === "en-XA" ? "en" : p.language, true);
+  return (
+    <MoneyField
+      label={renderCatalogKey(p, taskInput(input.id).labelId)}
+      hint={p.hint(amountField)}
+      rule={{ name: amountField.name, id: amountField.ruleId }}
+      disabled={props.disabled}
+      amount={{
+        id: input.id,
+        fieldName: amountField.name,
+        value: formValueText(props.values[input.id]),
+        onChange: (value) => {
+          props.onChange(input.id, value);
+        },
+      }}
+      currency={{
+        id: peer.id,
+        label: renderCatalogKey(p, taskInput(peer.id).labelId),
+        hint: p.hint(currencyField),
+        value: formValueText(props.values[peer.id]),
+        fieldName: currencyField.name,
+        options: currencies.map((currency) => ({ id: currency.code, label: currency.code })),
+        onChange: (value) => {
+          props.onChange(peer.id, value);
+        },
+      }}
+      {...(amountError === undefined && currencyError === undefined
+        ? {}
+        : {
+            error: (
+              <>
+                <ErrorText value={amountError} />
+                <ErrorText value={currencyError} />
+              </>
+            ),
+          })}
+    />
+  );
+};
+
 const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; peer?: Input }) => {
   const p = usePresentation();
   const members = peer === undefined ? [input] : [input, peer];
@@ -241,11 +300,20 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
           second: renderCatalogKey(p, taskInput(peer.id).labelId),
         });
   const clear = input.clearable;
+  let control = null;
+  if (selected && props.values[input.id] !== null) {
+    control =
+      peer === undefined ? (
+        <InputControl input={input} {...props} />
+      ) : (
+        <PairedInputs input={input} peer={peer} {...props} />
+      );
+  }
   return (
     <fieldset className="selected-fact">
       <legend>
         <label>
-          <input
+          <ChoiceControl
             type="checkbox"
             disabled={props.disabled}
             checked={selected}
@@ -268,7 +336,7 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
       </legend>
       {selected && clear ? (
         <label>
-          <input
+          <ChoiceControl
             type="checkbox"
             disabled={props.disabled}
             checked={props.values[input.id] === null}
@@ -282,9 +350,7 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
           {p.text("correction.CLEAR.label")}
         </label>
       ) : null}
-      {selected && props.values[input.id] !== null
-        ? members.map((member) => <InputControl key={member.id} input={member} {...props} />)
-        : null}
+      {control}
     </fieldset>
   );
 };
@@ -390,41 +456,7 @@ const GrantTargetInput = ({
 };
 const isGrantInput = (input: Input) =>
   ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
-const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; peer: Input }) => {
-  const p = usePresentation();
-  const amountError = props.errors[input.id];
-  const currencyError = props.errors[peer.id];
-  return (
-    <MoneyField
-      label={renderCatalogKey(p, taskInput(input.id).labelId)}
-      {...(amountError === undefined && currencyError === undefined
-        ? {}
-        : {
-            error: (
-              <>
-                <ErrorText value={amountError} />
-                <ErrorText value={currencyError} />
-              </>
-            ),
-          })}
-    >
-      {(sharedErrorId) => (
-        <>
-          <InputControl
-            input={input}
-            {...props}
-            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
-          />
-          <InputControl
-            input={peer}
-            {...props}
-            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
-          />
-        </>
-      )}
-    </MoneyField>
-  );
-};
+
 const isPairedCurrency = (
   field: (typeof productMetadata.catalog.fields)[number] | undefined,
   inputs: ReadonlyArray<Input>,
@@ -435,9 +467,6 @@ const isPairedCurrency = (
       (owner) => owner.name === taskInput(input.id).key && owner.pairs === field.name,
     ),
   );
-
-const catalogField = (input: Input) =>
-  productMetadata.catalog.fields.find((field) => field.name === taskInput(input.id).key);
 
 const Fields = ({
   inputs,

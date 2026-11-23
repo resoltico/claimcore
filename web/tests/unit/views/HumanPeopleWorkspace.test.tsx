@@ -1,3 +1,4 @@
+import { fireEvent } from "@testing-library/react";
 import { selectRowAction } from "../../support/workspace-actions";
 import { openPersonEditor } from "../../support/people-drawer.fixtures";
 import { withRecommendation, operationAffordance } from "../../support/affordances.fixtures";
@@ -300,6 +301,8 @@ it("uses a bound person task and renders the current Core people outcome after a
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
+  const invalidate = screen.getByRole("button", { name: "Invalidate read artifacts" });
+  await userEvent.click(await screen.findByRole("button", { name: "View receipt" }));
   await screen.findByText("Core accepted people outcome Ψ");
   expect(previews).toHaveLength(1);
   expect(executions).toEqual(previews);
@@ -311,11 +314,7 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(
     screen.queryByText("Original acceptance facts must be re-observed"),
   ).not.toBeInTheDocument();
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: "Invalidate read artifacts",
-    }),
-  );
+  fireEvent.click(invalidate);
   expect(screen.queryByText("Core accepted people outcome Ψ")).not.toBeInTheDocument();
   await waitFor(() => {
     expect(lookups).toHaveLength(2);

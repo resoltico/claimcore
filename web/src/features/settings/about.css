@@ -1,8 +1,9 @@
 @layer views {
   .about-panel {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .about-panel p {
@@ -16,6 +17,7 @@
 
   .about-links {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-2);
     margin: 0;
     padding-inline-start: var(--space-4);

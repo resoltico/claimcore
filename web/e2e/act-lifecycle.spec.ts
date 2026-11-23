@@ -58,11 +58,11 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await goToView(page, "recovery");
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
-  await page.locator('.receipt details[data-region="DETAILS"] > summary').click();
-  await expect(page.locator('.receipt [data-entry="operationId"]')).toContainText(
-    opened.operationId,
-  );
+  await page.getByRole("button", { name: "Technical details" }).click();
+  const technical = page.getByRole("dialog", { name: "Technical details" });
+  await expect(technical.locator('[data-entry="operationId"]')).toContainText(opened.operationId);
   await expectAccessible(page);
+  await technical.getByRole("button", { name: "Close", exact: true }).first().click();
 
   await goToView(page, "cases");
   await lookupCase(page, caseReference);

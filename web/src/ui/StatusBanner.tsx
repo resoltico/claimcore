@@ -20,13 +20,29 @@ export const StatusBanner = ({
 }) => {
   const banner = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
+    const element = banner.current;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        element?.closest(".page")?.querySelector("h1")?.focus();
+      }
+    };
+    const reveal = () => {
+      if (element?.contains(element.ownerDocument.activeElement) === true) {
+        element.scrollIntoView?.({ block: "nearest" });
+      }
+    };
+    element?.addEventListener("keydown", escape);
+    window.addEventListener("resize", reveal);
     const focus = requestAnimationFrame(() => {
       if (shouldFocus?.() !== false) {
-        banner.current?.focus();
+        element?.scrollIntoView?.({ block: "nearest" });
+        element?.focus({ preventScroll: true });
       }
     });
     return () => {
       cancelAnimationFrame(focus);
+      element?.removeEventListener("keydown", escape);
+      window.removeEventListener("resize", reveal);
     };
   }, [shouldFocus]);
   return (

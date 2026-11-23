@@ -37,6 +37,6 @@
   }
   .note-text {
     max-inline-size: var(--text-history-measure);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 }

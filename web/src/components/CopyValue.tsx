@@ -1,3 +1,4 @@
+import { TextArea } from "../ui/TextArea";
 import { CharacterWarning } from "./CharacterWarning";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ButtonControl as Button } from "../ui/ButtonControl";
@@ -75,7 +76,7 @@ export const CopyValue = ({ label, value, icon = false }: CopyValueProps) => {
       {status === "fallback" ? (
         <span>
           <CharacterWarning value={value} />
-          <textarea
+          <TextArea
             aria-label={p.text("ui.copyFallback", { label })}
             readOnly
             dir="auto"

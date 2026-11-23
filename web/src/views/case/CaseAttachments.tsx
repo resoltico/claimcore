@@ -1,3 +1,5 @@
+import type { Region } from "@contracts/client";
+import { Section } from "../../ui/Section";
 import { FileDrop } from "../../ui/FileDrop";
 import {
   attachmentTransport,
@@ -16,7 +18,6 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type ChangeEvent,
   type KeyboardEvent,
 } from "react";
 import {
@@ -35,7 +36,6 @@ import { isOperationAffordance, type OperationAffordance } from "../../operation
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { attachmentFragment } from "../../routing/coreLinks";
 import { localNotice, type Notice } from "../../protocol/notices";
 import { ownerScope, type OwnerScope } from "../../protocol/ownerScope";
 import { useSessionContext } from "../../session/SessionContext";
@@ -454,66 +454,17 @@ const AttachmentPicker = ({
   choose: (file: File) => void;
 }) => {
   const p = usePresentation();
-  const id = useId();
-  const busyTouch = useRef<number | null>(null);
-  const select = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.item(0);
-    event.currentTarget.value = "";
-    if (file !== undefined && file !== null && enabled && !busy) {
-      choose(file);
-    }
-  };
   return (
-    <FileDrop enabled={enabled && !busy} choose={choose}>
-      <div
-        className="attachment-picker"
-        data-pending={busy || undefined}
-        onPointerDown={(event) => {
-          if (event.pointerType === "touch" && event.isPrimary) {
-            busyTouch.current = busy ? event.pointerId : null;
-          }
-          if (busy) {
-            event.preventDefault();
-          }
-        }}
-        onPointerCancel={(event) => {
-          if (event.pointerId === busyTouch.current) {
-            busyTouch.current = null;
-          }
-        }}
-        onClickCapture={(event) => {
-          const { nativeEvent } = event;
-          // Touch can synthesize a click on the input or label after hit testing changes.
-          if (
-            nativeEvent instanceof PointerEvent &&
-            nativeEvent.pointerType === "touch" &&
-            nativeEvent.pointerId === busyTouch.current
-          ) {
-            busyTouch.current = null;
-            event.preventDefault();
-          }
-        }}
-      >
-        <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
-        <input
-          id={id}
-          type="file"
-          disabled={!enabled}
-          aria-disabled={busy || undefined}
-          onKeyDown={(event) => {
-            suppressActivation(event, busy);
-          }}
-          onClick={(event) => {
-            if (busy) {
-              event.preventDefault();
-            }
-          }}
-          onChange={select}
-        />
-      </div>
-    </FileDrop>
+    <FileDrop
+      enabled={enabled}
+      busy={busy}
+      choose={choose}
+      label={p.text("ui.attachments.file")}
+      hint={p.fieldHint("attachmentName")}
+    />
   );
 };
+
 const addOffer = (document: HumanDocument) =>
   document.actions.find(
     (action): action is OperationAffordance =>
@@ -645,6 +596,22 @@ const AttachmentWorkspace = ({
   );
 };
 
+const AttachmentsSection = ({
+  region,
+  ...props
+}: {
+  region: Region | undefined;
+} & Omit<React.ComponentProps<typeof Section>, "title" | "count">) => {
+  const p = usePresentation();
+  return (
+    <Section
+      {...props}
+      title={renderCatalogKey(p, region?.titleId ?? "section.attachments.label")}
+      count={region?.count}
+    />
+  );
+};
+
 const ApplicableAttachments = (props: Props) => {
   const p = usePresentation();
   const id = useId();
@@ -663,14 +630,12 @@ const ApplicableAttachments = (props: Props) => {
     return null;
   }
   return (
-    <section
-      className="screen-region case-attachments"
-      id={attachmentFragment}
-      tabIndex={-1}
-      aria-labelledby={id}
+    <AttachmentsSection
+      className="case-attachments"
+      id={id}
+      region={region}
       aria-busy={query.loading}
     >
-      <h2 id={id}>{renderCatalogKey(p, region?.titleId ?? "section.attachments.label")}</h2>
       {query.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {notice === null ? null : (
         <p role="alert">
@@ -696,7 +661,7 @@ const ApplicableAttachments = (props: Props) => {
           props={props}
         />
       )}
-    </section>
+    </AttachmentsSection>
   );
 };
 export const CaseAttachments = (props: Props) =>

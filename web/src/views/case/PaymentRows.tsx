@@ -1,5 +1,4 @@
 import type { Affordance, RegionContent } from "@contracts/client";
-import { usePresentation } from "../../presentation/context";
 import { DataTable } from "../../ui/DataTable";
 
 export const PaymentRows = ({
@@ -20,7 +19,3 @@ export const PaymentRows = ({
     }}
   />
 );
-export const PaymentsShown = ({ shown, total }: { shown: number; total: number }) => {
-  const p = usePresentation();
-  return <p>{p.text("ui.paymentsShown", { shown: p.integer(shown), total: p.integer(total) })}</p>;
-};

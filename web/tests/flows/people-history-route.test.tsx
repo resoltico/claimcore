@@ -185,9 +185,9 @@ it("applies and clears the Actor filter through the history route", async () => 
   showHistory("");
   await screen.findByText("Current target one");
   const user = userEvent.setup();
-  const actor = () => screen.getByRole("textbox", { name: "Account ID" });
+  const actor = () => screen.getByRole("combobox", { name: "Person" });
   await user.type(actor(), second);
-  await user.click(screen.getByRole("button", { name: "Apply filters" }));
+  await user.keyboard("{Enter}");
   await screen.findByText("Current target two");
   expect(window.location.search).toBe(`?actorId=${second}`);
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: second });
@@ -197,7 +197,7 @@ it("applies and clears the Actor filter through the history route", async () => 
     selection: { actorId: second },
   });
   await user.clear(actor());
-  await user.click(screen.getByRole("button", { name: "Apply filters" }));
+  await user.keyboard("{Enter}");
   await screen.findByText("Current target one");
   expect(window.location.search).toBe("");
   expect(requestAt(fetch, 3)).toEqual({ limit: 50 });

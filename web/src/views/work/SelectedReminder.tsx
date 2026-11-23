@@ -8,7 +8,7 @@ import { useEndpoint } from "../../hooks/useEndpoint";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import { ButtonControl as Button } from "../../ui/ButtonControl";
+import { Button } from "../../ui/Button";
 import { ScreenView } from "../../ui/ScreenView";
 import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 
@@ -72,7 +72,7 @@ export const SelectedReminder = ({
         !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(
           read.message.advice.action,
         )) ? null : (
-        <Button isDisabled={read.loading} onPress={read.reload}>
+        <Button variant="secondary" isDisabled={read.loading} onPress={read.reload}>
           {p.text("ui.tryAgain")}
         </Button>
       )}

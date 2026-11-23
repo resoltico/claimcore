@@ -29,7 +29,7 @@
     max-inline-size: 100%;
     min-inline-size: 0;
     padding-block: var(--space-2);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .presentation-controls select {
@@ -49,7 +49,7 @@
   }
 
   .people-panel {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .operation-editor {
@@ -64,7 +64,7 @@
     box-shadow: none;
     border: 0;
     padding: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   [dir="rtl"] .review-arrow {
@@ -101,7 +101,7 @@
   }
 
   .review-intent {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     font-size: var(--text-sm);
   }
   .review-intent dd {
@@ -137,22 +137,13 @@
 
   .plain-text-value {
     white-space: pre-wrap;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     unicode-bidi: isolate;
-  }
-  .text-field textarea {
-    min-block-size: var(--height-expanded-editor);
-    inline-size: 100%;
-    resize: vertical;
-    font: inherit;
-    line-height: 1.5;
   }
   .scalar-counter[data-over-limit] {
     color: var(--danger-text);
   }
 
-  .reminder-queue,
-  .reminder-list,
   .work-operation {
     margin-block: var(--space-4);
     min-inline-size: 0;
@@ -163,7 +154,7 @@
   .reminder-list li {
     border-block-end: 1px solid var(--border-control);
     padding-block: var(--space-4);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .reminder-list .actions {
     display: flex;
@@ -178,8 +169,5 @@
   .case-work dl > div:has(.plain-text-value) {
     flex-basis: 100%;
     min-inline-size: 0;
-  }
-  .text-field textarea[rows="1"] {
-    min-block-size: var(--control-target);
   }
 }

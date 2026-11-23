@@ -92,7 +92,7 @@ test("refuses retained attachment metadata before confirmation or upload @engine
   const preview = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );
-  await attachments.getByLabel("Choose a file", { exact: true }).setInputFiles({
+  await attachments.locator('input[type="file"]').setInputFiles({
     name: "another-name.txt",
     mimeType: "text/plain",
     buffer: evidence,
@@ -247,7 +247,8 @@ test("keeps the PDF pager usable in narrow Arabic and forced colors @engine", as
   await page.emulateMedia({ forcedColors: "active" });
 
   const panel = page.getByRole("region", { name: "المرفقات", exact: true });
-  await expect(panel.getByLabel("اختر ملفًا", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "اختر ملفًا", exact: true })).toBeVisible();
+  await expect(panel.locator('input[type="file"]')).toBeHidden();
   const row = panel.locator(".data-table tbody").filter({ hasText: pdfName });
   const preview = row.getByRole("button", { name: "معاينة", exact: true });
   await preview.focus();
@@ -718,7 +719,8 @@ for (const { focusOutside, pointerTarget, gesture } of [
     await openAuthenticated(page);
     await openCase(page, `ATTACH-PICKER-FOCUS-${randomUUID()}`);
     const panel = documentPanel(page);
-    const picker = panel.getByLabel("Choose a file", { exact: true });
+    const picker = panel.getByRole("button", { name: "Choose a file", exact: true });
+    const input = panel.locator('input[type="file"]');
     const external = page.locator(".case-timeline-panel").getByRole("tab", {
       name: "Attachments",
       exact: true,
@@ -735,9 +737,7 @@ for (const { focusOutside, pointerTarget, gesture } of [
     };
 
     const pointerControl =
-      pointerTarget === "label"
-        ? panel.locator("label").filter({ hasText: "Choose a file" })
-        : picker;
+      pointerTarget === "label" ? picker.getByText("Choose a file", { exact: true }) : picker;
     const pointAtControl = async () => {
       await pointerControl.scrollIntoViewIfNeeded();
       const box = await pointerControl.boundingBox();
@@ -797,7 +797,7 @@ for (const { focusOutside, pointerTarget, gesture } of [
         const busyChooser = observeChooser();
         await page.keyboard.press("Enter");
         expect(await busyChooser).toBeNull();
-        await picker.setInputFiles({ ...file, name: "pending-selection.txt" });
+        await input.setInputFiles({ ...file, name: "pending-selection.txt" });
         await expect(html).not.toHaveAttribute("data-second-file-read");
         if (focusOutside) {
           await external.focus();
@@ -906,6 +906,7 @@ test("reviews private files, displays native previews and withdraws disclosure @
   const reference = `ATTACH-WEB-${randomUUID()}`;
   await openCase(page, reference);
   const attachments = page.getByRole("region", { name: "Attachments", exact: true });
+  await expect(page.getByRole("link", { name: "Attachments", exact: true })).toHaveCount(0);
   const portable = "private_raster_01.png";
   const original = await upload(
     page,
@@ -951,7 +952,9 @@ test("reviews private files, displays native previews and withdraws disclosure @
   expect(JSON.stringify(old)).not.toContain(portable);
   await expect(page.locator(".case-timeline-panel")).not.toContainText(portable);
   await page.setViewportSize({ width: 320, height: 900 });
-  await expect(attachments.getByLabel("Choose a file", { exact: true })).toBeVisible();
+  await expect(
+    attachments.getByRole("button", { name: "Choose a file", exact: true }),
+  ).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
 });
 
@@ -961,7 +964,7 @@ test("settles a lost upload acknowledgement with an identity-only recovery recor
   await openAuthenticated(page);
   await openCase(page, `ATTACH-RECOVER-${randomUUID()}`);
   const panel = page.getByRole("region", { name: "Attachments", exact: true });
-  await panel.getByLabel("Choose a file", { exact: true }).setInputFiles({
+  await panel.locator('input[type="file"]').setInputFiles({
     name: "recovery canary.bin",
     mimeType: "application/octet-stream",
     buffer: Buffer.from("exact original"),

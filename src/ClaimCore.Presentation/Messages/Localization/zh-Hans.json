@@ -289,7 +289,7 @@
   },
   "attention.ASSIGNEE_UNAVAILABLE.label": {
     "text": "负责人不可用",
-    "source": "f5a70e0c561b"
+    "source": "4606d45b02f8"
   },
   "attention.DUE_TODAY.label": {
     "text": "今日到期",
@@ -4566,5 +4566,17 @@
   "label.paymentDecision": {
     "text": "付款决定",
     "source": "57372fefe301"
+  },
+  "label.person": {
+    "text": "人员",
+    "source": "6007db63e18e"
+  },
+  "label.useAccountId": {
+    "text": "使用账户 ID {id}",
+    "source": "2114d74198b7"
+  },
+  "label.optional": {
+    "text": "（选填）",
+    "source": "0059798b7f70"
   }
 }

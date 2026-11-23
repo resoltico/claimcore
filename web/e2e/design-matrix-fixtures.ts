@@ -190,13 +190,14 @@ const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] =>
   },
   {
     id: "cases-received",
-    path: "/cases?view=ALL&order=RECEIVED",
+    path: `/cases?view=ALL&order=RECEIVED&q=${encodeURIComponent(marker)}`,
     ready: "#case-list-title",
     endpoint: "case.list",
     expectedInput: {
       limit: 50,
       view: "ALL",
       order: "RECEIVED",
+      text: marker,
     },
   },
   {
@@ -212,12 +213,13 @@ const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] =>
   },
   ...views.map((view) => ({
     id: `cases-${view.id}`,
-    path: view.path,
+    path: `${view.path}&q=${encodeURIComponent(marker)}`,
     ready: "#case-list-title",
     endpoint: "case.list" as const,
     expectedInput: {
       limit: 50,
       ...view.input,
+      text: marker,
     },
   })),
   {
@@ -344,6 +346,11 @@ const routes = (data: {
     expectedInput: {
       limit: 50,
     },
+  },
+  {
+    id: "settings",
+    path: "/settings",
+    ready: "#settings-page",
   },
   {
     id: "not-found",

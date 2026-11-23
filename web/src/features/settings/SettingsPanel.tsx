@@ -1,3 +1,4 @@
+import { ChoiceControl } from "../../ui/TextField";
 import { Select } from "../../ui/Select";
 import { Section } from "../../ui/Section";
 import { Button } from "../../ui/Button";
@@ -71,7 +72,7 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
           <legend>{p.text("ui.language")}</legend>
           {options.map((option) => (
             <label key={option.value} className="settings-option" lang={option.value}>
-              <input
+              <ChoiceControl
                 type="radio"
                 name={`${id}-language`}
                 value={option.value}
@@ -83,10 +84,14 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
               <span dir={option.direction}>
                 {option.label}
                 {p.detectedLanguage && p.language === option.value ? (
-                  <small aria-hidden="true">{p.text("ui.detectedLanguage")}</small>
+                  <span className="field-hint" aria-hidden="true">
+                    {p.text("ui.detectedLanguage")}
+                  </span>
                 ) : null}
                 {option.direction === "rtl" ? (
-                  <small aria-hidden="true">{p.text("ui.rightToLeft")}</small>
+                  <span className="field-hint" aria-hidden="true">
+                    {p.text("ui.rightToLeft")}
+                  </span>
                 ) : null}
               </span>
             </label>
@@ -129,7 +134,7 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
           <legend>{p.text("ui.theme")}</legend>
           {modes.map((mode) => (
             <label key={mode} className="settings-option">
-              <input
+              <ChoiceControl
                 type="radio"
                 name={`${id}-mode`}
                 value={mode}
@@ -141,9 +146,9 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
               <span>
                 {p.text(modeLabels[mode])}
                 {mode === "system" ? (
-                  <small aria-hidden="true">
+                  <span className="field-hint" aria-hidden="true">
                     {p.text("ui.currentMode", { value: p.text(modeLabels[systemMode]) })}
-                  </small>
+                  </span>
                 ) : null}
               </span>
             </label>
@@ -159,7 +164,7 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
                 <i />
               </span>
               <span className="accent-choice">
-                <input
+                <ChoiceControl
                   type="radio"
                   name={`${id}-accent`}
                   value={accent}
@@ -172,9 +177,9 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
                 <span>{p.text(accentLabels[accent])}</span>
               </span>
               {accent === defaults.accent ? (
-                <small id={`${id}-default-accent`} aria-hidden="true">
+                <span className="field-hint" id={`${id}-default-accent`} aria-hidden="true">
                   {p.text("ui.defaultAccent")}
-                </small>
+                </span>
               ) : null}
             </label>
           ))}

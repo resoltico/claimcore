@@ -12,7 +12,6 @@ it("renders semantic worklist sets as independent Core-labelled checkboxes", asy
     <WorklistFilters query={{ lifecycle: ["ACTIVE"], progress: ["DECIDED"] }} onChange={change} />,
   );
   await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
-  await userEvent.click(screen.getByText("Lifecycle (1)", { selector: "summary" }));
   const active = screen.getByRole("checkbox", { name: "Active" });
   expect(active).toBeChecked();
   await userEvent.click(active);
@@ -63,7 +62,7 @@ it("takes role choices from the semantic people query and sends only authored fi
   await userEvent.type(screen.getByRole("searchbox"), "Authored filter Ω");
   await userEvent.click(screen.getByRole("combobox", { name: /role/iu }));
   await userEvent.click(screen.getByRole("option", { name: "Case reader" }));
-  await userEvent.click(screen.getByRole("button", { name: "Search" }));
+  await userEvent.type(screen.getByRole("searchbox"), "{Enter}");
   await waitFor(() => {
     expect(JSON.parse(requestText(fetch.mock.calls.at(-1)?.[1]?.body))).toEqual({
       text: "Authored filter Ω",

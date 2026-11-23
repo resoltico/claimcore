@@ -72,7 +72,7 @@ const SecondaryCells = ({
         .filter(({ prominence }) => prominence === "SECONDARY")
         .map((column) => {
           const value = row.values[column.index];
-          return value === undefined ? null : (
+          return value === undefined || value.kind === "ABSENT" ? null : (
             <div key={column.key}>
               <dt>{renderCatalogKey(p, column.labelId)}</dt>
               <dd>
@@ -88,6 +88,8 @@ const SecondaryCells = ({
 const TableRowControls = ({
   row,
   caption,
+  recommendationCaption,
+  timeZone,
   actionPresentation,
   actionsDisabled,
   onAction,
@@ -95,6 +97,8 @@ const TableRowControls = ({
 }: RegionInteraction & {
   row: RegionRow;
   caption: string;
+  recommendationCaption: string;
+  timeZone: string;
   showDetails: (key: string) => void;
 }) => {
   const p = usePresentation();
@@ -113,6 +117,10 @@ const TableRowControls = ({
               actionPresentation?.(action).label ??
               renderCatalogKey(p, task.reviewedLabelId ?? action.labelId),
             disabled: actionsDisabled === true || action.blocked !== null,
+            description:
+              action.blocked === null ? null : (
+                <SuppliedMessage message={action.blocked.message} timeZone={timeZone} />
+              ),
             consequence: task.consequence,
             select: () => {
               onAction(action, row, trigger);
@@ -136,23 +144,31 @@ const TableRowControls = ({
         {recommended === undefined || onAction === undefined ? null : (
           <Button
             id={primary}
+            className="data-table-recommended"
+            variant="secondary"
             compact
             isDisabled={actionsDisabled === true || recommended.blocked !== null}
+            aria-label={p.text("ui.rowActionLabel", {
+              action: renderCatalogKey(p, recommended.labelId),
+              row: recommendationCaption,
+            })}
             onPress={() => {
               onAction(recommended, row, primary, true);
             }}
           >
-            {renderCatalogKey(p, recommended.labelId)}
+            {renderCatalogKey(p, recommended.shortLabelId ?? recommended.labelId)}
           </Button>
         )}
         {items.length === 0 ? null : (
-          <ActionMenu
-            label={p.text("ui.actionsFor", { row: caption })}
-            id={trigger}
-            items={items}
-            icon
-            stewardshipLabel={p.text("label.dataStewardship")}
-          />
+          <span className="data-table-menu">
+            <ActionMenu
+              label={p.text("ui.actionsFor", { row: caption })}
+              id={trigger}
+              items={items}
+              icon
+              stewardshipLabel={p.text("label.dataStewardship")}
+            />
+          </span>
         )}
       </div>
     </td>
@@ -209,6 +225,11 @@ const DataRow = ({
   const linked = columns.findIndex((column) => row.values[column.index]?.kind === linkKind);
   const linkAt = linked >= 0 ? linked : Math.max(0, firstPrimary);
   const caption = rowCaption(p, row.values[columns[linkAt]?.index ?? 0]);
+  const actionText = columns.find(
+    (column) => column.prominence === "PRIMARY" && row.values[column.index]?.kind === "TEXT",
+  );
+  const recommendationCaption =
+    actionText === undefined ? caption : rowCaption(p, row.values[actionText.index]);
   return (
     <tr data-linked={link === undefined ? undefined : ""}>
       {columns.flatMap((column, position) => {
@@ -221,6 +242,7 @@ const DataRow = ({
             key={column.key}
             data-column={column.key}
             data-prominence={column.prominence}
+            data-present={value.kind !== "ABSENT" || undefined}
             data-money={column.isMoney || undefined}
             data-reference={value.kind === "REFERENCE" || undefined}
           >
@@ -239,7 +261,14 @@ const DataRow = ({
         );
       })}
       {controls ? (
-        <RowControls row={row} caption={caption} showDetails={showDetails} {...interaction} />
+        <RowControls
+          row={row}
+          caption={caption}
+          recommendationCaption={recommendationCaption}
+          timeZone={timeZone}
+          showDetails={showDetails}
+          {...interaction}
+        />
       ) : null}
     </tr>
   );

@@ -31,7 +31,7 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
     expect(input).toHaveValue("North ");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
-    fireEvent.submit(screen.getByRole("search", { name: "Filter this view" }));
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
     expect(publish).not.toHaveBeenCalled();
     expect(input).toHaveFocus();
     expect(input).toHaveAttribute("aria-invalid", "true");
@@ -43,7 +43,7 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
       vi.advanceTimersByTime(700);
     });
     expect(publish).not.toHaveBeenCalled();
-    fireEvent.submit(screen.getByRole("search", { name: "Filter this view" }));
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
     expect(publish).toHaveBeenCalledExactlyOnceWith({
       view: "ALL",
       status: ["OPENED"],

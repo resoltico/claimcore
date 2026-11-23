@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import type { SessionState } from "../session/useSession";
 import type { RequesterDocument } from "../protocol/types";
@@ -36,12 +36,27 @@ const retainOwner = (
     : { ...scope, credential: session.token };
 };
 
+type AcceptedOperation = {
+  owner: VerifiedOwner;
+  operationId: string;
+  messageId: string | undefined;
+  path: string;
+};
+
+const displayedReceipt = (
+  receipt: AcceptedOperation | null,
+  owner: VerifiedOwner | null,
+  requester: RequesterDocument | null,
+  path: string,
+) => (requester !== null && receipt?.owner === owner && receipt.path === path ? receipt : null);
+
 /** Mask feedback during a requester reread. A verified owner change retires it. */
-export const useAcceptedOperation = () => {
+export const useAcceptedOperation = (current?: RequesterDocument | null, denied = false) => {
   const { state } = useSessionContext();
-  const requester = useRequesterDocument();
+  const context = useRequesterDocument();
+  const requester = current === undefined ? context : current;
   const [previous, setPrevious] = useState<VerifiedOwner | null>(null);
-  const owner = retainOwner(previous, state, requester);
+  const owner = denied ? null : retainOwner(previous, state, requester);
   if (owner !== previous) {
     setPrevious(owner);
   }
@@ -52,22 +67,47 @@ export const useAcceptedOperation = () => {
       latestOwner.current = null;
     };
   }, [owner]);
-  const [accepted, setAccepted] = useState<{
-    owner: VerifiedOwner;
-    operationId: string;
-    messageId: string | undefined;
-  } | null>(null);
-  const visible = requester !== null && accepted?.owner === owner ? accepted : null;
+  const [accepted, setAccepted] = useState<AcceptedOperation | null>(null);
+  const path = location.pathname + location.search;
+  const [observedPath, setObservedPath] = useState(path);
+  if (observedPath !== path) {
+    setObservedPath(path);
+    // Settings parks the same workspace. Returning to its path reobserves the receipt.
+    if (location.pathname !== "/settings") {
+      setAccepted((receipt) => (receipt?.path === path ? receipt : null));
+    }
+  }
+  const visible = displayedReceipt(accepted, owner, requester, path);
+  const focused = useRef<string | null>(null);
+  const shouldFocus = useCallback(() => {
+    if (
+      visible === null ||
+      latestOwner.current !== visible.owner ||
+      focused.current === visible.operationId
+    ) {
+      return false;
+    }
+    focused.current = visible.operationId;
+    return true;
+  }, [visible]);
   return {
+    owner,
+    shouldFocus,
     operationId: visible?.operationId ?? null,
     messageId: visible?.messageId,
     clear: () => {
       setAccepted(null);
     },
-    accept: (operationId: string, messageId?: string) => {
+    accept: (
+      operationId: string,
+      messageId?: string,
+      target = location.pathname + location.search,
+    ) => {
       if (owner !== null && latestOwner.current === owner) {
-        setAccepted({ owner, operationId, messageId });
+        setAccepted({ owner, operationId, messageId, path: target });
+        return true;
       }
+      return false;
     },
   };
 };

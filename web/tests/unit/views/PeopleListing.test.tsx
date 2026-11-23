@@ -195,16 +195,19 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
       { kind: "TEXT", value: "saved-contact@example.invalid" },
     ],
   };
-  listing.mockResolvedValueOnce({ kind: "outcome", status: 200, value: people([selected]) });
+  listing
+    .mockResolvedValueOnce({ kind: "outcome", status: 200, value: people([]) })
+    .mockResolvedValueOnce({ kind: "outcome", status: 200, value: people([selected]) });
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Load more" }));
   expect(listing.mock.calls[1]![1]).toEqual({ limit: 50, cursor: "opaque-next" });
   const literal = "Ａ名+س@example.invalid";
   await user.type(screen.getByRole("searchbox", { name: "Search people" }), literal);
   await chooseOption(user, screen.getByRole("combobox", { name: "Role filter" }), "CASE_READER");
-  await user.click(screen.getByRole("button", { name: "Search" }));
+  await user.type(screen.getByRole("searchbox", { name: "Search people" }), "{Enter}");
   await screen.findByText("Server selected result");
-  expect(listing.mock.calls[2]![1]).toEqual({ limit: 50, text: literal, role: "CASE_READER" });
+  expect(listing.mock.calls[2]![1]).toEqual({ limit: 50, role: "CASE_READER" });
+  expect(listing.mock.calls[3]![1]).toEqual({ limit: 50, text: literal, role: "CASE_READER" });
   expect(listing.mock.calls[1]![2]?.aborted).toBe(true);
   expect(screen.queryByText(displayName)).toBeNull();
   expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
@@ -222,6 +225,6 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
     await pending.promise;
   });
   expect(screen.queryByText("OLD_PAGE_CANARY")).toBeNull();
-  expect(listing).toHaveBeenCalledTimes(3);
+  expect(listing).toHaveBeenCalledTimes(4);
   expect(grants).not.toHaveBeenCalled();
 });

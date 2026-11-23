@@ -2,10 +2,75 @@ import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
 import { FieldError } from "react-aria-components/FieldError";
 import { TextField } from "react-aria-components/TextField";
-import type { ReactNode, ComponentProps } from "react";
-import { useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type ComponentProps,
+} from "react";
 import { usePresentation } from "../presentation/context";
 import "./field.css";
+
+const FieldFocus = createContext(false);
+
+export const FieldGroup = ({ children }: { children: ReactNode }) => {
+  const [focused, setFocused] = useState(false);
+  const field = useRef<HTMLDivElement>(null);
+  const gesture = useRef<number | null>(null);
+  useEffect(() => {
+    const element = field.current;
+    if (!focused || element === null) {
+      return;
+    }
+    const document = element.ownerDocument;
+    let frame: number | null = null;
+    const capture = (event: PointerEvent) => {
+      if (event.isPrimary && event.target instanceof Node && !element.contains(event.target)) {
+        gesture.current = event.pointerId;
+      }
+    };
+    const release = (event: PointerEvent) => {
+      if (event.pointerId !== gesture.current) {
+        return;
+      }
+      gesture.current = null;
+      // A disappearing rule must not move the destination before its click is delivered.
+      frame = requestAnimationFrame(() => {
+        setFocused(element.contains(document.activeElement));
+      });
+    };
+    document.addEventListener("pointerdown", capture, true);
+    document.addEventListener("pointerup", release, true);
+    document.addEventListener("pointercancel", release, true);
+    return () => {
+      document.removeEventListener("pointerdown", capture, true);
+      document.removeEventListener("pointerup", release, true);
+      document.removeEventListener("pointercancel", release, true);
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+      }
+    };
+  }, [focused]);
+  return (
+    <div
+      ref={field}
+      className="field-group"
+      onFocusCapture={() => {
+        setFocused(true);
+      }}
+      onBlurCapture={(event) => {
+        if (gesture.current === null && !event.currentTarget.contains(event.relatedTarget)) {
+          setFocused(false);
+        }
+      }}
+    >
+      <FieldFocus.Provider value={focused}>{children}</FieldFocus.Provider>
+    </div>
+  );
+};
 
 export const FieldRule = ({
   ruleId,
@@ -19,77 +84,11 @@ export const FieldRule = ({
   invalid?: boolean;
 }) => {
   const p = usePresentation();
-  const placeholder = useRef<HTMLElement>(null);
-  const [focus, setFocus] = useState(false);
-  useEffect(() => {
-    const field = placeholder.current?.closest(".text-field, .assignee-input");
-    if (field === null || field === undefined) {
-      return;
-    }
-    const document = field.ownerDocument;
-    let pendingPress: AbortController | null = null;
-    let pendingFrame: number | null = null;
-    const rememberPress = (event: PointerEvent) => {
-      if (!event.isPrimary || !(event.target instanceof Node) || field.contains(event.target)) {
-        return;
-      }
-      pendingPress?.abort();
-      const press = new AbortController();
-      pendingPress = press;
-      const release = (end: PointerEvent) => {
-        if (end.pointerId !== event.pointerId) {
-          return;
-        }
-        press.abort();
-        pendingPress = null;
-        // Keep the outgoing rule in place until the browser has delivered the click.
-        pendingFrame = requestAnimationFrame(() => {
-          pendingFrame = null;
-          if (!field.contains(document.activeElement)) {
-            setFocus(false);
-          }
-        });
-      };
-      const options = { capture: true, signal: press.signal };
-      document.addEventListener("pointerup", release, options);
-      document.addEventListener("pointercancel", release, options);
-    };
-    const enter = () => {
-      document.addEventListener("pointerdown", rememberPress, true);
-      setFocus(true);
-    };
-    const leave = (event: Event) => {
-      if (
-        event instanceof FocusEvent &&
-        event.relatedTarget instanceof Node &&
-        field.contains(event.relatedTarget)
-      ) {
-        return;
-      }
-      document.removeEventListener("pointerdown", rememberPress, true);
-      if (pendingPress === null) {
-        setFocus(false);
-      }
-    };
-    field.addEventListener("focusin", enter);
-    field.addEventListener("focusout", leave);
-    if (field.contains(document.activeElement)) {
-      enter();
-    }
-    return () => {
-      field.removeEventListener("focusin", enter);
-      field.removeEventListener("focusout", leave);
-      document.removeEventListener("pointerdown", rememberPress, true);
-      pendingPress?.abort();
-      if (pendingFrame !== null) {
-        cancelAnimationFrame(pendingFrame);
-      }
-    };
-  }, []);
-  return ruleId === null ? null : (
-    <small id={id} ref={placeholder} className="field-rule" hidden={!focus && !invalid}>
-      {focus || invalid ? p.rule(ruleId, name) : null}
-    </small>
+  const focus = useContext(FieldFocus);
+  return ruleId === null || (!focus && !invalid) ? null : (
+    <span id={id} className="field-rule">
+      {p.rule(ruleId, name)}
+    </span>
   );
 };
 
@@ -97,22 +96,27 @@ export const Field = ({
   label,
   description,
   error,
+  optional,
   children,
   ...control
 }: Omit<ComponentProps<typeof TextField>, "children"> & {
   label: string;
   description: ReactNode;
   error?: ReactNode;
+  optional?: string | undefined;
   children: ReactNode;
 }) => (
-  <TextField {...control} className={["text-field", control.className].filter(Boolean).join(" ")}>
-    <div className="field-label-row">
-      <Label>{label}</Label>
-    </div>
-    {children}
-    <Text slot="description" className="field-description">
-      {description}
-    </Text>
-    {error === undefined ? null : <FieldError>{error}</FieldError>}
-  </TextField>
+  <FieldGroup>
+    <TextField {...control} className={["text-field", control.className].filter(Boolean).join(" ")}>
+      <div className="field-label-row">
+        <Label>{label}</Label>
+        {optional === undefined ? null : <span className="field-hint">{optional}</span>}
+      </div>
+      {children}
+      <Text slot="description" className="field-description">
+        {description}
+      </Text>
+      {error === undefined ? null : <FieldError>{error}</FieldError>}
+    </TextField>
+  </FieldGroup>
 );

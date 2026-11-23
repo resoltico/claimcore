@@ -1,3 +1,4 @@
+import { Page } from "../../../src/ui/Page";
 import { selectRowAction } from "../../support/workspace-actions";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import type { RequestByEndpoint, HumanDocument, HumanReview } from "@contracts/client";
@@ -217,12 +218,14 @@ it("takes one parent read and carries the selected reminder version through revi
   vi.stubGlobal("fetch", fetch);
   const view = render(
     <TestSession credential="owner-a">
-      <ReminderQueueWork
-        renderToolbar={(exportAction) => exportAction}
-        filter={{}}
-        onLockChange={vi.fn()}
-        disclosureAvailable
-      />
+      <Page id="reminders-title" title="Reminders">
+        <ReminderQueueWork
+          renderToolbar={(exportAction) => exportAction}
+          filter={{}}
+          onLockChange={vi.fn()}
+          disclosureAvailable
+        />
+      </Page>
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
@@ -264,12 +267,14 @@ it("takes one parent read and carries the selected reminder version through revi
   );
   view.rerender(
     <TestSession credential="owner-b">
-      <ReminderQueueWork
-        renderToolbar={(exportAction) => exportAction}
-        filter={{}}
-        onLockChange={vi.fn()}
-        disclosureAvailable
-      />
+      <Page id="reminders-title" title="Reminders">
+        <ReminderQueueWork
+          renderToolbar={(exportAction) => exportAction}
+          filter={{}}
+          onLockChange={vi.fn()}
+          disclosureAvailable
+        />
+      </Page>
     </TestSession>,
   );
   expect(screen.queryByText("Core accepted reminder Ψ")).not.toBeInTheDocument();

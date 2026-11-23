@@ -2,7 +2,7 @@ import { reviewedPeopleBinding } from "./people-revision";
 import { observedAccess, acceptedSubject } from "./work-workflow";
 import { syntheticPrincipals } from "./people-setup";
 import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
-import { expectCaseReadsSettled } from "./case-readiness";
+import { expectCaseReadsSettled, openAcceptedReceipt } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { type Language, defaults } from "../src/presentation/preferences";
@@ -225,7 +225,7 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED", subje
   ) {
     throw new Error("Missing accepted people response.");
   }
-  const receipt = page.locator("section.receipt");
+  const receipt = await openAcceptedReceipt(page);
   const busy = receipt
     .getByRole("alert")
     .filter({ hasText: "ClaimCore is busy. Try again in a moment." });
@@ -253,6 +253,7 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED", subje
   await expect(technical.locator('[data-entry="operationId"] .identifier-value')).toHaveText(
     operationExecuteReply.operationId,
   );
+  await receipt.getByRole("button", { name: "Close", exact: true }).first().click();
   await expect.poll(() => recoveryRecords(page)).toEqual([]);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   return operationExecuteReply.outcome.document;
@@ -393,15 +394,12 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   ) {
     throw new Error("Missing disclosed admitted service target.");
   }
-  const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');
-  await receiptDetails.locator(":scope > summary").click();
-  await expect(receiptDetails).not.toHaveAttribute("open");
+  const receipt = await openAcceptedReceipt(page);
+  await expect(receipt.locator('details[data-region="DETAILS"]')).not.toHaveAttribute("open");
   if (browserName === "chromium") {
-    await page.locator("section.receipt").scrollIntoViewIfNeeded();
-    await page.locator("section.receipt").screenshot({
-      path: testInfo.outputPath("people-receipt-en-light.png"),
-    });
+    await receipt.screenshot({ path: testInfo.outputPath("people-receipt-en-light.png") });
   }
+  await receipt.getByRole("button", { name: "Close", exact: true }).first().click();
   const accepted = await acceptedSubject(page, admitted.subject.operationId);
   if (accepted.kind !== "PEOPLE") {
     throw new Error("People receipt required");

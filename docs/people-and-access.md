@@ -83,7 +83,7 @@ the new responsible person, review and confirm once. Each row retains its own wo
 change requires a fresh review. A visible zero means no matching cases; an omitted count means your roles do not
 provide that case visibility. Responsibility never grants access.
 
-Use names or contact details to find people, optionally selecting a role. In the CLI,
+Enter a name or contact detail in **Search people** and press Enter. The **Role** filter applies when you select it. In the CLI,
 `people list --text TEXT --role case-handler` combines current saved name/contact search with the
 selected role.
 Use the returned actor ID with `people grants ACTOR-ID` and the person-change verbs (grant, revoke,
@@ -122,7 +122,7 @@ See [erasure limits](operating.md#erasure-limits) for backups and copies outside
 
 ## Review access changes
 
-Open **Access history**, or run `claimcore people history`, to see who changed access and what was
+In **Access history**, use **Person** to search the directory or enter an exact account ID. Open **Access history**, or run `claimcore people history`, to see who changed access and what was
 recorded. Actor names reflect current profiles, including profile erasure. Enter an **Account ID** in the
 toolbar and choose **Apply filters** to restrict the history to changes affecting that account. To see all
 accessible activity again, clear the field and apply the filter. **Load more** and **Download CSV** use the

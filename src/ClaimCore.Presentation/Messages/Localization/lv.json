@@ -289,7 +289,7 @@
   },
   "attention.ASSIGNEE_UNAVAILABLE.label": {
     "text": "Atbildīgais nav pieejams",
-    "source": "f5a70e0c561b"
+    "source": "4606d45b02f8"
   },
   "attention.DUE_TODAY.label": {
     "text": "Termiņš šodien",
@@ -4566,5 +4566,17 @@
   "label.paymentDecision": {
     "text": "Maksājuma lēmums",
     "source": "57372fefe301"
+  },
+  "label.person": {
+    "text": "Persona",
+    "source": "6007db63e18e"
+  },
+  "label.useAccountId": {
+    "text": "Izmantot konta ID {id}",
+    "source": "2114d74198b7"
+  },
+  "label.optional": {
+    "text": "(pēc izvēles)",
+    "source": "0059798b7f70"
   }
 }

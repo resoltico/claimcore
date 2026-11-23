@@ -1,3 +1,5 @@
+import { Section } from "../Section";
+import { TechnicalDetails } from "../TechnicalDetails";
 import { EmptyState } from "../EmptyState";
 import { useId } from "react";
 import type { Region, RegionContent } from "@contracts/client";
@@ -27,13 +29,14 @@ const Content = ({
   emptyId?: string | undefined;
 }) => {
   switch (content.kind) {
-    case "ENTRIES":
-      if (content.entries.length === 0 && emptyId !== undefined) {
+    case "ENTRIES": {
+      const entries = content.entries.filter((entry) => entry.recorded !== false);
+      if (entries.length === 0 && emptyId !== undefined) {
         return <EmptyState messageId={emptyId} />;
       }
       return (
         <Entries
-          entries={content.entries}
+          entries={entries}
           timeZone={timeZone}
           copy={copy}
           avatars={avatars}
@@ -41,6 +44,7 @@ const Content = ({
           {...(interaction.sectionLink === undefined ? {} : { link: interaction.sectionLink })}
         />
       );
+    }
     case "TABLE":
       return <DataTable view={content} timeZone={timeZone} emptyId={emptyId} {...interaction} />;
     case "STAGES":
@@ -82,39 +86,47 @@ export const RegionView = ({
   const p = usePresentation();
   const heading = useId();
   const body = (
+    <Content
+      emptyId={region.emptyId}
+      content={region.content}
+      timeZone={timeZone}
+      copy={region.role === "DETAILS"}
+      avatars={region.role === "WORK" || region.role === "ACCOUNT"}
+      {...interaction}
+    />
+  );
+  const actions = (
     <>
-      <Content
-        emptyId={region.emptyId}
-        content={region.content}
-        timeZone={timeZone}
-        copy={region.role === "DETAILS"}
-        avatars={region.role === "WORK" || region.role === "ACCOUNT"}
-        {...interaction}
-      />
+      {headerActions}
       <RegionActions region={region} {...interaction} />
     </>
   );
-  return region.role === "DETAILS" ? (
-    <details className="screen-details" data-region={region.role}>
-      <summary>{renderCatalogKey(p, region.titleId ?? "label.technicalDetails")}</summary>
-      {body}
-    </details>
-  ) : (
-    <section
-      className="screen-region"
+  if (region.role === "DETAILS") {
+    return (
+      <TechnicalDetails className="screen-details">
+        {body}
+        {actions}
+      </TechnicalDetails>
+    );
+  }
+  if (region.titleId === undefined) {
+    return (
+      <section className="screen-region" data-region={region.role}>
+        {body}
+        {actions}
+      </section>
+    );
+  }
+  return (
+    <Section
+      id={heading}
+      title={renderCatalogKey(p, region.titleId)}
+      count={region.count}
       data-region={region.role}
       role={embedded || region.role === "FACTS" ? "group" : undefined}
-      {...(region.titleId === undefined ? {} : { "aria-labelledby": heading })}
+      actions={actions}
     >
-      {region.titleId === undefined && headerActions === undefined ? null : (
-        <div className="region-heading">
-          {region.titleId === undefined ? null : (
-            <h2 id={heading}>{renderCatalogKey(p, region.titleId)}</h2>
-          )}
-          {headerActions}
-        </div>
-      )}
       {body}
-    </section>
+    </Section>
   );
 };

@@ -31,8 +31,9 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .click();
   await startAct(page, "case.close", "en");
   await expect(
-    page.getByRole("heading", {
+    page.getByRole("dialog").getByRole("heading", {
       name: "Close the case",
+      exact: true,
     }),
   ).toBeVisible();
   await expect(
@@ -158,7 +159,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   const banner = acceptanceBanner(page);
   await expect(banner).toContainText("Case opened.");
   await expect(banner).toBeFocused();
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "View receipt", exact: true })).toHaveCount(0);
   const receipt = await openAcceptedReceipt(page);
   await expect(receipt).toContainText("Case opened.");
   await receipt.getByRole("button", { name: "Close", exact: true }).click();

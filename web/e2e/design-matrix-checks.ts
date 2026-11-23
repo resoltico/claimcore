@@ -1,5 +1,5 @@
 import { expectNoInlineStyles } from "./inline-styles";
-import { geometryFailures } from "./design-geometry";
+import { geometryFailures, geometryReport } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
@@ -94,7 +94,7 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
   }
   if (route.id === "operation-result") {
-    await expect(page.locator(".entries-view [data-entry='policyNumber']")).toBeVisible();
+    await expect(page.locator(".receipt .region-notice").first()).toBeVisible();
   }
   if (route.id === "people-list") {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
@@ -321,7 +321,12 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await ready(page, route);
   if (route.id === "editor-work") {
     expect(await geometryFailures(page)).not.toContain("G1");
-    await page.locator("#case-work-summary").click();
+    const work = page.locator("#case-work-summary");
+    await expect(work).toBeVisible();
+    await work.evaluate((element) => {
+      element.scrollIntoView({ block: "center" });
+    });
+    await work.click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();
     await expect(summary).toBeInViewport({ ratio: 1 });
@@ -359,7 +364,102 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
-  expect(await geometryFailures(page)).toEqual([]);
+  const { violations, splitWords, firstRowTop } = await geometryReport(page);
+  if (violations.length > 0) {
+    const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
+      tables.map((table) => {
+        const content = table.querySelector("table")!;
+        return {
+          container: table.clientWidth,
+          overflow: table.scrollWidth - table.clientWidth,
+          mode: getComputedStyle(content).getPropertyValue("--table-layout").trim(),
+          maxHeight: Math.max(
+            0,
+            ...Array.from(
+              content.querySelectorAll("tbody tr:not(.table-group)"),
+              (row) => row.getBoundingClientRect().height,
+            ),
+          ),
+          tallRows: [...content.querySelectorAll("tbody tr:not(.table-group)")]
+            .filter((row) => row.getBoundingClientRect().height > 72)
+            .slice(0, 3)
+            .map((row) =>
+              Array.from(row.querySelectorAll("td"), (cell) => ({
+                width: cell.getBoundingClientRect().width,
+                content: cell.querySelector(".data-table-cell")?.getBoundingClientRect().height,
+                chips: [...cell.querySelectorAll(".chip")].map((chip) => ({
+                  width: chip.getBoundingClientRect().width,
+                  text: chip.textContent.trim(),
+                })),
+              })),
+            ),
+          protrusions: [
+            ...content.querySelectorAll(
+              "tbody td, tbody .chip, tbody .data-table-cell, tbody .identifier-value",
+            ),
+          ]
+            .flatMap((cell) => {
+              const edge = table.getBoundingClientRect();
+              const box = cell.getBoundingClientRect();
+              const spill = Math.max(edge.left - box.left, box.right - edge.right);
+              return box.width > 1 && box.height > 1 && spill > 1
+                ? [{ width: box.width, spill, text: cell.textContent.trim().slice(0, 55) }]
+                : [];
+            })
+            .slice(0, 4),
+          columns: Array.from(
+            content.querySelectorAll("thead th"),
+            (cell) => cell.getBoundingClientRect().width,
+          ),
+        };
+      }),
+    );
+    const controls = violations.includes("G8")
+      ? await page.locator("main form, .toolbar, [role=dialog] form").evaluateAll((forms) =>
+          forms.flatMap((form) =>
+            [
+              ...form.querySelectorAll(
+                ".control-box, button, input:not([type=hidden],[type=radio],[type=checkbox],[type=file])",
+              ),
+            ].flatMap((control) => {
+              const { x, y, width, height } = control.getBoundingClientRect();
+              return width > 1 && height > 1
+                ? [
+                    {
+                      x,
+                      y,
+                      width,
+                      height,
+                      kind: control.tagName,
+                      name:
+                        control.getAttribute("name") ??
+                        control.getAttribute("aria-label") ??
+                        control.className,
+                    },
+                  ]
+                : [];
+            }),
+          ),
+        )
+      : [];
+    const appearance = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      const title = main?.querySelector("h1");
+      return {
+        title: document.title,
+        heading: title?.textContent.trim(),
+        offset:
+          main === null || title === null || title === undefined
+            ? null
+            : title.getBoundingClientRect().top - main.getBoundingClientRect().top,
+        mainPadding: main === null ? null : getComputedStyle(main).paddingBlockStart,
+      };
+    });
+    expect(
+      violations,
+      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop })}`,
+    ).toEqual([]);
+  }
   await expectNoInlineStyles(page);
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
@@ -424,3 +524,5 @@ export const captureFrame = async (
   });
   return path;
 };
+
+export { headingOffset, headingOffsetFailures, feedbackFailures } from "./design-geometry";

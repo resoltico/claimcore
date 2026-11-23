@@ -127,7 +127,7 @@ test("selected people grants use bounded core pages and survive presentation cha
     throw new Error("Core directory table required");
   }
   const table = page.locator('table[aria-labelledby="people-title"]');
-  await expect(table.getByRole("columnheader")).toHaveCount(
+  await expect(table.locator("thead th[data-prominence]")).toHaveCount(
     content.columns.filter((column) => column.prominence !== "DETAIL").length,
   );
   await expect(table.locator("thead")).toBeVisible();
@@ -246,7 +246,7 @@ test("preserves historical profile contact and distinguishes global and case rol
   });
   await page.goto("/people");
   await page.locator("#people-search").fill(subject);
-  await page.locator(".directory-filters button[type='submit']").click();
+  await page.locator("#people-search").press("Enter");
   const row = page.locator(".table-view tbody > tr").filter({
     hasText: subject,
   });

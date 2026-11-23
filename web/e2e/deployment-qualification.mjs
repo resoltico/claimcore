@@ -419,10 +419,14 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
     try {
       const page = await context.newPage();
       let brandedStyles = false;
+      let brandedMark = false;
       page.on("response", (response) => {
         const url = new URL(response.url());
         if (url.origin === provider && url.pathname.endsWith("/css/claimcore.css")) {
           brandedStyles = response.ok();
+        }
+        if (url.origin === provider && url.pathname.endsWith("/img/brand.svg")) {
+          brandedMark = response.ok();
         }
       });
       // English in a fresh context is the no-hint control.
@@ -439,6 +443,7 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
       await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
       await expect(page.locator("#kc-login")).toBeVisible();
       await verifyProviderAppearance(page, language === "ar");
+      await expect.poll(() => brandedMark).toBe(true);
       if (language === "en") {
         await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
         await expect(page.locator("#kc-login")).toHaveAccessibleName("Sign in");
@@ -544,6 +549,12 @@ const qualify = async (origin, provider, ca) => {
     await verifyCliTheme(browser, provider);
     await verifyPriorRealm(browser, origin, provider);
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    const brand = await context.request.get(`${origin}/brand.svg`);
+    expect(brand.status()).toBe(200);
+    expect(brand.headers()["content-type"]).toBe("image/svg+xml");
+    expect(await brand.body()).toEqual(
+      readFileSync(new URL("../public/brand.svg", import.meta.url)),
+    );
     await login(context, origin, provider);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);

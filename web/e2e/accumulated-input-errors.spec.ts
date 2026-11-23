@@ -86,6 +86,6 @@ test("one submit reports every invalid input in summary order and links to its f
     }),
   ).toBeVisible();
   await expect(page.locator("[data-confirm-operation]")).toHaveCount(0);
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
   await expectAccessible(page);
 });

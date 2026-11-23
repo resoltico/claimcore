@@ -436,18 +436,16 @@ module ReceiptScreen =
 
         let markEntry (entry: Entry) =
             { entry with
-                Recorded = Some(isRecorded entry.LabelId)
-            }
-
-        let markSection (section: Section) =
-            { section with
-                Entries = List.map markEntry section.Entries
+                Recorded = Some(entry.Recorded <> Some false && isRecorded entry.LabelId)
             }
 
         Screen.mapContent
-            (fun _ content ->
+            (fun role content ->
                 match content with
-                | RegionContent.Entries values -> RegionContent.Entries(List.map markEntry values)
+                | RegionContent.Entries values when
+                    role = RegionRole.Facts || role = RegionRole.Work
+                    ->
+                    RegionContent.Entries(List.map markEntry values)
                 | RegionContent.Table table ->
                     RegionContent.Table
                         { table with
@@ -457,7 +455,6 @@ module ReceiptScreen =
                                     { column with
                                         Recorded = isRecorded column.LabelId
                                     })
-                            Sections = List.map markSection table.Sections
                         }
                 | content -> content)
             screen

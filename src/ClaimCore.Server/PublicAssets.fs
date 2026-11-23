@@ -126,6 +126,7 @@ module internal PublicAssets =
                         path.StartsWith("/assets/", StringComparison.Ordinal)
                         || path = "/react-aria-pressable.css"
                         || path = "/styles.css"
+                        || path = "/brand.svg"
                         || path.StartsWith("/locales/", StringComparison.Ordinal)
                         || requiredPaths.Contains path
                     )

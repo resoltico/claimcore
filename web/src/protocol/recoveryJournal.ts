@@ -1,3 +1,4 @@
+import { isCanonicalUuid } from "./uuid";
 import type { PrincipalScope } from "./ownerScope";
 import { taskDefinitions } from "@contracts/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -17,18 +18,14 @@ export type RecoveryJournal = {
   readonly remove: (record: RecoveryRecord) => Promise<void>;
   readonly list: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
 };
-const uuid = (value: unknown): value is string =>
-  typeof value === "string" &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(value) &&
-  value !== "00000000-0000-0000-0000-000000000000";
 const isScope = (value: Record<string, unknown>): boolean =>
   typeof value["serviceOrigin"] === "string" &&
   /^[!-~]{1,2048}$/u.test(value["serviceOrigin"]) &&
-  uuid(value["installationId"]) &&
-  uuid(value["actorId"]);
+  isCanonicalUuid(value["installationId"]) &&
+  isCanonicalUuid(value["actorId"]);
 const isAttempt = (value: Record<string, unknown>): boolean =>
-  uuid(value["attemptId"]) &&
-  uuid(value["operationId"]) &&
+  isCanonicalUuid(value["attemptId"]) &&
+  isCanonicalUuid(value["operationId"]) &&
   ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE", "PARTY", "LINK", "ATTACHMENT"].includes(
     String(value["subject"]),
   ) &&

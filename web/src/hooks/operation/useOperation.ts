@@ -1,3 +1,4 @@
+import { OperationFeedbackContext } from "../OperationFeedbackContext";
 import { initialSubmissionBinding } from "../../operation/submissionAssembly";
 import {
   apiEndpoints,
@@ -77,7 +78,7 @@ type Options = {
     entry: ReturnType<typeof operationEntry>,
   ) => FormValue;
   onLockChange: MutationLockChange;
-  onRecorded?: (receipt: OperationReceipt) => void;
+  onRecorded?: (receipt: OperationReceipt, operationId: string) => void;
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
@@ -195,6 +196,13 @@ type Reply = ApiResult<
   | ServiceResponse<typeof apiEndpoints.operationExecute>
   | ServiceResponse<typeof apiEndpoints.operationPreview>
 >;
+const publishRecord = (state: OperationState, publish: Options["onRecorded"]) => {
+  const { phase } = state.delivery;
+  if (state.disclosed.receipt !== null && phase.kind === "ACCEPTED") {
+    publish?.(state.disclosed.receipt, phase.source.prepared.input.operationId);
+  }
+};
+
 const completionNotice = (result: Reply): Notice => resultNotice(result);
 const completionUncertain = (
   effect: {
@@ -630,9 +638,7 @@ const useEffects = (
         continue;
       }
       if (effect.kind === "RECORDED") {
-        if (state.disclosed.receipt !== null) {
-          options.onRecorded?.(state.disclosed.receipt);
-        }
+        publishRecord(state, options.onRecorded);
       } else if (effect.kind === "DISCLOSURE_REFUSED") {
         options.onDisclosureRefused?.(effect.notice);
       } else {
@@ -1077,7 +1083,15 @@ export const useOperation = (supplied: Options) => {
   const journal = useRecoveryJournal();
   const session = useContext(SessionContext);
   const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
-  const options = resolveOperationOptions(supplied, requester, journal, contextEpoch);
+  const publish = useContext(OperationFeedbackContext);
+  const resolved = resolveOperationOptions(supplied, requester, journal, contextEpoch);
+  const options: Options = {
+    ...resolved,
+    onRecorded: (receipt, operationId) => {
+      resolved.onRecorded?.(receipt, operationId);
+      publish?.(receipt, operationId);
+    },
+  };
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const { ownerVerified, scopeVerified, ownerChanged } = operationOwnership(
     state,

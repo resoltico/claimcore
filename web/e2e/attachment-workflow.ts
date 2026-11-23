@@ -25,7 +25,7 @@ export const uploadAttachment = async (
   mimeType: string,
   bytes: Buffer,
 ) => {
-  const pick = attachments.getByLabel("Choose a file", { exact: true });
+  const pick = attachments.locator('input[type="file"]');
   await expect(pick).toBeEnabled();
   await pick.setInputFiles({ name, mimeType, buffer: bytes });
   const review = page.getByRole("dialog");

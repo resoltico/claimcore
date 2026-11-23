@@ -1,3 +1,5 @@
+import { Page } from "../../ui/Page";
+import { DirectoryPersonPicker } from "../../components/AssigneeInput";
 import { useCallback, useMemo } from "react";
 import type { RegionTimelineEntry } from "@contracts/client";
 import { CsvExportButton } from "../../components/CsvExportButton";
@@ -47,39 +49,28 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
     select,
   );
   return (
-    <section className="people-history" aria-labelledby="people-history-title">
-      <h1 id="people-history-title" tabIndex={-1}>
-        {p.text(actorId === "" ? "endpoint.people.history.label" : "ui.accountAccessHistory")}
-      </h1>
-      <form
-        aria-label={p.text("label.peopleHistory")}
-        onSubmit={(event) => {
-          event.preventDefault();
-          const value = new FormData(event.currentTarget).get("actorId");
-          if (typeof value === "string" && value.trim() !== actorId) {
-            navigate(peopleHistoryPath(value.trim()));
-          }
-        }}
-      >
-        <Toolbar>
-          <div className="text-field">
-            <label htmlFor="history-actor">{p.text("input.actorId.label")}</label>
-            <input
-              id="history-actor"
-              key={actorId}
-              name="actorId"
-              defaultValue={actorId}
-              autoComplete="off"
-              dir="ltr"
-            />
-          </div>
-          <button type="submit">{p.text("ui.applyFilters")}</button>
-          <CsvExportButton
-            selection={{ query: apiEndpoints.peopleHistory, selection }}
-            available={page.page !== null && !page.loading}
+    <Page
+      className="people-history"
+      id="people-history-title"
+      title={p.text(actorId === "" ? "endpoint.people.history.label" : "ui.accountAccessHistory")}
+    >
+      <Toolbar
+        filter={
+          <DirectoryPersonPicker
+            selected={actorId}
+            change={(value) => {
+              if (value !== actorId) {
+                navigate(peopleHistoryPath(value));
+              }
+            }}
           />
-        </Toolbar>
-      </form>
+        }
+      >
+        <CsvExportButton
+          selection={{ query: apiEndpoints.peopleHistory, selection }}
+          available={page.page !== null && !page.loading}
+        />
+      </Toolbar>
       {page.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
       {page.message === null ? null : (
         <p role="alert">
@@ -106,6 +97,6 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
             : page.refresh
         }
       />
-    </section>
+    </Page>
   );
 };

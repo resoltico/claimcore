@@ -1,6 +1,8 @@
+import { Page } from "../ui/Page";
 import { PhoneAction } from "../ui/PhoneAction";
 import { Icon } from "../ui/icons";
 import { ActionMenu } from "../ui/ActionMenu";
+import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { principalCreationTask } from "../operation/metadata";
 import { renderCatalogKey } from "../presentation/messages";
 import { isOperationAffordance, initialAffordanceValues } from "../operation/affordances";
@@ -10,14 +12,11 @@ import {
   type ServiceResponse,
   type OperationReceipt,
 } from "../api/service";
-import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 
 import { clientCompositions, taskDefinitions, type Principal } from "@contracts/client";
-import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
-import { ScreenView } from "../ui/ScreenView";
-import { useOperationObservation } from "../hooks/useOperationObservation";
+import { isActiveRequester } from "../hooks/useRequesterContext";
 import { usePeopleTarget, type PeopleTarget } from "../hooks/operation/usePeopleTarget";
 import { AccessRequests, type AccessRequestControl } from "./people/AccessRequests";
 import { ActorOperation, ActorActions } from "./people/ActorOperation";
@@ -250,8 +249,10 @@ const PeopleWorkspace = ({
   disclosureAvailable,
   target,
   editor,
+  before,
 }: {
   editor: PeopleEditor;
+  before: ReactNode;
   model: OperationModel;
   disclosure: Disclosure;
   disclosureAvailable: boolean;
@@ -268,8 +269,7 @@ const PeopleWorkspace = ({
           (action): action is AccessRequestControl =>
             isOperationAffordance(action) &&
             (action.task === clientCompositions.accountRegistration ||
-              action.task === clientCompositions.admission) &&
-            action.blocked === null,
+              action.task === clientCompositions.admission),
         ) ?? [])
       : [];
   const blocked =
@@ -279,7 +279,14 @@ const PeopleWorkspace = ({
   const items = additions.map((action) => ({
     id: action.task,
     label: renderCatalogKey(p, action.labelId),
-    disabled: blocked,
+    disabled: blocked || action.blocked !== null,
+    description:
+      action.blocked === null ? null : (
+        <SuppliedMessage
+          message={action.blocked.message}
+          timeZone={context.value?.basis.observation.timeZone ?? "UTC"}
+        />
+      ),
     select: () => {
       editor.admit(action);
       editor.open();
@@ -287,22 +294,38 @@ const PeopleWorkspace = ({
   }));
   const addPerson = p.text("label.addPerson");
   return (
-    <>
-      <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      {items.length === 0 ? null : (
-        <PhoneAction
-          renderCompact={() => (
+    <Page
+      id="people-title"
+      as="section"
+      labelledBy="people-title"
+      className="people-panel"
+      title={p.text("view.PEOPLE.label")}
+      primaryAction={
+        items.length === 0 ? null : (
+          <PhoneAction
+            renderCompact={() => (
+              <ActionMenu
+                label={addPerson}
+                variant="primary"
+                disabled={blocked}
+                items={items}
+                trigger={<Icon name="add" />}
+              />
+            )}
+          >
             <ActionMenu
               label={addPerson}
+              variant="primary"
+              compact={false}
               disabled={blocked}
               items={items}
-              trigger={<Icon name="add" />}
             />
-          )}
-        >
-          <ActionMenu label={addPerson} disabled={blocked} items={items} />
-        </PhoneAction>
-      )}
+          </PhoneAction>
+        )
+      }
+    >
+      {before}
+      <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
       <PendingPeopleRequests
         model={model}
         context={context.value}
@@ -344,54 +367,13 @@ const PeopleWorkspace = ({
           onClose={editor.close}
         />
       </div>
-    </>
+    </Page>
   );
 };
-const PeopleReceipt = ({ operationId }: { operationId: string }) => {
-  const p = usePresentation();
-  const observation = useOperationObservation(operationId);
-  const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (observation.receipt !== null) {
-      heading.current?.focus();
-    }
-  }, [observation.receipt]);
-  return (
-    <section className="receipt">
-      <h2 ref={heading} tabIndex={-1}>
-        {p.text("label.recordedChange")}
-      </h2>
-      {observation.receipt === null || observation.receipt.basis.kind !== "SNAPSHOT" ? null : (
-        <ScreenView
-          view={observation.receipt.screen}
-          timeZone={observation.receipt.basis.observation.timeZone}
-        />
-      )}
-      {observation.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {observation.message === null ? null : (
-        <div role="alert">
-          <NoticeView value={observation.message} />
-          <button
-            type="button"
-            disabled={observation.loading}
-            onClick={() => {
-              void observation.observe();
-            }}
-          >
-            {p.text("ui.tryAgain")}
-          </button>
-        </div>
-      )}
-    </section>
-  );
-};
-type PeopleOwner = OwnerScope & { credential: string };
-type RecordedPeople = (PeopleOwner & { operationId: string }) | null;
 type PeopleActions = {
   invalidate: () => void;
   restore: () => void;
   reset: () => void;
-  operationId: string | null;
 } | null;
 type PeopleEditor = {
   active: boolean;
@@ -404,13 +386,8 @@ type PeopleLayoutProps = {
   model: OperationModel;
   target: PeopleTarget;
   disclosure: Disclosure;
-  recorded: RecordedPeople;
   disclosureAvailable: boolean;
   onClose: () => void;
-};
-const PeopleTitle = () => {
-  const p = usePresentation();
-  return <h1 id="people-title">{p.text("view.PEOPLE.label")}</h1>;
 };
 const PeopleUnavailable = ({
   model,
@@ -453,55 +430,50 @@ const PeopleUnavailable = ({
 const PeopleLayout = ({
   model,
   disclosure,
-  recorded,
   onClose,
   disclosureAvailable,
   target,
   editor,
 }: PeopleLayoutProps) => {
+  const p = usePresentation();
   const credential = useCredential();
-  const { state: session } = useSessionContext();
-  const requester = useRequesterContext();
-  const visibleReceipt =
-    recorded !== null &&
-    requester !== null &&
-    disclosureAvailable &&
-    recorded.serviceOrigin === location.origin &&
-    recorded.credential === credential &&
-    recorded.sessionEpoch === session.epoch &&
-    recorded.installationId === requester.subject.installationId &&
-    recorded.actorId === requester.subject.actorId;
   const { invalidate } = disclosure;
-  return (
-    <section aria-labelledby="people-title" className="people-panel">
-      <PeopleTitle />
-      {visibleReceipt ? (
-        <PeopleReceipt key={recorded.operationId} operationId={recorded.operationId} />
-      ) : null}
+  const before = (
+    <>
       {disclosure.notice === null ? null : (
         <p role="alert">
           <NoticeView value={disclosure.notice} />
         </p>
       )}
       <OperationDiscard model={model} onClose={onClose} />
-      {disclosure.active ? (
-        <PeopleWorkspace
-          key={`${credential}:${disclosure.revision}`}
-          model={model}
-          disclosure={disclosure}
-          disclosureAvailable={disclosureAvailable}
-          target={target}
-          editor={editor}
-        />
-      ) : (
-        <PeopleUnavailable
-          model={model}
-          invalidate={invalidate}
-          available={disclosureAvailable}
-          editor={editor}
-        />
-      )}
-    </section>
+    </>
+  );
+  return disclosure.active ? (
+    <PeopleWorkspace
+      key={`${credential}:${disclosure.revision}`}
+      model={model}
+      disclosure={disclosure}
+      disclosureAvailable={disclosureAvailable}
+      target={target}
+      editor={editor}
+      before={before}
+    />
+  ) : (
+    <Page
+      id="people-title"
+      as="section"
+      labelledBy="people-title"
+      className="people-panel"
+      title={p.text("view.PEOPLE.label")}
+    >
+      {before}
+      <PeopleUnavailable
+        model={model}
+        invalidate={invalidate}
+        available={disclosureAvailable}
+        editor={editor}
+      />
+    </Page>
   );
 };
 
@@ -519,7 +491,6 @@ const usePeopleActions = (
       invalidate: model.invalidateDisclosure,
       restore: model.restoreDisclosure,
       reset: model.discard,
-      operationId: model.prepared?.input.operationId ?? null,
     };
   });
   useEffect(() => {
@@ -531,26 +502,12 @@ const usePeopleActions = (
 const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
   const credential = useCredential();
   const disclosure = usePeopleDisclosure();
-  const requester = useRequesterContext();
-  const { state: session } = useSessionContext();
-  const [owner, setOwner] = useState<PeopleOwner | null>(null);
-  if (owner === null && requester !== null) {
-    setOwner({
-      serviceOrigin: location.origin,
-      installationId: requester.subject.installationId,
-      actorId: requester.subject.actorId,
-      sessionEpoch: session.epoch,
-      credential,
-    });
-  }
   const cache = useEndpointCache();
   const { refused: refuseDisclosure, invalidate, ready } = disclosure;
-  const [recorded, setRecorded] = useState<RecordedPeople>(null);
   const actions = useRef<PeopleActions>(null);
   const refused = useCallback(
     (notice?: Notice) => {
       actions.current?.invalidate();
-      setRecorded(null);
       replaceDisclosureRoute("/people");
       cache?.invalidate();
       refuseDisclosure(notice);
@@ -559,10 +516,6 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
   );
   const onRecorded = (_receipt: OperationReceipt) => {
     replaceDisclosureRoute("/people");
-    const operationId = actions.current?.operationId;
-    if (operationId !== null && operationId !== undefined && owner !== null) {
-      setRecorded({ ...owner, operationId });
-    }
     cache?.invalidate();
     invalidate(true);
   };
@@ -586,7 +539,6 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
         invalidate(force);
       },
     },
-    recorded,
   };
 };
 const PeopleEditorPanel = (props: PeoplePanelProps) => {

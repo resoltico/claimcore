@@ -714,6 +714,16 @@ let tests =
                     RegionRole.Details
                     "Technical metadata is last"
 
+                match (List.last screen.Regions).Content with
+                | RegionContent.Entries entries ->
+                    let operation = entries |> List.find (fun entry -> entry.Key = "operationId")
+
+                    Expect.equal
+                        operation.Recorded
+                        (Some true)
+                        "The receipt's known operation identity remains present"
+                | _ -> failtest "Receipt details contain the operation identity"
+
                 Expect.isTrue (Screen.valid screen.Regions) "Role uniqueness holds"
 
                 for region in screen.Regions do

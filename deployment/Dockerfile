@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM node AS identity-theme
 WORKDIR /source
 COPY --from=source /source/web/src/theme/tokens.json ./web/src/theme/tokens.json
+COPY --from=source /source/web/public/brand.svg ./web/public/brand.svg
 COPY --from=source /source/deployment/identity-theme/ ./deployment/identity-theme/
 RUN node deployment/identity-theme/generate.mjs /theme \
     && find /theme -type d -exec chmod 0755 {} + \

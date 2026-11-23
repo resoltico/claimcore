@@ -128,7 +128,7 @@ it("renders Core review content and requires its exact confirmation target while
     </OperationReview>,
   );
   expect(screen.getByText("Core reviewed caption Ω")).toBeVisible();
-  expect(screen.getByText(operationId)).not.toBeVisible();
+  expect(screen.queryByText(operationId)).not.toBeInTheDocument();
   const submit = view.container.querySelector<HTMLButtonElement>("[data-confirm-operation]")!;
   expect(submit).toBeDisabled();
   await userEvent.type(screen.getByRole("textbox"), "WRONG-REFERENCE");

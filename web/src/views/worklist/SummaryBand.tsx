@@ -1,3 +1,4 @@
+import { Page } from "../../ui/Page";
 import { apiEndpoints } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import type { ApiResult, EndpointOutcome } from "../../protocol/types";
@@ -203,10 +204,14 @@ export const SummaryBand = ({
   const casesPath = worklist === "/cases" ? worklistPath({ view: "ALL" }) : worklist;
 
   return (
-    <section className="summary-band" aria-label={p.text("ui.caseReport")}>
-      <h1 ref={title} tabIndex={-1}>
-        {p.text("ui.caseReport")}
-      </h1>
+    <Page
+      className="summary-band"
+      as="section"
+      labelledBy="case-report-title"
+      id="case-report-title"
+      title={p.text("ui.caseReport")}
+      headingRef={title}
+    >
       <Select
         label={renderCatalogKey(p, grouping.labelId)}
         options={options}
@@ -236,7 +241,7 @@ export const SummaryBand = ({
         exportAvailable={exportAvailable}
         title={title}
       />
-    </section>
+    </Page>
   );
 };
 

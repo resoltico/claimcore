@@ -8,15 +8,18 @@ const presenterFor = async (page: Page) =>
   );
 
 export const acceptanceBanner = (page: Page) =>
-  page.locator('.case-detail .status-banner[data-tone="success"]');
+  page.locator('.page > .status-banner[data-tone="success"]');
 
 export const openAcceptedReceipt = async (page: Page) => {
   const p = await presenterFor(page);
   const receipt = page.getByRole("dialog", { name: p.text("ui.viewReceipt") });
   if (!(await receipt.isVisible())) {
-    await acceptanceBanner(page)
-      .getByRole("button", { name: p.text("ui.viewReceipt") })
-      .click();
+    const button = acceptanceBanner(page).getByRole("button", { name: p.text("ui.viewReceipt") });
+    await expect(button).toBeVisible();
+    await button.evaluate((element) => {
+      element.scrollIntoView({ block: "center" });
+    });
+    await button.click();
   }
   return receipt;
 };

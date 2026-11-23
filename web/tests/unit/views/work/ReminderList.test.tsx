@@ -8,13 +8,7 @@ import { humanReadHttpReply as response } from "../../../support/human-read-repl
 
 import { ReminderList } from "../../../../src/views/work/ReminderList";
 import { preferenceKey } from "../../../../src/presentation/preferences";
-import type {
-  HumanDocument,
-  RegionRow,
-  PresentedValue,
-  WorkDateBasis,
-  Region,
-} from "@contracts/client";
+import type { HumanDocument, RegionRow, PresentedValue, WorkDateBasis } from "@contracts/client";
 
 const basis = {
   observedAt: "2026-11-03T08:00:00.000000Z",
@@ -50,31 +44,10 @@ const rows = [
   row(2, { kind: "CODE", vocabulary: "reminderDue", token: "TODAY" }),
   row(3, { kind: "CODE", vocabulary: "reminderDue", token: "UPCOMING" }),
 ];
-const observation = (date: string, zone: string): Region => ({
-  role: "DETAILS",
-  content: {
-    kind: "ENTRIES",
-    entries: [
-      {
-        key: "date",
-        labelId: "label.businessDate",
-        prominence: "DETAIL",
-        value: { kind: "DATE", value: date },
-      },
-      {
-        key: "zone",
-        labelId: "label.timeZone",
-        prominence: "DETAIL",
-        value: { kind: "TEXT", value: zone },
-      },
-    ],
-  },
-});
 const documentFor = (
   items: ReadonlyArray<AuthoredReminder>,
   nextCursor: string | null = null,
   observed: WorkDateBasis = basis,
-  details: Region = observation("2026-11-03", "Etc/UTC"),
 ): HumanDocument => ({
   screen: {
     regions: [
@@ -117,7 +90,6 @@ const documentFor = (
           rows: items.map((item) => item.row),
         },
       },
-      details,
     ],
   },
   subject: { kind: "LIST" },
@@ -182,8 +154,6 @@ for (const [language, labels, pending] of [
           );
         }
       }
-      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("03/11/2026");
-      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("Etc/UTC");
       expect(view.container.querySelectorAll(".reminder-list a")).toHaveLength(3);
     });
   }
@@ -225,7 +195,6 @@ it("retains each loaded row's server timing and date basis when a later page use
               businessDate: "2026-11-04",
               timeZone: "Europe/Riga",
             },
-            observation("2026-11-04", "Europe/Riga"),
           ),
         ),
       ),
@@ -238,12 +207,8 @@ it("retains each loaded row's server timing and date basis when a later page use
   expect(items).toHaveLength(2);
   expect(items[0]).toHaveTextContent("Today");
   expect(items[1]).toHaveTextContent("Overdue");
-  const observations = view.container.querySelectorAll("[data-region=DETAILS]");
-  expect(observations[0]).toHaveTextContent("03/11/2026");
-  expect(observations[0]).toHaveTextContent("Etc/UTC");
-  expect(observations[0]).not.toHaveTextContent("Europe/Riga");
-  expect(observations[1]).toHaveTextContent("04/11/2026");
-  expect(observations[1]).toHaveTextContent("Europe/Riga");
+  expect(view.container.querySelectorAll("[data-region=DETAILS]")).toHaveLength(0);
+  expect(view.container.querySelector(".list-footer-update")).toHaveTextContent("Updated");
 });
 
 const actionRow = (): AuthoredReminder => {
@@ -275,7 +240,7 @@ it("delegates the supplied completion control without previewing or writing in t
       .mockResolvedValue(response("reminder.list", documentFor([item]))),
   );
   render(<ReminderList filter={{}} onAct={onAct} />);
-  await userEvent.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await userEvent.click(await screen.findByRole("button", { name: /^Complete reminder:/u }));
   expect(onAct).toHaveBeenCalledExactlyOnceWith(item.row.actions![0], expect.any(String), true);
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
@@ -289,5 +254,5 @@ it("renders no actionable control without a coordinator", async () => {
   );
   render(<ReminderList filter={{}} />);
   await screen.findByText("Action 7");
-  expect(screen.queryByRole("button", { name: "Complete reminder" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Complete reminder:/u })).toBeNull();
 });

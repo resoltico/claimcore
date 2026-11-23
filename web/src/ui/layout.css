@@ -1,6 +1,10 @@
 @layer layout {
   html:root {
     --gutter: var(--space-6);
+    --page-gap: var(--space-4);
+    --toolbar-page-margin: var(--space-3);
+    --toolbar-filter-min: 12rem;
+    --dialog-overlay-top: var(--space-4);
     --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
@@ -28,12 +32,20 @@
   }
 
   @media (width < 40rem) {
-    .view-tabs {
-      --view-tabs-wrap: nowrap;
+    .view-tabs-bar {
+      --view-tabs-bar-wrap: nowrap;
       overflow-x: auto;
       padding: calc(var(--focus-width) + var(--focus-offset));
       scroll-padding-inline: calc(var(--focus-width) + var(--focus-offset));
     }
+    .view-tabs {
+      --view-tabs-wrap: nowrap;
+      --view-tabs-max-width: none;
+      --view-tabs-margin: 0;
+      flex: 0 0 auto;
+      margin-block: 0;
+    }
+    .view-tabs-bar > .ui-button,
     .view-tab {
       flex: 0 0 auto;
       white-space: nowrap;
@@ -122,7 +134,7 @@
     }
     .correction-current dd {
       margin-inline: 0;
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
     }
     .people-workspace {
       grid-template-columns: minmax(0, 1fr);
@@ -195,6 +207,10 @@
     font-size: var(--text-sm);
   }
 
+  .workspace-main:has(.case-detail) {
+    padding-block-start: var(--space-3);
+  }
+
   .workspace-main {
     min-inline-size: 0;
     padding: var(--space-main-top) var(--gutter) var(--space-6);
@@ -238,13 +254,15 @@
     }
 
     .workspace-main {
-      margin-block: var(--shell-top-height) var(--shell-bottom-height);
+      --page-gap: var(--space-2);
+      --toolbar-page-margin: 0;
+      --toolbar-filter-min: 0;
+      margin-block-end: var(--shell-bottom-height);
       padding-block-start: var(--space-4);
     }
 
     .phone-app-bar,
     .workspace-mobile-tabs {
-      position: fixed;
       z-index: var(--layer-dialog);
       inset-inline: 0;
       display: flex;
@@ -255,6 +273,7 @@
     }
 
     .phone-app-bar {
+      position: sticky;
       inset-block-start: 0;
       min-block-size: var(--shell-top-height);
       border-block-end: var(--border-width) solid var(--border-subtle);
@@ -263,13 +282,26 @@
     .phone-app-bar > span {
       flex: 1;
       min-inline-size: 0;
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
       font-weight: 650;
     }
 
+    .phone-primary-action {
+      min-inline-size: 0;
+      max-inline-size: 45%;
+    }
+
+    .phone-primary-action button {
+      max-inline-size: 100%;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
     .workspace-mobile-tabs {
+      position: fixed;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(max-content, 1fr));
+      overflow-x: auto;
       gap: var(--space-1);
       padding-inline: var(--space-2);
       inset-block-end: 0;
@@ -277,9 +309,14 @@
       border-block-start: var(--border-width) solid var(--border-subtle);
     }
 
+    .phone-app-bar .shell-find {
+      flex: 0 0 var(--control-target);
+      padding-inline: 0;
+      justify-content: center;
+    }
+
     .workspace-mobile-tabs .shell-link-label {
-      min-inline-size: 0;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
     }
 
     .workspace-mobile-tabs .shell-count {
@@ -306,19 +343,71 @@
 }
 
 @layer layout {
+  @container data-table (width >= 64rem) {
+    .data-table table {
+      --table-chip-list-min-inline-size: 14.75rem;
+      font-family: Arial, "Liberation Sans", var(--font-body);
+    }
+
+    .data-table :is(td, th) {
+      padding-inline: calc(var(--space-1) / 2);
+    }
+
+    .data-table td {
+      font-size: var(--text-xs);
+    }
+
+    .data-table .actor-identity {
+      gap: var(--space-1);
+    }
+
+    .data-table .actor-identity .person-avatar {
+      inline-size: var(--space-5);
+      block-size: var(--space-5);
+    }
+  }
+
+  @container data-table (width < 64rem) {
+    .data-table table {
+      --table-layout: medium;
+    }
+    .data-table :is(td, th)[data-prominence="SECONDARY"] {
+      --secondary-cell-display: none;
+    }
+
+    .data-table .data-table-stack {
+      --stack-display: block;
+    }
+  }
+
   @container data-table (width < 30rem) {
     .data-table table,
-    .data-table tbody,
-    .data-table tbody tr,
-    .data-table tbody :is(td, th) {
+    .data-table tbody {
       display: block;
     }
 
     .data-table table {
+      --table-layout: narrow;
       --table-row-size: auto;
-      --table-reference-limit: 100%;
-      --table-cell-overflow: visible;
-      --table-cell-label-display: block;
+      --table-reference-wrap: normal;
+    }
+
+    .data-table tbody tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      block-size: auto;
+    }
+
+    .data-table tbody tr.table-group {
+      padding-block: var(--space-1);
+    }
+
+    .data-table .data-table-menu,
+    .data-table .data-table-recommended {
+      position: relative;
     }
 
     .data-table thead {
@@ -329,36 +418,45 @@
       clip-path: inset(50%);
     }
 
-    .data-table td[data-prominence="PRIMARY"] {
-      display: grid;
-      align-items: baseline;
-      gap: var(--space-1) var(--space-2);
-      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    .data-table td[data-prominence="PRIMARY"],
+    .data-table .data-table-controls,
+    .data-table .data-table-actions {
+      display: contents;
+      --table-controls-display: contents;
     }
 
-    .data-table-stack {
-      grid-column: 1 / -1;
+    .data-table td[data-prominence="PRIMARY"]:not([data-present]) {
+      display: none;
     }
 
-    .data-table-controls {
-      position: relative;
+    .data-table td[data-prominence="PRIMARY"] > .data-table-cell {
+      order: 0;
+      flex: 0 1 auto;
+      max-inline-size: 100%;
     }
-  }
 
-  @container data-table (width >= 48rem) {
-    .data-table-cell {
-      --table-cell-limit: calc(var(--size-row) + var(--space-1));
-    }
-  }
-
-  @container data-table (width < 48rem) {
-    .data-table :is(td, th)[data-prominence="SECONDARY"] {
-      --secondary-cell-display: none;
+    .data-table .data-table-menu {
+      order: 1;
+      margin-inline-start: auto;
     }
 
     .data-table .data-table-stack {
-      --stack-display: block;
+      order: 2;
+      flex: 0 0 100%;
+      margin-block: 0;
     }
+
+    .data-table .data-table-recommended {
+      order: 3;
+    }
+
+    .data-table .identifier-value {
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .ui-dialog .identifier-value {
+    overflow-wrap: anywhere;
   }
 }
 
@@ -404,5 +502,34 @@
       attr(data-cc-left px, auto);
     --cc-overlay-height: attr(data-cc-max-height px, 100dvh);
     max-block-size: min(var(--cc-overlay-height), var(--select-max-block-size, 100%));
+  }
+}
+
+@layer layout {
+  @media (width < 40rem) {
+    .region-timeline > li {
+      --timeline-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@layer layout {
+  @media (width < 40rem) {
+    .workspace-main .page-title {
+      position: absolute;
+      inset-block-start: 0;
+      inline-size: var(--border-width);
+      block-size: var(--border-width);
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}
+
+@layer layout {
+  .ui-dialog-overlay--top {
+    --dialog-overlay-alignment: start center;
+    --dialog-overlay-top: 12vh;
   }
 }

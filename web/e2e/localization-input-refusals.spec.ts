@@ -122,7 +122,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expect(
         name === "incidentDate" ? field.locator('input[type="hidden"]') : control,
       ).toHaveValue(value);
-      await expect(page.locator("section.receipt")).toHaveCount(0);
+      await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
       await page.locator('input[data-field-name="claimedAmount"]').fill("1200.50");
       await fillBusinessField(page, "incidentDate", "2026-09-01");
       await fillBusinessField(page, "claimedCurrency", "EUR");

@@ -123,6 +123,8 @@ case work, payment entry and stewardship rights. ClaimCore roles remain separate
 
 ## Record a case and find its row
 
+On a phone, use the plus button in the app bar to open a case. After recording it, use **View receipt** in the feedback banner.
+
 Choose **Open a case** and enter a synthetic reference. Add optional facts and party rows. Use observed dates at or before the current business date, for example:
 
 | Input | Value |

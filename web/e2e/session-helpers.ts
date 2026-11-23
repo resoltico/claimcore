@@ -552,12 +552,12 @@ export const signOut = async (page: Page, button: Locator): Promise<Response> =>
       const url = new URL(reply.url());
       return url.origin === landing.origin && url.pathname === "/api/session.logout";
     }),
-    page.waitForEvent("framenavigated", {
-      predicate: (frame) => frame === page.mainFrame() && frame.url() === landing.href,
-      timeout: loginNavigationTimeout,
-    }),
     button.click(),
   ]);
+  await page.waitForURL(landing.href, {
+    waitUntil: "domcontentloaded",
+    timeout: loginNavigationTimeout,
+  });
   expect(response.status()).toBe(200);
   return response;
 };

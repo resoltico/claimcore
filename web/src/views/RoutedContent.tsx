@@ -1,3 +1,5 @@
+import { Page } from "../ui/Page";
+import { renderCatalogKey } from "../presentation/messages";
 import {
   apiEndpoints,
   type ServiceResponse,
@@ -71,15 +73,14 @@ const RecoveryPanel = ({ operationId }: { operationId: string }) => (
 const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void }) => {
   const p = usePresentation();
   return (
-    <section>
-      <h1>{p.text("label.caseDetail")}</h1>
+    <Page id="case-editor-error-title" title={p.text("label.caseDetail")}>
       <p role="alert">
         <NoticeView value={message} />
       </p>
       <button type="button" onClick={retry}>
         {p.text("ui.tryAgain")}
       </button>
-    </section>
+    </Page>
   );
 };
 const selectAct = (current: CurrentCase, action: Affordance): void => {
@@ -252,6 +253,7 @@ const RoutedEditor = (
     onBack: () => void;
   },
 ) => {
+  const p = usePresentation();
   const [opened, setOpened] = useState<{
     current: CurrentCase;
     action: OperationAffordance;
@@ -262,28 +264,30 @@ const RoutedEditor = (
   return opened === null ? (
     <EditorBootstrap {...props} onReady={setOpened} />
   ) : (
-    <OperationEditor
-      definition={productMetadata}
-      current={opened.current}
-      initialAct={props.route.act}
-      affordance={opened.action}
-      {...(opened.action.binding.kind === "CASE" ? { binding: opened.action.binding } : {})}
-      {...(Object.keys(props.route.binding ?? {}).some((key) => key !== "kind")
-        ? {
-            autoReview: true,
-          }
-        : {})}
-      disclosureAvailable={props.disclosureAvailable}
-      onClose={() => {
-        navigate(
-          props.route.target.kind === "ID"
-            ? casePath(props.route.target.caseId)
-            : referencePath(props.route.target.caseReference),
-        );
-      }}
-      onCommitted={props.committed}
-      onMutationLockChange={props.setLocked}
-    />
+    <Page id="case-editor-page-title" title={renderCatalogKey(p, opened.action.labelId)}>
+      <OperationEditor
+        definition={productMetadata}
+        current={opened.current}
+        initialAct={props.route.act}
+        affordance={opened.action}
+        {...(opened.action.binding.kind === "CASE" ? { binding: opened.action.binding } : {})}
+        {...(Object.keys(props.route.binding ?? {}).some((key) => key !== "kind")
+          ? {
+              autoReview: true,
+            }
+          : {})}
+        disclosureAvailable={props.disclosureAvailable}
+        onClose={() => {
+          navigate(
+            props.route.target.kind === "ID"
+              ? casePath(props.route.target.caseId)
+              : referencePath(props.route.target.caseReference),
+          );
+        }}
+        onCommitted={props.committed}
+        onMutationLockChange={props.setLocked}
+      />
+    </Page>
   );
 };
 
@@ -293,6 +297,7 @@ const NewCaseEditor = ({
   disclosureAvailable,
   onClose,
 }: EditorCallbacks & { disclosureAvailable: boolean; onClose: () => void }) => {
+  const p = usePresentation();
   const action = useCaseCreationControl();
   const [initial, setInitial] = useState<ActKind | null>(null);
   if (initial === null && action !== undefined && isCaseAct(action.task)) {
@@ -301,15 +306,17 @@ const NewCaseEditor = ({
   return initial === null ? (
     <MissingPage />
   ) : (
-    <OperationEditor
-      definition={productMetadata}
-      current={null}
-      initialAct={initial}
-      disclosureAvailable={disclosureAvailable && action?.task === initial}
-      onClose={onClose}
-      onCommitted={committed}
-      onMutationLockChange={setLocked}
-    />
+    <Page id="new-case-editor-page-title" title={p.actLabel(initial)}>
+      <OperationEditor
+        definition={productMetadata}
+        current={null}
+        initialAct={initial}
+        disclosureAvailable={disclosureAvailable && action?.task === initial}
+        onClose={onClose}
+        onCommitted={committed}
+        onMutationLockChange={setLocked}
+      />
+    </Page>
   );
 };
 
@@ -348,7 +355,6 @@ export const RoutedContent = ({
   caseAvailable = true,
   caseAuthoringAvailable = caseAvailable,
   caseNavigation,
-  caseFeedback,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
@@ -356,7 +362,6 @@ export const RoutedContent = ({
   caseAvailable?: boolean;
   caseAuthoringAvailable?: boolean;
   caseNavigation: ReturnType<typeof useCaseNavigation>;
-  caseFeedback?: React.ReactNode;
 }) => {
   const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
@@ -375,7 +380,6 @@ export const RoutedContent = ({
       return (
         <CaseDetail
           target={route.target}
-          feedback={caseFeedback}
           reloadSignal={refresh}
           disclosureAvailable={caseAvailable}
           authoringAvailable={caseAuthoringAvailable}

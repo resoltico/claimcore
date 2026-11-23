@@ -1,7 +1,13 @@
+import { ComboBox, type PickerItem } from "../ui/ComboBox";
+import { apiEndpoints } from "../api/service";
+import { actorName } from "../presentation/actorName";
+import { personLinkActorId } from "../routing/coreLinks";
+import { isCanonicalUuid } from "../protocol/uuid";
+import { ChoiceControl } from "../ui/TextField";
 import { allActions } from "../operation/affordances";
-import { FieldRule } from "../ui/Field";
+import { FieldGroup, FieldRule } from "../ui/Field";
 import { PresentedValue } from "./PresentedValue";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
@@ -15,7 +21,7 @@ import type {
 } from "@contracts/client";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
-import type { TypedFieldProps } from "./CatalogDate";
+import type { TypedFieldProps } from "../ui/DateField";
 
 type Props = TypedFieldProps & {
   current: CurrentCase;
@@ -53,7 +59,7 @@ const AssigneeChoices = ({
         return typeof actorId === "string" ? (
           <li key={actorId}>
             <label>
-              <input
+              <ChoiceControl
                 type="radio"
                 name={props.inputName}
                 value={actorId}
@@ -136,62 +142,127 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
   );
   const page = discoveredPage(result.value);
   return (
-    <fieldset
-      id={`field-${props.inputName}`}
-      className="assignee-input"
-      disabled={props.disabled}
-      aria-describedby={props.field.ruleId === null ? hintId : `${hintId} ${ruleId}`}
-    >
-      <legend>{p.fieldLabel(props.field.name)}</legend>
-      <p id={hintId}>{p.hint(props.field)}</p>
-      <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
-      {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {result.message === null ? null : (
-        <p role="alert">
-          <NoticeView value={result.message} />
-        </p>
-      )}
-      {page === null ? null : (
-        <>
-          <AssigneeChoices {...props} page={page} seedInput={seedInput} />
-          <div className="actions">
-            <button
-              type="button"
-              disabled={result.loading || cursors.length === 0}
-              onClick={() => {
-                setPaging({ owner, cursors: cursors.slice(0, -1) });
-              }}
-            >
-              {p.text("ui.previousAccounts")}
-            </button>
-            <button
-              type="button"
-              disabled={result.loading || page.nextCursor === null}
-              onClick={() => {
-                if (page.nextCursor !== null) {
-                  setPaging({ owner, cursors: [...cursors, page.nextCursor] });
-                }
-              }}
-            >
-              {p.text("ui.nextAccounts")}
-            </button>
-          </div>
-        </>
-      )}
-      <button type="button" disabled={result.loading} onClick={result.reload}>
-        {p.text("ui.refreshAccounts")}
-      </button>
-      <FieldRule
-        id={ruleId}
-        name={props.field.name}
-        ruleId={props.field.ruleId}
-        invalid={props.error !== undefined}
-      />
-      {props.error === undefined ? null : (
-        <p role="alert">
-          <NoticeView value={props.error} />
-        </p>
-      )}
-    </fieldset>
+    <FieldGroup>
+      <fieldset
+        id={`field-${props.inputName}`}
+        className="assignee-input"
+        disabled={props.disabled}
+        aria-describedby={props.field.ruleId === null ? hintId : `${hintId} ${ruleId}`}
+      >
+        <legend>{p.fieldLabel(props.field.name)}</legend>
+        <p id={hintId}>{p.hint(props.field)}</p>
+        <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
+        {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+        {result.message === null ? null : (
+          <p role="alert">
+            <NoticeView value={result.message} />
+          </p>
+        )}
+        {page === null ? null : (
+          <>
+            <AssigneeChoices {...props} page={page} seedInput={seedInput} />
+            <div className="actions">
+              <button
+                type="button"
+                disabled={result.loading || cursors.length === 0}
+                onClick={() => {
+                  setPaging({ owner, cursors: cursors.slice(0, -1) });
+                }}
+              >
+                {p.text("ui.previousAccounts")}
+              </button>
+              <button
+                type="button"
+                disabled={result.loading || page.nextCursor === null}
+                onClick={() => {
+                  if (page.nextCursor !== null) {
+                    setPaging({ owner, cursors: [...cursors, page.nextCursor] });
+                  }
+                }}
+              >
+                {p.text("ui.nextAccounts")}
+              </button>
+            </div>
+          </>
+        )}
+        <button type="button" disabled={result.loading} onClick={result.reload}>
+          {p.text("ui.refreshAccounts")}
+        </button>
+        <FieldRule
+          id={ruleId}
+          name={props.field.name}
+          ruleId={props.field.ruleId}
+          invalid={props.error !== undefined}
+        />
+        {props.error === undefined ? null : (
+          <p role="alert">
+            <NoticeView value={props.error} />
+          </p>
+        )}
+      </fieldset>
+    </FieldGroup>
+  );
+};
+
+const directoryChoices = (
+  document: HumanDocument,
+  p: ReturnType<typeof usePresentation>,
+): PickerItem[] =>
+  document.screen.regions.flatMap(({ content }) => {
+    if (content.kind !== "TABLE") {
+      return [];
+    }
+    return content.rows.flatMap((row) => {
+      const actor = row.values.find((value) => value.kind === "ACTOR");
+      const id = row.link === undefined ? undefined : personLinkActorId(row.link);
+      return actor?.kind === "ACTOR" && id !== undefined
+        ? [{ id, label: actorName(p, actor.value) }]
+        : [];
+    });
+  });
+
+export const DirectoryPersonPicker = ({
+  selected,
+  change,
+}: {
+  selected: string;
+  change: (id: string) => void;
+}) => {
+  const p = usePresentation();
+  const [draft, setDraft] = useState(selected);
+  const [query, setQuery] = useState("");
+  const exact = draft.trim().toLowerCase();
+  const isExact = isCanonicalUuid(exact);
+  useEffect(() => {
+    if (draft.trim().length < 2 || isExact) {
+      return;
+    }
+    const delay = window.setTimeout(() => {
+      setQuery(draft.trim());
+    }, 250);
+    return () => {
+      window.clearTimeout(delay);
+    };
+  }, [draft, isExact]);
+  const searching = query === draft.trim() && query !== "" && !isExact;
+  const list = useEndpoint(apiEndpoints.peopleList, { text: query, limit: 8 }, searching);
+  const document = list.value?.outcome.kind === "SUCCEEDED" ? list.value.outcome.document : null;
+  const choices: PickerItem[] = searching && document !== null ? directoryChoices(document, p) : [];
+  if (isExact) {
+    choices.push({ id: exact, label: p.text("label.useAccountId", { id: exact }) });
+  }
+  const clearOrUseId = () => {
+    change(isExact ? exact : "");
+  };
+  return (
+    <ComboBox
+      id="history-actor"
+      label={p.text("label.person")}
+      value={draft}
+      items={choices}
+      onChange={setDraft}
+      onSelect={change}
+      onSubmit={isExact || draft.trim() === "" ? clearOrUseId : undefined}
+    />
   );
 };

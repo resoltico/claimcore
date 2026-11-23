@@ -1,5 +1,5 @@
 import { Menu, MenuItem, MenuSection, MenuTrigger } from "react-aria-components/Menu";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { Header } from "react-aria-components/Header";
 import { Popover } from "react-aria-components/ComboBox";
 import { Button } from "./Button";
@@ -9,8 +9,35 @@ type Item = {
   id: string;
   label: string;
   disabled?: boolean;
+  description?: ReactNode;
   consequence?: "ROUTINE" | "STEWARDSHIP" | "IRREVERSIBLE" | null;
   select: () => void;
+};
+
+const ActionMenuItem = ({ item }: { item: Item }) => {
+  const description = useId();
+  const hasDescription = item.description !== null && item.description !== undefined;
+  return (
+    <MenuItem
+      key={item.id}
+      id={item.id}
+      className="action-menu-item"
+      textValue={item.label}
+      aria-label={item.label}
+      aria-describedby={hasDescription ? description : undefined}
+      isDisabled={item.disabled ?? false}
+      data-consequence={item.consequence ?? undefined}
+      data-menu-item={item.id}
+      onAction={item.select}
+    >
+      <span>{item.label}</span>
+      {hasDescription ? (
+        <span id={description} className="action-menu-description">
+          {item.description}
+        </span>
+      ) : null}
+    </MenuItem>
+  );
 };
 
 export const ActionMenu = ({
@@ -21,6 +48,8 @@ export const ActionMenu = ({
   trigger,
   id,
   disabled = false,
+  variant = "quiet",
+  compact = true,
 }: {
   label: string;
   items: ReadonlyArray<Item>;
@@ -29,6 +58,8 @@ export const ActionMenu = ({
   trigger?: ReactNode;
   id?: string;
   disabled?: boolean;
+  variant?: "primary" | "secondary" | "quiet";
+  compact?: boolean;
 }) => {
   const routine = items.filter(
     ({ consequence }) => consequence !== "STEWARDSHIP" && consequence !== "IRREVERSIBLE",
@@ -36,26 +67,12 @@ export const ActionMenu = ({
   const stewardship = items.filter(
     ({ consequence }) => consequence === "STEWARDSHIP" || consequence === "IRREVERSIBLE",
   );
-  const renderItem = (item: Item) => (
-    <MenuItem
-      key={item.id}
-      id={item.id}
-      className="action-menu-item"
-      textValue={item.label}
-      isDisabled={item.disabled ?? false}
-      data-consequence={item.consequence ?? undefined}
-      data-menu-item={item.id}
-      onAction={item.select}
-    >
-      {item.label}
-    </MenuItem>
-  );
   return (
     <MenuTrigger>
       <Button
         {...(id === undefined ? {} : { id })}
-        variant="quiet"
-        compact
+        variant={variant}
+        compact={compact}
         aria-label={label}
         isDisabled={disabled}
       >
@@ -63,11 +80,15 @@ export const ActionMenu = ({
       </Button>
       <Popover className="action-menu-popover" placement="bottom end">
         <Menu className="action-menu" aria-label={label}>
-          {routine.map(renderItem)}
+          {routine.map((item) => (
+            <ActionMenuItem key={item.id} item={item} />
+          ))}
           {stewardship.length === 0 ? null : (
             <MenuSection className="action-menu-stewardship">
               {stewardshipLabel === undefined ? null : <Header>{stewardshipLabel}</Header>}
-              {stewardship.map(renderItem)}
+              {stewardship.map((item) => (
+                <ActionMenuItem key={item.id} item={item} />
+              ))}
             </MenuSection>
           )}
         </Menu>

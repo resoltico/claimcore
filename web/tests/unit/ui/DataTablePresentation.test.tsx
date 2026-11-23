@@ -1,10 +1,11 @@
 import { within } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { PresentedValue } from "../../../src/components/PresentedValue";
 import type { RegionContent } from "@contracts/client";
 import { DataTable } from "../../../src/ui/DataTable";
 import { render, screen } from "../../support/presentation-test-support";
+import { operationAffordance } from "../../support/affordances.fixtures";
 
 const view: Extract<RegionContent, { kind: "TABLE" }> = {
   kind: "TABLE",
@@ -57,9 +58,38 @@ it("lists primary and secondary cells, preserves the absent value label and omit
   expect(screen.getAllByRole("columnheader")).toHaveLength(3);
   expect(screen.queryByText("unlisted-revision")).not.toBeInTheDocument();
   const stacked = container.querySelector(".data-table-stack");
-  expect(stacked).toHaveTextContent("Due date");
-  expect(stacked).toHaveTextContent("Not recorded");
-  expect(stacked?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
+  expect(stacked?.textContent).toBe("");
+  const due = container.querySelector('[data-column="due"]');
+  expect(due).toHaveTextContent("Not recorded");
+  expect(due?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
+});
+
+it("uses the supplied empty message for a table section with no recorded entries", () => {
+  render(
+    <DataTable
+      view={{
+        ...view,
+        sections: [
+          {
+            titleId: "label.paymentDecision",
+            emptyId: "empty.paymentDecision",
+            entries: [
+              {
+                key: "paymentDecisionDate",
+                labelId: "field.paymentDecisionDate.label",
+                prominence: "PRIMARY",
+                value: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                recorded: false,
+              },
+            ],
+          },
+        ],
+      }}
+    />,
+  );
+  const decision = within(screen.getByRole("group", { name: "Payment decision" }));
+  expect(decision.getByText("No payment decision yet")).toBeVisible();
+  expect(decision.queryByText("Not recorded")).not.toBeInTheDocument();
 });
 
 it("shows the selected row's details in a dialog and removes them when the read withdraws the row", async () => {
@@ -73,6 +103,38 @@ it("shows the selected row's details in a dialog and removes them when the read 
   rerender(<DataTable view={{ ...view, rows: [] }} />);
   expect(screen.queryByText("Authorized retained row detail")).not.toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("keeps blocked row actions in the menu with visible and accessible core advice", async () => {
+  const user = userEvent.setup();
+  const onAction = vi.fn();
+  const binding = {
+    kind: "CASE",
+    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    expectedRevision: 1,
+  } as const;
+  const action = operationAffordance("case.close", binding);
+  const blocked = {
+    ...action,
+    blocked: {
+      action: "ASK_FOR_ACCESS",
+      message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+    },
+  } as const;
+  const row = {
+    ...view.rows[0]!,
+    actions: [blocked, operationAffordance("case.decide", binding)],
+  };
+  render(<DataTable view={{ ...view, rows: [row] }} onAction={onAction} />);
+  await user.click(screen.getByRole("button", { name: "Actions for CASE-1" }));
+  const close = screen.getByRole("menuitem", { name: "Close the case" });
+  const advice = "This item does not exist, or you do not have access to it.";
+  expect(close).toHaveAttribute("aria-disabled", "true");
+  expect(close).toHaveAccessibleDescription(advice);
+  expect(within(close).getByText(advice)).toBeVisible();
+  expect(screen.getAllByRole("menuitem")).toHaveLength(3);
+  await user.click(close);
+  expect(onAction).not.toHaveBeenCalled();
 });
 
 it.each([

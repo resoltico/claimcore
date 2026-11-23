@@ -90,7 +90,9 @@ it("follows only the issued cursor, clears refused continuations and retries wit
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} onDisclosureChanged={refused} />);
-  await user.click(await screen.findByRole("button", { name: "Load more" }));
+  const loadMore = await screen.findByRole("button", { name: "Load more" });
+  expect(loadMore.classList.contains("ui-button--secondary")).toBe(true);
+  await user.click(loadMore);
   await screen.findByRole("alert");
   expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({
     target,
@@ -101,7 +103,9 @@ it("follows only the issued cursor, clears refused continuations and retries wit
     view.container.querySelectorAll(".case-timeline-panel .region-timeline > li"),
   ).toHaveLength(0);
   expect(refused).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Try again" }));
+  const retry = screen.getByRole("button", { name: "Try again" });
+  expect(retry.classList.contains("ui-button--secondary")).toBe(true);
+  await user.click(retry);
   await screen.findByText("Timeline recorder");
   expect(JSON.parse(requestText(fetch.mock.calls[2]?.[1]?.body))).toEqual({ target, limit: 50 });
 });

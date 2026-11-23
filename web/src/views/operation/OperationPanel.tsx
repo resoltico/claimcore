@@ -1,3 +1,4 @@
+import { TechnicalDetails } from "../../ui/TechnicalDetails";
 import { useCompact } from "../../hooks/useCompact";
 import { Drawer } from "../../ui/Drawer";
 import { useReviewEntry } from "./useReviewEntry";
@@ -94,10 +95,9 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
           }}
         />
       </h2>
-      <details data-region="DETAILS">
-        <summary>{p.text("label.technicalDetails")}</summary>
+      <TechnicalDetails>
         <PendingMetadata metadata={metadata} />
-      </details>
+      </TechnicalDetails>
       <p>{p.text("ui.retryExactDescription")}</p>
       {notice === null ? null : (
         <p>

@@ -138,7 +138,7 @@ it("represents a completed zero liability with a native range and exact money te
       }}
     />,
   );
-  const meter = screen.getByRole("meter", { name: "Paid" });
+  const meter = screen.getByRole("meter", { name: "Paid 0.00 EUR of 0.00 EUR." });
   expect(meter).toHaveAttribute("value", "1");
   expect(meter).toHaveAttribute("max", "1");
   expect(document.body).toHaveTextContent("Paid 0.00 EUR of 0.00 EUR.");

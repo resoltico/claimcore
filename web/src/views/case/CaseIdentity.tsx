@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { PageTitle } from "../../ui/Page";
+import { usePresentation } from "../../presentation/context";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { PresentedValue as Value, Region } from "@contracts/client";
 import { PresentedValue } from "../../components/PresentedValue";
 import { Entries } from "../../ui/regions/Entries";
@@ -17,6 +19,7 @@ export const CaseIdentity = ({
   requestedReference: string | undefined;
   renderIdentity?: (heading: ReactNode, facts: ReactNode) => ReactNode;
 }) => {
+  const p = usePresentation();
   const entries = region?.content.kind === "ENTRIES" ? region.content.entries : [];
   const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
   const headline = entries.flatMap(({ value }) => (value.kind === "STATE" ? [value] : []));
@@ -35,9 +38,18 @@ export const CaseIdentity = ({
   }
   const heading = (
     <div className="case-title-line">
-      <h1 id="case-detail-title" tabIndex={-1}>
-        <PresentedValue value={title} timeZone={timeZone} />
-      </h1>
+      {renderIdentity === undefined ? (
+        <h2 className="case-context-title">
+          <PresentedValue value={title} timeZone={timeZone} />
+        </h2>
+      ) : (
+        <PageTitle
+          id="case-detail-title"
+          title={title.kind === "REFERENCE" ? title.value : p.text("label.caseDetail")}
+        >
+          <PresentedValue value={title} timeZone={timeZone} />
+        </PageTitle>
+      )}
       <div className="case-header-state">
         <ChipList values={[...headline, ...reasons]} />
       </div>
@@ -56,5 +68,38 @@ export const CaseIdentity = ({
     </div>
   ) : (
     renderIdentity(heading, factsView)
+  );
+};
+
+export const CaseTitleStrip = ({ children }: { children: ReactNode }) => {
+  const title = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useLayoutEffect(() => {
+    const element = title.current;
+    const card = element?.parentElement;
+    if (element === null || card === null || card === undefined) {
+      return;
+    }
+    const observe = () => {
+      const edge = card.getBoundingClientRect().top + card.clientTop;
+      setStuck(element.getBoundingClientRect().top > edge + 1);
+    };
+    observe();
+    window.addEventListener("scroll", observe, { passive: true });
+    window.addEventListener("resize", observe);
+    return () => {
+      window.removeEventListener("scroll", observe);
+      window.removeEventListener("resize", observe);
+    };
+  }, []);
+  return (
+    <div
+      ref={title}
+      className="case-title-sticky"
+      data-region="IDENTITY"
+      data-stuck={stuck || undefined}
+    >
+      {children}
+    </div>
   );
 };

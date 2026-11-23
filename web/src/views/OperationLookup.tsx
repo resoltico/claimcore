@@ -1,3 +1,4 @@
+import { TextField, TextInput } from "../ui/TextField";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { navigate } from "../routing/navigation";
@@ -6,11 +7,9 @@ import { FieldError } from "react-aria-components/FieldError";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
-import { ButtonControl as Button } from "../ui/ButtonControl";
+import { Button } from "../ui/Button";
 import { Form } from "react-aria-components/Form";
-import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
-import { TextField } from "react-aria-components/TextField";
 import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 type OperationLookupProps = {
@@ -58,7 +57,7 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
       >
         <TextField value={operationId} onChange={setOperationId} isInvalid={invalid}>
           <Label>{p.text("ui.exactOperationId")}</Label>
-          <Input ref={input} className="identifier-value" autoComplete="off" dir="ltr" />
+          <TextInput ref={input} className="identifier-value" autoComplete="off" dir="ltr" />
           {!invalid || message === null ? null : (
             <FieldError>
               <NoticeView value={message} />

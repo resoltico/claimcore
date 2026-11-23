@@ -166,7 +166,7 @@ const acceptsOperation = async (): Promise<void> => {
     }),
   ).toBeVisible();
   expect(screen.getByText("Case closed.")).toBeVisible();
-  expect(document.querySelector('.receipt [data-region="DETAILS"]')).not.toHaveAttribute("open");
+  expect(screen.getByRole("button", { name: "Technical details" })).toBeVisible();
   expect(committed).toHaveBeenCalledOnce();
 };
 describe("metadata-driven operation acceptance", () => {

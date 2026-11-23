@@ -403,8 +403,8 @@ it("retries only the accepted receipt read after admission pressure", async () =
     target: { value: "receipt-pressure" },
   });
   fireEvent.click(reviewConfirm());
-  const heading = await screen.findByRole("heading", { name: "Recorded change" });
-  const receipt = heading.closest("section")!;
+  fireEvent.click(await screen.findByRole("button", { name: "View receipt" }));
+  const receipt = await screen.findByRole("dialog", { name: "View receipt" });
   await within(receipt).findByRole("alert");
   const before = reads.mock.calls.length;
   reads.mockResolvedValue({ kind: "outcome", status: 200, value: wireReply("operation.get") });

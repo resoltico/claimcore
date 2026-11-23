@@ -1,3 +1,4 @@
+import { Avatar } from "../ui/Avatar";
 import { actorName } from "../presentation/actorName";
 import {
   type Screen,
@@ -6,7 +7,7 @@ import {
   type PresentedValue as Value,
 } from "@contracts/client";
 import { apiEndpoints } from "../api/service";
-import { useCaseCreationControl, useRequesterContext } from "../hooks/useRequesterContext";
+import { useRequesterContext } from "../hooks/useRequesterContext";
 import { coreLinkPath } from "../routing/coreLinks";
 import { renderCatalogKey } from "../presentation/messages";
 import { useRecovery } from "../recovery/RecoveryContext";
@@ -169,7 +170,11 @@ const ShellAccount = ({
       items={items}
       trigger={
         <span className="shell-account-identity">
-          <Icon name="person" />
+          {identity?.kind === "ACTOR" ? (
+            <Avatar actor={identity.value} showInitials={false} />
+          ) : (
+            <Icon name="person" />
+          )}
           {name === null ? null : <bdi>{name}</bdi>}
         </span>
       }
@@ -185,6 +190,7 @@ export const Shell = ({
   tasks,
   locked,
   phoneActionRef,
+  phoneTitle,
 }: {
   route: Route;
   presentation: Screen | null;
@@ -192,13 +198,13 @@ export const Shell = ({
   views: ReadonlyArray<Link["endpoint"]>;
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
+  phoneTitle?: string | undefined;
   phoneActionRef?: (node: HTMLDivElement | null) => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
   const counts = useNavigationCounts();
   const recovery = useRecovery();
-  const creation = useCaseCreationControl();
   const { logout } = useSessionContext();
   const [findOrigin, setFindOrigin] = useState<Route | null>(null);
   const [moreOrigin, setMoreOrigin] = useState<Route | null>(null);
@@ -229,13 +235,14 @@ export const Shell = ({
     });
   };
   const navigationItems = [
-    { id: "settings", label: p.text("ui.settings"), path: "/settings" },
+    { id: "settings", label: p.text("ui.settings"), path: "/settings", icon: "settings" as const },
     {
       id: "recovery",
       label: p.text("label.recoveryCount", { count: p.integer(recovery.operations.length) }),
       path: "/recovery",
+      icon: "pending" as const,
     },
-    { id: "about", label: p.text("ui.about"), path: aboutPath },
+    { id: "about", label: p.text("ui.about"), path: aboutPath, icon: "info" as const },
   ];
   const accountItems = [
     ...navigationItems.map(({ id, label, path }) => ({
@@ -315,9 +322,7 @@ export const Shell = ({
               });
             }}
           >
-            <span className="product-mark" aria-hidden="true">
-              <Icon name="brand" />
-            </span>
+            <img className="product-mark" src="/brand.svg" alt="" />
             <span className="shell-brand">ClaimCore</span>
           </a>
           {cases ? find(false) : null}
@@ -351,20 +356,8 @@ export const Shell = ({
       {compact ? (
         <>
           <header className="phone-app-bar">
-            <span>{p.text(title)}</span>
+            <span>{phoneTitle ?? p.text(title)}</span>
             {cases ? find(true) : null}
-            {route.screen === "cases" && creation !== undefined ? (
-              <Button
-                isDisabled={locked}
-                compact
-                aria-label={renderCatalogKey(p, creation.labelId)}
-                onPress={() => {
-                  navigate("/cases/new");
-                }}
-              >
-                <Icon name="add" />
-              </Button>
-            ) : null}
             <div className="phone-primary-action" ref={phoneActionRef} />
           </header>
           <nav className="workspace-mobile-tabs" aria-label={p.text("ui.primary")}>
@@ -376,6 +369,7 @@ export const Shell = ({
                 setMoreOrigin(route);
               }}
             >
+              <Icon name="more" />
               {p.text("ui.more")}
             </Button>
           </nav>
@@ -402,11 +396,11 @@ export const Shell = ({
                     });
                   }}
                 >
-                  {item.label}
+                  <Icon name={item.icon} /> {item.label}
                 </a>
               ))}
               <Button variant="quiet" isDisabled={locked} onPress={signOut}>
-                {p.text("ui.signOut")}
+                <Icon name="sign-out" /> {p.text("ui.signOut")}
               </Button>
               <BusinessDate view={presentation} />
             </div>

@@ -53,7 +53,8 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expectAccessible(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
   const meters = page.locator(".case-stage-list meter");
-  await expect(meters).toHaveCount(4);
+  await expect(meters).toHaveCount(1);
+  await expect(meters).toHaveAccessibleName("Opened");
   for (const meter of await meters.all()) {
     await expect(meter).toHaveAccessibleName(/.+/u);
     expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");
@@ -78,7 +79,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expect(page.locator("#kc-page-title")).toBeVisible();
   await expect(page.locator('input[name="username"]')).toBeVisible();
   await expect(page.locator("#case-detail-title")).toHaveCount(0);
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator(".page > .status-banner[data-tone=success]")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);
 });

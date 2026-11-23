@@ -1,3 +1,4 @@
+import { PageTitle } from "../ui/Page";
 import "./missing-page.css";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../presentation/context";
@@ -12,9 +13,7 @@ export const MissingPage = () => {
   }, []);
   return (
     <main className="missing-page">
-      <h1 ref={heading} tabIndex={-1}>
-        {p.text("ui.pageNotFound")}
-      </h1>
+      <PageTitle id="missing-page-title" title={p.text("ui.pageNotFound")} headingRef={heading} />
       <p>{p.text("ui.pageNotFoundDescription")}</p>
       <a
         href="/cases"

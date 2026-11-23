@@ -1,3 +1,5 @@
+import { Section } from "../../ui/Section";
+import { TextArea } from "../../ui/TextArea";
 import { isNarrativeCreationId } from "../../operation/metadata";
 import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance, type OperationAffordance } from "../../operation/affordances";
@@ -57,13 +59,7 @@ const noteCounts = (view: Screen) => {
     total: count?.kind === "COUNT" ? count.value : null,
   };
 };
-const NotesShown = ({ view, shown }: { view: Screen; shown: number }) => {
-  const p = usePresentation();
-  const { total } = noteCounts(view);
-  return total === null ? null : (
-    <p>{p.text("ui.notesShown", { shown: p.integer(shown), total: p.integer(total) })}</p>
-  );
-};
+
 const pageKey = (view: Screen): string => {
   const content = view.regions.find((item) => item.role === "NOTES")?.content;
   return content?.kind === "TABLE" ? (content.rows[0]?.key ?? "empty") : "empty";
@@ -173,10 +169,6 @@ const AllNotes = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <NotesShown
-        view={result.views.at(-1)?.view ?? current.screen}
-        shown={result.views.reduce((count, page) => count + noteCounts(page.view).shown, 0)}
-      />
       {result.cursor === null && result.message === null ? null : (
         <Button
           variant="secondary"
@@ -232,7 +224,6 @@ const NoteDisclosure = ({
         zone={current.basis.observation.timeZone}
         {...(editing ? {} : { onRemove })}
       />
-      <NotesShown view={current.screen} shown={noteCounts(current.screen).shown} />
       {(noteCounts(current.screen).total ?? 0) > noteCounts(current.screen).shown ? (
         <Button
           variant="secondary"
@@ -274,12 +265,13 @@ export const CaseNotes = ({
     return null;
   }
   return (
-    <section
-      className="screen-region case-notes"
+    <Section
+      id={`${id}-title`}
+      className="case-notes"
       data-region="NOTES"
-      aria-labelledby={`${id}-title`}
+      title={renderCatalogKey(p, region.titleId ?? "section.notes.label")}
+      count={region.count}
     >
-      <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
       {current.actions.some(
         (action) => isNarrativeCreationId(action.task) && action.blocked === null,
       ) ? (
@@ -290,7 +282,7 @@ export const CaseNotes = ({
           inert={!authoringAvailable}
         >
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
-          <textarea
+          <TextArea
             id={`${id}-text`}
             rows={1}
             value={text}
@@ -323,6 +315,6 @@ export const CaseNotes = ({
           onDisclosureRefused={onDisclosureRefused}
         />
       ) : null}
-    </section>
+    </Section>
   );
 };

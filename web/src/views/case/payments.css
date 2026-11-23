@@ -45,7 +45,7 @@
   }
   .payment-cards dd {
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .payment-card-actions {
     margin-block-start: var(--space-3);

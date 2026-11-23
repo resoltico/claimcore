@@ -35,8 +35,8 @@ it("renders the supplied nonlinear tracker without deriving completion, dates or
   expect(view.container).toHaveTextContent("31/10/2026");
   expect(view.container).toHaveTextContent("04/11/2026");
   expect(view.container).toHaveTextContent("100.00 USD");
-  expect(view.container.querySelector("li:nth-child(2)")).toHaveTextContent("Not recorded");
-  expect(view.container.querySelector("li:nth-child(3)")).toHaveTextContent("Not recorded");
+  expect(view.container.querySelector("li:nth-child(2)")).not.toHaveTextContent("Not recorded");
+  expect(view.container.querySelector("li:nth-child(3)")).not.toHaveTextContent("Not recorded");
 });
 it("preserves the complete numeric date and exact amount display scale", () => {
   const view = render(

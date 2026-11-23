@@ -285,7 +285,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   expect(await screen.findByRole("heading", { name: "General operation lookup" })).toBeVisible();
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
-  await user.click(await screen.findByText("Technical details", { selector: "summary" }));
+  await user.click(await screen.findByRole("button", { name: "Technical details" }));
   expect(screen.getByText(operationId, { selector: ".identifier-value" })).toBeVisible();
 });
 it("reports a failed list as a request-local error without manufacturing rows", async () => {
@@ -531,7 +531,6 @@ it.each(["clear", "apply"])("%s of the last viewless filter keeps All", async (a
     await user.click(await screen.findByRole("button", { name: "Clear filters" }));
   } else {
     await user.click(await screen.findByRole("button", { name: "More filters (1)" }));
-    await user.click(screen.getByText("Status filter (1)", { selector: "summary" }));
     await user.click(screen.getByRole("checkbox", { name: "Closed" }));
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
   }

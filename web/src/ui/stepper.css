@@ -16,7 +16,7 @@
     min-inline-size: 0;
     color: var(--text-secondary);
     font-size: var(--text-xs);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .case-stage-list > li::before {

@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRoute } from "./routing/useRoute";
 import { MissingPage } from "./views/MissingPage";
-import { usePresentation } from "./presentation/context";
 import { LoginScreen } from "./views/LoginScreen";
 import { Dashboard } from "./views/Dashboard";
 import { useSessionContext } from "./session/SessionContext";
@@ -48,11 +47,6 @@ const SessionContent = () => {
 };
 export const App = () => {
   const route = useRoute();
-  const p = usePresentation();
-  useEffect(() => {
-    document.title =
-      route.screen === "missing" ? `${p.text("ui.pageNotFound")} · ClaimCore` : "ClaimCore";
-  }, [route.screen, p]);
   if (route.screen === "missing") {
     return <MissingPage />;
   }

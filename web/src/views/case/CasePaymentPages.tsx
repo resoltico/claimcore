@@ -7,7 +7,7 @@ import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { Button } from "../../ui/Button";
-import { PaymentRows, PaymentsShown } from "./PaymentRows";
+import { PaymentRows } from "./PaymentRows";
 
 const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.casePayments]) => {
   if (reply.outcome.kind !== "SUCCEEDED" || reply.outcome.document.basis.kind !== "SNAPSHOT") {
@@ -34,12 +34,10 @@ type Handle = Page["items"][number];
 const continuationKey = (page: Page) => `${page.caseId}:${page.revision}`;
 export const CasePaymentPages = ({
   current,
-  total,
   onAction,
   onChanged,
 }: {
   current: CurrentCase;
-  total: number;
   onAction: (action: Affordance) => void;
   onChanged: () => void;
 }) => {
@@ -92,7 +90,6 @@ export const CasePaymentPages = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <PaymentsShown shown={result.items.length} total={total} />
       {result.cursor === null && result.message === null ? null : (
         <Button
           variant="secondary"

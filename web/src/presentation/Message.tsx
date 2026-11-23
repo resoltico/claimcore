@@ -1,3 +1,4 @@
+import { TechnicalDetails } from "../ui/TechnicalDetails";
 import { ScreenView } from "../ui/ScreenView";
 import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { IdentifierValue } from "../components/IdentifierValue";
@@ -43,11 +44,10 @@ export const NoticeView = ({ value }: { value: Notice }) => {
           <span className="recovery-state" data-state="RECORDED">
             {p.text("label.recorded")}
           </span>
-          <details data-region="DETAILS">
-            <summary>{p.text("label.technicalDetails")}</summary>
+          <TechnicalDetails>
             <IdentifierValue value={value.operationId} />
             <CopyValue label={p.fieldLabel("operationId")} value={value.operationId} />
-          </details>
+          </TechnicalDetails>
         </>
       ) : (
         p.notice(value)

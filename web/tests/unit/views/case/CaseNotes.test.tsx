@@ -13,6 +13,7 @@ const id = "10000000-0000-7000-8000-000000000091";
 const supplied: Region = {
   role: "NOTES",
   titleId: "section.notes.label",
+  count: { kind: "notes", value: 7 },
   content: {
     kind: "TABLE",
     sections: [
@@ -103,7 +104,7 @@ it("renders Core note text without history access and binds removal to the suppl
     />,
   );
   expect(screen.getByText("Authoritative supplied note")).toBeVisible();
-  expect(screen.getByText("Shown: 1 of 7")).toBeVisible();
+  expect(screen.getByText("7 notes")).toBeVisible();
   expect(screen.getByText("Supplied author")).toBeVisible();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "More actions" }));

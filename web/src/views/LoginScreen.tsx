@@ -1,3 +1,4 @@
+import { PageTitle } from "../ui/Page";
 import { useEffect, useRef, useState } from "react";
 import { AboutPanel } from "../features/settings/AboutPanel";
 import { recordAutomaticSignIn, resetSignIn, signedOut } from "../routing/signInAttempt";
@@ -49,14 +50,12 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
     <main className="login-shell">
       <section aria-labelledby="login-title" className="login-card">
         <p className="product-name">
-          <span className="product-mark" aria-hidden="true">
-            C
-          </span>{" "}
-          ClaimCore
+          <img className="product-mark" src="/brand.svg" alt="" /> ClaimCore
         </p>
-        <h1 id="login-title">
-          {p.text(hasSignedOut ? "notice.signedOutTitle" : "ui.signInTitle")}
-        </h1>
+        <PageTitle
+          id="login-title"
+          title={p.text(hasSignedOut ? "notice.signedOutTitle" : "ui.signInTitle")}
+        />
         {loopStopped ? <p role="alert">{p.text("notice.signInIncomplete")}</p> : null}
         {message === null ? null : (
           <p className="error" role="alert">

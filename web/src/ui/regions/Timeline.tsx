@@ -1,3 +1,4 @@
+import { EmptyState } from "../EmptyState";
 import { useState } from "react";
 import type { RegionInteraction, RowLink } from "./interaction";
 import type { RegionContent, RegionTimelineEntry } from "@contracts/client";
@@ -55,7 +56,7 @@ export const Timeline = ({
   return (
     <>
       {content.entries.length === 0 && emptyId !== undefined ? (
-        <p>{renderCatalogKey(p, emptyId)}</p>
+        <EmptyState messageId={emptyId} />
       ) : (
         <ol className="region-timeline">
           {content.entries.map((entry) => {
@@ -68,18 +69,24 @@ export const Timeline = ({
                 />
                 <span className="timeline-event">
                   <SuppliedMessage message={entry.summary} timeZone={timeZone} />
-                  <TimelineTarget value={entry.target} link={link} timeZone={timeZone} />
                 </span>
-                <PresentedValue value={entry.who} timeZone={timeZone} />
-                <Button
-                  variant="quiet"
-                  compact
-                  onPress={() => {
-                    setSelectedKey(entry.key);
-                  }}
-                >
-                  {p.text("ui.viewDetails")}
-                </Button>
+                {entry.target === undefined ? null : (
+                  <span className="timeline-subject">
+                    <TimelineTarget value={entry.target} link={link} timeZone={timeZone} />
+                  </span>
+                )}
+                <span className="timeline-actor">
+                  <PresentedValue value={entry.who} timeZone={timeZone} />
+                  <Button
+                    variant="quiet"
+                    compact
+                    onPress={() => {
+                      setSelectedKey(entry.key);
+                    }}
+                  >
+                    {p.text("ui.viewDetails")}
+                  </Button>
+                </span>
               </li>
             );
           })}

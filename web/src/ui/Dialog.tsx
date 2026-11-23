@@ -1,13 +1,18 @@
 import "./dialog.css";
-import { useId, type ReactNode, type RefObject } from "react";
+import { createContext, useId, type ReactNode, type RefObject } from "react";
 import { Dialog as AriaDialog } from "react-aria-components/Dialog";
 import { Popover } from "react-aria-components/ComboBox";
 import { Heading } from "react-aria-components/Heading";
 import { Modal, ModalOverlay } from "react-aria-components/Modal";
+import { Icon } from "./icons";
 import { Button } from "./Button";
+
+export const InsideDialog = createContext(false);
 
 type Props = {
   bodyRef?: (node: HTMLDivElement | null) => void;
+  headingId?: string;
+  closeInHeader?: boolean;
   headingRef?: (node: HTMLElement | null) => void;
   title: ReactNode;
   closeLabel: string;
@@ -20,7 +25,7 @@ type Props = {
   isOpen: boolean;
   isDismissable: boolean;
   onOpenChange: (open: boolean) => void;
-  placement?: "center" | "bottom" | "end";
+  placement?: "center" | "top" | "bottom" | "end";
   className?: string;
   navigationGuard?: boolean;
   anchorRef?: RefObject<HTMLElement | null>;
@@ -53,6 +58,8 @@ export const Dialog = ({
   title,
   bodyRef,
   headingRef,
+  headingId,
+  closeInHeader = false,
   closeLabel,
   description,
   children,
@@ -68,7 +75,8 @@ export const Dialog = ({
   navigationGuard,
   anchorRef,
 }: Props) => {
-  const titleId = useId();
+  const generatedTitleId = useId();
+  const titleId = headingId ?? generatedTitleId;
   const scrollableBody = placement === "end" || anchorRef !== undefined;
   const contents = (
     <AriaDialog
@@ -76,8 +84,8 @@ export const Dialog = ({
       data-navigation-guard={navigationGuard === true ? "" : undefined}
     >
       {({ close }) => (
-        <>
-          <header className="ui-dialog-header">
+        <InsideDialog value>
+          <div className="ui-dialog-header">
             <div className="ui-dialog-heading">
               <div className="ui-dialog-title-group">
                 {titleIcon}
@@ -92,10 +100,15 @@ export const Dialog = ({
                 </Heading>
               </div>
               {headerEnd}
+              {closeInHeader ? (
+                <Button aria-label={closeLabel} variant="quiet" compact onPress={close}>
+                  <Icon name="close" />
+                </Button>
+              ) : null}
             </div>
             {identity}
             {description === undefined || anchorRef !== undefined ? null : <p>{description}</p>}
-          </header>
+          </div>
           <div
             ref={bodyRef}
             className="ui-dialog-body"
@@ -106,10 +119,14 @@ export const Dialog = ({
             {anchorRef !== undefined && description !== undefined ? <p>{description}</p> : null}
             {children}
           </div>
-          <DialogFooter dismissable={isDismissable} label={closeLabel} close={close}>
+          <DialogFooter
+            dismissable={isDismissable && !closeInHeader}
+            label={closeLabel}
+            close={close}
+          >
             {footer}
           </DialogFooter>
-        </>
+        </InsideDialog>
       )}
     </AriaDialog>
   );

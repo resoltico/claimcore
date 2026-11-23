@@ -1,3 +1,5 @@
+import { SearchField } from "../ui/SearchField";
+import { Toolbar } from "../ui/Toolbar";
 import { ListFooter } from "../ui/ListFooter";
 import { apiEndpoints, type ApiResult, type ServiceResponse } from "../api/service";
 import { personLinkActorId } from "../routing/coreLinks";
@@ -6,10 +8,8 @@ import { isTerm } from "../presentation/terms";
 import { ResultPages } from "../ui/ResultPages";
 import { renderCatalogKey } from "../presentation/messages";
 
-import { FieldRule } from "../ui/Field";
 import { Select } from "../ui/Select";
-import { Button } from "../ui/Button";
-import { queryInput, taskInput } from "../protocol/taskCatalog";
+import { queryInput } from "../protocol/taskCatalog";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
 
@@ -114,12 +114,11 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
   );
 };
 
-const directorySearch = taskInput("input:directorySearch");
 const roleFilter = queryInput(apiEndpoints.peopleList, "input:roleFilter");
 export const PeopleListing = (props: ListingProps) => {
   const p = usePresentation();
-  const [draft, setDraft] = useState<DirectoryFilter>({ text: "", role: "" });
-  const [filter, setFilter] = useState(draft);
+  const [draft, setDraft] = useState("");
+  const [filter, setFilter] = useState<DirectoryFilter>({ text: "", role: "" });
   return (
     <section>
       {props.titleId === undefined ? (
@@ -127,38 +126,34 @@ export const PeopleListing = (props: ListingProps) => {
           {p.text("view.PEOPLE.label")}
         </h2>
       ) : null}
-      <form
-        className="directory-filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setFilter(draft);
-        }}
-      >
-        <div className="text-field">
-          <div className="field-label-row">
-            <label htmlFor="people-search">{p.fieldLabel("directorySearch")}</label>
-            <FieldRule name="directorySearch" ruleId={directorySearch.ruleId} />
-          </div>
-          <input
+      <Toolbar
+        className="directory-toolbar"
+        activeFilters={Number(filter.role !== "")}
+        filter={
+          <SearchField
             id="people-search"
-            name="text"
-            type="search"
-            value={draft.text}
-            aria-describedby="people-search-hint"
-            onChange={(event) => {
-              setDraft((prior) => ({ ...prior, text: event.target.value }));
+            label={p.fieldLabel("directorySearch")}
+            description={p.fieldHint("directorySearch")}
+            clearLabel={p.text("ui.clearFilters")}
+            value={draft}
+            onChange={setDraft}
+            onSubmit={(text) => {
+              setFilter((prior) => ({ ...prior, text }));
+            }}
+            onClear={() => {
+              setFilter((prior) => ({ ...prior, text: "" }));
             }}
           />
-          <small id="people-search-hint">{p.fieldHint("directorySearch")}</small>
-        </div>
+        }
+      >
         <Select
           id="people-role-filter"
           label={renderCatalogKey(p, roleFilter.labelId)}
-          help={<FieldRule name="roleFilter" ruleId={roleFilter.ruleId} />}
+          inlineLabel
           {...(roleFilter.hintId === null
             ? {}
             : { description: renderCatalogKey(p, roleFilter.hintId) })}
-          value={draft.role}
+          value={filter.role}
           options={[
             { value: "", label: p.text("ui.anyFilter") },
             ...roleFilter.choices
@@ -172,14 +167,13 @@ export const PeopleListing = (props: ListingProps) => {
             const selected = roleFilter.choices.find(
               (role) => role === value && isTerm("role", role),
             );
-            setDraft((prior) => ({
+            setFilter((prior) => ({
               ...prior,
               role: selected !== undefined && isTerm("role", selected) ? selected : "",
             }));
           }}
         />
-        <Button type="submit">{p.text("ui.search")}</Button>
-      </form>
+      </Toolbar>
       <DirectoryResults key={JSON.stringify(filter)} {...props} filter={filter} />
     </section>
   );

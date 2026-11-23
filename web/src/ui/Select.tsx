@@ -12,9 +12,40 @@ type Props = {
   value: string;
   help?: ReactNode;
   description?: string;
+  inlineLabel?: boolean;
   options: ReadonlyArray<SelectOption>;
   disabled?: boolean;
   onChange: (value: string) => void;
+};
+
+const SelectLabel = ({
+  label,
+  labelId,
+  controlId,
+  inline,
+  help,
+}: {
+  label: string;
+  labelId: string;
+  controlId: string;
+  inline: boolean;
+  help: ReactNode;
+}) => {
+  if (inline) {
+    return (
+      <span id={labelId} className="sr-only">
+        {label}
+      </span>
+    );
+  }
+  return (
+    <div className="ui-select-label">
+      <label id={labelId} htmlFor={controlId}>
+        {label}
+      </label>
+      {help}
+    </div>
+  );
 };
 
 /** A select-only picker without native select/HiddenSelect, which violates CSP in qualified WebKit. */
@@ -27,6 +58,7 @@ export const Select = ({
   onChange,
   help,
   description,
+  inlineLabel = false,
 }: Props) => {
   const generated = useId();
   const controlId = id ?? generated;
@@ -66,23 +98,18 @@ export const Select = ({
   };
   return (
     <div className="ui-select-field">
-      {help === undefined ? (
-        <label id={labelId} htmlFor={controlId}>
-          {label}
-        </label>
-      ) : (
-        <div className="ui-select-label">
-          <label id={labelId} htmlFor={controlId}>
-            {label}
-          </label>
-          {help}
-        </div>
-      )}
+      <SelectLabel
+        label={label}
+        labelId={labelId}
+        controlId={controlId}
+        inline={inlineLabel}
+        help={help}
+      />
       <button
         type="button"
         id={controlId}
         ref={trigger}
-        className="ui-button ui-button--secondary ui-select-trigger"
+        className="control-box ui-select-trigger"
         role="combobox"
         value={value}
         aria-labelledby={labelId}
@@ -129,12 +156,21 @@ export const Select = ({
           }
         }}
       >
+        {inlineLabel ? (
+          <span aria-hidden="true" className="select-inline-label">
+            {label}:
+          </span>
+        ) : null}
         <span id={valueId} lang={selected?.lang}>
           {selected?.label ?? value}
         </span>
         <Icon name="chevron-down" />
       </button>
-      {description === undefined ? null : <small id={descriptionId}>{description}</small>}
+      {description === undefined ? null : (
+        <span id={descriptionId} className={inlineLabel ? "sr-only" : "field-hint"}>
+          {description}
+        </span>
+      )}
       <Popover
         className="ui-select-popover"
         triggerRef={trigger}

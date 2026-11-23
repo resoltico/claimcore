@@ -59,7 +59,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-3);
-    align-items: center;
+    align-items: end;
   }
 
   .section-heading {
@@ -95,7 +95,7 @@
   :is(h1, h2) {
     color: var(--text-primary);
     min-inline-size: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   button[aria-pressed="false"] {
@@ -112,7 +112,7 @@
     padding: var(--space-2) var(--space-3);
     color: var(--text-primary);
     background: var(--bg-surface);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     color: var(--accent-text);
     background: var(--bg-surface);
   }
@@ -120,17 +120,6 @@
   button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
-  }
-
-  .text-field {
-    display: grid;
-    gap: var(--space-1);
-    margin: var(--space-3) 0;
-  }
-
-  .field-description {
-    display: grid;
-    gap: var(--space-1);
   }
 
   .text-field label,
@@ -187,7 +176,7 @@
     gap: var(--space-3);
     padding: var(--space-3) 0;
     border-block-start: var(--border-width) solid var(--border-control);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .field-row dd {
@@ -237,7 +226,7 @@
 
   .review-values dd {
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .dialog-actions {
@@ -263,7 +252,7 @@
     padding: var(--space-2) var(--space-3);
     color: var(--text-primary);
     background: var(--bg-surface);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     min-block-size: var(--control-target);
     min-inline-size: var(--control-target);
   }
@@ -310,18 +299,10 @@
     align-items: center;
     gap: var(--space-2);
   }
-  .date-control > .text-field {
-    flex: 1;
-    min-inline-size: 0;
-  }
   .react-aria-DateInput {
     display: flex;
-    padding: var(--space-2);
-    border: var(--border-width) solid var(--text-secondary);
-    border-radius: var(--radius-sm);
-    min-block-size: var(--control-target);
-    background: var(--bg-surface);
-    color: var(--text-primary);
+    align-items: center;
+    min-inline-size: 0;
   }
   .react-aria-DateSegment {
     padding-inline: var(--space-1);
@@ -343,7 +324,7 @@
     overflow: auto;
     padding: var(--space-3);
   }
-  .calendar-popover header {
+  .calendar-heading {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -487,7 +468,7 @@
     border: var(--border-width) solid var(--border-control);
     border-radius: var(--radius-md);
     background: var(--bg-surface);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .recovery-attempt > p:first-child {
     color: var(--text-secondary);

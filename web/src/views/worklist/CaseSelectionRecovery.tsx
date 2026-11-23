@@ -1,3 +1,5 @@
+import { Page } from "../../ui/Page";
+import { TextInput, ChoiceControl } from "../../ui/TextField";
 import { useEffect, useId, useRef, useState } from "react";
 import { usePresentation } from "../../presentation/context";
 import { isTerm } from "../../presentation/terms";
@@ -39,7 +41,7 @@ const DuplicateChoices = ({
         const { position, value } = authoredValue(fragment);
         return (
           <label key={position}>
-            <input
+            <ChoiceControl
               type="radio"
               name={id}
               checked={chosen === position}
@@ -136,7 +138,7 @@ const SelectionRepair = ({
           {workingValues.map(({ position, value }) => (
             <label key={position}>
               <bdi>{label}</bdi>
-              <input
+              <TextInput
                 dir="auto"
                 aria-invalid={duplicate ? !canApply : true}
                 aria-describedby={id}
@@ -186,10 +188,12 @@ export const CaseSelectionRecovery = ({
     title.current?.focus();
   }, []);
   return (
-    <section aria-labelledby="case-list-title" className="worklist">
-      <h1 id="case-list-title" tabIndex={-1} ref={title}>
-        {p.text(report ? "ui.caseReport" : "label.cases")}
-      </h1>
+    <Page
+      id="case-list-title"
+      className="worklist"
+      title={p.text(report ? "ui.caseReport" : "label.cases")}
+      headingRef={title}
+    >
       <p role="alert">{p.text("ui.caseSelectionInvalid")}</p>
       {admission.issues.map((issue) => (
         <SelectionRepair
@@ -199,6 +203,6 @@ export const CaseSelectionRecovery = ({
           path={report ? "/cases/report" : "/cases"}
         />
       ))}
-    </section>
+    </Page>
   );
 };

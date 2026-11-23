@@ -71,7 +71,7 @@
   "assignment.MINE.label": "Mine",
   "assignment.MINE.meaning": "Cases you are responsible for. Being able to view a case does not make you responsible for it.",
   "assignment.UNASSIGNED.label": "Unassigned",
-  "attention.ASSIGNEE_UNAVAILABLE.label": "Responsible person unavailable",
+  "attention.ASSIGNEE_UNAVAILABLE.label": "Assignee unavailable",
   "attention.DUE_TODAY.label": "Due today",
   "attention.NO_NEXT_ACTION.label": "No next action",
   "attention.OVERDUE.label": "Overdue",
@@ -1140,5 +1140,8 @@
   "label.count.accessRequests.few": "{count} access requests",
   "label.count.accessRequests.many": "{count} access requests",
   "label.count.accessRequests.other": "{count} access requests",
-  "label.paymentDecision": "Payment decision"
+  "label.paymentDecision": "Payment decision",
+  "label.person": "Person",
+  "label.useAccountId": "Use account ID {id}",
+  "label.optional": "(optional)"
 }

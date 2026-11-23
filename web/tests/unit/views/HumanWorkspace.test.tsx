@@ -90,7 +90,7 @@ it.each(["NO_ROLES", "DISABLED", "NOT_REGISTERED"] as const)(
     navigate("/cases", true);
     render(<Dashboard />);
     expect(await screen.findByText(`Core caller guidance ${state} Ω`)).toBeVisible();
-    expect(screen.getByText("Core caller technical identity Ψ")).not.toBeVisible();
+    expect(screen.queryByText("Core caller technical identity Ψ")).not.toBeInTheDocument();
     await userEvent.click(screen.getByText("Technical details"));
     expect(screen.getByText("Core caller technical identity Ψ")).toBeVisible();
     expect(fetch.mock.calls.map((call) => call[0])).toEqual(["/api/context"]);

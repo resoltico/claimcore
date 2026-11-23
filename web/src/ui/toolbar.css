@@ -3,6 +3,26 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    align-items: end;
+    align-items: start;
+    min-inline-size: 0;
+  }
+
+  .toolbar > .toolbar-filter {
+    flex: 1 1 0;
+    min-inline-size: var(--toolbar-filter-min);
+  }
+
+  .toolbar-sheet .ui-select-trigger {
+    flex-wrap: wrap;
+    justify-content: start;
+  }
+
+  .toolbar-sheet .ui-select-trigger > span {
+    overflow-wrap: normal;
+  }
+
+  .toolbar-sheet {
+    display: grid;
+    gap: var(--space-3);
   }
 }

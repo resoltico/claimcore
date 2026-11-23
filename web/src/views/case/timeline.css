@@ -56,20 +56,3 @@
     border-color: var(--border-control);
   }
 }
-
-@layer views {
-  @container (width >= 56rem) {
-    .case-timeline-panel .region-timeline > li {
-      flex-wrap: nowrap;
-    }
-
-    .case-timeline-panel .timeline-event {
-      display: block;
-      flex: 1 1 auto;
-      min-inline-size: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-}
