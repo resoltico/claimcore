@@ -1,3 +1,4 @@
+import { narrowTableFailures } from "./design-geometry";
 import { dimensions, dimensionCaseTitle, type Dimension } from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
@@ -152,6 +153,24 @@ const performRoute = async (route: MatrixRoute, run: Run) => {
       await historyComparison(run.page);
     }
     await recordFrame(run, route.id);
+    if (
+      run.dimension.language === "ar" &&
+      run.dimension.width === 320 &&
+      (route.id === "cases-all" || route.id === "reminders")
+    ) {
+      const table = run.page.getByRole("table").first();
+      await expect(table).toBeVisible();
+      await expect(table.getByRole("columnheader").first()).toBeAttached();
+      await expect(table.getByRole("cell").first()).toBeVisible();
+      expect(await narrowTableFailures(run.page)).toEqual([]);
+      const viewport = run.page.viewportSize()!;
+      try {
+        await run.page.setViewportSize({ ...viewport, width: 390 });
+        expect(await narrowTableFailures(run.page)).toEqual([]);
+      } finally {
+        await run.page.setViewportSize(viewport);
+      }
+    }
     if (route.filtered === true) {
       await expandedFilters(run);
     }

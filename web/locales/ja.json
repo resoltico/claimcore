@@ -283,18 +283,6 @@
     "text": "他の操作",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "記録を再読み込み",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "イベントをさらに読み込む",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "活動をさらに読み込む",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "アカウントをさらに表示",
     "source": "743e1725ebd5"
@@ -402,10 +390,6 @@
   "ui.reloadCurrentCase": {
     "text": "現在の案件を再読み込み",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "活動を再読み込み",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "画面を再読み込み",

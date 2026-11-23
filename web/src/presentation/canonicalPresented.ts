@@ -11,6 +11,8 @@ export const canonicalPresented = (value: PresentedValue): string => {
     case "STATE":
     case "CODE":
       return value.token;
+    case "DATE_WITH_CODE":
+      return `${value.value} · ${value.code.token}`;
     case "CODES":
       return value.tokens.join(", ");
     case "MESSAGE":

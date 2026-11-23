@@ -108,7 +108,7 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
       '.workspace-sidebar nav a[href="/people"], .workspace-mobile-tabs a[href="/people"]',
     ),
   ).toHaveCount(0);
-  await expect(page.locator(".people-table")).toHaveCount(0);
+  await expect(page.locator(".people-listing .data-table")).toHaveCount(0);
   const resume = page.getByRole("button", {
     name: ui("en", "ui.continuePeopleRequest"),
     exact: true,

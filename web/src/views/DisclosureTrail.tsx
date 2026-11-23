@@ -6,6 +6,8 @@ import { useEndpointPage } from "../hooks/useEndpointPage";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { isTerm } from "../presentation/terms";
+import { ListFooter } from "../ui/ListFooter";
+import { Toolbar } from "../ui/Toolbar";
 import { ResultPages } from "../ui/ResultPages";
 import { Select } from "../ui/Select";
 
@@ -60,57 +62,59 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
   const [kind, setKind] = useState("");
   return (
     <form
-      className="worklist-toolbar"
+      aria-label={p.text("endpoint.disclosure.trail.label")}
       onSubmit={(event) => {
         event.preventDefault();
         apply(trailSelection(event.currentTarget, kind));
       }}
     >
-      <div className="text-field">
-        <label htmlFor="trail-actor">{p.text("input.actorId.label")}</label>
-        <input id="trail-actor" name="actorId" type="text" autoComplete="off" dir="ltr" />
-      </div>
-      <div className="text-field">
-        <label htmlFor="trail-case">{p.text("input.disclosureCaseId.label")}</label>
-        <input id="trail-case" name="caseId" type="text" autoComplete="off" dir="ltr" />
-      </div>
-      <Select
-        id="trail-kind"
-        label={p.text("input.disclosureKind.label")}
-        value={kind}
-        options={[
-          { value: "", label: p.text("label.disclosureAnyKind") },
-          ...trailKinds.map((eventKind) => ({
-            value: eventKind,
-            label: p.term("disclosureKind", eventKind),
-          })),
-        ]}
-        onChange={setKind}
-      />
-      <div className="text-field">
-        <label htmlFor="trail-from">{p.text("input.disclosureFrom.label")}</label>
-        <input
-          id="trail-from"
-          name="from"
-          type="text"
-          autoComplete="off"
-          dir="ltr"
-          aria-describedby="trail-time-format"
+      <Toolbar>
+        <div className="text-field">
+          <label htmlFor="trail-actor">{p.text("input.actorId.label")}</label>
+          <input id="trail-actor" name="actorId" type="text" autoComplete="off" dir="ltr" />
+        </div>
+        <div className="text-field">
+          <label htmlFor="trail-case">{p.text("input.disclosureCaseId.label")}</label>
+          <input id="trail-case" name="caseId" type="text" autoComplete="off" dir="ltr" />
+        </div>
+        <Select
+          id="trail-kind"
+          label={p.text("input.disclosureKind.label")}
+          value={kind}
+          options={[
+            { value: "", label: p.text("label.disclosureAnyKind") },
+            ...trailKinds.map((eventKind) => ({
+              value: eventKind,
+              label: p.term("disclosureKind", eventKind),
+            })),
+          ]}
+          onChange={setKind}
         />
-      </div>
-      <div className="text-field">
-        <label htmlFor="trail-until">{p.text("input.disclosureUntil.label")}</label>
-        <input
-          id="trail-until"
-          name="until"
-          type="text"
-          autoComplete="off"
-          dir="ltr"
-          aria-describedby="trail-time-format"
-        />
-      </div>
-      <p id="trail-time-format">{p.text("input.disclosureFrom.hint")}</p>
-      <button type="submit">{p.text("ui.applyFilters")}</button>
+        <div className="text-field">
+          <label htmlFor="trail-from">{p.text("input.disclosureFrom.label")}</label>
+          <input
+            id="trail-from"
+            name="from"
+            type="text"
+            autoComplete="off"
+            dir="ltr"
+            aria-describedby="trail-time-format"
+          />
+        </div>
+        <div className="text-field">
+          <label htmlFor="trail-until">{p.text("input.disclosureUntil.label")}</label>
+          <input
+            id="trail-until"
+            name="until"
+            type="text"
+            autoComplete="off"
+            dir="ltr"
+            aria-describedby="trail-time-format"
+          />
+        </div>
+        <p id="trail-time-format">{p.text("input.disclosureFrom.hint")}</p>
+        <button type="submit">{p.text("ui.applyFilters")}</button>
+      </Toolbar>
     </form>
   );
 };
@@ -128,7 +132,7 @@ export const DisclosureTrail = () => {
     [selection],
   );
   const page = useEndpointPage<typeof endpoint, RegionRow, TrailPage>(endpoint, input, select);
-  const load = (cursor: string | null) => {
+  const load = (cursor: string) => {
     document.getElementById("disclosure-trail-title")?.focus({ preventScroll: true });
     void page.load(cursor);
   };
@@ -144,32 +148,21 @@ export const DisclosureTrail = () => {
           <NoticeView value={page.message} />
         </p>
       )}
-      {page.page !== null && page.items.length === 0 ? (
-        <p>{p.text("label.disclosureEmpty")}</p>
-      ) : null}
       <ResultPages views={page.views} />
-      <div className="worklist-actions">
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            load(null);
-          }}
-        >
-          {p.text("ui.disclosureReload")}
-        </button>
-        {page.cursor === null ? null : (
-          <button
-            type="button"
-            disabled={page.loading}
-            onClick={() => {
-              load(page.cursor);
-            }}
-          >
-            {p.text("ui.disclosureMore")}
-          </button>
-        )}
-      </div>
+      <ListFooter
+        basis={page.page?.basis ?? null}
+        continuation={page.cursor}
+        loading={page.loading}
+        busy={page.refreshBusy}
+        load={load}
+        refresh={
+          page.page === null || page.message !== null
+            ? () => {
+                void page.load(null);
+              }
+            : page.refresh
+        }
+      />
     </section>
   );
 };

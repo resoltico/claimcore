@@ -283,18 +283,6 @@
     "text": "작업 더 보기",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "기록 새로고침",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "이벤트 더 불러오기",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "활동 더 불러오기",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "계정 더 보기",
     "source": "743e1725ebd5"
@@ -402,10 +390,6 @@
   "ui.reloadCurrentCase": {
     "text": "현재 청구 건 다시 불러오기",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "활동 다시 불러오기",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "인터페이스 다시 불러오기",

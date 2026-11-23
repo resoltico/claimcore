@@ -19,6 +19,7 @@ type PresentedValue =
     | Money of PresentedMoney
     | MoneyTotal of PresentedMoneyTotal
     | Date of CalendarDate
+    | DateWithCode of CalendarDate * code: (string * string)
     | Instant of DateTimeOffset
     | Party of PartyName
     | Text of string

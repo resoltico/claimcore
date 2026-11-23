@@ -815,18 +815,25 @@ test("published reminder rows show server timing in case and queue views across 
     }
   }
   await page.goto("/reminders");
-  const reminderSearch = page.getByRole("search", {
-    name: ui("ar", "label.reminders"),
+  const reminderSearch = page.getByRole("searchbox", {
+    name: ui("ar", "ui.worklistSearch"),
     exact: true,
   });
-  await reminderSearch.getByRole("searchbox").fill(reference);
-  await reminderSearch.getByRole("button").click();
+  await reminderSearch.fill(reference);
+  await reminderSearch.press("Enter");
   await expect(reminderRows(page)).toHaveCount(3);
   for (const [index, label] of ["متأخر", "اليوم", "قادم"].entries()) {
     const item = reminderRows(page).filter({
       hasText: actions[index]!,
     });
     await expect(item.locator("..").locator('th[scope="rowgroup"]')).toContainText(label);
+    const due = item.locator('[data-column="due"]');
+    await expect(due.locator("time")).toHaveCount(1);
+    await expect(due.locator(".chip")).toHaveText(label);
+    await expect(due.locator(".chip")).toHaveAttribute(
+      "data-tone",
+      ["danger", "warning", "info"][index]!,
+    );
     await expect(item.getByRole("link")).toHaveText(reference);
   }
   const stewardContext = await browser.newContext({
@@ -854,8 +861,8 @@ test("published reminder rows show server timing in case and queue views across 
     await stewardContext.close();
   }
   await page.reload();
-  await reminderSearch.getByRole("searchbox").fill(reference);
-  await reminderSearch.getByRole("button").click();
+  await reminderSearch.fill(reference);
+  await reminderSearch.press("Enter");
   await expect(reminderRows(page)).toHaveCount(0);
   const filters = page.locator('.reminder-queue button[aria-haspopup="dialog"]');
   await filters.click();
@@ -865,8 +872,7 @@ test("published reminder rows show server timing in case and queue views across 
   });
   await expect(inactive).toBeEnabled();
   await expect(inactive).toBeChecked();
-  await page.keyboard.press("Escape");
-  await page
+  await sheet
     .getByRole("button", {
       name: ui("ar", "ui.manualFilters"),
       exact: true,
@@ -886,6 +892,7 @@ test("published reminder rows show server timing in case and queue views across 
     await expect(item.locator("..").locator('th[scope="rowgroup"]')).toContainText(
       ui("ar", "due.INACTIVE.label"),
     );
+    await expect(item.locator('[data-column="due"] .chip')).toHaveCount(0);
   }
   const retained = await workRequest(page, "reminder.list", {
     includeInactive: true,

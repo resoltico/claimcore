@@ -14,21 +14,25 @@ export const ListFooter = ({
   load,
   refresh,
 }: {
-  subject: keyof typeof listCountMessages;
-  count: number;
-  basis: WorkDateBasis;
+  basis: WorkDateBasis | null;
   continuation: string | null;
   loading: boolean;
   busy?: boolean;
   load: (cursor: string) => void;
   refresh: () => void;
-}) => {
+} & (
+  { subject: keyof typeof listCountMessages; count: number } | { subject?: never; count?: never }
+)) => {
   const p = usePresentation();
-  const category = new Intl.PluralRules(p.language).select(count);
-  const message = listCountMessages[subject][category];
+  const message =
+    subject === undefined
+      ? null
+      : listCountMessages[subject][new Intl.PluralRules(p.language).select(count)];
   return (
     <footer className="list-footer">
-      <span>{p.text(message, { count: p.integer(count) })}</span>
+      {message === null || count === undefined ? null : (
+        <span>{p.text(message, { count: p.integer(count) })}</span>
+      )}
       {continuation === null ? null : (
         <Button
           variant="quiet"
@@ -42,9 +46,11 @@ export const ListFooter = ({
         </Button>
       )}
       <span className="list-footer-update">
-        <time dateTime={basis.observedAt}>
-          {p.text("ui.updatedAt", { time: p.recordedTime(basis.observedAt, basis.timeZone) })}
-        </time>
+        {basis === null ? null : (
+          <time dateTime={basis.observedAt}>
+            {p.text("ui.updatedAt", { time: p.recordedTime(basis.observedAt, basis.timeZone) })}
+          </time>
+        )}
         {busy ? <span role="status">{p.text("ui.refreshFailed")}</span> : null}
         <Button
           variant="quiet"

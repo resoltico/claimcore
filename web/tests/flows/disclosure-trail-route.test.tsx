@@ -22,15 +22,19 @@ const page = (recordedCase: string, nextCursor: string | null = null) =>
       regions: [
         {
           role: "RESULTS",
+          emptyId: "empty.disclosureTrail",
           content: {
             kind: "TABLE",
-            rows: [
-              {
-                key: recordedCase,
-                values: [{ kind: "IDENTIFIER", value: recordedCase }],
-                actions: [],
-              },
-            ],
+            rows:
+              recordedCase === ""
+                ? []
+                : [
+                    {
+                      key: recordedCase,
+                      values: [{ kind: "IDENTIFIER", value: recordedCase }],
+                      actions: [],
+                    },
+                  ],
             columns: [
               {
                 key: "caseId",
@@ -97,7 +101,7 @@ it("submits the applied trail filters on all pages and replaces results when fil
 
   await screen.findByText("selected-case");
   expect(screen.queryByText("unfiltered-case")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Load more events" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   expect(await screen.findByText("older-case")).toBeVisible();
   expect(screen.getByText("selected-case")).toBeVisible();
 
@@ -119,4 +123,14 @@ it("shows a refusal for an unoffered trail and sends no query", async () => {
   );
   expect(screen.queryByRole("link", { name: "Access and export log" })).toBeNull();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("presents the declared empty state once with the shared observation footer", async () => {
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(page("")));
+  showTrail(true);
+  const message = await screen.findByText("No access or export entries match this selection.");
+  expect(message).toBeVisible();
+  expect(screen.getAllByText("No access or export entries match this selection.")).toHaveLength(1);
+  expect(screen.queryByText("No recorded events match.")).toBeNull();
+  expect(screen.getByRole("button", { name: "Refresh" })).toBeVisible();
 });

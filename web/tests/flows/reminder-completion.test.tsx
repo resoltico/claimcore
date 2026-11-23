@@ -209,7 +209,12 @@ const setup = () => {
   );
   const lock = vi.fn();
   render(
-    <ReminderQueueWork filter={{ view: "PENDING" }} onLockChange={lock} disclosureAvailable />,
+    <ReminderQueueWork
+      renderToolbar={(exportAction) => exportAction}
+      filter={{ view: "PENDING" }}
+      onLockChange={lock}
+      disclosureAvailable
+    />,
   );
   return { list, read, preview, execute, lock };
 };

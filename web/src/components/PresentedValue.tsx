@@ -77,6 +77,13 @@ export const PresentedValue = ({
           {moneyWithScale(value.amount, value.currency, value.displayScale, p.displayLocale)}
         </bdi>
       );
+    case "DATE_WITH_CODE":
+      return (
+        <span className="date-with-code">
+          <time dateTime={value.value}>{p.date(value.value)}</time>
+          <Chip value={value.code} />
+        </span>
+      );
     case "ACTOR":
       return <ActorIdentity actor={value.value} avatar={avatar} />;
     case "STATE":

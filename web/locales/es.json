@@ -283,18 +283,6 @@
     "text": "Más acciones",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "Recargar el registro",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "Cargar más eventos",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "Cargar más actividad",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "Más cuentas",
     "source": "743e1725ebd5"
@@ -402,10 +390,6 @@
   "ui.reloadCurrentCase": {
     "text": "Volver a cargar el expediente actual",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "Recargar actividad",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "Volver a cargar la interfaz",

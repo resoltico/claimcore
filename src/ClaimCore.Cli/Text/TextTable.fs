@@ -277,6 +277,7 @@ module internal TextTable =
 
                         match value with
                         | PresentedValue.Date _
+                        | PresentedValue.DateWithCode _
                         | PresentedValue.Instant _
                         | PresentedValue.Count _
                         | PresentedValue.Code _

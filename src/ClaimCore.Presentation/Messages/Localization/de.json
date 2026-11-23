@@ -1475,10 +1475,6 @@
     "text": "Exportierte Zeilen",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "Es gibt keine passenden protokollierten Ereignisse.",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "Zugriffsanfragen",
     "source": "34185554f83d"

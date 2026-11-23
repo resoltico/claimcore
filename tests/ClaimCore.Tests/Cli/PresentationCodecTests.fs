@@ -49,6 +49,31 @@ let tests =
                 Expect.isError
                     (read (wire "OWNER"))
                     "Account roles are outside the party vocabulary")
+            testCase "dates with codes round-trip and reject unknown tokens" (fun () ->
+                let wire token =
+                    JsonValue.Object
+                        [
+                            "kind", JsonValue.String "DATE_WITH_CODE"
+                            "value", JsonValue.String "2026-11-01"
+                            "code",
+                            JsonValue.Object
+                                [
+                                    "vocabulary", JsonValue.String "reminderDue"
+                                    "kind", JsonValue.String "CODE"
+                                    "token", JsonValue.String token
+                                ]
+                        ]
+
+                let value = read (wire "OVERDUE") |> CaseBuilders.accepted
+
+                Expect.equal
+                    (PresentationCodecs.value.Write value)
+                    (wire "OVERDUE")
+                    "Both parts survive"
+
+                Expect.isError
+                    (read (wire "INACTIVE"))
+                    "Timing codes belong to their declared vocabulary")
             testCase "provided scale survives admission reencoding and human rendering" (fun () ->
                 let provided = money "1" (JsonValue.Integer 4L)
                 let value = read provided |> CaseBuilders.accepted

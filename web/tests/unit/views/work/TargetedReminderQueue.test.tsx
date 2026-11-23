@@ -153,8 +153,8 @@ it("keeps the active case visible through real filter composition and reload", a
   await user.click(screen.getByRole("option", { name: "Today" }));
   await user.click(screen.getByRole("combobox", { name: "Responsibility" }));
   await user.click(screen.getByRole("option", { name: "Mine" }));
-  await user.type(screen.getByRole("searchbox", { name: "Search" }), "synthetic action");
-  await user.click(screen.getByRole("button", { name: "Search" }));
+  await user.type(screen.getByRole("searchbox", { name: "Filter this view" }), "synthetic action");
+  await user.keyboard("{Enter}");
   await waitFor(() => {
     expect(reads.mock.calls.at(-1)?.[1]).toEqual({
       target: { kind: "REFERENCE", caseReference: reference },

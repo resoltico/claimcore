@@ -319,18 +319,6 @@
     "text": "Citas darbības",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "Pārlādēt žurnālu",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "Ielādēt vēl notikumus",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "Ielādēt vairāk aktivitātes",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "Vairāk kontu",
     "source": "743e1725ebd5"
@@ -438,10 +426,6 @@
   "ui.reloadCurrentCase": {
     "text": "Pārlādēt pašreizējo lietu",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "Pārlādēt aktivitāti",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "Pārlādēt saskarni",

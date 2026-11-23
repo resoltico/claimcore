@@ -12,10 +12,22 @@ it("revalidates one current screen's reads in sequence and throttles automatic r
     });
     events.push("settled");
   });
-  cache.registerRefresh("/cases", () => {
-    events.push("second");
-    return Promise.resolve();
-  });
+  cache.registerRefresh(
+    "/cases",
+    () => {
+      events.push("second");
+      return Promise.resolve();
+    },
+    "case-list",
+  );
+  cache.registerRefresh(
+    "/cases",
+    () => {
+      events.push("duplicate");
+      return Promise.resolve();
+    },
+    "case-list",
+  );
   cache.registerRefresh("/people", () => {
     events.push("other");
     return Promise.resolve();

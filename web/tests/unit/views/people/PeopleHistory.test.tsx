@@ -118,7 +118,7 @@ it("keeps the selected actor filter when appending an older people history page"
     .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);
   const view = render(<PeopleHistory actorId={context.self.actorId} />);
-  const more = await screen.findByRole("button", { name: "Load more activity" });
+  const more = await screen.findByRole("button", { name: "Load more" });
   await userEvent.setup().click(more);
   await screen.findByText("Disable account", { exact: true });
   expect(view.container.querySelectorAll(".region-timeline > li")).toHaveLength(2);
@@ -128,5 +128,5 @@ it("keeps the selected actor filter when appending an older people history page"
       body: JSON.stringify({ limit: 50, actorId: context.self.actorId, cursor: "older-page" }),
     }),
   );
-  expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 });

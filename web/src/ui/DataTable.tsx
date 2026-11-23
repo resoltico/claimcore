@@ -131,7 +131,7 @@ const TableRowControls = ({
     });
   }
   return (
-    <td>
+    <td className="data-table-controls">
       <div className="data-table-actions">
         {recommended === undefined || onAction === undefined ? null : (
           <Button
@@ -163,7 +163,7 @@ const RowControls = (props: Parameters<typeof TableRowControls>[0]) =>
   props.renderControls === undefined ? (
     <TableRowControls {...props} />
   ) : (
-    <td>{props.renderControls(props.row)}</td>
+    <td className="data-table-controls">{props.renderControls(props.row)}</td>
   );
 
 const linkedValue = (link: RowLink | undefined, value: Value, timeZone: string) => {
@@ -224,6 +224,11 @@ const DataRow = ({
             data-money={column.isMoney || undefined}
             data-reference={value.kind === "REFERENCE" || undefined}
           >
+            {column.prominence === "PRIMARY" ? (
+              <span className="data-table-cell-label" aria-hidden="true">
+                {renderCatalogKey(p, column.labelId)}
+              </span>
+            ) : null}
             <div className="data-table-cell">
               {linkedValue(position === linkAt ? link : undefined, value, timeZone)}
             </div>

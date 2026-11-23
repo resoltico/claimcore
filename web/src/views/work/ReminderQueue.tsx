@@ -2,8 +2,9 @@ import { NoticeView } from "../../presentation/Message";
 import { apiEndpoints } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../../components/PresentedValue";
+import { Toolbar } from "../../ui/Toolbar";
 import { ViewTabs } from "../../ui/ViewTabs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { Dialog } from "../../ui/Dialog";
@@ -52,28 +53,45 @@ const ReminderSearch = ({
   onDraft: (value: string) => void;
 }) => {
   const p = usePresentation();
+  const apply = (text: string) => {
+    const { text: _text, ...rest } = query;
+    change(text === "" ? rest : { ...rest, text });
+  };
   return (
     <form
-      className="reminder-search"
+      className="worklist-search"
       role="search"
-      aria-label={p.text("label.reminders")}
+      aria-label={p.text("ui.worklistSearch")}
       onSubmit={(event) => {
         event.preventDefault();
-        const { text: _text, ...rest } = query;
-        change(draft === "" ? rest : { ...rest, text: draft });
+        apply(draft);
       }}
     >
-      <label>
-        {p.text("ui.search")}
-        <input
-          type="search"
-          value={draft}
-          onChange={(event) => {
-            onDraft(event.target.value);
-          }}
-        />
+      <label className="worklist-search-scope" htmlFor="reminder-search">
+        {p.text("ui.worklistSearch")}
       </label>
-      <Button type="submit">{p.text("ui.search")}</Button>
+      <input
+        id="reminder-search"
+        type="search"
+        value={draft}
+        autoComplete="off"
+        dir="auto"
+        onChange={(event) => {
+          onDraft(event.target.value);
+        }}
+      />
+      {draft === "" ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            onDraft("");
+            apply("");
+            document.getElementById("reminder-search")?.focus();
+          }}
+        >
+          {p.text("ui.clearFilters")}
+        </button>
+      )}
     </form>
   );
 };
@@ -122,14 +140,19 @@ const ReminderCaseTarget = ({
   );
 };
 type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boolean };
+type FilterMode = { manual: boolean; switchMode: () => void; canSwitchMode: boolean };
+
 const noLockChange = () => undefined;
 const ReminderAdvancedFilters = ({
   query,
   change,
+  manual,
+  switchMode,
+  canSwitchMode,
 }: {
   query: ReminderQuery;
   change: (value: ReminderQuery) => void;
-}) => {
+} & FilterMode) => {
   const p = usePresentation();
   const [draft, setDraft] = useState<Pick<
     ReminderQuery,
@@ -176,6 +199,17 @@ const ReminderAdvancedFilters = ({
               setDraft(null);
             }}
           >
+            <Button
+              variant="secondary"
+              aria-pressed={manual}
+              isDisabled={!canSwitchMode}
+              onPress={() => {
+                setDraft(null);
+                switchMode();
+              }}
+            >
+              {p.text("ui.manualFilters")}
+            </Button>
             <div className="filter-field-grid">
               <Select
                 label={renderCatalogKey(p, kindChoice.labelId)}
@@ -248,16 +282,20 @@ const ReminderFilters = ({
   change,
   draft,
   onDraft,
+  exportAction,
+  ...mode
 }: {
   query: ReminderQuery;
   change: (value: ReminderQuery) => void;
   draft: string;
   onDraft: (value: string) => void;
-}) => {
+  exportAction: ReactNode;
+} & FilterMode) => {
   const p = usePresentation();
   const effective = effectiveReminderSelection(query);
   return (
-    <div className="work-queue-filters filter-field-grid">
+    <Toolbar className="worklist-toolbar">
+      <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
       <Select
         label={renderCatalogKey(p, stateChoice.labelId)}
         value={effective.state}
@@ -309,9 +347,9 @@ const ReminderFilters = ({
           }
         }}
       />
-      <ReminderAdvancedFilters query={query} change={change} />
-      <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
-    </div>
+      <ReminderAdvancedFilters query={query} change={change} {...mode} />
+      {exportAction}
+    </Toolbar>
   );
 };
 const ReadyReminderQueue = ({
@@ -340,21 +378,25 @@ const ReadyReminderQueue = ({
       navigate(reminderPagePath(query, true), true);
     }
   };
-  const filters = (
-    <ReminderFilters
-      query={query}
-      change={change}
-      draft={draft.value}
-      onDraft={(value) => {
-        setDraft({ source, value });
-      }}
-    />
-  );
   const work = (
     <ReminderQueueWork
       filter={query}
       onLockChange={onLockChange}
       disclosureAvailable={disclosureAvailable}
+      renderToolbar={(exportAction) => (
+        <ReminderFilters
+          query={query}
+          change={change}
+          draft={draft.value}
+          onDraft={(value) => {
+            setDraft({ source, value });
+          }}
+          manual={manual}
+          switchMode={switchMode}
+          canSwitchMode={!manual || views.reminders.data?.items[0] !== undefined}
+          exportAction={exportAction}
+        />
+      )}
     />
   );
   return (
@@ -364,19 +406,8 @@ const ReadyReminderQueue = ({
       </h1>
       <WorkspaceViewsStatus area="reminders" />
       <ReminderCaseTarget query={query} change={change} />
-      <Button
-        variant="secondary"
-        aria-pressed={manual}
-        isDisabled={manual && views.reminders.data?.items[0] === undefined}
-        onPress={switchMode}
-      >
-        {p.text("ui.manualFilters")}
-      </Button>
       {manual ? (
-        <>
-          {filters}
-          {work}
-        </>
+        work
       ) : (
         <ViewTabs
           items={
@@ -404,7 +435,7 @@ const ReadyReminderQueue = ({
               change({ ...query, view });
             }
           }}
-          controls={filters}
+          controls={null}
         >
           {work}
         </ViewTabs>

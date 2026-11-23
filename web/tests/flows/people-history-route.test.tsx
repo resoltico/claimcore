@@ -104,9 +104,10 @@ const pending = <T,>() => {
 const requestAt = (
   fetch: ReturnType<typeof vi.fn<typeof globalThis.fetch>>,
   index: number,
+  endpoint = "/api/people.history",
 ): unknown => {
   const [path, options] = fetch.mock.calls[index]!;
-  expect(path).toBe("/api/people.history");
+  expect(path).toBe(endpoint);
   expect(options?.method).toBe("POST");
   const bytes = options?.body;
   if (typeof bytes !== "string") {
@@ -152,7 +153,7 @@ it("sends the direct actor URL filter on every page without a people lookup", as
     );
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByText("Enable account");
   expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(2);
   expect(fetch).toHaveBeenCalledTimes(2);
@@ -171,6 +172,35 @@ it("keeps the bare history route unfiltered and renders supplied actors without 
   expect(screen.getByText("Current target one")).toBeVisible();
   expect(fetch).toHaveBeenCalledOnce();
   expect(requestAt(fetch, 0)).toEqual({ limit: 50 });
+});
+
+it("applies and clears the Actor filter through the history route", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(page([entry()]))
+    .mockResolvedValueOnce(page([entry(second, 29)]))
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    .mockResolvedValueOnce(page([entry()]));
+  vi.stubGlobal("fetch", fetch);
+  showHistory("");
+  await screen.findByText("Current target one");
+  const user = userEvent.setup();
+  const actor = () => screen.getByRole("textbox", { name: "Account ID" });
+  await user.type(actor(), second);
+  await user.click(screen.getByRole("button", { name: "Apply filters" }));
+  await screen.findByText("Current target two");
+  expect(window.location.search).toBe(`?actorId=${second}`);
+  expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: second });
+  await user.click(screen.getByRole("button", { name: "Download CSV" }));
+  expect(requestAt(fetch, 2, "/api/export")).toEqual({
+    query: "people.history",
+    selection: { actorId: second },
+  });
+  await user.clear(actor());
+  await user.click(screen.getByRole("button", { name: "Apply filters" }));
+  await screen.findByText("Current target one");
+  expect(window.location.search).toBe("");
+  expect(requestAt(fetch, 3)).toEqual({ limit: 50 });
 });
 
 it("does not reconstruct or filter authoritative rows from a requested actor ID", async () => {
@@ -197,7 +227,7 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     .mockResolvedValueOnce(page([entry(second, 29)]));
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
   await act(() =>
     Promise.resolve().then(() => {
       navigate(`/people-history?actorId=${second}`);
@@ -233,12 +263,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     showHistory();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Load more activity" }));
+    await user.click(await screen.findByRole("button", { name: "Load more" }));
     await screen.findByRole("alert");
     expect(screen.queryByText("Current target one")).toBeNull();
     expect(screen.queryByText("Current history recorder")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Reload activity" }));
+    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
     await screen.findByText("Current target two");
     expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first });
   },
@@ -263,10 +293,10 @@ it("retains only the same history page on transient delivery failure and retries
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Load more activity" }));
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByRole("alert");
   expect(screen.getByText("Current target one")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Load more activity" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await screen.findByText("Enable account");
   expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(2);
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });

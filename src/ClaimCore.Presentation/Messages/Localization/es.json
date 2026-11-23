@@ -1475,10 +1475,6 @@
     "text": "Filas exportadas",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "No hay eventos registrados que coincidan.",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "Solicitudes de acceso",
     "source": "34185554f83d"

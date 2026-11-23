@@ -123,10 +123,11 @@ See [erasure limits](operating.md#erasure-limits) for backups and copies outside
 ## Review access changes
 
 Open **Access history**, or run `claimcore people history`, to see who changed access and what was
-recorded. Actor names reflect current profiles, including profile erasure. Follow each continuation to
-review more history. A case-specific role does not provide access-history access. **Download CSV**
-starts at the first page of the current actor selection and applies the same disclosure rules
-on every page.
+recorded. Actor names reflect current profiles, including profile erasure. Enter an **Account ID** in the
+toolbar and choose **Apply filters** to restrict the history to changes affecting that account. To see all
+accessible activity again, clear the field and apply the filter. **Load more** and **Download CSV** use the
+applied selection. The CSV starts at its first page and applies the same disclosure rules throughout.
+A case-specific role does not provide access-history access.
 
 If a change cannot be confirmed, keep its identifier and use [delivery recovery](integrating.md#recover-an-uncertain-change).
 Checking a result does not record it again. Retrying an in-memory reviewed change sends its identical

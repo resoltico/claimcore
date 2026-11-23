@@ -54,137 +54,6 @@
     gap: var(--space-2);
     align-items: center;
   }
-  .worklist-table {
-    display: block;
-    inline-size: 100%;
-    min-inline-size: 0;
-    max-inline-size: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    table-layout: fixed;
-  }
-  .worklist-columns {
-    display: block;
-    position: absolute;
-    inline-size: var(--border-width);
-    block-size: var(--border-width);
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .worklist-rows {
-    display: block;
-    margin: 0;
-    padding: 0;
-  }
-  .worklist-rows .worklist-row {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    margin-block: var(--space-3);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-md);
-  }
-  .worklist-row > td {
-    display: block;
-    min-inline-size: 0;
-    padding: 0;
-    overflow-wrap: anywhere;
-  }
-  .worklist-reference {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .reference {
-    display: block;
-    min-block-size: var(--target-minimum);
-    max-inline-size: 100%;
-    color: var(--accent-text);
-    font-family: var(--font-mono);
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .row-reference-text {
-    display: block;
-    max-inline-size: var(--width-reference-filter);
-    white-space: nowrap;
-  }
-  .reference-prefix {
-    display: inline-block;
-    max-inline-size: 65%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: bottom;
-  }
-  .reference-suffix {
-    display: inline-flex;
-    max-inline-size: 35%;
-    justify-content: end;
-    overflow: hidden;
-    vertical-align: bottom;
-  }
-  .worklist-row:focus-within {
-    outline: var(--focus-width) solid var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
-  .worklist-row:hover {
-    background: var(--accent-soft-bg);
-  }
-  .worklist-person > small {
-    display: block;
-    min-inline-size: 0;
-    overflow-wrap: anywhere;
-  }
-  .worklist-person {
-    display: block;
-    min-inline-size: 0;
-    overflow-wrap: anywhere;
-    margin-block-start: var(--space-2);
-    font-size: var(--text-sm);
-    text-align: start;
-  }
-  .worklist-row small {
-    display: block;
-    color: var(--text-secondary);
-    font-size: var(--text-xs);
-  }
-  .worklist-money {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    font-variant-numeric: tabular-nums;
-  }
-  .worklist-payable {
-    margin-block-start: var(--space-1);
-  }
-  .worklist-badges {
-    grid-column: 2;
-    grid-row: 1;
-    text-align: end;
-  }
-  .worklist-next-action {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    font-size: var(--text-sm);
-  }
-  .worklist-responsible {
-    grid-column: 1 / -1;
-    grid-row: 4;
-    font-size: var(--text-sm);
-  }
-  .worklist-changed {
-    grid-column: 1 / -1;
-    grid-row: 5;
-    font-size: var(--text-sm);
-  }
-  .worklist-cell-label {
-    display: block;
-    color: var(--text-secondary);
-    font-size: var(--text-xs);
-    margin-block-end: var(--space-1);
-  }
   .worklist-skeleton {
     min-block-size: var(--height-expanded-editor);
     margin-block: var(--space-4);
@@ -338,7 +207,7 @@
 
   .worklist-toolbar .worklist-search {
     flex: 1 1 var(--width-worklist-filter);
-    min-inline-size: var(--width-worklist-filter);
+    min-inline-size: 0;
   }
   .worklist-search-scope {
     flex-basis: 100%;

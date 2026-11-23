@@ -1,15 +1,16 @@
+import { useCallback, useMemo } from "react";
+import type { RegionTimelineEntry } from "@contracts/client";
 import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../../api/service";
-import type { RegionTimelineEntry } from "@contracts/client";
-
-import { ResultPages } from "../../ui/ResultPages";
-import { useCallback } from "react";
-
-type HistoryControl = RegionTimelineEntry;
-
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
+import { navigate } from "../../routing/navigation";
+import { peopleHistoryPath } from "../../routing/routes";
+import { ListFooter } from "../../ui/ListFooter";
+import { ResultPages } from "../../ui/ResultPages";
+import { Toolbar } from "../../ui/Toolbar";
+
 const select = (reply: ServiceResponse<typeof apiEndpoints.peopleHistory>) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -31,15 +32,16 @@ const select = (reply: ServiceResponse<typeof apiEndpoints.peopleHistory>) => {
 type HistoryPage = NonNullable<ReturnType<typeof select>>;
 export const PeopleHistory = ({ actorId }: { actorId: string }) => {
   const p = usePresentation();
+  const selection = useMemo(() => (actorId === "" ? {} : { actorId }), [actorId]);
   const input = useCallback(
     (cursor: string | null) => ({
       limit: 50,
-      ...(actorId === "" ? {} : { actorId }),
+      ...selection,
       ...(cursor === null ? {} : { cursor }),
     }),
-    [actorId],
+    [selection],
   );
-  const page = useEndpointPage<typeof apiEndpoints.peopleHistory, HistoryControl, HistoryPage>(
+  const page = useEndpointPage<typeof apiEndpoints.peopleHistory, RegionTimelineEntry, HistoryPage>(
     apiEndpoints.peopleHistory,
     input,
     select,
@@ -49,6 +51,35 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
       <h1 id="people-history-title" tabIndex={-1}>
         {p.text(actorId === "" ? "endpoint.people.history.label" : "ui.accountAccessHistory")}
       </h1>
+      <form
+        aria-label={p.text("label.peopleHistory")}
+        onSubmit={(event) => {
+          event.preventDefault();
+          const value = new FormData(event.currentTarget).get("actorId");
+          if (typeof value === "string" && value.trim() !== actorId) {
+            navigate(peopleHistoryPath(value.trim()));
+          }
+        }}
+      >
+        <Toolbar>
+          <div className="text-field">
+            <label htmlFor="history-actor">{p.text("input.actorId.label")}</label>
+            <input
+              id="history-actor"
+              key={actorId}
+              name="actorId"
+              defaultValue={actorId}
+              autoComplete="off"
+              dir="ltr"
+            />
+          </div>
+          <button type="submit">{p.text("ui.applyFilters")}</button>
+          <CsvExportButton
+            selection={{ query: apiEndpoints.peopleHistory, selection }}
+            available={page.page !== null && !page.loading}
+          />
+        </Toolbar>
+      </form>
       {page.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
       {page.message === null ? null : (
         <p role="alert">
@@ -58,37 +89,23 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
       <h2 className="sr-only">{p.text("ui.timeline.title")}</h2>
       <ResultPages views={page.views} />
 
-      <div className="worklist-actions" role="group" aria-label={p.text("label.peopleHistory")}>
-        <CsvExportButton
-          selection={{
-            query: apiEndpoints.peopleHistory,
-            selection: actorId === "" ? {} : { actorId },
-          }}
-          available={page.page !== null && !page.loading}
-        />
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            document.getElementById("people-history-title")?.focus({ preventScroll: true });
-            void page.load(null);
-          }}
-        >
-          {p.text("ui.reloadHistory")}
-        </button>
-        {page.cursor === null ? null : (
-          <button
-            type="button"
-            disabled={page.loading}
-            onClick={() => {
-              document.getElementById("people-history-title")?.focus({ preventScroll: true });
-              void page.load(page.cursor);
-            }}
-          >
-            {p.text("ui.moreHistory")}
-          </button>
-        )}
-      </div>
+      <ListFooter
+        basis={page.page?.basis ?? null}
+        continuation={page.cursor}
+        loading={page.loading}
+        busy={page.refreshBusy}
+        load={(cursor) => {
+          document.getElementById("people-history-title")?.focus({ preventScroll: true });
+          void page.load(cursor);
+        }}
+        refresh={
+          page.page === null || page.message !== null
+            ? () => {
+                void page.load(null);
+              }
+            : page.refresh
+        }
+      />
     </section>
   );
 };

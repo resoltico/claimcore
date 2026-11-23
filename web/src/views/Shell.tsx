@@ -303,23 +303,25 @@ export const Shell = ({
   return (
     <>
       <aside className="workspace-sidebar">
-        <a
-          className="product-name"
-          href="/"
-          aria-label="ClaimCore"
-          aria-disabled={locked || undefined}
-          onClick={(event) => {
-            followLink(event, () => {
-              navigate("/");
-            });
-          }}
-        >
-          <span className="product-mark" aria-hidden="true">
-            <Icon name="brand" />
-          </span>
-          <span className="shell-brand">ClaimCore</span>
-        </a>
-        {cases ? find(false) : null}
+        <div className="shell-sidebar-header">
+          <a
+            className="product-name"
+            href="/"
+            aria-label="ClaimCore"
+            aria-disabled={locked || undefined}
+            onClick={(event) => {
+              followLink(event, () => {
+                navigate("/");
+              });
+            }}
+          >
+            <span className="product-mark" aria-hidden="true">
+              <Icon name="brand" />
+            </span>
+            <span className="shell-brand">ClaimCore</span>
+          </a>
+          {cases ? find(false) : null}
+        </div>
         <nav aria-label={p.text("ui.primary")}>
           {primary.map(link)}
           {administrative.length === 0 ? null : (

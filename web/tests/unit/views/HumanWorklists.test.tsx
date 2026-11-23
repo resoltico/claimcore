@@ -248,6 +248,7 @@ it("renders the supplied reminder tab and keeps the server-declared manual filte
   await screen.findByRole("tab", {
     name: "Core reminder tab Ψ 23",
   });
+  await userEvent.click(screen.getByRole("button", { name: /more filters/iu }));
   await userEvent.click(
     screen.getByRole("button", {
       name: /manual filters/iu,

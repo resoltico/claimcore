@@ -72,9 +72,6 @@ export const ReminderList = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {result.items.length === 0 && !result.loading && result.message === null ? (
-        <p>{p.text("label.noReminders")}</p>
-      ) : null}
       <ResultPages
         showTableSections={false}
         views={result.views}

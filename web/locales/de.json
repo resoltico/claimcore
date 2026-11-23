@@ -283,18 +283,6 @@
     "text": "Weitere Aktionen",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "Protokoll neu laden",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "Weitere Ereignisse laden",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "Weitere Aktivität laden",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "Weitere Konten",
     "source": "743e1725ebd5"
@@ -402,10 +390,6 @@
   "ui.reloadCurrentCase": {
     "text": "Aktuellen Fall neu laden",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "Aktivität neu laden",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "Oberfläche neu laden",

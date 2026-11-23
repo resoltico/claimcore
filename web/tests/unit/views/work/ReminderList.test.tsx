@@ -200,7 +200,7 @@ it("keeps null timing for terminal and inactive parent observations without gues
   const view = render(<ReminderList filter={{ includeInactive: true }} />);
   await screen.findByText("Action 1");
   expect(view.container.querySelectorAll(".reminder-list .table-view tbody > tr")).toHaveLength(4);
-  expect(view.container.querySelectorAll(".reminder-timing")).toHaveLength(0);
+  expect(view.container.querySelectorAll(".date-with-code")).toHaveLength(0);
   expect(screen.getByText("Completed", { exact: false })).toBeVisible();
   expect(screen.getByText("Cancelled", { exact: false })).toBeVisible();
   const rendered = view.container.querySelectorAll(".reminder-list .table-view tbody > tr");

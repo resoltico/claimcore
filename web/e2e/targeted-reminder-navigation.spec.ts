@@ -43,12 +43,10 @@ test("discovers a case reminder queue, retains visible context through filters a
   await expect(page.getByRole("option", { name: "Mine", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   await assignment;
-  const search = page.getByRole("search", { name: "Reminders", exact: true });
-  await search
-    .getByRole("searchbox", { name: "Search", exact: true })
-    .fill("synthetic targeted action");
+  const search = page.getByRole("searchbox", { name: "Filter this view", exact: true });
+  await search.fill("synthetic targeted action");
   const searched = reminderResponse(page);
-  await search.getByRole("button", { name: "Search", exact: true }).click();
+  await search.press("Enter");
   const selected = {
     target: { kind: "REFERENCE", caseReference: reference },
     due: "TODAY",
@@ -77,4 +75,40 @@ test("discovers a case reminder queue, retains visible context through filters a
   await expect(page.getByText(reference, { exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Reminders", exact: true })).toBeFocused();
   expect(new URL(page.url()).searchParams.has("caseReference")).toBe(false);
+});
+
+test("focus and visibility revalidate the open reminder queue only once @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const filter = `RESUME-${randomUUID()}`;
+  await page.goto(`/reminders?view=PENDING&q=${encodeURIComponent(filter)}`);
+  const updated = page.locator('.reminder-list[aria-busy="false"] .list-footer time');
+  await expect(updated).toBeVisible();
+  const beforeFocus = await updated.getAttribute("datetime");
+  expect(beforeFocus).not.toBeNull();
+
+  const readPaths = ["/api/context", "/api/work.views", "/api/reminder.list"];
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (readPaths.includes(path)) {
+      reads.push(path);
+    }
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect.poll(() => updated.getAttribute("datetime")).not.toBe(beforeFocus);
+  await expect.poll(() => [...reads].sort()).toEqual([...readPaths].sort());
+
+  const secondPass = page.waitForRequest(
+    (request) => readPaths.includes(new URL(request.url()).pathname),
+    { timeout: 1_000 },
+  );
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(secondPass).rejects.toThrow(/Timeout/u);
+  expect([...reads].sort()).toEqual([...readPaths].sort());
 });

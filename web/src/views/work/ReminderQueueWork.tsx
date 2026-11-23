@@ -5,7 +5,7 @@ import type { BoundOperationAffordance, OperationAffordance } from "../../operat
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useSessionContext } from "../../session/SessionContext";
 import type { ReminderListRequest } from "@contracts/client";
 import type { OperationReceipt } from "../../protocol/types";
@@ -104,11 +104,17 @@ const SelectedReminder = ({
 };
 /** A queue action owns one selected reminder and one explicit parent read, never per-row reads. */
 type QueueProps = {
+  renderToolbar: (exportAction: ReactNode) => ReactNode;
   filter: Omit<ReminderListRequest, "cursor" | "limit">;
   onLockChange: MutationLockChange;
   disclosureAvailable: boolean;
 };
-const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable }: QueueProps) => {
+const AvailableReminderQueueWork = ({
+  renderToolbar,
+  filter,
+  onLockChange,
+  disclosureAvailable,
+}: QueueProps) => {
   const p = usePresentation();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [refresh, setRefresh] = useState(0);
@@ -125,10 +131,12 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
   };
   return (
     <>
-      <CsvExportButton
-        selection={{ query: apiEndpoints.reminderList, selection: filter }}
-        available={disclosureAvailable && !masked}
-      />
+      {renderToolbar(
+        <CsvExportButton
+          selection={{ query: apiEndpoints.reminderList, selection: filter }}
+          available={disclosureAvailable && !masked}
+        />,
+      )}
       {done.operationId === null || !disclosureAvailable || masked ? null : (
         <ReceiptFeedback
           key={done.operationId}

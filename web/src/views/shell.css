@@ -8,7 +8,7 @@
     inset-block-start: 0;
     block-size: var(--viewport-block);
     display: var(--shell-sidebar-display, grid);
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     gap: var(--space-3);
     padding: var(--space-page-header) var(--space-3);
     background: var(--bg-surface);
@@ -16,7 +16,21 @@
     overflow: auto;
   }
 
-  .workspace-sidebar nav,
+  .shell-sidebar-header {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .workspace-sidebar nav {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    min-block-size: 0;
+    overflow: auto;
+    margin-inline: calc(-1 * var(--space-1));
+    padding: var(--space-1);
+  }
+
   .shell-admin,
   .shell-footer,
   .shell-more {

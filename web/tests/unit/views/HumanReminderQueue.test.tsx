@@ -217,7 +217,12 @@ it("takes one parent read and carries the selected reminder version through revi
   vi.stubGlobal("fetch", fetch);
   const view = render(
     <TestSession credential="owner-a">
-      <ReminderQueueWork filter={{}} onLockChange={vi.fn()} disclosureAvailable />
+      <ReminderQueueWork
+        renderToolbar={(exportAction) => exportAction}
+        filter={{}}
+        onLockChange={vi.fn()}
+        disclosureAvailable
+      />
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
@@ -259,7 +264,12 @@ it("takes one parent read and carries the selected reminder version through revi
   );
   view.rerender(
     <TestSession credential="owner-b">
-      <ReminderQueueWork filter={{}} onLockChange={vi.fn()} disclosureAvailable />
+      <ReminderQueueWork
+        renderToolbar={(exportAction) => exportAction}
+        filter={{}}
+        onLockChange={vi.fn()}
+        disclosureAvailable
+      />
     </TestSession>,
   );
   expect(screen.queryByText("Core accepted reminder Ψ")).not.toBeInTheDocument();

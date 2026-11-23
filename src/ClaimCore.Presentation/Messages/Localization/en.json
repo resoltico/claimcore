@@ -368,7 +368,6 @@
   "label.disclosureExportQuery": "Export query",
   "label.disclosureExportSelection": "Export selection",
   "label.disclosureExportRowCount": "Exported rows",
-  "label.disclosureEmpty": "No recorded events match.",
   "endpoint.people.requests.label": "Access requests",
   "endpoint.people.requests.meaning": "List sign-in requests waiting for access.",
   "endpoint.people.requests.dismiss.label": "Dismiss access request",

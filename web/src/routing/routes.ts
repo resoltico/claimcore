@@ -46,6 +46,8 @@ const referenceFrom = (segment: string): string => {
   return reference;
 };
 
+export const peopleHistoryPath = (actorId: string): string =>
+  actorId === "" ? "/people-history" : `/people-history?actorId=${encodeURIComponent(actorId)}`;
 export const casePath = (caseId: string): string => `/cases/id/${encodeURIComponent(caseId)}`;
 export const referencePath = (reference: string): string =>
   `/cases/reference/${referenceSegment(reference)}`;

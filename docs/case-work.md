@@ -19,7 +19,7 @@ ClaimCore records assertions; it does not decide coverage or transfer money. Use
 
 ## Find work
 
-Cases opens at **Needs attention**. Use the view pills, search and filters to narrow the results.
+Cases opens at **Needs attention**. Use the view tabs, **More views**, and **Filter this view** to narrow the results.
 **Mine** follows explicit responsibility. **Unassigned** finds active open cases with nobody responsible.
 **Decided and not fully paid** includes partly paid cases. Paid cases ready to close need attention too.
 A case with several attention reasons counts once.
@@ -198,12 +198,14 @@ control after withdrawal or erasure.
 
 ## Work attention and queues
 
-Open **Reminders** for actions across readable cases. Standard views select pending, overdue, today,
-upcoming, completed or cancelled work. Kind, deadline outcome, state, due, assignment and text filters intersect
-with the selected view. In **Manual filters**, the initial state is **Pending**; choose **Any** to
-include completed and cancelled reminders too. **Include inactive work** can be selected explicitly
-in either mode and includes closed or voided parent cases where the selected view permits them.
-The controls show their effective defaults, including the standard view's inactive-parent choice.
+Open **Reminders** for actions across readable cases. Select **Pending**, **Mine**, **Overdue**,
+**Today**, or **Upcoming** from the tabs. **More views** contains **Completed** and **Cancelled**.
+**Filter this view**, the toolbar filters, and **Download CSV** use the current selection.
+
+Open **More filters** to use **Manual filters** or change **Include inactive case work**. Manual
+filtering uses **Pending** when no state is selected. Choose **Any** to include completed and cancelled
+reminders. The toolbar shows the effective defaults for the selected mode. Including inactive case work
+includes closed or voided parent cases where the selection permits them.
 
 An overdue plan still counts as a plan. A case can appear in both overdue and today action queues.
 Counts and loaded pages can change as others work; refresh for current results.

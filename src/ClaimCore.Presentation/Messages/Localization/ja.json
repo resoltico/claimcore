@@ -1475,10 +1475,6 @@
     "text": "エクスポートした行数",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "条件に一致する記録はありません。",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "アクセス申請",
     "source": "34185554f83d"
