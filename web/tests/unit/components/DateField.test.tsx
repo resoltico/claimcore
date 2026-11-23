@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import { IconSprite } from "../../../src/ui/icons";
-import { CatalogDate } from "../../../src/components/CatalogDate";
+import { DateField } from "../../../src/ui/DateField";
 import { productMetadata } from "../../../src/protocol/productMetadata";
 import { render, screen } from "../../support/presentation-test-support";
 import { changeField } from "../../support/field-entry";
@@ -13,7 +13,7 @@ it("authors segmented locale dates as ISO wire values", () => {
   const Controlled = () => {
     const [value, setValue] = useState("2026-09-01");
     return (
-      <CatalogDate
+      <DateField
         field={field}
         value={value}
         inputName="incidentDate"

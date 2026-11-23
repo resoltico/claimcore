@@ -21,7 +21,7 @@ import type {
 } from "@contracts/client";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
-import type { TypedFieldProps } from "./CatalogDate";
+import type { TypedFieldProps } from "../ui/DateField";
 
 type Props = TypedFieldProps & {
   current: CurrentCase;

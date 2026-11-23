@@ -1,11 +1,15 @@
 import { NoticeView } from "../presentation/Message";
-import { DateEntryDraft } from "./DateEntryDraft";
+import { DateEntryDraft } from "../components/DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
-import { FieldGroup, FieldRule } from "../ui/Field";
+import { FieldGroup, FieldRule } from "./Field";
 import { parseDate } from "@internationalized/date";
-import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
+import {
+  DateField as AriaDateField,
+  DateInput,
+  DateSegment,
+} from "react-aria-components/DateField";
 import { Calendar, CalendarGrid, CalendarCell } from "react-aria-components/Calendar";
-import { IconButton } from "../ui/IconButton";
+import { IconButton } from "./IconButton";
 import { DialogTrigger, Dialog } from "react-aria-components/Dialog";
 import { Heading } from "react-aria-components/Heading";
 import { Popover } from "react-aria-components/ComboBox";
@@ -82,7 +86,7 @@ const DateEntry = ({
   const p = usePresentation();
   return (
     <FieldGroup>
-      <DateField
+      <AriaDateField
         id={`field-${inputName}`}
         name={inputName}
         className="text-field"
@@ -124,11 +128,11 @@ const DateEntry = ({
             <NoticeView value={error} />
           </FieldError>
         )}
-      </DateField>
+      </AriaDateField>
     </FieldGroup>
   );
 };
-export const CatalogDate = (props: TypedFieldProps) => {
+export const DateField = (props: TypedFieldProps) => {
   const p = usePresentation();
   return (
     <I18nProvider locale={p.displayLocale}>

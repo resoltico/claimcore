@@ -1,4 +1,4 @@
-import { TextInput } from "../ui/TextField";
+import { TextField, TextInput } from "../ui/TextField";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { navigate } from "../routing/navigation";
@@ -10,7 +10,6 @@ import type { Notice } from "../protocol/notices";
 import { Button } from "../ui/Button";
 import { Form } from "react-aria-components/Form";
 import { Label } from "react-aria-components/Label";
-import { TextField } from "react-aria-components/TextField";
 import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 type OperationLookupProps = {

@@ -2,8 +2,8 @@ import { TextInput } from "../ui/TextField";
 import { TextArea } from "../ui/TextArea";
 import { NoticeView } from "../presentation/Message";
 import { Field, FieldRule } from "../ui/Field";
-import { CatalogDate } from "./CatalogDate";
-import { CatalogCode } from "./CatalogCode";
+import { DateField } from "../ui/DateField";
+import { CodePicker } from "../ui/CodePicker";
 import { CountryHint } from "./CountryHint";
 import type { FieldCatalogEntry } from "../api/service";
 import type { Notice } from "../protocol/notices";
@@ -94,10 +94,10 @@ export const CatalogField = ({
     optional,
   };
   if (isDate(field)) {
-    return <CatalogDate {...typed} />;
+    return <DateField {...typed} />;
   }
   if (isCode(field)) {
-    return <CatalogCode {...typed} />;
+    return <CodePicker {...typed} />;
   }
   return (
     <Field

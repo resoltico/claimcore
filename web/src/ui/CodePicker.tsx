@@ -1,21 +1,21 @@
-import { TextInput } from "../ui/TextField";
+import { TextInput } from "./TextField";
 import {
   codeSuggestions,
   rankCodeSuggestions,
   type CodeSuggestion,
 } from "../presentation/codeSuggestions";
 import { NoticeView } from "../presentation/Message";
-import { FieldGroup, FieldRule } from "../ui/Field";
+import { FieldGroup, FieldRule } from "./Field";
 import { useMemo } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
 import { Label } from "react-aria-components/Label";
-import { ButtonControl as Button } from "../ui/ButtonControl";
+import { ButtonControl as Button } from "./ButtonControl";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Text } from "react-aria-components/Text";
 import { FieldError } from "react-aria-components/FieldError";
 import { usePresentation } from "../presentation/context";
-import { CountryHint } from "./CountryHint";
-import type { TypedFieldProps } from "./CatalogDate";
+import { CountryHint } from "../components/CountryHint";
+import type { TypedFieldProps } from "./DateField";
 const CodeSuggestions = ({ items }: { items: CodeSuggestion[] }) => (
   <Popover className="code-popover">
     <ListBox items={items}>
@@ -44,7 +44,7 @@ const CodeDescription = ({ field, value, error, sharedErrorId }: TypedFieldProps
     </>
   );
 };
-export const CatalogCode = (props: TypedFieldProps) => {
+export const CodePicker = (props: TypedFieldProps) => {
   const { field, value, inputName, disabled, error, sharedErrorId, onChange, optional } = props;
   const p = usePresentation();
   const currency = field.scalar.kind === "CURRENCY";
