@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "{attention} jāpievērš uzmanība · Kopā {total}",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "Nav reģistrēta neviena puse.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "Neviena lietu grupa neatbilst šai atlasei.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "Nav pieejams neviens darba skats.",
+    "source": "3e86bd3913b7"
   }
 }

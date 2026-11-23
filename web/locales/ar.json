@@ -339,10 +339,6 @@
     "text": "الشهر التالي",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleHistory": {
-    "text": "لا يوجد نشاط لعرضه.",
-    "source": "5ddccb9ef206"
-  },
   "ui.noViews": {
     "text": "لا توجد عروض عمل متاحة.",
     "source": "3e86bd3913b7"
@@ -359,10 +355,6 @@
     "text": "لم يُؤكد بعد.",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "عُرضت جميع النتائج.",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "الصفحة غير موجودة",
     "source": "a469ab4ca4e5"
@@ -370,10 +362,6 @@
   "ui.pageNotFoundDescription": {
     "text": "لا يشير هذا العنوان إلى صفحة في ClaimCore.",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "تتوفر نتائج أخرى.",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first} و{second}",

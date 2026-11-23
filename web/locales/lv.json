@@ -339,10 +339,6 @@
     "text": "Nākamais mēnesis",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleHistory": {
-    "text": "Nav aktivitātes, ko rādīt.",
-    "source": "5ddccb9ef206"
-  },
   "ui.noViews": {
     "text": "Nav pieejamu darba skatu.",
     "source": "3e86bd3913b7"
@@ -359,10 +355,6 @@
     "text": "Vēl nav apstiprināts.",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "Visi rezultāti parādīti.",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "Lapa nav atrasta",
     "source": "a469ab4ca4e5"
@@ -370,10 +362,6 @@
   "ui.pageNotFoundDescription": {
     "text": "Šī adrese neatbilst ClaimCore lapai.",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "Ir pieejami vēl rezultāti.",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first} un {second}",

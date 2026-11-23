@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "{attention} تحتاج إلى الانتباه · {total} إجمالًا",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "لا توجد أطراف مسجّلة.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "لا توجد مجموعات ملفات تطابق هذا الاختيار.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "لا تتوفر طرق عرض للعمل.",
+    "source": "3e86bd3913b7"
   }
 }

@@ -157,4 +157,5 @@ module WorkViewsScreen =
                                 Sections = []
                                 Meter = None
                             })
+                    |> withEmpty "empty.workViews"
             ]

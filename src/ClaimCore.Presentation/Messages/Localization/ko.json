@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "주의 필요 {attention}건 · 총 {total}건",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "기록된 당사자가 없습니다.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "이 선택과 일치하는 사건 그룹이 없습니다.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "사용할 수 있는 작업 보기가 없습니다.",
+    "source": "3e86bd3913b7"
   }
 }

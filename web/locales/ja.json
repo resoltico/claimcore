@@ -303,10 +303,6 @@
     "text": "翌月",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleHistory": {
-    "text": "表示する活動はありません。",
-    "source": "5ddccb9ef206"
-  },
   "ui.noViews": {
     "text": "利用できる作業ビューはありません。",
     "source": "3e86bd3913b7"
@@ -323,10 +319,6 @@
     "text": "まだ確認できていません。",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "すべての結果を表示しています。",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "ページが見つかりません",
     "source": "a469ab4ca4e5"
@@ -334,10 +326,6 @@
   "ui.pageNotFoundDescription": {
     "text": "このアドレスはClaimCoreのページではありません。",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "続きの結果があります。",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first}と{second}",

@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "要対応 {attention} 件 · 合計 {total} 件",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "当事者は記録されていません。",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "この選択に一致する案件グループはありません。",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "利用できる作業ビューはありません。",
+    "source": "3e86bd3913b7"
   }
 }

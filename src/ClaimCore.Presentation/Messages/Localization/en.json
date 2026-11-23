@@ -1103,5 +1103,8 @@
   "task.reminder.complete.reviewed": "Complete with details…",
   "label.reviewNotEntered": "Not entered: {fields}",
   "label.addPerson": "Add person",
-  "label.caseWorklistCaption": "{attention} need attention · {total} in total"
+  "label.caseWorklistCaption": "{attention} need attention · {total} in total",
+  "empty.parties": "No parties are recorded.",
+  "empty.caseGroups": "No case groups match this selection.",
+  "empty.workViews": "No work views are available."
 }

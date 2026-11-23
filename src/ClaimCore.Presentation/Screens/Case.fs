@@ -138,6 +138,7 @@ module CaseScreen =
 
         { region RegionRole.Parties (Some "field.parties.label") (RegionContent.Table table) with
             Actions = List.choose TaskAffordances.fromOffer reply.PartyOffers
+            EmptyId = Some "empty.parties"
         }
 
     let private relatedCaseRegions (reply: CaseReadModel) =

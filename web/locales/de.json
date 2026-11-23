@@ -303,10 +303,6 @@
     "text": "Nächster Monat",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleHistory": {
-    "text": "Keine Aktivität anzuzeigen.",
-    "source": "5ddccb9ef206"
-  },
   "ui.noViews": {
     "text": "Keine Arbeitsansichten verfügbar.",
     "source": "3e86bd3913b7"
@@ -323,10 +319,6 @@
     "text": "Noch nicht bestätigt.",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "Alle Ergebnisse angezeigt.",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "Seite nicht gefunden",
     "source": "a469ab4ca4e5"
@@ -334,10 +326,6 @@
   "ui.pageNotFoundDescription": {
     "text": "Die Adresse bezeichnet keine ClaimCore-Seite.",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "Weitere Ergebnisse sind verfügbar.",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first} und {second}",

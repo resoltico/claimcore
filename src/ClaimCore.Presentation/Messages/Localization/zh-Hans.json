@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "{attention} 项需关注 · 共 {total} 项",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "没有记录任何当事方。",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "没有符合此选择的案件组。",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "没有可用的工作视图。",
+    "source": "3e86bd3913b7"
   }
 }

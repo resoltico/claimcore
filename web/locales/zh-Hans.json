@@ -303,10 +303,6 @@
     "text": "下个月",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleHistory": {
-    "text": "没有可显示的活动。",
-    "source": "5ddccb9ef206"
-  },
   "ui.noViews": {
     "text": "没有可用的工作视图。",
     "source": "3e86bd3913b7"
@@ -323,10 +319,6 @@
     "text": "尚未确认。",
     "source": "3ce10de819f7"
   },
-  "ui.pageEnd": {
-    "text": "已显示全部结果。",
-    "source": "959b6e22691e"
-  },
   "ui.pageNotFound": {
     "text": "找不到页面",
     "source": "a469ab4ca4e5"
@@ -334,10 +326,6 @@
   "ui.pageNotFoundDescription": {
     "text": "此地址未指向 ClaimCore 页面。",
     "source": "d35b48f97478"
-  },
-  "ui.pagePartial": {
-    "text": "还有更多结果。",
-    "source": "ff02dd781a42"
   },
   "ui.pairedFacts": {
     "text": "{first}与{second}",

@@ -1,3 +1,4 @@
+import { useCompact } from "../../hooks/useCompact";
 import { Drawer } from "../../ui/Drawer";
 import { useReviewEntry } from "./useReviewEntry";
 import { ScreenView } from "../../ui/ScreenView";
@@ -446,6 +447,13 @@ const operationVisible = (
   model.phase !== "ACCEPTED";
 const reviewVisible = (model: OperationModel, visible: boolean, offered: ReadonlyArray<string>) =>
   visible && model.review !== null && model.notice === null && offered.includes(model.entry.kind);
+const useCompletionAnchor = ({ model, disclosureAvailable, completionAnchor }: Props) => {
+  const compact = useCompact();
+  return compact || model.priorUncertain || !hasCurrentDisclosure(model, disclosureAvailable)
+    ? undefined
+    : completionAnchor;
+};
+
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true, open = true } = props;
   const p = usePresentation();
@@ -459,7 +467,8 @@ export const OperationPanel = (props: Props) => {
     model.phase === "EDITING",
   );
   const selection = useFieldSelection(JSON.stringify([model.task.id, model.bindingSource]));
-  const steps = props.completionAnchor === undefined ? <OperationSteps model={model} /> : null;
+  const anchor = useCompletionAnchor(props);
+  const steps = anchor === undefined ? <OperationSteps model={model} /> : null;
   const close = () => {
     requestClose(model, props.onClose);
   };
@@ -477,11 +486,7 @@ export const OperationPanel = (props: Props) => {
               </>
             }
             closeLabel={p.text("ui.close")}
-            {...(props.completionAnchor === undefined ||
-            model.priorUncertain ||
-            !hasCurrentDisclosure(model, disclosureAvailable)
-              ? {}
-              : { anchorRef: props.completionAnchor })}
+            {...(anchor === undefined ? {} : { anchorRef: anchor })}
             headerEnd={
               <div className="actions">
                 {settings === null ? null : (

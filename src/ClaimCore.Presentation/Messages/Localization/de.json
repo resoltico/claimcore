@@ -4418,5 +4418,17 @@
   "label.caseWorklistCaption": {
     "text": "{attention} benötigen Aufmerksamkeit · {total} insgesamt",
     "source": "df743b5a0f30"
+  },
+  "empty.parties": {
+    "text": "Es sind keine Beteiligten erfasst.",
+    "source": "b75b5bbce7cc"
+  },
+  "empty.caseGroups": {
+    "text": "Keine Fallgruppen entsprechen dieser Auswahl.",
+    "source": "01f1acf91ba7"
+  },
+  "empty.workViews": {
+    "text": "Es sind keine Arbeitsansichten verfügbar.",
+    "source": "3e86bd3913b7"
   }
 }
