@@ -49,7 +49,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .data-table :is([data-reference], time, [data-money] > bdi) {
+  .data-table :is([data-reference] > :is(a, bdi), time, [data-money] > bdi) {
     white-space: nowrap;
   }
 

@@ -1,4 +1,3 @@
-import "./styles.css";
 import "virtual:claimcore-theme.css";
 import "./theme/boot";
 import { PresentationProvider } from "./presentation/PresentationProvider";

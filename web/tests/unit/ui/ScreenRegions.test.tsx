@@ -1,3 +1,4 @@
+import { rowActions, selectRowAction } from "../../support/workspace-actions";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
@@ -155,12 +156,8 @@ it("routes grouped row actions by supplied identity rather than visible position
       }}
     />,
   );
-  await userEvent.setup().click(screen.getAllByRole("button", { name: "Close the case" })[0]!);
-  expect(selected).toHaveBeenCalledOnce();
-  expect(selected).toHaveBeenCalledWith("second-id");
-  expect(
-    screen
-      .getByRole("group", { name: "Second" })
-      .contains(screen.getAllByRole("button", { name: "Close the case" })[0]!),
-  ).toBe(true);
+  const second = screen.getByRole("row", { name: /Second/u });
+  expect(screen.getAllByRole("button", { name: /^Actions for/u })[0]).toBe(rowActions(second));
+  await selectRowAction(userEvent.setup(), second, "Close the case");
+  expect(selected).toHaveBeenCalledExactlyOnceWith("second-id");
 });

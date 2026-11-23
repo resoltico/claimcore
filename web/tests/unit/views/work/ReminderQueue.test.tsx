@@ -62,12 +62,15 @@ it("changes only the selected view when switching mode and shows owner defaults 
   await waitFor(() => {
     expect(reads).toHaveBeenCalledOnce();
   });
+  const user = userEvent.setup();
+  const moreFilters = () => screen.getByRole("button", { name: /^More filters/u });
+  await user.click(moreFilters());
   const inactive = () => screen.getByRole("checkbox", { name: "Include inactive case work" });
   expect(inactive()).toBeEnabled();
   expect(inactive()).toBeChecked();
+  await user.keyboard("{Escape}");
   const mode = screen.getByRole("button", { name: "Manual filters" });
   expect(mode).toHaveAttribute("aria-pressed", "false");
-  const user = userEvent.setup();
   await user.click(mode);
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(2);
@@ -75,10 +78,12 @@ it("changes only the selected view when switching mode and shows owner defaults 
   expect(reads.mock.calls[1]?.[1]).toEqual({ text: "literal", limit: 50 });
   expect(location.pathname + location.search).toBe("/reminders?q=literal&filters=manual");
   expect(screen.queryByRole("tab")).toBeNull();
+  await user.click(moreFilters());
   expect(inactive()).toBeEnabled();
   expect(inactive()).not.toBeChecked();
   expect(mode).toHaveAttribute("aria-pressed", "true");
   await user.click(inactive());
+  await user.click(screen.getByRole("button", { name: "Apply filters" }));
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(3);
   });
@@ -93,8 +98,10 @@ it("changes only the selected view when switching mode and shows owner defaults 
     includeInactive: true,
     limit: 50,
   });
+  await user.click(moreFilters());
   expect(inactive()).toBeEnabled();
   expect(inactive()).toBeChecked();
+  await user.keyboard("{Escape}");
   expect(mode).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByRole("tab", { name: "Pending 0" })).toHaveAttribute("aria-selected", "true");
 });

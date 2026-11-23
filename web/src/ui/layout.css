@@ -1,5 +1,5 @@
 @layer layout {
-  html:root {
+  :root {
     --gutter: var(--space-6);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
@@ -276,17 +276,6 @@
     }
   }
 
-  @media (width >= 40rem) {
-    :root {
-      --gutter: var(--space-6);
-    }
-  }
-
-  @media (40rem <= width < 64rem) {
-  }
-  @media (width < 40rem) {
-  }
-
   @media (width < 40rem) {
     .record-view dl > div {
       grid-template-columns: minmax(0, 1fr);
@@ -427,8 +416,12 @@
     .workspace-mobile-tabs {
       inset-block-end: 0;
       min-block-size: var(--shell-bottom-height);
-      justify-content: space-around;
+      justify-content: space-between;
       border-block-start: var(--border-width) solid var(--border-subtle);
+    }
+
+    .workspace-mobile-tabs button {
+      white-space: nowrap;
     }
   }
 }

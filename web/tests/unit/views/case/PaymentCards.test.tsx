@@ -1,3 +1,4 @@
+import { selectRowAction } from "../../../support/workspace-actions";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
@@ -5,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
 import type { RegionContent } from "@contracts/client";
 import { PaymentRows } from "../../../../src/views/case/PaymentRows";
-vi.mock("../../../../src/hooks/useCompact", () => ({ useCompact: () => true }));
 const paymentId = "10000000-0000-7000-8000-000000000090";
 const content: Extract<RegionContent, { kind: "TABLE" }> = {
   kind: "TABLE",
@@ -53,16 +53,19 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
     },
   ],
 };
-it("renders narrow payment cards from supplied columns and keeps technical identity in Details", async () => {
+it("renders supplied payment columns and keeps the technical identity in the details dialog", async () => {
   const remove = vi.fn();
   render(<PaymentRows content={content} zone="UTC" onAction={remove} />);
-  const card = within(screen.getByRole("list")).getByRole("listitem");
-  expect(within(card).getByText("Payment date")).toBeVisible();
-  expect(within(card).getByText("Paid amount")).toBeVisible();
-  expect(within(card).getByText("77.00 USD")).toBeVisible();
-  expect(within(card).getByText(paymentId)).not.toBeVisible();
-  await userEvent.click(within(card).getByText("Record details", { selector: "summary" }));
-  expect(within(card).getByText(paymentId)).toBeVisible();
-  await userEvent.click(within(card).getByRole("button", { name: "Remove payment entry" }));
+  const user = userEvent.setup();
+  const table = screen.getByRole("table");
+  const row = within(table).getByRole("row", { name: /77[.]00 USD/u });
+  expect(within(table).getByRole("columnheader", { name: "Payment date" })).toBeVisible();
+  expect(within(table).getByRole("columnheader", { name: "Paid amount" })).toBeVisible();
+  expect(within(row).getByText("77.00 USD")).toBeVisible();
+  expect(screen.queryByText(paymentId)).toBeNull();
+  await selectRowAction(user, row, "View details");
+  expect(within(screen.getByRole("dialog")).getByText(paymentId)).toBeVisible();
+  await user.keyboard("{Escape}");
+  await selectRowAction(user, row, "Remove payment entry");
   expect(remove).toHaveBeenCalledExactlyOnceWith(content.rows[0]!.actions![0]);
 });

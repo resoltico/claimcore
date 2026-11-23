@@ -46,7 +46,7 @@ const recordFrame = async (run: Run, frame: string) => {
 };
 const expandedFilters = async (run: Run) => {
   await settledWorkspaceHeader(run.page);
-  const grid = run.page.locator(".worklist-toolbar .filter-field-grid");
+  const grid = run.page.locator(".worklist-toolbar .worklist-filter-controls");
   const trigger = grid.locator('button[aria-haspopup="dialog"]');
   await expect(trigger).toHaveCount(1);
   await expect(grid.locator('[role="combobox"][value="RECENT"]')).toHaveCount(1);

@@ -31,6 +31,7 @@ export default function publicAssets() {
       const entries = [
         ...Object.values(bundle).filter((entry) => entry.fileName.startsWith("assets/")),
         { fileName: "react-aria-pressable.css" },
+        { fileName: "styles.css" },
         ...["index.html", "auth-recovery.html", ...legalFiles].map((fileName) => ({ fileName })),
         ...catalogFiles.map((name) => ({ fileName: `locales/${name}` })),
       ];

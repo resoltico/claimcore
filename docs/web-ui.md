@@ -5,8 +5,8 @@ headings and structure, DataTable for supplied rows, ChipList for codes and Acti
 actions. Use Dialog for important disclosures and Drawer-style dialogs for editing. StatusBanner
 keeps an outcome visible and gives focus to the result.
 
-The cascade order is reset, tokens, base, layout, components and views. Each stylesheet declares its
-layer. The theme generator reads [tokens.json](../web/src/theme/tokens.json). Vite loads its generated
+The cascade order is reset, tokens, base, layout, components and views. The workspace loads
+[styles.css](../web/public/styles.css) before the component bundles. Each stylesheet declares its layer. The theme generator reads [tokens.json](../web/src/theme/tokens.json). Vite loads its generated
 CSS at build time. View styles arrange their own content. Shared control geometry, spacing, type and
 colours use the theme's semantic tokens.
 

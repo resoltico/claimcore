@@ -127,6 +127,7 @@ module internal PublicAssets =
                     not (
                         path.StartsWith("/assets/", StringComparison.Ordinal)
                         || path = "/react-aria-pressable.css"
+                        || path = "/styles.css"
                         || path.StartsWith("/locales/", StringComparison.Ordinal)
                         || requiredPaths.Contains path
                     )
