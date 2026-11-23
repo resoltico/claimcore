@@ -52,7 +52,11 @@ module CaseListScreen =
                     |> Option.map (fun (facts: CaseSummaryFacts) -> facts.Fields))
                 |> List.map (fun definition ->
                     { definition with
-                        Prominence = Prominence.Secondary
+                        Prominence =
+                            if definition.Key = BusinessField.key BusinessField.PayableAmount then
+                                Prominence.Detail
+                            else
+                                Prominence.Secondary
                         Read =
                             fun row ->
                                 if CaseState.lifecycle row.State = Lifecycle.Erased then
@@ -98,6 +102,7 @@ module CaseListScreen =
         [
             {
                 TitleId = "subject.CASE.label"
+                EmptyMessageId = None
                 Entries = entries caseSummaryColumns row
             }
         ]
@@ -177,4 +182,4 @@ module CaseListScreen =
                      @ [ entryRegion RegionRole.Facts (Some "label.exactReference") facts ])
                     screen
 
-        page reply.Basis reply.Items.Length reply.NextCursor screen
+        screen

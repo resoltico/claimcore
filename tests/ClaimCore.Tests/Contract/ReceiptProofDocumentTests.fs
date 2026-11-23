@@ -170,6 +170,9 @@ let tests =
 
                     let item = TimelineScreen.item timeline
 
+                    Expect.isNone item.Target "A case-scoped timeline omits its own subject"
+                    Expect.isNone item.Link "The case-scoped timeline does not link to itself"
+
                     let detailValues =
                         item.Details
                         |> List.collect _.Entries

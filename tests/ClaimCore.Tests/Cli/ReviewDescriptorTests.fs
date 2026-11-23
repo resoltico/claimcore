@@ -312,7 +312,7 @@ let reviews =
                     Expect.stringContains
                         output
                         (ActorId.format identity)
-                        "Known identity remains in record details"
+                        "Known identity remains in technical details"
 
                     Expect.isFalse (output.Contains "Former account") "No fabricated erased actor"
 

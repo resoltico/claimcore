@@ -39,7 +39,7 @@ export const AboutPanel = () => {
         ))}
       </ul>
       <details>
-        <summary>{p.text("ui.legalTechnical")}</summary>
+        <summary>{p.text("label.technicalDetails")}</summary>
         <p>
           <bdi dir="ltr">{productMetadata.contractIdentity}</bdi>
         </p>

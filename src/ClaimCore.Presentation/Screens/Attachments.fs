@@ -52,7 +52,7 @@ module AttachmentsScreen =
                             Sections =
                                 [
                                     section
-                                        "label.recordDetails"
+                                        "label.technicalDetails"
                                         [
                                             value
                                                 "attachmentId"
@@ -98,4 +98,5 @@ module AttachmentsScreen =
                     (Some "section.attachments.label")
                     (RegionContent.Table table)
                 |> withEmpty "empty.attachments"
+                |> withCount "attachments" (int64 page.Items.Length)
             ]

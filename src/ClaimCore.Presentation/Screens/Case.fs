@@ -25,12 +25,14 @@ module CaseScreen =
 
                 {
                     TitleId = Vocabulary.messageKey RecordGroup.vocabulary group "label"
+                    EmptyMessageId = None
                     Entries = entries (fields declarations (fun () -> Some values)) ()
                 })
 
     let caseWork (work: CaseWorkView) =
         {
             TitleId = "section.work.label"
+            EmptyMessageId = None
             Entries =
                 [
                     value
@@ -226,19 +228,6 @@ module CaseScreen =
                 let content =
                     { outgoing with
                         Rows = outgoing.Rows @ incoming.Rows
-                        Sections =
-                            [
-                                if links.IncomingCount > int64 incoming.Rows.Length then
-                                    section
-                                        "section.relatedCases.incoming"
-                                        [
-                                            value
-                                                "shown"
-                                                "label.shown"
-                                                Prominence.Secondary
-                                                (PresentedValue.Count(int64 incoming.Rows.Length))
-                                        ]
-                            ]
                         Groups =
                             [
                                 if not outgoing.Rows.IsEmpty then
@@ -590,6 +579,7 @@ module CaseScreen =
                                         reply.LatestPayments
                                 ))
                             |> withEmpty "label.noPayments"
+                            |> withCount "payments" fields.Finance.PaymentCount
                     | None -> ()
 
                     yield
@@ -611,8 +601,9 @@ module CaseScreen =
                                 NotesScreen.table reply.Snapshot.CaseId reply.Notes
                             ))
                         |> withEmpty "empty.notes"
+                        |> withCount "notes" reply.Notes.Count
                 yield! relatedCaseRegions reply
-                yield entryRegion RegionRole.Details (Some "label.recordDetails") details
+                yield entryRegion RegionRole.Details (Some "label.technicalDetails") details
             ]
 
         |> Screen.withCurrentGroups (

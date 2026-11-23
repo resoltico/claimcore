@@ -385,7 +385,7 @@ module ReceiptScreen =
         body
         @ [
             section
-                "label.recordDetails"
+                "label.technicalDetails"
                 ([
                     value
                         "operationId"
@@ -602,7 +602,7 @@ module ReceiptScreen =
             @ [
                 entryRegion
                     RegionRole.Details
-                    (Some "label.recordDetails")
+                    (Some "label.technicalDetails")
                     (technical
                      @ record.Entries
                      @ [

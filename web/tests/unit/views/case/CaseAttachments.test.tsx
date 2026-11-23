@@ -904,7 +904,7 @@ const erasedHistory = () => {
         ...openedTimelineEntry,
         highlights: [
           {
-            titleId: "label.recordDetails",
+            titleId: "label.technicalDetails",
             entries: [
               {
                 key: "recordedChange",

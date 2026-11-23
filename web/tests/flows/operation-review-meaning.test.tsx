@@ -29,7 +29,7 @@ const entry = (key: string, labelId: string, value: PresentedEntry["value"]): Pr
 });
 const details = (entries: ReadonlyArray<PresentedEntry>): Screen["regions"][number] => ({
   role: "DETAILS",
-  titleId: "label.recordDetails",
+  titleId: "label.technicalDetails",
   content: { kind: "ENTRIES", entries },
 });
 const correction: OperationSubmission = {

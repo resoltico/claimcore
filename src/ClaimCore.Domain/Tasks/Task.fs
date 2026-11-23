@@ -25,6 +25,7 @@ type TaskDeclaration =
         Creates: bool
         Family: ActFamily
         Consequence: Consequence
+        Review: TaskReview
         ReviewsFamilySequence: bool
         Execution: TaskExecution
         // Potential capability needs; input-dependent requirements stay with the task.

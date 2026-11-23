@@ -149,21 +149,6 @@ type ClientTaskKind =
     | Command
     | Binary
 
-[<RequireQualifiedAccess>]
-type TaskReview =
-    | Required
-    | Implicit
-
-module TaskReview =
-    let vocabulary =
-        Vocabulary.ofUnion<TaskReview> "review" TokenCasing.ScreamingSnake None
-
-    let mode task =
-        match TaskId.token task with
-        | "note.add"
-        | "reminder.complete" -> TaskReview.Implicit
-        | _ -> TaskReview.Required
-
 /// A derived client view of the separate ledger and endpoint declarations.
 type ClientTaskDeclaration =
     private
@@ -188,8 +173,7 @@ type ClientTaskDeclaration =
         |> Option.map TaskDeclaration.editableInputs
         |> Option.defaultValue []
 
-    member this.Review =
-        this.LedgerValue |> Option.map (fun task -> TaskReview.mode task.Id)
+    member this.Review = this.LedgerValue |> Option.map _.Review
 
     member this.Creates = this.LedgerValue |> Option.exists _.Creates
 

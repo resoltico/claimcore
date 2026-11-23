@@ -47,7 +47,7 @@ const inactive = (state: "NO_ROLES" | "DISABLED" | "NOT_REGISTERED"): HumanDocum
       },
       {
         role: "DETAILS",
-        titleId: "label.recordDetails",
+        titleId: "label.technicalDetails",
         content: {
           kind: "ENTRIES",
           entries: [
@@ -91,7 +91,7 @@ it.each(["NO_ROLES", "DISABLED", "NOT_REGISTERED"] as const)(
     render(<Dashboard />);
     expect(await screen.findByText(`Core caller guidance ${state} Ω`)).toBeVisible();
     expect(screen.getByText("Core caller technical identity Ψ")).not.toBeVisible();
-    await userEvent.click(screen.getByText("Record details"));
+    await userEvent.click(screen.getByText("Technical details"));
     expect(screen.getByText("Core caller technical identity Ψ")).toBeVisible();
     expect(fetch.mock.calls.map((call) => call[0])).toEqual(["/api/context"]);
   },

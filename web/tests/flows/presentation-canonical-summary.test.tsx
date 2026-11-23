@@ -68,7 +68,7 @@ it.each(["en", "lv", "ar"])(
     await user.click(screen.getByText(p.text("subject.CASE.label")));
     await user.click(
       screen.getByRole("button", {
-        name: p.text("ui.copy", { label: p.text("label.recordDetails") }),
+        name: p.text("ui.copy", { label: p.text("label.technicalDetails") }),
       }),
     );
     expect(copy).toHaveBeenCalledWith(

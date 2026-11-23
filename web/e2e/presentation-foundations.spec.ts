@@ -1129,7 +1129,7 @@ for (const language of ["en", "ar"] as const) {
         ],
         details: [
           {
-            titleId: "label.recordDetails",
+            titleId: "label.technicalDetails",
             entries: [
               {
                 key: "operationId",

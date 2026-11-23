@@ -57,7 +57,7 @@ export const firstPerson: PersonDocument = withRecommendation(
         },
         {
           role: "DETAILS",
-          titleId: "label.recordDetails",
+          titleId: "label.technicalDetails",
           content: {
             kind: "ENTRIES",
             entries: [
@@ -142,7 +142,7 @@ export const secondPerson: PersonDocument = withRecommendation(
         },
         {
           role: "DETAILS",
-          titleId: "label.recordDetails",
+          titleId: "label.technicalDetails",
           content: {
             kind: "ENTRIES",
             entries: [

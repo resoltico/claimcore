@@ -95,7 +95,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
         />
       </h2>
       <details data-region="DETAILS">
-        <summary>{p.text("label.recordDetails")}</summary>
+        <summary>{p.text("label.technicalDetails")}</summary>
         <PendingMetadata metadata={metadata} />
       </details>
       <p>{p.text("ui.retryExactDescription")}</p>

@@ -256,7 +256,7 @@ same review through Settings and display changes; returning to edit restores the
 
 Review the proposed changes and confirm once. An interactive CLI command can read an omitted version
 and freeze it for review; automation supplies its expected version. Technical versions appear under
-Record details or CLI `--details`. A conflict keeps your draft and requires an explicit fresh review.
+Technical details or CLI `--details`. A conflict keeps your draft and requires an explicit fresh review.
 The CLI never silently rebases. In the browser, accepted case receipts show the recorded facts at
 full available width, with Close above them; closing the receipt returns to the case workspace.
 

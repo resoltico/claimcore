@@ -116,7 +116,7 @@ module ContextScreen =
                         (boolean authenticated)
                 ]
             section
-                "label.recordDetails"
+                "label.technicalDetails"
                 [
                     value
                         "contractIdentity"
@@ -288,7 +288,7 @@ module ContextScreen =
                 if not facts.IsEmpty then
                     entryRegion RegionRole.Facts None facts
                 if not details.IsEmpty then
-                    entryRegion RegionRole.Details (Some "label.recordDetails") details
+                    entryRegion RegionRole.Details (Some "label.technicalDetails") details
             ]
 
     let sessionView authenticated contractIdentity =
@@ -297,7 +297,7 @@ module ContextScreen =
         Screen.create
             [
                 entryRegion RegionRole.Identity None sections[0].Entries
-                entryRegion RegionRole.Details (Some "label.recordDetails") sections[1].Entries
+                entryRegion RegionRole.Details (Some "label.technicalDetails") sections[1].Entries
             ]
 
     let logoutView () =

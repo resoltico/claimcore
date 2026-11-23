@@ -327,6 +327,7 @@ let tests =
                         {
                             Task = TaskId.ofLiteral "people.requests.dismiss"
                             LabelId = "endpoint.people.requests.dismiss.label"
+                            ShortLabelId = None
                             Control =
                                 ActionControl.Command(
                                     CommandRequest.DismissAccessRequest principal

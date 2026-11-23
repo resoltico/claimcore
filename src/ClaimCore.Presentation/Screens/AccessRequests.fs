@@ -69,11 +69,8 @@ module AccessRequestsScreen =
 
     let view (reply: AccessRequestPage) =
         let screen = rows reply.Items
-
-        if reply.Items.IsEmpty then
-            screen
-        else
-            page reply.Basis reply.Items.Length reply.NextCursor screen
+        let count = int64 reply.Items.Length
+        Screen.withRegions (List.map (withCount "accessRequests" count) screen.Regions) screen
 
     let dismissed () =
         Screen.create

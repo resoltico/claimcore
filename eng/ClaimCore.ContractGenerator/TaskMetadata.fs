@@ -75,7 +75,7 @@ module TaskMetadata =
                 review =
                     ledger
                     |> Option.map (fun declaration ->
-                        TaskReview.mode declaration.Id |> Vocabulary.token TaskReview.vocabulary)
+                        declaration.Review |> Vocabulary.token TaskReview.vocabulary)
                 reviewedLabelId =
                     ledger
                     |> Option.bind (fun declaration ->

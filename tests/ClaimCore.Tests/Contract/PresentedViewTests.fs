@@ -49,6 +49,7 @@ let tests =
                                     Role = RegionRole.Facts
                                     TitleId = Some "subject.CASE.label"
                                     EmptyId = None
+                                    Count = None
                                     Content =
                                         RegionContent.Entries
                                             [
@@ -128,6 +129,7 @@ let tests =
                                     Role = RegionRole.Results
                                     TitleId = None
                                     EmptyId = None
+                                    Count = None
                                     Content = RegionContent.Table table
                                 }
                             ]
@@ -204,6 +206,7 @@ let tests =
                                     Role = RegionRole.Identity
                                     TitleId = None
                                     EmptyId = None
+                                    Count = None
                                     Content =
                                         RegionContent.Entries
                                             [
@@ -220,8 +223,9 @@ let tests =
                                     Link = None
                                     Actions = []
                                     Role = RegionRole.Details
-                                    TitleId = Some "label.recordDetails"
+                                    TitleId = Some "label.technicalDetails"
                                     EmptyId = None
+                                    Count = None
                                     Content =
                                         RegionContent.Entries
                                             [

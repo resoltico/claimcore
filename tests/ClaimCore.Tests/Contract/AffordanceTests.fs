@@ -39,6 +39,7 @@ let private region rows =
         Region.Role = RegionRole.Results
         TitleId = None
         EmptyId = None
+        Count = None
         Content =
             RegionContent.Table
                 {

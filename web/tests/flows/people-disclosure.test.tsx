@@ -495,7 +495,7 @@ it.each(["lost", "unknown"] as const)(
                 regions: [
                   {
                     role: "DETAILS",
-                    titleId: "label.recordDetails",
+                    titleId: "label.technicalDetails",
                     content: {
                       kind: "ENTRIES",
                       entries: [

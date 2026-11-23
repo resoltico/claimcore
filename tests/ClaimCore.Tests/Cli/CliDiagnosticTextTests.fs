@@ -412,6 +412,7 @@ let nextAndConflicts =
                             [
                                 {
                                     TitleId = "label.changes"
+                                    EmptyMessageId = None
                                     Entries =
                                         [
                                             {

@@ -113,7 +113,7 @@ module AccessHistoryScreen =
                     Details =
                         [
                             section
-                                "label.recordDetails"
+                                "label.technicalDetails"
                                 (entries peopleHistoryColumns item |> List.filter technical)
                         ]
                 })
@@ -124,5 +124,4 @@ module AccessHistoryScreen =
                 |> withEmpty "empty.accessHistory"
             ]
 
-    let view (reply: PeopleHistoryPage) =
-        rows reply.Entries |> page reply.Basis reply.Entries.Length reply.NextCursor
+    let view (reply: PeopleHistoryPage) = rows reply.Entries

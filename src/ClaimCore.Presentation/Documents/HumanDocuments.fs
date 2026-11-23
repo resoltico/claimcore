@@ -266,6 +266,11 @@ module HumanCaseDocument =
                             Some
                                 { action with
                                     LabelId = labelId
+                                    ShortLabelId =
+                                        if labelId = "task.case.decide.change" then
+                                            Some "task.case.decide.changeShortLabel"
+                                        else
+                                            action.ShortLabelId
                                     Blocked =
                                         availability.Blocked
                                         |> Option.map TaskAffordances.availability

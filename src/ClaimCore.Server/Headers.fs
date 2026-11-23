@@ -36,7 +36,6 @@ module HttpHeaders =
     let private permissionsPolicy =
         [
             "accelerometer=()"
-            "ambient-light-sensor=()"
             "autoplay=()"
             "bluetooth=()"
             "browsing-topics=()"

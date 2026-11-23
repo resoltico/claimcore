@@ -119,7 +119,7 @@ export const Entries = ({
       </dl>
       {copy && entries.length > 0 ? (
         <CopyValue
-          label={p.text("label.recordDetails")}
+          label={p.text("label.technicalDetails")}
           value={entries
             .map((entry) => `${entry.key}: ${canonicalPresented(entry.value)}`)
             .join("\n")}
