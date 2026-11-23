@@ -16,6 +16,7 @@ type Item = {
 
 const ActionMenuItem = ({ item }: { item: Item }) => {
   const description = useId();
+  const hasDescription = item.description !== null && item.description !== undefined;
   return (
     <MenuItem
       key={item.id}
@@ -23,18 +24,18 @@ const ActionMenuItem = ({ item }: { item: Item }) => {
       className="action-menu-item"
       textValue={item.label}
       aria-label={item.label}
-      aria-describedby={item.description === undefined ? undefined : description}
+      aria-describedby={hasDescription ? description : undefined}
       isDisabled={item.disabled ?? false}
       data-consequence={item.consequence ?? undefined}
       data-menu-item={item.id}
       onAction={item.select}
     >
       <span>{item.label}</span>
-      {item.description === undefined ? null : (
+      {hasDescription ? (
         <span id={description} className="action-menu-description">
           {item.description}
         </span>
-      )}
+      ) : null}
     </MenuItem>
   );
 };

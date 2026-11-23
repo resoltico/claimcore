@@ -5,6 +5,7 @@ import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { ActionMenu } from "./ActionMenu";
 import { Button } from "./Button";
+import { SuppliedMessage } from "./SuppliedMessage";
 
 export const TaskControls = ({
   actions,
@@ -13,6 +14,7 @@ export const TaskControls = ({
   compact = false,
   disabled = false,
   prominent = false,
+  timeZone = "UTC",
 }: {
   actions: ReadonlyArray<Affordance>;
   onAction?: (action: Affordance, originId?: string) => void;
@@ -20,6 +22,7 @@ export const TaskControls = ({
   compact?: boolean;
   disabled?: boolean;
   prominent?: boolean;
+  timeZone?: string;
 }) => {
   const p = usePresentation();
   const id = useId();
@@ -39,6 +42,7 @@ export const TaskControls = ({
         meaning: renderCatalogKey(p, task.meaningId),
       }),
       disabled: disabled || action.blocked !== null,
+      advice: action.blocked?.message,
       consequence: task.consequence,
       select: (origin: string) => {
         onAction?.(action, origin);
@@ -80,15 +84,19 @@ export const TaskControls = ({
     <ActionMenu
       id={id}
       label={p.text("ui.moreCaseActions")}
-      items={described.map(({ id: key, label, consequence, disabled: itemDisabled, select }) => ({
-        id: key,
-        label,
-        consequence,
-        disabled: itemDisabled,
-        select: () => {
-          select(id);
-        },
-      }))}
+      items={described.map(
+        ({ id: key, label, consequence, disabled: itemDisabled, advice, select }) => ({
+          id: key,
+          label,
+          consequence,
+          disabled: itemDisabled,
+          description:
+            advice === undefined ? null : <SuppliedMessage message={advice} timeZone={timeZone} />,
+          select: () => {
+            select(id);
+          },
+        }),
+      )}
       stewardshipLabel={p.text("label.dataStewardship")}
     />
   );

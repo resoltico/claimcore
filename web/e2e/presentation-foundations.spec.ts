@@ -355,10 +355,14 @@ for (const language of ["en", "ar"] as const) {
       }
       await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
       if (mobile) {
+        await expect(
+          page.locator(".workspace-mobile-tabs :is(a, button):not(:has(svg))"),
+        ).toHaveCount(0);
         const trigger = page.locator("#workspace-more");
         await trigger.press("Enter");
         const sheet = page.locator(".shell-more");
         await expect(sheet.locator('a[href="/recovery"]')).toBeVisible();
+        await expect(sheet.locator(":is(a, button):not(:has(svg))")).toHaveCount(0);
         await expect(sheet.locator(".shell-business-date")).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(trigger).toBeFocused();

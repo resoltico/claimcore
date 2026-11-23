@@ -906,6 +906,7 @@ test("reviews private files, displays native previews and withdraws disclosure @
   const reference = `ATTACH-WEB-${randomUUID()}`;
   await openCase(page, reference);
   const attachments = page.getByRole("region", { name: "Attachments", exact: true });
+  await expect(page.getByRole("link", { name: "Attachments", exact: true })).toHaveCount(0);
   const portable = "private_raster_01.png";
   const original = await upload(
     page,

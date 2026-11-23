@@ -12,6 +12,7 @@ import { navigate } from "../../routing/navigation";
 import { Chip } from "../../ui/Chip";
 import { Button } from "../../ui/Button";
 import { ActionMenu } from "../../ui/ActionMenu";
+import { SuppliedMessage } from "../../ui/SuppliedMessage";
 import { Section } from "../../ui/Section";
 import { EmptyState } from "../../ui/EmptyState";
 import type { ReminderActHandler } from "./reminderActions";
@@ -93,6 +94,10 @@ const ReminderCard = ({
                 operationTask(action.task).reviewedLabelId ?? action.labelId,
               ),
               disabled: action.blocked !== null,
+              description:
+                action.blocked === null ? null : (
+                  <SuppliedMessage message={action.blocked.message} timeZone={zone} />
+                ),
               select: () => {
                 onReminder(action, actionId);
               },

@@ -2,6 +2,7 @@ import { Page } from "../ui/Page";
 import { PhoneAction } from "../ui/PhoneAction";
 import { Icon } from "../ui/icons";
 import { ActionMenu } from "../ui/ActionMenu";
+import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { principalCreationTask } from "../operation/metadata";
 import { renderCatalogKey } from "../presentation/messages";
 import { isOperationAffordance, initialAffordanceValues } from "../operation/affordances";
@@ -268,8 +269,7 @@ const PeopleWorkspace = ({
           (action): action is AccessRequestControl =>
             isOperationAffordance(action) &&
             (action.task === clientCompositions.accountRegistration ||
-              action.task === clientCompositions.admission) &&
-            action.blocked === null,
+              action.task === clientCompositions.admission),
         ) ?? [])
       : [];
   const blocked =
@@ -279,7 +279,14 @@ const PeopleWorkspace = ({
   const items = additions.map((action) => ({
     id: action.task,
     label: renderCatalogKey(p, action.labelId),
-    disabled: blocked,
+    disabled: blocked || action.blocked !== null,
+    description:
+      action.blocked === null ? null : (
+        <SuppliedMessage
+          message={action.blocked.message}
+          timeZone={context.value?.basis.observation.timeZone ?? "UTC"}
+        />
+      ),
     select: () => {
       editor.admit(action);
       editor.open();
