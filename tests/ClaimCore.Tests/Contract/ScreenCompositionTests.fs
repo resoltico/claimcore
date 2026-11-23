@@ -205,9 +205,26 @@ let redesignDeclarations =
                         [ "No next actions for this case." ]
                         "CLI renders the empty message in place of the column headers")
             testCase "an empty case party table names its own empty state" (fun () ->
+                let original = ResponseExamples.caseRead
+
+                let add =
+                    TaskOffer.Available(
+                        TaskId.ofLiteral "party.add",
+                        Binding.PartyNew(CaseSelector.Id original.Snapshot.CaseId),
+                        {
+                            Seeds = Map.empty
+                            Selections = Set.empty
+                            Editable = []
+                            Choices = Map.empty
+                            Blocked = None
+                            Recommendation = None
+                        }
+                    )
+
                 let observation =
-                    { ResponseExamples.caseRead with
+                    { original with
                         Parties = []
+                        PartyOffers = [ add ]
                     }
 
                 let screen = CaseScreen.view observation
