@@ -262,9 +262,9 @@ test("Settings keeps the format preview and accent cards within the page at 320p
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
-  const previewOverflow = await page.locator(".settings-preview").evaluate((preview) => {
-    return preview.scrollWidth - preview.clientWidth;
-  });
+  const previewOverflow = await page
+    .locator(".settings-preview")
+    .evaluate((preview) => preview.scrollWidth - preview.clientWidth);
   expect(previewOverflow).toBeLessThanOrEqual(1);
   const overflow = await page.evaluate(() => {
     const cards = [...document.querySelectorAll<HTMLElement>(".accent-card")];
