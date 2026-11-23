@@ -110,9 +110,31 @@ const recordPaymentReview = async (run: Run) => {
 const historyComparison = async (page: Page) => {
   await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
 };
+const editorLayout = async (page: Page) => {
+  const section = page.locator(".task-field-section").filter({
+    has: page.locator('[data-field-name="incidentDate"]'),
+  });
+  await expect(section.getByRole("heading")).toBeVisible();
+  const date = await section.locator('[data-field-name="incidentDate"]').boundingBox();
+  const received = await section.locator('[data-field-name="receivedDate"]').boundingBox();
+  const narrative = await section.locator('[data-field-name="incidentDescription"]').boundingBox();
+  expect(date).not.toBeNull();
+  expect(received).not.toBeNull();
+  expect(narrative).not.toBeNull();
+  if ((page.viewportSize()?.width ?? 0) >= 640) {
+    expect(Math.abs(date!.y - received!.y)).toBeLessThan(2);
+    expect(Math.abs(date!.x - received!.x)).toBeGreaterThan(date!.width);
+    expect(narrative!.width).toBeGreaterThan(date!.width * 1.5);
+  } else {
+    expect(received!.y).toBeGreaterThan(date!.y);
+  }
+};
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {
     await visitRoute(run.page, route, run.dimension);
+    if (route.id === "editor-open") {
+      await editorLayout(run.page);
+    }
     if (route.id === "paid-correction-review") {
       await paidCorrectionReview(run);
     }

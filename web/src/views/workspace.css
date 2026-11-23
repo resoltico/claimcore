@@ -1,4 +1,16 @@
 @layer views {
+  .task-field-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--task-field-columns, 1), minmax(0, 1fr));
+    column-gap: var(--space-4);
+  }
+  .task-field-section {
+    margin-block: var(--space-4);
+  }
+  .task-field-grid > :only-child,
+  .task-field-wide {
+    grid-column: 1 / -1;
+  }
   .segmented-choice {
     display: flex;
     flex-wrap: wrap;

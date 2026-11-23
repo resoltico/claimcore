@@ -1,6 +1,6 @@
 @layer components {
   .drawer {
-    max-inline-size: var(--width-drawer);
+    --dialog-width: var(--width-drawer);
   }
 
   .drawer .ui-dialog-actions {

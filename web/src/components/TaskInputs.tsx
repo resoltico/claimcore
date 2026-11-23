@@ -432,41 +432,76 @@ const isPairedCurrency = (
     ),
   );
 
-const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input> }) => {
+const catalogField = (input: Input) =>
+  productMetadata.catalog.fields.find((field) => field.name === taskInput(input.id).key);
+
+const Fields = ({
+  inputs,
+  showSections = false,
+  ...props
+}: InputProps & { inputs: ReadonlyArray<Input>; showSections?: boolean }) => {
+  const p = usePresentation();
   const render = (input: Input) => {
-    const field = productMetadata.catalog.fields.find(
-      (candidate) => candidate.name === taskInput(input.id).key,
-    );
-    const peer =
-      field?.pairs === null || field?.pairs === undefined
-        ? undefined
-        : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = !props.task.creates && selectsValue(input, props.task.subject);
+    const field = catalogField(input);
     if (isPairedCurrency(field, inputs)) {
       return null;
     }
-    if (peer !== undefined && !selectable) {
-      return <PairedInputs key={input.id} input={input} peer={peer} {...props} />;
+    const peer = inputs.find((candidate) => taskInput(candidate.id).key === field?.pairs);
+    if (!props.task.creates && selectsValue(input, props.task.subject)) {
+      return (
+        <div key={input.id} className="task-field-wide">
+          <SelectedValue input={input} {...(peer === undefined ? {} : { peer })} {...props} />
+        </div>
+      );
     }
-    return selectable ? (
-      <SelectedValue
-        key={input.id}
-        input={input}
-        {...(peer === undefined ? {} : { peer })}
-        {...props}
-      />
-    ) : (
-      <InputControl key={input.id} input={input} {...props} />
+    if (peer !== undefined) {
+      return (
+        <div key={input.id}>
+          <PairedInputs input={input} peer={peer} {...props} />
+        </div>
+      );
+    }
+    const scalar = taskScalar(input.id)?.scalar;
+    const narrative = scalar?.kind === "PLAIN_TEXT" && scalar.allowsLineFeed;
+    const wide = input.choices.length > 0 || narrative;
+    return (
+      <div key={input.id} className={wide ? "task-field-wide" : undefined}>
+        <InputControl input={input} {...props} />
+      </div>
     );
   };
   const hasGrantTarget =
     props.task.subject === "PEOPLE" &&
     props.task.inputs.some((input) => input.id === "input:scope") &&
     inputs.some(isGrantInput);
+  const sections = new Map<NonNullable<ReturnType<typeof catalogField>>["section"], Input[]>();
+  for (const input of inputs) {
+    if (hasGrantTarget && isGrantInput(input)) {
+      continue;
+    }
+    const section = showSections ? (catalogField(input)?.section ?? null) : null;
+    const fields = sections.get(section);
+    if (fields === undefined) {
+      sections.set(section, [input]);
+    } else {
+      fields.push(input);
+    }
+  }
   return (
     <>
       {hasGrantTarget && <GrantTargetInput {...props} inputs={props.task.inputs} />}
-      {inputs.filter((input) => !hasGrantTarget || !isGrantInput(input)).map(render)}
+      {[...sections].map(([section, fields]) =>
+        section === null ? (
+          <div className="task-field-grid" key="ungrouped">
+            {fields.map(render)}
+          </div>
+        ) : (
+          <section className="task-field-section" key={section}>
+            <h3>{p.term("section", section)}</h3>
+            <div className="task-field-grid">{fields.map(render)}</div>
+          </section>
+        ),
+      )}
     </>
   );
 };
@@ -574,7 +609,7 @@ export const TaskInputs = (props: Props) => {
   );
   return (
     <>
-      <Fields inputs={ordinary} {...inputProps} />
+      <Fields inputs={ordinary} showSections {...inputProps} />
       {groups.map((group) => {
         const metadata = taskInput(group.id);
         const children = visible.filter(

@@ -27,7 +27,7 @@
   }
   .ui-dialog {
     inline-size: 100%;
-    max-inline-size: var(--width-operation-dialog);
+    max-inline-size: var(--dialog-width);
     max-block-size: calc(var(--viewport-block) - var(--space-6));
     overflow: auto;
     overflow-wrap: anywhere;

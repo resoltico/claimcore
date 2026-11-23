@@ -4,6 +4,7 @@
     --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
+    --dialog-width: var(--width-operation-dialog);
     --drawer-block-size: 100%;
   }
 
@@ -133,6 +134,12 @@
     }
     .case-main-column > .case-fields > dl > .field-row {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (width >= 40rem) {
+    .operation-form-card {
+      --task-field-columns: 2;
     }
   }
 
