@@ -441,7 +441,7 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
       await verifyProviderAppearance(page, language === "ar");
       if (language === "en") {
         await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
-        await expect(page.locator("#kc-login")).toHaveValue("Sign in");
+        await expect(page.locator("#kc-login")).toHaveAccessibleName("Sign in");
         const top = await page
           .locator(".pf-v5-c-login__main")
           .evaluate((card) => getComputedStyle(card).borderTopWidth);
