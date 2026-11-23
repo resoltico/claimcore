@@ -1,6 +1,6 @@
+import { expectCaseRevision } from "./work-workflow";
 import { type ResponseFor } from "@contracts/client";
-import { showCaseRecordDetails } from "./workspace-navigation";
-import { expectCaseReadsSettled } from "./case-readiness";
+import { expectCaseReadsSettled, acceptanceBanner } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import { openCase, reviewDraft, startClose } from "./case-workflow";
@@ -57,14 +57,9 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
-  await expect(page.locator(".accepted-receipt")).toContainText("Case closed.");
+  await expect(acceptanceBanner(page)).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
-  await showCaseRecordDetails(page);
-  await expect(
-    page.locator(
-      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
-    ),
-  ).toContainText("2");
+  await expectCaseRevision(page, 2);
 };
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
   page,
@@ -208,10 +203,8 @@ test("canonical case links reload and browser back and forward preserve the case
   await page.reload();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await page
-    .getByRole("button", {
-      name: "Back to cases",
-      exact: true,
-    })
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Cases", exact: true })
     .click();
   await expect(page).toHaveURL(
     (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",

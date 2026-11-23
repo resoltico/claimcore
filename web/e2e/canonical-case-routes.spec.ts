@@ -104,10 +104,8 @@ test("case inspection restores the live work query, selected row focus and scrol
   await selected.click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await page
-    .getByRole("button", {
-      name: "Back to cases",
-      exact: true,
-    })
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Cases", exact: true })
     .click();
   await expect(page).toHaveURL(url);
   await expect(page.locator(`[id="${id}"]`)).toBeFocused();

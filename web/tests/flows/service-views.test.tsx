@@ -480,7 +480,7 @@ it("retains the current worklist draft during a guarded Find navigation", async 
     return false;
   });
   try {
-    await user.click(screen.getByRole("button", { name: "Find a case" }));
+    await user.click(screen.getByRole("button", { name: /^Find a case/u }));
     await user.type(
       screen.getByRole("combobox", { name: "Find a case" }),
       "matching claimants{Enter}",

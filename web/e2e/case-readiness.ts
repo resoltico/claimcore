@@ -7,9 +7,23 @@ const presenterFor = async (page: Page) =>
     parsePreferences(await page.evaluate((key) => localStorage.getItem(key), preferenceKey)),
   );
 
+export const acceptanceBanner = (page: Page) =>
+  page.locator('.case-detail .status-banner[data-tone="success"]');
+
+export const openAcceptedReceipt = async (page: Page) => {
+  const p = await presenterFor(page);
+  const receipt = page.getByRole("dialog", { name: p.text("ui.viewReceipt") });
+  if (!(await receipt.isVisible())) {
+    await acceptanceBanner(page)
+      .getByRole("button", { name: p.text("ui.viewReceipt") })
+      .click();
+  }
+  return receipt;
+};
+
 export const expectReceiptReadSettled = async (page: Page): Promise<void> => {
   const p = await presenterFor(page);
-  const receipt = page.locator(".accepted-receipt");
+  const receipt = page.getByRole("dialog", { name: p.text("ui.viewReceipt") });
   if ((await receipt.count()) > 0) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       await expect(

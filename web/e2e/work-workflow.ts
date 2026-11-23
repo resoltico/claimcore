@@ -1,3 +1,4 @@
+import { parseRoute } from "../src/routing/routes";
 import { type ResponseFor, endpoints, type RequestByEndpoint } from "@contracts/client";
 import { chooseOption } from "./workspace-navigation";
 import { ui } from "./localization-support";
@@ -172,6 +173,20 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
   }
   return endpointReply;
 };
+export const expectCaseRevision = async (page: Page, revision: number): Promise<void> => {
+  const url = new URL(page.url());
+  const route = parseRoute(url);
+  if (route.screen !== "case") {
+    throw new Error("Case route required for revision readback.");
+  }
+  const current = await workRequest(page, "case.get", { target: route.target });
+  if (current.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Case revision readback was refused.");
+  }
+  expect(current.outcome.data.revision).toBe(revision);
+  await expect(page.locator('.case-detail details[data-region="DETAILS"]')).toHaveCount(0);
+};
+
 /** Check durable facts through DATA independently of the HUMAN receipt display. */
 export const acceptedSubject = async (
   page: Page,

@@ -2,6 +2,7 @@
   .data-table {
     min-inline-size: 0;
     overflow-x: auto;
+    contain: paint;
     container-name: data-table;
     container-type: inline-size;
     background: var(--bg-surface);
@@ -55,6 +56,14 @@
 
   .data-table .chip {
     overflow-wrap: normal;
+  }
+
+  .data-table [data-reference] > :is(a, bdi) {
+    display: inline-block;
+    max-inline-size: var(--width-reference-filter);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
   }
 
   .data-table .row-link::after {

@@ -1,3 +1,4 @@
+import { expectCaseRevision } from "./work-workflow";
 import { prefixedInputs } from "../tests/support/submission-inputs";
 import {
   type ResponseFor,
@@ -7,7 +8,7 @@ import {
   type RequestByEndpoint,
 } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
+import { showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
 
 type CaseSubmission = Extract<
@@ -252,20 +253,11 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
     recordedBy = acceptedActor.actor.actorId;
     revision = acceptedRevision;
   }
-  await (await showExactLookup(page)).fill(reference);
-  await page
-    .getByRole("button", {
-      name: "Open by exact reference",
-      exact: true,
-    })
-    .click();
+  const lookup = await showExactLookup(page);
+  await lookup.fill(reference);
+  await lookup.press("Enter");
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await showCaseRecordDetails(page);
-  await expect(
-    page.locator(
-      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
-    ),
-  ).toContainText(String(revision));
+  await expectCaseRevision(page, revision);
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);

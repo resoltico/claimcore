@@ -3,7 +3,7 @@ import { apiEndpoints, type CurrentCase, isCurrentCase } from "../../api/service
 import type { BoundOperationAffordance, OperationAffordance } from "../../operation/affordances";
 
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ReceiptFeedback } from "../operation/ReceiptFeedback";
+import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState } from "react";
 import { useSessionContext } from "../../session/SessionContext";
@@ -133,6 +133,7 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
         <ReceiptFeedback
           key={done.operationId}
           operationId={done.operationId}
+          messageId={done.messageId}
           dismiss={done.clear}
         />
       )}
@@ -177,8 +178,8 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
           refused={() => {
             setMasked(true);
           }}
-          recorded={(_receipt, operationId) => {
-            done.accept(operationId);
+          recorded={(receipt, operationId) => {
+            done.accept(operationId, receiptOutcomeMessage(receipt));
             setMasked(false);
             setRefresh((value) => value + 1);
             close();

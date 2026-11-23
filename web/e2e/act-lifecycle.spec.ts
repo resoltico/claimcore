@@ -1,4 +1,5 @@
-import { showCaseRecordDetails, goToView, showOperationLookup } from "./workspace-navigation";
+import { expectCaseRevision } from "./work-workflow";
+import { goToView, showOperationLookup } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
@@ -16,12 +17,7 @@ import {
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
-  await showCaseRecordDetails(page);
-  await expect(
-    page.locator(
-      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
-    ),
-  ).toContainText(revision);
+  await expectCaseRevision(page, Number(revision));
 };
 const reference = (): string => `BROWSER-${randomUUID()}`;
 

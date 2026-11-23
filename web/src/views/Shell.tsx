@@ -1,3 +1,4 @@
+import { actorName } from "../presentation/actorName";
 import {
   type Screen,
   type TaskId,
@@ -12,7 +13,7 @@ import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ComponentProps } from "react";
 
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
@@ -140,6 +141,31 @@ const shellTitle = (active: string, route: Route) =>
   areas.find((area) => area.name === active)?.label ??
   (route.screen === "recovery" ? "ui.recovery" : "label.caseDetail");
 
+const ShellAccount = ({
+  identity,
+  items,
+}: {
+  identity: Value | undefined;
+  items: ComponentProps<typeof ActionMenu>["items"];
+}) => {
+  const p = usePresentation();
+  const label = p.text("label.account");
+  const name = identity?.kind === "ACTOR" ? actorName(p, identity.value) : null;
+  return (
+    <ActionMenu
+      id="workspace-account"
+      label={name === null ? label : `${label} · ${name}`}
+      items={items}
+      trigger={
+        <span className="shell-account-identity">
+          <Icon name="person" />
+          {name === null ? null : <bdi>{name}</bdi>}
+        </span>
+      }
+    />
+  );
+};
+
 export const Shell = ({
   route,
   presentation,
@@ -183,6 +209,7 @@ export const Shell = ({
     (entry) => entry.key === "self",
   )?.value;
   const apple = /Mac|iPhone|iPad|iPod/u.test(window.navigator.platform);
+  const shortcut = apple ? "⌘K" : "Ctrl+K";
   const signOut = () => {
     guardedDeparture(() => {
       void logout();
@@ -251,7 +278,7 @@ export const Shell = ({
     <Button
       variant="quiet"
       isDisabled={locked}
-      aria-label={p.text("ui.findCase")}
+      aria-label={iconOnly ? p.text("ui.findCase") : `${p.text("ui.findCase")} ${shortcut}`}
       className="shell-find"
       onPress={() => {
         setFindOrigin(route);
@@ -261,7 +288,7 @@ export const Shell = ({
       {iconOnly ? null : (
         <>
           <span className="shell-link-label">{p.text("ui.findCase")}</span>
-          <kbd>{apple ? "⌘K" : "Ctrl+K"}</kbd>
+          <kbd>{shortcut}</kbd>
         </>
       )}
     </Button>
@@ -282,7 +309,7 @@ export const Shell = ({
           }}
         >
           <span className="product-mark" aria-hidden="true">
-            C
+            <Icon name="brand" />
           </span>
           <span className="shell-brand">ClaimCore</span>
         </a>
@@ -310,20 +337,7 @@ export const Shell = ({
           >
             <Icon name="info" /> <span className="shell-link-label">{p.text("ui.about")}</span>
           </a>
-          <ActionMenu
-            id="workspace-account"
-            label={p.text("label.account")}
-            items={accountItems}
-            trigger={
-              identity === undefined ? (
-                <Icon name="person" />
-              ) : (
-                <span className="shell-account-identity">
-                  <PresentedValue value={identity} timeZone="UTC" avatar />
-                </span>
-              )
-            }
-          />
+          <ShellAccount identity={identity} items={accountItems} />
         </footer>
       </aside>
       {compact ? (

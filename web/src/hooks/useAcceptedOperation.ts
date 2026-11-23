@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import { useRequesterContext } from "./useRequesterContext";
 
@@ -6,7 +6,7 @@ import { useRequesterContext } from "./useRequesterContext";
 export const useAcceptedOperation = () => {
   const { state } = useSessionContext();
   const requester = useRequesterContext();
-  const owner =
+  const scope =
     state.kind === "authenticated" && requester !== null
       ? JSON.stringify([
           location.origin,
@@ -16,6 +16,7 @@ export const useAcceptedOperation = () => {
           requester.subject.actorId,
         ])
       : null;
+  const owner = useMemo(() => (scope === null ? null : { scope }), [scope]);
   const latestOwner = useRef(owner);
   useLayoutEffect(() => {
     latestOwner.current = owner;
@@ -23,15 +24,21 @@ export const useAcceptedOperation = () => {
       latestOwner.current = null;
     };
   }, [owner]);
-  const [accepted, setAccepted] = useState<{ owner: string; operationId: string } | null>(null);
+  const [accepted, setAccepted] = useState<{
+    owner: NonNullable<typeof owner>;
+    operationId: string;
+    messageId: string | undefined;
+  } | null>(null);
+  const visible = accepted?.owner === owner ? accepted : null;
   return {
-    operationId: accepted !== null && accepted.owner === owner ? accepted.operationId : null,
+    operationId: visible?.operationId ?? null,
+    messageId: visible?.messageId,
     clear: () => {
       setAccepted(null);
     },
-    accept: (operationId: string) => {
+    accept: (operationId: string, messageId?: string) => {
       if (owner !== null && latestOwner.current === owner) {
-        setAccepted({ owner, operationId });
+        setAccepted({ owner, operationId, messageId });
       }
     },
   };

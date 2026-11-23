@@ -39,13 +39,9 @@ const openNarrowSession = (page: Page, heading: string): Promise<void> => {
   return openAuthenticated(page, heading, stewardCookies);
 };
 const findCase = async (page: Page, reference: string) => {
-  await (await showExactLookup(page)).fill(reference);
-  await page
-    .getByRole("button", {
-      name: "Open by exact reference",
-      exact: true,
-    })
-    .click();
+  const lookup = await showExactLookup(page);
+  await lookup.fill(reference);
+  await lookup.press("Enter");
 };
 const expectContextAccess = async (page: Page) => {
   const token = await sessionToken(page);
@@ -100,10 +96,8 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   if (scoped) {
     await page
-      .getByRole("button", {
-        name: "Back to cases",
-        exact: true,
-      })
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "Cases", exact: true })
       .click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(

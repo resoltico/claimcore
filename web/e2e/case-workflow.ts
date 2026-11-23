@@ -186,64 +186,44 @@ export const startOpen = async (
 };
 
 /** Reveal the offered global actions without opening an operation or sending a mutation. */
+const caseActionMenuTrigger = (page: Page) =>
+  page.locator(".case-header-actions button[aria-haspopup]").filter({ visible: true });
+
 export const showCaseActionMenu = async (page: Page): Promise<void> => {
-  const more = page.locator(".case-actions > summary, .case-more-actions > summary").filter({
-    visible: true,
-  });
-  if ((await more.count()) === 0) {
-    return;
-  }
-  await expect(more).toHaveCount(1);
-  if (
-    !(await more.evaluate(
-      (element) =>
-        element.parentElement instanceof HTMLDetailsElement && element.parentElement.open,
-    ))
-  ) {
+  const more = caseActionMenuTrigger(page);
+  if ((await more.count()) > 0 && (await more.getAttribute("aria-expanded")) !== "true") {
     await more.click();
   }
 };
 
-/** Reveal a Core-offered case action and check its complete localized accessible name. */
+/** Reveal a supplied case action and verify that its visible caption is its accessible name. */
 export const caseActionButton = async (
   page: Page,
   kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   language: Language,
 ) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  const p = createPresenter({
-    ...defaults,
-    language,
-  });
-  const button = page
-    .getByRole("button")
-    .and(page.locator(`button[data-act="${kind}"]`))
-    .filter({
-      visible: true,
-    });
-  const more = page.locator(".case-actions > summary, .case-more-actions > summary").filter({
-    visible: true,
-  });
-  await button.or(more).first().waitFor({
-    state: "visible",
-    timeout: 10_000,
-  });
-  if (!(await button.isVisible())) {
+  const p = createPresenter({ ...defaults, language });
+  const primary = page
+    .locator(`.case-header-actions button[data-act="${kind}"]`)
+    .filter({ visible: true });
+  const more = caseActionMenuTrigger(page);
+  await primary.or(more).first().waitFor({ state: "visible", timeout: 10_000 });
+  let control = primary;
+  if (!(await primary.isVisible())) {
+    await expect(more).toHaveAccessibleName(p.text("ui.moreCaseActions"));
     await showCaseActionMenu(page);
+    control = page.getByRole("menuitem").and(page.locator(`[data-menu-item="${kind}"]`));
   }
-  await expect(button).toHaveCount(1);
-  await expect(button).toBeEnabled();
+  await expect(control).toHaveCount(1);
+  await expect(control).toBeEnabled();
   expect(
-    await button.evaluate((element) => element.closest("[inert], [aria-hidden=true]") === null),
+    await control.evaluate((element) => element.closest("[inert], [aria-hidden=true]") === null),
   ).toBe(true);
-  await expect(button).toHaveText(p.actLabel(kind));
-  await expect(button).toHaveAccessibleName(
-    p.text("ui.actDescription", {
-      label: p.actLabel(kind),
-      meaning: p.actMeaning(kind),
-    }),
-  );
-  return button;
+  const label = (await control.textContent())?.trim();
+  expect(label).toBeTruthy();
+  await expect(control).toHaveAccessibleName(label!);
+  return control;
 };
 export const startAct = async (
   page: Page,

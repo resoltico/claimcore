@@ -9,7 +9,7 @@ import {
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { RoutedReminder } from "./SelectedReminder";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ReceiptFeedback } from "../operation/ReceiptFeedback";
+import { ReceiptFeedback, receiptOutcomeMessage } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { Affordance, TaskId, OperationBinding } from "@contracts/client";
@@ -84,11 +84,11 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (_receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
+  const accepted = (receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
     if (noteIntent !== undefined) {
       noteDraft.accepted(noteIntent);
     }
-    recorded.accept(operationId);
+    recorded.accept(operationId, receiptOutcomeMessage(receipt));
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -170,6 +170,7 @@ export const useCaseWorkPanels = ({
         <ReceiptFeedback
           key={recorded.operationId}
           operationId={recorded.operationId}
+          messageId={recorded.messageId}
           dismiss={recorded.clear}
         />
       )}

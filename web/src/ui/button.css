@@ -3,7 +3,7 @@
     --button-bg: var(--accent-solid);
     --button-text: var(--on-accent-solid);
     --button-border: var(--accent-solid);
-    display: inline-flex;
+    display: var(--button-display, inline-flex);
     align-items: center;
     justify-content: center;
     gap: var(--space-2);

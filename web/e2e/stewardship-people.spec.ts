@@ -131,13 +131,9 @@ test("browser renders void, reinstatement and live payload erasure through autho
   try {
     const steward = await context.newPage();
     await openAuthenticated(steward, "Cases", stewardCookies);
-    await (await showExactLookup(steward)).fill(reference);
-    await steward
-      .getByRole("button", {
-        name: "Open by exact reference",
-        exact: true,
-      })
-      .click();
+    const lookup = await showExactLookup(steward);
+    await lookup.fill(reference);
+    await lookup.press("Enter");
     await stewardAct(steward, reference, "case.void", "Synthetic entry error");
     await expect(
       steward.locator(

@@ -73,7 +73,7 @@ it("shows only supplied account identity and keeps navigation independent from r
     />
   );
   const view = render(<RequesterContext value={requester}>{header}</RequesterContext>);
-  expect(screen.getByRole("button", { name: "Account" })).toHaveTextContent(
+  expect(screen.getByRole("button", { name: /^Account(?: · |$)/u })).toHaveTextContent(
     "Supplied account name",
   );
   expect(screen.queryByLabelText("Roles")).toBeNull();
@@ -97,7 +97,7 @@ it("offers named global Find from other screens and respects the lock", async ()
     />
   );
   const view = render(header(false));
-  const trigger = screen.getByRole("button", { name: "Find a case" });
+  const trigger = screen.getByRole("button", { name: /^Find a case/u });
   expect(trigger).toBeEnabled();
   await userEvent.click(trigger);
   expect(screen.getByRole("dialog", { name: "Find a case" })).toBeVisible();

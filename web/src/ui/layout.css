@@ -26,7 +26,7 @@
 
   @media (width < 40rem) {
     .view-tabs {
-      flex-wrap: nowrap;
+      --view-tabs-wrap: nowrap;
       overflow-x: auto;
       padding: calc(var(--focus-width) + var(--focus-offset));
       scroll-padding-inline: calc(var(--focus-width) + var(--focus-offset));
@@ -414,6 +414,8 @@
     }
 
     .workspace-mobile-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
       inset-block-end: 0;
       min-block-size: var(--shell-bottom-height);
       justify-content: space-between;
@@ -422,6 +424,23 @@
 
     .workspace-mobile-tabs button {
       white-space: nowrap;
+    }
+
+    .workspace-mobile-tabs .shell-link-label {
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .workspace-mobile-tabs .shell-count {
+      position: absolute;
+      inline-size: var(--border-width);
+      block-size: var(--border-width);
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    html:root {
+      scroll-padding-block: var(--shell-top-height) var(--shell-bottom-height);
     }
   }
 }
@@ -456,7 +475,7 @@
 @layer layout {
   @media (width < 40rem) {
     .page-heading .open-case-link {
-      display: none;
+      --button-display: none;
     }
 
     .worklist-toolbar .worklist-search {

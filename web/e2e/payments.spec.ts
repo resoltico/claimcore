@@ -286,7 +286,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   expect(current.outcome.data.state.fields.finance.totals).toEqual([
     { currency: "EUR", paid: "54", returned: "0" },
   ]);
-  const acceptedNotice = page.locator(".accepted-receipt");
+  const acceptedNotice = page.locator('.status-banner[data-tone="success"]');
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice
     .getByRole("button", {

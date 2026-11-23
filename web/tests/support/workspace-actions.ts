@@ -13,7 +13,7 @@ export const workspaceSignOut = async (user = userEvent.setup()) => {
   if (visible !== null) {
     return visible;
   }
-  await user.click(screen.getByRole("button", { name: "Account" }));
+  await user.click(screen.getByRole("button", { name: /^Account(?: · |$)/u }));
   return screen.getByRole("menuitem", { name: "Sign out" });
 };
 

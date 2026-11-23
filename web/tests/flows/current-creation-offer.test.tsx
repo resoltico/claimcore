@@ -300,7 +300,7 @@ it("retains owned local creation fields through Settings while the unavailable O
   expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Account" }));
+  await user.click(screen.getByRole("button", { name: /^Account(?: · |$)/u }));
   await user.click(screen.getByRole("menuitem", { name: "Settings" }));
   await screen.findByRole("heading", { name: "Settings", level: 1 });
   await user.click(screen.getByRole("button", { name: "Close" }));

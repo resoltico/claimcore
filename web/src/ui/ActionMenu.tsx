@@ -44,6 +44,7 @@ export const ActionMenu = ({
       textValue={item.label}
       isDisabled={item.disabled ?? false}
       data-consequence={item.consequence ?? undefined}
+      data-menu-item={item.id}
       onAction={item.select}
     >
       {item.label}

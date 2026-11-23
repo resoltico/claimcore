@@ -20,7 +20,6 @@ import { useRequesterContext, useCaseCreationControl } from "../hooks/useRequest
 import { operationTask } from "../protocol/taskCatalog";
 import { renderCatalogKey } from "../presentation/messages";
 import { followLink } from "../routing/followLink";
-import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 
@@ -111,6 +110,11 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
   const p = usePresentation();
   const filtered = Object.keys(page.query).some((key) => key !== "view");
   const customEmpty = filtered || page.query.view !== undefined;
+  const empty = customEmpty ? (
+    <WorklistEmpty page={page} filtered={filtered} />
+  ) : (
+    <p>{p.text("label.noCases")}</p>
+  );
   return (
     <>
       {page.message === null ? null : (
@@ -126,20 +130,9 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
           </button>
         </div>
       )}
-      {page.page !== null && !page.loading && page.message === null ? (
-        <>
-          {page.items.length === 0 && customEmpty ? null : (
-            <PageStatus
-              empty={page.items.length === 0}
-              cursor={page.cursor}
-              emptyMessage="label.noCases"
-            />
-          )}
-          {page.items.length === 0 && customEmpty ? (
-            <WorklistEmpty page={page} filtered={filtered} />
-          ) : null}
-        </>
-      ) : null}
+      {page.page === null || page.loading || page.message !== null || page.items.length > 0
+        ? null
+        : empty}
     </>
   );
 };
@@ -196,23 +189,25 @@ const WorklistResults = ({
           }}
         />
       )}
-      {current === null || !current.screen.regions.some(({ role }) => role === "FACTS") ? null : (
+      {current === null || exact === null ? null : (
         <ScreenView
-          view={current.screen}
+          view={{
+            regions: current.screen.regions.filter(
+              ({ content }) =>
+                content.kind === "ENTRIES" &&
+                content.entries.some(({ value }) => value.kind === "REFERENCE"),
+            ),
+          }}
           timeZone={current.basis.timeZone}
           roles={["FACTS"]}
-          {...(exact === null
-            ? {}
-            : {
-                sectionLink: {
-                  column: "exactReference",
-                  id: exactOrigin,
-                  href: caseTargetPath(exact),
-                  follow: () => {
-                    onSelect(exact, exactOrigin);
-                  },
-                },
-              })}
+          sectionLink={{
+            column: "exactReference",
+            id: exactOrigin,
+            href: caseTargetPath(exact),
+            follow: () => {
+              onSelect(exact, exactOrigin);
+            },
+          }}
         />
       )}
       {page.page === null ? null : (

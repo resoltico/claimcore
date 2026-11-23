@@ -38,7 +38,7 @@ test("offers public terms and published source from the signed-out screen @engin
     const notice = await readLink("Licensing and source details");
     expect(await notice.text()).toContain("AGPL");
     const notices = await readLink("Third-party notices");
-    expect(await notices.text()).toContain("React");
+    expect(await notices.text()).toContain("Package: react@");
     const commercial = await readLink("Commercial terms");
     expect(commercial.status()).toBe(200);
     expect((await commercial.text()).replace(/\s+/gu, " ")).toContain(
