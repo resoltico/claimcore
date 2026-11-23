@@ -6,6 +6,7 @@ import { observe, seed } from "./presentation-probe";
 
 test("short desktop keeps the full administration navigation and footer keyboard reachable @engine", async ({
   page,
+  browserName,
 }) => {
   const clean = await observe(page, true);
   await seed(page);
@@ -73,21 +74,22 @@ test("short desktop keeps the full administration navigation and footer keyboard
     .poll(() => navigation.evaluate((nav) => nav.scrollHeight > nav.clientHeight))
     .toBe(true);
 
+  const tab = browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
   const find = sidebar.locator("#workspace-find");
   await find.focus();
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(tab);
   // Firefox includes the overflowing navigation itself in the tab sequence.
   if (await navigation.evaluate((nav) => nav === document.activeElement)) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(tab);
   }
   for (const path of paths) {
     const link = navigation.locator(`a[href="${path}"]`);
     await expect(link).toBeFocused();
     await expect(link).toBeInViewport({ ratio: 1 });
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(tab);
   }
   await expect(footer.getByRole("link", { name: "About ClaimCore" })).toBeFocused();
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(tab);
   const account = footer.locator("#workspace-account");
   await expect(account).toBeFocused();
   await expect(footer).toBeInViewport({ ratio: 1 });
