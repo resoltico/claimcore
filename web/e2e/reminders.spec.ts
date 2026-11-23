@@ -154,7 +154,7 @@ test("supports multiple independently revised reminders, terminal records, reope
   );
   // Cancellation has no editable inputs and Core declares automatic preview.
   await recordWorkReview(page, "REMINDER");
-  await expect(page.locator('[data-region="ATTENTION"]')).toBeVisible();
+  await expect(page.locator(".case-title-line .chip-list")).toContainText("No next action");
   await selectCaseReminderState(page, "COMPLETED");
   await expect(reminderRows(page)).toHaveCount(1);
   await expect(page.locator(".reminder-list")).not.toContainText("Overdue");
@@ -857,11 +857,15 @@ test("published reminder rows show server timing in case and queue views across 
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
   await expect(reminderRows(page)).toHaveCount(0);
-  const inactive = page.getByRole("checkbox", {
+  const filters = page.locator('.reminder-queue button[aria-haspopup="dialog"]');
+  await filters.click();
+  const sheet = page.locator(".filter-sheet").getByRole("dialog");
+  const inactive = sheet.getByRole("checkbox", {
     name: ui("ar", "input.includeInactive.label"),
   });
   await expect(inactive).toBeEnabled();
   await expect(inactive).toBeChecked();
+  await page.keyboard.press("Escape");
   await page
     .getByRole("button", {
       name: ui("ar", "ui.manualFilters"),
@@ -871,7 +875,9 @@ test("published reminder rows show server timing in case and queue views across 
   await expect(page).toHaveURL(
     (url) => url.searchParams.get("filters") === "manual" && !url.searchParams.has("view"),
   );
+  await filters.click();
   await inactive.check();
+  await sheet.locator('button[type="submit"]').click();
   await expect(reminderRows(page)).toHaveCount(3);
   await expect(page.locator(".reminder-list")).not.toContainText(
     ui("ar", "reminderDue.OVERDUE.label"),
@@ -1039,7 +1045,7 @@ test("@engine returns from an exact reminder to its filtered queue scroll and cl
   await expect(page).toHaveURL(new RegExp(`/reminders/${last}$`, "u"));
   await expectCaseReadsSettled(page);
   await expect(page.locator(".selected-reminder")).toContainText(`${reference} row 11`);
-  await page.locator("[data-return-workspace]").click();
+  await page.goBack();
   await expect(page).toHaveURL(queue);
   await expect(link).toBeFocused();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(position);

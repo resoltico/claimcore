@@ -1,5 +1,5 @@
 import type { ResponseFor } from "@contracts/client";
-import { recordWorkReview, workRequest } from "./work-workflow";
+import { reminderRows, recordWorkReview, workRequest } from "./work-workflow";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { openCase, recordReviewed, reviewDraft, startAct } from "./case-workflow";
@@ -92,8 +92,7 @@ test("records future planned work and scoped responsibility, then finds the case
   expect(accepted.outcome.data.work.responsible?.actorId).toBe(actorId);
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
   await expect(
-    page
-      .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr")
+    reminderRows(page)
       .filter({
         hasText: "Request the remaining documents",
       })
