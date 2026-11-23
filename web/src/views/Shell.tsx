@@ -161,7 +161,7 @@ export const Shell = ({
   const recovery = useRecovery();
   const creation = useCaseCreationControl();
   const { logout } = useSessionContext();
-  const [finding, setFinding] = useState(false);
+  const [findOrigin, setFindOrigin] = useState<Route | null>(null);
   const [more, setMore] = useState(false);
   const cases = views.includes(apiEndpoints.caseList);
   const available: Record<Area["name"], boolean> = {
@@ -228,14 +228,14 @@ export const Shell = ({
         event.key.toLowerCase() === "k"
       ) {
         event.preventDefault();
-        setFinding(true);
+        setFindOrigin(route);
       }
     };
     window.addEventListener("keydown", keyDown);
     return () => {
       window.removeEventListener("keydown", keyDown);
     };
-  }, [cases, locked, apple]);
+  }, [cases, locked, apple, route]);
 
   const link = (area: Area) => (
     <ShellLink
@@ -254,7 +254,7 @@ export const Shell = ({
       aria-label={p.text("ui.findCase")}
       className="shell-find"
       onPress={() => {
-        setFinding(true);
+        setFindOrigin(route);
       }}
     >
       <Icon name="search" />
@@ -381,7 +381,12 @@ export const Shell = ({
           </Dialog>
         </>
       ) : null}
-      <FindCase open={finding} setOpen={setFinding} />
+      <FindCase
+        open={findOrigin === route}
+        setOpen={(open) => {
+          setFindOrigin(open ? route : null);
+        }}
+      />
     </>
   );
 };

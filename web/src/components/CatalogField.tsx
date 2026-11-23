@@ -15,6 +15,7 @@ type CatalogFieldProps = {
   inputName?: string;
   description?: string;
   error?: Notice | undefined;
+  sharedErrorId?: string | undefined;
   disabled?: boolean;
   onChange: (value: string) => void;
 };
@@ -74,12 +75,13 @@ export const CatalogField = ({
   inputName,
   description,
   error,
+  sharedErrorId,
   disabled = false,
   onChange,
 }: CatalogFieldProps) => {
   const p = usePresentation();
   const name = inputName ?? field.name;
-  const typed = { field, value, inputName: name, disabled, error, onChange };
+  const typed = { field, value, inputName: name, disabled, error, sharedErrorId, onChange };
   if (isDate(field)) {
     return <CatalogDate {...typed} />;
   }
@@ -90,6 +92,9 @@ export const CatalogField = ({
     <Field
       id={`field-${name}`}
       label={p.fieldLabel(field.name)}
+      {...(error === undefined || sharedErrorId === undefined
+        ? {}
+        : { "aria-describedby": sharedErrorId })}
       isInvalid={error !== undefined}
       isDisabled={disabled}
       value={value}
@@ -102,7 +107,9 @@ export const CatalogField = ({
           {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
         </>
       }
-      {...(error === undefined ? {} : { error: <NoticeView value={error} /> })}
+      {...(error === undefined || sharedErrorId !== undefined
+        ? {}
+        : { error: <NoticeView value={error} /> })}
     >
       <ScalarControl field={field} name={name} />
     </Field>

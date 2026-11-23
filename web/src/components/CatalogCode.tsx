@@ -27,7 +27,7 @@ const CodeSuggestions = ({ items }: { items: CodeSuggestion[] }) => (
     </ListBox>
   </Popover>
 );
-const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
+const CodeDescription = ({ field, value, error, sharedErrorId }: TypedFieldProps) => {
   const p = usePresentation();
   return (
     <>
@@ -36,7 +36,7 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
         {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}{" "}
         <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
       </Text>
-      {error === undefined ? null : (
+      {error === undefined || sharedErrorId !== undefined ? null : (
         <FieldError>
           <NoticeView value={error} />
         </FieldError>
@@ -45,7 +45,7 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
   );
 };
 export const CatalogCode = (props: TypedFieldProps) => {
-  const { field, value, inputName, disabled, error, onChange } = props;
+  const { field, value, inputName, disabled, error, sharedErrorId, onChange } = props;
   const p = usePresentation();
   const currency = field.scalar.kind === "CURRENCY";
   const locale = p.language === "en-XA" ? "en" : p.language;
@@ -61,6 +61,9 @@ export const CatalogCode = (props: TypedFieldProps) => {
       inputValue={value}
       onInputChange={onChange}
       isDisabled={disabled}
+      {...(error === undefined || sharedErrorId === undefined
+        ? {}
+        : { "aria-describedby": sharedErrorId })}
       isInvalid={error !== undefined}
       validationBehavior="aria"
       menuTrigger="focus"

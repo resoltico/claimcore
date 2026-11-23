@@ -7,7 +7,9 @@ export const casesBreadcrumb = () =>
   });
 
 export const workspaceSignOut = async (user = userEvent.setup()) => {
-  const visible = screen.queryByRole("menuitem", { name: "Sign out" });
+  const visible =
+    screen.queryByRole("menuitem", { name: "Sign out" }) ??
+    screen.queryByRole("button", { name: "Sign out" });
   if (visible !== null) {
     return visible;
   }

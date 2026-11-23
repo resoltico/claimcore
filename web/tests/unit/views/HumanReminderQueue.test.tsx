@@ -1,3 +1,4 @@
+import { selectRowAction } from "../../support/workspace-actions";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import type { RequestByEndpoint, HumanDocument, HumanReview } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
@@ -220,10 +221,11 @@ it("takes one parent read and carries the selected reminder version through revi
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: /complete/iu,
-    }),
+  const user = userEvent.setup();
+  await selectRowAction(
+    user,
+    screen.getByRole("row", { name: /Core selected reminder/u }),
+    "Complete with details…",
   );
   await userEvent.click(await screen.findByRole("button", { name: "Review changes" }));
   await waitFor(() => {
@@ -232,6 +234,7 @@ it("takes one parent read and carries the selected reminder version through revi
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
+  await user.click(await screen.findByRole("button", { name: "View receipt" }));
   await screen.findByText("Core accepted reminder Ψ");
   expect(
     fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("operation.get")),

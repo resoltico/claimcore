@@ -289,6 +289,7 @@ const fact = (revision: number): RegionTimelineEntry => ({
     messageId: "change.CASE.recorded",
     arguments: [],
   },
+  target: { kind: "TEXT", value: `Core change ${revision}` },
   highlights: [
     {
       titleId: "field.policyNumber.label",

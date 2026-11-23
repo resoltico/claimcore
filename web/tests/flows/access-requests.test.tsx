@@ -136,7 +136,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   );
   const { onAdmit } = setup();
   await screen.findByText("Unverified hint");
-  expect(screen.getByRole("columnheader", { name: "Name hint" })).toBeVisible();
+  expect(screen.getByText("Name hint", { selector: "dt" })).toBeVisible();
   expect(onAdmit).not.toHaveBeenCalled();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Load more" }));
@@ -147,7 +147,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     { limit: 50 },
     { limit: 50, cursor: "next-request-page" },
   ]);
-  await user.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
+  await user.click(screen.getAllByRole("button", { name: "Add from access request" })[0]!);
   expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.admit",
@@ -162,7 +162,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     }),
   );
   onAdmit.mockClear();
-  await user.click(screen.getAllByRole("button", { name: "Add person" })[1]!);
+  await user.click(screen.getAllByRole("button", { name: "Add from access request" })[1]!);
   expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.admit",
@@ -230,7 +230,7 @@ it("keeps a retained people draft from being overwritten or dismissed", async ()
   mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
   const { onAdmit } = setup(true, true);
   await screen.findByText("Unverified hint");
-  expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Add from access request" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Dismiss access request" })).toBeDisabled();
   expect(onAdmit).not.toHaveBeenCalled();
 });

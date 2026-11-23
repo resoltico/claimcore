@@ -1,3 +1,4 @@
+import { selectRowAction } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
@@ -85,6 +86,7 @@ const setup = () => {
                 rows: [
                   {
                     key: reminderId,
+                    recommended: "reminder.complete",
                     actions: [
                       operationAffordance("reminder.complete", {
                         kind: "REMINDER",
@@ -214,11 +216,11 @@ const setup = () => {
 it("opens a dated completion draft from a row action and writes only after review and confirmation", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
-  const complete = await screen.findByRole("button", { name: "Complete reminder" });
+  const row = await screen.findByRole("row", { name: /Call the claimant/u });
   expect(read).not.toHaveBeenCalled();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
-  await user.click(complete);
+  await selectRowAction(user, row, "Complete with details…");
   expect(await screen.findByText("Done on")).toBeVisible();
   expect(preview).not.toHaveBeenCalled();
   await user.click(await screen.findByRole("button", { name: "Review changes" }));
@@ -245,7 +247,9 @@ it("opens a dated completion draft from a row action and writes only after revie
   await waitFor(() => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+  await user.click(await screen.findByRole("button", { name: "View receipt" }));
   expect(await screen.findByText("Reminder completed.")).toBeVisible();
+  await user.keyboard("{Escape}");
   expect(screen.queryByText("Call the claimant")).toBeNull();
 });
 
@@ -290,7 +294,11 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
       }),
     );
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await selectRowAction(
+    user,
+    await screen.findByRole("row", { name: /Call the claimant/u }),
+    "Complete with details…",
+  );
   await user.click(await screen.findByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());

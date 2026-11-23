@@ -159,10 +159,13 @@ it("associates a payment amount refusal with its generated field", async () => {
   await user.type(amount, "0");
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   await waitFor(() => {
-    expect(screen.getByRole("alert")).toHaveFocus();
+    expect(screen.getAllByRole("alert").some((alert) => alert === document.activeElement)).toBe(
+      true,
+    );
   });
-  expect(amount).toHaveAttribute("aria-invalid", "true");
-  expect(amount).toHaveAccessibleDescription(/greater than zero/u);
+  const invalidAmount = screen.getByRole("textbox", { name: "Paid amount" });
+  expect(invalidAmount).toHaveAttribute("aria-invalid", "true");
+  expect(invalidAmount).toHaveAccessibleDescription(/greater than zero/u);
   await setEditorLanguage(user, "lv");
   expect(document.querySelector('input[data-field-name="paidAmount"]')).toHaveAccessibleDescription(
     /lielāka par nulli/u,

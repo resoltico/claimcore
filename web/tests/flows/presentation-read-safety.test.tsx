@@ -175,7 +175,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
 
   await waitFor(() => {
     expect(view.container.querySelectorAll('.case-timeline > p[role="status"]')).toHaveLength(0);
-    const directStatus = view.container.querySelectorAll(".case-header-state .badge");
+    const directStatus = view.container.querySelectorAll(".case-title-line .chip");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(

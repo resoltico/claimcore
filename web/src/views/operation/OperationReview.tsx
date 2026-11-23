@@ -28,7 +28,11 @@ const ReviewBody = ({ review, creation }: { review: HumanReview; creation: boole
     return null;
   }
   const basis = review.document.basis.observation;
-  const ordinary = review.document.screen.regions.filter((region) => region.role === "NOTICE");
+  const subject = review.document.subject;
+  const stewardship = subject.kind === "REVIEW" && subject.consequence !== "ROUTINE";
+  const ordinary = review.document.screen.regions.filter(
+    ({ role }) => role === "IDENTITY" || role === "NOTICE" || (stewardship && role === "FACTS"),
+  );
   const absent = review.presentation.notEntered ?? [];
   return (
     <>

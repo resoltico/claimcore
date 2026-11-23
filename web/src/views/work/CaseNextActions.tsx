@@ -29,15 +29,15 @@ export const CaseNextActions = ({
 }) => {
   const p = usePresentation();
   const region = current.screen.regions.find((item) => item.role === "NEXT_ACTIONS");
-  if (region?.content.kind !== "TABLE") {
+  const all = current.links.find(({ link }) => link.endpoint === apiEndpoints.reminderList);
+  const table = region?.content.kind === "TABLE" ? region.content : null;
+  if (table === null && all === undefined) {
     return null;
   }
-  const table = region.content;
   const zone = current.basis.observation.timeZone;
-  const actionIndex = table.columns.findIndex(({ key }) => key === "action");
-  const dueIndex = table.columns.findIndex(({ key }) => key === "due");
-  const kindIndex = table.columns.findIndex(({ key }) => key === "kind");
-  const all = current.links.find(({ link }) => link.endpoint === apiEndpoints.reminderList);
+  const actionIndex = table?.columns.findIndex(({ key }) => key === "action") ?? -1;
+  const dueIndex = table?.columns.findIndex(({ key }) => key === "due") ?? -1;
+  const kindIndex = table?.columns.findIndex(({ key }) => key === "kind") ?? -1;
   const allPath = all === undefined ? undefined : coreLinkPath(all.link);
   const create = canCreate ? (
     <Button id="case-reminder-add" variant="quiet" compact onPress={onCreate}>
@@ -48,10 +48,10 @@ export const CaseNextActions = ({
     <div className="case-reminders" data-region="NEXT_ACTIONS">
       <Section
         id="case-reminders-title"
-        title={renderCatalogKey(p, region.titleId ?? "label.nextActions")}
+        title={renderCatalogKey(p, region?.titleId ?? "label.nextActions")}
         actions={create}
       >
-        {table.rows.length === 0 && region.emptyId !== undefined ? (
+        {table === null ? null : table.rows.length === 0 && region?.emptyId !== undefined ? (
           <EmptyState messageId={region.emptyId} />
         ) : (
           <ul className="next-action-cards">

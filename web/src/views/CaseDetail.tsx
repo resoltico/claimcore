@@ -1,3 +1,4 @@
+import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { attachmentFragment, coreLinkPath } from "../routing/coreLinks";
 import { followLink } from "../routing/followLink";
 import { navigate } from "../routing/navigation";
@@ -166,6 +167,8 @@ const CaseHeader = ({
   state: HumanDocument | null;
 }) => {
   const p = usePresentation();
+  const route = useContentRoute();
+  const showingReminder = route.screen === "case" && route.reminderId !== undefined;
   const back = lastWorklist();
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
@@ -191,6 +194,15 @@ const CaseHeader = ({
           </>
         )}
       </nav>
+      {showingReminder ? (
+        <Button
+          onPress={() => {
+            onBack();
+          }}
+        >
+          {p.text("ui.close")}
+        </Button>
+      ) : null}
       <section className="case-header-card">
         <div className="case-heading">
           <CaseIdentity

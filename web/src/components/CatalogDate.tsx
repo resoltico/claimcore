@@ -28,6 +28,7 @@ export type TypedFieldProps = {
   inputName: string;
   disabled: boolean;
   error?: Notice | undefined;
+  sharedErrorId?: string | undefined;
   onChange: (value: string) => void;
 };
 const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) => {

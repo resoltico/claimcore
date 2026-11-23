@@ -126,7 +126,7 @@ it("shows core account state and raw roles with one native person link and no ro
   expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Owner");
   expect(within(table).getAllByRole("cell")[1]).toHaveTextContent("Enabled with roles");
   expect(within(table).queryByText("No roles")).toBeNull();
-  expect(within(table).getByText("support@example.invalid")).toBeVisible();
+  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("support@example.invalid");
   expect(grants).not.toHaveBeenCalled();
   expect(link).toHaveAttribute("href", `/people/${actorId}`);
   expect(link.querySelector("bdi")).not.toBeNull();

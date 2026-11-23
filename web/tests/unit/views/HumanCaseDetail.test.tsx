@@ -1,3 +1,4 @@
+import { selectRowAction } from "../../support/workspace-actions";
 import { prefixedInputs } from "../../support/submission-inputs";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -24,7 +25,7 @@ const table = (role: Region["role"], key: string, caption: string): Region => ({
     kind: "TABLE",
     columns: [
       {
-        key: "caption",
+        key: role === "NEXT_ACTIONS" ? "action" : "caption",
         labelId: "label.details",
         prominence: "PRIMARY",
         isMoney: false,
@@ -187,10 +188,10 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
   ]) {
     expect(screen.getByText(caption)).toBeVisible();
   }
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: /remove/iu,
-    }),
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /Core payment caption/u }),
+    "Remove payment entry",
   );
   expect(f.onAct).toHaveBeenCalledWith(
     expect.objectContaining<{

@@ -1,3 +1,5 @@
+import userEvent from "@testing-library/user-event";
+import { within } from "@testing-library/react";
 import { casesBreadcrumb } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
@@ -70,7 +72,11 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
   expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent(
     "This action is not currently offered for this case.",
   );
-  expect(view.container.querySelector(".case-action-refusal button")).toHaveTextContent("Reopen");
+  const user = userEvent.setup();
+  const callout = view.container.querySelector<HTMLElement>(".case-action-refusal")!;
+  await user.click(within(callout).getByRole("button", { name: "More actions" }));
+  expect(screen.getByRole("menuitem", { name: /Reopen/u })).toBeVisible();
+  await user.keyboard("{Escape}");
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   expect(get).toHaveBeenCalledOnce();
   expect(preview).not.toHaveBeenCalled();

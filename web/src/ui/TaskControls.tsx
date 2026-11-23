@@ -28,9 +28,11 @@ export const TaskControls = ({
   }
   const described = actions.map((action) => {
     const task = taskDefinitions.find(({ id: taskId }) => taskId === action.task)!;
-    const label = actionPresentation?.(action).label ?? renderCatalogKey(p, action.labelId);
+    const presentation = actionPresentation?.(action);
+    const label = presentation?.label ?? renderCatalogKey(p, action.labelId);
     return {
       id: action.task,
+      origin: presentation?.id ?? `${id}-${action.task}`,
       label,
       description: p.text("ui.actDescription", {
         label,
@@ -38,8 +40,8 @@ export const TaskControls = ({
       }),
       disabled: disabled || action.blocked !== null,
       consequence: task.consequence,
-      select: () => {
-        onAction?.(action, id);
+      select: (origin: string) => {
+        onAction?.(action, origin);
       },
     };
   });
@@ -58,12 +60,15 @@ export const TaskControls = ({
         {described.map((item) => (
           <Button
             key={item.id}
+            id={item.origin}
             data-act={item.id}
             aria-label={prominent ? item.description : item.label}
             compact={compact}
             variant={prominent ? "primary" : "secondary"}
             isDisabled={item.disabled}
-            onPress={item.select}
+            onPress={() => {
+              item.select(item.origin);
+            }}
           >
             {item.label}
           </Button>
@@ -75,7 +80,12 @@ export const TaskControls = ({
     <ActionMenu
       id={id}
       label={p.text("ui.moreCaseActions")}
-      items={described}
+      items={described.map((item) => ({
+        ...item,
+        select: () => {
+          item.select(id);
+        },
+      }))}
       stewardshipLabel={p.text("label.dataStewardship")}
     />
   );

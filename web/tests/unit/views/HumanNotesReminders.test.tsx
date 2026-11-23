@@ -103,7 +103,9 @@ it("renders supplied note narrative and author captions and binds remove to the 
   );
   expect(screen.getByText("Core note narrative Ω")).toBeVisible();
   expect(screen.getByText("Core opaque author Ψ")).toBeVisible();
-  await userEvent.click(screen.getByRole("button", { name: /remove note/iu }));
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "More actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Remove note" }));
   expect(remove).toHaveBeenCalledWith(
     expect.objectContaining({
       task: "note.remove",
@@ -138,6 +140,7 @@ it("renders reminder rows from Core while actions use versioned task controls wi
             rows: [
               {
                 key: reminderId,
+                recommended: "reminder.complete",
                 link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
                 actions: [
                   operationAffordance("reminder.complete", {
@@ -195,5 +198,6 @@ it("renders reminder rows from Core while actions use versioned task controls wi
       },
     }),
     expect.any(String),
+    true,
   );
 });

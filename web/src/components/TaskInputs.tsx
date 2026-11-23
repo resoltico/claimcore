@@ -85,7 +85,7 @@ const TaskInputHelp = ({
   );
 };
 type InputProps = Props & { defaults: FormValues };
-type ControlProps = InputProps & { input: Input; errorKey?: string };
+type ControlProps = InputProps & { input: Input; errorKey?: string; sharedErrorId?: string };
 const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, value: string) => {
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
@@ -160,7 +160,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
     </fieldset>
   );
 };
-const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) => {
+const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: ControlProps) => {
   const p = usePresentation();
   const metadata =
     props.task.subject === "PEOPLE" && input.id === "field:caseReference"
@@ -182,6 +182,7 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
       value: formValueText(props.values[input.id]),
       disabled: props.disabled,
       error,
+      sharedErrorId,
       onChange: (value: string) => {
         if (props.task.creates && input.mode === "OPTIONAL" && value === "") {
           props.onFieldsChange({}, [input.id]);
@@ -389,9 +390,6 @@ const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; pe
   const p = usePresentation();
   const amountError = props.errors[input.id];
   const currencyError = props.errors[peer.id];
-  const quietErrors = Object.fromEntries(
-    Object.entries(props.errors).filter(([key]) => key !== input.id && key !== peer.id),
-  );
   return (
     <MoneyField
       label={renderCatalogKey(p, taskInput(input.id).labelId)}
@@ -406,8 +404,20 @@ const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; pe
             ),
           })}
     >
-      <InputControl input={input} {...props} errors={quietErrors} />
-      <InputControl input={peer} {...props} errors={quietErrors} />
+      {(sharedErrorId) => (
+        <>
+          <InputControl
+            input={input}
+            {...props}
+            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
+          />
+          <InputControl
+            input={peer}
+            {...props}
+            {...(sharedErrorId === undefined ? {} : { sharedErrorId })}
+          />
+        </>
+      )}
     </MoneyField>
   );
 };

@@ -383,7 +383,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   ).toBeGreaterThan(0);
   expect(
     screen.getAllByRole("link", {
-      name: "Reminders 3",
+      name: "Reminders 3 due",
     }).length,
   ).toBeGreaterThan(0);
   expect(
@@ -393,7 +393,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("link", {
-      name: "Reminders 23",
+      name: "Reminders 23 due",
     }),
   ).not.toBeInTheDocument();
 });

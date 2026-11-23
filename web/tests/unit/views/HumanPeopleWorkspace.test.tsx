@@ -1,3 +1,5 @@
+import { selectRowAction } from "../../support/workspace-actions";
+import { openPersonEditor } from "../../support/people-drawer.fixtures";
 import { withRecommendation, operationAffordance } from "../../support/affordances.fixtures";
 import {
   installationActions,
@@ -457,15 +459,10 @@ it("binds a selected revocation to the Core case identity without editable role/
   );
   navigate(`/people/${actorId}`, true);
   render(workspace());
-  const { within } = await import("@testing-library/react");
   const row = await screen.findByRole("row", {
     name: /Core selected grant Φ/u,
   });
-  await userEvent.click(
-    await within(row).findByRole("button", {
-      name: /revoke/iu,
-    }),
-  );
+  await selectRowAction(userEvent.setup(), row, "Revoke role");
   expect(
     screen.queryByRole("combobox", {
       name: /role|scope/iu,
@@ -573,11 +570,7 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
   );
   navigate("/people", true);
   render(workspace("owner-a", admitting));
-  await userEvent.click(
-    await screen.findByRole("button", {
-      name: "Add person",
-    }),
-  );
+  await openPersonEditor();
   expect(
     screen.getByRole("textbox", {
       name: "Sign-in provider",
