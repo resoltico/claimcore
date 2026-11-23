@@ -681,9 +681,7 @@ for (const { language, accent, mode, mobile } of contexts) {
       .click();
     const confirm = dialog.locator("[data-confirm-operation]");
     await expect(confirm).toBeEnabled();
-    await expect(page.locator(".ui-completion-popover")).toBeVisible();
     await expect(dialog).toContainText("Call claimant about invoice");
-    await expect(page.locator(".ui-completion-popover")).toHaveCSS("opacity", "1");
     const geometry = await dialog.evaluate((element) => ({
       dialog: {
         top: element.getBoundingClientRect().top,

@@ -26,7 +26,36 @@ export const FieldRule = ({
     if (field === null || field === undefined) {
       return;
     }
+    const document = field.ownerDocument;
+    let pendingPress: AbortController | null = null;
+    let pendingFrame: number | null = null;
+    const rememberPress = (event: PointerEvent) => {
+      if (!event.isPrimary || !(event.target instanceof Node) || field.contains(event.target)) {
+        return;
+      }
+      pendingPress?.abort();
+      const press = new AbortController();
+      pendingPress = press;
+      const release = (end: PointerEvent) => {
+        if (end.pointerId !== event.pointerId) {
+          return;
+        }
+        press.abort();
+        pendingPress = null;
+        // Keep the outgoing rule in place until the browser has delivered the click.
+        pendingFrame = requestAnimationFrame(() => {
+          pendingFrame = null;
+          if (!field.contains(document.activeElement)) {
+            setFocus(false);
+          }
+        });
+      };
+      const options = { capture: true, signal: press.signal };
+      document.addEventListener("pointerup", release, options);
+      document.addEventListener("pointercancel", release, options);
+    };
     const enter = () => {
+      document.addEventListener("pointerdown", rememberPress, true);
       setFocus(true);
     };
     const leave = (event: Event) => {
@@ -37,13 +66,24 @@ export const FieldRule = ({
       ) {
         return;
       }
-      setFocus(false);
+      document.removeEventListener("pointerdown", rememberPress, true);
+      if (pendingPress === null) {
+        setFocus(false);
+      }
     };
     field.addEventListener("focusin", enter);
     field.addEventListener("focusout", leave);
+    if (field.contains(document.activeElement)) {
+      enter();
+    }
     return () => {
       field.removeEventListener("focusin", enter);
       field.removeEventListener("focusout", leave);
+      document.removeEventListener("pointerdown", rememberPress, true);
+      pendingPress?.abort();
+      if (pendingFrame !== null) {
+        cancelAnimationFrame(pendingFrame);
+      }
     };
   }, []);
   return ruleId === null ? null : (

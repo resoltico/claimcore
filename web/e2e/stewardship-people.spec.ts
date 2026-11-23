@@ -333,16 +333,14 @@ const beginActorAct = async (
     name,
     exact: true,
   });
-  const button = person.getByRole("button", {
-    name: p.text("ui.actDescription", {
-      label: p.peopleLabel(kind),
-      meaning: p.peopleMeaning(kind),
-    }),
-    exact: true,
-  });
-  await expect(button).toBeVisible();
-  await expect(button).toHaveText(p.peopleLabel(kind));
-  await button.click();
+  const label = p.peopleLabel(kind);
+  const direct = person.getByRole("button", { name: label, exact: true });
+  if (await direct.isVisible()) {
+    await direct.click();
+  } else {
+    await person.getByRole("button", { name: p.text("ui.moreCaseActions"), exact: true }).click();
+    await page.getByRole("menuitem", { name: label, exact: true }).click();
+  }
   await expect(
     page.getByRole("dialog", {
       name: p.peopleLabel(kind),

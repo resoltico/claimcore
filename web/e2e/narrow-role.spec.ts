@@ -85,15 +85,16 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await expect(details).not.toContainText("Synthetic insurer");
   }
   await details.getByRole("button", { name: "Close", exact: true }).first().click();
-  await showCaseActionMenu(page);
   if (role === "CASE_HANDLER") {
     await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   } else {
+    await showCaseActionMenu(page);
     const usableClose = page.locator(
       '[data-menu-item="case.close"]:not([aria-disabled="true"]), button[data-act="case.close"]:enabled',
     );
     await expect(usableClose).toHaveCount(0);
   }
+  await page.keyboard.press("Escape");
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator(".timeline-comparison [data-side]")).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);

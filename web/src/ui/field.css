@@ -1,6 +1,6 @@
 @layer components {
   .field-rule {
-    display: none;
+    display: block;
     margin-block-start: var(--space-1);
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
@@ -9,12 +9,7 @@
     font-size: var(--text-xs);
   }
 
-  :is(.text-field, .assignee-input, .task-choice):is(
-      :focus-within,
-      [data-invalid],
-      :has([aria-invalid="true"])
-    )
-    .field-rule {
-    display: block;
+  .field-rule[hidden] {
+    display: none;
   }
 }
