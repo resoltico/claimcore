@@ -402,7 +402,9 @@ it("returns an accepted open operation to Dashboard through its committed transi
   });
   expect(heading).toBeVisible();
   await waitFor(() => {
-    expect(heading).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: "View receipt" }).closest(".status-banner"),
+    ).toHaveFocus();
   });
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
