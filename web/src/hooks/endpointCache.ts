@@ -114,14 +114,14 @@ export class EndpointCache {
   private generation = 0;
   private readonly refreshers = new Map<
     symbol,
-    { screen: string; refresh: () => Promise<unknown> }
+    { screen: string; key: string | symbol; refresh: () => Promise<unknown> }
   >();
   private readonly lastRefresh = new Map<string, number>();
   private refreshInFlight: Promise<void> | null = null;
 
-  registerRefresh = (screen: string, refresh: () => Promise<unknown>) => {
+  registerRefresh = (screen: string, refresh: () => Promise<unknown>, key?: string) => {
     const registration = Symbol("screen refresh");
-    this.refreshers.set(registration, { screen, refresh });
+    this.refreshers.set(registration, { screen, refresh, key: key ?? registration });
     return () => {
       this.refreshers.delete(registration);
     };
@@ -137,12 +137,14 @@ export class EndpointCache {
     }
     this.lastRefresh.set(screen, now);
     const registrations = [...this.refreshers.keys()];
+    const refreshed = new Set<string | symbol>();
     this.refreshInFlight = registrations
       .reduce(
         (previous, registration) =>
           previous.then(async () => {
             const refresher = this.refreshers.get(registration);
-            if (refresher?.screen === screen) {
+            if (refresher?.screen === screen && !refreshed.has(refresher.key)) {
+              refreshed.add(refresher.key);
               await refresher.refresh();
             }
           }),

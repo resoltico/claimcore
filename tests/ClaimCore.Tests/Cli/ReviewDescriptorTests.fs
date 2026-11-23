@@ -44,6 +44,15 @@ let kindGoldens =
                     [ [ "0.00 USD" ]; [ "0,00 USD" ]; [ "0.00 USD" ] ]
                     PresentedValue.Date(DomainInputs.date "2026-11-04"),
                     [ [ "4 Nov 2026" ]; [ "4 nov. 2026" ]; [ "4 نوفمبر 2026" ] ]
+                    PresentedValue.DateWithCode(
+                        DomainInputs.date "2026-11-04",
+                        ("reminderDue", "OVERDUE")
+                    ),
+                    [
+                        [ "4 Nov 2026 · Overdue" ]
+                        [ "4 nov. 2026 · Termiņš nokavēts" ]
+                        [ "4 نوفمبر 2026 · متأخر" ]
+                    ]
                     PresentedValue.Instant(DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)),
                     [
                         [ "4 Nov 2026 12:00 +00:00" ]

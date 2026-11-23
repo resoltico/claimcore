@@ -1475,10 +1475,6 @@
     "text": "匯出列數",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "沒有相符的已記錄事件。",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "存取申請",
     "source": "34185554f83d"

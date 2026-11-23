@@ -83,3 +83,44 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
     ];
     return findings.flatMap(([id, violated]) => (violated ? [id] : []));
   });
+
+export const narrowTableFailures = (page: Page): Promise<string[]> =>
+  page.evaluate(async () => {
+    await document.fonts.ready;
+    const tables = [...document.querySelectorAll<HTMLElement>(".workspace-main .data-table")];
+    const cells = tables.flatMap((table) => [
+      ...table.querySelectorAll<HTMLElement>('td[data-prominence="PRIMARY"] > .data-table-cell'),
+    ]);
+    const clip = cells.some(
+      (cell) =>
+        cell.scrollWidth > cell.clientWidth + 1 || cell.scrollHeight > cell.clientHeight + 1,
+    );
+    const range = document.createRange();
+    const crushed = cells.some((cell) =>
+      [...cell.querySelectorAll(".plain-text-value")].some((text) => {
+        const node = text.firstChild;
+        if (node === null || !(node instanceof Text)) {
+          return false;
+        }
+        for (const word of node.data.matchAll(
+          /(?<![\p{L}\p{M}])[\p{L}\p{M}]{3,10}(?![\p{L}\p{M}])/gu,
+        )) {
+          range.setStart(node, word.index);
+          range.setEnd(node, word.index + word[0].length);
+          const lineTops = [...range.getClientRects()].map((rect) => rect.top);
+          if (lineTops.length > 1 && Math.max(...lineTops) - Math.min(...lineTops) > 2) {
+            return true;
+          }
+        }
+        return false;
+      }),
+    );
+    return [
+      ...(tables.length === 0 ? ["missing-table"] : []),
+      ...(tables.some((table) => table.scrollWidth > table.clientWidth + 1)
+        ? ["table-overflow"]
+        : []),
+      ...(clip ? ["clipped-primary-cell"] : []),
+      ...(crushed ? ["split-ordinary-word"] : []),
+    ];
+  });

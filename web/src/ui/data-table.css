@@ -1,5 +1,7 @@
 @layer components {
   .data-table {
+    --table-row-size: var(--size-row);
+    --table-reference-limit: var(--width-table-reference);
     min-inline-size: 0;
     overflow-x: auto;
     contain: paint;
@@ -33,7 +35,7 @@
 
   .data-table tbody tr {
     position: relative;
-    block-size: var(--size-row);
+    block-size: var(--table-row-size);
     border-block-start: var(--border-width) solid var(--border-subtle);
   }
 
@@ -60,15 +62,23 @@
 
   .data-table [data-reference] .data-table-cell > :is(a, bdi) {
     display: inline-block;
-    max-inline-size: var(--width-table-reference);
+    max-inline-size: var(--table-reference-limit);
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: bottom;
   }
 
   .data-table-cell {
+    min-inline-size: 0;
     max-block-size: var(--table-cell-limit);
-    overflow: hidden;
+    overflow: var(--table-cell-overflow, hidden);
+  }
+
+  .data-table-cell-label {
+    display: var(--table-cell-label-display, none);
+    text-align: start;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
   }
 
   .data-table .row-link::after {

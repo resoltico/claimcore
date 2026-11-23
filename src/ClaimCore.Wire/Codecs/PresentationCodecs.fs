@@ -145,12 +145,12 @@ module PresentationCodecs =
         ]
         |> taggedOn "vocabulary" (if many then "PresentedCodes" else "PresentedCode")
 
-    let private stateDetail =
+    let private presentedCode =
         codes false
         |> map
             (function
             | PresentedValue.Code(vocabulary, token) -> vocabulary, token
-            | _ -> invalidOp "State details require a presented code.")
+            | _ -> invalidOp "The presentation payload requires a code.")
             (fun (vocabulary, token) -> PresentedValue.Code(vocabulary, token))
 
     // This complete wire-tag table keeps every semantic constructor beside its closed payload grammar.
@@ -179,6 +179,15 @@ module PresentationCodecs =
                     | PresentedValue.Date value -> Some value
                     | _ -> None)
                     (record id |> field "value" id calendarDate)
+                variant
+                    "DATE_WITH_CODE"
+                    PresentedValue.DateWithCode
+                    (function
+                    | PresentedValue.DateWithCode(value, code) -> Some(value, code)
+                    | _ -> None)
+                    (record (fun value code -> value, code)
+                     |> field "value" fst calendarDate
+                     |> field "code" snd presentedCode)
                 variant
                     "INSTANT"
                     PresentedValue.Instant
@@ -230,7 +239,7 @@ module PresentationCodecs =
                     (record (fun state detail -> state, detail)
                      |> fixedField "vocabulary" (Vocabulary.name CaseHeadline.vocabulary)
                      |> field "token" fst (VocabularyCodec.create CaseHeadline.vocabulary)
-                     |> optionalField "detail" snd stateDetail)
+                     |> optionalField "detail" snd presentedCode)
                 variant
                     "COUNT"
                     PresentedValue.Count

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import type { EndpointId, RequestByEndpoint } from "@contracts/client";
 import {
   requestEndpoint,
@@ -50,14 +57,21 @@ export const useEndpoint = <K extends EndpointId>(
       void cache.fetch(key, request);
     }
   }, [cache, key, request, state.loading, active]);
-  useEffect(() => {
-    if (cache === null || !active) {
+  const screen = window.location.pathname;
+  const refreshRequest = useRef(request);
+  useLayoutEffect(() => {
+    refreshRequest.current = request;
+  }, [request]);
+  useLayoutEffect(() => {
+    if (!active) {
       return;
     }
-    return cache.registerRefresh(window.location.pathname, () =>
-      cache.fetch(key, request, false, true),
+    return cache.registerRefresh(
+      screen,
+      () => cache.fetch(key, refreshRequest.current, false, true),
+      key,
     );
-  }, [cache, key, request, active]);
+  }, [cache, key, active, screen]);
   const result = useMemo(() => typedResult(endpoint, state.result), [endpoint, state.result]);
   const previous = useMemo(
     () =>

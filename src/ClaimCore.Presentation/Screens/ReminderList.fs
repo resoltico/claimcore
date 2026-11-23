@@ -17,7 +17,15 @@ module ReminderListScreen =
             column "action" "field.reminderAction.label" Prominence.Primary false (fun item ->
                 PresentedValue.Text(ReminderAction.format (Reminder.action item.Reminder)))
             column "due" "field.reminderDueDate.label" Prominence.Primary false (fun item ->
-                PresentedValue.Date(Reminder.due item.Reminder))
+                let due = Reminder.due item.Reminder
+
+                match item.Active, Reminder.state item.Reminder, item.Timing with
+                | true, ReminderState.Pending, Some timing ->
+                    PresentedValue.DateWithCode(
+                        due,
+                        (Vocabulary.name ReminderDue.vocabulary, ReminderDue.token timing)
+                    )
+                | _ -> PresentedValue.Date due)
             column "state" "input.reminderState.label" Prominence.Secondary false (fun item ->
                 code ReminderState.vocabulary (Reminder.state item.Reminder))
             column "kind" "field.kind.label" Prominence.Secondary false (fun item ->
@@ -26,11 +34,6 @@ module ReminderListScreen =
                 optional PresentedValue.Date (Reminder.doneOn item.Reminder))
             column "deadlineOutcome" "label.deadlineOutcome" Prominence.Secondary false (fun item ->
                 optional (code DeadlineOutcome.vocabulary) item.DeadlineOutcome)
-            column "timing" "input.reminderDue.label" Prominence.Primary false (fun item ->
-                if not item.Active then
-                    code CaseDue.vocabulary CaseDue.Inactive
-                else
-                    optional (code ReminderDue.vocabulary) item.Timing)
             column "claimants" "label.claimants" Prominence.Secondary false (fun item ->
                 match item.Claimants with
                 | [] -> optional PresentedValue.Text None

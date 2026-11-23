@@ -283,18 +283,6 @@
     "text": "更多操作",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "重新載入日誌",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "載入更多事件",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "載入更多活動",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "更多帳戶",
     "source": "743e1725ebd5"
@@ -402,10 +390,6 @@
   "ui.reloadCurrentCase": {
     "text": "重新載入當前案件",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "重新載入活動",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "重新載入介面",

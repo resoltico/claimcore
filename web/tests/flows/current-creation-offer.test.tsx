@@ -101,6 +101,7 @@ beforeEach(() => {
     }),
   });
 });
+let resumeTime = 0;
 const freshContext = async (
   mock: ReturnType<typeof mockEndpoint<"context">>,
   offered: boolean,
@@ -108,14 +109,20 @@ const freshContext = async (
 ) => {
   const before = mock.mock.calls.length;
   mock.mockResolvedValue(contextReply(offered, scopedRegistrar));
-  await act(async () => {
-    window.dispatchEvent(new Event("focus"));
-    await Promise.resolve();
-  });
-  await waitFor(() => {
-    expect(mock).toHaveBeenCalledTimes(before + 1);
-  });
-  await act(() => Promise.resolve());
+  resumeTime += 30_000;
+  const now = vi.spyOn(performance, "now").mockReturnValue(resumeTime);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(mock).toHaveBeenCalledTimes(before + 1);
+    });
+    await act(() => Promise.resolve());
+  } finally {
+    now.mockRestore();
+  }
 };
 const openDraft = async () => {
   const user = userEvent.setup();

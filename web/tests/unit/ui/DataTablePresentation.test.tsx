@@ -1,6 +1,7 @@
 import { within } from "@testing-library/react";
 import { expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
+import { PresentedValue } from "../../../src/components/PresentedValue";
 import type { RegionContent } from "@contracts/client";
 import { DataTable } from "../../../src/ui/DataTable";
 import { render, screen } from "../../support/presentation-test-support";
@@ -73,3 +74,25 @@ it("shows the selected row's details in a dialog and removes them when the read 
   expect(screen.queryByText("Authorized retained row detail")).not.toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
+
+it.each([
+  ["OVERDUE", "Overdue", "danger"],
+  ["TODAY", "Today", "warning"],
+  ["UPCOMING", "Upcoming", "info"],
+] as const)(
+  "presents the supplied %s due code with the date and its tone",
+  (token, label, tone) => {
+    const { container } = render(
+      <PresentedValue
+        value={{
+          kind: "DATE_WITH_CODE",
+          value: "2026-11-01",
+          code: { kind: "CODE", vocabulary: "reminderDue", token },
+        }}
+        timeZone="UTC"
+      />,
+    );
+    expect(container.querySelector("time")).toHaveAttribute("datetime", "2026-11-01");
+    expect(screen.getByText(label)).toHaveAttribute("data-tone", tone);
+  },
+);

@@ -73,6 +73,41 @@ let tests =
     testList
         "current reminder human replies"
         [
+            testCase
+                "reminder due cells retain dates and carry timing only for active pending work"
+                (fun () ->
+                    let due = CalendarDate.parse "2026-11-01" |> required
+
+                    let column =
+                        ReminderListScreen.columnsFor None None
+                        |> List.find (fun column -> column.Key = "due")
+
+                    for timing, token in
+                        [
+                            ReminderDue.Overdue, "OVERDUE"
+                            ReminderDue.Today, "TODAY"
+                            ReminderDue.Upcoming, "UPCOMING"
+                        ] do
+                        Expect.equal
+                            (column.Read(item true ReminderState.Pending (Some timing)))
+                            (PresentedValue.DateWithCode(due, ("reminderDue", token)))
+                            "The supplied timing accompanies the due date in the same cell"
+
+                    for active, state in
+                        [
+                            false, ReminderState.Pending
+                            true, ReminderState.Completed
+                            true, ReminderState.Cancelled
+                        ] do
+                        Expect.equal
+                            (column.Read(item active state (Some ReminderDue.Overdue)))
+                            (PresentedValue.Date due)
+                            "Inactive or finished work presents its date without a timing code"
+
+                    Expect.equal
+                        (column.Read(item true ReminderState.Pending None))
+                        (PresentedValue.Date due)
+                        "The presentation does not infer an absent timing code")
             testCase "inactive parent case uses a state label without inventing status" (fun () ->
                 let value = item false ReminderState.Pending None
                 let entries = ReminderScreen.reminder value |> List.collect _.Entries

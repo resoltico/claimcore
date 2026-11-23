@@ -1,7 +1,7 @@
 import { isCaseListSelection, type CaseSelector, type Link } from "@contracts/client";
 import { isObject } from "../protocol/client";
 import { isTerm } from "../presentation/terms";
-import { casePath, referencePath } from "./routes";
+import { casePath, peopleHistoryPath, referencePath } from "./routes";
 import { worklistPath } from "./worklistQuery";
 import { parseReminderQuery, reminderPagePath } from "./reminderQuery";
 const targetInput = (link: Link): CaseSelector | undefined => {
@@ -85,9 +85,7 @@ const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefine
   },
   "people.history": (link) => {
     const actor = link.input["actorId"];
-    return typeof actor === "string"
-      ? `/people-history?actorId=${encodeURIComponent(actor)}`
-      : "/people-history";
+    return peopleHistoryPath(typeof actor === "string" ? actor : "");
   },
   "people.list": () => "/people",
   "people.requests": () => "/people",

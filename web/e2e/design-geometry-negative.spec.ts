@@ -1,5 +1,5 @@
 import { expectNoInlineStyles } from "./inline-styles";
-import { geometryFailures, type GeometryId } from "./design-geometry";
+import { geometryFailures, narrowTableFailures, type GeometryId } from "./design-geometry";
 import { expect, test } from "@playwright/test";
 
 const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
@@ -72,4 +72,23 @@ test("rejects both forms of inline styling", async ({ page }) => {
 
   await page.addStyleTag({ content: "main { margin: 0 }" });
   await expect(expectNoInlineStyles(page)).rejects.toThrow("external stylesheets");
+});
+
+test("narrow table geometry rejects crushed words and clipped values", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.setContent(`
+    <main class="workspace-main">
+      <div class="data-table">
+        <table><tbody><tr><td data-prominence="PRIMARY">
+          <div class="data-table-cell"><bdi class="plain-text-value">Contact claimant</bdi></div>
+        </td></tr></tbody></table>
+      </div>
+    </main>
+  `);
+  expect(await narrowTableFailures(page)).toEqual([]);
+  await page.addStyleTag({
+    content:
+      ".data-table-cell { width: 3ch; height: 1em; overflow: hidden; overflow-wrap: anywhere }",
+  });
+  expect(await narrowTableFailures(page)).toEqual(["clipped-primary-cell", "split-ordinary-word"]);
 });

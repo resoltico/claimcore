@@ -43,8 +43,7 @@
       font-size: var(--text-md);
     }
     .field-row,
-    .review-values,
-    .reminder-queue .work-queue-filters {
+    .review-values {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--space-1);
     }
@@ -76,59 +75,6 @@
   }
 
   @media (width < 64rem) {
-    .worklist-rows .worklist-row {
-      grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-      gap: var(--space-1) var(--space-2);
-      padding: var(--space-2) var(--space-3);
-    }
-    .worklist-row .worklist-reference {
-      grid-column: 1;
-      grid-row: 1 / 3;
-    }
-    .worklist-row .reference {
-      min-block-size: 0;
-    }
-    .worklist-person {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-block-start: var(--space-1);
-    }
-    .worklist-person > small,
-    .worklist-row .worklist-payable,
-    .worklist-row .worklist-cell-label,
-    .worklist-row .worklist-responsible,
-    .worklist-row .worklist-changed,
-    .worklist-row .worklist-extra-fields {
-      display: none;
-    }
-    .worklist-row .worklist-money {
-      grid-column: 2;
-      grid-row: 1;
-      max-inline-size: 19ch;
-      text-align: end;
-      font-size: var(--text-sm);
-    }
-    .worklist-row .worklist-badges {
-      grid-column: 2;
-      grid-row: 2;
-    }
-    .worklist-row .worklist-next-action {
-      grid-column: 1 / -1;
-      grid-row: 3;
-    }
-    .worklist-next-action > bdi {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .worklist-next-action > small,
-    .worklist-next-action .case-attention {
-      display: inline-flex;
-      margin-block: 0;
-      margin-inline-end: var(--space-1);
-    }
     .field-row {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -182,106 +128,11 @@
       grid-template-columns: minmax(0, 1fr);
       align-items: start;
     }
-    .people-table {
-      display: table;
-    }
-    .people-columns {
-      display: table-header-group;
-      position: static;
-      inline-size: auto;
-      block-size: auto;
-      overflow: visible;
-      clip-path: none;
-    }
-    .people-rows {
-      display: table-row-group;
-    }
-    .people-row {
-      display: table-row;
-      border: 0;
-      border-radius: 0;
-      margin: 0;
-    }
-    .people-row > td,
-    .people-columns th {
-      display: table-cell;
-      padding: var(--space-1) var(--space-2);
-      vertical-align: middle;
-      text-align: start;
-      border-block-end: var(--border-width) solid var(--border-control);
-    }
-    .people-columns th {
-      font-size: var(--text-sm);
-      inline-size: 20%;
-    }
-    .people-columns th:first-child {
-      inline-size: 40%;
-    }
-    .people-cell-label {
-      display: none;
-    }
     .worklist-filters details[open] fieldset {
       position: absolute;
       z-index: 3;
       min-inline-size: max-content;
       box-shadow: var(--shadow-2);
-    }
-    .worklist-table {
-      display: table;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-control);
-      border-radius: var(--radius-md);
-    }
-    .worklist-columns {
-      display: table-header-group;
-      position: static;
-      inline-size: auto;
-      block-size: auto;
-      overflow: visible;
-      clip-path: none;
-    }
-    .worklist-columns th {
-      text-align: start;
-      font-size: var(--text-xs);
-      color: var(--text-secondary);
-      background: var(--bg-sunken);
-      font-weight: 650;
-    }
-    .worklist-rows {
-      display: table-row-group;
-    }
-    .worklist-rows .worklist-row,
-    .worklist-columns tr {
-      display: table-row;
-    }
-    .worklist-row > td,
-    .worklist-columns th {
-      display: table-cell;
-      padding: var(--space-4) var(--space-3);
-      vertical-align: top;
-      border-block-end: 1px solid var(--border-control);
-      text-align: start;
-    }
-    .worklist-columns th:nth-child(1) {
-      inline-size: 24%;
-    }
-    .worklist-columns th:nth-child(2) {
-      inline-size: 12%;
-    }
-    .worklist-columns th:nth-child(3) {
-      inline-size: 23%;
-    }
-    .worklist-columns th:nth-child(4) {
-      inline-size: 15%;
-    }
-    .worklist-columns th:nth-child(5) {
-      inline-size: 15%;
-    }
-    .worklist-columns th:nth-child(6) {
-      inline-size: 11%;
-    }
-    .worklist-cell-label {
-      display: none;
     }
   }
 
@@ -455,6 +306,45 @@
 }
 
 @layer layout {
+  @container data-table (width < 30rem) {
+    .data-table table,
+    .data-table tbody,
+    .data-table tbody tr,
+    .data-table tbody :is(td, th) {
+      display: block;
+    }
+
+    .data-table table {
+      --table-row-size: auto;
+      --table-reference-limit: 100%;
+      --table-cell-overflow: visible;
+      --table-cell-label-display: block;
+    }
+
+    .data-table thead {
+      position: absolute;
+      inline-size: var(--border-width);
+      block-size: var(--border-width);
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .data-table td[data-prominence="PRIMARY"] {
+      display: grid;
+      align-items: baseline;
+      gap: var(--space-1) var(--space-2);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    }
+
+    .data-table-stack {
+      grid-column: 1 / -1;
+    }
+
+    .data-table-controls {
+      position: relative;
+    }
+  }
+
   @container data-table (width >= 48rem) {
     .data-table-cell {
       --table-cell-limit: calc(var(--size-row) + var(--space-1));

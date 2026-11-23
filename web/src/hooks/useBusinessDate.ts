@@ -1,10 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { subscribeBusinessDates } from "../api/businessDateObservation";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import type { ActiveRequester } from "./useRequesterContext";
 
-/** Focus refresh replaces polling; all dates remain server observations. */
+/** A changed server business date invalidates dependent observations. */
 export const useBusinessDate = (requester: ActiveRequester | null) => {
   const cache = useEndpointCache();
   const credential = useCredential();
@@ -37,36 +37,6 @@ export const useBusinessDate = (requester: ActiveRequester | null) => {
       },
     });
   }, [credential, date, requester, owner, cache]);
-  useEffect(() => {
-    if (owner === null) {
-      return;
-    }
-    let active = true;
-    let frame: number | null = null;
-    const resumed = () => {
-      if (document.visibilityState === "visible" && frame === null) {
-        // Let browser activation and its first input finish before replacing read subtrees.
-        frame = requestAnimationFrame(() => {
-          frame = requestAnimationFrame(() => {
-            frame = null;
-            if (active && document.visibilityState === "visible") {
-              cache?.invalidate();
-            }
-          });
-        });
-      }
-    };
-    window.addEventListener("focus", resumed);
-    document.addEventListener("visibilitychange", resumed);
-    return () => {
-      active = false;
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-      window.removeEventListener("focus", resumed);
-      document.removeEventListener("visibilitychange", resumed);
-    };
-  }, [owner, cache]);
   return {
     changedDate: change !== null && change.owner === owner ? change.date : null,
     refresh: () => {

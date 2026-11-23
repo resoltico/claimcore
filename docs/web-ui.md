@@ -12,9 +12,11 @@ colours use the theme's semantic tokens.
 
 Core supplies chip tones, table prominence, recommendation, consequences and empty-state wording.
 Lists show primary and secondary columns. Secondary values stack beneath the first primary cell in a
-narrow table. Detail columns stay in the supplied document for other presentations. Use Core labels
+narrow table. At phone widths, rows display their primary columns as full-width labelled fields.
+Detail columns stay in the supplied document for other presentations. Use Core labels
 for the row and the actions. Keep reference links keyboard reachable and leave action controls above
-the row's linked hit area.
+the row's linked hit area. Use Toolbar to group list filters and available exports. The list footer
+owns pagination, the observation time and refresh.
 
 Use logical properties, visible focus and text labels. Check narrow layouts, Arabic, both colour
 schemes, reduced motion and forced colours. Menus and dialogs use React Aria keyboard and focus

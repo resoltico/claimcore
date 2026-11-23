@@ -1475,10 +1475,6 @@
     "text": "导出行数",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "没有匹配的已记录事件。",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "访问申请",
     "source": "34185554f83d"

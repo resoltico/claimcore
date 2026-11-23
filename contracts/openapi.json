@@ -23911,6 +23911,9 @@
             "$ref": "#/components/schemas/PresentedScalar.DATE"
           },
           {
+            "$ref": "#/components/schemas/PresentedScalar.DATE_WITH_CODE"
+          },
+          {
             "$ref": "#/components/schemas/PresentedScalar.INSTANT"
           },
           {
@@ -23956,6 +23959,7 @@
             "MONEY": "#/components/schemas/PresentedScalar.MONEY",
             "MONEY_TOTAL": "#/components/schemas/PresentedScalar.MONEY_TOTAL",
             "DATE": "#/components/schemas/PresentedScalar.DATE",
+            "DATE_WITH_CODE": "#/components/schemas/PresentedScalar.DATE_WITH_CODE",
             "INSTANT": "#/components/schemas/PresentedScalar.INSTANT",
             "PARTY": "#/components/schemas/PresentedScalar.PARTY",
             "TEXT": "#/components/schemas/PresentedScalar.TEXT",
@@ -24081,6 +24085,30 @@
         "required": [
           "kind",
           "value"
+        ]
+      },
+      "PresentedScalar.DATE_WITH_CODE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DATE_WITH_CODE"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "code": {
+            "$ref": "#/components/schemas/PresentedCode"
+          }
+        },
+        "required": [
+          "kind",
+          "value",
+          "code"
         ]
       },
       "PresentedScalar.IDENTIFIER": {

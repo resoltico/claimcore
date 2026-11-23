@@ -41,6 +41,13 @@ module internal TextDescriptorValue =
                 value.Value
                 value.DisplayScale
         | PresentedValue.Date value -> ReplyTextFormat.date rendering value |> text rendering
+        | PresentedValue.DateWithCode(value, (vocabulary, token)) ->
+            String.concat
+                " · "
+                [
+                    ReplyTextFormat.date rendering value |> text rendering
+                    code rendering vocabulary token
+                ]
         | PresentedValue.Instant value ->
             ReplyTextFormat.instantIn rendering timeZone value |> text rendering
         | PresentedValue.Party value -> PartyName.format value |> text rendering

@@ -133,12 +133,14 @@ const FindControl = ({ close, returnFocusId }: { close: () => void; returnFocusI
     }
   };
 
-  useLayoutEffect(
-    () => () => {
+  useLayoutEffect(() => {
+    if (credential === null) {
+      return;
+    }
+    return () => {
       exactRequest.current?.abort();
-    },
-    [credential],
-  );
+    };
+  }, [credential]);
 
   return (
     <div className="find-control">

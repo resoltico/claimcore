@@ -1,4 +1,5 @@
 import { humanReadReply } from "../../../support/human-read-reply.fixtures";
+import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -30,13 +31,15 @@ it("selects the first core view and changes views without adding hidden state pr
   });
   expect(reads.mock.calls[0]?.[1]).toEqual({ view: "PENDING", text: "literal", limit: 50 });
   const user = userEvent.setup();
-  await user.type(screen.getByRole("searchbox", { name: "Search" }), " raw draft");
+  await user.type(screen.getByRole("searchbox", { name: "Filter this view" }), " raw draft");
   await user.click(screen.getByRole("tab", { name: "Completed 0" }));
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(2);
   });
   expect(reads.mock.calls[1]?.[1]).toEqual({ view: "COMPLETED", text: "literal", limit: 50 });
-  expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("literal raw draft");
+  expect(screen.getByRole("searchbox", { name: "Filter this view" })).toHaveValue(
+    "literal raw draft",
+  );
   expect(location.pathname + location.search).toBe("/reminders?view=COMPLETED&q=literal");
 });
 
@@ -68,10 +71,10 @@ it("changes only the selected view when switching mode and shows owner defaults 
   const inactive = () => screen.getByRole("checkbox", { name: "Include inactive case work" });
   expect(inactive()).toBeEnabled();
   expect(inactive()).toBeChecked();
-  await user.keyboard("{Escape}");
-  const mode = screen.getByRole("button", { name: "Manual filters" });
-  expect(mode).toHaveAttribute("aria-pressed", "false");
-  await user.click(mode);
+  const mode = () =>
+    within(screen.getByRole("dialog")).getByRole("button", { name: "Manual filters" });
+  expect(mode()).toHaveAttribute("aria-pressed", "false");
+  await user.click(mode());
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(2);
   });
@@ -81,14 +84,15 @@ it("changes only the selected view when switching mode and shows owner defaults 
   await user.click(moreFilters());
   expect(inactive()).toBeEnabled();
   expect(inactive()).not.toBeChecked();
-  expect(mode).toHaveAttribute("aria-pressed", "true");
+  expect(mode()).toHaveAttribute("aria-pressed", "true");
   await user.click(inactive());
   await user.click(screen.getByRole("button", { name: "Apply filters" }));
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(3);
   });
   expect(reads.mock.calls[2]?.[1]).toEqual({ text: "literal", includeInactive: true, limit: 50 });
-  await user.click(mode);
+  await user.click(moreFilters());
+  await user.click(mode());
   await waitFor(() => {
     expect(reads).toHaveBeenCalledTimes(4);
   });
@@ -101,7 +105,7 @@ it("changes only the selected view when switching mode and shows owner defaults 
   await user.click(moreFilters());
   expect(inactive()).toBeEnabled();
   expect(inactive()).toBeChecked();
+  expect(mode()).toHaveAttribute("aria-pressed", "false");
   await user.keyboard("{Escape}");
-  expect(mode).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByRole("tab", { name: "Pending 0" })).toHaveAttribute("aria-selected", "true");
 });

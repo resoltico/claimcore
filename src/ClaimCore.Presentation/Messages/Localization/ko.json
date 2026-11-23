@@ -1475,10 +1475,6 @@
     "text": "내보낸 행",
     "source": "eed4b8cd8379"
   },
-  "label.disclosureEmpty": {
-    "text": "일치하는 기록이 없습니다.",
-    "source": "dd4c737e416c"
-  },
   "endpoint.people.requests.label": {
     "text": "접근 요청",
     "source": "34185554f83d"

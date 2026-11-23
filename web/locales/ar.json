@@ -319,18 +319,6 @@
     "text": "إجراءات إضافية",
     "source": "f8d46c2570e7"
   },
-  "ui.disclosureReload": {
-    "text": "إعادة تحميل السجل",
-    "source": "b2ef51cf8a3b"
-  },
-  "ui.disclosureMore": {
-    "text": "تحميل المزيد من الأحداث",
-    "source": "96f2482de866"
-  },
-  "ui.moreHistory": {
-    "text": "تحميل المزيد من النشاط",
-    "source": "e3f0587b4839"
-  },
   "ui.nextAccounts": {
     "text": "المزيد من الحسابات",
     "source": "743e1725ebd5"
@@ -438,10 +426,6 @@
   "ui.reloadCurrentCase": {
     "text": "إعادة تحميل الملف الحالي",
     "source": "dfad4aa77ca3"
-  },
-  "ui.reloadHistory": {
-    "text": "إعادة تحميل النشاط",
-    "source": "10d39b0ca399"
   },
   "ui.reloadInterface": {
     "text": "إعادة تحميل الواجهة",
