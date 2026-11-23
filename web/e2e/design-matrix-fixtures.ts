@@ -722,9 +722,7 @@ export const prepareDesignDataset = async (
     ) {
       throw new Error("E2E_MATRIX_CONTEXT_REFUSED");
     }
-    // Keep the layout seed's references comparable to the evaluation seed. Exact routing
-    // still exercises reserved characters, and the operation identities retain full UUIDs.
-    const marker = `DM-${randomUUID().slice(0, 12)}`;
+    const marker = `DM-${randomUUID()}`;
     const cases = await seedCases(page, marker, contextReply.outcome.data.requester.businessDate);
     restore = await setOwnerCaseWork(
       page,

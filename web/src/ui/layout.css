@@ -347,6 +347,20 @@
     .data-table table {
       --table-chip-list-min-inline-size: 15rem;
     }
+
+    .data-table :is(td, th) {
+      padding-inline: calc(var(--space-1) / 2);
+    }
+
+    .data-table .actor-identity {
+      flex-wrap: wrap;
+      row-gap: var(--space-1);
+    }
+
+    .data-table .actor-identity .person-avatar {
+      inline-size: var(--space-5);
+      block-size: var(--space-5);
+    }
   }
 
   @container data-table (width < 64rem) {
