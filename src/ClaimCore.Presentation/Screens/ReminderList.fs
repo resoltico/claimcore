@@ -6,6 +6,29 @@ open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module ReminderListScreen =
+    let private dueDate =
+        column
+            "due"
+            "field.reminderDueDate.label"
+            Prominence.Primary
+            false
+            (fun (item: ReminderReadModel) -> PresentedValue.Date(Reminder.due item.Reminder))
+
+    let private queueDue =
+        { dueDate with
+            Read =
+                fun item ->
+                    let due = Reminder.due item.Reminder
+
+                    match item.Active, Reminder.state item.Reminder, item.Timing with
+                    | true, ReminderState.Pending, Some timing ->
+                        PresentedValue.DateWithCode(
+                            due,
+                            (Vocabulary.name ReminderDue.vocabulary, ReminderDue.token timing)
+                        )
+                    | _ -> PresentedValue.Date due
+        }
+
     let reminderColumns =
         [
             column
@@ -16,16 +39,7 @@ module ReminderListScreen =
                 (fun (item: ReminderReadModel) -> PresentedValue.Reference item.Reference)
             column "action" "field.reminderAction.label" Prominence.Primary false (fun item ->
                 PresentedValue.Text(ReminderAction.format (Reminder.action item.Reminder)))
-            column "due" "field.reminderDueDate.label" Prominence.Primary false (fun item ->
-                let due = Reminder.due item.Reminder
-
-                match item.Active, Reminder.state item.Reminder, item.Timing with
-                | true, ReminderState.Pending, Some timing ->
-                    PresentedValue.DateWithCode(
-                        due,
-                        (Vocabulary.name ReminderDue.vocabulary, ReminderDue.token timing)
-                    )
-                | _ -> PresentedValue.Date due)
+            dueDate
             column "state" "input.reminderState.label" Prominence.Secondary false (fun item ->
                 code ReminderState.vocabulary (Reminder.state item.Reminder))
             column "kind" "field.kind.label" Prominence.Secondary false (fun item ->
@@ -34,6 +48,11 @@ module ReminderListScreen =
                 optional PresentedValue.Date (Reminder.doneOn item.Reminder))
             column "deadlineOutcome" "label.deadlineOutcome" Prominence.Secondary false (fun item ->
                 optional (code DeadlineOutcome.vocabulary) item.DeadlineOutcome)
+            column "timing" "input.reminderDue.label" Prominence.Primary false (fun item ->
+                if not item.Active then
+                    code CaseDue.vocabulary CaseDue.Inactive
+                else
+                    optional (code ReminderDue.vocabulary) item.Timing)
             column "claimants" "label.claimants" Prominence.Secondary false (fun item ->
                 match item.Claimants with
                 | [] -> optional PresentedValue.Text None
@@ -72,7 +91,9 @@ module ReminderListScreen =
                 columns
 
         keys
-        |> List.map (fun key -> reminderColumns |> List.find (fun column -> column.Key = key))
+        |> List.map (function
+            | "due" -> queueDue
+            | key -> reminderColumns |> List.find (fun column -> column.Key = key))
 
     let recommendCompletion (table: RegionTable) =
         let complete = ClientCompositions.reminderCompletion

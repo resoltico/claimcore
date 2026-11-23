@@ -81,8 +81,12 @@ test("focus and visibility revalidate the open reminder queue only once @engine"
   page,
 }) => {
   await openAuthenticated(page);
-  await page.goto("/reminders?view=PENDING");
-  await expect(page.locator('.reminder-list[aria-busy="false"]')).toBeVisible();
+  const filter = `RESUME-${randomUUID()}`;
+  await page.goto(`/reminders?view=PENDING&q=${encodeURIComponent(filter)}`);
+  const updated = page.locator('.reminder-list[aria-busy="false"] .list-footer time');
+  await expect(updated).toBeVisible();
+  const beforeFocus = await updated.getAttribute("datetime");
+  expect(beforeFocus).not.toBeNull();
 
   const readPaths = ["/api/context", "/api/work.views", "/api/reminder.list"];
   const reads: string[] = [];
@@ -92,11 +96,10 @@ test("focus and visibility revalidate the open reminder queue only once @engine"
       reads.push(path);
     }
   });
-  const resumed = reminderResponse(page);
   await page.evaluate(() => {
     window.dispatchEvent(new Event("focus"));
   });
-  expect(await (await resumed).finished()).toBeNull();
+  await expect.poll(() => updated.getAttribute("datetime")).not.toBe(beforeFocus);
   await expect.poll(() => [...reads].sort()).toEqual([...readPaths].sort());
 
   const secondPass = page.waitForRequest(

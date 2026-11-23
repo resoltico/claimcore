@@ -908,12 +908,7 @@ test("reminder views keep URL state and leave implicit state predicates to the c
   });
   await expect(completed).toHaveAttribute("aria-selected", "true");
   await expect.poll(() => requests.length).toBe(1);
-  const filter = page
-    .getByRole("search", {
-      name: "Reminders",
-      exact: true,
-    })
-    .getByRole("searchbox");
+  const filter = page.getByRole("searchbox", { name: "Filter this view", exact: true });
   await filter.fill("unsubmitted filter");
   await completed.focus();
   await page.keyboard.press("ArrowRight");
