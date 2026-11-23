@@ -25,6 +25,259 @@ let private matches name expected build =
         Expect.isTrue (Screen.valid screen.Regions) "Only facts repeat")
 
 [<Tests>]
+let redesignDeclarations =
+    testList
+        "workspace presentation declarations"
+        [
+            testCase "all chip vocabularies declare exactly one supported tone per code" (fun () ->
+                let tokens vocabulary =
+                    Vocabulary.name vocabulary, Set.ofList (Vocabulary.tokens vocabulary)
+
+                let expected =
+                    [
+                        tokens CaseHeadline.vocabulary
+                        tokens CaseStatus.vocabulary
+                        tokens Lifecycle.vocabulary
+                        tokens CaseProgress.vocabulary
+                        tokens CaseAttention.vocabulary
+                        tokens ReminderDue.vocabulary
+                        tokens ReminderState.vocabulary
+                        tokens DeadlineOutcome.vocabulary
+                        tokens AccountState.vocabulary
+                        tokens RequesterKind.vocabulary
+                        tokens ClosureOutcome.vocabulary
+                    ]
+                    |> Map.ofList
+
+                Expect.equal
+                    (Tones.codeTones |> Map.map (fun _ tones -> Set.ofSeq (Map.keys tones)))
+                    expected
+                    "The tone table covers the admitted vocabularies"
+
+                Expect.equal
+                    (Tones.codeTones["attention"]["DEADLINE_OVERDUE"])
+                    "DANGER"
+                    "An overdue deadline uses the danger tone"
+
+                Expect.equal
+                    (Tones.codeTones["headline"]["CLOSED"])
+                    "NEUTRAL"
+                    "Closed is not an alert")
+            testCase "work view prominence matches the case and reminder tab sets" (fun () ->
+                Expect.equal
+                    (CaseView.all
+                     |> List.filter (WorkViewsScreen.caseProminence >> (=) Prominence.Primary)
+                     |> Set.ofList)
+                    (set
+                        [
+                            CaseView.NeedsAttention
+                            CaseView.Mine
+                            CaseView.Overdue
+                            CaseView.DueToday
+                            CaseView.All
+                        ])
+                    "Case tabs and More views"
+
+                Expect.equal
+                    (ReminderView.all
+                     |> List.filter (WorkViewsScreen.reminderProminence >> (=) Prominence.Primary)
+                     |> Set.ofList)
+                    (set
+                        [
+                            ReminderView.Pending
+                            ReminderView.Mine
+                            ReminderView.Overdue
+                            ReminderView.Today
+                            ReminderView.Upcoming
+                        ])
+                    "Reminder tabs and More views")
+            testCase "HUMAN worklist columns carry the declared order and prominence" (fun () ->
+                let region = (CaseListScreen.rows []).Regions.Head
+                let primary = Prominence.Primary
+                let secondary = Prominence.Secondary
+                let detail = Prominence.Detail
+
+                match region.Content with
+                | RegionContent.Table table ->
+                    Expect.equal
+                        (table.Columns |> List.map (fun column -> column.Key, column.Prominence))
+                        [
+                            "caseReference", primary
+                            "headline", primary
+                            "claimants", primary
+                            "claimedAmount", secondary
+                            "payableAmount", secondary
+                            "responsible", secondary
+                            "nextAction", secondary
+                            "nextDue", secondary
+                            "attention", primary
+                            "insurers", detail
+                            "changedAt", detail
+                        ]
+                        "Human columns are independent of the machine projection"
+
+                    Expect.equal
+                        region.EmptyId
+                        (Some "label.noCasesForView")
+                        "Cases supplies its empty message"
+                | _ -> failtest "Cases results are a table"
+
+                for view in ReminderView.all do
+                    let baseColumns =
+                        [ "due"; "action"; "reference"; "claimants"; "kind"; "responsible" ]
+
+                    let expected =
+                        match view with
+                        | ReminderView.Completed
+                        | ReminderView.Cancelled -> baseColumns @ [ "doneOn"; "deadlineOutcome" ]
+                        | _ -> baseColumns
+
+                    Expect.equal
+                        (ReminderListScreen.columnsFor (Some view) None |> List.map _.Key)
+                        expected
+                        "Finished reminder views add the two completion columns")
+            testCase
+                "closed headline includes the reason and case fact presence is explicit"
+                (fun () ->
+                    let reading = ResponseExamples.caseRead
+
+                    let closed =
+                        { reading with
+                            Headline = CaseHeadline.Closed
+                            Snapshot =
+                                { reading.Snapshot with
+                                    State =
+                                        reading.Snapshot.State
+                                        |> CaseState.map (fun facts ->
+                                            { facts with
+                                                Handling =
+                                                    Handling.Closed
+                                                        {
+                                                            Outcome = ClosureOutcome.Settled
+                                                            Note = None
+                                                        }
+                                            })
+                                }
+                        }
+
+                    let regions = (CaseScreen.view closed).Regions
+
+                    let facts role =
+                        regions
+                        |> List.filter (fun region -> region.Role = role)
+                        |> List.collect (fun region ->
+                            match region.Content with
+                            | RegionContent.Entries entries -> entries
+                            | _ -> [])
+
+                    Expect.contains
+                        (facts RegionRole.Identity |> List.map _.Value)
+                        (PresentedValue.State(
+                            CaseHeadline.Closed,
+                            Some("closureOutcome", "SETTLED")
+                        ))
+                        "The closed headline contains the typed outcome"
+
+                    Expect.isTrue
+                        (facts RegionRole.Facts |> List.forall (_.Recorded >> Option.isSome))
+                        "Every fact has presence"
+
+                    Expect.isTrue
+                        (facts RegionRole.Facts
+                         |> List.exists (fun entry -> entry.Recorded = Some false))
+                        "An absent optional fact is explicit"
+
+                    match
+                        (regions |> List.find (fun region -> region.Role = RegionRole.NextActions))
+                            .Content
+                    with
+                    | RegionContent.Table table ->
+                        Expect.isEmpty table.Sections "Next actions excludes the old summary"
+                    | _ -> failtest "Next actions require a table"
+
+                    let nextOnly =
+                        regions
+                        |> List.filter (fun region -> region.Role = RegionRole.NextActions)
+                        |> Screen.create
+
+                    Expect.equal
+                        (ViewText.renderSelected false (RenderingContext.forLanguage "en") nextOnly)
+                        [ "No next actions for this case." ]
+                        "CLI renders the empty message in place of the column headers")
+            testCase
+                "payment-decision affordance uses a label for the current decision state"
+                (fun () ->
+                    let reading = ResponseExamples.caseRead
+
+                    let binding =
+                        Binding.Case(
+                            CaseSelector.Id reading.Snapshot.CaseId,
+                            reading.Snapshot.Revision
+                        )
+
+                    let offer = Inputs.offeredTask "case.decide" binding Map.empty
+
+                    let actionWith state =
+                        HumanCaseDocument.ofCore
+                            { reading with
+                                Snapshot = { reading.Snapshot with State = state }
+                                Advice = CaseAdvice.withOffers [ offer ] reading.Advice
+                            }
+                        |> _.Screen
+                        |> Screen.affordances
+                        |> List.find (fun action -> TaskId.token action.Task = "case.decide")
+
+                    let changed =
+                        reading.Snapshot.State
+                        |> CaseState.map (fun facts ->
+                            { facts with
+                                Finance =
+                                    FinancialPosition.withDecision
+                                        (Some(DomainInputs.admittedDecision DomainInputs.decision))
+                                        facts.Finance
+                            })
+
+                    Expect.equal
+                        (actionWith reading.Snapshot.State).LabelId
+                        "task.case.decide.label"
+                        "First decision"
+
+                    Expect.equal
+                        (actionWith changed).LabelId
+                        "task.case.decide.change"
+                        "Existing decision")
+            testCase
+                "only routine note addition and reminder completion allow implicit review"
+                (fun () ->
+                    let tasks =
+                        TaskDeclarations.all
+                        |> List.filter (fun task -> task.Review = Some TaskReview.Implicit)
+
+                    Expect.equal
+                        (tasks |> List.map _.Id |> Set.ofList)
+                        (set [ "note.add"; "reminder.complete" ])
+                        "The implicit review set is closed"
+
+                    Expect.isTrue
+                        (tasks |> List.forall (fun task -> task.Consequence = Consequence.Routine))
+                        "An implicit task must be routine"
+
+                    for collection in [ TaskCollectionId.Parties; TaskCollectionId.PeopleGrants ] do
+                        let labels =
+                            [
+                                CollectionPresentation.labelId collection
+                                CollectionPresentation.itemLabelId collection
+                                CollectionPresentation.addLabelId collection
+                                CollectionPresentation.removeLabelId collection
+                            ]
+
+                        Expect.equal
+                            (Set.ofList labels).Count
+                            4
+                            "Each collection has four distinct wording roles")
+        ]
+
+[<Tests>]
 let invalidTables =
     testCase "screen constructors refuse duplicate rows widths and incomplete row groups" (fun () ->
         let row key values =
@@ -33,6 +286,8 @@ let invalidTables =
                 Actions = []
                 RegionRow.Key = key
                 Transfers = []
+                Recommended = None
+                Prominence = None
                 Values = values
                 Detail = None
             }
@@ -80,6 +335,7 @@ let invalidTables =
                         Actions = []
                         Role = RegionRole.Results
                         TitleId = None
+                        EmptyId = None
                         Content = RegionContent.Table(table [ row "one" values ] [])
                     }
                 ]
@@ -96,6 +352,7 @@ let invalidTables =
                                 Actions = []
                                 Role = RegionRole.Results
                                 TitleId = None
+                                EmptyId = None
                                 Content = RegionContent.Table value
                             }
                         ]
@@ -288,7 +545,7 @@ let tests =
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]
                 (fun () -> data Api.reminder |> ReminderScreen.view)
             matches "reminder list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
-                data Api.reminders |> ReminderListScreen.view)
+                data Api.reminders |> ReminderListScreen.view None None)
             matches "timeline" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
                 data Api.caseTimeline |> TimelineScreen.view)
             matches "people" [ RegionRole.Results; RegionRole.Details ] (fun () ->
@@ -305,9 +562,17 @@ let tests =
                     let reply = data Api.peopleRequests
                     let empty = { reply with Items = [] }
 
-                    Expect.isEmpty
-                        (AccessRequestsScreen.view empty).Regions
-                        "No empty table or page metadata chrome"
+                    let regions = (AccessRequestsScreen.view empty).Regions
+
+                    Expect.equal
+                        (regions |> List.map _.Role)
+                        [ RegionRole.Results ]
+                        "The empty state has no pagination details"
+
+                    Expect.equal
+                        regions.Head.EmptyId
+                        (Some "label.noAccessRequests")
+                        "The region provides its empty message"
 
                     Expect.equal
                         empty.Basis
@@ -318,7 +583,7 @@ let tests =
                         empty.NextCursor
                         reply.NextCursor
                         "The HUMAN page retains its continuation")
-            matches "empty access requests" [] (fun () ->
+            matches "empty access requests" [ RegionRole.Results ] (fun () ->
                 data Api.peopleRequests |> AccessRequestsScreen.view)
             matches
                 "context"

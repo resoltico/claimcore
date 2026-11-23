@@ -253,8 +253,19 @@ module HumanCaseDocument =
                                 else
                                     action
 
+                            let labelId =
+                                let hasDecision =
+                                    CaseState.fields value.Snapshot.State
+                                    |> Option.exists (fun facts -> facts.Finance.Decision.IsSome)
+
+                                if task = ClientCompositions.paymentDecision && hasDecision then
+                                    "task.case.decide.change"
+                                else
+                                    action.LabelId
+
                             Some
                                 { action with
+                                    LabelId = labelId
                                     Blocked =
                                         availability.Blocked
                                         |> Option.map TaskAffordances.availability
@@ -793,8 +804,11 @@ module HumanReadDocuments =
             HumanDisclosure.Current
             None
 
-    let reminders (value: ReminderPage) =
-        listPage value.Basis (ReminderListScreen.view value) value.NextCursor
+    let reminders (request: ReminderListRequest) (value: ReminderPage) =
+        listPage
+            value.Basis
+            (ReminderListScreen.view request.View request.State value)
+            value.NextCursor
 
     let actors (value: ActorReviewPage) =
         listPage value.Basis (PeopleScreen.view value) value.NextCursor

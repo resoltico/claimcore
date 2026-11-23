@@ -447,8 +447,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let refreshed = Encoding.UTF8.GetString last.StandardOutput
 
     let currentCoverage =
-        refreshed.Contains("No next action", StringComparison.Ordinal)
-        && Regex.IsMatch(refreshed, "(?m)^Pending reminders[ ]*: 0\r?$")
+        Regex.IsMatch(refreshed, @"\bNo next action\b")
+        && refreshed.Contains("No next actions for this case.", StringComparison.Ordinal)
 
     if not currentCoverage then
         FixtureFiles.write fixture.Directory "last-completion-human.stdout" last.StandardOutput
@@ -456,7 +456,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     Expect.isTrue
         currentCoverage
-        "Human output refreshes core attention and zero pending count after last completion"
+        "Human output refreshes core attention and the empty next-actions section after last completion"
 
     let afterWork = current ()
 
@@ -593,12 +593,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             |}
 
     let ndjson =
-        invoke
-            fixture
-            environment
-            [ "session" ]
-            (Array.concat [ get; [| 10uy |]; get; [| 10uy |] ])
-            0
+        invoke fixture environment [ "batch" ] (Array.concat [ get; [| 10uy |]; get; [| 10uy |] ]) 0
 
     Expect.equal ndjson.ExitCode 0 "Actual NDJSON session succeeds"
 

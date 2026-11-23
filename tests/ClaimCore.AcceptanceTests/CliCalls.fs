@@ -387,5 +387,5 @@ let setup fixture =
 
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
-    invoke fixture environment [ "session" ] source 0
+    invoke fixture environment [ "batch" ] source 0
     |> requireAcceptedReplies frames.Length

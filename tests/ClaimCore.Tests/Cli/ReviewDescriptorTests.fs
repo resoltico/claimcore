@@ -59,7 +59,7 @@ let kindGoldens =
                     PresentedValue.Codes("boolean", [ "FALSE"; "TRUE" ]),
                     [ [ "No, Yes" ]; [ "Nē, Jā" ]; [ "لا, نعم" ] ]
                     PresentedValue.Actor account, List.replicate 3 [ "Tess" ]
-                    PresentedValue.State CaseHeadline.Erased,
+                    PresentedValue.State(CaseHeadline.Erased, None),
                     [ [ "Erased" ]; [ "Dzēsta" ]; [ "تم المحو" ] ]
                     PresentedValue.Count 42L, List.replicate 3 [ "42" ]
                     PresentedValue.Reference(DomainInputs.reference "R-1"),
@@ -95,81 +95,73 @@ let reviews =
     testList
         "typed operation review deltas"
         [
-            testCase
-                "work summary changes retain responsibility in one unchanged summary"
-                (fun () ->
-                    let before =
-                        {
-                            CaseWorkReadModel.CaseId = CliReplyFixtures.snapshot.CaseId
-                            Revision = Revision.first
-                            Responsible = Some account
-                            Summary = HandlingSummary.parse "Before" |> Result.toOption
-                        }
+            testCase "work summary reviews omit unchanged responsibility" (fun () ->
+                let before =
+                    {
+                        CaseWorkReadModel.CaseId = CliReplyFixtures.snapshot.CaseId
+                        Revision = Revision.first
+                        Responsible = Some account
+                        Summary = HandlingSummary.parse "Before" |> Result.toOption
+                    }
 
-                    let proposed =
-                        { before with
-                            Summary = HandlingSummary.parse "After\nSecond line" |> Result.toOption
-                        }
+                let proposed =
+                    { before with
+                        Summary = HandlingSummary.parse "After\nSecond line" |> Result.toOption
+                    }
 
-                    let review =
-                        Reviews.workReview
-                            (TaskId.ofLiteral "work.update")
-                            (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
-                            CliReplyFixtures.snapshot
-                            before
-                            proposed
-                            context
+                let review =
+                    Reviews.workReview
+                        (TaskId.ofLiteral "work.update")
+                        (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
+                        CliReplyFixtures.snapshot
+                        before
+                        proposed
+                        context
 
-                    let delta = ReviewScreen.operationReview review
+                let delta = ReviewScreen.operationReview Map.empty review
 
-                    Expect.equal
-                        (delta.Changes |> List.map _.Key)
-                        [ CaseId.format before.CaseId + ".summary" ]
-                        "The core supplies only actual changes"
+                Expect.equal
+                    (delta.Changes |> List.map _.Key)
+                    [ CaseId.format before.CaseId + ".summary" ]
+                    "The core supplies only actual changes"
 
-                    Expect.equal
-                        (delta.Unchanged |> List.map _.Key)
-                        [ "responsible" ]
-                        "The retained assignment is explicit"
+                Expect.isEmpty delta.Unchanged "Unchanged responsibility stays out of the review"
 
-                    let text =
-                        OperationText.previewLines
-                            (RenderingContext.forLanguage "en")
-                            None
-                            (RepresentationReply.Human(
-                                HumanReplies.previewSubmission
-                                    (Submissions.create
-                                        "work.update"
-                                        CliReplyFixtures.id
-                                        (Binding.Work(
-                                            CaseSelector.Id before.CaseId,
-                                            Revision.first
-                                        ))
-                                        (Submissions.fields
-                                            [ BusinessField.HandlingSummary, "After\nSecond line" ]))
-                                    {
-                                        PreviewReply.OperationId = CliReplyFixtures.id
-                                        Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-                                    }
-                            ))
-                        |> String.concat "\n"
+                let text =
+                    OperationText.previewLines
+                        (RenderingContext.forLanguage "en")
+                        None
+                        (RepresentationReply.Human(
+                            HumanReplies.previewSubmission
+                                (Submissions.create
+                                    "work.update"
+                                    CliReplyFixtures.id
+                                    (Binding.Work(CaseSelector.Id before.CaseId, Revision.first))
+                                    (Submissions.fields
+                                        [ BusinessField.HandlingSummary, "After\nSecond line" ]))
+                                {
+                                    PreviewReply.OperationId = CliReplyFixtures.id
+                                    Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                                }
+                        ))
+                    |> String.concat "\n"
 
-                    Expect.stringContains
-                        text
-                        "Before → After\nSecond line"
-                        "Admitted narrative layout is preserved"
+                Expect.stringContains
+                    text
+                    "Before → After\nSecond line"
+                    "Admitted narrative layout is preserved"
 
-                    Expect.equal
-                        (text.Split('\n')
-                         |> Array.filter (fun (line: string) ->
-                             line.StartsWith("Unchanged:", StringComparison.Ordinal))
-                         |> Array.length)
-                        1
-                        "One summary line"
+                Expect.equal
+                    (text.Split('\n')
+                     |> Array.filter (fun (line: string) ->
+                         line.StartsWith("Unchanged:", StringComparison.Ordinal))
+                     |> Array.length)
+                    0
+                    "No unchanged summary line"
 
-                    Expect.isFalse
-                        (text.Contains "→ Tess" || text.Contains "Tess →")
-                        "Unchanged person does not become a fake change")
+                Expect.isFalse
+                    (text.Contains "→ Tess" || text.Contains "Tess →")
+                    "Unchanged person does not become a fake change")
             testCase "case money changes are atomic and erasure removes retained fields" (fun () ->
                 let input =
                     DomainInputs.registrationWith
@@ -209,7 +201,7 @@ let reviews =
                         proposed
                         context
 
-                let delta = ReviewScreen.operationReview (review proposed)
+                let delta = ReviewScreen.operationReview Map.empty (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -223,7 +215,9 @@ let reviews =
                     "All accepted money digits and minor units survive"
 
                 let erased =
-                    ReviewScreen.operationReview (review { before with State = CaseState.Erased })
+                    ReviewScreen.operationReview
+                        Map.empty
+                        (review { before with State = CaseState.Erased })
 
                 Expect.isTrue
                     (erased.Changes
@@ -354,17 +348,14 @@ let assignmentIdentity =
                 after
                 context
 
-        let delta = ReviewScreen.operationReview review
+        let delta = ReviewScreen.operationReview Map.empty review
 
         Expect.equal
             delta.Changes
             []
             "Assignment is an ActorId fact; current profile and availability metadata do not change it"
 
-        Expect.contains
-            (delta.Unchanged |> List.map _.Key)
-            "responsible"
-            "The existing assignment is retained")
+        Expect.isEmpty delta.Unchanged "The retained assignment needs no review")
 
 
 [<Tests>]

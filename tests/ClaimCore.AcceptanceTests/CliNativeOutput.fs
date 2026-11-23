@@ -125,13 +125,13 @@ let private mutations fixture =
     let destinations =
         [ "broken"; "both" ] @ (if OperatingSystem.IsLinux() then [ "full" ] else [])
 
-    for command in [ "call"; "session" ] do
+    for command in [ "call"; "batch" ] do
         for destination in destinations do
             let source, operation, reference = authored fixture
             let later, _, laterReference = authored fixture
 
             let input =
-                if command = "session" then
+                if command = "batch" then
                     Array.concat [ source; [| 10uy |]; later; [| 10uy |] ]
                 else
                     source
@@ -152,7 +152,7 @@ let private mutations fixture =
 
             accepted fixture reference
 
-            if command = "session" then
+            if command = "batch" then
                 automation
                     fixture
                     "case.get"
@@ -216,7 +216,7 @@ let private unicodeFrames fixture =
         CliCalls.invoke
             fixture
             fixture.Environment
-            [ "session" ]
+            [ "batch" ]
             (Array.concat [ request; [| 10uy |]; request; [| 10uy |] ])
             0
 

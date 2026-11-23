@@ -863,7 +863,7 @@ test("published reminder rows show server timing in case and queue views across 
       .filter({
         hasText: actions[index]!,
       });
-    await expect(item.locator("[data-column='timing']")).toHaveText(label);
+    await expect(item.locator("..").locator('th[scope="rowgroup"]')).toContainText(label);
     await expect(item.getByRole("link")).toHaveText(reference);
   }
   const stewardContext = await browser.newContext({
@@ -914,13 +914,29 @@ test("published reminder rows show server timing in case and queue views across 
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(3);
-  await expect(page.locator(".reminder-list")).not.toContainText("Overdue");
+  await expect(page.locator(".reminder-list")).not.toContainText(
+    ui("ar", "reminderDue.OVERDUE.label"),
+  );
   for (const item of await page
     .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)")
     .all()) {
-    await expect(item).toContainText(ui("ar", "due.INACTIVE.label"));
-    await expect(item).toContainText(ui("ar", "reminderState.PENDING.label"));
+    await expect(item.locator("..").locator('th[scope="rowgroup"]')).toContainText(
+      ui("ar", "due.INACTIVE.label"),
+    );
   }
+  const retained = await workRequest(page, "reminder.list", {
+    includeInactive: true,
+    text: reference,
+    limit: 50,
+  });
+  if (retained.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected retained reminders.");
+  }
+  expect(retained.outcome.data.items.map((row) => row.reminder.state)).toEqual([
+    "PENDING",
+    "PENDING",
+    "PENDING",
+  ]);
 });
 
 const seedReminder = async (

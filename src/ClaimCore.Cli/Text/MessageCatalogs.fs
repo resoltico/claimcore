@@ -114,7 +114,7 @@ module internal MessageCatalogs =
             | CliCommand.Version -> CliMessage.VersionFamily
             | CliCommand.Schema -> CliMessage.SchemaFamily
             | CliCommand.Call -> CliMessage.CallFamily
-            | CliCommand.Session -> CliMessage.SessionFamily
+            | CliCommand.Batch -> CliMessage.BatchFamily
             | CliCommand.Shell -> CliMessage.ShellFamily
             | CliCommand.Recovery -> CliMessage.RecoveryFamily
             | CliCommand.Configure -> CliMessage.ConfigureFamily
@@ -137,7 +137,7 @@ module internal MessageCatalogs =
     let private helpBody formatNumber language =
         function
         | HelpTopic.Call -> renderCli language (CliMessage.HelpCall)
-        | HelpTopic.Session -> renderCli language (CliMessage.HelpCall)
+        | HelpTopic.Batch -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Configuration -> renderCli language (CliMessage.HelpConfiguration)
         | HelpTopic.Delivery ->
             renderCli language (CliMessage.HelpDelivery(window formatNumber language))

@@ -72,6 +72,10 @@ module TaskMetadata =
                 meaningId = meaningId
                 consequence = consequence
                 creates = creates
+                review =
+                    ledger
+                    |> Option.map (fun declaration ->
+                        TaskReview.mode declaration.Id |> Vocabulary.token TaskReview.vocabulary)
                 paged = paged
                 csv = csv
                 execution =
@@ -129,6 +133,11 @@ module TaskMetadata =
                     |> List.map (fun (collection: TaskCollectionDeclaration) ->
                         {|
                             id = TaskCollectionId.key collection.Collection
+                            labelId = CollectionPresentation.labelId collection.Collection
+                            itemLabelId = CollectionPresentation.itemLabelId collection.Collection
+                            addLabelId = CollectionPresentation.addLabelId collection.Collection
+                            removeLabelId =
+                                CollectionPresentation.removeLabelId collection.Collection
                             input =
                                 TaskInputId.token (TaskCollectionId.input collection.Collection)
                             minimumRows = collection.MinimumRows

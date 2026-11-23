@@ -20,14 +20,23 @@ module CaseListScreen =
                 LabelId = "label.caseState"
                 Prominence = Prominence.Primary
                 IsMoney = false
-                Read = fun row -> PresentedValue.State row.Headline
+                Read =
+                    fun row ->
+                        let outcome = CaseState.fields row.State |> Option.bind _.ClosureOutcome
+                        headline row.Headline outcome
             }
             for role, key, label in
                 [
                     PartyRole.Claimant, "claimants", "label.claimants"
                     PartyRole.Insurer, "insurers", "label.insurers"
                 ] do
-                column key label Prominence.Secondary false (fun row ->
+                let prominence =
+                    if role = PartyRole.Claimant then
+                        Prominence.Primary
+                    else
+                        Prominence.Detail
+
+                column key label prominence false (fun row ->
                     match CaseState.fields row.State with
                     | None -> PresentedValue.Absent "lifecycle.ERASED.label"
                     | Some fields ->
@@ -43,6 +52,7 @@ module CaseListScreen =
                     |> Option.map (fun (facts: CaseSummaryFacts) -> facts.Fields))
                 |> List.map (fun definition ->
                     { definition with
+                        Prominence = Prominence.Secondary
                         Read =
                             fun row ->
                                 if CaseState.lifecycle row.State = Lifecycle.Erased then
@@ -73,6 +83,8 @@ module CaseListScreen =
                             PresentedValue.Text(ReminderAction.format next.Action))
                         |> Option.defaultValue (PresentedValue.Absent "view.NO_NEXT_ACTION.label")
             }
+            column "nextDue" "field.reminderDueDate.label" Prominence.Secondary false (fun row ->
+                row.NextAction |> Option.map _.Due |> optional PresentedValue.Date)
             {
                 Key = "changedAt"
                 LabelId = "label.changedAt"
@@ -81,14 +93,6 @@ module CaseListScreen =
                 Read = fun row -> PresentedValue.Instant row.ChangedAt
             }
         ]
-
-    let private workRevision =
-        column
-            "workRevision"
-            "label.workRevision"
-            Prominence.Detail
-            false
-            (fun (row: CaseSummary) -> PresentedValue.Identifier(Revision.format row.WorkRevision))
 
     let caseSummary row =
         [
@@ -100,25 +104,18 @@ module CaseListScreen =
 
     let rows rows =
         let attention =
-            column
-                "attention"
-                "label.attention"
-                Prominence.Secondary
-                false
-                (fun (row: CaseSummary) -> codes CaseAttention.vocabulary row.Attention)
+            column "attention" "label.attention" Prominence.Primary false (fun (row: CaseSummary) ->
+                codes CaseAttention.vocabulary row.Attention)
+
+        let visible, details =
+            caseSummaryColumns
+            |> List.partition (fun column -> column.Prominence <> Prominence.Detail)
 
         let data =
             tableWithControls
                 (fun (row: CaseSummary) -> CaseId.format row.CaseId)
-                (fun row ->
-                    Some
-                        {
-                            Summary = None
-                            Highlights = []
-                            Sections =
-                                [ section "label.recordDetails" (entries [ workRevision ] row) ]
-                        })
-                (caseSummaryColumns @ [ attention ])
+                (fun _ -> None)
+                (visible @ [ attention ] @ details)
                 (fun row ->
                     let actions =
                         if row.CanAssign then
@@ -145,7 +142,11 @@ module CaseListScreen =
                     Some(Link.caseById row.CaseId), actions)
                 rows
 
-        Screen.create [ region RegionRole.Results None (RegionContent.Table data) ]
+        Screen.create
+            [
+                region RegionRole.Results None (RegionContent.Table data)
+                |> withEmpty "label.noCasesForView"
+            ]
 
     let view (reply: CaseSummaryPage) =
         let screen = rows reply.Items
@@ -173,12 +174,7 @@ module CaseListScreen =
 
                 Screen.withRegions
                     (screen.Regions
-                     @ [
-                         region
-                             RegionRole.Facts
-                             (Some "label.exactReference")
-                             (RegionContent.Entries facts)
-                     ])
+                     @ [ entryRegion RegionRole.Facts (Some "label.exactReference") facts ])
                     screen
 
         page reply.Basis reply.Items.Length reply.NextCursor screen

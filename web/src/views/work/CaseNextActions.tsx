@@ -62,7 +62,9 @@ export const CaseNextActions = ({
           </button>
         ) : null}
       </div>
-      {!browsing && nextRegion.content.rows.length === 0 ? <p>{p.text("view.empty")}</p> : null}
+      {!browsing && nextRegion.content.rows.length === 0 && nextRegion.emptyId !== undefined ? (
+        <p>{renderCatalogKey(p, nextRegion.emptyId)}</p>
+      ) : null}
       {browsing ? null : (
         <Table
           view={nextRegion.content}

@@ -48,11 +48,12 @@ let tests =
                                     Actions = []
                                     Role = RegionRole.Facts
                                     TitleId = Some "subject.CASE.label"
+                                    EmptyId = None
                                     Content =
                                         RegionContent.Entries
                                             [
                                                 {
-                                                    Recorded = false
+                                                    Recorded = None
                                                     Key = "future-field"
                                                     LabelId = "field.caseReference.label"
                                                     Prominence = Prominence.Primary
@@ -108,6 +109,8 @@ let tests =
                                         Actions = []
                                         Key = "entity-7"
                                         Transfers = []
+                                        Recommended = None
+                                        Prominence = None
                                         Values = [ PresentedValue.Count 7L ]
                                         Detail = None
                                     }
@@ -124,6 +127,7 @@ let tests =
                                     Actions = []
                                     Role = RegionRole.Results
                                     TitleId = None
+                                    EmptyId = None
                                     Content = RegionContent.Table table
                                 }
                             ]
@@ -199,11 +203,12 @@ let tests =
                                     Actions = []
                                     Role = RegionRole.Identity
                                     TitleId = None
+                                    EmptyId = None
                                     Content =
                                         RegionContent.Entries
                                             [
                                                 {
-                                                    Recorded = false
+                                                    Recorded = None
                                                     Key = "case"
                                                     LabelId = "field.caseReference.label"
                                                     Prominence = Prominence.Primary
@@ -216,11 +221,12 @@ let tests =
                                     Actions = []
                                     Role = RegionRole.Details
                                     TitleId = Some "label.recordDetails"
+                                    EmptyId = None
                                     Content =
                                         RegionContent.Entries
                                             [
                                                 {
-                                                    Recorded = false
+                                                    Recorded = None
                                                     Key = "version"
                                                     LabelId = "label.revisionLabel"
                                                     Prominence = Prominence.Detail

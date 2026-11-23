@@ -168,7 +168,9 @@ let internal session (provider: Provider) =
         InteractiveAuthorization.obtainWith
             {
                 Clock = provider.Clock
-                Launch = provider.Launch
+                Launch = fun address _ -> Task.FromResult(provider.Launch address)
+                ShowAddress = fun _ -> failtest "Unexpected manual sign-in"
+                Language = "en"
             }
             provider
             provider.Issuer

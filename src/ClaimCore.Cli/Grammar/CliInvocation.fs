@@ -38,7 +38,7 @@ type CliInvocation =
     | Version of json: bool
     | Schema of selection: CliSchema
     | Call
-    | Session
+    | Batch
     | Shell
     | Recovery of RecoveryInvocation
     | Configure of Map<CliSetting, string> option
@@ -194,7 +194,7 @@ module CliInvocations =
             | CliCommand.Recovery -> admitRecovery tail
             | CliCommand.Configure -> CliConfigure.admit tail |> Result.map CliInvocation.Configure
             | CliCommand.Shell -> noArguments CliInvocation.Shell tail
-            | CliCommand.Session -> noArguments CliInvocation.Session tail
+            | CliCommand.Batch -> noArguments CliInvocation.Batch tail
 
     let private wantsCommandHelp (arguments: string list) =
         let switches =
@@ -318,7 +318,7 @@ module CliInvocations =
         | CliInvocation.Version _
         | CliInvocation.Schema _
         | CliInvocation.Call
-        | CliInvocation.Session
+        | CliInvocation.Batch
         | CliInvocation.Shell
         | CliInvocation.Configure _ -> false
 

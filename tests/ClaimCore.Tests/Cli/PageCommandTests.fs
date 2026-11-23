@@ -20,6 +20,7 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
+        ClosureOutcome = None
         CaseSummaryFacts.Parties =
             Map.ofList
                 [
@@ -480,7 +481,7 @@ let tests =
 
                 Expect.equal
                     headline.Value
-                    (PresentedValue.State CaseHeadline.Undecided)
+                    (PresentedValue.State(CaseHeadline.Undecided, None))
                     "The supplied headline retains its meaning"
 
                 let output =

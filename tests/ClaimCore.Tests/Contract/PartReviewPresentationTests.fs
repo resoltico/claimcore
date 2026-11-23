@@ -43,6 +43,110 @@ let private caseValue status finance =
     }
 
 [<Tests>]
+let reminderCreationReview =
+    testCase "reminder creation omits a defaulted kind and includes an entered kind" (fun () ->
+        let snapshot = ResponseExamples.snapshot
+        let kind = TaskInputId.Target InputTarget.ReminderPlanKind
+
+        let review =
+            {
+                Task = TaskId.ofLiteral "reminder.create"
+                Target = ReviewTarget.Case(snapshot.CaseId, snapshot.Reference)
+                References = references
+                Binding = Binding.ReminderNew(CaseSelector.Id snapshot.CaseId)
+                Context =
+                    {
+                        ProductVersion = "synthetic"
+                        Basis = DomainInputs.workBasis
+                    }
+                ChangesOwnSignInIdentity = false
+                Changes =
+                    [
+                        {
+                            PartId = id
+                            Revision = Revision.first
+                            Description =
+                                PartDescription.Reminder
+                                    {
+                                        Plans = { Before = None; After = None }
+                                        Action = None
+                                        Due = None
+                                        Kind =
+                                            Some
+                                                {
+                                                    Before = None
+                                                    After = Some ReminderKind.FollowUp
+                                                }
+                                        DoneOn = None
+                                        State =
+                                            Some
+                                                {
+                                                    Before = None
+                                                    After = Some ReminderState.Pending
+                                                }
+                                    }
+                        }
+                    ]
+            }
+
+        let omitted = ReviewScreen.operationReview Map.empty review
+
+        let entered =
+            ReviewScreen.operationReview (Map.ofList [ kind, InputValue.Text "FOLLOW_UP" ]) review
+
+        Expect.isEmpty omitted.Changes "The default kind and initial state are not authored"
+
+        Expect.equal
+            (entered.Changes |> List.map _.LabelId)
+            [ "field.kind.label" ]
+            "An explicitly selected default is still authored")
+
+[<Tests>]
+let noteCreationReview =
+    testCase "creating a note reviews only the authored note text" (fun () ->
+        let snapshot = ResponseExamples.snapshot
+
+        let note =
+            NoteText.parse "Synthetic handling note"
+            |> Result.defaultWith (string >> failtest)
+
+        let review =
+            {
+                Task = TaskId.ofLiteral "note.add"
+                Target = ReviewTarget.Case(snapshot.CaseId, snapshot.Reference)
+                References = references
+                Binding = Binding.NoteNew(CaseSelector.Id snapshot.CaseId)
+                Context =
+                    {
+                        ProductVersion = "synthetic"
+                        Basis = DomainInputs.workBasis
+                    }
+                ChangesOwnSignInIdentity = false
+                Changes =
+                    [
+                        {
+                            PartId = id
+                            Revision = Revision.first
+                            Description =
+                                PartDescription.Note
+                                    {
+                                        Text = Some { Before = None; After = Some note }
+                                        Removed = Some { Before = None; After = Some false }
+                                    }
+                        }
+                    ]
+            }
+
+        let result = ReviewScreen.operationReview Map.empty review
+
+        Expect.equal
+            (result.Changes |> List.map _.LabelId)
+            [ "field.noteText.label" ]
+            "The initial removal marker is a creation default"
+
+        Expect.isEmpty result.Unchanged "Unchanged values do not enter the review")
+
+[<Tests>]
 let tests =
     testList
         "shared part review facts"

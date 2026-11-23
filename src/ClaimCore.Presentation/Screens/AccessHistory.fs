@@ -118,7 +118,11 @@ module AccessHistoryScreen =
                         ]
                 })
 
-        Screen.create [ region RegionRole.Activity None (RegionContent.Timeline items) ]
+        Screen.create
+            [
+                region RegionRole.Activity None (RegionContent.Timeline items)
+                |> withEmpty "empty.accessHistory"
+            ]
 
     let view (reply: PeopleHistoryPage) =
         rows reply.Entries |> page reply.Basis reply.Entries.Length reply.NextCursor

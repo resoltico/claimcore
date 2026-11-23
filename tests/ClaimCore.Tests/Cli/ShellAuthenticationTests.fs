@@ -1,6 +1,7 @@
 module ClaimCore.Tests.ShellAuthenticationTests
 
 open System
+open System.IO
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Cli
@@ -116,12 +117,70 @@ let private emptyAfterFailure () =
 
     Expect.isFalse (credentials.IsCurrent access) "Failed renewal leaves no current grant"
 
+let private manualSignIn () =
+    task {
+        let directory = Directory.CreateTempSubdirectory "claimcore-launcher-"
+
+        try
+            let missing = Path.Combine(directory.FullName, "missing")
+            let failing = Path.Combine(directory.FullName, "failing")
+
+            File.WriteAllText(
+                failing,
+                "#!/bin/sh\nprintf 'unexpected stdout'\nprintf 'unexpected stderr' >&2\nexit 19\n"
+            )
+
+            File.SetUnixFileMode(
+                failing,
+                UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+            )
+
+            for launcher in [ missing; failing ] do
+                let clock = Clock()
+                use provider = new Provider(clock)
+                use errors = new StringWriter()
+                use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 8.)
+
+                let! result =
+                    InteractiveAuthorization.obtainWith
+                        {
+                            Clock = provider.Clock
+                            Launch = LoopbackTransport.launchWith launcher
+                            Language = "en"
+                            ShowAddress =
+                                fun address ->
+                                    InteractiveAuthorization.manualSignIn errors "en" address
+                                    provider.Launch address |> ignore
+                        }
+                        provider
+                        provider.Issuer
+                        "synthetic-cli"
+                        deadline.Token
+
+                Expect.isOk result "Manual opening completes the real authorization flow"
+                do! provider.Completed()
+
+                Expect.stringContains
+                    (errors.ToString())
+                    "Open this address in your browser to sign in: https://identity.example.test/"
+                    "The URL goes to the configured error writer"
+
+                Expect.isFalse
+                    (errors.ToString().Contains "unexpected")
+                    "Child output does not enter the CLI output"
+        finally
+            directory.Delete(true)
+    }
+
 [<Tests>]
 let tests =
     testList
         "shell authentication"
         [
             testCase "new and failed-renewal sessions have no current grant" emptyAfterFailure
+            testTask "missing and failed browser launchers print to stderr and await manual sign-in" {
+                do! manualSignIn ()
+            }
             testCase "many commands share one real PKCE sign-in" reuse
             testCase "expiry refreshes and rotates the memory-only token" rotation
             testCase "refresh omission retains the current token" omittedRotation

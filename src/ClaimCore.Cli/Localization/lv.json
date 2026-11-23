@@ -24,8 +24,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "Autentifikācijas atbilde saņemta. Atgriezieties terminālī.",
-    "source": "5ab530fe0240"
+    "text": "Pierakstīšanās pabeigta. Varat aizvērt šo cilni un atgriezties terminālī.",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "Autentifikācijas atbilde tika atteikta.",
@@ -80,32 +80,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "Skatīt piekļuves un eksporta žurnālu.",
-    "source": "370be36fbfc0"
+    "text": "Skatīt piekļuves un eksporta žurnālu",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "Personas un piekļuve",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "Nosūtīt vienu strukturētu pieprasījumu.",
-    "source": "928e1c599453"
+    "text": "Nosūtīt vienu strukturētu pieprasījumu",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "Lietu fakti un lēmumi",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "Saglabājiet publiskos savienojuma iestatījumus vai skatiet to avotus.",
-    "source": "67ea2596497a"
+    "text": "Saglabājiet publiskos savienojuma iestatījumus vai skatiet to avotus",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "Jūsu konts un instalācija",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "Lasīt palīdzības tēmas.",
-    "source": "519291bec34c"
+    "text": "Lasīt palīdzības tēmas",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "Pārbaudīt, vai izmaiņas tika reģistrētas",
@@ -120,28 +120,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "Lasīt protokola shēmas.",
-    "source": "048234b2c1a5"
+    "text": "Lasīt protokola shēmas",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "Apstrādāt strukturētus pieprasījumus vienā sesijā.",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "Apstrādāt strukturētus pieprasījumus vienā sesijā",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "Izpildiet interaktīvas komandas pēc vienas pierakstīšanās.",
-    "source": "943c7dc4df93"
+    "text": "Izpildiet interaktīvas komandas pēc vienas pierakstīšanās",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "Parādīt produkta versiju.",
-    "source": "1ff071b74e83"
+    "text": "Parādīt produkta versiju",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "Atbildība un izskatīšanas kopsavilkums",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call` nolasa vienu JSON pieprasījumu no standarta ievades; `session` nolasa vienu pieprasījumu katrā rindā.\nJa izmaiņas pieprasījumam nav operācijas ID, CLI to izveido un izdrukā.\nPrecīzu formātu un ierobežojumus skatiet docs/integrating.md#cli-use.",
-    "source": "f4e598c4197a"
+    "text": "`call` nolasa vienu JSON pieprasījumu no standarta ievades; `batch` nolasa vienu pieprasījumu katrā rindā.\nJa izmaiņas pieprasījumam nav operācijas ID, CLI to izveido un izdrukā.\nPrecīzu formātu un ierobežojumus skatiet docs/integrating.md#cli-use.",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "Komandām izmantojiet {command}.",
@@ -177,7 +177,7 @@
   },
   "cli.help.layout": {
     "text": "ClaimCore strukturēts HTTPS klients. Palīdzība un izziņa darbojas bezsaistē; pieprasījumiem vajadzīga autentifikācija.\n{body}",
-    "source": "7e13b1539170"
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "Katra saraksta lapa izmanto piekļuvi un lietu informāciju nolasīšanas brīdī.\nVienlaicīgas izmaiņas var pārvietot, atkārtot vai izlaist rindas.\n--all nolasa visas lapas, taču nefiksē nemainīgu rezultātu.",
@@ -432,8 +432,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell nepieciešams interaktīvs terminālis un interaktīva pierakstīšanās. Caurulētiem pieprasījumiem izmantojiet session.",
-    "source": "1318499469cb"
+    "text": "shell nepieciešams interaktīvs terminālis un interaktīva pierakstīšanās. Caurulētiem pieprasījumiem izmantojiet batch.",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "Atteikts, gaida galīgo apstiprinājumu — mēģinājums {attemptId}: {subject} {act}; operācija {operationId}.",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "Palaidiet {command} operētājsistēmas terminālī.",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "Lai pierakstītos, atveriet šo adresi pārlūkprogrammā: {url}",
+    "source": "bf2997f0b8c2"
   }
 }

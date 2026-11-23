@@ -445,7 +445,21 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.reminders
-                HumanReadDocuments.reminders
+                (HumanReadDocuments.reminders (
+                    {
+                        View = None
+                        Target = None
+                        State = None
+                        Kind = None
+                        DeadlineOutcome = None
+                        Due = None
+                        Assignment = None
+                        Text = None
+                        AfterCursor = None
+                        Limit = 50
+                        IncludeInactive = None
+                    }
+                ))
                 (Outcome.Succeeded
                     {
                         Basis = basis

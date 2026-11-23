@@ -61,16 +61,19 @@ module AccessRequestsScreen =
 
     let rows rows =
         resultScreenWithControls
+            "label.noAccessRequests"
             (fun (row: AccessRequest) -> principalKey row.Principal)
             accessRequestColumns
             (fun row -> None, TaskAffordances.requestActions row)
             rows
 
     let view (reply: AccessRequestPage) =
+        let screen = rows reply.Items
+
         if reply.Items.IsEmpty then
-            Screen.create []
+            screen
         else
-            page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
+            page reply.Basis reply.Items.Length reply.NextCursor screen
 
     let dismissed () =
         Screen.create

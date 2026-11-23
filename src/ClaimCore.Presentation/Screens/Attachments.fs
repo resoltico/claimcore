@@ -97,4 +97,5 @@ module AttachmentsScreen =
                     RegionRole.Attachments
                     (Some "section.attachments.label")
                     (RegionContent.Table table)
+                |> withEmpty "empty.attachments"
             ]

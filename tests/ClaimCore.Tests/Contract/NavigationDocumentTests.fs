@@ -88,7 +88,21 @@ let private documents () =
                 NextCursor = Some "case-next"
                 ExactReference = None
             }
-        HumanReadDocuments.reminders
+        (HumanReadDocuments.reminders (
+            {
+                View = None
+                Target = None
+                State = None
+                Kind = None
+                DeadlineOutcome = None
+                Due = None
+                Assignment = None
+                Text = None
+                AfterCursor = None
+                Limit = 50
+                IncludeInactive = None
+            }
+        ))
             {
                 Basis = DomainInputs.workBasis
                 Items = [ action ]

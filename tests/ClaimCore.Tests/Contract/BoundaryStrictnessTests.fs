@@ -60,7 +60,7 @@ let private cliStrictness () =
             [ "version" ]
             [ "schema"; "invocation" ]
             [ "call" ]
-            [ "session" ]
+            [ "batch" ]
            ]
            |> List.map (fun arguments -> arguments, host))
 

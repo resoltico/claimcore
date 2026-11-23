@@ -113,36 +113,38 @@ let attention =
                         (facts state (Some(actor, false)) (Some(date "2026-11-05"))))
                     [ CaseAttention.AssigneeUnavailable ]
                     "An unavailable assignee differs from unassigned")
-            testCase "overdue deadline sorts first and is actionable only while open" (fun () ->
-                let openCase =
-                    { facts
-                          (CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided))
-                          None
-                          (Some(date "2026-11-03")) with
-                        NextDeadlineDue = Some(date "2026-11-03")
-                    }
+            testCase
+                "overdue deadline subsumes overdue attention but retains Overdue view membership"
+                (fun () ->
+                    let openCase =
+                        { facts
+                              (CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided))
+                              None
+                              (Some(date "2026-11-03")) with
+                            NextDeadlineDue = Some(date "2026-11-03")
+                        }
 
-                Expect.equal
-                    (CaseAttention.at today openCase)
-                    [
-                        CaseAttention.DeadlineOverdue
-                        CaseAttention.Overdue
-                        CaseAttention.Unassigned
-                    ]
-                    "Deadline attention precedes other valid reasons"
+                    Expect.equal
+                        (CaseAttention.at today openCase)
+                        [ CaseAttention.DeadlineOverdue; CaseAttention.Unassigned ]
+                        "The overdue deadline subsumes the ordinary overdue reason"
 
-                Expect.isEmpty
-                    (CaseAttention.at
-                        today
-                        { openCase with
-                            State = CaseState.Active(CaseStatus.Closed, CaseProgress.Undecided)
-                        })
-                    "Closure suppresses a pending deadline"
+                    Expect.isTrue
+                        (CaseView.matches today actor CaseView.Overdue openCase)
+                        "An overdue deadline still belongs in the Overdue view"
 
-                Expect.equal
-                    (CaseAttention.at today openCase |> List.tryHead)
-                    (Some CaseAttention.DeadlineOverdue)
-                    "An open case is actionable again")
+                    Expect.isEmpty
+                        (CaseAttention.at
+                            today
+                            { openCase with
+                                State = CaseState.Active(CaseStatus.Closed, CaseProgress.Undecided)
+                            })
+                        "Closure suppresses a pending deadline"
+
+                    Expect.equal
+                        (CaseAttention.at today openCase |> List.tryHead)
+                        (Some CaseAttention.DeadlineOverdue)
+                        "An open case is actionable again")
             testCase "attention is absent for every inactive or closed state" (fun () ->
                 for state in states do
                     match state with

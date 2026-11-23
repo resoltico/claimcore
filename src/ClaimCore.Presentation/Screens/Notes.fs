@@ -96,4 +96,5 @@ module NotesScreen =
                     RegionRole.Notes
                     (Some "section.notes.label")
                     (RegionContent.Table(table page.CaseId page.Notes))
+                |> withEmpty "empty.notes"
             ]

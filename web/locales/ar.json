@@ -735,18 +735,6 @@
     "text": "يتم عرض بعض الأدوار فقط.",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "إضافة دور",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "إزالة الدور",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "الدور {number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "تعذّر على المتصفح حفظ التنزيل. حاول مجددًا.",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "إزالة قيد الملف",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "إضافة صف",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "إزالة الصف",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "الصف {number}",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "اختر ملفًا",

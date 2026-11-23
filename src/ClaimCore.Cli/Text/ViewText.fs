@@ -109,6 +109,13 @@ module internal ViewText =
                         |> List.map (fun entry -> label entry.LabelId + ": " + text entry.Value)
                     else
                         []
+                | RegionContent.Table data when
+                    region.EmptyId.IsSome
+                    && data.Rows.IsEmpty
+                    && data.Sections.IsEmpty
+                    && data.Meter.IsNone
+                    ->
+                    []
                 | RegionContent.Table data -> table (region.Role = RegionRole.RelatedCases) data
                 | RegionContent.Stages data ->
                     data.Steps
@@ -171,17 +178,17 @@ module internal ViewText =
                            else
                                []))
 
-            if body.IsEmpty then [] else heading @ body
+            if body.IsEmpty then
+                if includeHeader && showEmpty then
+                    region.EmptyId |> Option.map label |> Option.toList
+                else
+                    []
+            else
+                heading @ body
 
-        let lines =
-            screen.Regions
-            |> List.filter (fun region -> includeDetails || region.Role <> RegionRole.Details)
-            |> List.collect render
-
-        if lines.IsEmpty && includeHeader && showEmpty then
-            [ label "view.empty" ]
-        else
-            lines
+        screen.Regions
+        |> List.filter (fun region -> includeDetails || region.Role <> RegionRole.Details)
+        |> List.collect render
 
     let renderWithDetails includeDetails options (rendering: RenderingContext) screen =
         renderWithHeader "UTC" true true includeDetails options rendering screen

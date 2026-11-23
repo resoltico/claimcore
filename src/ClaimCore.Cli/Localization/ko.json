@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "인증 응답을 받았습니다. 터미널로 돌아가세요.",
-    "source": "5ab530fe0240"
+    "text": "로그인했습니다. 이 탭을 닫고 터미널로 돌아가세요.",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "인증 응답이 거부되었습니다.",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "접근 및 내보내기 기록을 봅니다.",
-    "source": "370be36fbfc0"
+    "text": "접근 및 내보내기 기록을 봅니다",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "사람 및 접근 권한",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "구조화된 요청 하나를 전송합니다.",
-    "source": "928e1c599453"
+    "text": "구조화된 요청 하나를 전송합니다",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "청구 건 정보 및 결정",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "공개 연결 설정을 저장하거나 설정 출처를 표시합니다.",
-    "source": "67ea2596497a"
+    "text": "공개 연결 설정을 저장하거나 설정 출처를 표시합니다",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "내 계정 및 설치 환경",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "도움말 항목을 읽습니다.",
-    "source": "519291bec34c"
+    "text": "도움말 항목을 읽습니다",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "변경 기록 여부 확인",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "프로토콜 스키마를 조회합니다.",
-    "source": "048234b2c1a5"
+    "text": "프로토콜 스키마를 조회합니다",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "하나의 세션에서 구조화된 요청을 처리합니다.",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "하나의 세션에서 구조화된 요청을 처리합니다",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "한 번 로그인하여 대화형 명령을 실행합니다.",
-    "source": "943c7dc4df93"
+    "text": "한 번 로그인하여 대화형 명령을 실행합니다",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "제품 버전을 표시합니다.",
-    "source": "1ff071b74e83"
+    "text": "제품 버전을 표시합니다",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "담당자 및 처리 요약",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call`은 표준 입력에서 JSON 요청 하나를 읽으며 `session`은 한 줄에 요청 하나를 읽습니다.\n변경 요청에 작업 ID가 없으면 CLI가 만들어 출력합니다.\n정확한 형식과 제한은 docs/integrating.md#cli-use를 참조하세요.",
-    "source": "f4e598c4197a"
+    "text": "`call`은 표준 입력에서 JSON 요청 하나를 읽으며 `batch`은 한 줄에 요청 하나를 읽습니다.\n변경 요청에 작업 ID가 없으면 CLI가 만들어 출력합니다.\n정확한 형식과 제한은 docs/integrating.md#cli-use를 참조하세요.",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "명령을 보려면 {command}를 실행하세요.",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "ClaimCore 구조화 HTTPS 클라이언트입니다. 도움말과 기능 탐색은 오프라인에서 가능하며 call과 session에는 인증이 필요합니다.\n{body}",
-    "source": "7e13b1539170"
+    "text": "ClaimCore 구조화 HTTPS 클라이언트입니다. 도움말과 기능 탐색은 오프라인에서 가능하며 call과 batch에는 인증이 필요합니다.\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "각 목록 페이지는 읽을 때의 접근 권한과 청구 건 정보를 사용합니다.\n동시 변경으로 행이 이동하거나 중복되거나 빠질 수 있습니다.\n--all은 모든 페이지를 읽지만 결과를 고정하지는 않습니다.",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell에는 대화형 터미널과 대화형 로그인이 필요합니다. 파이프로 전달하는 요청에는 session을 사용하세요.",
-    "source": "1318499469cb"
+    "text": "shell에는 대화형 터미널과 대화형 로그인이 필요합니다. 파이프로 전달하는 요청에는 batch을 사용하세요.",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "거부됨, 최종 확인 대기 — 시도 {attemptId}: {subject} {act}; 작업 {operationId}.",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "운영 체제의 터미널에서 {command} 명령을 실행하세요.",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "로그인하려면 브라우저에서 이 주소를 여세요: {url}",
+    "source": "bf2997f0b8c2"
   }
 }

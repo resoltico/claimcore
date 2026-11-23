@@ -50,7 +50,16 @@ module internal TextDescriptorValue =
         | PresentedValue.Code(vocabulary, token) -> code rendering vocabulary token
         | PresentedValue.Codes(vocabulary, tokens) -> codes rendering vocabulary tokens
         | PresentedValue.Actor value -> ReplyTextFormat.actorName rendering value |> text rendering
-        | PresentedValue.State value -> ReplyTextFormat.term rendering CaseHeadline.vocabulary value
+        | PresentedValue.State(value, detail) ->
+            let state = ReplyTextFormat.term rendering CaseHeadline.vocabulary value
+
+            match detail with
+            | None -> state
+            | Some(vocabulary, token) ->
+                MessageCatalogs.render
+                    rendering.Language
+                    "headline.withDetail"
+                    (Map.ofList [ "state", state; "detail", code rendering vocabulary token ])
         | PresentedValue.Count value -> ReplyTextFormat.number rendering value
         | PresentedValue.Reference value -> CaseReference.format value |> text rendering
         | PresentedValue.Identifier value -> text rendering value

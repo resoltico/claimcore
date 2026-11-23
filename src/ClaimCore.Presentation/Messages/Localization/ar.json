@@ -2475,10 +2475,6 @@
     "text": "التذكيرات",
     "source": "7971dd752669"
   },
-  "view.empty": {
-    "text": "لا يوجد ما يُعرض هنا.",
-    "source": "349bbe9bc791"
-  },
   "scalar.calendarDate.guidance": {
     "text": "استخدم YYYY-MM-DD، مثل 2026-10-06.",
     "source": "4be0526a5f3c"
@@ -4222,5 +4218,85 @@
   "endpoint.attachment.preview.meaning": {
     "text": "اعرض المرفق الحالي داخل مساحة العمل.",
     "source": "5e943e102857"
+  },
+  "headline.withDetail": {
+    "text": "{state}: {detail}",
+    "source": "4849dd0aea3d"
+  },
+  "collection.parties.item": {
+    "text": "الطرف {number}",
+    "source": "f05452041a6b"
+  },
+  "collection.parties.add": {
+    "text": "إضافة طرف",
+    "source": "bfb2a7177b88"
+  },
+  "collection.parties.remove": {
+    "text": "إزالة الطرف",
+    "source": "e842bc4acd74"
+  },
+  "empty.nextActions": {
+    "text": "لا توجد إجراءات تالية لهذا الملف.",
+    "source": "ed6df5906626"
+  },
+  "empty.work": {
+    "text": "لم تُسجّل تفاصيل العمل.",
+    "source": "36840a34f818"
+  },
+  "task.case.decide.change": {
+    "text": "تغيير قرار الدفع",
+    "source": "4236683d2784"
+  },
+  "collection.parties.label": {
+    "text": "الأطراف",
+    "source": "2729f5dd4807"
+  },
+  "collection.peopleGrants.label": {
+    "text": "الأدوار",
+    "source": "c25337055464"
+  },
+  "collection.peopleGrants.item": {
+    "text": "الدور {number}",
+    "source": "00fa69a81cab"
+  },
+  "collection.peopleGrants.add": {
+    "text": "إضافة دور",
+    "source": "e53a93625e74"
+  },
+  "collection.peopleGrants.remove": {
+    "text": "إزالة الدور",
+    "source": "9a1fb81f279f"
+  },
+  "empty.notes": {
+    "text": "لم تُسجّل ملاحظات.",
+    "source": "a567e3ebbe5c"
+  },
+  "empty.attachments": {
+    "text": "لا توجد مرفقات حالية.",
+    "source": "6d2a34c560f7"
+  },
+  "empty.relatedCases": {
+    "text": "لا توجد ملفات مرتبطة.",
+    "source": "633111ebc7ee"
+  },
+  "empty.activity": {
+    "text": "لا يوجد نشاط لعرضه.",
+    "source": "5ddccb9ef206"
+  },
+  "empty.accessHistory": {
+    "text": "لا توجد تغييرات وصول تطابق هذا الاختيار.",
+    "source": "551e9e8904a3"
+  },
+  "empty.disclosureTrail": {
+    "text": "لا توجد سجلات وصول أو تصدير تطابق هذا الاختيار.",
+    "source": "dfbdf8774ba3"
+  },
+  "label.reminderCompletedInactive": {
+    "text": "مكتمل (عمل غير نشط)",
+    "source": "fa843abf79cb"
+  },
+  "label.reminderCancelledInactive": {
+    "text": "ملغى (عمل غير نشط)",
+    "source": "0c7f57d2c13d"
   }
 }

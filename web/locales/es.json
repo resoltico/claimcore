@@ -735,18 +735,6 @@
     "text": "Solo se muestran algunos roles.",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "Añadir un rol",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "Eliminar el rol",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "Rol {number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "El navegador no pudo guardar la descarga. Inténtelo de nuevo.",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "Quitar restricción de expediente",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "Añadir fila",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "Quitar fila",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "Fila {number}",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "Seleccionar archivo",

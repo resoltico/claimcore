@@ -109,7 +109,7 @@ let private helpAlias () =
 
         Expect.stringContains
             (rendered (CliTopic.Diagnostic CliGuidance.ProtocolGuidance))
-            "session"
+            "batch"
             "The shared call/session topic explains framing."
 
 let private localizedExplanations () =

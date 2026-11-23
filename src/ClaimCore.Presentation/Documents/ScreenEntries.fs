@@ -11,7 +11,7 @@ module ScreenEntries =
         |> List.map (fun definition ->
             {
                 Entry.Key = definition.Key
-                Recorded = false
+                Recorded = None
                 LabelId = definition.LabelId
                 Prominence = definition.Prominence
                 Value = definition.Read value
@@ -83,7 +83,7 @@ module ScreenEntries =
     let value key label prominence value =
         {
             Entry.Key = key
-            Recorded = false
+            Recorded = None
             LabelId = label
             Prominence = prominence
             Value = value
@@ -122,7 +122,7 @@ module ScreenEntries =
     let count key label value =
         {
             Entry.Key = key
-            Recorded = false
+            Recorded = None
             LabelId = label
             Prominence = Prominence.Primary
             Value = PresentedValue.Count value
@@ -269,13 +269,43 @@ module ScreenEntries =
         {
             Role = role
             TitleId = title
+            EmptyId = None
             Content = content
             Link = None
             Actions = []
         }
 
-    let entryRegion role title entries =
+    let withEmpty messageId (region: Region) =
+        { region with EmptyId = Some messageId }
+
+    let entryRegion role title (entries: Entry list) =
+        let entries =
+            if role = RegionRole.Facts || role = RegionRole.Work then
+                entries
+                |> List.map (fun entry ->
+                    let recorded =
+                        match entry.Value with
+                        | PresentedValue.Absent _ -> false
+                        | _ -> true
+
+                    { entry with
+                        Recorded = entry.Recorded |> Option.orElse (Some recorded)
+                    })
+            else
+                entries
+
         region role title (RegionContent.Entries entries)
+
+    let headline (state: CaseHeadline) outcome =
+        let detail =
+            if state = CaseHeadline.Closed then
+                outcome
+                |> Option.map (fun outcome ->
+                    Vocabulary.name ClosureOutcome.vocabulary, ClosureOutcome.token outcome)
+            else
+                None
+
+        PresentedValue.State(state, detail)
 
     let factRegions sections =
         sections
@@ -318,6 +348,8 @@ module ScreenEntries =
                         Link = link
                         Actions = actions
                         Transfers = transfers row
+                        Recommended = None
+                        Prominence = None
                     })
             Groups = []
             Sections = []
@@ -330,7 +362,7 @@ module ScreenEntries =
     let table key describe definitions rows =
         tableWithControls key describe definitions (fun _ -> None, []) rows
 
-    let resultScreenWithControls key definitions controls rows =
+    let resultScreenWithControls emptyId key definitions controls rows =
         Screen.create
             [
                 region
@@ -339,6 +371,7 @@ module ScreenEntries =
                     (RegionContent.Table(
                         tableWithControls key (fun _ -> None) definitions controls rows
                     ))
+                |> withEmpty emptyId
             ]
 
     let resultScreen key definitions rows =

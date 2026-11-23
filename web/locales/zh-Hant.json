@@ -735,18 +735,6 @@
     "text": "僅顯示部分角色。",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "添加角色",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "移除角色",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "角色 {number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "瀏覽器無法儲存下載檔案。請重試。",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "清除案件限制",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "新增列",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "移除列",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "第 {number} 列",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "選取檔案",

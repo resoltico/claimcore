@@ -247,12 +247,19 @@ let private withListener action =
             listener.Stop()
     }
 
+let private readCallback listener host cancelled =
+    task {
+        match! LoopbackTransport.readCallback "en" listener host cancelled with
+        | Error reason -> return Error reason
+        | Ok(address, client) ->
+            use client = client
+            do! LoopbackTransport.respond "en" (client.GetStream()) true cancelled
+            return Ok address
+    }
+
 let private withCallback action =
     withListener (fun listener endpoint cancelled ->
-        action
-            endpoint
-            (LoopbackTransport.readCallback listener (string endpoint) cancelled)
-            cancelled)
+        action endpoint (readCallback listener (string endpoint) cancelled) cancelled)
 
 let private sendCallback (endpoint: IPEndPoint) source cancelled =
     task {
@@ -398,7 +405,7 @@ let private resetConnection partial =
             do! resetHeaders partial listener endpoint cancelled
 
             if not partial then
-                let pending = LoopbackTransport.readCallback listener (string endpoint) cancelled
+                let pending = readCallback listener (string endpoint) cancelled
                 let sending = sendCallback endpoint (callbackRequest endpoint) cancelled
                 let! result = pending
                 let! response = sending
@@ -419,7 +426,7 @@ let private cancelledCallback idle =
                 do! client.ConnectAsync(endpoint.Address, endpoint.Port)
 
             let watch = System.Diagnostics.Stopwatch.StartNew()
-            let pending = LoopbackTransport.readCallback listener "127.0.0.1" deadline.Token
+            let pending = readCallback listener "127.0.0.1" deadline.Token
             deadline.CancelAfter(TimeSpan.FromMilliseconds 100.)
 
             try
@@ -437,28 +444,41 @@ let private cancelledCallback idle =
     }
 
 let private callbackMessages () =
-    let check (body: byte array) (expected: string) =
-        let source = Encoding.UTF8.GetString body
+    for accepted, identity in [ true, "cli.callbackAccepted"; false, "cli.callbackRefused" ] do
+        let bytes = LoopbackTransport.callbackResponse "lv" accepted
+        let source = Encoding.UTF8.GetString bytes
         let split = source.IndexOf("\r\n\r\n", StringComparison.Ordinal)
         Expect.isGreaterThan split 0 "HTTP response contains its header separator"
         let header = source.Substring(0, split)
-        let text = source.Substring(split + 4)
-        Expect.equal text expected "Response body preserves core-authored text"
+        let body = source.Substring(split + 4)
+        Expect.stringContains header "Content-Type: text/html; charset=utf-8" "HTML presentation"
+        Expect.stringContains body "<main><h1>ClaimCore</h1>" "A branded page"
+
+        Expect.stringContains
+            body
+            (WebUtility.HtmlEncode(ContractDiscovery.localized "lv" identity))
+            "The message uses the supplied language"
+
+        Expect.isFalse (body.Contains("style=")) "The page has no style attributes"
+
+        let style = Text.RegularExpressions.Regex.Match(body, "<style>([^<]+)</style>")
+        Expect.isTrue style.Success "The page includes a stylesheet"
+
+        let hash =
+            style.Groups[1].Value
+            |> Encoding.UTF8.GetBytes
+            |> SHA256.HashData
+            |> Convert.ToBase64String
 
         Expect.stringContains
             header
-            "Content-Type: text/plain; charset=utf-8"
-            "Plain UTF-8 rendering"
+            ("style-src 'sha256-" + hash + "'")
+            "CSP authorizes the exact stylesheet bytes"
 
         Expect.stringContains
             header
-            ("Content-Length: " + string (Encoding.UTF8.GetByteCount expected))
+            ("Content-Length: " + string (Encoding.UTF8.GetByteCount body))
             "Length counts UTF-8 bytes"
-
-    for accepted, identity in [ true, "cli.callbackAccepted"; false, "cli.callbackRefused" ] do
-        check (LoopbackTransport.callbackResponse accepted) (ContractDiscovery.message identity)
-
-    check (LoopbackTransport.response "200 OK" "Sintētisks — العربية") "Sintētisks — العربية"
 
 let private mismatchIdentity () =
     task {

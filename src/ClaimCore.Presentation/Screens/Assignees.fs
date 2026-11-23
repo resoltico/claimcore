@@ -24,6 +24,7 @@ module AssigneesScreen =
         let columns = assigneeColumns |> List.filter (fun column -> column.Key <> "actorId")
 
         resultScreenWithControls
+            "label.noEligibleAccounts"
             (fun (row: ActorRef) -> ActorId.format row.ActorId)
             columns
             (fun row ->

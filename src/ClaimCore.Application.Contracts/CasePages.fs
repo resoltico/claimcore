@@ -8,6 +8,7 @@ type CaseSummaryFacts =
     {
         Fields: Map<BusinessField, CaseFieldValue option>
         Parties: Map<PartyRole, PartyName list>
+        ClosureOutcome: ClosureOutcome option
     }
 
 type CaseNextAction =

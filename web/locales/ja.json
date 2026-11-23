@@ -735,18 +735,6 @@
     "text": "一部のロールのみ表示しています。",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "役割を追加",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "役割を削除",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "役割{number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "ブラウザーでダウンロードを保存できませんでした。再試行してください。",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "案件の絞り込みを解除",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "行を追加",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "行を削除",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "行 {number}",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "ファイルを選択",

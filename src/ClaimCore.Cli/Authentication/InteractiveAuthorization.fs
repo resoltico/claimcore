@@ -1,16 +1,20 @@
 namespace ClaimCore.Cli
 
 open System
+open System.IO
 open System.Net.Http
 open System.Threading
 open Duende.IdentityModel.OidcClient
+open System.Threading.Tasks
 
 module InteractiveAuthorization =
     [<NoEquality; NoComparison>]
     type internal Interaction =
         {
             Clock: TimeProvider
-            Launch: string -> Result<unit, AccessFailure>
+            Launch: string -> CancellationToken -> Task<Result<unit, AccessFailure>>
+            ShowAddress: string -> unit
+            Language: string
         }
 
     let private tokenEndpoint (options: OidcClientOptions) () =
@@ -71,7 +75,13 @@ module InteractiveAuthorization =
         (cancelled: CancellationToken)
         =
         task {
-            use browser = new LoopbackBrowser(interaction.Launch)
+            use browser =
+                new LoopbackBrowser(
+                    interaction.Language,
+                    interaction.Launch,
+                    interaction.ShowAddress
+                )
+
             let options = configuration issuer clientId browser
             let clock = interaction.Clock
             use transport = new OidcBackchannel(handler, tokenEndpoint options, clock)
@@ -82,28 +92,44 @@ module InteractiveAuthorization =
             options.HttpClientFactory <- Func<OidcClientOptions, HttpClient>(fun _ -> client)
             let oidc = Duende.IdentityModel.OidcClient.OidcClient options
 
-            try
-                let! result = oidc.LoginAsync(LoginRequest(), cancelled)
+            let! result =
+                task {
+                    try
+                        let! result = oidc.LoginAsync(LoginRequest(), cancelled)
 
-                try
-                    match tokenEndpoint options () with
-                    | Some endpoint -> return received clock browser transport endpoint result
-                    | None -> return Error AccessFailure.OidcMetadataInvalid
-                finally
-                    result.RefreshTokenHandler |> Option.ofObj |> Option.iter _.Dispose()
-            with
-            | :? OperationCanceledException
-            | :? HttpRequestException
-            | :? IO.IOException -> return Error AccessFailure.OidcTokenUnavailable
-            | :? InvalidOperationException
-            | :? ArgumentException -> return Error AccessFailure.OidcMetadataInvalid
+                        try
+                            match tokenEndpoint options () with
+                            | Some endpoint ->
+                                return received clock browser transport endpoint result
+                            | None -> return Error AccessFailure.OidcMetadataInvalid
+                        finally
+                            result.RefreshTokenHandler |> Option.ofObj |> Option.iter _.Dispose()
+                    with
+                    | :? OperationCanceledException
+                    | :? HttpRequestException
+                    | :? IO.IOException -> return Error AccessFailure.OidcTokenUnavailable
+                    | :? InvalidOperationException
+                    | :? ArgumentException -> return Error AccessFailure.OidcMetadataInvalid
+                }
+
+            do! browser.Complete(Result.isOk result)
+            return result
         }
 
+    let internal manualSignIn (errors: TextWriter) language address =
+        errors.WriteLine(
+            MessageCatalogs.renderCli language (CliMessage.BrowserOpenManually address)
+        )
+
     let internal obtain handler issuer clientId cancelled =
+        let language = CliLanguage.effective ()
+
         obtainWith
             {
                 Clock = TimeProvider.System
                 Launch = LoopbackTransport.launch
+                ShowAddress = manualSignIn Console.Error language
+                Language = language
             }
             handler
             issuer

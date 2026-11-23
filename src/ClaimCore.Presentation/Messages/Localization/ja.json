@@ -2475,10 +2475,6 @@
     "text": "リマインダー",
     "source": "7971dd752669"
   },
-  "view.empty": {
-    "text": "このビューに表示する項目はありません。",
-    "source": "349bbe9bc791"
-  },
   "scalar.calendarDate.guidance": {
     "text": "YYYY-MM-DDを使用してください。例：2026-10-06。",
     "source": "4be0526a5f3c"
@@ -4222,5 +4218,85 @@
   "endpoint.attachment.preview.meaning": {
     "text": "現在の添付ファイルをワークスペース内で表示します。",
     "source": "5e943e102857"
+  },
+  "headline.withDetail": {
+    "text": "{state}：{detail}",
+    "source": "4849dd0aea3d"
+  },
+  "collection.parties.item": {
+    "text": "当事者 {number}",
+    "source": "f05452041a6b"
+  },
+  "collection.parties.add": {
+    "text": "当事者を追加",
+    "source": "bfb2a7177b88"
+  },
+  "collection.parties.remove": {
+    "text": "当事者を削除",
+    "source": "e842bc4acd74"
+  },
+  "empty.nextActions": {
+    "text": "この案件に次の対応はありません。",
+    "source": "ed6df5906626"
+  },
+  "empty.work": {
+    "text": "対応の詳細は記録されていません。",
+    "source": "36840a34f818"
+  },
+  "task.case.decide.change": {
+    "text": "支払決定を変更",
+    "source": "4236683d2784"
+  },
+  "collection.parties.label": {
+    "text": "関係者",
+    "source": "2729f5dd4807"
+  },
+  "collection.peopleGrants.label": {
+    "text": "役割",
+    "source": "c25337055464"
+  },
+  "collection.peopleGrants.item": {
+    "text": "役割{number}",
+    "source": "00fa69a81cab"
+  },
+  "collection.peopleGrants.add": {
+    "text": "役割を追加",
+    "source": "e53a93625e74"
+  },
+  "collection.peopleGrants.remove": {
+    "text": "役割を削除",
+    "source": "9a1fb81f279f"
+  },
+  "empty.notes": {
+    "text": "メモは記録されていません。",
+    "source": "a567e3ebbe5c"
+  },
+  "empty.attachments": {
+    "text": "現在の添付ファイルはありません。",
+    "source": "6d2a34c560f7"
+  },
+  "empty.relatedCases": {
+    "text": "関連案件はありません。",
+    "source": "633111ebc7ee"
+  },
+  "empty.activity": {
+    "text": "表示する活動はありません。",
+    "source": "5ddccb9ef206"
+  },
+  "empty.accessHistory": {
+    "text": "選択条件に一致するアクセス権の変更はありません。",
+    "source": "551e9e8904a3"
+  },
+  "empty.disclosureTrail": {
+    "text": "選択条件に一致するアクセスまたはエクスポートの記録はありません。",
+    "source": "dfbdf8774ba3"
+  },
+  "label.reminderCompletedInactive": {
+    "text": "完了（非稼働の対応）",
+    "source": "fa843abf79cb"
+  },
+  "label.reminderCancelledInactive": {
+    "text": "取消（非稼働の対応）",
+    "source": "0c7f57d2c13d"
   }
 }

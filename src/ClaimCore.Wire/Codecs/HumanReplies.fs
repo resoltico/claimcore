@@ -45,7 +45,7 @@ module HumanReplies =
                     ))
                     message.Arguments
             | Refusal.Case(CaseRefusal.NotOffered state) ->
-                Map.add "state" (PresentedValue.State state) message.Arguments
+                Map.add "state" (PresentedValue.State(state, None)) message.Arguments
             | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) ->
                 Map.add
                     "state"

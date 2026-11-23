@@ -26,7 +26,7 @@ let private aliases () =
             "version", CliTopic.Help HelpTopic.Version
             "schema", CliTopic.Help HelpTopic.Schema
             "call", CliTopic.Help HelpTopic.Call
-            "session", CliTopic.Help HelpTopic.Session
+            "batch", CliTopic.Help HelpTopic.Batch
         ] do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
@@ -54,6 +54,21 @@ let private aliases () =
                 "Useful guidance"
 
 let private options () =
+    Expect.equal
+        (CliInvocations.admit [ "batch" ])
+        (Ok CliInvocation.Batch)
+        "Batch admits structured requests"
+
+    Expect.equal
+        (CliInvocations.admit [ "help"; "session" ])
+        (Ok(CliInvocation.CommandHelp([ "session" ], RenderingContext.forLanguage "en", false)))
+        "Session help belongs to browser-session management"
+
+    Expect.equal
+        (CliInvocations.admit [ "session" ])
+        (Ok(CliInvocation.CommandHelp([ "session" ], RenderingContext.forLanguage "en", false)))
+        "The former batch command does not read standard input"
+
     Expect.equal
         (CliInvocations.admit [ "call" ])
         (Ok(CliInvocation.Call))
@@ -89,6 +104,31 @@ let private options () =
         (Frames.admit (Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}"))
         "Help example is admitted"
 
+let private descriptionPunctuation () =
+    for language in LocalizationPolicy.languages do
+        let rendering = RenderingContext.forLanguage language
+
+        let overview =
+            ContractDiscovery.helpTopic rendering (CliTopic.Help HelpTopic.Overview)
+
+        let familyHelp =
+            CommandGrammar.families
+            |> List.choose (fun family -> Discovery.commandHelp rendering [ family ])
+
+        let descriptions =
+            overview :: familyHelp
+            |> List.collect (fun text -> text.Split('\n') |> Array.toList)
+            |> List.filter (fun line -> line.Contains(" — ", StringComparison.Ordinal))
+
+        Expect.isNonEmpty descriptions "Help exposes family and verb descriptions"
+
+        for description in descriptions do
+            Expect.isFalse
+                (description.EndsWith('.')
+                 || description.EndsWith('。')
+                 || description.EndsWith('۔'))
+                "Description lines omit final full stops"
+
 [<Tests>]
 let tests =
     testList
@@ -96,6 +136,9 @@ let tests =
         [
             testCase "exact help aliases and all localized topics" aliases
             testCase "strict human versus machine option combinations" options
+            testCase
+                "family and verb descriptions have no trailing full stop"
+                descriptionPunctuation
         ]
 
 let private prepared arguments =
@@ -645,7 +688,7 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
                 "Synthetic account"
                 "Core target caption survives without client reconstruction"
 
-        if enabledBefore <> enabledAfter then
+        if verb <> "register" && enabledBefore <> enabledAfter then
             let yes, no =
                 match language with
                 | "en" -> "Yes", "No"

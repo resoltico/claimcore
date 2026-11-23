@@ -268,7 +268,7 @@ let tests =
                 for invocation in
                     [
                         CliInvocation.Call
-                        CliInvocation.Session
+                        CliInvocation.Batch
                         CliInvocation.Verb [ "case"; "list" ]
                     ] do
                     Expect.equal

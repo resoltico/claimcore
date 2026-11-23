@@ -258,6 +258,7 @@ module CaseScreen =
                           RegionRole.RelatedCases
                           (Some "section.relatedCases.label")
                           (RegionContent.Table content) with
+                        EmptyId = Some "empty.relatedCases"
                         Actions =
                             [
                                 if links.CanAdd then
@@ -272,49 +273,67 @@ module CaseScreen =
 
         let headlines = identityFacts reply.Snapshot
 
+        let outcome =
+            CaseState.fields reply.Snapshot.State
+            |> Option.bind (fun fields -> Handling.closure fields.Handling)
+            |> Option.map _.Outcome
+
         let identity =
             [
-                value
-                    "caseReference"
-                    "field.caseReference.label"
-                    Prominence.Primary
-                    (PresentedValue.Reference reply.Snapshot.Reference)
+                yield
+                    value
+                        "caseReference"
+                        "field.caseReference.label"
+                        Prominence.Primary
+                        (PresentedValue.Reference reply.Snapshot.Reference)
                 match reply.MatchedReference with
                 | Some reference ->
-                    value
-                        "matchedReference"
-                        "label.referenceChangedFrom"
-                        Prominence.Secondary
-                        (PresentedValue.Reference reference)
+                    yield
+                        value
+                            "matchedReference"
+                            "label.referenceChangedFrom"
+                            Prominence.Secondary
+                            (PresentedValue.Reference reference)
                 | None -> ()
                 match CaseState.fields reply.Snapshot.State with
                 | Some facts ->
                     if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
-                        value
-                            "lifecycle"
-                            "input.lifecycle.label"
-                            Prominence.Primary
-                            (code Lifecycle.vocabulary Lifecycle.Voided)
+                        yield
+                            value
+                                "lifecycle"
+                                "input.lifecycle.label"
+                                Prominence.Primary
+                                (code Lifecycle.vocabulary Lifecycle.Voided)
                     else
-                        value
-                            "status"
-                            "field.status.label"
-                            Prominence.Primary
-                            (code CaseStatus.vocabulary facts.Status)
+                        yield
+                            value
+                                "status"
+                                "field.status.label"
+                                Prominence.Primary
+                                (code CaseStatus.vocabulary facts.Status)
 
-                    value
-                        "progress"
-                        "input.progress.label"
-                        Prominence.Primary
-                        (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
+                    yield
+                        value
+                            "progress"
+                            "input.progress.label"
+                            Prominence.Primary
+                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
 
                     if reply.Mine then
-                        value
-                            "assignment"
-                            "input.assignment.label"
-                            Prominence.Secondary
-                            (code CaseAssignment.vocabulary CaseAssignment.Mine)
+                        yield
+                            value
+                                "assignment"
+                                "input.assignment.label"
+                                Prominence.Secondary
+                                (code CaseAssignment.vocabulary CaseAssignment.Mine)
                 | None -> ()
+                if live then
+                    yield
+                        value
+                            "headline"
+                            "label.caseState"
+                            Prominence.Primary
+                            (headline reply.Headline outcome)
                 yield! headlines
             ]
 
@@ -385,7 +404,8 @@ module CaseScreen =
 
         let nextColumns =
             ReminderListScreen.reminderColumns
-            |> List.filter (fun column -> List.contains column.Key [ "action"; "due"; "timing" ])
+            |> List.filter (fun column ->
+                List.contains column.Key [ "action"; "due"; "kind"; "timing" ])
 
         let next =
             tableWithControls
@@ -402,22 +422,7 @@ module CaseScreen =
                     ),
                     TaskAffordances.reminder row)
                 reply.NextActions
-
-        let next =
-            { next with
-                Sections =
-                    [
-                        section
-                            "label.reminder"
-                            [
-                                value
-                                    "pending"
-                                    "label.pendingReminders"
-                                    Prominence.Secondary
-                                    (PresentedValue.Count reply.Work.PendingReminders)
-                            ]
-                    ]
-            }
+            |> ReminderListScreen.recommendCompletion
 
         let details =
             [
@@ -552,15 +557,19 @@ module CaseScreen =
                                         reply.PaymentPayees
                                         reply.LatestPayments
                                 ))
+                            |> withEmpty "label.noPayments"
                     | None -> ()
 
-                    yield entryRegion RegionRole.Work (Some "section.work.label") work
+                    yield
+                        entryRegion RegionRole.Work (Some "section.work.label") work
+                        |> withEmpty "empty.work"
 
                     yield
                         region
                             RegionRole.NextActions
                             (Some "label.nextActions")
                             (RegionContent.Table next)
+                        |> withEmpty "empty.nextActions"
 
                     yield
                         region
@@ -569,6 +578,7 @@ module CaseScreen =
                             (RegionContent.Table(
                                 NotesScreen.table reply.Snapshot.CaseId reply.Notes
                             ))
+                        |> withEmpty "empty.notes"
                 yield! relatedCaseRegions reply
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]

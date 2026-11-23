@@ -77,6 +77,7 @@ module PeopleScreen =
                 not (List.contains column.Key [ "actorId"; "issuer"; "subject" ]))
 
         resultScreenWithControls
+            "label.noPeople"
             (fun (row: ActorReviewItem) -> ActorId.format row.Actor.ActorId)
             columns
             (fun row -> Some(Link.person row.Actor.ActorId), [])

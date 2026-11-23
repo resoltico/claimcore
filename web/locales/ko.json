@@ -735,18 +735,6 @@
     "text": "일부 역할만 표시됩니다.",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "역할 추가",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "역할 삭제",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "역할 {number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "브라우저가 다운로드를 저장하지 못했습니다. 다시 시도하세요.",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "청구 건 제한 해제",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "행 추가",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "행 제거",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "행 {number}",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "파일 선택",

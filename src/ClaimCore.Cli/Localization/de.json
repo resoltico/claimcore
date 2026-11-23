@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "Authentifizierungsantwort empfangen. Kehren Sie zum Terminal zurück.",
-    "source": "5ab530fe0240"
+    "text": "Sie sind angemeldet. Sie können diesen Tab schließen und zum Terminal zurückkehren.",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "Authentifizierungsantwort abgelehnt.",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "Das Zugriffs- und Exportprotokoll anzeigen.",
-    "source": "370be36fbfc0"
+    "text": "Das Zugriffs- und Exportprotokoll anzeigen",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "Personen und Zugriff",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "Eine strukturierte Anfrage senden.",
-    "source": "928e1c599453"
+    "text": "Eine strukturierte Anfrage senden",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "Falldaten und Entscheidungen",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "Öffentliche Verbindungseinstellungen speichern oder ihre Quellen anzeigen.",
-    "source": "67ea2596497a"
+    "text": "Öffentliche Verbindungseinstellungen speichern oder ihre Quellen anzeigen",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "Ihr Konto und Ihre Installation",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "Hilfethemen lesen.",
-    "source": "519291bec34c"
+    "text": "Hilfethemen lesen",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "Prüfen, ob Änderungen erfasst wurden",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "Protokollschemata lesen.",
-    "source": "048234b2c1a5"
+    "text": "Protokollschemata lesen",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "Strukturierte Anfragen in einer Sitzung verarbeiten.",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "Strukturierte Anfragen in einer Sitzung verarbeiten",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "Interaktive Befehle mit einer Anmeldung ausführen.",
-    "source": "943c7dc4df93"
+    "text": "Interaktive Befehle mit einer Anmeldung ausführen",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "Produktversion anzeigen.",
-    "source": "1ff071b74e83"
+    "text": "Produktversion anzeigen",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "Zuständigkeit und Bearbeitungsnotiz",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call` liest eine JSON-Anfrage von stdin; `session` liest eine Anfrage pro Zeile.\nFehlt einer Änderungsanfrage die Vorgangs-ID, erstellt die CLI eine und gibt sie aus.\nFormat und Grenzen: docs/integrating.md#cli-use.",
-    "source": "f4e598c4197a"
+    "text": "`call` liest eine JSON-Anfrage von stdin; `batch` liest eine Anfrage pro Zeile.\nFehlt einer Änderungsanfrage die Vorgangs-ID, erstellt die CLI eine und gibt sie aus.\nFormat und Grenzen: docs/integrating.md#cli-use.",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "Führen Sie {command} aus, um Befehle anzuzeigen.",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "Strukturierter HTTPS-Client von ClaimCore. Hilfe und Erkundung funktionieren offline; call und session erfordern Authentifizierung.\n{body}",
-    "source": "7e13b1539170"
+    "text": "Strukturierter HTTPS-Client von ClaimCore. Hilfe und Erkundung funktionieren offline; call und batch erfordern Authentifizierung.\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "Jede Listenseite nutzt Zugriff und Fallangaben zum Zeitpunkt des Lesens.\nGleichzeitige Änderungen können Zeilen verschieben, wiederholen oder auslassen.\n--all liest alle Seiten, friert die Ergebnisse aber nicht ein.",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell benötigt ein interaktives Terminal und eine interaktive Anmeldung. Verwenden Sie session für Anfragen über eine Pipe.",
-    "source": "1318499469cb"
+    "text": "shell benötigt ein interaktives Terminal und eine interaktive Anmeldung. Verwenden Sie batch für Anfragen über eine Pipe.",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "Abgelehnt, endgültige Bestätigung ausstehend — Versuch {attemptId}: {subject} {act}; Vorgang {operationId}.",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "Führen Sie {command} im Terminal Ihres Betriebssystems aus.",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "Öffnen Sie zum Anmelden diese Adresse im Browser: {url}",
+    "source": "bf2997f0b8c2"
   }
 }
