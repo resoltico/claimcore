@@ -8,6 +8,7 @@ import {
 } from "../api/service";
 import { consumerContractIdentity } from "@contracts/client";
 import { localNotice, type Notice } from "../protocol/notices";
+import { markSignedOut } from "../routing/signInAttempt";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -98,6 +99,7 @@ export const useSession = () => {
       setState(stateFor(null, resultNotice(result), logoutEpoch));
       return;
     }
+    markSignedOut(window.sessionStorage);
     setState({ kind: "anonymous", token: null, message: null, epoch: logoutEpoch });
     window.location.replace(data.location);
   };

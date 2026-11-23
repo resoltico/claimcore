@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "사람 추가",
-    "source": "66848b5361f4"
+    "text": "접근 요청에서 추가",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "이름과 첫 역할을 지정하여 사람 또는 서비스 계정을 추가합니다.",
@@ -4298,5 +4298,121 @@
   "label.reminderCancelledInactive": {
     "text": "취소(비활성 업무)",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "로그아웃했습니다",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "다시 로그인",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "로그인이 완료되지 않았습니다.",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "관리",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "기한 도래 {count}건",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "확인되지 않은 변경 사항 ({count})",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "데이터 관리",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "청구 건 {count}건 표시",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "청구 건 {count}건 표시",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "청구 건 {count}건 표시",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "청구 건 {count}건 표시",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "청구 건 {count}건 표시",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "청구 건 {count}건 표시",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "후속 조치 {count}건 표시",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "사용자 {count}명 표시",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "사용자 {count}명 표시",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "사용자 {count}명 표시",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "사용자 {count}명 표시",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "사용자 {count}명 표시",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "사용자 {count}명 표시",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "세부 정보를 입력하여 완료…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "입력하지 않음: {fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "사람 추가",
+    "source": "66848b5361f4"
   }
 }

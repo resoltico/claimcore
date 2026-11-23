@@ -2,7 +2,7 @@ import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../../api/service";
 import type { RegionTimelineEntry } from "@contracts/client";
 
-import { PageTables } from "../../ui/PageTables";
+import { ResultPages } from "../../ui/ResultPages";
 import { useCallback } from "react";
 
 type HistoryControl = RegionTimelineEntry;
@@ -56,7 +56,7 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
         </p>
       )}
       <h2 className="sr-only">{p.text("ui.timeline.title")}</h2>
-      <PageTables views={page.views} />
+      <ResultPages views={page.views} />
 
       <div className="worklist-actions" role="group" aria-label={p.text("label.peopleHistory")}>
         <CsvExportButton

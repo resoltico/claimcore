@@ -28,7 +28,7 @@ module PeopleScreen =
                     |> Option.map (fun (count: ActorResponsibleCases) ->
                         PresentedValue.Count count.Count)
                     |> Option.defaultValue (PresentedValue.Absent "label.detailsWithheld"))
-            column "contact" "field.profile.contact.label" Prominence.Detail false (fun item ->
+            column "contact" "field.profile.contact.label" Prominence.Secondary false (fun item ->
                 optional (ContactText.format >> PresentedValue.Text) item.Contact)
             column "actorId" "input.actorId.label" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(ActorId.format item.Actor.ActorId))

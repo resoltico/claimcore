@@ -50,6 +50,14 @@ export const useEndpoint = <K extends EndpointId>(
       void cache.fetch(key, request);
     }
   }, [cache, key, request, state.loading, active]);
+  useEffect(() => {
+    if (cache === null || !active) {
+      return;
+    }
+    return cache.registerRefresh(window.location.pathname, () =>
+      cache.fetch(key, request, false, true),
+    );
+  }, [cache, key, request, active]);
   const result = useMemo(() => typedResult(endpoint, state.result), [endpoint, state.result]);
   const previous = useMemo(
     () =>

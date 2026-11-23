@@ -87,7 +87,7 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
       }),
     ).toBeVisible();
     await expect(
-      page.getByText(ui(language, "ui.loginInstructions"), {
+      page.getByText(ui(language, "ui.signInTitle"), {
         exact: true,
       }),
     ).toBeVisible();

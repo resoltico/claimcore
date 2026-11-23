@@ -7,7 +7,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 export const openPersonEditor = async () => {
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Add person" }));
-  return screen.findByRole("dialog", { name: "Add person" });
+  await user.click(screen.getByRole("menuitem", { name: "Add from access request" }));
+  return screen.findByRole("dialog", { name: "Add from access request" });
 };
 
 export const chooseAdmissionRole = async () => {

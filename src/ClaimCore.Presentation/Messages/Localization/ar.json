@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "إضافة شخص",
-    "source": "66848b5361f4"
+    "text": "إضافة من طلب وصول",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "إضافة شخص أو حساب خدمة باسم وأدواره الأولى.",
@@ -4298,5 +4298,121 @@
   "label.reminderCancelledInactive": {
     "text": "ملغى (عمل غير نشط)",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "سجّلت الخروج",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "تسجيل الدخول مجددًا",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "لم يكتمل تسجيل الدخول.",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "الإدارة",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "{count} مستحقة",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "تغييرات غير مؤكدة ({count})",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "الإشراف على البيانات",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "لم تُعرض ملفات ({count})",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "عُرض ملف واحد ({count})",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "عُرض ملفان ({count})",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "عُرضت {count} ملفات",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "عُرض {count} ملف",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "عُرض {count} ملف",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "لم تُعرض تذكيرات ({count})",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "عُرض تذكير واحد ({count})",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "عُرض تذكيران ({count})",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "عُرضت {count} تذكيرات",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "عُرض {count} تذكير",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "عُرض {count} تذكير",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "لم يُعرض أشخاص ({count})",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "عُرض شخص واحد ({count})",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "عُرض شخصان ({count})",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "عُرض {count} أشخاص",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "عُرض {count} شخص",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "عُرض {count} شخص",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "إكمال مع التفاصيل…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "لم يُدخل: {fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "إضافة شخص",
+    "source": "66848b5361f4"
   }
 }

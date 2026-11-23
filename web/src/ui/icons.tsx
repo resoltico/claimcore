@@ -15,12 +15,24 @@ export type IconName =
   | "settings"
   | "search"
   | "edit"
-  | "info";
+  | "info"
+  | "add"
+  | "audit"
+  | "refresh";
 
 /** A single document sprite supplies decorative icons; controls own their accessible names. */
 export const IconSprite = () => (
   <svg className="ui-icon-sprite" aria-hidden="true" focusable="false">
     <defs>
+      <symbol id="claimcore-icon-refresh" viewBox="0 0 24 24">
+        <path d="M4 11a8 8 0 1 1 2 6m-2-6V5m0 6h6" />
+      </symbol>
+      <symbol id="claimcore-icon-add" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14" />
+      </symbol>
+      <symbol id="claimcore-icon-audit" viewBox="0 0 24 24">
+        <path d="M12 3 4 6v5c0 5 4 8 8 10 4-2 8-5 8-10V6l-8-3Zm-3 9 2 2 4-4" />
+      </symbol>
       <symbol id="claimcore-icon-edit" viewBox="0 0 24 24">
         <path d="m16 3 5 5-12 12-6 1 1-6ZM13 6l5 5" />
       </symbol>

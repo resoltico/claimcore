@@ -1,0 +1,28 @@
+@layer components {
+  .section-card {
+    min-inline-size: 0;
+    background: var(--bg-surface);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .section-card-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-block-end: var(--border-width) solid var(--border-subtle);
+  }
+
+  .section-card-heading h2 {
+    margin: 0;
+    font-size: var(--text-md);
+  }
+
+  .section-card-body {
+    min-inline-size: 0;
+    padding: var(--space-4);
+  }
+}

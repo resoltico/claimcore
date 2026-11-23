@@ -1,5 +1,5 @@
 import { Select } from "../../ui/Select";
-import { Card } from "../../ui/Card";
+import { Section } from "../../ui/Section";
 import { Button } from "../../ui/Button";
 import { useSystemMode } from "../../theme/useSystemMode";
 import "./settings.css";
@@ -17,7 +17,6 @@ import {
   accents,
   defaults,
 } from "../../presentation/preferences";
-import { productMetadata } from "../../protocol/productMetadata";
 
 const modeLabels = {
   system: "ui.themeSystem",
@@ -52,9 +51,10 @@ const preferencesStatus = (p: ReturnType<typeof usePresentation>): string => {
       return p.text("ui.accentSet", { value: p.text(accentLabels[change.accent]) });
   }
 };
-export const SettingsPanel = () => {
+export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
   const p = usePresentation();
-  const id = useId();
+  const generatedId = useId();
+  const id = idPrefix ?? generatedId;
   const systemMode = useSystemMode();
   const options =
     p.language === presentationPseudolanguage
@@ -66,7 +66,7 @@ export const SettingsPanel = () => {
   return (
     <section className="settings-panel" aria-label={p.text("ui.settings")}>
       <p>{p.text("ui.settingsIntroduction")}</p>
-      <Card className="settings-card" title={p.text("ui.languageRegion")}>
+      <Section id={`${id}-language-region`} title={p.text("ui.languageRegion")}>
         <fieldset className="settings-options">
           <legend>{p.text("ui.language")}</legend>
           {options.map((option) => (
@@ -123,8 +123,8 @@ export const SettingsPanel = () => {
             amount: p.money("1234.50", "EUR"),
           })}
         </p>
-      </Card>
-      <Card className="settings-card" title={p.text("ui.appearance")}>
+      </Section>
+      <Section id={`${id}-appearance`} title={p.text("ui.appearance")}>
         <fieldset className="settings-options">
           <legend>{p.text("ui.theme")}</legend>
           {modes.map((mode) => (
@@ -180,17 +180,7 @@ export const SettingsPanel = () => {
           ))}
         </fieldset>
         <p>{p.text("ui.themeAccessibility")}</p>
-      </Card>
-      <Card className="settings-card" title={p.text("ui.about")}>
-        <dl>
-          <dt>{p.text("ui.version")}</dt>
-          <dd>{productMetadata.productVersion}</dd>
-          <dt>{p.text("ui.contract")}</dt>
-          <dd>
-            <bdi className="mono">{productMetadata.contractIdentity}</bdi>
-          </dd>
-        </dl>
-      </Card>
+      </Section>
       <span aria-live="polite" className="presentation-status">
         {preferencesStatus(p)}
       </span>

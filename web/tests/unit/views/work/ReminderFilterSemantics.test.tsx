@@ -87,7 +87,7 @@ it("keeps false and Any through a supplied-target page continuation, clear restr
   );
   const view = render(<ReminderQueue />);
   expect(await screen.findByText("Completed open reminder")).toBeVisible();
-  await userEvent.click(screen.getByRole("button", { name: "More reminders" }));
+  await userEvent.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(reads.mock.calls[1]?.[1]).toMatchObject({
       cursor: "old-scope-cursor",

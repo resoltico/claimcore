@@ -67,7 +67,7 @@ it("composes target assignment due text and state through queue paging and reset
     limit: 50,
   };
   expect(list.mock.calls[0]![1]).toEqual(expected);
-  await user.click(screen.getByRole("button", { name: "More reminders" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await screen.findByText("SECOND-PAGE");
   expect(list.mock.calls[1]![1]).toEqual({ ...expected, cursor: "next-selected-page" });
   await chooseOption(user, screen.getByRole("combobox", { name: "Reminder due" }), "UPCOMING");

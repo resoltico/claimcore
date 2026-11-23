@@ -1,0 +1,94 @@
+@layer components {
+  .data-table {
+    min-inline-size: 0;
+    overflow-x: auto;
+    container-name: data-table;
+    container-type: inline-size;
+    background: var(--bg-surface);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .data-table table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .data-table :is(td, th) {
+    min-inline-size: 0;
+    padding: var(--space-2) var(--space-3);
+    text-align: start;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table thead th {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  .data-table tbody tr {
+    position: relative;
+    block-size: var(--size-row);
+    border-block-start: var(--border-width) solid var(--border-subtle);
+  }
+
+  .data-table .table-group {
+    background: var(--bg-canvas);
+  }
+
+  .data-table tr[data-linked]:hover {
+    background: var(--bg-sunken);
+  }
+
+  .data-table [data-money] {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .data-table [data-reference] {
+    white-space: nowrap;
+  }
+
+  .data-table .row-link::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .data-table-actions {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .data-table :is(td, th)[data-prominence="SECONDARY"] {
+    display: var(--secondary-cell-display, table-cell);
+  }
+
+  .data-table-stack {
+    display: var(--stack-display, none);
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+  }
+
+  .data-table-stack > div {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .data-table-stack dd {
+    margin: 0;
+  }
+
+  .data-table-empty {
+    padding: var(--space-5);
+    text-align: center;
+  }
+}

@@ -252,7 +252,7 @@ it.each(["context", "listing"] as const)(
     } else {
       await author("synthetic-next");
     }
-    expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Add from access request" })).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "People action" })).toBeNull();
     expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue(
       "synthetic-next",
@@ -333,7 +333,7 @@ it.each(["transport", "host", "core"] as const)(
     expect(contextRetries).toHaveLength(1);
     fireEvent.click(contextRetries[0]!);
     await openPersonEditor();
-    expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Add from access request" })).toBeVisible();
     expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(reads).toHaveBeenCalledTimes(3);

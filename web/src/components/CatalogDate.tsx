@@ -1,7 +1,7 @@
 import { NoticeView } from "../presentation/Message";
 import { DateEntryDraft } from "./DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
-import { FieldHelp } from "./FieldHelp";
+import { FieldRule } from "../ui/Field";
 import { parseDate } from "@internationalized/date";
 import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
 import { Calendar, CalendarGrid, CalendarCell } from "react-aria-components/Calendar";
@@ -87,13 +87,13 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
       <DateEntryDraft path={inputName} canonical={value} disabled={disabled} />
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
       <DateInput lang={p.displayLocale} aria-invalid={error !== undefined || undefined}>
         {(segment) => <DateSegment segment={segment} />}
       </DateInput>
       <Text slot="description" className="field-description">
-        <small>{p.hint(field)}</small>
+        <small>{p.hint(field)}</small>{" "}
+        <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
       </Text>
       {error === undefined ? null : (
         <FieldError>

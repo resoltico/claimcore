@@ -1,34 +1,54 @@
+import { useEffect } from "react";
 import { OwnBrowserSessions } from "./BrowserSessions";
-import { Button } from "../../ui/Button";
+import { AboutPanel } from "./AboutPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { usePresentation } from "../../presentation/context";
-import { useSessionContext } from "../../session/SessionContext";
+import { Page } from "../../ui/Page";
+import { Section } from "../../ui/Section";
+import { useRoute } from "../../routing/useRoute";
 import "./settings.css";
-import { guardedDeparture } from "../../routing/navigation";
+
+const sections = [
+  ["settings-language-region", "ui.languageRegion"],
+  ["settings-appearance", "ui.appearance"],
+  ["settings-browser-sessions", "ui.browserSessions"],
+  ["settings-about", "ui.about"],
+] as const;
+
 export const SettingsPage = () => {
   const p = usePresentation();
-  const { logout } = useSessionContext();
+  const route = useRoute();
+  useEffect(() => {
+    if (
+      route.screen === "settings" &&
+      new URLSearchParams(window.location.search).get("section") === "about"
+    ) {
+      document.getElementById("settings-about")?.scrollIntoView({ block: "nearest" });
+    }
+  }, [route]);
   return (
-    <section>
-      <h1 tabIndex={-1}>{p.text("ui.settings")}</h1>
-      <SettingsPanel />
-      <section className="settings-session-group" aria-labelledby="current-session">
-        <h2 id="current-session">{p.text("ui.currentBrowserSession")}</h2>
-        <Button
-          variant="secondary"
-          onPress={() => {
-            guardedDeparture(() => {
-              void logout();
-            });
-          }}
-        >
-          {p.text("ui.signOut")}
-        </Button>
-      </section>
-      <section className="settings-session-group" aria-labelledby="browser-sessions">
-        <h2 id="browser-sessions">{p.text("ui.browserSessions")}</h2>
-        <OwnBrowserSessions />
-      </section>
-    </section>
+    <div className="settings-workspace">
+      <Page
+        id="settings-page"
+        title={p.text("ui.settings")}
+        tabs={
+          <nav aria-label={p.text("ui.settings")} className="settings-navigation">
+            {sections.map(([id, message]) => (
+              <a key={id} href={`#${id}`}>
+                {p.text(message)}
+              </a>
+            ))}
+          </nav>
+        }
+      >
+        <SettingsPanel idPrefix="settings" />
+        <Section id="settings-browser-sessions" title={p.text("ui.browserSessions")}>
+          <OwnBrowserSessions />
+        </Section>
+        <Section id="settings-about" title={p.text("ui.about")}>
+          <AboutPanel />
+        </Section>
+      </Page>
+    </div>
   );
 };

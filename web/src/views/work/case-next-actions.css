@@ -1,0 +1,24 @@
+@layer views {
+  .next-action-cards {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0;
+    margin: 0 0 var(--space-3);
+    list-style: none;
+  }
+
+  .next-action-cards > li {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .next-action-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+}

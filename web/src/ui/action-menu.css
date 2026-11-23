@@ -1,0 +1,40 @@
+@layer components {
+  .action-menu-popover {
+    min-inline-size: max-content;
+    max-inline-size: var(--width-dialog);
+    padding: var(--space-1);
+    background: var(--bg-raised);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-2);
+  }
+
+  .action-menu-item {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--size-menu-item);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .action-menu-item[data-focused] {
+    background: var(--accent-soft-bg);
+    color: var(--accent-soft-text);
+  }
+
+  .action-menu-item[data-disabled] {
+    color: var(--text-disabled);
+  }
+
+  .action-menu-item:is([data-consequence="STEWARDSHIP"], [data-consequence="IRREVERSIBLE"]) {
+    color: var(--tone-danger-text);
+  }
+
+  .action-menu-stewardship {
+    margin-block-start: var(--space-1);
+    padding-block-start: var(--space-1);
+    border-block-start: var(--border-width) solid var(--border-subtle);
+    font-size: var(--text-xs);
+  }
+}

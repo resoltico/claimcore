@@ -100,7 +100,7 @@ test("preserves language and independent display preferences through real logout
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(ui("ar", "ui.loginInstructions"), {
+    page.getByText(ui("ar", "ui.signInTitle"), {
       exact: true,
     }),
   ).toBeVisible();

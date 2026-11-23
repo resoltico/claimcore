@@ -1,3 +1,4 @@
+import { MoneyField } from "../ui/MoneyField";
 import { Select } from "../ui/Select";
 import { grantFields, grantScope, grantTarget } from "../operation/grantTargetDraft";
 import { affordanceSeed, type OperationAffordance } from "../operation/affordances";
@@ -384,6 +385,43 @@ const GrantTargetInput = ({
 };
 const isGrantInput = (input: Input) =>
   ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
+const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; peer: Input }) => {
+  const p = usePresentation();
+  const amountError = props.errors[input.id];
+  const currencyError = props.errors[peer.id];
+  const quietErrors = Object.fromEntries(
+    Object.entries(props.errors).filter(([key]) => key !== input.id && key !== peer.id),
+  );
+  return (
+    <MoneyField
+      label={renderCatalogKey(p, taskInput(input.id).labelId)}
+      {...(amountError === undefined && currencyError === undefined
+        ? {}
+        : {
+            error: (
+              <>
+                <ErrorText value={amountError} />
+                <ErrorText value={currencyError} />
+              </>
+            ),
+          })}
+    >
+      <InputControl input={input} {...props} errors={quietErrors} />
+      <InputControl input={peer} {...props} errors={quietErrors} />
+    </MoneyField>
+  );
+};
+const isPairedCurrency = (
+  field: (typeof productMetadata.catalog.fields)[number] | undefined,
+  inputs: ReadonlyArray<Input>,
+) =>
+  field?.scalar.kind === "CURRENCY" &&
+  inputs.some((input) =>
+    productMetadata.catalog.fields.some(
+      (owner) => owner.name === taskInput(input.id).key && owner.pairs === field.name,
+    ),
+  );
+
 const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input> }) => {
   const render = (input: Input) => {
     const field = productMetadata.catalog.fields.find(
@@ -394,18 +432,11 @@ const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
     const selectable = !props.task.creates && selectsValue(input, props.task.subject);
-    if (
-      selectable &&
-      field?.scalar.kind === "CURRENCY" &&
-      inputs.some(
-        (candidate) =>
-          selectsValue(candidate, props.task.subject) &&
-          productMetadata.catalog.fields.some(
-            (owner) => owner.name === taskInput(candidate.id).key && owner.pairs === field.name,
-          ),
-      )
-    ) {
+    if (isPairedCurrency(field, inputs)) {
       return null;
+    }
+    if (peer !== undefined && !selectable) {
+      return <PairedInputs key={input.id} input={input} peer={peer} {...props} />;
     }
     return selectable ? (
       <SelectedValue
@@ -441,10 +472,14 @@ const CollectionRows = ({
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
   };
   return (
-    <fieldset id={`field-${collection.id}`} disabled={props.disabled}>
-      <legend>{renderCatalogKey(p, collection.labelId)}</legend>
+    <section
+      className="task-collection"
+      id={`field-${collection.id}`}
+      aria-labelledby={`label-${collection.id}`}
+    >
+      <h3 id={`label-${collection.id}`}>{renderCatalogKey(p, collection.labelId)}</h3>
       {rows.map((row, index) => (
-        <fieldset key={row.key}>
+        <fieldset key={row.key} disabled={props.disabled} className="collection-item">
           <legend>{p.text(collection.itemLabelId, { number: p.integer(index + 1) })}</legend>
           {hasGrantTarget && (
             <GrantTargetInput
@@ -516,7 +551,7 @@ const CollectionRows = ({
       >
         {renderCatalogKey(p, collection.addLabelId)}
       </button>
-    </fieldset>
+    </section>
   );
 };
 export const TaskInputs = (props: Props) => {

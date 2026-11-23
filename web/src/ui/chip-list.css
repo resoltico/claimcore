@@ -1,0 +1,17 @@
+@layer components {
+  .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-chip-list);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chip-list > li {
+    display: flex;
+    align-items: center;
+    min-inline-size: 0;
+  }
+}

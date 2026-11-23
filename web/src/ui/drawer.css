@@ -1,0 +1,14 @@
+@layer components {
+  .drawer {
+    max-inline-size: var(--width-drawer);
+  }
+
+  .drawer .ui-dialog-body {
+    min-block-size: 0;
+    overflow-y: auto;
+  }
+
+  .drawer .ui-dialog-actions {
+    border-block-start: var(--border-width) solid var(--border-subtle);
+  }
+}

@@ -1,124 +1,128 @@
+import { useState } from "react";
 import type { RegionInteraction, RowLink } from "./interaction";
 import type { RegionContent, RegionTimelineEntry } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { PresentedValue } from "../../components/PresentedValue";
 import { SectionsView } from "../SectionsView";
-import { coreRowLink } from "./rowLink";
-import { Actions } from "./Actions";
-
-import {} from "./timeline.css";
 import { renderCatalogKey } from "../../presentation/messages";
 import { followLink } from "../../routing/followLink";
 import { SuppliedMessage } from "../SuppliedMessage";
+import { Button } from "../Button";
+import { Dialog } from "../Dialog";
+import { coreRowLink } from "./rowLink";
+import "./timeline.css";
+
 const TimelineTarget = ({
-  target,
-  rowLink,
+  value,
+  link,
   timeZone,
 }: {
-  target: RegionTimelineEntry["target"];
-  rowLink: RowLink | undefined;
+  value: RegionTimelineEntry["target"];
+  link: RowLink | undefined;
   timeZone: string;
 }) => {
-  if (target === undefined) {
+  if (value === undefined) {
     return null;
   }
-  const value = <PresentedValue value={target} timeZone={timeZone} />;
-  return rowLink === undefined ? (
-    value
+  const field = <PresentedValue value={value} timeZone={timeZone} />;
+  return link === undefined ? (
+    field
   ) : (
     <a
-      href={rowLink.href}
+      href={link.href}
+      id={link.id}
       onClick={(event) => {
-        followLink(event, rowLink.follow);
+        followLink(event, link.follow);
       }}
     >
-      {value}
+      {field}
     </a>
   );
 };
 export const Timeline = ({
   content,
   timeZone,
-  onAction,
-  actionsDisabled,
-  actionPresentation,
   linkNavigation,
+  emptyId,
 }: RegionInteraction & {
   content: Extract<RegionContent, { kind: "TIMELINE" }>;
   timeZone: string;
+  emptyId?: string | undefined;
 }) => {
   const p = usePresentation();
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const selected = content.entries.find((entry) => entry.key === selectedKey) ?? null;
   return (
-    <ol className="region-timeline">
-      {content.entries.map((entry) => {
-        const rowLink = coreRowLink(entry.link, linkNavigation);
-        const changes = entry.changes ?? [];
-        return (
-          <li key={entry.key} data-effect={entry.key}>
-            <h3>
-              <SuppliedMessage message={entry.summary} timeZone={timeZone} />
-            </h3>
-            <TimelineTarget target={entry.target} rowLink={rowLink} timeZone={timeZone} />
-            <p>
-              <PresentedValue value={entry.who} timeZone={timeZone} /> ·{" "}
-              <PresentedValue value={{ kind: "INSTANT", value: entry.when }} timeZone={timeZone} />
-            </p>
-            <div className="timeline-change-summary">
-              {entry.highlights
-                .flatMap(({ entries }) => entries)
-                .map((item) => (
-                  <span key={item.key}>
-                    {renderCatalogKey(p, item.labelId)}{" "}
-                    <PresentedValue value={item.value} timeZone={timeZone} />
-                  </span>
-                ))}
-            </div>
-            {entry.changedFields === undefined ? null : (
-              <ul className="timeline-changed-fields" aria-label={p.text("label.changes")}>
-                {entry.changedFields.map((field) => (
-                  <li key={field}>{renderCatalogKey(p, field)}</li>
-                ))}
-              </ul>
+    <>
+      {content.entries.length === 0 && emptyId !== undefined ? (
+        <p>{renderCatalogKey(p, emptyId)}</p>
+      ) : (
+        <ol className="region-timeline">
+          {content.entries.map((entry) => {
+            const link = coreRowLink(entry.link, linkNavigation);
+            return (
+              <li key={entry.key}>
+                <PresentedValue
+                  value={{ kind: "INSTANT", value: entry.when }}
+                  timeZone={timeZone}
+                />
+                <span className="timeline-event">
+                  <SuppliedMessage message={entry.summary} timeZone={timeZone} />
+                  <TimelineTarget value={entry.target} link={link} timeZone={timeZone} />
+                </span>
+                <PresentedValue value={entry.who} timeZone={timeZone} />
+                <Button
+                  variant="quiet"
+                  compact
+                  onPress={() => {
+                    setSelectedKey(entry.key);
+                  }}
+                >
+                  {p.text("ui.viewDetails")}
+                </Button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <Dialog
+        title={p.text("ui.viewDetails")}
+        closeLabel={p.text("ui.close")}
+        isOpen={selected !== null}
+        isDismissable
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedKey(null);
+          }
+        }}
+      >
+        {selected === null ? null : (
+          <>
+            {selected.target === undefined ? null : (
+              <PresentedValue value={selected.target} timeZone={timeZone} />
             )}
-            {entry.details.length === 0 && changes.length === 0 ? null : (
-              <details>
-                <summary>{p.text("label.recordDetails")}</summary>
-                {changes.length > 0 ? (
-                  <dl className="timeline-comparison" aria-label={p.text("label.changes")}>
-                    {changes.map((change) => (
-                      <div key={change.key} data-change-label={change.labelId}>
-                        <dt>{renderCatalogKey(p, change.labelId)}</dt>
-                        <dd data-side="before">
-                          <span>{p.text("label.before")}</span>{" "}
-                          <PresentedValue value={change.before} timeZone={timeZone} />
-                        </dd>
-                        <dd data-side="after">
-                          <span>{p.text("label.after")}</span>{" "}
-                          <PresentedValue value={change.after} timeZone={timeZone} />
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                ) : null}
-                <SectionsView sections={entry.details} headingLevel={4} timeZone={timeZone} />
-              </details>
+            <SectionsView sections={selected.highlights} timeZone={timeZone} />
+            {(selected.changes ?? []).length === 0 ? null : (
+              <dl className="timeline-comparison" aria-label={p.text("label.changes")}>
+                {selected.changes?.map((change) => (
+                  <div key={change.key} data-change-label={change.labelId}>
+                    <dt>{renderCatalogKey(p, change.labelId)}</dt>
+                    <dd data-side="before">
+                      {p.text("label.before")}{" "}
+                      <PresentedValue value={change.before} timeZone={timeZone} />
+                    </dd>
+                    <dd data-side="after">
+                      {p.text("label.after")}{" "}
+                      <PresentedValue value={change.after} timeZone={timeZone} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             )}
-            <Actions
-              actions={entry.actions ?? []}
-              disabled={actionsDisabled ?? false}
-              {...(actionPresentation === undefined ? {} : { actionPresentation })}
-              {...(onAction === undefined
-                ? {}
-                : {
-                    onAction: (action, originId) => {
-                      onAction(action, undefined, originId);
-                    },
-                  })}
-              compact
-            />
-          </li>
-        );
-      })}
-    </ol>
+            <SectionsView sections={selected.details} headingLevel={3} timeZone={timeZone} />
+          </>
+        )}
+      </Dialog>
+    </>
   );
 };

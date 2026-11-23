@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
@@ -151,7 +152,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
       name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
-  await user.click(getButton("Back to cases"));
+  await user.click(casesBreadcrumb());
   expect(
     await screen.findByRole("heading", {
       name: "Cases",

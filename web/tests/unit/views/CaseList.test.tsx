@@ -335,7 +335,7 @@ it.each(["access", "session"])(
     render(<CaseList onSelect={vi.fn()} />);
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "Load more cases",
+        name: "Load more",
       }),
     );
     await screen.findByRole("alert");
@@ -351,7 +351,7 @@ it.each(["access", "session"])(
     ).toBeNull();
     expect(
       screen.queryByRole("button", {
-        name: "Load more cases",
+        name: "Load more",
       }),
     ).toBeNull();
   },
@@ -367,7 +367,7 @@ it("retains the last accepted rows after a request-local failure", async () => {
   render(<CaseList onSelect={vi.fn()} />);
   fireEvent.click(
     await screen.findByRole("button", {
-      name: "Load more cases",
+      name: "Load more",
     }),
   );
   await waitFor(() => {

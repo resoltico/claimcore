@@ -1,3 +1,4 @@
+import { workspaceSignOut } from "../support/workspace-actions";
 import {
   installationActions,
   requesterLinks,
@@ -413,7 +414,7 @@ it.each([
       // People workspace; its ensuing refusal revalidation remains bounded.
       expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 4);
     });
-    expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Account" })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
@@ -424,14 +425,14 @@ it.each([
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
     );
-    expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Account" })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
     expect(screen.queryByText("synthetic-authored")).toBeNull();
     await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(await workspaceSignOut(user));
     expect(logout).toHaveBeenCalledOnce();
   },
 );

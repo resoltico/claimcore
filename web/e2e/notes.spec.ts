@@ -7,7 +7,7 @@ import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { noHorizontalOverflow } from "./layout-support";
 
-test("notes use reviewed unversioned writes, latest three, paging, removal and Activity @engine", async ({
+test("notes use one-step unversioned writes, latest three, paging, removal and Activity @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -23,23 +23,19 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
     await notes
       .getByRole("textbox", { name: "Note", exact: true })
       .fill(`Handling note ${number}\nSecond line`);
-    const preview = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/operation.preview",
+    const execution = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/operation.execute",
     );
     await notes.getByRole("button", { name: "Add note", exact: true }).click();
-    const reviewed = await preview;
-    expect(reviewed.request().postDataJSON()).toMatchObject({
+    const recorded = await execution;
+    expect(recorded.request().postDataJSON()).toMatchObject({
       task: "note.add",
       binding: { kind: "NOTE" },
       inputs: { "input:noteText": `Handling note ${number}\nSecond line` },
     });
-    expect(reviewed.request().postDataJSON()).not.toHaveProperty("expectedRevision");
-    const dialog = page.getByRole("dialog");
-    const confirm = dialog.locator("button[data-confirm-operation]");
-    await expect(confirm).toBeEnabled();
-    expect(writes).toBe(number - 1);
-    await confirm.click();
-    await expect(dialog).toHaveCount(0);
+    expect(recorded.request().postDataJSON()).not.toHaveProperty("expectedRevision");
+    expect(writes).toBe(number);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await expectCaseReadsSettled(page);
     await expect(notes.getByText(`Handling note ${number}`, { exact: false })).toBeVisible();
   }

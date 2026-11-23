@@ -1524,8 +1524,8 @@
     "source": "1ae8310d09d9"
   },
   "task.people.admit.label": {
-    "text": "添加人员",
-    "source": "66848b5361f4"
+    "text": "从访问请求添加",
+    "source": "dfc39a02ed75"
   },
   "task.people.admit.meaning": {
     "text": "添加包含姓名和首批角色的人员账户或服务账户。",
@@ -4298,5 +4298,121 @@
   "label.reminderCancelledInactive": {
     "text": "已取消（非活动处理）",
     "source": "0c7f57d2c13d"
+  },
+  "notice.signedOutTitle": {
+    "text": "您已退出登录",
+    "source": "3ee85005ad9d"
+  },
+  "label.signInAgain": {
+    "text": "重新登录",
+    "source": "51fbe1dc8a73"
+  },
+  "notice.signInIncomplete": {
+    "text": "登录未完成。",
+    "source": "e5b084eddaec"
+  },
+  "label.administration": {
+    "text": "管理",
+    "source": "4b42c6690ebe"
+  },
+  "label.remindersDue": {
+    "text": "{count} 项到期",
+    "source": "ab54b2cef767"
+  },
+  "label.businessDateCaption": {
+    "text": "{date} · {zone}",
+    "source": "5052078fedd8"
+  },
+  "label.recoveryCount": {
+    "text": "未确认的更改（{count} 项）",
+    "source": "537d7c75a40f"
+  },
+  "label.dataStewardship": {
+    "text": "数据管理",
+    "source": "3f1b2f078556"
+  },
+  "label.shown.cases.zero": {
+    "text": "已显示 {count} 个案件",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.one": {
+    "text": "已显示 {count} 个案件",
+    "source": "07be532c1f47"
+  },
+  "label.shown.cases.two": {
+    "text": "已显示 {count} 个案件",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.few": {
+    "text": "已显示 {count} 个案件",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.many": {
+    "text": "已显示 {count} 个案件",
+    "source": "19e47162fe28"
+  },
+  "label.shown.cases.other": {
+    "text": "已显示 {count} 个案件",
+    "source": "19e47162fe28"
+  },
+  "label.shown.reminders.zero": {
+    "text": "已显示 {count} 条提醒",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.one": {
+    "text": "已显示 {count} 条提醒",
+    "source": "960227e16c70"
+  },
+  "label.shown.reminders.two": {
+    "text": "已显示 {count} 条提醒",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.few": {
+    "text": "已显示 {count} 条提醒",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.many": {
+    "text": "已显示 {count} 条提醒",
+    "source": "27845c867e0f"
+  },
+  "label.shown.reminders.other": {
+    "text": "已显示 {count} 条提醒",
+    "source": "27845c867e0f"
+  },
+  "label.shown.people.zero": {
+    "text": "已显示 {count} 人",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.one": {
+    "text": "已显示 {count} 人",
+    "source": "df617913dd61"
+  },
+  "label.shown.people.two": {
+    "text": "已显示 {count} 人",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.few": {
+    "text": "已显示 {count} 人",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.many": {
+    "text": "已显示 {count} 人",
+    "source": "ec1d836d913f"
+  },
+  "label.shown.people.other": {
+    "text": "已显示 {count} 人",
+    "source": "ec1d836d913f"
+  },
+  "task.reminder.complete.reviewed": {
+    "text": "填写详情后完成…",
+    "source": "ae469d43b909"
+  },
+  "label.reviewNotEntered": {
+    "text": "未填写：{fields}",
+    "source": "0d20d2d4b6a2"
+  },
+  "label.addPerson": {
+    "text": "添加人员",
+    "source": "66848b5361f4"
   }
 }

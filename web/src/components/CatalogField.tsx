@@ -1,14 +1,10 @@
 import { NoticeView } from "../presentation/Message";
-import { FieldHelp } from "./FieldHelp";
+import { Field, FieldRule } from "../ui/Field";
 import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
-import { FieldError } from "react-aria-components/FieldError";
 import { TextArea } from "react-aria-components/TextArea";
 import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
-import { Text } from "react-aria-components/Text";
-import { TextField } from "react-aria-components/TextField";
 import type { FieldCatalogEntry } from "../api/service";
 import type { Notice } from "../protocol/notices";
 import { usePresentation } from "../presentation/context";
@@ -91,29 +87,24 @@ export const CatalogField = ({
     return <CatalogCode {...typed} />;
   }
   return (
-    <TextField
+    <Field
       id={`field-${name}`}
-      className="text-field"
+      label={p.fieldLabel(field.name)}
       isInvalid={error !== undefined}
       isDisabled={disabled}
       value={value}
       onChange={onChange}
+      description={
+        <>
+          <small>{description ?? p.hint(field)}</small>{" "}
+          <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+          <ScalarCounter field={field} value={value} />
+          {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
+        </>
+      }
+      {...(error === undefined ? {} : { error: <NoticeView value={error} /> })}
     >
-      <div className="field-label-row">
-        <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
-      </div>
       <ScalarControl field={field} name={name} />
-      <Text slot="description" className="field-description">
-        <small>{description ?? p.hint(field)}</small>
-        <ScalarCounter field={field} value={value} />
-        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
-      </Text>
-      {error === undefined ? null : (
-        <FieldError>
-          <NoticeView value={error} />
-        </FieldError>
-      )}
-    </TextField>
+    </Field>
   );
 };

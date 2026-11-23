@@ -131,10 +131,15 @@ const ReminderAdvancedFilters = ({
   change: (value: ReminderQuery) => void;
 }) => {
   const p = usePresentation();
-  const [draft, setDraft] = useState<Pick<ReminderQuery, "kind" | "deadlineOutcome"> | null>(null);
-  const { kind, deadlineOutcome, ...other } = query;
+  const [draft, setDraft] = useState<Pick<
+    ReminderQuery,
+    "kind" | "deadlineOutcome" | "includeInactive"
+  > | null>(null);
+  const { kind, deadlineOutcome, includeInactive, ...other } = query;
   const count =
-    Number(kind !== undefined && kind !== "ANY") + Number(deadlineOutcome !== undefined);
+    Number(kind !== undefined && kind !== "ANY") +
+    Number(deadlineOutcome !== undefined) +
+    Number(includeInactive !== undefined);
   return (
     <>
       <button
@@ -144,6 +149,7 @@ const ReminderAdvancedFilters = ({
           setDraft({
             ...(kind === undefined ? {} : { kind }),
             ...(deadlineOutcome === undefined ? {} : { deadlineOutcome }),
+            ...(includeInactive === undefined ? {} : { includeInactive }),
           });
         }}
       >
@@ -202,6 +208,16 @@ const ReminderAdvancedFilters = ({
                 }}
               />
             </div>
+            <label className="field-toggle">
+              <input
+                type="checkbox"
+                checked={effectiveReminderSelection({ ...other, ...draft }).includeInactive}
+                onChange={(event) => {
+                  setDraft({ ...draft, includeInactive: event.target.checked });
+                }}
+              />
+              {p.text("input.includeInactive.label")}
+            </label>
             <div className="worklist-actions">
               <button
                 type="button"
@@ -294,16 +310,6 @@ const ReminderFilters = ({
         }}
       />
       <ReminderAdvancedFilters query={query} change={change} />
-      <label className="field-toggle">
-        <input
-          type="checkbox"
-          checked={effective.includeInactive}
-          onChange={(event) => {
-            change({ ...query, includeInactive: event.target.checked });
-          }}
-        />
-        {p.text("input.includeInactive.label")}
-      </label>
       <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
     </div>
   );
@@ -374,8 +380,14 @@ const ReadyReminderQueue = ({
       ) : (
         <ViewTabs
           items={
-            views.reminders.data?.items.map(({ view, label, count }) => ({
+            views.reminders.data?.items.map(({ view, label, count, prominence }) => ({
               id: view,
+              prominence,
+              ...(label.kind === "MESSAGE" && count.kind === "COUNT"
+                ? {
+                    menuLabel: `${renderCatalogKey(p, label.messageId)} · ${p.integer(count.value)}`,
+                  }
+                : {}),
               label: (
                 <PresentedValue value={label} timeZone={views.reminders.data!.basis.timeZone} />
               ),

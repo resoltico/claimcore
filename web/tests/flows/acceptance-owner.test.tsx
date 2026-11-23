@@ -94,14 +94,14 @@ const start = async () => {
   navigate(casePath(audit.receipt!.caseId), true);
   const view = render(shown("actor-a-token", 1));
   await userEvent.click(await view.findByRole("button", { name: "Simulate admitted acceptance" }));
-  expect(view.container.querySelector(".accepted-receipt")).not.toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).not.toBeNull();
   return view;
 };
 it("control: equivalent requester refresh can retain own acceptance feedback", async () => {
   const view = await start();
   audit.context = { ...audit.context! };
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).not.toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).not.toBeNull();
 });
 it("a new actor/session cannot inherit the previous actor acceptance feedback", async () => {
   const view = await start();
@@ -117,7 +117,7 @@ it("a new actor/session cannot inherit the previous actor acceptance feedback", 
       level: 1,
     }),
   ).toBeVisible();
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });
 
 it("cannot revive prior feedback on actor A to B to A in the same session", async () => {
@@ -128,23 +128,23 @@ it("cannot revive prior feedback on actor A to B to A in the same session", asyn
     subject: { ...original.subject, actorId: "90000000-0000-4000-8000-000000000099" },
   };
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   audit.context = original;
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });
 it("masks acceptance during unverified context and after installation replacement", async () => {
   const view = await start();
   const original = audit.context!;
   audit.context = null;
   view.rerender(shown("renewed-token", 2));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   audit.context = {
     ...original,
     subject: { ...original.subject, installationId: "90000000-0000-4000-8000-000000000099" },
   };
   view.rerender(shown("renewed-token", 2));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });
 it.each(["anonymous", "failure"] as const)("does not revive acceptance after %s", async (kind) => {
   const view = await start();
@@ -153,9 +153,9 @@ it.each(["anonymous", "failure"] as const)("does not revive acceptance after %s"
       ? { kind, token: null, message: null, epoch: 2 }
       : { kind, message: { kind: "local", reason: "unreachable" }, epoch: 2 };
   view.rerender(sessionView(state));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   view.rerender(shown("actor-a-token", 3));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });
 it("ignores a late acceptance callback after an owner transition", async () => {
   const view = await start();
@@ -167,7 +167,7 @@ it("ignores a late acceptance callback after an owner transition", async () => {
   view.rerender(shown("actor-b-token", 2));
   const before = location.href;
   late(audit.receipt!, "10000000-0000-7000-8000-000000000001");
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   expect(location.href).toBe(before);
 });
 
@@ -176,10 +176,10 @@ it("masks own acceptance through a read invalidation and restores identity feedb
   const original = audit.context!;
   audit.context = null;
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   audit.context = { ...original };
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).not.toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).not.toBeNull();
 });
 
 it("does not restore prior acceptance after known case access is removed and later returns", async () => {
@@ -190,10 +190,10 @@ it("does not restore prior acceptance after known case access is removed and lat
     links: original.links.filter((link) => new Set<string>(["OPERATIONS"]).has(link.labelId)),
   };
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   audit.context = original;
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });
 
 it("does not restore prior acceptance after a definite session refusal and fresh successful context", async () => {
@@ -202,9 +202,9 @@ it("does not restore prior acceptance after a definite session refusal and fresh
   audit.context = null;
   audit.refused = true;
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
   audit.refused = false;
   audit.context = original;
   view.rerender(shown("actor-a-token", 1));
-  expect(view.container.querySelector(".accepted-receipt")).toBeNull();
+  expect(view.container.querySelector(".status-banner[data-tone=success]")).toBeNull();
 });

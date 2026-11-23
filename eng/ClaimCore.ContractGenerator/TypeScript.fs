@@ -162,6 +162,9 @@ module TypeScript =
             "export type OperationBinding = OperationSubmission['binding'];"
             metadataTypes ()
             TaskMetadata.source ()
+            "export const listCountMessages = "
+            + JsonSerializer.Serialize(ListCounts.messages)
+            + " as const;"
             "export const codeTones = "
             + JsonSerializer.Serialize(Tones.codeTones)
             + " as const;"

@@ -1,3 +1,4 @@
+import { geometryFailures } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
@@ -90,9 +91,6 @@ const ready = async (page: Page, route: MatrixRoute) => {
   await assertQueueOrReport(page, route);
   if (route.id.startsWith("case-")) {
     await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
-    await expect(
-      page.locator('.code-value[data-vocabulary="assignment"][data-code="MINE"]'),
-    ).toHaveCount(route.id === "case-undecided" ? 1 : 0);
   }
   if (route.id === "operation-result") {
     await expect(page.locator(".entries-view [data-entry='policyNumber']")).toBeVisible();
@@ -355,6 +353,7 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
+  expect(await geometryFailures(page)).toEqual([]);
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
   await noHorizontalOverflow(page, dimension.reflowScale === undefined ? "narrow" : "zoom");

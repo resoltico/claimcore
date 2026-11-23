@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
+import { themeCss } from "./scripts/generate-theme.mjs";
 import publicAssets from "./scripts/public-assets.plugin.mjs";
 import { attachmentPreviewResources } from "./scripts/attachment-viewer.mjs";
 import react from "@vitejs/plugin-react";
@@ -10,11 +11,26 @@ import reactAriaLiveAnnouncer, {
   reactAriaLiveAnnouncerBanner,
 } from "./scripts/react-aria-live-announcer.plugin.mjs";
 
+const themeModule = "virtual:claimcore-theme.css";
+const resolvedThemeModule = `\0${themeModule}`;
+
+const themeStylesheet = {
+  name: "claimcore-theme",
+  resolveId: (source: string) => (source === themeModule ? resolvedThemeModule : null),
+  load: (id: string) => (id === resolvedThemeModule ? themeCss : null),
+};
+
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
 export default {
   cacheDir: "artifacts/vite",
-  plugins: [reactAriaLiveAnnouncer(), react(), attachmentPreviewResources(), publicAssets()],
+  plugins: [
+    themeStylesheet,
+    reactAriaLiveAnnouncer(),
+    react(),
+    attachmentPreviewResources(),
+    publicAssets(),
+  ],
   optimizeDeps: { rolldownOptions: { plugins: [reactAriaLiveAnnouncer()] } },
   resolve: {
     alias: [

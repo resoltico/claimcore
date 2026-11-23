@@ -1,5 +1,10 @@
 # People and access
 
+Open **People and access** from Administration in the sidebar or from **More** on a phone.
+**Add person** lists the available registration and access-request operations. Choose a row's detail
+in its action menu. Access history and the access and export log show an event per row and open its
+details in a dialog. Settings groups language, appearance, browser sessions and **About ClaimCore**.
+
 Use **People and access** to add accounts, update names and contact details, and assign roles. An owner can
 make these changes. An auditor can review people and access without changing them. See the
 [operating guide](operating.md#access-review-and-sessions) for identity-provider and session controls.

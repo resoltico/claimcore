@@ -1,0 +1,11 @@
+@layer components {
+  .file-drop {
+    padding: var(--space-4);
+    border: var(--border-drop) dashed var(--border-strong);
+    border-radius: var(--radius-md);
+  }
+
+  .file-drop[data-drag-over] {
+    background: var(--accent-soft-bg);
+  }
+}

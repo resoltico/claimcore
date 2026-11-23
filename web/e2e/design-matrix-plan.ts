@@ -17,6 +17,7 @@ export const dimensions = (engine: string): Dimension[] => {
   }
   return [
     ...shared,
+    { width: 1440, language: "en", mode: "light", accent: "blue" },
     { width: 1280, language: "en", mode: "dark", accent: "blue" },
     { width: 320, language: "de", mode: "light", accent: "green" },
     { width: 320, language: "en-XA", mode: "light", accent: "green" },
@@ -26,7 +27,8 @@ export const dimensions = (engine: string): Dimension[] => {
 export const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.reflowScale === undefined &&
   dimension.language !== "en-XA" &&
-  (dimension.width <= 390 || (dimension.language === "en" && dimension.width === 1280));
+  (dimension.width <= 390 ||
+    (dimension.language === "en" && (dimension.width === 1280 || dimension.width === 1440)));
 export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
   const baselinePair =
     frame === "cases-open-undecided" &&

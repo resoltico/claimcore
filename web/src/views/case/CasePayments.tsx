@@ -9,7 +9,7 @@ import { renderCatalogKey } from "../../presentation/messages";
 import { Entries } from "../../ui/regions/Entries";
 import { MoneyMeter } from "../../ui/regions/MoneyMeter";
 import { Button } from "../../ui/Button";
-import { Actions } from "../../ui/regions/Actions";
+import { TaskControls } from "../../ui/TaskControls";
 import {} from "./payments.css";
 type PaymentTable = Extract<Region["content"], { kind: "TABLE" }>;
 const PaymentPreview = ({
@@ -76,7 +76,7 @@ export const CasePayments = ({
         <h2 id="case-payments-title">
           {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
         </h2>
-        <Actions actions={region.actions ?? []} compact descriptiveLabel onAction={onAct} />
+        <TaskControls actions={region.actions ?? []} compact onAction={onAct} />
       </div>
       <Entries
         entries={(content.sections ?? []).flatMap((section) => section.entries)}

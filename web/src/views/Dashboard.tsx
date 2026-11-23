@@ -7,7 +7,7 @@ import type { Link, TaskId, Region, Screen } from "@contracts/client";
 
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
-import { ObservedReceipt } from "./operation/ObservedReceipt";
+import { ReceiptFeedback } from "./operation/ReceiptFeedback";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
@@ -26,7 +26,7 @@ import {} from "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
 import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
-import { isWorkspaceLinkId, WorkspaceHeader } from "./WorkspaceHeader";
+import { isWorkspaceLinkId, Shell } from "./Shell";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -229,7 +229,6 @@ const AcceptedReceipt = ({
   receipt: { caseId: string; operationId: string } | null;
   close: () => void;
 }) => {
-  const p = usePresentation();
   if (
     receipt === null ||
     route.screen !== "case" ||
@@ -239,14 +238,7 @@ const AcceptedReceipt = ({
     return null;
   }
   return (
-    <section className="accepted-receipt receipt" aria-label={p.text("label.recordedChange")}>
-      <div className="accepted-receipt-actions">
-        <button type="button" onClick={close}>
-          {p.text("ui.close")}
-        </button>
-      </div>
-      <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
-    </section>
+    <ReceiptFeedback key={receipt.operationId} operationId={receipt.operationId} dismiss={close} />
   );
 };
 const succeededRequester = (response: ServiceResponse<typeof apiEndpoints.context> | null) =>
@@ -625,7 +617,7 @@ export const Dashboard = () => {
             <InlineNoteRecovery />
             <WorkspaceViewsProvider>
               <div className="workspace-shell">
-                <WorkspaceHeader
+                <Shell
                   route={route}
                   presentation={presentation}
                   active={route.screen === "reminders" ? "reminders" : active}
@@ -633,14 +625,7 @@ export const Dashboard = () => {
                   tasks={tasks}
                   locked={locked}
                 />
-                <main className="app-shell">
-                  <AcceptedReceipt
-                    route={route}
-                    receipt={feedback.receipt}
-                    close={() => {
-                      feedback.clear();
-                    }}
-                  />
+                <main className="workspace-main">
                   <RecoveryBanner />
                   {businessDate.changedDate === null ? null : (
                     <BusinessDateNotice
@@ -657,6 +642,13 @@ export const Dashboard = () => {
                       <WorkspaceRoute
                         key={ownerIdentity}
                         route={route}
+                        caseFeedback={
+                          <AcceptedReceipt
+                            route={route}
+                            receipt={feedback.receipt}
+                            close={feedback.clear}
+                          />
+                        }
                         caseNavigation={caseNavigation}
                         views={views}
                         noViews={noViews}

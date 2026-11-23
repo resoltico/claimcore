@@ -15,13 +15,7 @@ it("keeps intermediate search text focused and publishes only an admitted draft"
     const Toolbar = () => {
       const [draft, setDraft] = useState("Earlier");
       return (
-        <WorklistToolbar
-          query={query}
-          search={draft}
-          onSearch={setDraft}
-          onChange={publish}
-          onSelect={vi.fn()}
-        />
+        <WorklistToolbar query={query} search={draft} onSearch={setDraft} onChange={publish} />
       );
     };
     render(<Toolbar />);
@@ -68,10 +62,9 @@ it("applies the whole date pair once and associates a reversed range with its en
       search=""
       onSearch={vi.fn()}
       onChange={publish}
-      onSelect={vi.fn()}
     />,
   );
-  fireEvent.click(screen.getByRole("button", { name: /^Filters/u }));
+  fireEvent.click(screen.getByRole("button", { name: /^More filters/u }));
   fireEvent.change(screen.getByLabelText("Received from"), { target: { value: "2026-09-09" } });
   expect(publish).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));

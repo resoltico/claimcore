@@ -2,7 +2,7 @@ import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
-import { WorkspaceHeader } from "../../../src/views/WorkspaceHeader";
+import { Shell } from "../../../src/views/Shell";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
@@ -360,7 +360,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   render(
     <RecoveryProvider identity={testWorkspaceIdentity}>
       <WorkspaceViewsProvider>
-        <WorkspaceHeader
+        <Shell
           route={{
             screen: "cases",
             query: "",

@@ -1,0 +1,28 @@
+@layer components {
+  .page {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .page-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-block-end: var(--space-1);
+  }
+
+  .page-heading :is(h1, p) {
+    margin: 0;
+  }
+
+  .page-heading h1 {
+    font-size: var(--text-heading);
+  }
+
+  .page-heading p {
+    color: var(--text-secondary);
+  }
+}

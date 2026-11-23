@@ -15,7 +15,7 @@ import {
 } from "../api/service";
 
 import { useEndpointCache } from "./EndpointProvider";
-import { endpointCacheKey, typedResult, type EndpointCache } from "./endpointCache";
+import { isReadBusy, endpointCacheKey, typedResult, type EndpointCache } from "./endpointCache";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import type { Notice } from "../protocol/notices";
 import {
@@ -46,6 +46,7 @@ type PageSinks<P> = {
   setMessage: Dispatch<SetStateAction<Notice | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
   setPages: Dispatch<SetStateAction<P[]>>;
+  setRefreshBusy: (busy: boolean) => void;
 };
 
 const acceptPage = <T, P extends Page<T>>(
@@ -80,12 +81,19 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   continuationKey: ((page: P) => string) | undefined,
   current: () => boolean,
   publish: () => void,
+  quiet: boolean,
 ): Promise<void> => {
   const result = await request(cursor, signal);
   if (signal.aborted || !current()) {
     return;
   }
   publish();
+  if (quiet && isReadBusy(result)) {
+    sinks.setRefreshBusy(true);
+    sinks.setLoading(false);
+    return;
+  }
+  sinks.setRefreshBusy(false);
   const page = result.kind === "outcome" ? select(result.value) : null;
   if (page === null) {
     const rejected = result.kind === "outcome" && result.value.outcome.kind === "REJECTED";
@@ -116,20 +124,22 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   const controller = useRef<AbortController | null>(null);
   const pending = useRef<{ cursor: string | null; task: Promise<void> } | null>(null);
   const load = useCallback(
-    (next: string | null): Promise<void> => {
+    (next: string | null, quiet = false): Promise<void> => {
       if (pending.current?.cursor === next) {
         return pending.current.task;
       }
       controller.current?.abort();
       const attempt = new AbortController();
       controller.current = attempt;
-      if (next === null) {
+      if (next === null && !quiet) {
         previousPage.current = null;
         sinks.setCursor(null);
         sinks.setPages([]);
       }
-      sinks.setLoading(true);
-      sinks.setMessage(null);
+      if (!quiet) {
+        sinks.setLoading(true);
+        sinks.setMessage(null);
+      }
       const task = fetchPage(
         request,
         select,
@@ -140,6 +150,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
         continuationKey,
         current,
         publish,
+        quiet,
       ).finally(() => {
         if (controller.current === attempt) {
           pending.current = null;
@@ -173,6 +184,7 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   const [cursor, setCursor] = useState<string | null>(null);
   const [message, setMessage] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshBusy, setRefreshBusy] = useState(false);
   const [pages, setPages] = useState<P[]>([]);
   const items = useMemo(() => pages.flatMap((page) => page.items), [pages]);
   const views = useMemo<PresentedPage[]>(
@@ -180,7 +192,7 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
     [pages],
   );
   const sinks = useMemo(
-    () => ({ setCursor, setMessage, setLoading, setPages, onDisclosureChanged }),
+    () => ({ setCursor, setMessage, setLoading, setPages, setRefreshBusy, onDisclosureChanged }),
     [setCursor, setMessage, setLoading, setPages, onDisclosureChanged],
   );
   const publish = useCallback(() => {
@@ -208,6 +220,7 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
     items: visible ? items : [],
     cursor: visible ? cursor : null,
     message: visible ? message : null,
+    refreshBusy: visible && refreshBusy,
     loading: !visible || loading,
     page: visible ? (pages.at(-1) ?? null) : null,
     pages: visible ? pages : [],
@@ -304,11 +317,22 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
       ),
     [subscribe, fetchEndpoint, credential, owner, endpoint, input, observed, generation],
   );
-  return usePages<ServiceResponse<K>, T, P>(
+  const pages = usePages<ServiceResponse<K>, T, P>(
     identity,
     request,
     select,
     onDisclosureChanged,
     continuationKey,
   );
+  const { load } = pages;
+  useEffect(
+    () => cache.registerRefresh(window.location.pathname, () => load(null, true)),
+    [cache, load],
+  );
+  return {
+    ...pages,
+    refresh: () => {
+      void cache.revalidate(window.location.pathname, performance.now(), true);
+    },
+  };
 };

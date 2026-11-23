@@ -1,16 +1,18 @@
 import { expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { LegalNotice } from "../../../src/components/LegalNotice";
-it("offers this build's source and public terms without an authenticated session", () => {
-  render(<LegalNotice />);
-  expect(screen.getByText("ClaimCore · AGPL-3.0-only · License and source")).toBeVisible();
-  expect(screen.getByRole("link", { name: "Source for this build", hidden: true })).toHaveAttribute(
+import { render, screen } from "../../support/presentation-test-support";
+import { AboutPanel } from "../../../src/features/settings/AboutPanel";
+
+it("offers this build's legal and source files without an authenticated session", () => {
+  render(<AboutPanel />);
+  expect(screen.getByText(/AGPL-3.0-only/u)).toBeVisible();
+  expect(screen.getByRole("link", { name: "Source for this build" })).toHaveAttribute(
     "href",
     "/SOURCE.tar.gz",
   );
-  expect(screen.getByRole("link", { name: "License", hidden: true })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "License" })).toHaveAttribute("href", "/LICENSE.txt");
+  expect(screen.getByRole("link", { name: "Third-party notices" })).toHaveAttribute(
     "href",
-    "/LICENSE.txt",
+    "/THIRD-PARTY-NOTICES.txt",
   );
   expect(screen.getByText(/No warranty/u)).toHaveTextContent(
     "You may redistribute under the license terms.",

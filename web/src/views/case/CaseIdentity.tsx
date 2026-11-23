@@ -1,7 +1,7 @@
 import type { PresentedValue as Value, Region } from "@contracts/client";
 import { PresentedValue } from "../../components/PresentedValue";
 import { Entries } from "../../ui/regions/Entries";
-import { RegionView } from "../../ui/regions/RegionView";
+import { ChipList, chipValues } from "../../ui/ChipList";
 
 export const CaseIdentity = ({
   region,
@@ -16,8 +16,14 @@ export const CaseIdentity = ({
 }) => {
   const entries = region?.content.kind === "ENTRIES" ? region.content.entries : [];
   const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
-  const chips = entries.filter((entry) => ["STATE", "CODE", "CODES"].includes(entry.value.kind));
-  const facts = entries.filter((entry) => entry !== reference && !chips.includes(entry));
+  const headline = entries.flatMap(({ value }) => (value.kind === "STATE" ? [value] : []));
+  const reasons = attention?.content.kind === "CODES" ? chipValues(attention.content) : [];
+  const facts = entries.filter(
+    (entry) =>
+      entry !== reference &&
+      entry.prominence === "PRIMARY" &&
+      !["STATE", "CODE", "CODES", "ABSENT"].includes(entry.value.kind),
+  );
   let title: Value = { kind: "MESSAGE", messageId: "label.caseDetail" };
   if (reference !== undefined) {
     title = reference.value;
@@ -31,10 +37,7 @@ export const CaseIdentity = ({
           <PresentedValue value={title} timeZone={timeZone} />
         </h1>
         <div className="case-header-state">
-          {chips.map((entry) => (
-            <PresentedValue key={entry.key} value={entry.value} timeZone={timeZone} />
-          ))}
-          {attention === undefined ? null : <RegionView region={attention} timeZone={timeZone} />}
+          <ChipList values={[...headline, ...reasons]} />
         </div>
       </div>
       {facts.length === 0 ? null : (

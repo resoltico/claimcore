@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AboutPanel } from "../features/settings/AboutPanel";
+import { recordAutomaticSignIn, resetSignIn, signedOut } from "../routing/signInAttempt";
 import { Dialog } from "../ui/Dialog";
 import { Button } from "../ui/Button";
 import { presentationLanguageOptions, presentationPseudolanguage } from "@contracts/client";
@@ -17,6 +19,32 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
       : (presentationLanguageOptions.find((option) => option.value === p.language)?.label ??
         p.language);
   const [settings, setSettings] = useState(false);
+  const [about, setAbout] = useState(false);
+  const [loopStopped, setLoopStopped] = useState(false);
+  const redirecting = useRef(false);
+  const hasSignedOut = signedOut(window.sessionStorage);
+
+  useEffect(() => {
+    if (message !== null || hasSignedOut || redirecting.current) {
+      return;
+    }
+    if (!recordAutomaticSignIn(window.sessionStorage, Date.now())) {
+      queueMicrotask(() => {
+        setLoopStopped(true);
+      });
+      return;
+    }
+    redirecting.current = true;
+    rememberLoginReturn();
+    window.location.replace(loginPath(p.language));
+  }, [message, hasSignedOut, p.language]);
+  if (!hasSignedOut && message === null && !loopStopped) {
+    return (
+      <main className="loading" role="status">
+        {p.text("ui.loadingSession")}
+      </main>
+    );
+  }
   return (
     <main className="login-shell">
       <section aria-labelledby="login-title" className="login-card">
@@ -26,19 +54,36 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
           </span>{" "}
           ClaimCore
         </p>
-        <h1 id="login-title">{p.text("ui.signInTitle")}</h1>
-        <p>{p.text("ui.loginInstructions")}</p>
+        <h1 id="login-title">
+          {p.text(hasSignedOut ? "notice.signedOutTitle" : "ui.signInTitle")}
+        </h1>
+        {loopStopped ? <p role="alert">{p.text("notice.signInIncomplete")}</p> : null}
         {message === null ? null : (
           <p className="error" role="alert">
             <NoticeView value={message} />
           </p>
         )}
-        <a className="login-link" href={loginPath(p.language)} onClick={rememberLoginReturn}>
-          {p.text("ui.signIn")}
+        <a
+          className="login-link"
+          href={loginPath(p.language)}
+          onClick={() => {
+            resetSignIn(window.sessionStorage);
+            rememberLoginReturn();
+          }}
+        >
+          {p.text(hasSignedOut ? "label.signInAgain" : "ui.signIn")}
         </a>
       </section>
       <footer className="login-footer">
         <span>{productMetadata.productVersion}</span>
+        <Button
+          variant="quiet"
+          onPress={() => {
+            setAbout(true);
+          }}
+        >
+          {p.text("ui.about")}
+        </Button>
         <Button
           variant="secondary"
           onPress={() => {
@@ -48,6 +93,15 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
           {p.text("ui.languageAppearance")} · <bdi lang={p.language}>{currentLanguage}</bdi>
         </Button>
       </footer>
+      <Dialog
+        title={p.text("ui.about")}
+        closeLabel={p.text("ui.close")}
+        isOpen={about}
+        isDismissable
+        onOpenChange={setAbout}
+      >
+        <AboutPanel />
+      </Dialog>
       <Dialog
         title={p.text("ui.settings")}
         closeLabel={p.text("ui.close")}

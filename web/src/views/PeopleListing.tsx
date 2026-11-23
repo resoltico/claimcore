@@ -1,15 +1,15 @@
+import { ListFooter } from "../ui/ListFooter";
 import { apiEndpoints, type ApiResult, type ServiceResponse } from "../api/service";
 import { personLinkActorId } from "../routing/coreLinks";
 import type { RegionRow, ActorListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
-import { PageTables } from "../ui/PageTables";
+import { ResultPages } from "../ui/ResultPages";
 import { renderCatalogKey } from "../presentation/messages";
 
-import { FieldHelp } from "../components/FieldHelp";
+import { FieldRule } from "../ui/Field";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { queryInput, taskInput } from "../protocol/taskCatalog";
-import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
 
@@ -74,7 +74,7 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
   const page = usePeoplePage(props, props.filter);
   return (
     <section>
-      <PageTables
+      <ResultPages
         labelledBy={props.titleId ?? "people-actors-title"}
         views={page.views}
         linkNavigation={(link) => {
@@ -94,33 +94,20 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
           <NoticeView value={page.message} />
         </p>
       )}
-      {page.page !== null && !page.loading && page.message === null ? (
-        <PageStatus
-          empty={page.items.length === 0}
-          cursor={page.cursor}
-          emptyMessage="label.noPeople"
-        />
-      ) : null}
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <button
-        type="button"
-        disabled={page.loading}
-        onClick={() => {
-          void page.load(null);
-        }}
-      >
-        {p.text("ui.reloadActors")}
-      </button>
-      {page.cursor === null ? null : (
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            void page.load(page.cursor);
+      {page.page === null ? null : (
+        <ListFooter
+          subject="people"
+          count={page.items.length}
+          basis={page.page.basis}
+          continuation={page.cursor}
+          loading={page.loading}
+          busy={page.refreshBusy}
+          load={(cursor) => {
+            void page.load(cursor);
           }}
-        >
-          {p.text("ui.moreActors")}
-        </button>
+          refresh={page.refresh}
+        />
       )}
     </section>
   );
@@ -149,11 +136,7 @@ export const PeopleListing = (props: ListingProps) => {
         <div className="text-field">
           <div className="field-label-row">
             <label htmlFor="people-search">{p.fieldLabel("directorySearch")}</label>
-            <FieldHelp
-              name="directorySearch"
-              label={p.fieldLabel("directorySearch")}
-              ruleId={directorySearch.ruleId}
-            />
+            <FieldRule name="directorySearch" ruleId={directorySearch.ruleId} />
           </div>
           <input
             id="people-search"
@@ -170,13 +153,7 @@ export const PeopleListing = (props: ListingProps) => {
         <Select
           id="people-role-filter"
           label={renderCatalogKey(p, roleFilter.labelId)}
-          help={
-            <FieldHelp
-              name="roleFilter"
-              label={renderCatalogKey(p, roleFilter.labelId)}
-              ruleId={roleFilter.ruleId}
-            />
-          }
+          help={<FieldRule name="roleFilter" ruleId={roleFilter.ruleId} />}
           {...(roleFilter.hintId === null
             ? {}
             : { description: renderCatalogKey(p, roleFilter.hintId) })}

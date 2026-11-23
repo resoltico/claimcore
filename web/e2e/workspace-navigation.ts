@@ -1,23 +1,22 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 /** Resize completion precedes React's media-query subscription update. */
 export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
-  await page.locator(".workspace-header").waitFor({ state: "visible" });
+  await page.locator(".workspace-shell").waitFor({ state: "visible" });
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   await page
-    .locator(compact ? ".workspace-mobile-tabs:visible" : ".workspace-sidebar nav")
+    .locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav")
     .waitFor({ state: "visible" });
 };
-/** Compact workspace navigation stays available below case tasks. */
+
 export const compactSettingsNavigation = async (page: Page): Promise<Locator> => {
-  const navigation = page.locator(".workspace-mobile-tabs");
-  const settings = navigation.locator('a[href="/settings"]');
+  const settings = page.getByRole("dialog").getByRole("button", { name: "Settings", exact: true });
   if (!(await settings.isVisible())) {
-    await navigation.locator("details > summary").click();
+    await page.locator("#workspace-more").click();
   }
   await expect(settings).toBeVisible();
   return settings;
 };
-/** Desktop account controls live in the sidebar footer. Compact sign out lives in Settings. */
+
 export const showAccountActions = async (page: Page): Promise<void> => {
   const drawerSettings = page.locator(
     '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
@@ -28,13 +27,9 @@ export const showAccountActions = async (page: Page): Promise<void> => {
   }
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
-  if (compact) {
-    await (await compactSettingsNavigation(page)).click();
-    return;
-  }
-  const account = page.locator(".workspace-sidebar .account-menu");
-  if ((await account.getAttribute("open")) === null) {
-    await account.locator(":scope > summary").click();
+  const trigger = page.locator(compact ? "#workspace-more" : "#workspace-account");
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") {
+    await trigger.click();
   }
 };
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
@@ -43,9 +38,9 @@ export const choiceGroup = (page: Page, name: string): Locator =>
   page.locator(`fieldset[id="field-${name}"]`);
 export const showExactLookup = async (page: Page): Promise<Locator> => {
   await page.locator('.worklist[aria-busy="false"]').waitFor({ state: "visible" });
-  const input = page.locator("#case-lookup");
+  const input = page.getByRole("dialog").getByRole("combobox");
   if (!(await input.isVisible())) {
-    await page.locator(".exact-lookup > summary").click();
+    await page.locator(".shell-find:visible").click();
   }
   return input;
 };
@@ -57,10 +52,20 @@ export const goToView = async (
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   const navigation = page.locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav");
   const destination = navigation.locator(`a[href="/${name}"]`);
-  if (compact && !(await destination.isVisible())) {
-    await navigation.locator("details > summary").click();
+  if (await destination.isVisible()) {
+    await destination.click();
+  } else if (name === "recovery") {
+    await showAccountActions(page);
+    await page
+      .getByRole("menuitem", { name: /^Unconfirmed changes/u })
+      .or(page.getByRole("button", { name: /^Unconfirmed changes/u }))
+      .click();
+  } else if (compact) {
+    await page.locator("#workspace-more").click();
+    await page.getByRole("dialog").locator(`a[href="/${name}"]`).click();
+  } else {
+    await destination.click();
   }
-  await destination.click();
 };
 /** The recovery route also supports an exact direct link. */
 export const openRecovery = async (page: Page): Promise<void> => {

@@ -960,3 +960,55 @@ test("real IndexedDB retains only current work and reminder identities and refus
     format: 1,
   });
 });
+
+test("one-step note delivery journals first and recovers the same interrupted operation", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await openAuthenticated(page);
+  await openCase(page, `JOURNAL-NOTE-${randomUUID()}`);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
+  const operations: string[] = [];
+  await page.route("**/api/operation.execute", async (route) => {
+    const journal = await records(page, scope);
+    expect(journal).toHaveLength(1);
+    const entry = journal[0]!;
+    expect(entry).toMatchObject({ act: "note.add", subject: "NOTE" });
+    expect(route.request().postDataJSON()).toMatchObject({ operationId: entry.operationId });
+    const response = await route.fetch({ maxRedirects: 0 });
+    expect(await response.json()).toMatchObject({
+      operationId: entry.operationId,
+      outcome: { kind: "ACCEPTED" },
+    });
+    operations.push(entry.operationId);
+    await route.abort("connectionfailed");
+  });
+  const notes = page.locator(".note-composer");
+  await notes.getByRole("textbox").fill("Synthetic note with interrupted delivery");
+  await notes.getByRole("button", { name: "Add note", exact: true }).click();
+  await expect.poll(() => operations).toHaveLength(1);
+  await expect(page.locator("button[data-confirm-operation]")).toHaveCount(0);
+  const operationId = operations[0]!;
+  expect(await records(page, scope)).toMatchObject([{ operationId, act: "note.add" }]);
+
+  const replacement = await context.newPage();
+  try {
+    const resolved = replacement.waitForResponse((response) =>
+      lookupObservation(response, operationId),
+    );
+    await page.close();
+    await openAuthenticated(replacement);
+    expect(await (await resolved).json()).toMatchObject({
+      operationId,
+      outcome: { kind: "ACCEPTED", byRequester: true },
+    });
+    await adapter(replacement);
+    await expect.poll(() => records(replacement, scope)).toEqual([]);
+    expect(operations).toEqual([operationId]);
+  } finally {
+    await replacement.close();
+  }
+});

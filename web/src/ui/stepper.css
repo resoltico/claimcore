@@ -1,0 +1,48 @@
+@layer components {
+  .case-stage-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .case-stage-list > li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    min-inline-size: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    overflow-wrap: anywhere;
+  }
+
+  .case-stage-list > li::before {
+    display: block;
+    block-size: var(--space-3);
+    inline-size: var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--border-control);
+    content: "";
+  }
+
+  .case-stage-list > li[data-complete="true"]::before {
+    background: var(--accent-solid);
+  }
+
+  .case-stage-list strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .case-stage-list .progress-meter {
+    block-size: var(--focus-width);
+    inline-size: 100%;
+  }
+
+  .case-stage-list .money-meter p {
+    margin: 0;
+  }
+}

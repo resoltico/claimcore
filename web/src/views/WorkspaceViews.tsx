@@ -19,7 +19,12 @@ type Views<T> = { data: T | null; loading: boolean; message: Notice | null };
 type ViewCounts<V> = {
   basis: WorkDateBasis;
   navigation: PresentedValue | null;
-  items: ReadonlyArray<{ view: V; label: PresentedValue; count: PresentedValue }>;
+  items: ReadonlyArray<{
+    view: V;
+    label: PresentedValue;
+    count: PresentedValue;
+    prominence?: "PRIMARY" | "SECONDARY" | "DETAIL";
+  }>;
 };
 export type CaseCounts = ViewCounts<(typeof taskChoices.caseView)[number]>;
 export type ReminderCounts = ViewCounts<(typeof taskChoices.reminderView)[number]>;
@@ -44,7 +49,14 @@ const countData = <V,>(
       const count = row.values[countIndex];
       return view === undefined || label === undefined || count === undefined
         ? []
-        : [{ view, label, count }];
+        : [
+            {
+              view,
+              label,
+              count,
+              ...(row.prominence === undefined ? {} : { prominence: row.prominence }),
+            },
+          ];
     });
   });
   const totals = document.screen.regions.flatMap((region) =>

@@ -1,3 +1,4 @@
+import { workspaceSignOut } from "../support/workspace-actions";
 import type { RequesterDocument } from "../../src/protocol/types";
 import { installationActions, activeRequester } from "../support/human-requester.fixtures";
 import {
@@ -410,7 +411,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(execute).toHaveBeenCalledOnce();
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(await workspaceSignOut(user));
     expect(await screen.findByRole("dialog")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Keep editing" }));
     await user.click(screen.getByRole("button", { name: "Check access" }));

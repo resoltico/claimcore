@@ -4,7 +4,7 @@ import {
   type CodeSuggestion,
 } from "../presentation/codeSuggestions";
 import { NoticeView } from "../presentation/Message";
-import { FieldHelp } from "./FieldHelp";
+import { FieldRule } from "../ui/Field";
 import { useMemo } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
 import { Input } from "react-aria-components/Input";
@@ -33,7 +33,8 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
     <>
       <Text slot="description" className="field-description">
         <small>{p.hint(field)}</small>
-        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
+        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}{" "}
+        <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
       </Text>
       {error === undefined ? null : (
         <FieldError>
@@ -71,7 +72,6 @@ export const CatalogCode = (props: TypedFieldProps) => {
     >
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
       <div className="code-input">
         <Input data-field-name={field.name} autoComplete="off" spellCheck={false} dir="ltr" />

@@ -1,11 +1,11 @@
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
-import { Table } from "../../../src/ui/regions/Table";
+import { DataTable } from "../../../src/ui/DataTable";
 import { render, screen } from "../../support/presentation-test-support";
 
 it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
-    <Table
+    <DataTable
       onAction={() => undefined}
       view={{
         kind: "TABLE",

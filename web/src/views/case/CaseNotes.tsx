@@ -5,7 +5,7 @@ import { caseLinkId } from "../../routing/coreLinks";
 import { useInlineNoteDraft, type NoteIntent } from "./InlineNoteDraft";
 
 import type { RegionRow, HumanResponseByEndpoint, Screen } from "@contracts/client";
-import { Actions } from "../../ui/regions/Actions";
+import { TaskControls } from "../../ui/TaskControls";
 import { useCallback, useId, useLayoutEffect, useState } from "react";
 
 import type { CurrentCase } from "../../protocol/types";
@@ -103,7 +103,7 @@ const NoteRows = ({
             ) : null,
           )}
           {onRemove === undefined ? null : (
-            <Actions
+            <TaskControls
               actions={row.actions ?? []}
               compact
               onAction={(action) => {
@@ -288,6 +288,7 @@ export const CaseNotes = ({
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
             id={`${id}-text`}
+            rows={1}
             value={text}
             placeholder={p.text("ui.notePlaceholder")}
             disabled={editing}

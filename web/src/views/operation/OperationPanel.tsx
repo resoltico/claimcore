@@ -1,3 +1,4 @@
+import { Drawer } from "../../ui/Drawer";
 import { useReviewEntry } from "./useReviewEntry";
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
@@ -466,7 +467,7 @@ export const OperationPanel = (props: Props) => {
     <DateEntryDraftContext value={{ entries: model.dateEntries, capture: model.captureDateEntry }}>
       <OperationReview model={model} paused={!props.offered.includes(model.entry.kind)}>
         {(review) => (
-          <Dialog
+          <Drawer
             {...reviewEntry}
             title={renderCatalogKey(p, model.task.labelId)}
             identity={
@@ -476,7 +477,6 @@ export const OperationPanel = (props: Props) => {
               </>
             }
             closeLabel={p.text("ui.close")}
-            placement="end"
             {...(props.completionAnchor === undefined ||
             model.priorUncertain ||
             !hasCurrentDisclosure(model, disclosureAvailable)
@@ -527,7 +527,7 @@ export const OperationPanel = (props: Props) => {
           >
             <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
             <FreshPrecondition model={model} />
-          </Dialog>
+          </Drawer>
         )}
       </OperationReview>
     </DateEntryDraftContext>

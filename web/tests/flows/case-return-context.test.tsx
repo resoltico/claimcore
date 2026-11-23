@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { fields } from "../support/service-ui.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { timelineDocument } from "../support/timeline-document.fixtures";
@@ -122,7 +123,7 @@ it.each([
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
     });
-    await user.click(screen.getByRole("button", { name: "Back to cases" }));
+    await user.click(casesBreadcrumb());
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");
     });

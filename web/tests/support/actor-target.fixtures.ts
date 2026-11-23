@@ -1,3 +1,4 @@
+import { openPersonEditor } from "./people-drawer.fixtures";
 import { isOperationAffordance, allActions } from "../../src/operation/affordances";
 import type { PersonDocument } from "../../src/protocol/types";
 import { withRecommendation, operationAffordance } from "./affordances.fixtures";
@@ -355,7 +356,7 @@ export const openActor = async (id = firstActor.actor.actorId) => {
   await screen.findByRole("dialog");
 };
 export const authorDifferentTarget = async () => {
-  fireEvent.click(await screen.findByRole("button", { name: "Add person" }));
+  await openPersonEditor();
   await waitFor(() => {
     expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });

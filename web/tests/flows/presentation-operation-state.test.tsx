@@ -223,7 +223,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   expect(
     document.querySelector('input[data-field-name="policyNumber"]'),
   ).toHaveAccessibleDescription(
-    "Apdrošinātāja izmantotais polises numurs. Nepieciešama netukša vērtība.",
+    "Apdrošinātāja izmantotais polises numurs. Līdz 80 rakstzīmēm. Nepieciešama netukša vērtība.",
   );
   const alert = screen.getByRole("alert").textContent;
   await setEditorLanguage(user, "en");
@@ -232,7 +232,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   expect(
     document.querySelector('input[data-field-name="policyNumber"]'),
   ).toHaveAccessibleDescription(
-    "The policy number used by the insurer. A non-blank value is required.",
+    "The policy number used by the insurer. Up to 80 characters. A non-blank value is required.",
   );
   expect(document.querySelector('input[data-field-name="policyNumber"]')).toHaveAttribute(
     "aria-invalid",

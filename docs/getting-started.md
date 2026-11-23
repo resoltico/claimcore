@@ -112,8 +112,8 @@ openssl x509 -in "$claimcore_config/ca.pem" -noout -fingerprint -sha256
 
 ## Sign in and open Cases
 
-Open Cases at `https://localhost:7443/cases` in the trusted browser chosen above and sign in as
-`owner`. Read its generated password locally from `owner-login.password` in the configuration directory. Keep credentials out of
+Open Cases at `https://localhost:7443/cases` in the trusted browser chosen above. A fresh visit opens
+the identity provider directly. Sign in as `owner`. Read its generated password locally from `owner-login.password` in the configuration directory. Keep credentials out of
 commands, logs and public reports. The identity provider is
 `https://identity.localhost:7444/realms/claimcore` for these example ports.
 
@@ -138,7 +138,8 @@ Choose **Open a case** and enter a synthetic reference. Add optional facts and p
 
 Leaving an optional field blank omits it. Use the Claimant and Insurer roles for the party rows.
 Incident description is optional; use it for a short account of what happened. Review the proposed
-facts and choose **Open a case**. Expect **Case opened** and the case workspace. Return to Cases and
+facts and choose **Open a case**. The case workspace shows the outcome. Choose **View receipt** for
+the recorded details. Follow the **Cases** breadcrumb and
 search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.
 **Needs attention** includes the new case. **Mine** includes it only after responsibility is explicitly
 assigned to your account.

@@ -1,7 +1,7 @@
 import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
-import { Actions } from "../../ui/regions/Actions";
+import { TaskControls } from "../../ui/TaskControls";
 import type { CaseSelector, Affordance } from "@contracts/client";
 import { useEffect, useRef } from "react";
 import { useEndpoint } from "../../hooks/useEndpoint";
@@ -88,11 +88,10 @@ export const SelectedReminder = ({
               onAction(action, originId);
             }}
           />
-          <Actions
+          <TaskControls
             actions={document.actions}
             onAction={onAction}
             actionPresentation={selectedActionPresentation}
-            expandOther
           />
         </>
       )}

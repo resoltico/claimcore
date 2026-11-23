@@ -2,7 +2,7 @@ import type { apiEndpoints } from "../../api/service";
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
 import { ScreenView } from "../../ui/ScreenView";
-import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
+import { ReviewPresentation } from "../../components/ReviewPresentation";
 import { isReviewPresentationComplete } from "../../presentation/review";
 import { taskForCommand } from "../../protocol/taskCatalog";
 import type { HumanReview } from "@contracts/client";
@@ -22,16 +22,30 @@ type ReviewModel = {
   execute: () => Promise<void>;
   returnToEdit: () => void;
 };
-const ReviewBody = ({ review }: { review: HumanReview }) => {
+const ReviewBody = ({ review, creation }: { review: HumanReview; creation: boolean }) => {
+  const p = usePresentation();
   if (review.document.basis.kind !== "SNAPSHOT") {
     return null;
   }
   const basis = review.document.basis.observation;
-  const ordinary = review.document.screen.regions.filter((region) => region.role !== "DETAILS");
+  const ordinary = review.document.screen.regions.filter((region) => region.role === "NOTICE");
+  const absent = review.presentation.notEntered ?? [];
   return (
     <>
-      <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
-      <UnchangedReview value={review.presentation} />
+      <ReviewPresentation
+        value={review.presentation}
+        timeZone={basis.timeZone}
+        creation={creation}
+      />
+      {creation && absent.length > 0 ? (
+        <p>
+          {p.text("label.reviewNotEntered", {
+            fields: new Intl.ListFormat(p.language === "en-XA" ? "en" : p.language).format(
+              absent.map((key) => renderCatalogKey(p, key)),
+            ),
+          })}
+        </p>
+      ) : null}
       <ScreenView view={{ regions: ordinary }} timeZone={basis.timeZone} />
     </>
   );
@@ -137,10 +151,12 @@ const reviewOpen = (phase: string) =>
 const ReviewContents = ({
   review,
   complete,
+  creation,
   confirmation,
 }: {
   review: HumanReview;
   complete: boolean;
+  creation: boolean;
   confirmation: ReactNode;
 }) => {
   const p = usePresentation();
@@ -151,7 +167,7 @@ const ReviewContents = ({
   return (
     <>
       {complete ? (
-        <ReviewBody review={review} />
+        <ReviewBody review={review} creation={creation} />
       ) : (
         <p role="alert" data-incomplete-review>
           <NoticeView value={{ kind: "local", reason: "incomplete" }} />
@@ -167,7 +183,12 @@ const ReviewContents = ({
       ) ? (
         <details className="review-request">
           <summary>{p.text("label.recordDetails")}</summary>
-          <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} technical />
+          <ReviewPresentation
+            value={review.presentation}
+            timeZone={basis.timeZone}
+            technical
+            creation={creation}
+          />
         </details>
       ) : null}
       <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
@@ -191,7 +212,12 @@ export const OperationReview = ({
     return children?.(null) ?? null;
   }
   const body = (
-    <ReviewContents review={model.review} complete={complete} confirmation={controls.body} />
+    <ReviewContents
+      review={model.review}
+      complete={complete}
+      creation={taskForCommand(model.prepared.input).creates}
+      confirmation={controls.body}
+    />
   );
   const actions = (
     <>

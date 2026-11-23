@@ -33,7 +33,17 @@ export const CaseFactRegions = ({
           <RegionView
             // oxlint-disable-next-line react/no-array-index-key -- Fact groups are ordered supplied read-only regions.
             key={`${region.role}:${index}`}
-            region={region}
+            region={
+              region.role === "FACTS" && region.content.kind === "ENTRIES"
+                ? {
+                    ...region,
+                    content: {
+                      ...region.content,
+                      entries: region.content.entries.filter((entry) => entry.recorded !== false),
+                    },
+                  }
+                : region
+            }
             timeZone={current.basis.observation.timeZone}
             onAction={(action) => {
               onAct(action);

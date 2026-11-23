@@ -336,14 +336,23 @@ module PresentationCodecs =
         |> named "PresentedField"
 
     let review =
-        (record (fun changes unchanged ->
+        (record (fun changes unchanged notEntered ->
             {
                 ReviewPresentation.Changes = changes
                 Unchanged = unchanged
+                NotEntered = defaultArg notEntered []
             })
         : Fields<ReviewPresentation, _>)
         |> field "changes" _.Changes (list MaximumEntries change)
         |> field "unchanged" _.Unchanged (list MaximumEntries unchanged)
+        |> optionalField
+            "notEntered"
+            (fun value ->
+                if value.NotEntered.IsEmpty then
+                    None
+                else
+                    Some value.NotEntered)
+            (list MaximumEntries messageId)
         |> build
         |> named "ReviewPresentation"
 

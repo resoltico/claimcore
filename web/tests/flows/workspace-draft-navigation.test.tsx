@@ -1,3 +1,4 @@
+import { workspaceSignOut } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { workBasis } from "../support/inputs";
@@ -58,15 +59,11 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
   await user.click(screen.getByRole("button", { name: "Keep editing" }));
   expect(document.querySelector('input[data-field-name="policyNumber"]')).toBeNull();
   expect(screen.queryByRole("dialog")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+  await user.click(screen.getByRole("button", { name: "Close" }));
   expect(await screen.findByRole("textbox", { name: "Policy number" })).toHaveValue(authored);
   await user.click(screen.getByRole("button", { name: "Settings" }));
   await screen.findByRole("heading", { name: "Settings", level: 1 });
-  await user.click(
-    screen
-      .getAllByRole("button", { name: "Sign out" })
-      .find((button) => button.closest("main") !== null)!,
-  );
+  await user.click(await workspaceSignOut(user));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));

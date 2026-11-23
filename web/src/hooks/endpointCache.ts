@@ -13,6 +13,9 @@ export type CacheSnapshot = Readonly<{
   loading: boolean;
   version: number;
 }>;
+export const isReadBusy = (result: ApiResult<EndpointOutcome>): boolean =>
+  result.kind === "hostFailure" && result.failure.code === "RATE_LIMITED";
+
 const empty: CacheSnapshot = { result: null, previous: null, loading: true, version: 0 };
 type Entry = {
   snapshot: CacheSnapshot;
@@ -109,6 +112,47 @@ export function typedResult<K extends EndpointId>(
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();
   private generation = 0;
+  private readonly refreshers = new Map<
+    symbol,
+    { screen: string; refresh: () => Promise<unknown> }
+  >();
+  private readonly lastRefresh = new Map<string, number>();
+  private refreshInFlight: Promise<void> | null = null;
+
+  registerRefresh = (screen: string, refresh: () => Promise<unknown>) => {
+    const registration = Symbol("screen refresh");
+    this.refreshers.set(registration, { screen, refresh });
+    return () => {
+      this.refreshers.delete(registration);
+    };
+  };
+
+  revalidate = (screen: string, now: number, force = false): Promise<void> => {
+    if (this.refreshInFlight !== null) {
+      return this.refreshInFlight;
+    }
+    const last = this.lastRefresh.get(screen);
+    if (!force && last !== undefined && now - last < 30_000) {
+      return Promise.resolve();
+    }
+    this.lastRefresh.set(screen, now);
+    const registrations = [...this.refreshers.keys()];
+    this.refreshInFlight = registrations
+      .reduce(
+        (previous, registration) =>
+          previous.then(async () => {
+            const refresher = this.refreshers.get(registration);
+            if (refresher?.screen === screen) {
+              await refresher.refresh();
+            }
+          }),
+        Promise.resolve(),
+      )
+      .finally(() => {
+        this.refreshInFlight = null;
+      });
+    return this.refreshInFlight;
+  };
   private readonly attachmentDisclosures = new Map<string, number>();
   private readonly erasedAttachmentCases = new Set<string>();
   attachmentsErased = (caseId: string): boolean => this.erasedAttachmentCases.has(caseId);
@@ -221,6 +265,7 @@ export class EndpointCache {
     key: string,
     request: (signal: AbortSignal) => Promise<ApiResult<EndpointOutcome>>,
     retry = false,
+    quiet = false,
   ): Promise<ApiResult<EndpointOutcome>> => {
     const entry = this.entry(key);
     if (entry.pending !== null && !retry) {
@@ -230,14 +275,18 @@ export class EndpointCache {
     entry.controller?.abort();
     const controller = new AbortController();
     entry.controller = controller;
-    this.publish(entry, { result: null, previous: entry.snapshot.previous, loading: true });
+    if (!quiet) {
+      this.publish(entry, { result: null, previous: entry.snapshot.previous, loading: true });
+    }
     const pending = request(controller.signal).then((result) => {
       if (entry.controller === controller && !controller.signal.aborted) {
-        this.publish(entry, {
-          result,
-          loading: false,
-          previous: previousOutcome(result, entry.snapshot.previous),
-        });
+        if (!quiet || !isReadBusy(result)) {
+          this.publish(entry, {
+            result,
+            loading: false,
+            previous: previousOutcome(result, entry.snapshot.previous),
+          });
+        }
         entry.pending = null;
       }
       return result;

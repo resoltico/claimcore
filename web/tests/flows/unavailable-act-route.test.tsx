@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
@@ -65,7 +66,7 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
       level: 1,
     }),
   ).toBeVisible();
-  expect(screen.getByRole("button", { name: "Back to cases" })).toBeVisible();
+  expect(casesBreadcrumb()).toBeVisible();
   expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent(
     "This action is not currently offered for this case.",
   );

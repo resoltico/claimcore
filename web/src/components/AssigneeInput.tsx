@@ -1,5 +1,5 @@
 import { allActions } from "../operation/affordances";
-import { FieldHelp } from "./FieldHelp";
+import { FieldRule } from "../ui/Field";
 import { PresentedValue } from "./PresentedValue";
 import { useMemo, useState } from "react";
 import { useEndpoint } from "../hooks/useEndpoint";
@@ -136,12 +136,12 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
   return (
     <fieldset id={`field-${props.inputName}`} className="assignee-input" disabled={props.disabled}>
       <legend>{p.fieldLabel(props.field.name)}</legend>
-      <FieldHelp
-        name={props.field.name}
-        label={p.fieldLabel(props.field.name)}
-        ruleId={props.field.ruleId}
-      />
       <p>{p.hint(props.field)}</p>
+      <FieldRule
+        name={props.field.name}
+        ruleId={props.field.ruleId}
+        invalid={props.error !== undefined}
+      />
       <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {result.message === null ? null : (

@@ -232,7 +232,7 @@ it("retains each loaded row's server timing and date basis when a later page use
   );
   const view = render(<ReminderList filter={{ state: "PENDING" }} />);
   await screen.findByText("Action 2");
-  await userEvent.click(screen.getByRole("button", { name: "More reminders" }));
+  await userEvent.click(screen.getByRole("button", { name: "Load more" }));
   await screen.findByText("Action 4");
   const items = view.container.querySelectorAll(".reminder-list .table-view tbody > tr");
   expect(items).toHaveLength(2);

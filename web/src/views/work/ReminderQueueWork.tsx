@@ -3,7 +3,7 @@ import { apiEndpoints, type CurrentCase, isCurrentCase } from "../../api/service
 import type { BoundOperationAffordance, OperationAffordance } from "../../operation/affordances";
 
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
-import { ObservedReceipt } from "../operation/ObservedReceipt";
+import { ReceiptFeedback } from "../operation/ReceiptFeedback";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState } from "react";
 import { useSessionContext } from "../../session/SessionContext";
@@ -24,6 +24,7 @@ type Selection = {
   action: BoundOperationAffordance<"REMINDER">;
   anchor: string | null;
   readId: string;
+  implicit: boolean;
 };
 const isReminderAction = (action: OperationAffordance): action is Selection["action"] =>
   action.binding.kind === "REMINDER";
@@ -87,6 +88,7 @@ const SelectedReminder = ({
     <WorkOperation
       current={parent}
       subject="REMINDER"
+      implicit={selection.implicit}
       kind={task.id}
       targetIdentity={"reminderId" in binding ? binding.reminderId : action.task}
       {...(selection.anchor === null ? {} : { completionAnchor: selection.anchor })}
@@ -128,13 +130,17 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
         available={disclosureAvailable && !masked}
       />
       {done.operationId === null || !disclosureAvailable || masked ? null : (
-        <ObservedReceipt key={done.operationId} operationId={done.operationId} />
+        <ReceiptFeedback
+          key={done.operationId}
+          operationId={done.operationId}
+          dismiss={done.clear}
+        />
       )}
       {disclosureAvailable && !masked ? (
         <ReminderList
           key={refresh}
           filter={filter}
-          onAct={(action, originId?: string) => {
+          onAct={(action, originId, implicit = false) => {
             focus.current =
               originId ??
               (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
@@ -142,6 +148,7 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
             if (isReminderAction(action)) {
               setSelection({
                 action,
+                implicit,
                 anchor: focus.current,
                 readId: crypto.randomUUID(),
               });

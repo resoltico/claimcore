@@ -15,6 +15,7 @@ import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
   noteIntent?: NoteIntent | undefined;
+  implicit?: boolean | undefined;
   upload?: File | undefined;
   affordance?: OperationAffordance;
   current: CurrentCase;
@@ -31,10 +32,17 @@ type Props = {
   onLockChange: MutationLockChange;
   onDisclosureRefused: () => void;
 };
+const showWorkEditor = (implicit: boolean, model: ReturnType<typeof useOperation>) =>
+  !implicit ||
+  model.priorUncertain ||
+  model.notice !== null ||
+  Object.keys(model.fieldErrors).length > 0;
+
 /** Reuses the same frozen review, journal-before-send, retry and scoped disclosure coordinator. */
 export const WorkOperation = ({
   current,
   noteIntent,
+  implicit = false,
   upload,
   disclosureAvailable,
   subject,
@@ -56,6 +64,7 @@ export const WorkOperation = ({
     completionAnchor === undefined ? null : document.getElementById(completionAnchor),
   );
   const previewed = useRef(false);
+  const sent = useRef<string | null>(null);
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
   const accepted = useCallback(
@@ -97,6 +106,7 @@ export const WorkOperation = ({
       bindNote(noteIntent, model.prepared.input.operationId);
     }
   }, [bindNote, noteIntent, model.prepared]);
+  const implicitReview = implicit && model.task.review === "IMPLICIT";
   const observed = model.currentCase;
   const allowed = model.affordance?.blocked === null;
   const authored = model.task.inputs.filter((input) => input.source === "AUTHORED");
@@ -115,7 +125,7 @@ export const WorkOperation = ({
   useEffect(() => {
     if (
       allowed &&
-      autoPreview &&
+      (autoPreview || implicitReview) &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -123,7 +133,25 @@ export const WorkOperation = ({
       previewed.current = true;
       void model.preview();
     }
-  }, [model, allowed, autoPreview]);
+  }, [model, allowed, autoPreview, implicitReview]);
+  useEffect(() => {
+    const operation = model.prepared?.input.operationId;
+    if (
+      implicitReview &&
+      allowed &&
+      model.ownerVerified &&
+      model.disclosureCurrent &&
+      model.review !== null &&
+      model.phase === "REVIEWING" &&
+      model.notice === null &&
+      operation !== undefined &&
+      operation !== sent.current
+    ) {
+      sent.current = operation;
+      model.confirm(true);
+      void model.execute();
+    }
+  }, [model, allowed, implicitReview]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -149,6 +177,7 @@ export const WorkOperation = ({
       <OperationDiscard model={model} onClose={navigation.close} />
       <OperationPanel
         model={model}
+        open={showWorkEditor(implicitReview, model)}
         current={observed}
         offered={allowed ? [kind] : []}
         onClose={navigation.close}

@@ -4,7 +4,6 @@ import { navigate } from "../routing/navigation";
 import { renderCatalogKey } from "../presentation/messages";
 import { isNarrativeCreationId, type ActKind } from "../operation/metadata";
 import type { Affordance, CaseSelector, HumanDocument, Screen } from "@contracts/client";
-import { useContentRoute } from "../hooks/SettingsDetourContext";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 
 import { useState, useLayoutEffect, useRef, type ReactNode } from "react";
@@ -22,7 +21,8 @@ import {
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { ScreenView } from "../ui/ScreenView";
-import { CaseActions, CaseActionAlternatives } from "./case/CaseActions";
+import { lastWorklist } from "../routing/lastWorklist";
+import { CaseActions } from "./case/CaseActions";
 import "./case.css";
 
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
@@ -34,6 +34,7 @@ import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 type CaseDetailProps = {
   target: CaseSelector;
   unavailableAct?: ActKind;
+  feedback?: ReactNode;
   reloadSignal: number;
   disclosureAvailable?: boolean;
   authoringAvailable?: boolean;
@@ -79,11 +80,9 @@ const CurrentPresentation = ({
   authoringAvailable,
   attachmentAuthoringAvailable,
   timeline,
-  recordDetails,
   onAct,
 }: {
   timeline: ReactNode;
-  recordDetails: ReactNode;
   current: CurrentCase;
   view: Screen | null;
   onChanged: () => void;
@@ -117,6 +116,13 @@ const CurrentPresentation = ({
       <div className="case-workspace">
         <div className="case-main-column">
           {facts}
+          {panels.notes}
+          {panels.attachments}
+          {timeline}
+        </div>
+        <aside className="case-work-rail">
+          {panels.work}
+          {panels.nextActions}
           {view === null || !disclosureAvailable ? null : (
             <ScreenView
               view={view}
@@ -128,16 +134,8 @@ const CurrentPresentation = ({
               }}
             />
           )}
-          {panels.notes}
-          {panels.attachments}
-          {timeline}
-        </div>
-        <aside className="case-work-rail">
-          {panels.work}
-          {panels.nextActions}
         </aside>
       </div>
-      {recordDetails}
       {panels.operation}
     </>
   );
@@ -145,27 +143,53 @@ const CurrentPresentation = ({
 
 const asCurrentCase = (state: HumanDocument | null) =>
   state !== null && isCurrentCase(state) ? state : null;
+const breadcrumbReference = (
+  target: CaseSelector,
+  identity: Screen["regions"][number] | undefined,
+) => {
+  if (target.kind === "REFERENCE") {
+    return target.caseReference;
+  }
+  if (identity?.content.kind === "ENTRIES") {
+    return identity.content.entries.flatMap(({ value }) =>
+      value.kind === "REFERENCE" ? [value.value] : [],
+    )[0];
+  }
+  return undefined;
+};
 const CaseHeader = ({
   target,
-  onBack,
   state,
   onAct,
-}: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & {
+}: Pick<CaseDetailProps, "target" | "onAct"> & {
   state: HumanDocument | null;
 }) => {
   const p = usePresentation();
-  const route = useContentRoute();
-  const selectedReminder = route.screen === "case" && route.reminderId !== undefined;
+  const back = lastWorklist();
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
   const attention = state?.screen.regions.find((region) => region.role === "ATTENTION");
+  const breadcrumb = breadcrumbReference(target, identity);
   return (
     <>
-      <div className="case-back">
-        <Button onPress={onBack}>
-          {p.text(selectedReminder ? "ui.returnToWorkspace" : "ui.backToCases")}
-        </Button>
-      </div>
+      <nav className="case-breadcrumb" aria-label={p.text("ui.breadcrumb")}>
+        <a
+          href={back}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(back);
+            });
+          }}
+        >
+          {p.text("label.cases")}
+        </a>
+        {breadcrumb === undefined ? null : (
+          <>
+            <span aria-hidden="true"> › </span>
+            <bdi>{breadcrumb}</bdi>
+          </>
+        )}
+      </nav>
       <section className="case-header-card">
         <div className="case-heading">
           <CaseIdentity
@@ -174,28 +198,30 @@ const CaseHeader = ({
             requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
             timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
           />
-          {current?.links.map((named) => {
-            const href = coreLinkPath(named.link);
-            return href === undefined ? null : (
-              <a
-                key={JSON.stringify(named.link)}
-                href={href}
-                onClick={(event) => {
-                  followLink(event, () => {
-                    if (named.link.endpoint === apiEndpoints.caseAttachments) {
-                      const panel = document.getElementById(attachmentFragment);
-                      panel?.focus();
-                      panel?.scrollIntoView();
-                    } else {
-                      navigate(href);
-                    }
-                  });
-                }}
-              >
-                {renderCatalogKey(p, named.labelId)}
-              </a>
-            );
-          })}
+          {current?.links
+            .filter(({ link }) => link.endpoint !== apiEndpoints.reminderList)
+            .map((named) => {
+              const href = coreLinkPath(named.link);
+              return href === undefined ? null : (
+                <a
+                  key={JSON.stringify(named.link)}
+                  href={href}
+                  onClick={(event) => {
+                    followLink(event, () => {
+                      if (named.link.endpoint === apiEndpoints.caseAttachments) {
+                        const panel = document.getElementById(attachmentFragment);
+                        panel?.focus();
+                        panel?.scrollIntoView();
+                      } else {
+                        navigate(href);
+                      }
+                    });
+                  }}
+                >
+                  {renderCatalogKey(p, named.labelId)}
+                </a>
+              );
+            })}
           {current === null ? null : (
             <div className="case-header-actions">
               <CaseActions
@@ -236,7 +262,7 @@ const UnavailableAct = ({
         <strong>{p.actLabel(value)}</strong>: {p.text("label.actionNotOffered")}
       </p>
       {current === null ? null : (
-        <CaseActionAlternatives
+        <CaseActions
           current={current}
           onAct={(act) => {
             onAct(current, act);
@@ -325,19 +351,11 @@ const caseReadPresentation = (
         onDisclosureChanged={revalidate}
       />
     );
-  const recordDetails =
-    state === null ? null : (
-      <ScreenView
-        view={state.screen}
-        roles={["DETAILS"]}
-        timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
-      />
-    );
-  return { timeline, recordDetails };
+  return timeline;
 };
 const CaseDisclosure = ({
   target,
-  onBack,
+  feedback,
   onAct,
   onMutationLockChange = ignoreMutationLock,
   unavailableAct,
@@ -353,7 +371,7 @@ const CaseDisclosure = ({
   const state = disclosureAvailable ? current.value : null;
   const lookup = asCurrentCase(state);
   const mounted = useRetainedCase(lookup);
-  const { timeline, recordDetails } = caseReadPresentation(
+  const timeline = caseReadPresentation(
     state,
     disclosureAvailable,
     historyAccess,
@@ -363,7 +381,8 @@ const CaseDisclosure = ({
   );
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
-      <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
+      <CaseHeader target={target} state={state} onAct={onAct} />
+      {feedback}
       <CurrentFeedback
         message={current.message}
         loading={current.loading}
@@ -388,7 +407,6 @@ const CaseDisclosure = ({
         <CurrentPresentation
           current={mounted}
           timeline={timeline}
-          recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
           authoringAvailable={authoringAvailable && retainedNoteOffer}
           attachmentAuthoringAvailable={authoringAvailable}
@@ -398,7 +416,6 @@ const CaseDisclosure = ({
           onAct={onAct}
         />
       )}
-      {mounted === null ? recordDetails : null}
       {mounted === null ? timeline : null}
     </section>
   );

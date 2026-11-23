@@ -15,7 +15,7 @@ import {
 import { isTerm } from "../../presentation/terms";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { ViewTabs } from "../../ui/ViewTabs";
-import { PageTables } from "../../ui/PageTables";
+import { ResultPages } from "../../ui/ResultPages";
 import { useCallback, useState, useEffect, useRef } from "react";
 
 import { Button } from "../../ui/Button";
@@ -222,7 +222,7 @@ export const CaseTimeline = ({
           </p>
         )}
         {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-        <PageTables views={suppressed ? [] : views} />
+        <ResultPages views={suppressed ? [] : views} />
         {result.page !== null && result.items.length === 0 && !result.loading ? (
           <p>{p.text("ui.timeline.empty")}</p>
         ) : null}
@@ -241,7 +241,7 @@ export const CaseTimeline = ({
               void result.load(null);
             }}
           >
-            {p.text(result.message === null ? "ui.reloadHistory" : "ui.tryAgain")}
+            {p.text("ui.tryAgain")}
           </Button>
           {result.cursor === null ? null : (
             <Button

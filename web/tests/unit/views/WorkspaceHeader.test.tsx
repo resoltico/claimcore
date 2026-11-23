@@ -15,9 +15,9 @@ import { expect, it } from "vitest";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { workBasis } from "../../support/inputs";
 
-import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
+import { Shell as Header } from "../../../src/views/Shell";
 
-const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
+const Shell = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
   const requester = useRequesterContext();
   return (
     <RecoveryProvider identity={requester === null ? null : testWorkspaceIdentity}>
@@ -52,7 +52,7 @@ it("shows only supplied own role facts and keeps navigation independent from raw
     links: requesterLinks([], []),
   };
   const header = (
-    <WorkspaceHeader
+    <Shell
       route={{ screen: "cases", query: "" }}
       active="cases"
       views={[]}
@@ -73,7 +73,7 @@ it("shows only supplied own role facts and keeps navigation independent from raw
 
 it("offers named global search from other screens with a clean All selection", () => {
   const header = (locked: boolean) => (
-    <WorkspaceHeader
+    <Shell
       route={{ screen: "reminders", query: "" }}
       active="reminders"
       views={["case.list"]}
@@ -91,7 +91,7 @@ it("offers named global search from other screens with a clean All selection", (
 
 it("keeps compact sidebar links named when their visual tooltip captions are hidden", () => {
   render(
-    <WorkspaceHeader
+    <Shell
       route={{ screen: "cases", query: "" }}
       active="cases"
       views={["case.list"]}

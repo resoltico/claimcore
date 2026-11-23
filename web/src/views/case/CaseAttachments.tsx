@@ -1,3 +1,4 @@
+import { FileDrop } from "../../ui/FileDrop";
 import {
   attachmentTransport,
   clientCompositions,
@@ -38,7 +39,7 @@ import { attachmentFragment } from "../../routing/coreLinks";
 import { localNotice, type Notice } from "../../protocol/notices";
 import { ownerScope, type OwnerScope } from "../../protocol/ownerScope";
 import { useSessionContext } from "../../session/SessionContext";
-import { Actions } from "../../ui/regions/Actions";
+import { TaskControls } from "../../ui/TaskControls";
 import { Button } from "../../ui/Button";
 import { ButtonControl } from "../../ui/ButtonControl";
 import { DocumentPreview } from "./pdf/DocumentPreview";
@@ -422,7 +423,7 @@ const AttachmentControls = ({
         </Button>
       ))}
       {editing || busy ? null : (
-        <Actions
+        <TaskControls
           actions={row.actions ?? []}
           compact
           onAction={(action) => {
@@ -497,52 +498,54 @@ const AttachmentPicker = ({
     }
   };
   return (
-    <div
-      className="attachment-picker"
-      data-pending={busy || undefined}
-      onPointerDown={(event) => {
-        if (event.pointerType === "touch" && event.isPrimary) {
-          busyTouch.current = busy ? event.pointerId : null;
-        }
-        if (busy) {
-          event.preventDefault();
-        }
-      }}
-      onPointerCancel={(event) => {
-        if (event.pointerId === busyTouch.current) {
-          busyTouch.current = null;
-        }
-      }}
-      onClickCapture={(event) => {
-        const { nativeEvent } = event;
-        // Touch can synthesize a click on the input or label after hit testing changes.
-        if (
-          nativeEvent instanceof PointerEvent &&
-          nativeEvent.pointerType === "touch" &&
-          nativeEvent.pointerId === busyTouch.current
-        ) {
-          busyTouch.current = null;
-          event.preventDefault();
-        }
-      }}
-    >
-      <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
-      <input
-        id={id}
-        type="file"
-        disabled={!enabled}
-        aria-disabled={busy || undefined}
-        onKeyDown={(event) => {
-          suppressActivation(event, busy);
-        }}
-        onClick={(event) => {
+    <FileDrop enabled={enabled && !busy} choose={choose}>
+      <div
+        className="attachment-picker"
+        data-pending={busy || undefined}
+        onPointerDown={(event) => {
+          if (event.pointerType === "touch" && event.isPrimary) {
+            busyTouch.current = busy ? event.pointerId : null;
+          }
           if (busy) {
             event.preventDefault();
           }
         }}
-        onChange={select}
-      />
-    </div>
+        onPointerCancel={(event) => {
+          if (event.pointerId === busyTouch.current) {
+            busyTouch.current = null;
+          }
+        }}
+        onClickCapture={(event) => {
+          const { nativeEvent } = event;
+          // Touch can synthesize a click on the input or label after hit testing changes.
+          if (
+            nativeEvent instanceof PointerEvent &&
+            nativeEvent.pointerType === "touch" &&
+            nativeEvent.pointerId === busyTouch.current
+          ) {
+            busyTouch.current = null;
+            event.preventDefault();
+          }
+        }}
+      >
+        <label htmlFor={id}>{p.text("ui.attachments.file")}</label>
+        <input
+          id={id}
+          type="file"
+          disabled={!enabled}
+          aria-disabled={busy || undefined}
+          onKeyDown={(event) => {
+            suppressActivation(event, busy);
+          }}
+          onClick={(event) => {
+            if (busy) {
+              event.preventDefault();
+            }
+          }}
+          onChange={select}
+        />
+      </div>
+    </FileDrop>
   );
 };
 const addOffer = (document: HumanDocument) =>

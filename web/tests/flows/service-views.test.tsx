@@ -1,3 +1,4 @@
+import { casesBreadcrumb } from "../support/workspace-actions";
 import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
@@ -198,7 +199,7 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
     kind: "ID",
     caseId: "20000000-0000-4000-8000-000000000001",
   });
-  await user.click(getButton("Load more cases"));
+  await user.click(getButton("Load more"));
   expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
   await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
   await user.click(getButton("Open by exact reference"));
@@ -242,7 +243,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");
   await user.click(getButton("Load more"));
-  await user.click(getButton("Back to cases"));
+  await user.click(casesBreadcrumb());
   expect(back).toHaveBeenCalledOnce();
 });
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {

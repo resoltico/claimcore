@@ -118,7 +118,7 @@ it.each<CaseSelector>([
     expect(screen.getByText(text)).toBeVisible();
     expect(screen.getByText(text).closest("bdi")).not.toBeNull();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "More reminders" }));
+    await user.click(screen.getByRole("button", { name: "Load more" }));
     await waitFor(() => {
       expect(reads.mock.calls.at(-1)?.[1]).toMatchObject({ cursor: "opaque-next", target });
     });

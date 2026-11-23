@@ -11,7 +11,8 @@ const start = async () => {
   listRoute();
   render(<PeoplePanel onLockChange={vi.fn()} />);
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Register account" }));
+  await user.click(await screen.findByRole("button", { name: "Add person" }));
+  await user.click(screen.getByRole("menuitem", { name: "Register account" }));
   await screen.findByRole("dialog", { name: "Register account" });
   return { user, preview };
 };

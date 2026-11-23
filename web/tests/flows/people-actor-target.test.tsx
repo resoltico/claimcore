@@ -87,7 +87,7 @@ it("declining retarget consent retains the authored principal and returns to its
   await openActor();
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
-  expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "Add from access request" })).toBeVisible();
   expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("authored-other");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));

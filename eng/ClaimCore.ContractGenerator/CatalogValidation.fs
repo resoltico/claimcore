@@ -21,7 +21,7 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                    | ("labelId" | "reviewedLabelId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
                       JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []
@@ -53,6 +53,11 @@ module CatalogValidation =
         matches "label.operationWindow" (set [ "minutes" ])
         matches "label.paymentProgress" (set [ "paid"; "payable" ])
         matches "headline.withDetail" (set [ "state"; "detail" ])
+        matches "label.reviewNotEntered" (set [ "fields" ])
+
+        for KeyValue(_, categories) in ListCounts.messages do
+            for KeyValue(_, message) in categories do
+                matches message (set [ "count" ])
 
         for collection in
             TaskDeclarations.all

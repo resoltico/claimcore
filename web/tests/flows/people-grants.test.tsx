@@ -588,7 +588,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
       <Dashboard />
     </>,
   );
-  fireEvent.click(await screen.findByRole("button", { name: "More people" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByText(`listed-${second}`);
   fireEvent.click(screen.getAllByRole("link", { name: /listed-/u })[1]!);
   await screen.findByText(`GRANT-${second}`);

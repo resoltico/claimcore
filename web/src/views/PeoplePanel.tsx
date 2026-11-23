@@ -1,5 +1,5 @@
+import { ActionMenu } from "../ui/ActionMenu";
 import { principalCreationTask } from "../operation/metadata";
-import { operationTask } from "../protocol/taskCatalog";
 import { renderCatalogKey } from "../presentation/messages";
 import { isOperationAffordance, initialAffordanceValues } from "../operation/affordances";
 import {
@@ -260,36 +260,37 @@ const PeopleWorkspace = ({
     disclosure,
     target,
   );
+  const additions =
+    selectedActorId === null
+      ? (context.value?.actions.filter(
+          (action): action is AccessRequestControl =>
+            isOperationAffordance(action) &&
+            (action.task === clientCompositions.accountRegistration ||
+              action.task === clientCompositions.admission) &&
+            action.blocked === null,
+        ) ?? [])
+      : [];
+  const blocked =
+    model.busy ||
+    (model.phase !== "ACCEPTED" &&
+      (model.dirty || model.prepared !== null || model.priorUncertain));
   return (
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      {selectedActorId === null
-        ? context.value?.actions
-            .filter(
-              (action): action is AccessRequestControl =>
-                isOperationAffordance(action) &&
-                (action.task === clientCompositions.accountRegistration ||
-                  action.task === clientCompositions.admission) &&
-                action.blocked === null,
-            )
-            .map((action) => (
-              <button
-                key={action.task}
-                type="button"
-                disabled={
-                  model.busy ||
-                  (model.phase !== "ACCEPTED" &&
-                    (model.dirty || model.prepared !== null || model.priorUncertain))
-                }
-                onClick={() => {
-                  editor.admit(action);
-                  editor.open();
-                }}
-              >
-                {renderCatalogKey(p, operationTask(action.task).labelId)}
-              </button>
-            ))
-        : null}
+      {additions.length === 0 ? null : (
+        <ActionMenu
+          label={p.text("label.addPerson")}
+          items={additions.map((action) => ({
+            id: action.task,
+            label: renderCatalogKey(p, action.labelId),
+            disabled: blocked,
+            select: () => {
+              editor.admit(action);
+              editor.open();
+            },
+          }))}
+        />
+      )}
       <PendingPeopleRequests
         model={model}
         context={context.value}
@@ -432,7 +433,7 @@ const PeopleUnavailable = ({
           invalidate(true);
         }}
       >
-        {p.text("ui.reloadActors")}
+        {p.text("ui.tryAgain")}
       </button>
     </>
   );

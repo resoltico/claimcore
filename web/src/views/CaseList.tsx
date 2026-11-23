@@ -6,6 +6,8 @@ import type { RegionRow, CaseSelector } from "@contracts/client";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
+import { rememberWorklist } from "../routing/lastWorklist";
+import { ListFooter } from "../ui/ListFooter";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import {} from "./worklist/worklist.css";
@@ -33,7 +35,7 @@ import {
 } from "../routing/worklistQuery";
 import { CaseSelectionRecovery } from "./worklist/CaseSelectionRecovery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
-import { PageTables } from "../ui/PageTables";
+import { ResultPages } from "../ui/ResultPages";
 import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
@@ -160,14 +162,13 @@ const WorklistResults = ({
   reassign: (row: CaseListControl) => void;
   editing: boolean;
 }) => {
-  const p = usePresentation();
   const current = page.page;
   const exact = current?.exactTarget ?? null;
   const exactOrigin = "case-exact-match";
   return (
     <>
       {page.items.length === 0 && exact === null ? null : (
-        <PageTables
+        <ResultPages
           views={page.views}
           roles={["RESULTS"]}
           actionPresentation={(action) => {
@@ -213,16 +214,19 @@ const WorklistResults = ({
               })}
         />
       )}
-      {page.cursor === null ? null : (
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            void page.load(page.cursor);
+      {page.page === null ? null : (
+        <ListFooter
+          subject="cases"
+          count={page.items.length}
+          basis={page.page.basis}
+          continuation={page.cursor}
+          loading={page.loading}
+          load={(cursor) => {
+            void page.load(cursor);
           }}
-        >
-          {p.text("ui.moreCases")}
-        </button>
+          busy={page.refreshBusy}
+          refresh={page.refresh}
+        />
       )}
     </>
   );
@@ -285,6 +289,10 @@ const ReadyCaseList = ({
 }: Props & { query: WorklistQuery }) => {
   const p = usePresentation();
   const page = useWorklist(query);
+  useEffect(() => {
+    rememberWorklist(worklistPath(query));
+  }, [query]);
+
   const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
   const close = () => {
     const id =
@@ -309,8 +317,13 @@ const ReadyCaseList = ({
       <WorkspaceViewsStatus area="cases" />
 
       <ViewTabs
-        items={quickViews.map(({ view, label, count }) => ({
+        items={quickViews.map(({ view, label, count, prominence }) => ({
           id: view,
+          prominence,
+          menuLabel:
+            label.kind === "MESSAGE" && count.kind === "COUNT"
+              ? `${renderCatalogKey(p, label.messageId)} · ${p.integer(count.value)}`
+              : undefined,
           label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
           count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
         }))}
@@ -328,38 +341,23 @@ const ReadyCaseList = ({
             search={search}
             onSearch={setSearch}
             onChange={page.change}
-            onSelect={(caseReference) => {
-              onSelect({ kind: "REFERENCE", caseReference });
-            }}
+            exportAction={
+              <CsvExportButton
+                selection={{ query: apiEndpoints.caseList, selection: page.query }}
+                available={disclosureAvailable && !page.loading && page.page !== null}
+                label="ui.exportCasesCsv"
+                menu={{
+                  label: p.text("ui.export"),
+                  report: p.text("ui.caseReport"),
+                  onReport: () => {
+                    navigate(worklistPath(page.query, "/cases/report"));
+                  },
+                }}
+              />
+            }
           />
         }
       >
-        <div className="worklist-actions">
-          <a
-            href={worklistPath(page.query, "/cases/report")}
-            onClick={(event) => {
-              followLink(event, () => {
-                navigate(worklistPath(page.query, "/cases/report"));
-              });
-            }}
-          >
-            {p.text("ui.caseReport")}
-          </a>
-          <button
-            type="button"
-            disabled={page.loading}
-            onClick={() => {
-              void page.load(null);
-            }}
-          >
-            {p.text("ui.reloadCases")}
-          </button>
-          <CsvExportButton
-            selection={{ query: apiEndpoints.caseList, selection: page.query }}
-            available={disclosureAvailable && !page.loading && page.page !== null}
-            label="ui.exportCasesCsv"
-          />
-        </div>
         <WorklistLoading page={page} />
         <WorklistResults
           page={page}

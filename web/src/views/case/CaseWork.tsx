@@ -20,7 +20,17 @@ export const CaseWork = ({
   return region === undefined ? null : (
     <div className="case-work">
       <RegionView
-        region={region}
+        region={
+          region.content.kind === "ENTRIES"
+            ? {
+                ...region,
+                content: {
+                  ...region.content,
+                  entries: region.content.entries.filter((entry) => entry.recorded !== false),
+                },
+              }
+            : region
+        }
         timeZone={timeZone}
         headerActions={
           <div className="case-work-controls">

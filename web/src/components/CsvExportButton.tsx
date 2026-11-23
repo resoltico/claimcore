@@ -1,3 +1,4 @@
+import { ActionMenu } from "../ui/ActionMenu";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ExportRequest } from "@contracts/client";
 import { routeRevisionSnapshot, subscribeRoute } from "../routing/navigation";
@@ -27,9 +28,11 @@ export const CsvExportButton = ({
   selection,
   available = true,
   label = "label.exportCsv",
+  menu,
 }: {
   selection: ExportRequest;
   available?: boolean;
+  menu?: { label: string; report: string; onReport: () => void };
   label?: "label.exportCsv" | "ui.exportCasesCsv" | "ui.exportReportCsv";
 }) => {
   const p = usePresentation();
@@ -116,17 +119,35 @@ export const CsvExportButton = ({
     }
     complete(result, owner, currentOwner);
   };
+  const disabled = !admitted || (view.scope === scope && view.busy);
   return (
     <div className="csv-export">
-      <button
-        type="button"
-        disabled={!admitted || (view.scope === scope && view.busy)}
-        onClick={() => {
-          void download();
-        }}
-      >
-        {p.text(label)}
-      </button>
+      {menu === undefined ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            void download();
+          }}
+        >
+          {p.text(label)}
+        </button>
+      ) : (
+        <ActionMenu
+          label={menu.label}
+          items={[
+            {
+              id: "csv",
+              label: p.text(label),
+              disabled,
+              select: () => {
+                void download();
+              },
+            },
+            { id: "report", label: menu.report, select: menu.onReport },
+          ]}
+        />
+      )}
       {view.scope === scope && view.notice !== null ? (
         <p role="alert">
           <NoticeView value={view.notice} />

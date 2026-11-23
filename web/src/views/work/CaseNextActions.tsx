@@ -1,119 +1,127 @@
 import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
-import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
-import { queryInput } from "../../protocol/taskCatalog";
-import { isTerm } from "../../presentation/terms";
+import { operationTask } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
+import { PresentedValue } from "../../components/PresentedValue";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { Table } from "../../ui/regions/Table";
-import { Select } from "../../ui/Select";
-import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
-import { ReminderList } from "./ReminderList";
-const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
-type State = (typeof taskChoices.reminderState)[number];
+import { coreLinkPath } from "../../routing/coreLinks";
+import { followLink } from "../../routing/followLink";
+import { navigate } from "../../routing/navigation";
+import { Chip } from "../../ui/Chip";
+import { Button } from "../../ui/Button";
+import { ActionMenu } from "../../ui/ActionMenu";
+import { Section } from "../../ui/Section";
+import { EmptyState } from "../../ui/EmptyState";
+import type { ReminderActHandler } from "./reminderActions";
+import "./case-next-actions.css";
+
 export const CaseNextActions = ({
   current,
   canCreate,
   onCreate,
   onReminder,
-  state,
-  setState,
-  browsing,
-  setBrowsing,
-  refresh,
-  target,
-  filter,
-  onChanged,
-  onRefresh,
 }: {
   current: CurrentCase;
   canCreate: boolean;
   onCreate: () => void;
   onReminder: ReminderActHandler;
-  state: State;
-  setState: (state: State) => void;
-  browsing: boolean;
-  setBrowsing: (value: boolean) => void;
-  refresh: number;
-  target: CaseSelector;
-  filter: Omit<ReminderListRequest, "target" | "cursor" | "limit">;
-  onChanged: () => void;
-  onRefresh: () => void;
 }) => {
   const p = usePresentation();
-  const nextRegion = current.screen.regions.find((region) => region.role === "NEXT_ACTIONS");
-  if (nextRegion?.content.kind !== "TABLE") {
+  const region = current.screen.regions.find((item) => item.role === "NEXT_ACTIONS");
+  if (region?.content.kind !== "TABLE") {
     return null;
   }
+  const table = region.content;
+  const zone = current.basis.observation.timeZone;
+  const actionIndex = table.columns.findIndex(({ key }) => key === "action");
+  const dueIndex = table.columns.findIndex(({ key }) => key === "due");
+  const kindIndex = table.columns.findIndex(({ key }) => key === "kind");
+  const all = current.links.find(({ link }) => link.endpoint === apiEndpoints.reminderList);
+  const allPath = all === undefined ? undefined : coreLinkPath(all.link);
+  const create = canCreate ? (
+    <Button id="case-reminder-add" variant="quiet" compact onPress={onCreate}>
+      {p.text("task.reminder.create.label")}
+    </Button>
+  ) : undefined;
   return (
-    <section
-      className="case-reminders screen-region"
-      data-region="NEXT_ACTIONS"
-      aria-labelledby="case-reminders-title"
-    >
-      <div className="region-heading">
-        <h2 id="case-reminders-title">
-          {renderCatalogKey(p, nextRegion.titleId ?? "label.nextActions")}
-        </h2>
-        {canCreate ? (
-          <button id="case-reminder-add" type="button" onClick={onCreate}>
-            {p.text("task.reminder.create.label")}
-          </button>
-        ) : null}
-      </div>
-      {!browsing && nextRegion.content.rows.length === 0 && nextRegion.emptyId !== undefined ? (
-        <p>{renderCatalogKey(p, nextRegion.emptyId)}</p>
-      ) : null}
-      {browsing ? null : (
-        <Table
-          view={nextRegion.content}
-          actionPresentation={reminderActionPresentation}
-          timeZone={current.basis.observation.timeZone}
-          onAction={(action, _row, originId) => {
-            if (isOperationAffordance(action)) {
-              onReminder(action, originId);
-            }
-          }}
-        />
-      )}
-      <details
-        className="case-reminder-controls"
-        onToggle={(event) => {
-          setBrowsing(event.currentTarget.open);
-        }}
+    <div className="case-reminders" data-region="NEXT_ACTIONS">
+      <Section
+        id="case-reminders-title"
+        title={renderCatalogKey(p, region.titleId ?? "label.nextActions")}
+        actions={create}
       >
-        <summary>
-          {p.text("input.reminderState.label")} · {p.term("reminderStateSelection", state)}
-        </summary>
-        <Select
-          label={renderCatalogKey(p, stateChoice.labelId)}
-          value={state}
-          options={stateChoice.choices
-            .filter((value) => isTerm("reminderStateSelection", value))
-            .map((value) => ({
-              value,
-              label: p.term("reminderStateSelection", value),
-            }))}
-          onChange={(value) => {
-            if (isTerm("reminderStateSelection", value) && stateChoice.choices.includes(value)) {
-              setState(value);
-            }
-          }}
-        />
-        {browsing ? (
-          <ReminderList
-            key={refresh}
-            target={target}
-            filter={filter}
-            onDisclosureRefused={onChanged}
-            onAct={onReminder}
-          />
-        ) : null}
-        <button type="button" onClick={onRefresh}>
-          {p.text("ui.refreshWork")}
-        </button>
-      </details>
-    </section>
+        {table.rows.length === 0 && region.emptyId !== undefined ? (
+          <EmptyState messageId={region.emptyId} />
+        ) : (
+          <ul className="next-action-cards">
+            {table.rows.map((row) => {
+              const message = row.values[actionIndex];
+              const due = row.values[dueIndex];
+              const kind = row.values[kindIndex];
+              const controls = (row.actions ?? []).filter(isOperationAffordance);
+              const recommended = controls.find((action) => action.task === row.recommended);
+              const actionId = `reminder-${row.key}-actions`;
+              return (
+                <li key={row.key}>
+                  {message === undefined ? null : (
+                    <strong>
+                      <PresentedValue value={message} timeZone={zone} />
+                    </strong>
+                  )}
+                  {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
+                  {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
+                  <div className="next-action-controls">
+                    {recommended === undefined ? null : (
+                      <Button
+                        compact
+                        onPress={() => {
+                          onReminder(recommended, actionId, true);
+                        }}
+                      >
+                        {renderCatalogKey(p, recommended.labelId)}
+                      </Button>
+                    )}
+                    {controls.length === 0 ? null : (
+                      <ActionMenu
+                        id={actionId}
+                        icon
+                        label={p.text("ui.actionsFor", {
+                          row:
+                            message?.kind === "TEXT" ? message.value : p.text("label.nextActions"),
+                        })}
+                        items={controls.map((action) => ({
+                          id: action.task,
+                          label: renderCatalogKey(
+                            p,
+                            operationTask(action.task).reviewedLabelId ?? action.labelId,
+                          ),
+                          disabled: action.blocked !== null,
+                          select: () => {
+                            onReminder(action, actionId);
+                          },
+                        }))}
+                      />
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {all === undefined || allPath === undefined ? null : (
+          <a
+            href={allPath}
+            onClick={(event) => {
+              followLink(event, () => {
+                navigate(allPath);
+              });
+            }}
+          >
+            {renderCatalogKey(p, all.labelId)}
+          </a>
+        )}
+      </Section>
+    </div>
   );
 };

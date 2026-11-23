@@ -406,6 +406,15 @@ export const awaitLoginAdmission = async (
   );
   await acceptedNavigation;
 };
+const applicationAddress = (page: Page): URL => {
+  const start = new URL(page.url());
+  const base = process.env["CLAIMCORE_WEB_BASE_URL"];
+  if (base === undefined) {
+    return start;
+  }
+  const configured = new URL(base);
+  return configured.origin === start.origin ? start : configured;
+};
 export const login = async (
   page: Page,
   workspaceHeading: string | null = "Cases",
@@ -416,16 +425,22 @@ export const login = async (
   await retainResponseBodies(page);
   const authenticated =
     workspaceHeading === null
-      ? page.locator(".workspace-header")
+      ? page.locator(".workspace-shell")
       : page.getByRole("heading", {
           name: workspaceHeading,
           exact: true,
           level: 1,
         });
+  const requestedAddress = applicationAddress(page);
+  const providerForm = page.locator('input[name="username"]');
   try {
-    await authenticated.or(page.locator(".login-card h1, #sign-in-incomplete")).first().waitFor({
-      timeout: 5_000,
-    });
+    await authenticated
+      .or(providerForm)
+      .or(page.locator(".login-card h1, #sign-in-incomplete"))
+      .first()
+      .waitFor({
+        timeout: 5_000,
+      });
   } catch {
     const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
     const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
@@ -437,10 +452,13 @@ export const login = async (
     return;
   }
   await progress("login-anon");
-  const requestedAddress = new URL(page.url());
   const applicationOrigin = requestedAddress.origin;
   const owner = await syntheticCredentials(username);
-  await awaitLoginAdmission(page, signIn, applicationOrigin);
+  if (!(await providerForm.isVisible())) {
+    const explicit = page.locator(".login-link");
+    const label = (await explicit.textContent())?.trim() ?? signIn;
+    await awaitLoginAdmission(page, label, applicationOrigin);
+  }
   await page.locator('input[name="username"]').or(authenticated).first().waitFor();
   if (await authenticated.isVisible()) {
     await progress("login-ready");
@@ -501,24 +519,19 @@ export const signOut = async (page: Page, button: Locator): Promise<Response> =>
 
 export const logout = async (page: Page): Promise<Response> => {
   await showAccountActions(page);
-  const control = page.getByRole("button", {
-    name: "Sign out",
-    exact: true,
-  });
-  if (!(await control.isVisible())) {
-    await page.locator('a[href="/settings"]').click();
-    await expect(page.locator(".settings-panel")).toBeVisible();
-  }
+  const control = page
+    .getByRole("menuitem", { name: "Sign out", exact: true })
+    .or(page.getByRole("button", { name: "Sign out", exact: true }));
   const response = await signOut(page, control);
   await expect(
     page.getByRole("heading", {
-      name: "Sign in to the case register",
+      name: "You signed out",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "Sign in",
+      name: "Sign in again",
     }),
   ).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
