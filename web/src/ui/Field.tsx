@@ -2,7 +2,15 @@ import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
 import { FieldError } from "react-aria-components/FieldError";
 import { TextField } from "react-aria-components/TextField";
-import { createContext, useContext, useState, type ReactNode, type ComponentProps } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type ComponentProps,
+} from "react";
 import { usePresentation } from "../presentation/context";
 import "./field.css";
 
@@ -10,14 +18,51 @@ const FieldFocus = createContext(false);
 
 export const FieldGroup = ({ children }: { children: ReactNode }) => {
   const [focused, setFocused] = useState(false);
+  const field = useRef<HTMLDivElement>(null);
+  const gesture = useRef<number | null>(null);
+  useEffect(() => {
+    const element = field.current;
+    if (!focused || element === null) {
+      return;
+    }
+    const document = element.ownerDocument;
+    let frame: number | null = null;
+    const capture = (event: PointerEvent) => {
+      if (event.isPrimary && event.target instanceof Node && !element.contains(event.target)) {
+        gesture.current = event.pointerId;
+      }
+    };
+    const release = (event: PointerEvent) => {
+      if (event.pointerId !== gesture.current) {
+        return;
+      }
+      gesture.current = null;
+      // A disappearing rule must not move the destination before its click is delivered.
+      frame = requestAnimationFrame(() => {
+        setFocused(element.contains(document.activeElement));
+      });
+    };
+    document.addEventListener("pointerdown", capture, true);
+    document.addEventListener("pointerup", release, true);
+    document.addEventListener("pointercancel", release, true);
+    return () => {
+      document.removeEventListener("pointerdown", capture, true);
+      document.removeEventListener("pointerup", release, true);
+      document.removeEventListener("pointercancel", release, true);
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+      }
+    };
+  }, [focused]);
   return (
     <div
+      ref={field}
       className="field-group"
       onFocusCapture={() => {
         setFocused(true);
       }}
       onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
+        if (gesture.current === null && !event.currentTarget.contains(event.relatedTarget)) {
           setFocused(false);
         }
       }}

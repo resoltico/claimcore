@@ -289,6 +289,8 @@ const PeopleWorkspace = ({
   return (
     <Page
       id="people-title"
+      as="section"
+      labelledBy="people-title"
       className="people-panel"
       title={p.text("view.PEOPLE.label")}
       primaryAction={
@@ -450,7 +452,13 @@ const PeopleLayout = ({
       before={before}
     />
   ) : (
-    <Page id="people-title" className="people-panel" title={p.text("view.PEOPLE.label")}>
+    <Page
+      id="people-title"
+      as="section"
+      labelledBy="people-title"
+      className="people-panel"
+      title={p.text("view.PEOPLE.label")}
+    >
       {before}
       <PeopleUnavailable
         model={model}

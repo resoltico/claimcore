@@ -39,39 +39,41 @@ export type TypedFieldProps = {
 const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) => {
   const p = usePresentation();
   return (
-    <DialogTrigger>
-      <IconButton
-        icon="calendar"
-        isDisabled={disabled}
-        label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
-      />
-      <Popover className="calendar-popover">
-        <Dialog aria-label={p.fieldLabel(field.name)}>
-          <I18nProvider locale={p.displayLocale}>
-            <Calendar
-              aria-label={p.fieldLabel(field.name)}
-              value={dateValue(value)}
-              onChange={(next) => {
-                onChange(next.toString());
-              }}
-            >
-              <header>
-                <IconButton
-                  slot="previous"
-                  icon="chevron-start"
-                  label={p.text("ui.previousMonth")}
-                />
-                <Heading lang={p.displayLocale} />
-                <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
-              </header>
-              <CalendarGrid lang={p.displayLocale}>
-                {(day) => <CalendarCell date={day} />}
-              </CalendarGrid>
-            </Calendar>
-          </I18nProvider>
-        </Dialog>
-      </Popover>
-    </DialogTrigger>
+    <I18nProvider locale={p.language === "en-XA" ? "en" : p.language}>
+      <DialogTrigger>
+        <IconButton
+          icon="calendar"
+          isDisabled={disabled}
+          label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
+        />
+        <Popover className="calendar-popover">
+          <Dialog aria-label={p.fieldLabel(field.name)}>
+            <I18nProvider locale={p.displayLocale}>
+              <Calendar
+                aria-label={p.fieldLabel(field.name)}
+                value={dateValue(value)}
+                onChange={(next) => {
+                  onChange(next.toString());
+                }}
+              >
+                <header>
+                  <IconButton
+                    slot="previous"
+                    icon="chevron-start"
+                    label={p.text("ui.previousMonth")}
+                  />
+                  <Heading lang={p.displayLocale} />
+                  <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
+                </header>
+                <CalendarGrid lang={p.displayLocale}>
+                  {(day) => <CalendarCell date={day} />}
+                </CalendarGrid>
+              </Calendar>
+            </I18nProvider>
+          </Dialog>
+        </Popover>
+      </DialogTrigger>
+    </I18nProvider>
   );
 };
 const DateEntry = ({

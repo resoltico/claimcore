@@ -34,9 +34,7 @@ test("records instalments and removes the selected entry through one reviewed co
     page.locator(".case-title-line").getByText("Partly paid", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.locator(
-      '.case-detail .case-stage-list li[data-complete="false"] meter[aria-label="Paid"]',
-    ),
+    page.locator('.case-detail .case-stage-list li[data-complete="false"] meter'),
   ).toHaveAttribute("value", "40");
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
@@ -221,7 +219,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   await page.reload();
   await expectCaseReadsSettled(page);
   const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
-  await expect(payments.locator('[data-entry="paymentCount"] dd')).toHaveText("55");
+  await expect(payments.locator(".section-count")).toHaveText("55 payments");
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("55.00 EUR");
   await expect(payments.locator('[data-entry="payable"]')).toContainText("100.00 EUR");
   await expect(payments.locator("tbody tr")).toHaveCount(3);

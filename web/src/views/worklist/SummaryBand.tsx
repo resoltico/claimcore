@@ -206,6 +206,8 @@ export const SummaryBand = ({
   return (
     <Page
       className="summary-band"
+      as="section"
+      labelledBy="case-report-title"
       id="case-report-title"
       title={p.text("ui.caseReport")}
       headingRef={title}

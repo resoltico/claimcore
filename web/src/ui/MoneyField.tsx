@@ -32,6 +32,7 @@ export const MoneyField = ({
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
+  const currencyHintId = `${id}-currency-hint`;
   const invalid = error !== undefined;
   return (
     <FieldGroup>
@@ -59,7 +60,8 @@ export const MoneyField = ({
             compact
             id={currency.id}
             label={currency.label}
-            hint={currency.hint}
+            invalid={invalid}
+            describedBy={invalid ? `${currencyHintId} ${errorId}` : currencyHintId}
             value={currency.value}
             items={currency.options.filter(
               (item) =>
@@ -71,6 +73,9 @@ export const MoneyField = ({
             onSelect={currency.onChange}
           />
         </div>
+        <span id={currencyHintId} className="sr-only">
+          {currency.hint}
+        </span>
         <div id={hintId} className="field-description">
           {hint}
           <FieldRule name={rule.name} ruleId={rule.id} invalid={invalid} />

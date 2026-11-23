@@ -36,6 +36,20 @@ const retainOwner = (
     : { ...scope, credential: session.token };
 };
 
+type AcceptedOperation = {
+  owner: VerifiedOwner;
+  operationId: string;
+  messageId: string | undefined;
+  path: string;
+};
+
+const displayedReceipt = (
+  receipt: AcceptedOperation | null,
+  owner: VerifiedOwner | null,
+  requester: RequesterDocument | null,
+  path: string,
+) => (requester !== null && receipt?.owner === owner && receipt.path === path ? receipt : null);
+
 /** Mask feedback during a requester reread. A verified owner change retires it. */
 export const useAcceptedOperation = (current?: RequesterDocument | null, denied = false) => {
   const { state } = useSessionContext();
@@ -53,22 +67,17 @@ export const useAcceptedOperation = (current?: RequesterDocument | null, denied 
       latestOwner.current = null;
     };
   }, [owner]);
-  const [accepted, setAccepted] = useState<{
-    owner: VerifiedOwner;
-    operationId: string;
-    messageId: string | undefined;
-    path: string;
-  } | null>(null);
+  const [accepted, setAccepted] = useState<AcceptedOperation | null>(null);
   const path = location.pathname + location.search;
-  const previousPath = useRef(path);
-  useLayoutEffect(() => {
-    if (previousPath.current !== path) {
-      previousPath.current = path;
+  const [observedPath, setObservedPath] = useState(path);
+  if (observedPath !== path) {
+    setObservedPath(path);
+    // Settings parks the same workspace. Returning to its path reobserves the receipt.
+    if (location.pathname !== "/settings") {
       setAccepted((receipt) => (receipt?.path === path ? receipt : null));
     }
-  }, [path]);
-  const visible =
-    requester !== null && accepted?.owner === owner && accepted.path === path ? accepted : null;
+  }
+  const visible = displayedReceipt(accepted, owner, requester, path);
   const focused = useRef<string | null>(null);
   const shouldFocus = useCallback(() => {
     if (

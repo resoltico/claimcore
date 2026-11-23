@@ -321,7 +321,12 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await ready(page, route);
   if (route.id === "editor-work") {
     expect(await geometryFailures(page)).not.toContain("G1");
-    await page.locator("#case-work-summary").click();
+    const work = page.locator("#case-work-summary");
+    await expect(work).toBeVisible();
+    await work.evaluate((element) => {
+      element.scrollIntoView({ block: "center" });
+    });
+    await work.click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();
     await expect(summary).toBeInViewport({ ratio: 1 });

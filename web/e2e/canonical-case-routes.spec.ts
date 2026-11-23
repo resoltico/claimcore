@@ -97,8 +97,10 @@ test("case inspection restores the live work query, selected row focus and scrol
   const id = await selected.getAttribute("id");
   expect(id).toMatch(/^case-[0-9a-f-]{36}$/u);
   const url = page.url();
+  const reference = (await selected.textContent())?.trim();
+  expect(reference).toBeTruthy();
   await selected.click();
-  await expect(page.locator("#case-detail-title")).toBeVisible();
+  await expect(page.locator(".phone-app-bar")).toContainText(reference!);
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
     .getByRole("link", { name: "Cases", exact: true })

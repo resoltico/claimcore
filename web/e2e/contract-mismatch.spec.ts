@@ -38,7 +38,9 @@ test("a real contract refusal prompts reload without replaying the draft", async
   expect(executions).toBe(0);
   await page.getByRole("button", { name: "Reload page", exact: true }).click();
   await expect(page).toHaveURL(/\/cases\/new$/u);
-  await expect(page.getByRole("heading", { name: "Open a case", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("heading", { name: "Open a case", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveValue("");
   await expect(page.getByRole("textbox", { name: "Policy number", exact: true })).toHaveValue("");
   expect(previews).toBe(1);

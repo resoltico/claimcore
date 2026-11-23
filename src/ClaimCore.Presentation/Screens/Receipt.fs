@@ -445,9 +445,12 @@ module ReceiptScreen =
             }
 
         Screen.mapContent
-            (fun _ content ->
+            (fun role content ->
                 match content with
-                | RegionContent.Entries values -> RegionContent.Entries(List.map markEntry values)
+                | RegionContent.Entries values when
+                    role = RegionRole.Facts || role = RegionRole.Work
+                    ->
+                    RegionContent.Entries(List.map markEntry values)
                 | RegionContent.Table table ->
                     RegionContent.Table
                         { table with

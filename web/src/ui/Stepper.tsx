@@ -10,7 +10,7 @@ import { PresentedValue } from "../components/PresentedValue";
 type Step = Extract<RegionContent, { kind: "STAGES" }>["steps"][number];
 const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => {
   const p = usePresentation();
-  if (!step.reached) {
+  if (!step.reached && step.meter === undefined) {
     return null;
   }
   let value = null;
@@ -25,7 +25,7 @@ const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => 
   }
   return (
     <>
-      {step.date === null ? null : (
+      {step.date === null || !step.reached ? null : (
         <span className="stage-date">
           <time dateTime={step.date}>{p.date(step.date)}</time>
         </span>

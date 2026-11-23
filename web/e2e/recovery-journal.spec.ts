@@ -60,6 +60,7 @@ const adapter = async (page: Page) => {
   for (const [path, file] of [
     ["**/__claimcore_qa__/recovery/indexedJournal.js", "../src/recovery/indexedJournal.ts"],
     ["**/__claimcore_qa__/protocol/recoveryJournal", "../src/protocol/recoveryJournal.ts"],
+    ["**/__claimcore_qa__/protocol/uuid", "../src/protocol/uuid.ts"],
   ] as const) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
     const script = stripTypeScriptTypes(

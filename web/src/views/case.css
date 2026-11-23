@@ -44,7 +44,8 @@
   }
   .case-title-line .identifier-value {
     font-family: inherit;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
   .case-header-state {
     display: flex;
@@ -263,6 +264,8 @@
   }
 
   .case-title-line :is(h1, .case-context-title) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
     margin: 0;
     font-size: var(--text-xl);
     font-weight: 700;

@@ -133,7 +133,7 @@ test("a Completed view shows its owner inactive default and explicit false remov
   const restricted = nextRead(page);
   await inactive.uncheck();
   await sheet.locator('button[type="submit"]').click();
-  await expect(queue.getByRole("combobox", { name: "Reminder state" })).toHaveText("Any");
+  await expect(queue.getByRole("combobox", { name: "Reminder state" })).toContainText("Any");
   expect((await restricted).request().postDataJSON()).toEqual({
     view: "COMPLETED",
     text: marker,

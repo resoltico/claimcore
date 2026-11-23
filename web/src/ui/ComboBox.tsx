@@ -18,6 +18,8 @@ export const ComboBox = ({
   disabled,
   compact = false,
   fieldName,
+  invalid = false,
+  describedBy,
   onSubmit,
 }: {
   id: string;
@@ -30,6 +32,8 @@ export const ComboBox = ({
   disabled?: boolean | undefined;
   compact?: boolean;
   fieldName?: string | undefined;
+  invalid?: boolean;
+  describedBy?: string | undefined;
   onSubmit?: (() => void) | undefined;
 }) => (
   <AriaComboBox
@@ -43,6 +47,7 @@ export const ComboBox = ({
     allowsCustomValue
     menuTrigger="focus"
     isDisabled={disabled ?? false}
+    isInvalid={invalid}
     onChange={(key) => {
       if (key !== null) {
         onSelect(String(key));
@@ -54,6 +59,8 @@ export const ComboBox = ({
       data-field-name={fieldName}
       aria-label={label}
       aria-description={hint}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       autoComplete="off"
       onKeyDownCapture={(event) => {
         if (event.key === "Enter" && onSubmit !== undefined) {

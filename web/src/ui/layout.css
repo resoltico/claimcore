@@ -288,7 +288,8 @@
 
     .workspace-mobile-tabs {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(max-content, 1fr));
+      overflow-x: auto;
       gap: var(--space-1);
       padding-inline: var(--space-2);
       inset-block-end: 0;
@@ -296,9 +297,14 @@
       border-block-start: var(--border-width) solid var(--border-subtle);
     }
 
+    .phone-app-bar .shell-find {
+      flex: 0 0 var(--control-target);
+      padding-inline: 0;
+      justify-content: center;
+    }
+
     .workspace-mobile-tabs .shell-link-label {
-      min-inline-size: 0;
-      overflow-wrap: break-word;
+      white-space: nowrap;
     }
 
     .workspace-mobile-tabs .shell-count {

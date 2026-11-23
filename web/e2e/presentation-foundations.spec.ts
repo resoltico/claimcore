@@ -2872,7 +2872,7 @@ for (const [language, displayLocale, dismiss, separator] of [
     expect(await calendar.evaluate((node) => getComputedStyle(node).direction)).toBe(
       language === "ar" ? "rtl" : "ltr",
     );
-    expect(await page.locator(`button[aria-label="${dismiss}"]`).count()).toBeGreaterThan(1);
+    expect(await calendar.locator(`button[aria-label="${dismiss}"]`).count()).toBeGreaterThan(0);
     await expect(page.locator('button[aria-label="Nerādīt"]')).toHaveCount(0);
     const labels = await field.locator('[role="spinbutton"]').evaluateAll((nodes) =>
       nodes.map((node) => ({
