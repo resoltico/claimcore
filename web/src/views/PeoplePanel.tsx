@@ -1,3 +1,5 @@
+import { PhoneAction } from "../ui/PhoneAction";
+import { Icon } from "../ui/icons";
 import { ActionMenu } from "../ui/ActionMenu";
 import { principalCreationTask } from "../operation/metadata";
 import { renderCatalogKey } from "../presentation/messages";
@@ -274,23 +276,32 @@ const PeopleWorkspace = ({
     model.busy ||
     (model.phase !== "ACCEPTED" &&
       (model.dirty || model.prepared !== null || model.priorUncertain));
+  const items = additions.map((action) => ({
+    id: action.task,
+    label: renderCatalogKey(p, action.labelId),
+    disabled: blocked,
+    select: () => {
+      editor.admit(action);
+      editor.open();
+    },
+  }));
+  const addPerson = p.text("label.addPerson");
   return (
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      {additions.length === 0 ? null : (
-        <ActionMenu
-          label={p.text("label.addPerson")}
-          disabled={blocked}
-          items={additions.map((action) => ({
-            id: action.task,
-            label: renderCatalogKey(p, action.labelId),
-            disabled: blocked,
-            select: () => {
-              editor.admit(action);
-              editor.open();
-            },
-          }))}
-        />
+      {items.length === 0 ? null : (
+        <PhoneAction
+          renderCompact={() => (
+            <ActionMenu
+              label={addPerson}
+              disabled={blocked}
+              items={items}
+              trigger={<Icon name="add" />}
+            />
+          )}
+        >
+          <ActionMenu label={addPerson} disabled={blocked} items={items} />
+        </PhoneAction>
       )}
       <PendingPeopleRequests
         model={model}

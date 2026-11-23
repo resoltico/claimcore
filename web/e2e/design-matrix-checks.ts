@@ -1,3 +1,4 @@
+import { expectNoInlineStyles } from "./inline-styles";
 import { geometryFailures } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
@@ -358,6 +359,7 @@ export const checkFrame = async (
   _info: TestInfo,
 ) => {
   expect(await geometryFailures(page)).toEqual([]);
+  await expectNoInlineStyles(page);
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
   await noHorizontalOverflow(page, dimension.reflowScale === undefined ? "narrow" : "zoom");

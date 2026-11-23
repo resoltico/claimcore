@@ -205,7 +205,9 @@ export const caseActionButton = async (
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const p = createPresenter({ ...defaults, language });
   const primary = page
-    .locator(`.case-header-actions button[data-act="${kind}"]`)
+    .locator(
+      `.case-header-actions button[data-act="${kind}"], .phone-primary-action button[data-act="${kind}"]`,
+    )
     .filter({ visible: true });
   const more = caseActionMenuTrigger(page);
   await primary.or(more).first().waitFor({ state: "visible", timeout: 10_000 });
@@ -220,7 +222,7 @@ export const caseActionButton = async (
   expect(
     await control.evaluate((element) => element.closest("[inert], [aria-hidden=true]") === null),
   ).toBe(true);
-  const label = (await control.textContent())?.trim();
+  const label = (await control.getAttribute("aria-label")) ?? (await control.textContent())?.trim();
   expect(label).toBeTruthy();
   await expect(control).toHaveAccessibleName(label!);
   return control;

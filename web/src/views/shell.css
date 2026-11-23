@@ -1,4 +1,8 @@
 @layer views {
+  .phone-primary-action:empty {
+    display: none;
+  }
+
   .workspace-sidebar {
     position: sticky;
     inset-block-start: 0;

@@ -1,3 +1,4 @@
+import { PhoneActionTarget } from "../ui/PhoneAction";
 import { hasStaticMessage } from "../presentation/messages";
 import { apiEndpoints, type CaseLinkedReceipt, type ServiceResponse } from "../api/service";
 import { hasDocumentSubject, type RequesterDocument } from "../protocol/types";
@@ -593,6 +594,7 @@ export const Dashboard = () => {
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
+  const [phoneAction, setPhoneAction] = useState<HTMLDivElement | null>(null);
   const content = useRouteHeading(route, focusScope, {
     loading: context.loading,
     admitted: actorContext !== null,
@@ -633,44 +635,47 @@ export const Dashboard = () => {
                   views={views}
                   tasks={tasks}
                   locked={locked}
+                  phoneActionRef={setPhoneAction}
                 />
-                <main className="workspace-main">
-                  <RecoveryBanner />
-                  {businessDate.changedDate === null ? null : (
-                    <BusinessDateNotice
-                      date={businessDate.changedDate}
-                      refresh={businessDate.refresh}
-                    />
-                  )}
-                  <WorkspaceStatus context={context} />
-                  {presentation === null ? null : (
-                    <ScreenView view={presentation} roles={["NOTICE"]} />
-                  )}
-                  <div ref={content}>
-                    <LinkNavigationContext value={caseNavigation.linkNavigation}>
-                      <WorkspaceRoute
-                        key={ownerIdentity}
-                        route={route}
-                        caseFeedback={
-                          <AcceptedReceipt
-                            route={route}
-                            receipt={feedback.receipt}
-                            close={feedback.clear}
-                          />
-                        }
-                        caseNavigation={caseNavigation}
-                        views={views}
-                        noViews={noViews}
-                        tasks={tasks}
-                        known={actorContext !== null}
-                        checking={context.loading}
-                        setLocked={setLocked}
-                        committed={committed}
-                        refresh={refresh}
+                <PhoneActionTarget value={phoneAction}>
+                  <main className="workspace-main">
+                    <RecoveryBanner />
+                    {businessDate.changedDate === null ? null : (
+                      <BusinessDateNotice
+                        date={businessDate.changedDate}
+                        refresh={businessDate.refresh}
                       />
-                    </LinkNavigationContext>
-                  </div>
-                </main>
+                    )}
+                    <WorkspaceStatus context={context} />
+                    {presentation === null ? null : (
+                      <ScreenView view={presentation} roles={["NOTICE"]} />
+                    )}
+                    <div ref={content}>
+                      <LinkNavigationContext value={caseNavigation.linkNavigation}>
+                        <WorkspaceRoute
+                          key={ownerIdentity}
+                          route={route}
+                          caseFeedback={
+                            <AcceptedReceipt
+                              route={route}
+                              receipt={feedback.receipt}
+                              close={feedback.clear}
+                            />
+                          }
+                          caseNavigation={caseNavigation}
+                          views={views}
+                          noViews={noViews}
+                          tasks={tasks}
+                          known={actorContext !== null}
+                          checking={context.loading}
+                          setLocked={setLocked}
+                          committed={committed}
+                          refresh={refresh}
+                        />
+                      </LinkNavigationContext>
+                    </div>
+                  </main>
+                </PhoneActionTarget>
               </div>
             </WorkspaceViewsProvider>
           </RecoveryProvider>

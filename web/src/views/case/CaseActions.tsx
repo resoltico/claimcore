@@ -1,3 +1,5 @@
+import { PhoneAction } from "../../ui/PhoneAction";
+import { Icon } from "../../ui/icons";
 import type { Affordance } from "@contracts/client";
 import type { CurrentCase } from "../../api/service";
 import { isCaseAct } from "../../operation/metadata";
@@ -10,8 +12,10 @@ import { Button } from "../../ui/Button";
 export const CaseActions = ({
   current,
   onAct,
+  phonePrimary = false,
 }: {
   current: CurrentCase;
+  phonePrimary?: boolean;
   onAct: (action: Affordance) => void;
 }) => {
   const p = usePresentation();
@@ -34,17 +38,38 @@ export const CaseActions = ({
         ]
       : [],
   );
+  const primary =
+    recommendation === undefined ? null : (
+      <Button
+        data-act={recommendation.task}
+        onPress={() => {
+          onAct(recommendation);
+        }}
+      >
+        {renderCatalogKey(p, recommendation.labelId)}
+      </Button>
+    );
   return (
     <>
-      {recommendation === undefined ? null : (
-        <Button
-          data-act={recommendation.task}
-          onPress={() => {
-            onAct(recommendation);
-          }}
+      {recommendation === undefined || !phonePrimary ? (
+        primary
+      ) : (
+        <PhoneAction
+          renderCompact={() => (
+            <Button
+              data-act={recommendation.task}
+              aria-label={renderCatalogKey(p, recommendation.labelId)}
+              compact
+              onPress={() => {
+                onAct(recommendation);
+              }}
+            >
+              <Icon name="check" />
+            </Button>
+          )}
         >
-          {renderCatalogKey(p, recommendation.labelId)}
-        </Button>
+          {primary}
+        </PhoneAction>
       )}
       {alternatives.length === 0 ? null : (
         <ActionMenu

@@ -16,7 +16,9 @@ const fitSurface = () => {
   surface.setAttribute("height", String(height));
   return { width: bounds.width, height };
 };
-window.addEventListener("resize", fitSurface);
+window.addEventListener("resize", () => {
+  fitSurface();
+});
 
 const pageCanvas = (width: number, height: number) => {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {

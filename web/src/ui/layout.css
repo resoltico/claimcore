@@ -1,6 +1,7 @@
 @layer layout {
   html:root {
     --gutter: var(--space-6);
+    --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
     --drawer-block-size: 100%;
@@ -287,6 +288,10 @@
     .screen-region[data-region="PROGRESS"] .case-stage-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--space-2);
+    }
+    .case-detail {
+      --case-title-inset: var(--shell-top-height);
+      --case-header-gutter: var(--space-4);
     }
     .case-header-card {
       padding-inline: var(--space-4);

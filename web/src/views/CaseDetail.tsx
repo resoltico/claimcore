@@ -210,57 +210,68 @@ const CaseHeader = ({
         )}
       </nav>
       <CloseReminderSelection onBack={onBack} />
-      <section className="case-header-card">
-        <div className="case-heading">
-          <CaseIdentity
-            region={identity}
-            attention={attention}
-            requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
-            timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
-          />
-          {current?.links
-            .filter(({ link }) => link.endpoint !== apiEndpoints.reminderList)
-            .map((named) => {
-              const href = coreLinkPath(named.link);
-              return href === undefined ? null : (
-                <a
-                  key={JSON.stringify(named.link)}
-                  href={href}
-                  onClick={(event) => {
-                    followLink(event, () => {
-                      if (named.link.endpoint === apiEndpoints.caseAttachments) {
-                        const panel = document.getElementById(attachmentFragment);
-                        panel?.focus();
-                        panel?.scrollIntoView();
-                      } else {
-                        navigate(href);
-                      }
-                    });
-                  }}
-                >
-                  {renderCatalogKey(p, named.labelId)}
-                </a>
-              );
-            })}
-          {current === null ? null : (
-            <div className="case-header-actions">
-              <CaseActions
-                current={current}
-                onAct={(act) => {
-                  onAct(current, act);
-                }}
-              />
+      <CaseIdentity
+        region={identity}
+        attention={attention}
+        requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
+        timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
+        renderIdentity={(heading, facts) => (
+          <>
+            <div className="case-title-sticky" data-region="IDENTITY">
+              {heading}
             </div>
-          )}
-        </div>
-        {state === null ? null : (
-          <ScreenView
-            view={state.screen}
-            roles={["PROGRESS"]}
-            timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
-          />
+            <section className="case-header-card">
+              <div className="case-heading">
+                {facts === null ? null : <div className="case-identity">{facts}</div>}
+                {current?.links
+                  .filter(({ link }) => link.endpoint !== apiEndpoints.reminderList)
+                  .map((named) => {
+                    const href = coreLinkPath(named.link);
+                    return href === undefined ? null : (
+                      <a
+                        key={JSON.stringify(named.link)}
+                        href={href}
+                        onClick={(event) => {
+                          followLink(event, () => {
+                            if (named.link.endpoint === apiEndpoints.caseAttachments) {
+                              const panel = document.getElementById(attachmentFragment);
+                              panel?.focus();
+                              panel?.scrollIntoView();
+                            } else {
+                              navigate(href);
+                            }
+                          });
+                        }}
+                      >
+                        {renderCatalogKey(p, named.labelId)}
+                      </a>
+                    );
+                  })}
+                {current === null ? null : (
+                  <div className="case-header-actions">
+                    <CaseActions
+                      current={current}
+                      phonePrimary
+                      onAct={(act) => {
+                        onAct(current, act);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              {state === null ? null : (
+                <ScreenView
+                  view={state.screen}
+                  roles={["PROGRESS"]}
+                  timeZone={
+                    state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"
+                  }
+                />
+              )}
+            </section>
+          </>
         )}
-      </section>
+      />
     </>
   );
 };

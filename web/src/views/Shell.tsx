@@ -184,6 +184,7 @@ export const Shell = ({
   views,
   tasks,
   locked,
+  phoneActionRef,
 }: {
   route: Route;
   presentation: Screen | null;
@@ -191,6 +192,7 @@ export const Shell = ({
   views: ReadonlyArray<Link["endpoint"]>;
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
+  phoneActionRef?: (node: HTMLDivElement | null) => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
@@ -368,6 +370,7 @@ export const Shell = ({
                 <Icon name="add" />
               </Button>
             ) : null}
+            <div className="phone-primary-action" ref={phoneActionRef} />
           </header>
           <nav className="workspace-mobile-tabs" aria-label={p.text("ui.primary")}>
             {primary.map(link)}
