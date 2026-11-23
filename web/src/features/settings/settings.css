@@ -62,6 +62,7 @@
   }
   .settings-preview {
     color: var(--text-secondary);
+    overflow-wrap: anywhere;
   }
   .settings-card dd {
     overflow-wrap: anywhere;

@@ -237,7 +237,7 @@ test("programmatic heading focus stays quiet after keyboard use and controls ret
   await expect(picker).toHaveCSS("outline-offset", "2px");
   await clean();
 });
-test("Settings reflows at 320px and 200% text without overflowing accent cards", async ({
+test("Settings keeps the format preview and accent cards within the page at 320px and 200% text", async ({
   page,
 }) => {
   const clean = await observe(page, true);
@@ -262,6 +262,10 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
+  const previewOverflow = await page.locator(".settings-preview").evaluate((preview) => {
+    return preview.scrollWidth - preview.clientWidth;
+  });
+  expect(previewOverflow).toBeLessThanOrEqual(1);
   const overflow = await page.evaluate(() => {
     const cards = [...document.querySelectorAll<HTMLElement>(".accent-card")];
     return {
