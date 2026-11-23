@@ -5,10 +5,10 @@
 - Regenerate HUMAN clients for state detail, empty labels, row recommendations, view prominence, next due dates, per-view reminder columns and creation summaries.
 - Regenerate clients for collection labels, review modes and the code tone table.
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
+- Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
 - If the CLI cannot launch a browser, it prints the sign-in address to stderr and waits for you to open it.
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
 - Use Find a case, the Cases breadcrumb, compact row menus, and About ClaimCore in the redesigned workspace.
-- Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
 
 ## [0.21.0] - 2026-11-22
 
