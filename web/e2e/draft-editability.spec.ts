@@ -1,12 +1,11 @@
 import { documentActions } from "../src/operation/affordances";
 import type { ResponseFor } from "@contracts/client";
-import { expectCaseReadsSettled } from "./case-readiness";
-import { showCaseRecordDetails } from "./workspace-navigation";
+import { acceptanceBanner, expectCaseReadsSettled, openAcceptedReceipt } from "./case-readiness";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
-import { openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
+import { caseActionButton, openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
@@ -154,31 +153,26 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   expect(documentActions(caseGetReply.outcome.document).map((action) => action.task)).toContain(
     "case.amendRegistration",
   );
-  await expect(page.locator('[data-entry="caseReference"]').first()).toContainText(reference);
   const detail = page.locator("#case-detail-title");
-  await expect(detail).toBeVisible();
-  await expect(detail).toBeFocused();
-  await expect(page.locator(".accepted-receipt")).toContainText("Case opened.");
-  await showCaseRecordDetails(page);
+  await expect(detail).toHaveText(reference);
+  const banner = acceptanceBanner(page);
+  await expect(banner).toContainText("Case opened.");
+  await expect(banner).toBeFocused();
+  await expect(page.locator("section.receipt")).toHaveCount(0);
+  const receipt = await openAcceptedReceipt(page);
+  await expect(receipt).toContainText("Case opened.");
+  await receipt.getByRole("button", { name: "Close", exact: true }).click();
   await expect(
-    page.locator(
-      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
-    ),
-  ).toContainText("1");
-  await expect(page.locator(".operation-form-card")).toHaveCount(0);
-  await expect(
-    page.getByRole("button", {
-      name: "Back to cases",
-      exact: true,
-    }),
+    page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "Cases", exact: true }),
   ).toBeVisible();
-  await expect(page.locator("section.accepted-receipt.receipt")).toHaveCount(1);
-  await expect(page.locator("section.receipt:not(.accepted-receipt)")).toHaveCount(0);
-  await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator('button[data-act="case.amendRegistration"]')).toHaveCount(1);
+  await expect(page.locator("section.case-detail details[data-region=DETAILS]")).toHaveCount(0);
+  await expect(page.locator(".operation-form-card")).toHaveCount(0);
+  await expect(await caseActionButton(page, "case.amendRegistration", "en")).toBeVisible();
 });
 
-test("accepted receipt fills its content width and keeps dismissal above facts in desktop LTR and narrow RTL", async ({
+test("accepted receipt opens in a readable dialog in desktop LTR and narrow RTL", async ({
   page,
 }, info) => {
   await seedPresentation(page, "en", "en-GB");
@@ -186,15 +180,14 @@ test("accepted receipt fills its content width and keeps dismissal above facts i
   await openAuthenticated(page);
   const reference = `RECEIPT-LAYOUT-${randomUUID()}`;
   await openCase(page, reference);
-  const receipt = page.locator("section.receipt");
-  await expect(receipt.locator('[data-region="DETAILS"]')).toBeVisible();
   for (const language of ["en", "ar"] as const) {
     if (language === "ar") {
       await page.setViewportSize({ width: 390, height: 844 });
       await selectLanguage(page, language);
-      await expect(receipt.locator('[data-region="DETAILS"]')).toBeVisible();
+      await expect(page.locator("#case-detail-title")).toBeVisible();
     }
     await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
+    const receipt = await openAcceptedReceipt(page);
     await expect(receipt.locator('[data-entry="reference"] dd')).toHaveText(reference);
     await expect(receipt.locator('[data-entry="policyNumber"] dd')).toHaveText(
       "Synthetic claimant",
@@ -203,52 +196,16 @@ test("accepted receipt fills its content width and keeps dismissal above facts i
       "Synthetic insurer",
     );
     await expect(receipt.locator('[data-entry="claimedAmount"] dd')).toHaveText("1,200.50 EUR");
-    const close = receipt.getByRole("button", { name: ui(language, "ui.close"), exact: true });
-    const geometry = await receipt.evaluate(
-      (element, closeLabel) => {
-        const screen = element.querySelector(":scope > .screen-view")!;
-        const button = [...element.querySelectorAll("button")].find(
-          (candidate) => candidate.textContent?.trim() === closeLabel,
-        )!;
-        const heading = element.querySelector('[data-region="IDENTITY"] .region-heading')!;
-        const rect = (node: Element) => {
-          const { top, bottom, left, width, height } = node.getBoundingClientRect();
-          return { top, bottom, left, width, height };
-        };
-        const style = getComputedStyle(element);
-        return {
-          usableWidth:
-            element.clientWidth -
-            parseFloat(style.paddingInlineStart) -
-            parseFloat(style.paddingInlineEnd),
-          screen: rect(screen),
-          close: rect(button),
-          heading: rect(heading),
-          receipt: rect(element),
-        };
-      },
-      ui(language, "ui.close"),
-    );
-    await info.attach(`receipt-${language}-geometry`, {
-      body: JSON.stringify(geometry, null, 2),
-      contentType: "application/json",
-    });
-    expect
-      .soft(geometry.screen.width, `${language}: full Screen uses the receipt's usable width`)
-      .toBeGreaterThanOrEqual(geometry.usableWidth - 1);
-    expect
-      .soft(geometry.close.bottom, `${language}: dismissal precedes the full receipt Screen`)
-      .toBeLessThanOrEqual(geometry.screen.top + 1);
-    expect
-      .soft(geometry.close.top, `${language}: dismissal stays above the result heading`)
-      .toBeLessThan(geometry.heading.bottom);
-    await close.focus();
-    await expect(close).toBeFocused();
+    await expect
+      .poll(() => receipt.evaluate((element) => element.contains(document.activeElement)))
+      .toBe(true);
     await noHorizontalOverflow(page, "narrow");
     await expectAccessible(page);
     await page.screenshot({ path: info.outputPath(`receipt-layout-${language}.png`) });
+    await receipt
+      .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+      .press("Enter");
+    await expect(receipt).toHaveCount(0);
   }
-  await receipt.getByRole("button", { name: ui("ar", "ui.close"), exact: true }).press("Enter");
-  await expect(receipt).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
 });

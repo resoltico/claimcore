@@ -120,11 +120,3 @@ export const chooseOption = async (page: Page, control: Locator, value: string):
   }
   throw new Error("E2E_SELECT_VALUE_NOT_OFFERED");
 };
-
-export const showCaseRecordDetails = async (page: Page): Promise<Locator> => {
-  const details = page.locator("section.case-detail > .screen-view > [data-region=DETAILS]");
-  if ((await details.getAttribute("open")) === null) {
-    await details.locator(":scope > summary").click();
-  }
-  return details;
-};

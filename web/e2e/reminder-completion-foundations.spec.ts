@@ -8,7 +8,6 @@ import { caseSubject, caseDocumentInput } from "../tests/support/case-document.f
 import { operationAffordance } from "../tests/support/affordances.fixtures";
 
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
-import { showCaseRecordDetails } from "./workspace-navigation";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "./fixtures";
@@ -620,7 +619,7 @@ for (const { language, accent, mode, mobile } of contexts) {
     expect(requests.filter((path) => path === "/api/reminder.list")).toHaveLength(0);
     if (mobile) {
       await expect(page.locator(".workspace-mobile-tabs")).toBeVisible();
-      const last = (await showCaseRecordDetails(page)).getByRole("button").last();
+      const last = page.locator(".case-detail").getByRole("button").last();
       await last.focus();
       await writeFile(
         testInfo.outputPath("focus-layout.json"),

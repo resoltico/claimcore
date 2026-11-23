@@ -141,6 +141,17 @@ const shellTitle = (active: string, route: Route) =>
   areas.find((area) => area.name === active)?.label ??
   (route.screen === "recovery" ? "ui.recovery" : "label.caseDetail");
 
+const accountCaption = (p: ReturnType<typeof usePresentation>, identity: Value | undefined) => {
+  switch (identity?.kind) {
+    case "ACTOR":
+      return actorName(p, identity.value);
+    case "TEXT":
+      return identity.value;
+    default:
+      return null;
+  }
+};
+
 const ShellAccount = ({
   identity,
   items,
@@ -150,7 +161,7 @@ const ShellAccount = ({
 }) => {
   const p = usePresentation();
   const label = p.text("label.account");
-  const name = identity?.kind === "ACTOR" ? actorName(p, identity.value) : null;
+  const name = accountCaption(p, identity);
   return (
     <ActionMenu
       id="workspace-account"

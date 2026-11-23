@@ -195,7 +195,7 @@ const WorklistResults = ({
             regions: current.screen.regions.filter(
               ({ content }) =>
                 content.kind === "ENTRIES" &&
-                content.entries.some(({ value }) => value.kind === "REFERENCE"),
+                content.entries.some(({ key }) => key === "exactReference"),
             ),
           }}
           timeZone={current.basis.timeZone}
