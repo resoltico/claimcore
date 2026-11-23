@@ -411,6 +411,8 @@
 
     .phone-app-bar > span {
       flex: 1;
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
       font-weight: 650;
     }
 

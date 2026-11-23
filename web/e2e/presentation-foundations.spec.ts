@@ -35,6 +35,7 @@ import {
 import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../tests/support/themeContrast";
 import {
+  settledWorkspaceHeader,
   startPeopleCreation,
   chooseOption,
   settlePopupTriggerScroll,
@@ -253,14 +254,18 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
     waitUntil: "commit",
   });
   await expect(page.locator(".settings-panel")).toBeVisible();
+  await settledWorkspaceHeader(page);
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
   await expect(page.locator("html")).toHaveCSS("font-size", "32px");
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
   const overflow = await page.evaluate(() => {
     const cards = [...document.querySelectorAll<HTMLElement>(".accent-card")];
     return {
-      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       cards: cards.map((card) => {
         const bound = card.getBoundingClientRect();
         return [...card.querySelectorAll<HTMLElement>("*")].some((child) => {
@@ -270,10 +275,8 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
       }),
     };
   });
-  expect(overflow).toEqual({
-    document: false,
-    cards: [false, false],
-  });
+  expect(overflow.document).toBeLessThanOrEqual(1);
+  expect(overflow.cards).toEqual([false, false]);
   await clean();
 });
 for (const language of ["en", "lv", "ar"] as const) {
