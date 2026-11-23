@@ -11,6 +11,7 @@ import { linkedCaseReceipt, type CaseLinkedReceipt } from "../../src/protocol/ty
 import { wireReply } from "../support/reply.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { casePath } from "../../src/routing/routes";
+import type { ReactNode } from "react";
 import type { SessionState } from "../../src/session/useSession";
 
 beforeEach(() => {
@@ -47,18 +48,23 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
 vi.mock("../../src/views/RoutedContent", () => ({
   RoutedContent: ({
     committed,
+    caseFeedback,
   }: {
+    caseFeedback?: ReactNode;
     committed: (receipt: CaseLinkedReceipt, operationId: string) => void;
   }) => {
     audit.callbacks.push(committed);
     return (
-      <button
-        onClick={() => {
-          committed(audit.receipt!, "10000000-0000-7000-8000-000000000001");
-        }}
-      >
-        Simulate admitted acceptance
-      </button>
+      <>
+        {caseFeedback}
+        <button
+          onClick={() => {
+            committed(audit.receipt!, "10000000-0000-7000-8000-000000000001");
+          }}
+        >
+          Simulate admitted acceptance
+        </button>
+      </>
     );
   },
 }));

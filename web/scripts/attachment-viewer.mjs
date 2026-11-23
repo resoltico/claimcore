@@ -119,8 +119,8 @@ export const writeAttachmentViewer = async (directory) => {
     throw new Error("The attachment viewer inline content contains a closing tag.");
   }
   const html =
-    `<!doctype html><html><head><meta charset="utf-8"><style>${style}</style></head>` +
-    `<body><canvas></canvas><script>${script}</script></body></html>`;
+    `<!doctype html><html data-pdf-viewer><head><meta charset="utf-8"><style>${style}</style></head>` +
+    `<body data-pdf-viewer><canvas></canvas><script>${script}</script></body></html>`;
   await writeFile(resolve(directory, "attachment-preview.viewer"), html);
   return {
     sha256: createHash("sha256").update(html).digest("hex"),

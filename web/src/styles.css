@@ -1,5 +1,3 @@
-@layer reset, tokens, base, layout, components, views;
-
 @layer base {
   html {
     color: var(--text-primary);

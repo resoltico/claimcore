@@ -146,7 +146,7 @@ export const designFindings = (root, generatedTheme) => {
     const text = readFileSync(resolve(source, path), "utf8");
     const add = (/** @type {string} */ reason) =>
       findings.push(`${relative(root, resolve(source, path))}: ${reason}`);
-    if (path.endsWith(".css") && !path.startsWith("..")) {
+    if (path.endsWith(".css")) {
       try {
         sheets.push({ path, sheet: postcss.parse(text, { from: path }) });
       } catch {
@@ -159,7 +159,8 @@ export const designFindings = (root, generatedTheme) => {
     sheets.push({ path: "theme/tokens.css", sheet: postcss.parse(generatedTheme) });
   }
   const layers = new Set(
-    (sheets.find(({ path }) => path === "styles.css")?.sheet.nodes ?? [])
+    sheets
+      .flatMap(({ sheet }) => sheet.nodes)
       .filter((node) => node.type === "atrule" && node.name === "layer" && node.nodes === undefined)
       .flatMap((node) => ("params" in node ? postcss.list.comma(node.params) : [])),
   );

@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 const css = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const filename = resolve(directory, entry.name);
@@ -28,7 +29,16 @@ const missingTokens = (sources: ReadonlyArray<string>): string[] => {
   return [...references].filter((name) => !declared.has(name));
 };
 it("declares every referenced CSS token without a fallback", () => {
-  const sources = css(resolve("src")).map((path) => readFileSync(path, "utf8"));
+  const themeCss = execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      "import { themeCss } from './scripts/generate-theme.mjs'; process.stdout.write(themeCss);",
+    ],
+    { encoding: "utf8" },
+  );
+  const sources = [themeCss, ...css(resolve("src")).map((path) => readFileSync(path, "utf8"))];
   expect(missingTokens(sources)).toEqual([]);
   expect(
     missingTokens([...sources, ".witness { font-family: var(--undeclared-font-witness); }"]),

@@ -14,3 +14,15 @@ export const workspaceSignOut = async (user = userEvent.setup()) => {
   await user.click(screen.getByRole("button", { name: "Account" }));
   return screen.getByRole("menuitem", { name: "Sign out" });
 };
+
+export const rowActions = (row: HTMLElement) =>
+  within(row).getByRole("button", { name: /^Actions for /u });
+
+export const selectRowAction = async (
+  user: ReturnType<typeof userEvent.setup>,
+  row: HTMLElement,
+  label: string,
+) => {
+  await user.click(rowActions(row));
+  await user.click(screen.getByRole("menuitem", { name: label }));
+};

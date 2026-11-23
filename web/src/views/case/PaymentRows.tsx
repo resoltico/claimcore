@@ -15,7 +15,9 @@ export const PaymentRows = ({
     view={{ kind: "TABLE", columns: content.columns, rows: content.rows }}
     emptyId="label.noPayments"
     timeZone={zone}
-    onAction={onAction}
+    onAction={(action) => {
+      onAction(action);
+    }}
   />
 );
 export const PaymentsShown = ({ shown, total }: { shown: number; total: number }) => {

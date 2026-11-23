@@ -1,3 +1,4 @@
+import { rowActions, selectRowAction } from "../../../support/workspace-actions";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -165,11 +166,8 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
   );
   await screen.findByText("41.00 USD");
   expect(screen.queryByText("3.00 EUR")).not.toBeInTheDocument();
-  expect(
-    screen.getAllByRole("button", {
-      name: "Remove payment entry",
-    }),
-  ).toHaveLength(1);
+  const oldestLoadedRow = screen.getByRole("row", { name: /41[.]00 USD/u });
+  expect(rowActions(oldestLoadedRow)).toBeVisible();
   expect(JSON.parse(requestText(fetch.mock.calls[0]?.[1]?.body))).toEqual({
     target: {
       kind: "ID",
@@ -194,11 +192,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
     },
     cursor: "core-payment-cursor",
   });
-  await user.click(
-    screen.getAllByRole("button", {
-      name: "Remove payment entry",
-    })[0]!,
-  );
+  await selectRowAction(user, oldestLoadedRow, "Remove payment entry");
   expect(onAct).toHaveBeenCalledWith(
     expect.objectContaining<{ task: string; binding: unknown }>({
       task: "case.removePayment",
@@ -245,7 +239,7 @@ it("masks earlier payment rows on an erased continuation and refreshes the case 
   expect(screen.queryByText("41.00 USD")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", {
-      name: "Remove payment entry",
+      name: /^Actions for /u,
     }),
   ).not.toBeInTheDocument();
 });
@@ -279,7 +273,7 @@ it("refuses to expose payment rows from a newer case version until its current d
   expect(screen.queryByText("41.00 USD")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", {
-      name: "Remove payment entry",
+      name: /^Actions for /u,
     }),
   ).not.toBeInTheDocument();
 });

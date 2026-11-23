@@ -1,3 +1,4 @@
+import { selectRowAction } from "../../../support/workspace-actions";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -86,9 +87,11 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
   expect(screen.getByText("77.00 USD")).toBeVisible();
   expect(screen.queryByText("30.00 EUR")).toBeNull();
   expect(screen.queryByRole("button", { name: "Change decision" })).toBeNull();
-  await userEvent
-    .setup()
-    .click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /77.00 USD/u }),
+    "Remove payment entry",
+  );
   expect(onAct).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining<{ task: string; binding: unknown }>({
       task: "case.removePayment",
@@ -108,7 +111,7 @@ it("offers no removal when Core withdraws its row controls", () => {
       onChanged={vi.fn()}
     />,
   );
-  expect(screen.queryByRole("button", { name: "Remove payment entry" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Actions for /u })).toBeNull();
 });
 it("represents a completed zero liability with a native range and exact money text", () => {
   render(

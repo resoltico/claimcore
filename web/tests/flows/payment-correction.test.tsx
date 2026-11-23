@@ -1,3 +1,4 @@
+import { selectRowAction } from "../support/workspace-actions";
 import { useState } from "react";
 import type {
   Affordance,
@@ -176,7 +177,11 @@ it("selects the exact payment row, confirms frozen correction bytes and renders 
   );
   const committed = vi.fn();
   render(<SelectedCorrection committed={committed} />);
-  await userEvent.click(screen.getByRole("button", { name: "Correct payment entry" }));
+  await selectRowAction(
+    userEvent.setup(),
+    screen.getByRole("row", { name: /25.00 EUR/u }),
+    "Correct payment entry",
+  );
   expect(screen.queryByRole("textbox", { name: "Payment ID" })).toBeNull();
   input("Payment date", "2026-09-05");
   input("Paid amount", "40");
