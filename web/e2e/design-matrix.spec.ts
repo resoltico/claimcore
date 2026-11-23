@@ -122,6 +122,8 @@ const editorLayout = async (page: Page) => {
   expect(received).not.toBeNull();
   expect(narrative).not.toBeNull();
   if ((page.viewportSize()?.width ?? 0) >= 640) {
+    const drawer = await page.locator(".drawer").boundingBox();
+    expect(drawer?.width).toBeGreaterThanOrEqual(640);
     expect(Math.abs(date!.y - received!.y)).toBeLessThan(2);
     expect(Math.abs(date!.x - received!.x)).toBeGreaterThan(date!.width);
     expect(narrative!.width).toBeGreaterThan(date!.width * 1.5);

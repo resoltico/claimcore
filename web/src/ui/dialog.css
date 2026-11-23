@@ -40,6 +40,7 @@
     padding-inline: var(--padding-workspace);
   }
   .ui-dialog-overlay--end {
+    --dialog-width: var(--width-dialog);
     place-items: stretch end;
     padding: 0;
     overflow: hidden;
@@ -161,14 +162,10 @@
     line-height: var(--line-heading);
   }
   .ui-dialog-overlay--end .ui-dialog {
-    inline-size: 100%;
-    max-inline-size: var(--width-review);
     block-size: var(--viewport-block);
     max-block-size: var(--viewport-block);
     border-radius: 0;
     overflow: hidden;
-    inline-size: 100%;
-    max-inline-size: var(--width-dialog);
     border-inline-start: var(--border-width) solid var(--border-subtle);
   }
   .ui-dialog-actions {

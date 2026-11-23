@@ -302,9 +302,6 @@
     .case-identity {
       flex-basis: 100%;
     }
-    .ui-dialog-overlay--end .ui-dialog {
-      inline-size: 100%;
-    }
     .ui-dialog .review-values > div {
       grid-template-columns: minmax(0, 1fr);
     }
