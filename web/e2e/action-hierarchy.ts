@@ -8,7 +8,9 @@ const checkCaseActions = async (page: Page, expected?: string | null) => {
   if ((await region.locator("button").count()) === 0 && expected === undefined) {
     return;
   }
-  const primary = region.locator("button.ui-button--primary");
+  const primary = region
+    .locator("button.ui-button--primary")
+    .or(page.locator(".phone-primary-action button[data-act]"));
   if (expected === undefined && (await primary.count()) === 0) {
     return;
   }
@@ -75,8 +77,8 @@ export const checkActionHierarchy = async (page: Page, expected?: string | null)
   }
   const fill = await background(primary);
   for (const button of await page
-    .locator(".workspace-sidebar, .phone-app-bar")
-    .getByRole("button")
+    .locator(".workspace-sidebar button, .phone-app-bar button:not(.phone-primary-action button)")
+    .filter({ visible: true })
     .all()) {
     expect(
       await background(button),

@@ -62,9 +62,13 @@ test("rejects both forms of inline styling", async ({ page }) => {
   await page.setContent("<main>Workspace</main>");
   await expectNoInlineStyles(page);
 
-  await page.locator("main").evaluate((element) => element.setAttribute("style", "margin:0"));
+  await page.locator("main").evaluate((element) => {
+    element.setAttribute("style", "margin:0");
+  });
   await expect(expectNoInlineStyles(page)).rejects.toThrow("external stylesheets");
-  await page.locator("main").evaluate((element) => element.removeAttribute("style"));
+  await page.locator("main").evaluate((element) => {
+    element.removeAttribute("style");
+  });
 
   await page.addStyleTag({ content: "main { margin: 0 }" });
   await expect(expectNoInlineStyles(page)).rejects.toThrow("external stylesheets");

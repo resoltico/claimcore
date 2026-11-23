@@ -10,17 +10,8 @@ const modulePath = (id) =>
     id.replaceAll("\\", "/"),
   )?.[1];
 
-/**
- * Move only the locked modules' layout effects. Keep the interaction algorithms in React Aria.
- * @param {string} path
- * @param {string} source
- */
-export const adaptAriaLayout = (path, source) => {
-  const expected = hashes[/** @type {keyof typeof hashes} */ (path)];
-  if (!expected || createHash("sha256").update(source).digest("hex") !== expected) {
-    throw new Error(`Review the React Aria layout adaptation for ${path} before updating it.`);
-  }
-
+/** @param {string} path @param {string} source */
+const replaceLayoutEffects = (path, source) => {
   switch (path.split("/").at(-1)) {
     case "useOverlayPosition":
       return source
@@ -48,13 +39,13 @@ export const adaptAriaLayout = (path, source) => {
           overlay.setAttribute("data-cc-positioned", "");`,
         )
         .replace(
-          /overlayProps: \{\n            style: \{[\s\S]*?\n            \}\n        \},/u,
+          /overlayProps: \{\n {12}style: \{[\s\S]*?\n {12}\}\n {8}\},/u,
           'overlayProps: {"data-cc-overlay": ""},',
         );
     case "Popover":
       return source
         .replace(
-          /    let style = \{\n        \.\.\.popoverProps\.style,[\s\S]*?\n    \};/u,
+          / {4}let style = \{\n {8}\.\.\.popoverProps\.style,[\s\S]*?\n {4}\};/u,
           `    const {style: widthStyle, ...elementProps} = renderProps;
     const width = parseFloat(widthStyle?.["--trigger-width"] || triggerWidth);`,
         )
@@ -67,33 +58,30 @@ export const adaptAriaLayout = (path, source) => {
           '        "data-cc-trigger-width": Number.isFinite(width) ? width : undefined,',
         )
         .replace(
-          /style: \{\n            position: 'fixed',\n            inset: 0\n        \}/u,
+          /style: \{\n {12}position: 'fixed',\n {12}inset: 0\n {8}\}/u,
           '"data-cc-underlay": ""',
         )
-        .replace(
-          /style: \{\n            display: 'contents'\n        \}/u,
-          '"data-cc-portal-group": ""',
-        );
+        .replace(/style: \{\n {12}display: 'contents'\n {8}\}/u, '"data-cc-portal-group": ""');
     case "Modal":
       // The application uses viewport units rather than the optional upstream size variables.
       return source
-        .replace(/    let style = \{\n        \.\.\.renderProps\.style,[\s\S]*?\n    \};/u, "")
+        .replace(/ {4}let style = \{\n {8}\.\.\.renderProps\.style,[\s\S]*?\n {4}\};/u, "")
         .replace("        style: style,\n", "");
     case "DismissButton":
       return source.replace(
-        /style: \{\n            width: 1,\n            height: 1\n        \}/u,
+        /style: \{\n {12}width: 1,\n {12}height: 1\n {8}\}/u,
         '"data-cc-dismiss": ""',
       );
     case "VisuallyHidden":
       return source
-        .replace(/    let combinedStyles = [\s\S]*?\n    \]\);/u, "")
+        .replace(/ {4}let combinedStyles = [\s\S]*?\n {4}\]\);/u, "")
         .replace(
           "style: combinedStyles",
           '"data-cc-visually-hidden": isFocused ? undefined : style?.position === "fixed" ? "fixed" : "absolute"',
         );
     case "useDateField":
       return source.replace(
-        /style: \{\n                unicodeBidi: 'isolate'\n            \}/u,
+        /style: \{\n {16}unicodeBidi: 'isolate'\n {12}\}/u,
         '"data-cc-date-field": ""',
       );
     case "useDateSegment":
@@ -106,7 +94,7 @@ export const adaptAriaLayout = (path, source) => {
       return source.replace("node.style.display = 'none';", "node.hidden = true;");
     case "animation":
       return source.replace(
-        /        if \(!isReady && ref.current\) return [^\n]*;/u,
+        / {8}if \(!isReady && ref.current\) return [^\n]*;/u,
         `        if (!isReady && ref.current) {
             const element = ref.current;
             element.setAttribute("data-cc-enter-pending", "");
@@ -116,18 +104,18 @@ export const adaptAriaLayout = (path, source) => {
     case "usePreventScroll":
       return source
         .replace(
-          /    let scrollbarWidth = [^\n]*;\n    return [\s\S]*?(?=UNSTABLE_overrideFocus && .*overrideFocus)/u,
+          / {4}let scrollbarWidth = [^\n]*;\n {4}return [\s\S]*?(?=UNSTABLE_overrideFocus && .*overrideFocus)/u,
           `    const root = document.documentElement;
     root.setAttribute("data-cc-scroll-lock", "");
     return (0, $a4e76a5424781910$export$e08e3b67e392101e)(() => root.removeAttribute("data-cc-scroll-lock"), `,
         )
         .replace(
-          /    let restoreOverflow = [^\n]*;/u,
+          / {4}let restoreOverflow = [^\n]*;/u,
           `    const root = document.documentElement;
     root.setAttribute("data-cc-scroll-lock", "touch");`,
         )
         .replace(
-          /    let style = document\.createElement\('style'\);[\s\S]*?document\.head\.prepend\(style\);/u,
+          / {4}let style = document\.createElement\('style'\);[\s\S]*?document\.head\.prepend\(style\);/u,
           "",
         )
         .replace(
@@ -138,24 +126,38 @@ export const adaptAriaLayout = (path, source) => {
     case "textSelection":
       return source
         .replace(
-          /            [^\n]*savedUserSelect = documentObject\.documentElement\.style\.webkitUserSelect;\n            documentObject\.documentElement\.style\.webkitUserSelect = 'none';/u,
+          / {12}[^\n]*savedUserSelect = documentObject\.documentElement\.style\.webkitUserSelect;\n {12}documentObject\.documentElement\.style\.webkitUserSelect = 'none';/u,
           '            documentObject.documentElement.setAttribute("data-cc-no-selection", "");',
         )
         .replace(
-          /        let property = 'userSelect' in target\.style[^\n]*\n        [^\n]*modifiedElementMap\.set[^\n]*\n        target\.style\[property\] = 'none';/u,
+          / {8}let property = 'userSelect' in target\.style[^\n]*\n {8}[^\n]*modifiedElementMap\.set[^\n]*\n {8}target\.style\[property\] = 'none';/u,
           '        target.setAttribute("data-cc-no-selection", "");',
         )
         .replace(
-          /                    if \(documentObject\.documentElement\.style\.webkitUserSelect[^\n]*\n                    [^\n]*savedUserSelect = '';/u,
+          / {20}if \(documentObject\.documentElement\.style\.webkitUserSelect[^\n]*\n {20}[^\n]*savedUserSelect = '';/u,
           '                    documentObject.documentElement.removeAttribute("data-cc-no-selection");',
         )
         .replace(
-          /        if \(target && [^\n]*modifiedElementMap\.has\(target\)\) \{[\s\S]*?\n        \}/u,
+          / {8}if \(target && [^\n]*modifiedElementMap\.has\(target\)\) \{[\s\S]*?\n {8}\}/u,
           '        target.removeAttribute("data-cc-no-selection");',
         );
     default:
       throw new Error(`Missing React Aria adaptation for ${path}.`);
   }
+};
+
+/**
+ * Move only the locked modules' layout effects. Keep the interaction algorithms in React Aria.
+ * @param {string} path
+ * @param {string} source
+ */
+export const adaptAriaLayout = (path, source) => {
+  const expected = hashes[/** @type {keyof typeof hashes} */ (path)];
+  if (!expected || createHash("sha256").update(source).digest("hex") !== expected) {
+    throw new Error(`Review the React Aria layout adaptation for ${path} before updating it.`);
+  }
+
+  return replaceLayoutEffects(path, source);
 };
 
 /** @returns {import("vite").Plugin} */
