@@ -17,7 +17,7 @@ export type GeometryId =
   | "G15"
   | "G16";
 
-export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
+export const geometryReport = (page: Page) =>
   page.evaluate(() => {
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
@@ -129,6 +129,7 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
         "main td, main th, .chip, button, [role=tab], nav a, main h1, main h2, main h3",
       ),
     ];
+    const splitWords: string[] = [];
     const wrap = words.filter(visible).some((element) => {
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       const range = document.createRange();
@@ -150,6 +151,7 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
               .map((rect) => Math.round(rect.top)),
           );
           if (lines.size > 1) {
+            splitWords.push(word[0].slice(0, 50));
             return true;
           }
         }
@@ -213,8 +215,15 @@ export const geometryFailures = (page: Page): Promise<GeometryId[]> =>
           firstRow.getBoundingClientRect().top > innerHeight * 0.6,
       ],
     ];
-    return findings.flatMap(([id, violated]) => (violated ? [id] : []));
+    return {
+      violations: findings.flatMap(([id, violated]) => (violated ? [id] : [])),
+      splitWords,
+      firstRowTop: firstRow?.getBoundingClientRect().top,
+    };
   });
+
+export const geometryFailures = async (page: Page): Promise<GeometryId[]> =>
+  (await geometryReport(page)).violations;
 
 export const narrowTableFailures = (page: Page): Promise<string[]> =>
   page.evaluate(async () => {

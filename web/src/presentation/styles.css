@@ -144,7 +144,6 @@
     color: var(--danger-text);
   }
 
-  .reminder-list,
   .work-operation {
     margin-block: var(--space-4);
     min-inline-size: 0;

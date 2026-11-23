@@ -549,6 +549,12 @@ const qualify = async (origin, provider, ca) => {
     await verifyCliTheme(browser, provider);
     await verifyPriorRealm(browser, origin, provider);
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    const brand = await context.request.get(`${origin}/brand.svg`);
+    expect(brand.status()).toBe(200);
+    expect(brand.headers()["content-type"]).toBe("image/svg+xml");
+    expect(await brand.body()).toEqual(
+      readFileSync(new URL("../public/brand.svg", import.meta.url)),
+    );
     await login(context, origin, provider);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);

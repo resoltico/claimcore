@@ -1,5 +1,5 @@
 import { expectNoInlineStyles } from "./inline-styles";
-import { geometryFailures } from "./design-geometry";
+import { geometryFailures, geometryReport } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
@@ -359,7 +359,7 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
-  const violations = await geometryFailures(page);
+  const { violations, splitWords, firstRowTop } = await geometryReport(page);
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {
@@ -450,9 +450,10 @@ export const checkFrame = async (
         mainPadding: main === null ? null : getComputedStyle(main).paddingBlockStart,
       };
     });
-    expect(violations, `${frame} ${JSON.stringify({ tableBounds, controls, appearance })}`).toEqual(
-      [],
-    );
+    expect(
+      violations,
+      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop })}`,
+    ).toEqual([]);
   }
   await expectNoInlineStyles(page);
   await expectAccessible(page);

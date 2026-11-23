@@ -2,10 +2,16 @@ import type { ActorRef } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { Icon } from "./icons";
 import "./avatar.css";
-export const Avatar = ({ actor }: { actor: ActorRef }) => {
+export const Avatar = ({
+  actor,
+  showInitials = true,
+}: {
+  actor: ActorRef;
+  showInitials?: boolean;
+}) => {
   const p = usePresentation();
   const initials =
-    actor.displayName.kind === "NAMED"
+    showInitials && actor.displayName.kind === "NAMED"
       ? actor.displayName.value
           .split(/\s+/u)
           .slice(0, 2)

@@ -100,6 +100,23 @@ let private pressableStylesheet () =
             "Other root files gain no authentication exemption"
     }
 
+let private brandMark () =
+    task {
+        let bytes = Encoding.UTF8.GetBytes "<svg xmlns=\"http://www.w3.org/2000/svg\"/>"
+        use host = new Host(true, buildAssets = [ "brand.svg", bytes ])
+        use! response = host.Client.GetAsync "/brand.svg"
+        Expect.equal response.StatusCode HttpStatusCode.OK "The inventoried mark is public"
+
+        Expect.equal
+            (response.Content.Headers.ContentType |> nonNull).MediaType
+            "image/svg+xml"
+            "The mark has its SVG media type"
+
+        let! actual = response.Content.ReadAsByteArrayAsync()
+        Expect.equal actual bytes "The route serves the inventoried bytes"
+        Expect.isFalse (response.Headers.Contains "Set-Cookie") "Public mark creates no session"
+    }
+
 let private independentAdmission () =
     task {
         let bytes = Encoding.UTF8.GetBytes "export const publicValue = 2;"
@@ -420,6 +437,9 @@ let tests =
             testCaseAsync
                 "verifies fixed-name pressable CSS without immutable caching or broader exemptions"
                 (async { do! pressableStylesheet () |> Async.AwaitTask })
+            testCaseAsync
+                "brand mark uses the verified public asset inventory"
+                (async { do! brandMark () |> Async.AwaitTask })
             testCaseAsync
                 "serves verified public bytes independently of saturated authentication"
                 (async { do! independentAdmission () |> Async.AwaitTask })

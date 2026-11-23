@@ -62,6 +62,11 @@
     align-items: center;
   }
 
+  .lookup .ui-button {
+    line-height: 1.15;
+    overflow-wrap: normal;
+  }
+
   .section-heading {
     display: flex;
     flex-wrap: wrap;

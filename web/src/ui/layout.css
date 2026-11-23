@@ -356,6 +356,15 @@
       block-size: auto;
     }
 
+    .data-table tbody tr.table-group {
+      padding-block: var(--space-1);
+    }
+
+    .data-table .data-table-menu,
+    .data-table .data-table-recommended {
+      position: relative;
+    }
+
     .data-table thead {
       position: absolute;
       inline-size: var(--border-width);

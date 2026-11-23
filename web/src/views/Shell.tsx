@@ -170,7 +170,11 @@ const ShellAccount = ({
       items={items}
       trigger={
         <span className="shell-account-identity">
-          {identity?.kind === "ACTOR" ? <Avatar actor={identity.value} /> : <Icon name="person" />}
+          {identity?.kind === "ACTOR" ? (
+            <Avatar actor={identity.value} showInitials={false} />
+          ) : (
+            <Icon name="person" />
+          )}
           {name === null ? null : <bdi>{name}</bdi>}
         </span>
       }
