@@ -38,17 +38,7 @@ module internal OperationText =
                      + " → "
                      + TextDescriptorValue.render rendering change.After))
 
-        let unchanged =
-            if review.Presentation.Unchanged.IsEmpty then
-                "—"
-            else
-                review.Presentation.Unchanged
-                |> List.map (fun entry -> ReplyTextFormat.label rendering entry.LabelId)
-                |> List.distinct
-                |> String.concat ", "
-
         changes
-        @ [ ReplyTextFormat.line rendering "label.unchanged" unchanged ]
         @ ViewText.renderDocument details rendering review.Document
         @ (match review.Document.Basis with
            | ObservationBasis.Snapshot basis -> [ TextObservation.line rendering basis ]

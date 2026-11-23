@@ -86,10 +86,8 @@ const useWorklist = (query: WorklistQuery) => {
 type Page = ReturnType<typeof useWorklist>;
 const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
   const p = usePresentation();
-  const emptyMessage =
-    filtered || page.query.view === undefined
-      ? p.text("label.noCasesForView")
-      : p.text("view.empty");
+  const emptyId = page.page?.screen.regions.find(({ role }) => role === "RESULTS")?.emptyId;
+  const emptyMessage = renderCatalogKey(p, emptyId ?? "label.noCasesForView");
   return (
     <p>
       {emptyMessage}{" "}

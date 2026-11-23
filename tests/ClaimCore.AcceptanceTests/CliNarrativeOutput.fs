@@ -206,7 +206,7 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
         CliCalls.invoke
             fixture
             owner
-            [ "session" ]
+            [ "batch" ]
             (Array.concat [ query; [| 10uy |]; query; [| 10uy |] ])
             0
 

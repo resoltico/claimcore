@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "認証応答を受信しました。ターミナルに戻ってください。",
-    "source": "5ab530fe0240"
+    "text": "サインインしました。このタブを閉じて端末に戻れます。",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "認証応答が拒否されました。",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "アクセスとエクスポートの記録を表示します。",
-    "source": "370be36fbfc0"
+    "text": "アクセスとエクスポートの記録を表示します",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "利用者とアクセス権限",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "構造化されたリクエストを1つ送信します。",
-    "source": "928e1c599453"
+    "text": "構造化されたリクエストを1つ送信します",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "案件情報と決定",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "公開接続設定を保存するか、設定の取得元を表示します。",
-    "source": "67ea2596497a"
+    "text": "公開接続設定を保存するか、設定の取得元を表示します",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "自分のアカウントと設置環境",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "ヘルプを表示します。",
-    "source": "519291bec34c"
+    "text": "ヘルプを表示します",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "変更が記録されたか確認",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "プロトコルのスキーマを表示します。",
-    "source": "048234b2c1a5"
+    "text": "プロトコルのスキーマを表示します",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "1つのセッションで構造化されたリクエストを処理します。",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "1つのセッションで構造化されたリクエストを処理します",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "1回のサインインで対話型コマンドを実行します。",
-    "source": "943c7dc4df93"
+    "text": "1回のサインインで対話型コマンドを実行します",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "製品のバージョンを表示します。",
-    "source": "1ff071b74e83"
+    "text": "製品のバージョンを表示します",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "担当者と対応概要",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call`は標準入力から1つのJSON要求を読み、`session`は1行につき1つの要求を読みます。\n変更要求に操作IDがない場合、CLIが作成して出力します。\n正確な形式と制限はdocs/integrating.md#cli-useを参照してください。",
-    "source": "f4e598c4197a"
+    "text": "`call`は標準入力から1つのJSON要求を読み、`batch`は1行につき1つの要求を読みます。\n変更要求に操作IDがない場合、CLIが作成して出力します。\n正確な形式と制限はdocs/integrating.md#cli-useを参照してください。",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "コマンドを表示するには{command}を実行してください。",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "ClaimCoreの構造化HTTPSクライアントです。ヘルプと機能の確認はオフラインで利用でき、callとsessionには認証が必要です。\n{body}",
-    "source": "7e13b1539170"
+    "text": "ClaimCoreの構造化HTTPSクライアントです。ヘルプと機能の確認はオフラインで利用でき、callとbatchには認証が必要です。\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "各ページは読み取り時点のアクセス権と案件情報を使用します。\n同時変更により行が移動、重複、または欠落することがあります。\n--allは全ページを読みますが、結果を固定しません。",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shellには対話型端末と対話型サインインが必要です。パイプ経由のリクエストにはsessionを使用してください。",
-    "source": "1318499469cb"
+    "text": "shellには対話型端末と対話型サインインが必要です。パイプ経由のリクエストにはbatchを使用してください。",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "拒否済み、最終確認待ち — 試行{attemptId}：{subject} {act}、操作{operationId}。",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "OS の端末で {command} を実行してください。",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "サインインするには、ブラウザーでこのアドレスを開いてください：{url}",
+    "source": "bf2997f0b8c2"
   }
 }

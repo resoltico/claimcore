@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "已收到身份验证响应。请返回终端。",
-    "source": "5ab530fe0240"
+    "text": "已登录。您可以关闭此标签页并返回终端。",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "身份验证响应被拒绝。",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "查看访问和导出日志。",
-    "source": "370be36fbfc0"
+    "text": "查看访问和导出日志",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "人员与访问权限",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "发送一个结构化请求。",
-    "source": "928e1c599453"
+    "text": "发送一个结构化请求",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "案件资料与决定",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "保存公开的连接设置或显示其来源。",
-    "source": "67ea2596497a"
+    "text": "保存公开的连接设置或显示其来源",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "您的账户与安装实例",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "查阅帮助主题。",
-    "source": "519291bec34c"
+    "text": "查阅帮助主题",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "检查更改是否已记录",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "查阅协议结构定义。",
-    "source": "048234b2c1a5"
+    "text": "查阅协议结构定义",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "在同一会话中处理结构化请求。",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "在同一会话中处理结构化请求",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "登录一次后运行交互式命令。",
-    "source": "943c7dc4df93"
+    "text": "登录一次后运行交互式命令",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "显示产品版本。",
-    "source": "1ff071b74e83"
+    "text": "显示产品版本",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "负责人及处理摘要",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call` 从标准输入读取一个 JSON 请求；`session` 每行读取一个请求。\n如果更改请求没有操作 ID，CLI 会创建并输出 ID。\n准确格式和限制见 docs/integrating.md#cli-use。",
-    "source": "f4e598c4197a"
+    "text": "`call` 从标准输入读取一个 JSON 请求；`batch` 每行读取一个请求。\n如果更改请求没有操作 ID，CLI 会创建并输出 ID。\n准确格式和限制见 docs/integrating.md#cli-use。",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "运行 {command} 查看命令。",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "ClaimCore 结构化 HTTPS 客户端。帮助和命令发现支持离线使用；call 和 session 需要身份验证。\n{body}",
-    "source": "7e13b1539170"
+    "text": "ClaimCore 结构化 HTTPS 客户端。帮助和命令发现支持离线使用；call 和 batch 需要身份验证。\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "每页使用读取时的访问权限和案件信息。\n并发更改可能导致行移动、重复或遗漏。\n--all 读取所有页面，但不会冻结结果。",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell 需要交互式终端和交互式登录。管道请求请使用 session。",
-    "source": "1318499469cb"
+    "text": "shell 需要交互式终端和交互式登录。管道请求请使用 batch。",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "已拒绝，等待最终确认 — 尝试 {attemptId}：{subject} {act}；操作 {operationId}。",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "请在操作系统的终端中运行 {command}。",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "请在浏览器中打开此地址登录：{url}",
+    "source": "bf2997f0b8c2"
   }
 }

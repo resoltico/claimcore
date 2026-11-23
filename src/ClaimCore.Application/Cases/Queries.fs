@@ -490,6 +490,8 @@ module internal Queries =
                             {
                                 CaseSummaryFacts.Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                ClosureOutcome =
+                                    Handling.closure fields.Handling |> Option.map _.Outcome
                                 Parties =
                                     Vocabulary.all PartyRole.vocabulary
                                     |> List.map (fun role ->

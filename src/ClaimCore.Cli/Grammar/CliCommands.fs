@@ -10,7 +10,7 @@ type CliCommand =
     | Version
     | Schema
     | Call
-    | Session
+    | Batch
     | Shell
     | Recovery
     | Configure
@@ -22,7 +22,7 @@ type HelpTopic =
     | Version
     | Schema
     | Call
-    | Session
+    | Batch
     | Shell
     | Recovery
     | Configure
@@ -84,7 +84,7 @@ module CliCommands =
         | CliCommand.Version -> CliTopic.Help HelpTopic.Version
         | CliCommand.Schema -> CliTopic.Help HelpTopic.Schema
         | CliCommand.Call -> CliTopic.Help HelpTopic.Call
-        | CliCommand.Session -> CliTopic.Help HelpTopic.Session
+        | CliCommand.Batch -> CliTopic.Help HelpTopic.Batch
         | CliCommand.Shell -> CliTopic.Help HelpTopic.Shell
         | CliCommand.Recovery -> CliTopic.Help HelpTopic.Recovery
         | CliCommand.Configure -> CliTopic.Help HelpTopic.Configure
@@ -106,7 +106,7 @@ module CliCommands =
                 + "]"
             ]
         | CliCommand.Call -> [ "call" ]
-        | CliCommand.Session -> [ "session" ]
+        | CliCommand.Batch -> [ "batch" ]
         | CliCommand.Shell -> [ "shell" ]
         | CliCommand.Recovery ->
             [
@@ -134,7 +134,7 @@ module CliCommands =
             ]
 
     let private protocolSynopses =
-        [ "schema invocation"; "schema response"; "help call"; "help session" ]
+        [ "schema invocation"; "schema response"; "help call"; "help batch" ]
 
     // Every closed HelpTopic has one syntax value; an added topic must remain a compile-time omission.
     let private helpSynopses =
@@ -143,7 +143,7 @@ module CliCommands =
         | HelpTopic.Version -> synopses CliCommand.Version
         | HelpTopic.Help -> synopses CliCommand.Help
         | HelpTopic.Call -> synopses CliCommand.Call @ protocolSynopses
-        | HelpTopic.Session -> synopses CliCommand.Session @ protocolSynopses
+        | HelpTopic.Batch -> synopses CliCommand.Batch @ protocolSynopses
         | HelpTopic.Shell -> synopses CliCommand.Shell
         | HelpTopic.Recovery -> synopses CliCommand.Recovery
         | HelpTopic.Configure -> synopses CliCommand.Configure

@@ -4,21 +4,16 @@ open System
 open System.Diagnostics
 open System.Net
 open System.Net.Sockets
+open System.Security.Cryptography
 open System.Text
+open ClaimCore.Presentation
 open System.Threading
 open System.Threading.Tasks
 open Duende.IdentityModel.OidcClient.Browser
 
 module internal LoopbackTransport =
-    let launch (address: string) =
-        let executable =
-            if OperatingSystem.IsMacOS() then Some "open"
-            elif OperatingSystem.IsLinux() then Some "xdg-open"
-            else None
-
-        match executable with
-        | None -> Error AccessFailure.OidcBrowserUnavailable
-        | Some executable ->
+    let launchWith executable (address: string) (cancelled: CancellationToken) =
+        task {
             try
                 let start =
                     ProcessStartInfo(
@@ -30,15 +25,38 @@ module internal LoopbackTransport =
                     )
 
                 start.ArgumentList.Add address
-                use child = Process.Start start
 
-                if isNull child then
-                    Error AccessFailure.OidcBrowserUnavailable
-                else
-                    Ok()
+                match Process.Start start with
+                | null -> return Error AccessFailure.OidcBrowserUnavailable
+                | child ->
+                    use child = child
+
+                    let stdout =
+                        child.StandardOutput.BaseStream.CopyToAsync(IO.Stream.Null, cancelled)
+
+                    let stderr =
+                        child.StandardError.BaseStream.CopyToAsync(IO.Stream.Null, cancelled)
+
+                    do! child.WaitForExitAsync cancelled
+                    do! Task.WhenAll(stdout, stderr)
+
+                    return
+                        if child.ExitCode = 0 then
+                            Ok()
+                        else
+                            Error AccessFailure.OidcBrowserUnavailable
             with
             | :? ComponentModel.Win32Exception
-            | :? InvalidOperationException -> Error AccessFailure.OidcBrowserUnavailable
+            | :? InvalidOperationException -> return Error AccessFailure.OidcBrowserUnavailable
+        }
+
+    let launch address cancelled =
+        if OperatingSystem.IsMacOS() then
+            launchWith "open" address cancelled
+        elif OperatingSystem.IsLinux() then
+            launchWith "xdg-open" address cancelled
+        else
+            Task.FromResult(Error AccessFailure.OidcBrowserUnavailable)
 
     let private callbackUri host (target: string) =
         if
@@ -121,59 +139,82 @@ module internal LoopbackTransport =
                 return Ok None
         }
 
-    let response status body =
-        let bytes = Encoding.UTF8.GetBytes(body: string)
+    let private style =
+        "html{color-scheme:light dark;font:1rem system-ui}body{display:grid;place-items:center;min-block-size:95vh}main{max-inline-size:28rem;padding:2rem;border:1px solid GrayText;border-radius:.75rem}h1{margin-block-start:0;font-size:1.25rem}"
+
+    let private styleHash =
+        style |> Encoding.UTF8.GetBytes |> SHA256.HashData |> Convert.ToBase64String
+
+    let response language status message =
+        let direction = (LocalizationPolicy.languageOption language).direction
+
+        let body =
+            $"""<!doctype html><html lang="{WebUtility.HtmlEncode language}" dir="{direction}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>ClaimCore</title><style>{style}</style><main><h1>ClaimCore</h1><p>{WebUtility.HtmlEncode message}</p></main></html>"""
+
+        let bytes = Encoding.UTF8.GetBytes body
 
         let header =
             Encoding.ASCII.GetBytes(
-                $"HTTP/1.1 {status}\r\nContent-Type: text/plain; charset=utf-8\r\nCache-Control: no-store\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n"
+                $"HTTP/1.1 {status}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Security-Policy: default-src 'none'; style-src 'sha256-{styleHash}'; base-uri 'none'; frame-ancestors 'none'\r\nReferrer-Policy: no-referrer\r\nCache-Control: no-store\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n"
             )
 
         Array.append header bytes
 
-    let callbackResponse accepted =
+    let callbackResponse language accepted =
         let status, identity =
             if accepted then
                 "200 OK", CliMessage.CallbackAccepted
             else
                 "400 Bad Request", CliMessage.CallbackRefused
 
-        response status (ContractDiscovery.message (CliMessages.key identity))
+        response language status (MessageCatalogs.renderCli language identity)
 
-    let respond (stream: NetworkStream) accepted cancelled =
+    let respond language (stream: NetworkStream) accepted cancelled =
         task {
-            let bytes = callbackResponse accepted
+            let bytes = callbackResponse language accepted
             do! stream.WriteAsync(bytes.AsMemory(), cancelled)
             do! stream.FlushAsync(cancelled)
         }
 
-    let readCallback (listener: TcpListener) host cancelled =
+    let readCallback language (listener: TcpListener) host cancelled =
         task {
             let mutable result = None
 
             while result.IsNone do
-                use! client = listener.AcceptTcpClientAsync(cancelled)
-                use stream = client.GetStream()
-                let! request = readConnection stream cancelled
+                let! client = listener.AcceptTcpClientAsync(cancelled)
+                let mutable transferred = false
 
-                let parsed =
-                    match request with
-                    | Ok None -> None
-                    | Ok(Some source) -> Some(parseRequest host source)
-                    | Error reason -> Some(Error reason)
+                try
+                    let stream = client.GetStream()
+                    let! request = readConnection stream cancelled
 
-                match parsed with
-                | None -> ()
-                | Some callback ->
-                    do! respond stream (Result.isOk callback) cancelled
-                    result <- Some callback
+                    let callback =
+                        match request with
+                        | Ok None -> Ok None
+                        | Ok(Some source) -> parseRequest host source |> Result.map Some
+                        | Error reason -> Error reason
+
+                    match callback with
+                    | Ok None -> ()
+                    | Ok(Some callback) ->
+                        result <- Some(Ok(callback, client))
+                        transferred <- true
+                    | Error reason ->
+                        do! respond language stream false cancelled
+                        result <- Some(Error reason)
+                finally
+                    if not transferred then
+                        client.Dispose()
 
             return result.Value
         }
 
 /// One IPv4 loopback callback. OAuth state, issuer and PKCE validation belong to OidcClient.
-type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
+type internal LoopbackBrowser
+    (language, launch: string -> CancellationToken -> Task<Result<unit, AccessFailure>>, showAddress)
+    =
     let listener = new TcpListener(IPAddress.Loopback, 0)
+    let mutable callbackClient: TcpClient option = None
     let mutable invoked = 0
     let mutable failure: AccessFailure option = None
     do listener.Start 1
@@ -185,10 +226,12 @@ type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
             deadline.CancelAfter(TimeSpan.FromMinutes 2.)
 
             try
-                let! parsed = LoopbackTransport.readCallback listener host deadline.Token
+                let! parsed = LoopbackTransport.readCallback language listener host deadline.Token
 
                 match parsed with
-                | Ok response ->
+                | Ok(response, client) ->
+                    callbackClient <- Some client
+
                     return
                         BrowserResult(ResultType = BrowserResultType.Success, Response = response)
                 | Error reason ->
@@ -206,10 +249,32 @@ type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
                 return BrowserResult(ResultType = BrowserResultType.HttpError)
         }
 
-    new() = new LoopbackBrowser(LoopbackTransport.launch)
+    new() = new LoopbackBrowser("en", LoopbackTransport.launch, ignore)
 
     member _.RedirectUri = "http://" + host
     member _.Failure = failure
+
+    member _.Complete(accepted) =
+        task {
+            match callbackClient with
+            | None -> ()
+            | Some client ->
+                callbackClient <- None
+                use client = client
+                use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 2.)
+
+                try
+                    do!
+                        LoopbackTransport.respond
+                            language
+                            (client.GetStream())
+                            accepted
+                            deadline.Token
+                with
+                | :? IO.IOException
+                | :? SocketException
+                | :? OperationCanceledException -> ()
+        }
 
     interface IBrowser with
         member _.InvokeAsync(options, cancelled) =
@@ -217,12 +282,29 @@ type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
                 if Interlocked.Exchange(&invoked, 1) <> 0 then
                     return BrowserResult(ResultType = BrowserResultType.UnknownError)
                 else
-                    match launch options.StartUrl with
-                    | Ok() -> return! receive cancelled
-                    | Error reason ->
-                        failure <- Some reason
-                        return BrowserResult(ResultType = BrowserResultType.UnknownError)
+                    use launchCancellation =
+                        CancellationTokenSource.CreateLinkedTokenSource cancelled
+
+                    let launching =
+                        task {
+                            try
+                                match! launch options.StartUrl launchCancellation.Token with
+                                | Ok() -> ()
+                                | Error _ when not launchCancellation.IsCancellationRequested ->
+                                    showAddress options.StartUrl
+                                | Error _ -> ()
+                            with :? OperationCanceledException when
+                                launchCancellation.IsCancellationRequested ->
+                                ()
+                        }
+
+                    let! result = receive cancelled
+                    launchCancellation.Cancel()
+                    do! launching
+                    return result
             }
 
     interface IDisposable with
-        member _.Dispose() = listener.Stop()
+        member _.Dispose() =
+            callbackClient |> Option.iter _.Dispose()
+            listener.Stop()

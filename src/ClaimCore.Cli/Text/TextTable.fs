@@ -213,7 +213,7 @@ module internal TextTable =
                  |> List.map (fun definition ->
                      {
                          Entry.Key = definition.Key
-                         Recorded = false
+                         Recorded = None
                          LabelId = definition.LabelId
                          Prominence = definition.Prominence
                          Value = definition.Read row

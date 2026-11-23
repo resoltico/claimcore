@@ -43,6 +43,51 @@ let private caseValue status finance =
     }
 
 [<Tests>]
+let noteCreationReview =
+    testCase "creating a note reviews only the authored note text" (fun () ->
+        let snapshot = ResponseExamples.snapshot
+
+        let note =
+            NoteText.parse "Synthetic handling note"
+            |> Result.defaultWith (string >> failtest)
+
+        let review =
+            {
+                Task = TaskId.ofLiteral "note.add"
+                Target = ReviewTarget.Case(snapshot.CaseId, snapshot.Reference)
+                References = references
+                Binding = Binding.NoteNew(CaseSelector.Id snapshot.CaseId)
+                Context =
+                    {
+                        ProductVersion = "synthetic"
+                        Basis = DomainInputs.workBasis
+                    }
+                ChangesOwnSignInIdentity = false
+                Changes =
+                    [
+                        {
+                            PartId = id
+                            Revision = Revision.first
+                            Description =
+                                PartDescription.Note
+                                    {
+                                        Text = Some { Before = None; After = Some note }
+                                        Removed = Some { Before = None; After = Some false }
+                                    }
+                        }
+                    ]
+            }
+
+        let result = ReviewScreen.operationReview review
+
+        Expect.equal
+            (result.Changes |> List.map _.LabelId)
+            [ "field.noteText.label" ]
+            "The initial removal marker is a creation default"
+
+        Expect.isEmpty result.Unchanged "Unchanged values do not enter the review")
+
+[<Tests>]
 let tests =
     testList
         "shared part review facts"

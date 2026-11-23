@@ -510,6 +510,7 @@ module TimelineScreen =
                     RegionRole.Activity
                     None
                     (RegionContent.Timeline(List.map (project target link) entries))
+                |> withEmpty "empty.activity"
             ]
 
     let rows entries = rowsFor None None entries

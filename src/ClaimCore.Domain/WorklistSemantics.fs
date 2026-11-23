@@ -207,9 +207,21 @@ module CaseAttention =
 
         WorkSelection.All [ WorkSelection.activeOpen; attention ]
 
+    let subsumedBy =
+        function
+        | CaseAttention.Overdue -> Some CaseAttention.DeadlineOverdue
+        | _ -> None
+
     let at today facts =
-        all
-        |> List.filter (fun reason -> WorkSelection.evaluate today None facts None (plan reason))
+        let matching =
+            all
+            |> List.filter (fun reason ->
+                WorkSelection.evaluate today None facts None (plan reason))
+
+        matching
+        |> List.filter (fun reason ->
+            subsumedBy reason
+            |> Option.forall (fun stronger -> not (List.contains stronger matching)))
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseView =

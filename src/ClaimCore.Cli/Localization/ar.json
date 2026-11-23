@@ -24,8 +24,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "تم استلام استجابة المصادقة. عُد إلى الطرفية.",
-    "source": "5ab530fe0240"
+    "text": "تم تسجيل الدخول. يمكنك إغلاق علامة التبويب هذه والعودة إلى الطرفية.",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "رُفضت استجابة المصادقة.",
@@ -80,32 +80,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "عرض سجل الوصول والتصدير.",
-    "source": "370be36fbfc0"
+    "text": "عرض سجل الوصول والتصدير",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "الأشخاص والوصول",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "إرسال طلب منظم واحد.",
-    "source": "928e1c599453"
+    "text": "إرسال طلب منظم واحد",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "وقائع الملفات والقرارات",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "احفظ إعدادات الاتصال العامة أو اعرض مصادرها.",
-    "source": "67ea2596497a"
+    "text": "احفظ إعدادات الاتصال العامة أو اعرض مصادرها",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "حسابك والتثبيت",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "قراءة مواضيع المساعدة.",
-    "source": "519291bec34c"
+    "text": "قراءة مواضيع المساعدة",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "التحقق من تسجيل التغييرات",
@@ -120,28 +120,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "قراءة مخططات البروتوكول.",
-    "source": "048234b2c1a5"
+    "text": "قراءة مخططات البروتوكول",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "معالجة طلبات منظمة في جلسة واحدة.",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "معالجة طلبات منظمة في جلسة واحدة",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "نفّذ أوامر تفاعلية بعد تسجيل دخول واحد.",
-    "source": "943c7dc4df93"
+    "text": "نفّذ أوامر تفاعلية بعد تسجيل دخول واحد",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "عرض إصدار المنتج.",
-    "source": "1ff071b74e83"
+    "text": "عرض إصدار المنتج",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "المسؤولية وملخص المعالجة",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "يقرأ `call` طلب JSON واحدًا من الإدخال القياسي؛ ويقرأ `session` طلبًا في كل سطر.\nإذا لم يتضمن طلب التغيير معرّف عملية، تنشئه CLI وتطبعه.\nراجع docs/integrating.md#cli-use للتنسيق والحدود الدقيقة.",
-    "source": "f4e598c4197a"
+    "text": "يقرأ `call` طلب JSON واحدًا من الإدخال القياسي؛ ويقرأ `batch` طلبًا في كل سطر.\nإذا لم يتضمن طلب التغيير معرّف عملية، تنشئه CLI وتطبعه.\nراجع docs/integrating.md#cli-use للتنسيق والحدود الدقيقة.",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "استخدم {command} لعرض الأوامر.",
@@ -177,7 +177,7 @@
   },
   "cli.help.layout": {
     "text": "عميل ClaimCore لبروتوكول HTTPS. تعمل المساعدة دون اتصال وتتطلب الطلبات المصادقة.\n{body}",
-    "source": "7e13b1539170"
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "تستخدم كل صفحة الصلاحيات وتفاصيل الملفات المتاحة عند قراءتها.\nقد تنقل التغييرات المتزامنة الصفوف أو تكررها أو تحذفها من النتائج.\nيقرأ --all كل الصفحات دون تجميد النتائج.",
@@ -432,8 +432,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "يتطلب shell طرفية تفاعلية وتسجيل دخول تفاعليًا. استخدم session للطلبات عبر الأنابيب.",
-    "source": "1318499469cb"
+    "text": "يتطلب shell طرفية تفاعلية وتسجيل دخول تفاعليًا. استخدم batch للطلبات عبر الأنابيب.",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "مرفوض، بانتظار التأكيد النهائي — المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "نفّذ {command} من طرفية نظام التشغيل.",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "افتح هذا العنوان في متصفحك لتسجيل الدخول: {url}",
+    "source": "bf2997f0b8c2"
   }
 }

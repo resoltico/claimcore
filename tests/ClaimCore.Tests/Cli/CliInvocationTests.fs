@@ -26,7 +26,7 @@ let private aliases () =
             "version", CliTopic.Help HelpTopic.Version
             "schema", CliTopic.Help HelpTopic.Schema
             "call", CliTopic.Help HelpTopic.Call
-            "session", CliTopic.Help HelpTopic.Session
+            "batch", CliTopic.Help HelpTopic.Batch
         ] do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
@@ -54,6 +54,21 @@ let private aliases () =
                 "Useful guidance"
 
 let private options () =
+    Expect.equal
+        (CliInvocations.admit [ "batch" ])
+        (Ok CliInvocation.Batch)
+        "Batch admits structured requests"
+
+    Expect.equal
+        (CliInvocations.admit [ "help"; "session" ])
+        (Ok(CliInvocation.CommandHelp([ "session" ], RenderingContext.forLanguage "en", false)))
+        "Session help belongs to browser-session management"
+
+    Expect.equal
+        (CliInvocations.admit [ "session" ])
+        (Ok(CliInvocation.CommandHelp([ "session" ], RenderingContext.forLanguage "en", false)))
+        "The former batch command does not read standard input"
+
     Expect.equal
         (CliInvocations.admit [ "call" ])
         (Ok(CliInvocation.Call))
@@ -645,7 +660,7 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
                 "Synthetic account"
                 "Core target caption survives without client reconstruction"
 
-        if enabledBefore <> enabledAfter then
+        if verb <> "register" && enabledBefore <> enabledAfter then
             let yes, no =
                 match language with
                 | "en" -> "Yes", "No"

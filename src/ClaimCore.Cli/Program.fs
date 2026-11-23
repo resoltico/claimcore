@@ -121,7 +121,7 @@ let internal run output errors openInput argv =
                 false
                 "en"
                 (fun reply -> reply.Bytes)
-        | Ok CliInvocation.Session ->
+        | Ok CliInvocation.Batch ->
             use input = openInput ()
 
             remote

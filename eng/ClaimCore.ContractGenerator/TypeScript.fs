@@ -162,6 +162,9 @@ module TypeScript =
             "export type OperationBinding = OperationSubmission['binding'];"
             metadataTypes ()
             TaskMetadata.source ()
+            "export const codeTones = "
+            + JsonSerializer.Serialize(Tones.codeTones)
+            + " as const;"
             "export const isRepresentable = (value:string):boolean => Array.from(value).every(character => { const scalar=character.codePointAt(0)!; return scalar!==0 && !(scalar>=0xd800&&scalar<=0xdfff) && !(scalar>=0xfdd0&&scalar<=0xfdef) && (scalar&0xffff)<0xfffe; });"
             "const hostFailures = "
             + (HostFailureReason.all

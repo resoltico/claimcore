@@ -7,12 +7,14 @@
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="Messages/DiagnosticMetadata.fs" />
     <Compile Include="Catalog/Prominence.fs" />
+    <Compile Include="Catalog/Tones.fs" />
     <Compile Include="Documents/Links.fs" />
     <Compile Include="Documents/ReplyPresentation.fs" />
     <Compile Include="Documents/Values.fs" />
     <Compile Include="Documents/OutcomePresentation.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
     <Compile Include="Catalog/TaskInputPresentation.fs" />
+    <Compile Include="Catalog/CollectionPresentation.fs" />
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />

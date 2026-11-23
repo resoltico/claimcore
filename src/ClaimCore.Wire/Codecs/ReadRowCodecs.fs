@@ -93,6 +93,7 @@ module internal ReadRowCodecs =
             {
                 CaseSummaryFacts.Fields = fields
                 Parties = parties
+                ClosureOutcome = None
             })
         : Fields<CaseSummaryFacts, _>)
         |> field "parties" _.Parties partySummary

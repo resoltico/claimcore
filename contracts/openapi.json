@@ -24280,6 +24280,9 @@
               "DECIDED",
               "UNDECIDED"
             ]
+          },
+          "detail": {
+            "$ref": "#/components/schemas/PresentedCode"
           }
         },
         "required": [
@@ -25094,6 +25097,12 @@
             "minLength": 1,
             "maxLength": 256
           },
+          "emptyId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
           "content": {
             "$ref": "#/components/schemas/RegionContent"
           },
@@ -25356,6 +25365,58 @@
             },
             "minItems": 0,
             "maxItems": 2
+          },
+          "recommended": {
+            "enum": [
+              "case.open",
+              "case.amendRegistration",
+              "case.changeReference",
+              "case.correct",
+              "case.decide",
+              "case.withdrawDecision",
+              "case.recordPayment",
+              "case.removePayment",
+              "case.correctPayment",
+              "case.void",
+              "case.reinstate",
+              "case.close",
+              "case.reopen",
+              "case.erase",
+              "people.provisionOwner",
+              "people.recoverOwner",
+              "people.register",
+              "people.grant",
+              "people.revoke",
+              "people.enable",
+              "people.disable",
+              "people.setProfile",
+              "people.changeSignInIdentity",
+              "people.eraseProfile",
+              "people.admit",
+              "work.update",
+              "party.add",
+              "party.update",
+              "party.remove",
+              "note.add",
+              "note.remove",
+              "attachment.add",
+              "attachment.withdraw",
+              "link.add",
+              "link.remove",
+              "reminder.create",
+              "reminder.update",
+              "reminder.complete",
+              "reminder.cancel",
+              "reminder.reopen",
+              "reminder.completeAndPlanNext"
+            ]
+          },
+          "prominence": {
+            "enum": [
+              "PRIMARY",
+              "SECONDARY",
+              "DETAIL"
+            ]
           }
         },
         "required": [

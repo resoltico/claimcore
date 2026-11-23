@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "已收到身分驗證響應。請返回終端。",
-    "source": "5ab530fe0240"
+    "text": "已登入。您可以關閉此分頁並返回終端機。",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "身分驗證響應被拒絕。",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "檢視存取和匯出日誌。",
-    "source": "370be36fbfc0"
+    "text": "檢視存取和匯出日誌",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "人員與存取權限",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "傳送一個結構化請求。",
-    "source": "928e1c599453"
+    "text": "傳送一個結構化請求",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "案件資料與決定",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "保存公開的連線設定或顯示其來源。",
-    "source": "67ea2596497a"
+    "text": "保存公開的連線設定或顯示其來源",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "您的帳戶與安裝實例",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "查閱幫助主題。",
-    "source": "519291bec34c"
+    "text": "查閱幫助主題",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "檢查更改是否已記錄",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "查閱協議結構定義。",
-    "source": "048234b2c1a5"
+    "text": "查閱協議結構定義",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "在同一會話中處理結構化請求。",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "在同一會話中處理結構化請求",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "登入一次後執行互動式命令。",
-    "source": "943c7dc4df93"
+    "text": "登入一次後執行互動式命令",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "顯示產品版本。",
-    "source": "1ff071b74e83"
+    "text": "顯示產品版本",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "負責人及處理摘要",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call` 從標準輸入讀取一個 JSON 請求；`session` 每行讀取一個請求。\n如果更改請求沒有操作 ID，CLI 會創建並輸出 ID。\n準確格式和限制見 docs/integrating.md#cli-use。",
-    "source": "f4e598c4197a"
+    "text": "`call` 從標準輸入讀取一個 JSON 請求；`batch` 每行讀取一個請求。\n如果更改請求沒有操作 ID，CLI 會創建並輸出 ID。\n準確格式和限制見 docs/integrating.md#cli-use。",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "執行 {command} 查看命令。",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "ClaimCore 結構化 HTTPS 用戶端。幫助和命令發現支援離線使用；call 和 session 需要身分驗證。\n{body}",
-    "source": "7e13b1539170"
+    "text": "ClaimCore 結構化 HTTPS 用戶端。幫助和命令發現支援離線使用；call 和 batch 需要身分驗證。\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "每頁使用讀取時的存取權限和案件資訊。\n併發更改可能導致行移動、重復或遺漏。\n--all 讀取所有頁面，但不會凍結結果。",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell 需要互動式終端機與互動式登入。管線請求請使用 session。",
-    "source": "1318499469cb"
+    "text": "shell 需要互動式終端機與互動式登入。管線請求請使用 batch。",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "已拒絕，等待最終確認 — 嘗試 {attemptId}：{subject} {act}；操作 {operationId}。",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "請在作業系統的終端機中執行 {command}。",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "請在瀏覽器中開啟此位址登入：{url}",
+    "source": "bf2997f0b8c2"
   }
 }

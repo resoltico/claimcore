@@ -638,35 +638,32 @@ let tests =
                     "JSON omission remains usage-invalid"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
-            testCase
-                "omitted correction groups mean KEEP and one unchanged summary replaces repeated KEEP lines"
-                (fun () ->
-                    let h =
-                        harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
+            testCase "omitted correction groups mean KEEP and stay out of the review" (fun () ->
+                let h = harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
 
-                    run [ "case"; "correct"; "x" ] h |> ignore
+                run [ "case"; "correct"; "x" ] h |> ignore
 
-                    let values = (caseInput h.Calls[2] |> Submissions.command).Inputs.Values
+                let values = (caseInput h.Calls[2] |> Submissions.command).Inputs.Values
 
-                    for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
-                        Expect.equal
-                            values[TaskInputId.Target(InputTarget.Group group)]
-                            (InputValue.Text "KEEP")
-                            "Unselected correction groups retain their facts"
-
-                    let rendered = String.concat "\n" h.Text
-
+                for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
                     Expect.equal
-                        (rendered.Split('\n')
-                         |> Array.filter (fun line ->
-                             line.StartsWith("Unchanged:", StringComparison.Ordinal))
-                         |> Array.length)
-                        1
-                        "One summary covers unchanged values"
+                        values[TaskInputId.Target(InputTarget.Group group)]
+                        (InputValue.Text "KEEP")
+                        "Unselected correction groups retain their facts"
 
-                    Expect.isFalse
-                        (rendered.Contains "Keep current details")
-                        "Unchanged group actions do not obscure the supplied changes")
+                let rendered = String.concat "\n" h.Text
+
+                Expect.equal
+                    (rendered.Split('\n')
+                     |> Array.filter (fun line ->
+                         line.StartsWith("Unchanged:", StringComparison.Ordinal))
+                     |> Array.length)
+                    0
+                    "The review omits unchanged values"
+
+                Expect.isFalse
+                    (rendered.Contains "Keep current details")
+                    "Unchanged group actions do not obscure the supplied changes")
             testCase "localized prompts accept affirmative Latvian and Arabic replies" (fun () ->
                 for language, answer, prompt in
                     [

@@ -27,6 +27,25 @@ module WorkViewsScreen =
         [ section "label.cases" cases; section "label.reminders" reminders ]
 
 
+    let caseProminence =
+        function
+        | CaseView.NeedsAttention
+        | CaseView.Mine
+        | CaseView.Overdue
+        | CaseView.DueToday
+        | CaseView.All -> Prominence.Primary
+        | _ -> Prominence.Secondary
+
+    let reminderProminence =
+        function
+        | ReminderView.Pending
+        | ReminderView.Mine
+        | ReminderView.Overdue
+        | ReminderView.Today
+        | ReminderView.Upcoming -> Prominence.Primary
+        | ReminderView.Completed
+        | ReminderView.Cancelled -> Prominence.Secondary
+
     let view (reply: WorkViews) =
         let columns =
             [
@@ -52,6 +71,8 @@ module WorkViewsScreen =
                 {
                     RegionRow.Key = caseKey item.View
                     Transfers = []
+                    Recommended = None
+                    Prominence = Some(caseProminence item.View)
                     Link =
                         Some(
                             Link.CaseList
@@ -82,6 +103,8 @@ module WorkViewsScreen =
                 {
                     RegionRow.Key = reminderKey item.View
                     Transfers = []
+                    Recommended = None
+                    Prominence = Some(reminderProminence item.View)
                     Link =
                         Some(
                             Link.ReminderList

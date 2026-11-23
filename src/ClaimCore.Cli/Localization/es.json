@@ -12,8 +12,8 @@
     "source": "dfb0a6878428"
   },
   "cli.callbackAccepted": {
-    "text": "Respuesta de autenticación recibida. Vuelve al terminal.",
-    "source": "5ab530fe0240"
+    "text": "Has iniciado sesión. Puedes cerrar esta pestaña y volver al terminal.",
+    "source": "1fccb6eb38a8"
   },
   "cli.callbackRefused": {
     "text": "Respuesta de autenticación rechazada.",
@@ -68,32 +68,32 @@
     "source": "6468ac9f9bca"
   },
   "cli.family.disclosure": {
-    "text": "Ver el registro de acceso y exportación.",
-    "source": "370be36fbfc0"
+    "text": "Ver el registro de acceso y exportación",
+    "source": "637731605ab4"
   },
   "cli.family.people": {
     "text": "Personas y acceso",
     "source": "1e133caaec46"
   },
   "cli.family.call": {
-    "text": "Enviar una solicitud estructurada.",
-    "source": "928e1c599453"
+    "text": "Enviar una solicitud estructurada",
+    "source": "0e7bfab3d0f9"
   },
   "cli.family.case": {
     "text": "Datos del expediente y decisiones",
     "source": "80b97b9bb858"
   },
   "cli.family.configure": {
-    "text": "Guardar los ajustes públicos de conexión o mostrar sus fuentes.",
-    "source": "67ea2596497a"
+    "text": "Guardar los ajustes públicos de conexión o mostrar sus fuentes",
+    "source": "63efb28d6a2b"
   },
   "cli.family.context": {
     "text": "Tu cuenta y tu instalación",
     "source": "14cc2a6da0af"
   },
   "cli.family.help": {
-    "text": "Consultar los temas de ayuda.",
-    "source": "519291bec34c"
+    "text": "Consultar los temas de ayuda",
+    "source": "997d5cb3102e"
   },
   "cli.family.operation": {
     "text": "Comprobar si los cambios se registraron",
@@ -108,28 +108,28 @@
     "source": "a57f1425ef1b"
   },
   "cli.family.schema": {
-    "text": "Consultar los esquemas del protocolo.",
-    "source": "048234b2c1a5"
+    "text": "Consultar los esquemas del protocolo",
+    "source": "185d9926112e"
   },
-  "cli.family.session": {
-    "text": "Procesar solicitudes estructuradas en una sesión.",
-    "source": "539c70f5ca7f"
+  "cli.family.batch": {
+    "text": "Procesar solicitudes estructuradas en una sesión",
+    "source": "37a69388dd43"
   },
   "cli.family.shell": {
-    "text": "Ejecutar comandos interactivos con un solo inicio de sesión.",
-    "source": "943c7dc4df93"
+    "text": "Ejecutar comandos interactivos con un solo inicio de sesión",
+    "source": "830d427babdb"
   },
   "cli.family.version": {
-    "text": "Mostrar la versión del producto.",
-    "source": "1ff071b74e83"
+    "text": "Mostrar la versión del producto",
+    "source": "1b36334e67e1"
   },
   "cli.family.work": {
     "text": "Responsabilidad y resumen de tramitación",
     "source": "cc58af0433de"
   },
   "cli.help.call": {
-    "text": "`call` lee una solicitud JSON desde stdin; `session` lee una solicitud por línea.\nSi una solicitud de cambio no tiene ID de operación, la CLI lo crea y lo imprime.\nConsulta el formato y los límites en docs/integrating.md#cli-use.",
-    "source": "f4e598c4197a"
+    "text": "`call` lee una solicitud JSON desde stdin; `batch` lee una solicitud por línea.\nSi una solicitud de cambio no tiene ID de operación, la CLI lo crea y lo imprime.\nConsulta el formato y los límites en docs/integrating.md#cli-use.",
+    "source": "e0e3d82a77d4"
   },
   "cli.help.commands": {
     "text": "Ejecuta {command} para consultar los comandos.",
@@ -164,8 +164,8 @@
     "source": "e601a5b87c90"
   },
   "cli.help.layout": {
-    "text": "Cliente HTTPS estructurado de ClaimCore. La ayuda y la exploración funcionan sin conexión; call y session requieren autenticación.\n{body}",
-    "source": "7e13b1539170"
+    "text": "Cliente HTTPS estructurado de ClaimCore. La ayuda y la exploración funcionan sin conexión; call y batch requieren autenticación.\n{body}",
+    "source": "31ab8703d7b9"
   },
   "cli.help.liveTraversal": {
     "text": "Cada página usa el acceso y los datos disponibles al leerla.\nLos cambios simultáneos pueden mover, repetir u omitir filas.\n--all lee todas las páginas sin congelar los resultados.",
@@ -420,8 +420,8 @@
     "source": "942c7b3fea92"
   },
   "cli.usage.shellInteractiveRequired": {
-    "text": "shell requiere un terminal interactivo y un inicio de sesión interactivo. Use session para solicitudes por tubería.",
-    "source": "1318499469cb"
+    "text": "shell requiere un terminal interactivo y un inicio de sesión interactivo. Use batch para solicitudes por tubería.",
+    "source": "0444cb8fe219"
   },
   "cli.text.recoveryRefusedAttempt": {
     "text": "Rechazado, pendiente de confirmación definitiva — intento {attemptId}: {subject} {act}; operación {operationId}.",
@@ -510,5 +510,9 @@
   "cli.usage.configureShowFromShell": {
     "text": "Ejecuta {command} en el terminal de tu sistema operativo.",
     "source": "278514d04b5d"
+  },
+  "cli.browserOpenManually": {
+    "text": "Abre esta dirección en tu navegador para iniciar sesión: {url}",
+    "source": "bf2997f0b8c2"
   }
 }

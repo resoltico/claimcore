@@ -151,13 +151,14 @@ type CliMessage =
     | [<MessageKey("cli.family.operation")>] OperationFamily
     | [<MessageKey("cli.family.context")>] ContextFamily
     | [<MessageKey("cli.family.call")>] CallFamily
-    | [<MessageKey("cli.family.session")>] SessionFamily
+    | [<MessageKey("cli.family.batch")>] BatchFamily
     | [<MessageKey("cli.family.schema")>] SchemaFamily
     | [<MessageKey("cli.family.help")>] HelpFamily
     | [<MessageKey("cli.help.examples")>] HelpExamples
     | [<MessageKey("cli.help.help")>] HelpHelp
     | [<MessageKey("cli.help.schema")>] HelpSchema
     | [<MessageKey("cli.help.version")>] HelpVersion
+    | [<MessageKey("cli.browserOpenManually")>] BrowserOpenManually of url: string
     | [<MessageKey("cli.callbackAccepted")>] CallbackAccepted
     | [<MessageKey("cli.callbackRefused")>] CallbackRefused
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure

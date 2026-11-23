@@ -63,12 +63,34 @@ let tests =
         "list and detail carry the same versioned reminder affordances and permitted seeds"
         (fun () ->
             let document =
-                HumanReadDocuments.reminders
+                (HumanReadDocuments.reminders (
+                    {
+                        View = None
+                        Target = None
+                        State = None
+                        Kind = None
+                        DeadlineOutcome = None
+                        Due = None
+                        Assignment = None
+                        Text = None
+                        AfterCursor = None
+                        Limit = 50
+                        IncludeInactive = None
+                    }
+                ))
                     {
                         Basis = DomainInputs.workBasis
                         Items = [ item ]
                         NextCursor = None
                     }
+
+            match document.Screen.Regions.Head.Content with
+            | RegionContent.Table table ->
+                Expect.equal
+                    table.Rows.Head.Recommended
+                    (Some(TaskId.ofLiteral "reminder.complete"))
+                    "A pending row recommends its offered completion"
+            | _ -> failtest "Reminder results are a table"
 
             let controls = Screen.affordances document.Screen
 

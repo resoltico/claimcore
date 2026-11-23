@@ -54,7 +54,10 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->
             Route.representedRead Api.reminder HumanReadDocuments.reminder Service.reminder
         | ActorEndpoint.Query QueryTaskId.ReminderList ->
-            Route.representedRead Api.reminders HumanReadDocuments.reminders Service.reminders
+            Route.representedReadWithInput
+                Api.reminders
+                HumanReadDocuments.reminders
+                Service.reminders
         | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
             Route.representedRead Api.caseTimeline HumanReadDocuments.timeline Service.timeline
         | ActorEndpoint.Query QueryTaskId.Context ->

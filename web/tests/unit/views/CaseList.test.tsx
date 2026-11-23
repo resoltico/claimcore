@@ -242,8 +242,8 @@ it.each([
   );
   navigate(`/cases?view=${view}`, true);
   render(<CaseList onSelect={vi.fn()} />);
-  await screen.findByText("Nothing to show in this view.");
-  expect(screen.getAllByText("Nothing to show in this view.")).toHaveLength(1);
+  await screen.findByText("No cases match this view.");
+  expect(screen.getAllByText("No cases match this view.")).toHaveLength(1);
   expect(screen.queryByRole("heading", { name: "Page" })).toBeNull();
   expect(screen.queryByText("All results shown.")).toBeNull();
   expect(screen.getByRole("tab", { name: `${label} 0` })).toHaveAttribute("aria-selected", "true");

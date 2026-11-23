@@ -130,7 +130,7 @@ type internal ShellSession
                         token
             | Ok(CliInvocation.Configure None) ->
                 return unsupported (UsageError.NotApplicable("--show", "shell"))
-            | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
+            | Ok(CliInvocation.Call | CliInvocation.Batch | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
                 return unsupported (UsageError.NotApplicable("command", "shell"))
             | Ok invocation ->
                 return

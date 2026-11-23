@@ -735,18 +735,6 @@
     "text": "Parādīta tikai daļa lomu.",
     "source": "391d53d153f3"
   },
-  "ui.addRole": {
-    "text": "Pievienot lomu",
-    "source": "e53a93625e74"
-  },
-  "ui.removeRole": {
-    "text": "Noņemt lomu",
-    "source": "9a1fb81f279f"
-  },
-  "ui.roleNumber": {
-    "text": "Loma {number}",
-    "source": "00fa69a81cab"
-  },
   "ui.downloadFailed": {
     "text": "Pārlūks nevarēja saglabāt lejupielādi. Mēģiniet vēlreiz.",
     "source": "e3c4b2089bc4"
@@ -754,18 +742,6 @@
   "ui.clearCaseRestriction": {
     "text": "Noņemt lietas ierobežojumu",
     "source": "76ab14deda9c"
-  },
-  "ui.addRow": {
-    "text": "Pievienot rindu",
-    "source": "1868a8dd78ad"
-  },
-  "ui.removeRow": {
-    "text": "Noņemt rindu",
-    "source": "1810fddd9e28"
-  },
-  "ui.rowNumber": {
-    "text": "{number}. rinda",
-    "source": "f8c78edd5258"
   },
   "ui.attachments.file": {
     "text": "Izvēlēties failu",

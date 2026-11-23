@@ -187,7 +187,7 @@ let redirectedShell =
                 Expect.isEmpty result.StandardOutput "No JSON frame is emitted"
                 let text = Text.Encoding.UTF8.GetString result.StandardError
                 Expect.stringContains text "interactive terminal" "Explain the required terminal"
-                Expect.stringContains text "session" "Explain the piped alternative"
+                Expect.stringContains text "batch" "Explain the piped alternative"
 
                 Expect.isFalse
                     (text.Contains("CONFIGURATION_INVALID"))

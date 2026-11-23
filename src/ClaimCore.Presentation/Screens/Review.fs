@@ -464,13 +464,45 @@ module ReviewScreen =
 
             principal @ changes @ grants, unchanged
 
-    let operationReview (review: OperationReview) =
-        let parts =
-            review.Changes
-            |> List.map (fun part -> describePart review.References part.PartId part.Description)
+    let private authoredCreationFields =
+        function
+        | PartDescription.Case value when value.Values.Before.IsNone ->
+            PartDescription.Case
+                { value with
+                    Lifecycle = None
+                    Fields =
+                        value.Fields
+                        |> List.filter (fun change -> change.FieldName <> BusinessField.Status)
+                }
+        | PartDescription.Note value -> PartDescription.Note { value with Removed = None }
+        | PartDescription.Reminder value -> PartDescription.Reminder { value with State = None }
+        | PartDescription.Person value ->
+            PartDescription.Person
+                { value with
+                    Enabled = None
+                    ProfilePresent = None
+                }
+        | description -> description
 
-        let changes = parts |> List.collect fst
-        let unchanged = parts |> List.collect snd
+    let operationReview (review: OperationReview) =
+        let creation = (TaskDeclarations.describe (TaskId.token review.Task)).Creates
+
+        let changes =
+            review.Changes
+            |> List.collect (fun part ->
+                let description =
+                    if creation then
+                        authoredCreationFields part.Description
+                    else
+                        part.Description
+
+                describePart review.References part.PartId description |> fst)
+            |> List.filter (fun change ->
+                change.Before <> change.After
+                && (not creation
+                    || match change.After with
+                       | PresentedValue.Absent _ -> false
+                       | _ -> true))
 
         let effects =
             changes
@@ -488,7 +520,7 @@ module ReviewScreen =
 
         {
             ReviewDescription.Changes = changes
-            Unchanged = unchanged
+            Unchanged = []
             Effects = effects
             Basis = review.Context.Basis
         }

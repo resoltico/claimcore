@@ -145,6 +145,14 @@ module PresentationCodecs =
         ]
         |> taggedOn "vocabulary" (if many then "PresentedCodes" else "PresentedCode")
 
+    let private stateDetail =
+        codes false
+        |> map
+            (function
+            | PresentedValue.Code(vocabulary, token) -> vocabulary, token
+            | _ -> invalidOp "State details require a presented code.")
+            (fun (vocabulary, token) -> PresentedValue.Code(vocabulary, token))
+
     // This complete wire-tag table keeps every semantic constructor beside its closed payload grammar.
     let private scalar =
         tagged
@@ -215,13 +223,14 @@ module PresentationCodecs =
                     (record id |> field "value" id ActorCodecs.actorRef)
                 variant
                     "STATE"
-                    PresentedValue.State
+                    (fun (state, detail) -> PresentedValue.State(state, detail))
                     (function
-                    | PresentedValue.State value -> Some value
+                    | PresentedValue.State(state, detail) -> Some(state, detail)
                     | _ -> None)
-                    (record id
+                    (record (fun state detail -> state, detail)
                      |> fixedField "vocabulary" (Vocabulary.name CaseHeadline.vocabulary)
-                     |> field "token" id (VocabularyCodec.create CaseHeadline.vocabulary))
+                     |> field "token" fst (VocabularyCodec.create CaseHeadline.vocabulary)
+                     |> optionalField "detail" snd stateDetail)
                 variant
                     "COUNT"
                     PresentedValue.Count
@@ -693,7 +702,7 @@ module PresentationCodecs =
         (record (fun key label prominence value recorded ->
             {
                 Entry.Key = key
-                Recorded = defaultArg recorded false
+                Recorded = recorded
                 LabelId = label
                 Prominence = prominence
                 Value = value
@@ -703,10 +712,7 @@ module PresentationCodecs =
         |> field "labelId" _.LabelId messageId
         |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
         |> field "value" _.Value value
-        |> optionalField
-            "recorded"
-            (fun value -> if value.Recorded then Some true else None)
-            boolean
+        |> optionalField "recorded" _.Recorded boolean
         |> build
         |> named "PresentedEntry"
 
@@ -825,7 +831,7 @@ module PresentationCodecs =
         |> named "AttachmentTransferControl"
 
     let private row =
-        (record (fun key values detail link actions transfers ->
+        (record (fun key values detail link actions transfers recommended prominence ->
             {
                 RegionRow.Key = key
                 Values = values
@@ -833,6 +839,8 @@ module PresentationCodecs =
                 Link = link
                 Actions = defaultArg actions []
                 Transfers = defaultArg transfers []
+                Recommended = recommended
+                Prominence = prominence
             })
         : Fields<RegionRow, _>)
         |> field "key" _.Key key
@@ -851,6 +859,11 @@ module PresentationCodecs =
                 else
                     Some value.Transfers)
             (list AttachmentRead.all.Length attachmentTransfer)
+        |> optionalField
+            "recommended"
+            _.Recommended
+            (VocabularyCodec.create TaskVocabulary.vocabulary)
+        |> optionalField "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
         |> build
         |> named "RegionRow"
 
@@ -1020,17 +1033,19 @@ module PresentationCodecs =
         |> fun codec -> restrict codec.Schema PresentationStructure.content codec
 
     let private region =
-        (record (fun role title content link actions ->
+        (record (fun role title emptyId content link actions ->
             {
                 Region.Role = role
                 Link = link
                 Actions = defaultArg actions []
                 TitleId = title
+                EmptyId = emptyId
                 Content = content
             })
         : Fields<Region, _>)
         |> field "role" _.Role (VocabularyCodec.create RegionRole.vocabulary)
         |> optionalField "titleId" _.TitleId messageId
+        |> optionalField "emptyId" _.EmptyId messageId
         |> field "content" _.Content content
         |> optionalField "link" _.Link link
         |> optionalField

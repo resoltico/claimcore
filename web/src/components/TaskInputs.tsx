@@ -418,14 +418,14 @@ const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input
       <InputControl key={input.id} input={input} {...props} />
     );
   };
-  const grant =
+  const hasGrantTarget =
     props.task.subject === "PEOPLE" &&
     props.task.inputs.some((input) => input.id === "input:scope") &&
     inputs.some(isGrantInput);
   return (
     <>
-      {grant ? <GrantTargetInput {...props} inputs={props.task.inputs} /> : null}
-      {inputs.filter((input) => !grant || !isGrantInput(input)).map(render)}
+      {hasGrantTarget && <GrantTargetInput {...props} inputs={props.task.inputs} />}
+      {inputs.filter((input) => !hasGrantTarget || !isGrantInput(input)).map(render)}
     </>
   );
 };
@@ -436,19 +436,17 @@ const CollectionRows = ({
   const p = usePresentation();
   const value = props.values[collection.id];
   const rows = isFormCollection(value) ? value.rows : [];
-  const grant = collection.inputs.some(isGrantInput);
+  const hasGrantTarget = collection.inputs.some(isGrantInput);
   const update = (next: typeof rows) => {
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
   };
   return (
     <fieldset id={`field-${collection.id}`} disabled={props.disabled}>
-      <legend>{renderCatalogKey(p, taskInput(collection.input).labelId)}</legend>
+      <legend>{renderCatalogKey(p, collection.labelId)}</legend>
       {rows.map((row, index) => (
         <fieldset key={row.key}>
-          <legend>
-            {p.text(grant ? "ui.roleNumber" : "ui.rowNumber", { number: p.integer(index + 1) })}
-          </legend>
-          {grant ? (
+          <legend>{p.text(collection.itemLabelId, { number: p.integer(index + 1) })}</legend>
+          {hasGrantTarget && (
             <GrantTargetInput
               {...props}
               defaults={collection.defaults}
@@ -467,9 +465,9 @@ const CollectionRows = ({
                 );
               }}
             />
-          ) : null}
+          )}
           {collection.inputs
-            .filter((input) => !grant || !isGrantInput(input))
+            .filter((input) => !hasGrantTarget || !isGrantInput(input))
             .map((input) => (
               <InputControl
                 key={input.id}
@@ -498,7 +496,7 @@ const CollectionRows = ({
               update(rows.filter((previous) => previous.key !== row.key));
             }}
           >
-            {p.text(grant ? "ui.removeRole" : "ui.removeRow")}
+            {renderCatalogKey(p, collection.removeLabelId)}
           </button>
         </fieldset>
       ))}
@@ -516,7 +514,7 @@ const CollectionRows = ({
           ]);
         }}
       >
-        {p.text(grant ? "ui.addRole" : "ui.addRow")}
+        {renderCatalogKey(p, collection.addLabelId)}
       </button>
     </fieldset>
   );

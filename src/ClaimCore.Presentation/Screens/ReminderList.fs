@@ -51,8 +51,44 @@ module ReminderListScreen =
 
 
 
-    let rows rows =
-        let columns = reminderColumns |> List.filter (fun column -> column.Key <> "id")
+    let columnsFor view state =
+        let columns = [ "due"; "action"; "reference"; "claimants"; "kind"; "responsible" ]
+
+        let completed =
+            match view, state with
+            | Some(ReminderView.Completed | ReminderView.Cancelled), _
+            | None,
+              Some(ReminderStateSelection.Any | ReminderStateSelection.State(ReminderState.Completed | ReminderState.Cancelled)) ->
+                true
+            | _ -> false
+
+        let keys =
+            if completed then
+                columns @ [ "doneOn"; "deadlineOutcome" ]
+            else
+                columns
+
+        keys
+        |> List.map (fun key -> reminderColumns |> List.find (fun column -> column.Key = key))
+
+    let recommendCompletion (table: RegionTable) =
+        let complete = ClientCompositions.reminderCompletion
+
+        { table with
+            Rows =
+                table.Rows
+                |> List.map (fun row ->
+                    { row with
+                        Recommended =
+                            row.Actions
+                            |> List.tryFind (fun action ->
+                                action.Task = complete && action.Blocked.IsNone)
+                            |> Option.map _.Task
+                    })
+        }
+
+    let rows selection state rows =
+        let columns = columnsFor selection state
 
         let data =
             tableWithControls
@@ -69,6 +105,7 @@ module ReminderListScreen =
                     ),
                     TaskAffordances.reminder row)
                 rows
+            |> recommendCompletion
 
         let groups =
             [
@@ -77,9 +114,13 @@ module ReminderListScreen =
                 "reminderDue.TODAY.label", (fun row -> row.Timing = Some ReminderDue.Today)
                 "reminderDue.UPCOMING.label", (fun row -> row.Timing = Some ReminderDue.Upcoming)
                 "reminderState.COMPLETED.label",
-                (fun row -> Reminder.state row.Reminder = ReminderState.Completed)
+                (fun row -> row.Active && Reminder.state row.Reminder = ReminderState.Completed)
                 "reminderState.CANCELLED.label",
-                (fun row -> Reminder.state row.Reminder = ReminderState.Cancelled)
+                (fun row -> row.Active && Reminder.state row.Reminder = ReminderState.Cancelled)
+                "label.reminderCompletedInactive",
+                (fun row -> not row.Active && Reminder.state row.Reminder = ReminderState.Completed)
+                "label.reminderCancelledInactive",
+                (fun row -> not row.Active && Reminder.state row.Reminder = ReminderState.Cancelled)
                 (Vocabulary.messageKey CaseDue.vocabulary CaseDue.Inactive "label"),
                 (fun row ->
                     row.Timing.IsNone && Reminder.state row.Reminder = ReminderState.Pending)
@@ -103,7 +144,8 @@ module ReminderListScreen =
         Screen.create
             [
                 region RegionRole.Results None (RegionContent.Table { data with Groups = groups })
+                |> withEmpty "label.noReminders"
             ]
 
-    let view (reply: ReminderPage) =
-        page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
+    let view selection state (reply: ReminderPage) =
+        page reply.Basis reply.Items.Length reply.NextCursor (rows selection state reply.Items)

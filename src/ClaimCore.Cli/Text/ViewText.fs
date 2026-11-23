@@ -171,17 +171,17 @@ module internal ViewText =
                            else
                                []))
 
-            if body.IsEmpty then [] else heading @ body
+            if body.IsEmpty then
+                if includeHeader && showEmpty then
+                    region.EmptyId |> Option.map label |> Option.toList
+                else
+                    []
+            else
+                heading @ body
 
-        let lines =
-            screen.Regions
-            |> List.filter (fun region -> includeDetails || region.Role <> RegionRole.Details)
-            |> List.collect render
-
-        if lines.IsEmpty && includeHeader && showEmpty then
-            [ label "view.empty" ]
-        else
-            lines
+        screen.Regions
+        |> List.filter (fun region -> includeDetails || region.Role <> RegionRole.Details)
+        |> List.collect render
 
     let renderWithDetails includeDetails options (rendering: RenderingContext) screen =
         renderWithHeader "UTC" true true includeDetails options rendering screen

@@ -254,10 +254,10 @@ let private hostExamples =
         "version options", [ "version"; "--bad" ], "versionOptions", [], Some "version [--json]"
         "call invocation", [ "call"; "--retry" ], "invocation", [ "command", "call" ], Some "call"
         "session invocation",
-        [ "session"; "extra" ],
+        [ "batch"; "extra" ],
         "invocation",
-        [ "command", "session" ],
-        Some "session"
+        [ "command", "batch" ],
+        Some "batch"
     ]
 
 let private qualifyHost (arguments, key, values, syntax) () =
@@ -385,7 +385,7 @@ let closedFlagsBeforeInput =
                 [ "help" ]
                 [ "schema"; "invocation" ]
                 [ "call" ]
-                [ "session" ]
+                [ "batch" ]
                 [ "shell" ]
                 [ "configure" ]
                 [

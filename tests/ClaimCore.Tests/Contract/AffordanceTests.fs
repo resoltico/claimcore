@@ -26,6 +26,8 @@ let private row key actions =
     {
         RegionRow.Key = key
         Transfers = []
+        Recommended = None
+        Prominence = None
         Values = []
         Detail = None
         Link = None
@@ -36,6 +38,7 @@ let private region rows =
     {
         Region.Role = RegionRole.Results
         TitleId = None
+        EmptyId = None
         Content =
             RegionContent.Table
                 {

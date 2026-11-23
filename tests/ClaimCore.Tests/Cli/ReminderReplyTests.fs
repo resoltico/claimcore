@@ -57,6 +57,8 @@ let private render language dateBasis value =
     [
         ReminderScreen.view { Basis = dateBasis; Item = value }
         ReminderListScreen.view
+            None
+            None
             {
                 Basis = dateBasis
                 Items = [ value ]
@@ -177,7 +179,10 @@ let tests =
 
                                     for text in outputs do
                                         Expect.equal
-                                            (text.Contains inactive)
+                                            (text.Contains(
+                                                inactive,
+                                                StringComparison.OrdinalIgnoreCase
+                                            ))
                                             (not active)
                                             "Inactive indication follows actual parent activity"
 

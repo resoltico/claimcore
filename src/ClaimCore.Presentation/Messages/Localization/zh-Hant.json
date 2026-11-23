@@ -2475,10 +2475,6 @@
     "text": "提醒",
     "source": "7971dd752669"
   },
-  "view.empty": {
-    "text": "此視圖中沒有可顯示的內容。",
-    "source": "349bbe9bc791"
-  },
   "scalar.calendarDate.guidance": {
     "text": "請使用 YYYY-MM-DD，例如 2026-10-06。",
     "source": "4be0526a5f3c"
@@ -4222,5 +4218,85 @@
   "endpoint.attachment.preview.meaning": {
     "text": "在工作區內檢視目前的附件。",
     "source": "5e943e102857"
+  },
+  "headline.withDetail": {
+    "text": "{state}：{detail}",
+    "source": "4849dd0aea3d"
+  },
+  "collection.parties.item": {
+    "text": "當事方 {number}",
+    "source": "f05452041a6b"
+  },
+  "collection.parties.add": {
+    "text": "新增當事方",
+    "source": "bfb2a7177b88"
+  },
+  "collection.parties.remove": {
+    "text": "移除當事方",
+    "source": "e842bc4acd74"
+  },
+  "empty.nextActions": {
+    "text": "此案件沒有後續行動。",
+    "source": "ed6df5906626"
+  },
+  "empty.work": {
+    "text": "未記錄處理詳情。",
+    "source": "36840a34f818"
+  },
+  "task.case.decide.change": {
+    "text": "變更付款決定",
+    "source": "4236683d2784"
+  },
+  "collection.parties.label": {
+    "text": "當事方",
+    "source": "2729f5dd4807"
+  },
+  "collection.peopleGrants.label": {
+    "text": "角色",
+    "source": "c25337055464"
+  },
+  "collection.peopleGrants.item": {
+    "text": "角色 {number}",
+    "source": "00fa69a81cab"
+  },
+  "collection.peopleGrants.add": {
+    "text": "添加角色",
+    "source": "e53a93625e74"
+  },
+  "collection.peopleGrants.remove": {
+    "text": "移除角色",
+    "source": "9a1fb81f279f"
+  },
+  "empty.notes": {
+    "text": "未記錄備註。",
+    "source": "a567e3ebbe5c"
+  },
+  "empty.attachments": {
+    "text": "沒有目前的附件。",
+    "source": "6d2a34c560f7"
+  },
+  "empty.relatedCases": {
+    "text": "沒有相關案件。",
+    "source": "633111ebc7ee"
+  },
+  "empty.activity": {
+    "text": "沒有可顯示的活動。",
+    "source": "5ddccb9ef206"
+  },
+  "empty.accessHistory": {
+    "text": "沒有符合所選條件的權限變更。",
+    "source": "551e9e8904a3"
+  },
+  "empty.disclosureTrail": {
+    "text": "沒有符合所選條件的存取或匯出記錄。",
+    "source": "dfbdf8774ba3"
+  },
+  "label.reminderCompletedInactive": {
+    "text": "已完成（非使用中的處理）",
+    "source": "fa843abf79cb"
+  },
+  "label.reminderCancelledInactive": {
+    "text": "已取消（非使用中的處理）",
+    "source": "0c7f57d2c13d"
   }
 }

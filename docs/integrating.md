@@ -335,7 +335,7 @@ claimcore schema invocation
 claimcore schema response
 ```
 
-Human verbs, `call`, `session`, `shell` and recovery commands are documented by their own help topics.
+Human verbs, `call`, `batch`, `shell` and recovery commands are documented by their own help topics.
 For structured calls, inspect the invocation and response schemas before writing an adapter. Keep
 stdout machine frames separate from stderr guidance, and consume complete frames rather than partial
 chunks. A shell pipeline closing its output does not establish whether a write was accepted.

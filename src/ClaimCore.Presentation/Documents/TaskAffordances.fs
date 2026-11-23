@@ -245,7 +245,7 @@ module TaskAffordances =
                         )
                     ]
             | Refusal.Case(CaseRefusal.NotOffered state) ->
-                "NOT_OFFERED", Map.ofList [ "state", PresentedValue.State state ]
+                "NOT_OFFERED", Map.ofList [ "state", PresentedValue.State(state, None) ]
             | Refusal.Case CaseRefusal.CaseAlreadyExists -> "CASE_ALREADY_EXISTS", Map.empty
             | Refusal.RegisterMaintenance -> "REGISTER_MAINTENANCE", Map.empty
             | _ ->

@@ -160,11 +160,14 @@ module Route =
                         })
         }
 
-    let representedRead endpoint describe invoke =
+    let representedReadWithInput endpoint describe invoke =
         represented
             endpoint
             (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
-            (fun _ outcome -> HumanReplies.read describe outcome)
+            (fun input outcome -> HumanReplies.read (describe input) outcome)
             (fun _ -> None)
             (fun _ -> false)
             invoke
+
+    let representedRead endpoint describe invoke =
+        representedReadWithInput endpoint (fun _ -> describe) invoke

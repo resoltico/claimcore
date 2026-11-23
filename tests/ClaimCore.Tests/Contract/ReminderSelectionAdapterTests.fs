@@ -198,7 +198,9 @@ let tests =
                         CliReplies.ofValue
                             Api.reminders
                             (RepresentationReply.Human(
-                                HumanReplies.read HumanReadDocuments.reminders result
+                                HumanReplies.read
+                                    (HumanReadDocuments.reminders (query [ "--state"; "ANY" ]))
+                                    result
                             ))
 
                     let output =

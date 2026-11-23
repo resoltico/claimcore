@@ -58,24 +58,24 @@ module DisclosureTrailScreen =
         ]
 
     let view (value: DisclosureTrailPage) =
-        if value.Items.IsEmpty then
-            Screen.create []
-        else
-            let rows =
-                table
-                    (fun (item: RecordedDisclosure) ->
-                        item.Id.ToString(CultureInfo.InvariantCulture))
-                    (fun item ->
-                        Some
-                            {
-                                Summary = None
-                                Highlights = []
-                                Sections = [ section "label.recordDetails" (entries columns item) ]
-                            })
-                    columns
-                    value.Items
+        let rows =
+            table
+                (fun (item: RecordedDisclosure) -> item.Id.ToString(CultureInfo.InvariantCulture))
+                (fun item ->
+                    Some
+                        {
+                            Summary = None
+                            Highlights = []
+                            Sections = [ section "label.recordDetails" (entries columns item) ]
+                        })
+                columns
+                value.Items
 
-            let screen =
-                Screen.create [ region RegionRole.Results None (RegionContent.Table rows) ]
+        let screen =
+            Screen.create
+                [
+                    region RegionRole.Results None (RegionContent.Table rows)
+                    |> withEmpty "empty.disclosureTrail"
+                ]
 
-            page value.Basis value.Items.Length value.NextCursor screen
+        page value.Basis value.Items.Length value.NextCursor screen

@@ -156,7 +156,7 @@ let private diagnosticRoute () =
                 "claimcore schema invocation"
                 "claimcore schema response"
                 "claimcore help call"
-                "claimcore help session"
+                "claimcore help batch"
                 "docs/integrating.md#cli-use"
             ] do
             Expect.stringContains guidance route "Repairable framing and schema guidance"

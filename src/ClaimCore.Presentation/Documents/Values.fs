@@ -27,7 +27,7 @@ type PresentedValue =
     | Code of vocabulary: string * token: string
     | Codes of vocabulary: string * tokens: string list
     | Actor of ActorRef
-    | State of CaseHeadline
+    | State of CaseHeadline * detail: (string * string) option
     | Count of int64
     | Reference of CaseReference
     | Identifier of string
@@ -56,7 +56,7 @@ type Entry =
         LabelId: string
         Prominence: Prominence
         Value: PresentedValue
-        Recorded: bool
+        Recorded: bool option
     }
 
 type Section =
@@ -287,6 +287,8 @@ type RegionRow =
         Link: Link option
         Actions: Affordance list
         Transfers: AttachmentTransferControl list
+        Recommended: TaskId option
+        Prominence: Prominence option
     }
 
 type RegionRowGroup =
@@ -377,6 +379,7 @@ type Region =
     {
         Role: RegionRole
         TitleId: string option
+        EmptyId: string option
         Content: RegionContent
         Link: Link option
         Actions: Affordance list
@@ -440,7 +443,12 @@ module Screen =
                         && unique keys
                         && unique grouped
                         && (table.Rows
-                            |> List.forall (fun row -> row.Values.Length = table.Columns.Length))
+                            |> List.forall (fun row ->
+                                row.Values.Length = table.Columns.Length
+                                && (row.Recommended
+                                    |> Option.forall (fun task ->
+                                        row.Actions
+                                        |> List.exists (fun action -> action.Task = task)))))
                         && (table.Groups
                             |> List.forall (fun group -> group.Count >= int64 group.RowKeys.Length))
                         && (table.Groups.IsEmpty || Set.ofList keys = Set.ofList grouped)

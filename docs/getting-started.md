@@ -212,4 +212,4 @@ certificate trust/expiry, private-file permissions and the pinned tools. See [Su
 redacted reporting and [Operations](operating.md) for backups and erasure limits.
 
 The `shell` command requires an interactive terminal and interactive sign-in. Redirected stdin or
-automation mode is a usage error (exit 64); use `session` for piped requests.
+automation mode is a usage error (exit 64); use `batch` for piped requests.

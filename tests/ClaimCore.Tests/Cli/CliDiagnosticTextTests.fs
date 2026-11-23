@@ -415,7 +415,7 @@ let nextAndConflicts =
                                     Entries =
                                         [
                                             {
-                                                Recorded = false
+                                                Recorded = None
                                                 Key = "future-server-change"
                                                 LabelId = "label.after"
                                                 Prominence = Prominence.Primary

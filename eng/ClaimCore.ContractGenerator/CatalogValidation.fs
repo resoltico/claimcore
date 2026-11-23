@@ -21,7 +21,7 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                    | ("labelId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
                       JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []
@@ -52,6 +52,14 @@ module CatalogValidation =
 
         matches "label.operationWindow" (set [ "minutes" ])
         matches "label.paymentProgress" (set [ "paid"; "payable" ])
+        matches "headline.withDetail" (set [ "state"; "detail" ])
+
+        for collection in
+            TaskDeclarations.all
+            |> List.collect _.Collections
+            |> List.map _.Collection
+            |> List.distinct do
+            matches (CollectionPresentation.itemLabelId collection) (set [ "number" ])
 
         for KeyValue(key, arguments) in CliMessages.contracts do
             matches key arguments
@@ -148,6 +156,8 @@ module CatalogValidation =
                 "timeline"
                 "digest"
                 "change"
+                "collection"
+                "empty"
             ]
             @ (Terms.all |> List.map _.Name)
 

@@ -230,6 +230,7 @@ let completeByteGoldens =
                             {
                                 Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
+                                ClosureOutcome = None
                                 Parties =
                                     Map.ofList
                                         [
