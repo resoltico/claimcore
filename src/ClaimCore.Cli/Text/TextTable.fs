@@ -126,7 +126,7 @@ module internal TextTable =
                     [ Prominence.Detail; Prominence.Secondary ]
                     |> List.tryPick (fun prominence ->
                         columns
-                        |> List.tryFindIndex (fun (definition, _) ->
+                        |> List.tryFindIndexBack (fun (definition, _) ->
                             definition.Prominence = prominence))
 
                 match removable with
