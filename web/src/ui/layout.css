@@ -346,6 +346,7 @@
   @container data-table (width >= 64rem) {
     .data-table table {
       --table-chip-list-min-inline-size: 14.75rem;
+      font-family: Arial, "Liberation Sans", var(--font-body);
     }
 
     .data-table :is(td, th) {

@@ -31,8 +31,9 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .click();
   await startAct(page, "case.close", "en");
   await expect(
-    page.getByRole("heading", {
+    page.getByRole("dialog").getByRole("heading", {
       name: "Close the case",
+      exact: true,
     }),
   ).toBeVisible();
   await expect(

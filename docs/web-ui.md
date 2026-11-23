@@ -11,7 +11,8 @@ currency, with one written hint and error region. Toolbar groups search, filters
 phones, the search stays in the toolbar and Filters opens a bottom sheet.
 
 Core supplies chip tones, table prominence, recommendations, consequences and empty wording.
-DataTable shows primary and secondary columns in a wide container. Secondary values stack under a
+DataTable shows primary and secondary columns in a wide container. Wide tables prefer Arial and
+Liberation Sans for consistent column widths across platforms. Secondary values stack under a
 primary cell in medium containers. Narrow rows put the reference and primary values first, followed
 by recorded secondary values and the recommended action. Chips stay intact. Identifiers may wrap
 within a word in narrow rows and dialogs. A row recommendation uses a short core label on a secondary
