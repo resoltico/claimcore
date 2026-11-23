@@ -829,11 +829,7 @@ test("published reminder rows show server timing in case and queue views across 
     await expect(item.locator("..").locator('th[scope="rowgroup"]')).toContainText(label);
     const due = item.locator('[data-column="due"]');
     await expect(due.locator("time")).toHaveCount(1);
-    await expect(due.locator(".chip")).toHaveText(label);
-    await expect(due.locator(".chip")).toHaveAttribute(
-      "data-tone",
-      ["danger", "warning", "info"][index]!,
-    );
+    await expect(due.locator(".chip")).toHaveCount(0);
     await expect(item.getByRole("link")).toHaveText(reference);
   }
   const stewardContext = await browser.newContext({
