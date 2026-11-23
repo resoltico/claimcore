@@ -33,7 +33,7 @@ export const Section = ({
       aria-labelledby={id}
       {...section}
     >
-      <header className="section-card-heading">
+      <div className="section-card-heading">
         <div>
           <h2 id={id} tabIndex={-1}>
             {title}
@@ -41,7 +41,7 @@ export const Section = ({
           {caption === null ? null : <span className="section-count">{caption}</span>}
         </div>
         {actions}
-      </header>
+      </div>
       <div className="section-card-body">{children ?? empty}</div>
     </section>
   );

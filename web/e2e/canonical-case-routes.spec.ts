@@ -77,6 +77,16 @@ test("case inspection restores the live work query, selected row focus and scrol
   page,
 }) => {
   await openAuthenticated(page);
+  const marker = `INSPECT-${randomUUID()}`;
+  for (let index = 0; index < 8; index += 1) {
+    const result = await workRequest(page, "operation.execute", {
+      operationId: operationId(),
+      task: "case.open",
+      binding: { kind: "CASE", expectedRevision: 0 },
+      inputs: { "field:caseReference": `${marker}-${index}` },
+    });
+    expect(result.outcome.kind).toBe("ACCEPTED");
+  }
   await page.setViewportSize({
     width: 390,
     height: 800,
@@ -87,9 +97,13 @@ test("case inspection restores the live work query, selected row focus and scrol
     })
     .click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "ALL");
+  const filter = page.getByRole("searchbox", { name: "Filter this view" });
+  await filter.fill(marker);
+  await filter.press("Enter");
+  await expect(page).toHaveURL((url) => url.searchParams.get("q") === marker);
   await page.waitForLoadState("networkidle");
   const links = page.locator('a[id^="case-"][href^="/cases/id/"]');
-  expect(await links.count()).toBeGreaterThan(1);
+  await expect(links).toHaveCount(8);
   const selected = links.last();
   await selected.scrollIntoViewIfNeeded();
   const position = await page.evaluate(() => scrollY);

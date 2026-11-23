@@ -324,7 +324,7 @@
     overflow: auto;
     padding: var(--space-3);
   }
-  .calendar-popover header {
+  .calendar-heading {
     display: flex;
     justify-content: space-between;
     align-items: center;

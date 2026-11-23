@@ -56,7 +56,7 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
                   onChange(next.toString());
                 }}
               >
-                <header>
+                <div className="calendar-heading">
                   <IconButton
                     slot="previous"
                     icon="chevron-start"
@@ -64,7 +64,7 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
                   />
                   <Heading lang={p.displayLocale} />
                   <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
-                </header>
+                </div>
                 <CalendarGrid lang={p.displayLocale}>
                   {(day) => <CalendarCell date={day} />}
                 </CalendarGrid>

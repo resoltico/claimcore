@@ -345,16 +345,19 @@
 @layer layout {
   @container data-table (width >= 64rem) {
     .data-table table {
-      --table-chip-list-min-inline-size: 15rem;
+      --table-chip-list-min-inline-size: 14.75rem;
     }
 
     .data-table :is(td, th) {
       padding-inline: calc(var(--space-1) / 2);
     }
 
+    .data-table td {
+      font-size: var(--text-xs);
+    }
+
     .data-table .actor-identity {
-      flex-wrap: wrap;
-      row-gap: var(--space-1);
+      gap: var(--space-1);
     }
 
     .data-table .actor-identity .person-avatar {
