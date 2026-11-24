@@ -39,10 +39,11 @@ const AssigneeChoices = ({ page, ...props }: TypedFieldProps & { page: HumanDocu
     );
   }
   const zone = page.basis.observation.timeZone;
-  const region = page.screen.regions.find((region) => region.role === "RESULTS");
+  const region = page.screen.regions.find((candidate) => candidate.role === "RESULTS");
   const content = region?.content;
   if (content?.kind === "TABLE" && content.rows.length === 0) {
-    return region?.emptyId == null ? null : <p>{renderCatalogKey(p, region.emptyId)}</p>;
+    const emptyId = region?.emptyId;
+    return emptyId === undefined ? null : <p>{renderCatalogKey(p, emptyId)}</p>;
   }
   if (content?.kind !== "TABLE") {
     return null;
@@ -102,6 +103,23 @@ const SelectedAssignee = ({
     </p>
   );
 };
+const EmptyLookupChoice = ({ optional, inputName, value, onChange }: TypedFieldProps) => {
+  const p = usePresentation();
+  return optional === true ? (
+    <label>
+      <ChoiceControl
+        type="radio"
+        name={inputName}
+        value=""
+        checked={value === ""}
+        onChange={() => {
+          onChange("");
+        }}
+      />
+      {p.text("label.notRecorded")}
+    </label>
+  ) : null;
+};
 const discoveredPage = (value: HumanReadReply | null) =>
   value?.outcome.kind === "SUCCEEDED" ? value.outcome.document : null;
 /** Discovery is advisory; authoritative writes independently check the selected ActorId. */
@@ -147,18 +165,7 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
         <legend>{p.fieldLabel(props.field.name)}</legend>
         <p id={hintId}>{p.hint(props.field)}</p>
         <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
-        {props.optional ? (
-          <label>
-            <ChoiceControl
-              type="radio"
-              name={props.inputName}
-              value=""
-              checked={props.value === ""}
-              onChange={() => props.onChange("")}
-            />
-            {p.text("label.notRecorded")}
-          </label>
-        ) : null}
+        <EmptyLookupChoice {...props} />
         {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
         {result.message === null ? null : (
           <p role="alert">

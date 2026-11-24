@@ -93,16 +93,19 @@ module internal RouteSupport =
         task {
             use _request = StorageFailureLog.withinRequest context.RequestAborted stopping
 
+            let abandon () =
+                RequestLog.abandoned context
+                context.Abort()
+
             try
                 do! next.Invoke context
 
                 if StorageFailureLog.abandoned () then
-                    RequestLog.abandoned context
+                    abandon ()
                 elif context.Response.StatusCode = 405 && not context.Response.HasStarted then
                     do! (hostFailure context HostFailureReason.MethodRejected).ExecuteAsync context
             with
-            | :? OperationCanceledException when StorageFailureLog.abandoned () ->
-                RequestLog.abandoned context
+            | :? OperationCanceledException when StorageFailureLog.abandoned () -> abandon ()
             | error ->
                 RequestLog.reportException sink error
 
