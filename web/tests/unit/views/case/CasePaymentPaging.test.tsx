@@ -199,6 +199,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
       task: "case.removePayment",
       binding: expect.objectContaining({ paymentId: older }),
     }),
+    expect.any(String),
   );
   expect(onChanged).not.toHaveBeenCalled();
 });

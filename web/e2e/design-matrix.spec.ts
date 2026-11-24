@@ -270,6 +270,45 @@ test.describe("adopted work surface design matrix", () => {
     await dataset?.close();
   });
   plannedDimensions.forEach(registerDimension);
+  test(
+    "case action drawers retain the case route and restore the opener",
+    { tag: ["@engine"] },
+    async ({ page }) => {
+      const dimension: Dimension = { language: "en", width: 1440, mode: "light", accent: "green" };
+      await page.context().addCookies(dataset.cookies);
+      await configureDimension(page, dimension);
+      const read = dataset.routes.find(({ id }) => id === "case-undecided")!;
+      await visitRoute(page, read, dimension);
+      const heading = page.locator("main #case-detail-title");
+      const reference = (await heading.textContent())!.trim();
+      const caseUrl = page.url();
+      const opener = page.locator(".case-title-line .ui-button--primary").first();
+      await opener.click();
+      const drawer = page.getByRole("dialog");
+      await expect(drawer).toBeVisible();
+      await expect(page.locator("main h1")).toHaveCount(1);
+      await expect(heading).toHaveText(reference);
+      await expect(drawer.locator(".case-title-line .identifier-value")).toHaveText(reference);
+      await expect(page).toHaveTitle(`Record payment decision · ${reference} · ClaimCore`);
+      const actUrl = page.url();
+
+      await page.keyboard.press("Escape");
+      await expect(page).toHaveURL(caseUrl);
+      await expect(opener).toBeFocused();
+
+      await opener.click();
+      await expect(drawer).toBeVisible();
+      await page.goBack();
+      await expect(page).toHaveURL(caseUrl);
+      await expect(opener).toBeFocused();
+
+      await page.goto(actUrl);
+      await expect(drawer).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page).toHaveURL(caseUrl);
+      await expect(heading).toBeFocused();
+    },
+  );
   (["en", "ar"] as const).forEach(registerCasesLayoutBoundaries);
 });
 

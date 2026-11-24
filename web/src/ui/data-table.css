@@ -96,10 +96,6 @@
     --value-measure: var(--measure-chips);
   }
 
-  .data-table-value .actor-identity > bdi {
-    min-inline-size: 0;
-  }
-
   .data-table-cell-label {
     display: none;
     text-align: start;

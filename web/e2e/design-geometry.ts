@@ -144,7 +144,7 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
           (element) =>
             visible(element) &&
             element.closest(".view-tabs-bar") === null &&
-            (element.matches(".data-table") ||
+            (element.matches(".data-table, .timeline-layout") ||
               /auto|scroll|hidden|clip/u.test(getComputedStyle(element).overflowX)) &&
             element.clientWidth > 2 &&
             element.scrollWidth > element.clientWidth + 1,
@@ -305,7 +305,17 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
           return above !== undefined && Math.abs(field.top - above.bottom - gap) > 1;
         });
       });
-      return badButton || badGap;
+      const groupGap = [...drawer.querySelectorAll(".task-field-section + .task-field-grid")]
+        .filter(visible)
+        .some(
+          (grid) =>
+            Math.abs(
+              grid.getBoundingClientRect().top -
+                grid.previousElementSibling!.getBoundingClientRect().bottom -
+                gap,
+            ) > 1,
+        );
+      return badButton || badGap || groupGap;
     });
 
     const crowdedDrawer = drawers.some((drawer) => {
