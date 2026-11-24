@@ -208,6 +208,7 @@ it.each([
           regions: [
             {
               role: "RESULTS",
+              emptyId: "label.noCasesForView",
               content: {
                 kind: "TABLE",
                 columns: [
@@ -219,19 +220,6 @@ it.each([
                   },
                 ],
                 rows: [],
-                sections: [
-                  {
-                    titleId: "label.page",
-                    entries: [
-                      {
-                        key: "shown",
-                        labelId: "label.shown",
-                        prominence: "SECONDARY",
-                        value: { kind: "COUNT", value: 0 },
-                      },
-                    ],
-                  },
-                ],
               },
             },
           ],
@@ -244,8 +232,6 @@ it.each([
   render(<CaseList onSelect={vi.fn()} />);
   await screen.findByText("No cases match this view.");
   expect(screen.getAllByText("No cases match this view.")).toHaveLength(1);
-  expect(screen.queryByRole("heading", { name: "Page" })).toBeNull();
-  expect(screen.queryByText("All results shown.")).toBeNull();
   expect(screen.getByRole("tab", { name: `${label} 0` })).toHaveAttribute("aria-selected", "true");
   expect(screen.queryByText("No cases to show.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
