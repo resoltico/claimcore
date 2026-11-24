@@ -824,6 +824,7 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
   ] satisfies MatrixRoute[];
 };
 export type DesignDataset = {
+  caseMarker: string;
   routes: ReadonlyArray<MatrixRoute>;
   businessDate: string;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
@@ -860,6 +861,7 @@ export const prepareDesignDataset = async (
     if (fixture === "limits") {
       const limitRoutes = await seedLimits(page, marker, date, stewardship.inventory.issuer);
       return {
+        caseMarker: marker,
         routes: limitRoutes,
         businessDate: date,
         cookies: await context.cookies(),
@@ -892,6 +894,7 @@ export const prepareDesignDataset = async (
       cases.references.undecided,
     );
     return {
+      caseMarker: marker,
       routes: routes({
         ...cases,
         marker,

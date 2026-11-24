@@ -34,8 +34,11 @@ export type GeometryId =
   | "G28"
   | "G30";
 
-export const geometryReport = (page: Page, limitsFixture = false) =>
-  page.evaluate((limits) => {
+type GeometryOptions = { limits?: boolean; caseMarker?: string | undefined };
+
+export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
+  page.evaluate((frame) => {
+    const { limits = false, caseMarker } = frame;
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 1 || rect.height <= 1) {
@@ -98,10 +101,16 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         ":is(.worklist, .reminder-list, .people-listing) .data-table",
       ),
     ].filter(visible);
-    const inflatedRows = (table: HTMLElement) =>
-      [...table.querySelectorAll("tbody tr:not(.table-group)")].some(
-        (row) => visible(row) && row.getBoundingClientRect().height > 72,
+    const fixtureRows = (table: Element) =>
+      [...table.querySelectorAll("tbody tr:not(.table-group)")].filter(
+        (row) =>
+          visible(row) &&
+          (caseMarker === undefined ||
+            table.closest(".worklist") === null ||
+            row.querySelector("a .identifier-value")?.textContent.includes(caseMarker) === true),
       );
+    const inflatedRows = (table: HTMLElement) =>
+      fixtureRows(table).some((row) => row.getBoundingClientRect().height > 72);
     const extraRowActions = (table: HTMLElement) =>
       [...table.querySelectorAll(".data-table-actions")].some(
         (controls) =>
@@ -502,13 +511,15 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       const caseChipsWrap =
         !limits &&
         wideCases.some((table) =>
-          [...table.querySelectorAll("tbody .chip-list")].some(
-            (chips) =>
-              new Set(
-                [...chips.querySelectorAll(".chip")]
-                  .filter(visible)
-                  .map((chip) => Math.round(rect(chip).top)),
-              ).size > 1,
+          fixtureRows(table).some((row) =>
+            [...row.querySelectorAll(".chip-list")].some(
+              (chips) =>
+                new Set(
+                  [...chips.querySelectorAll(".chip")]
+                    .filter(visible)
+                    .map((chip) => Math.round(rect(chip).top)),
+                ).size > 1,
+            ),
           ),
         );
       const rows = [...document.querySelectorAll(".data-table tbody tr:not(.table-group)")].filter(
@@ -768,10 +779,13 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       pageSpill,
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
-  }, limitsFixture);
+  }, options);
 
-export const geometryFailures = async (page: Page, limits = false): Promise<GeometryId[]> =>
-  (await geometryReport(page, limits)).violations;
+export const geometryFailures = async (
+  page: Page,
+  limits = false,
+  caseMarker?: string,
+): Promise<GeometryId[]> => (await geometryReport(page, { limits, caseMarker })).violations;
 
 export const narrowTableFailures = (page: Page): Promise<string[]> =>
   page.evaluate(async () => {

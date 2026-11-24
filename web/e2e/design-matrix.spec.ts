@@ -38,7 +38,7 @@ type Run = {
 };
 const recordFrame = async (run: Run, frame: string) => {
   try {
-    await checkFrame(run.page, run.dimension, frame, run.info);
+    await checkFrame(run.page, run.dimension, frame, run.info, dataset.caseMarker);
   } catch (error) {
     try {
       await run.page.screenshot({
@@ -126,7 +126,7 @@ const casesLayoutBoundaries = async (page: Page) => {
       513, 514, 639, 640, 913, 914, 928, 929, 1023, 1024, 1105, 1106, 1120, 1121,
     ]) {
       await page.setViewportSize({ ...viewport, width });
-      const failures = await geometryFailures(page);
+      const failures = await geometryFailures(page, false, dataset.caseMarker);
       expect(
         failures.filter((id) => id === "G4" || id === "G5" || id === "G9"),
         `Seeded Cases at ${width}px`,

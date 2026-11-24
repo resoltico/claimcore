@@ -429,9 +429,10 @@ export const checkFrame = async (
   dimension: Dimension,
   frame: string,
   _info: TestInfo,
+  caseMarker: string,
 ) => {
   const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
-    await geometryReport(page, dimension.fixture === "limits");
+    await geometryReport(page, { limits: dimension.fixture === "limits", caseMarker });
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {

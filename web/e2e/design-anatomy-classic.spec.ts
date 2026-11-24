@@ -9,6 +9,15 @@ import {
 import { prepareDesignDataset, type DesignDataset } from "./design-matrix-fixtures";
 import { settledWorkspaceHeader } from "./workspace-navigation";
 
+const standardCasesPaths = (dataset: DesignDataset) => {
+  const scope = dataset.routes.find(({ id }) => id === "cases-received")!;
+  const search = new URL(scope.path, "https://workspace.example").searchParams.get("q")!;
+  return ["/cases", "/cases?view=ALL", "/cases?view=MINE"].map((path) => {
+    const url = new URL(path, "https://workspace.example");
+    url.searchParams.set("q", search);
+    return url.pathname + url.search;
+  });
+};
 const registerFixture = (fixture: "standard" | "limits", standard: () => DesignDataset) => {
   test.describe(`classic scrollbar ${fixture} fixture`, () => {
     let dataset: DesignDataset;
@@ -32,14 +41,11 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
         await configureDimension(page, { width, language: "en", mode: "light", accent: "blue" });
         const list = page.locator("main .data-table");
         const casesAll = dataset.routes.find(({ id }) => id === "cases-all")!;
-        for (const path of [
-          "/cases",
-          casesAll.path,
-          "/cases?view=MINE",
-          "/reminders",
-          "/reminders?view=MINE",
-          "/people",
-        ]) {
+        const cases =
+          fixture === "standard"
+            ? standardCasesPaths(dataset)
+            : ["/cases", casesAll.path, "/cases?view=MINE"];
+        for (const path of [...cases, "/reminders", "/reminders?view=MINE", "/people"]) {
           await page.goto(path);
           await settledWorkspaceHeader(page);
           await expect(list.locator("tbody tr").first()).toBeVisible();
@@ -49,7 +55,7 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
           }
           const failures = await geometryFailures(page, fixture === "limits");
           expect(
-            failures.filter((id) => id === "G5b" || id === "G30"),
+            failures.filter((id) => id === "G5" || id === "G5b" || id === "G30"),
             path,
           ).toEqual([]);
           const viewport = page.viewportSize()!;

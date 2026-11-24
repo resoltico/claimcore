@@ -69,6 +69,7 @@ const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
     .chip-list { display: flex; align-items: center; list-style: none }
     .data-table { width: 100%; overflow: auto }
     .data-table table { --table-layout: wide }
+    td { padding-inline: 6px }
     :where(.toolbar input) { height: 40px; box-sizing: border-box }
     .extra { display: none }
   `,
@@ -97,6 +98,27 @@ for (const [id, defect] of witnesses) {
     expect(await geometryFailures(page)).toEqual([id]);
   });
 }
+test("G5 measures only the standard fixture rows when a case scope is supplied", async ({
+  page,
+}) => {
+  await authorFixture(page);
+  const result = page.locator(".data-table td").first();
+  await result.evaluate((cell) => {
+    const link = document.createElement("a");
+    const reference = document.createElement("span");
+    reference.className = "identifier-value";
+    reference.textContent = "earlier-fixture-row";
+    link.append(reference);
+    cell.replaceChildren(link);
+  });
+  await page.addStyleTag({ content: ".data-table tr { block-size: 120px }" });
+  expect(await geometryFailures(page, false, "current-fixture")).not.toContain("G5");
+  await result.locator(".identifier-value").evaluate((reference) => {
+    reference.textContent = "~current-fixture";
+  });
+  expect(await geometryFailures(page, false, "current-fixture")).toContain("G5");
+});
+
 test("G10 rejects two primary actions", async ({ page }) => {
   await authorFixture(page);
   await page.locator("main").evaluate((main) => {
