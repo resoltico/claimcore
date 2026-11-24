@@ -109,7 +109,7 @@ module internal RouteSupport =
             with
             | :? OperationCanceledException as cancelled when
                 StorageFailureLog.clientDisconnected ()
-                && cancelled.CancellationToken.IsCancellationRequested
+                && cancelled.CancellationToken = context.RequestAborted
                 ->
                 abandon ()
             | error ->

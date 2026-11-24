@@ -296,8 +296,11 @@ module internal AttachmentRoutes =
 
                             if not (StorageFailureLog.clientDisconnected ()) then
                                 do! context.Response.CompleteAsync()
-                        with :? OperationCanceledException when
-                            deadline.IsCancellationRequested
-                            && not (StorageFailureLog.clientDisconnected ()) ->
-                            context.Abort()
+                        with :? OperationCanceledException as error when
+                            error.CancellationToken = deadline.Token
+                            && deadline.IsCancellationRequested ->
+                            if StorageFailureLog.clientDisconnected () then
+                                context.RequestAborted.ThrowIfCancellationRequested()
+                            else
+                                context.Abort()
         }

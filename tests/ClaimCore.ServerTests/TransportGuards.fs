@@ -139,6 +139,7 @@ type private RequestEnd =
     | AcceptedWrite
     | CancelledRead
     | DisconnectedFailure
+    | UnrelatedCancellation
     | OpenFailure
     | Shutdown
 
@@ -213,6 +214,9 @@ let private requestOutcome ending =
             | DisconnectedFailure ->
                 disconnected.Cancel()
                 Task.FromException(InvalidOperationException "synthetic dispatch fault")
+            | UnrelatedCancellation ->
+                disconnected.Cancel()
+                Task.FromException(OperationCanceledException(CancellationToken(true)))
             | OpenFailure ->
                 Task.FromException(InvalidOperationException "synthetic dispatch fault"))
 
@@ -253,6 +257,7 @@ let private requestOutcome ending =
         Expect.hasLength records 1 "No storage or exception diagnostics"
         Expect.equal body.Length 0L "No response body was written"
     | DisconnectedFailure
+    | UnrelatedCancellation
     | OpenFailure
     | Shutdown ->
         Expect.equal outcome "HOST_FAILURE" "Request outcome"
@@ -288,6 +293,8 @@ let tests =
                 requestOutcome AcceptedWrite)
             testCase "an unexpected exception after disconnect remains a host failure" (fun () ->
                 requestOutcome DisconnectedFailure)
+            testCase "an unrelated cancellation after disconnect remains a host failure" (fun () ->
+                requestOutcome UnrelatedCancellation)
             testCase "open dispatch exceptions remain host failures" (fun () ->
                 requestOutcome OpenFailure)
             testCase "shutdown cancellation remains a host failure" (fun () ->

@@ -64,7 +64,7 @@ module Service =
                 | Error StoreFailure.Cancelled when
                     cancellation.IsCancellationRequested && token.IsCancellationRequested
                     ->
-                    return! Task.FromCanceled<_> token
+                    return! Task.FromCanceled<_> cancellation
                 | result -> return result
             }
 

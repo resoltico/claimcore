@@ -153,11 +153,25 @@ module internal ExportRoutes =
                                                                         (CsvExport.traversal
                                                                             services
                                                                             selection)
-                                                            with :? OperationCanceledException when
+                                                            with
+                                                            | :? OperationCanceledException as error when
+                                                                error.CancellationToken =
+                                                                    budget.Token
+                                                                && StorageFailureLog
+                                                                    .clientDisconnected ()
+                                                                ->
+                                                                return
+                                                                    raise (
+                                                                        OperationCanceledException(
+                                                                            context.RequestAborted
+                                                                        )
+                                                                    )
+                                                            | :? OperationCanceledException when
                                                                 not (
                                                                     StorageFailureLog
                                                                         .clientDisconnected ()
-                                                                ) ->
+                                                                )
+                                                                ->
                                                                 return
                                                                     Error(
                                                                         ExportFailure

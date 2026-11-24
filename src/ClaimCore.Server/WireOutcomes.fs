@@ -62,7 +62,12 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
                 context.Response.Headers.CacheControl <- "no-store, no-transform, max-age=0"
 
                 if not (StorageFailureLog.clientDisconnected ()) then
-                    do! context.Response.Body.WriteAsync(bytes, cancellation.Token)
+                    try
+                        do! context.Response.Body.WriteAsync(bytes, cancellation.Token)
+                    with :? OperationCanceledException as error when
+                        error.CancellationToken = cancellation.Token
+                        && StorageFailureLog.clientDisconnected () ->
+                        context.RequestAborted.ThrowIfCancellationRequested()
             }
             :> Task
 
