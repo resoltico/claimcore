@@ -2,7 +2,7 @@ import { ComboBox as AriaComboBox, Popover } from "react-aria-components/ComboBo
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Button } from "./Button";
 import { Icon } from "./icons";
-import { TextInput } from "./TextField";
+import { ControlInput } from "./TextField";
 import "./select.css";
 
 export type PickerItem = { id: string; label: string };
@@ -54,7 +54,7 @@ export const ComboBox = ({
       }
     }}
   >
-    <TextInput
+    <ControlInput
       id={id}
       name={inputName}
       data-field-name={fieldName}

@@ -57,8 +57,28 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+    {
+      name: "chromium",
+      testIgnore: "**/design-anatomy-classic*.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "chromium-classic",
+      testMatch: "**/design-anatomy-classic*.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] },
+      },
+    },
+    {
+      name: "firefox",
+      testIgnore: "**/design-anatomy-classic*.spec.ts",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      testIgnore: "**/design-anatomy-classic*.spec.ts",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
 });

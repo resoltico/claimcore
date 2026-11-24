@@ -18,7 +18,8 @@ import { editor, draftAt, setEditorLanguage } from "../support/presentation-stat
 import type { CurrentCase } from "../../src/api/service";
 import { fields } from "../support/service-ui.fixtures";
 
-import { endpointResponse } from "../support/transport-response.fixtures";
+import { emptyPartyChoices } from "../support/catalog-transport.fixtures";
+import { endpointResponse, requestAddress } from "../support/transport-response.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
 
 const decision = { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" };
@@ -144,15 +145,23 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   });
 });
 
+const paymentFetch = (preview: () => Response) =>
+  vi.fn<typeof fetch>().mockImplementation((path) => {
+    const address = requestAddress(path);
+    if (address.endsWith("/api/case.parties")) {
+      return Promise.resolve(emptyPartyChoices());
+    }
+    if (!address.endsWith("/api/operation.preview")) {
+      throw new Error("Expected payment lookup or preview.");
+    }
+    return Promise.resolve(preview());
+  });
+
 it("associates a payment amount refusal with its generated field", async () => {
   const user = userEvent.setup();
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve(inputRefusal("field:paidAmount", "diagnostic.PAYMENT_AMOUNT_POSITIVE")),
-      ),
+    paymentFetch(() => inputRefusal("field:paidAmount", "diagnostic.PAYMENT_AMOUNT_POSITIVE")),
   );
   render(editor({ initialAct: "case.recordPayment", current: payable }));
   const amount = screen.getByRole("textbox", { name: "Paid amount" });
@@ -174,10 +183,8 @@ it("associates a payment amount refusal with its generated field", async () => {
 
 it("shows the exact-integer payment limit as a group issue without inventing a field target", async () => {
   const user = userEvent.setup();
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockResolvedValue(inputRefusal("group:payment", "diagnostic.PAYMENT_COUNT_LIMIT"));
-  vi.stubGlobal("fetch", fetch);
+  const preview = vi.fn(() => inputRefusal("group:payment", "diagnostic.PAYMENT_COUNT_LIMIT"));
+  vi.stubGlobal("fetch", paymentFetch(preview));
   // The collection can fill after this readable snapshot and before authoritative preview.
   render(editor({ initialAct: "case.recordPayment", current: payable }));
   await user.type(screen.getByRole("textbox", { name: "Paid amount" }), "1");
@@ -189,6 +196,6 @@ it("shows the exact-integer payment limit as a group issue without inventing a f
   await waitFor(() => {
     expect(summary).toHaveFocus();
   });
-  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(preview).toHaveBeenCalledOnce();
   expect(screen.queryByRole("button", { name: "Record change" })).toBeNull();
 });

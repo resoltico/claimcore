@@ -283,10 +283,6 @@
     "text": "작업 더 보기",
     "source": "f8d46c2570e7"
   },
-  "ui.nextAccounts": {
-    "text": "계정 더 보기",
-    "source": "743e1725ebd5"
-  },
   "ui.nextMonth": {
     "text": "다음 달",
     "source": "74e53211fef4"
@@ -331,10 +327,6 @@
     "text": "검토 중…",
     "source": "fcc53388888f"
   },
-  "ui.previousAccounts": {
-    "text": "이전 계정",
-    "source": "c74522075fca"
-  },
   "ui.previousMonth": {
     "text": "이전 달",
     "source": "6a2769502a5d"
@@ -374,10 +366,6 @@
   "ui.recoveryUnavailable": {
     "text": "전송되지 않음: 복구 저장소를 사용할 수 없습니다. 사이트 저장소를 허용하거나 여유 공간을 확보한 후 다시 시도하세요. 요청은 전송되지 않았습니다.",
     "source": "d65945e86bb7"
-  },
-  "ui.refreshAccounts": {
-    "text": "지정 가능한 계정 새로고침",
-    "source": "792e2d92a7aa"
   },
   "ui.refreshWork": {
     "text": "업무 새로고침",
@@ -430,10 +418,6 @@
   "ui.scalarCount": {
     "text": "문자 수: {count}/{maximum}",
     "source": "907b0d890dff"
-  },
-  "ui.selectedAccount": {
-    "text": "선택한 계정",
-    "source": "8b63d9475c25"
   },
   "ui.settings": {
     "text": "설정",

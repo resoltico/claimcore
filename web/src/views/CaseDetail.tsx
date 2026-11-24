@@ -124,11 +124,15 @@ const CurrentPresentation = ({
   return (
     <>
       <div className="case-workspace">
-        <div className="case-area-next">{panels.nextActions}</div>
-        <div className="case-area-work">{panels.work}</div>
-        {facts}
-        <div className="case-area-notes">{panels.notes}</div>
-        <div className="case-area-attachments">{panels.attachments}</div>
+        <div className="case-work-panels">
+          <div className="case-area-next">{panels.nextActions}</div>
+          <div className="case-area-work">{panels.work}</div>
+        </div>
+        <div className="case-record-panels">
+          {facts}
+          <div className="case-area-notes">{panels.notes}</div>
+          <div className="case-area-attachments">{panels.attachments}</div>
+        </div>
         {view === null || !disclosureAvailable ? null : (
           <div className="case-area-related">
             <ScreenView
@@ -247,7 +251,12 @@ const CaseHeader = ({
           }
         />
         {state === null ? null : (
-          <ScreenView view={state.screen} roles={["PROGRESS"]} timeZone={caseTimeZone(state)} />
+          <ScreenView
+            embedded
+            view={state.screen}
+            roles={["PROGRESS"]}
+            timeZone={caseTimeZone(state)}
+          />
         )}
       </section>
     </div>

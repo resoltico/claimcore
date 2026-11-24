@@ -43,6 +43,31 @@ const PaymentPreview = ({
     </>
   );
 };
+const PaymentDecisionEntries = ({
+  sections,
+  zone,
+}: {
+  sections: NonNullable<PaymentTable["sections"]>;
+  zone: string;
+}) => {
+  const shown = sections.map((section) => ({
+    ...section,
+    entries: section.entries.filter(
+      (entry) => entry.recorded !== false && entry.value.kind !== "COUNT",
+    ),
+  }));
+  const entries = shown.flatMap((section) => section.entries);
+  return (
+    <>
+      {entries.length === 0 ? null : <Entries entries={entries} timeZone={zone} />}
+      {shown.map((section) =>
+        section.entries.length === 0 && section.emptyId !== undefined ? (
+          <EmptyState key={section.titleId} messageId={section.emptyId} />
+        ) : null,
+      )}
+    </>
+  );
+};
 export const CasePayments = ({
   region,
   current,
@@ -62,10 +87,7 @@ export const CasePayments = ({
   }
   const { content } = region;
   const { meter } = content;
-  const count = (content.sections ?? [])
-    .flatMap((section) => section.entries)
-    .find((entry) => entry.key === "paymentCount")?.value;
-  const total = count?.kind === "COUNT" ? count.value : null;
+  const total = region.count?.value ?? null;
   const zone = current.basis.observation.timeZone;
   return (
     <Section
@@ -76,17 +98,7 @@ export const CasePayments = ({
       title={renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
       actions={<TaskControls actions={region.actions ?? []} compact onAction={onAct} />}
     >
-      {(content.sections ?? []).map((section) => {
-        const entries = section.entries.filter(
-          (entry) => entry.recorded !== false && entry.key !== "paymentCount",
-        );
-        if (entries.length > 0) {
-          return <Entries key={section.titleId} entries={entries} timeZone={zone} />;
-        }
-        return section.emptyId === undefined ? null : (
-          <EmptyState key={section.titleId} messageId={section.emptyId} />
-        );
-      })}
+      <PaymentDecisionEntries sections={content.sections ?? []} zone={zone} />
       {meter === undefined ? null : (
         <MoneyMeter meter={meter} timeZone={zone} label={p.text("label.paid")} />
       )}

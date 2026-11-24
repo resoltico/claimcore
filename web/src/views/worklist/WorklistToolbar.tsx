@@ -88,7 +88,10 @@ export const WorklistToolbar = (props: Props) => (
       ).length
     }
   >
-    <WorklistFilters query={props.query} onChange={props.onChange} />
-    {props.exportAction}
+    <WorklistFilters
+      query={props.query}
+      onChange={props.onChange}
+      exportAction={props.exportAction}
+    />
   </Toolbar>
 );

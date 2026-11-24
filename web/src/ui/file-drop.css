@@ -6,6 +6,6 @@
   }
 
   .file-drop[data-drop-target] {
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
   }
 }

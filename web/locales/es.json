@@ -283,10 +283,6 @@
     "text": "Más acciones",
     "source": "f8d46c2570e7"
   },
-  "ui.nextAccounts": {
-    "text": "Más cuentas",
-    "source": "743e1725ebd5"
-  },
   "ui.nextMonth": {
     "text": "Mes siguiente",
     "source": "74e53211fef4"
@@ -331,10 +327,6 @@
     "text": "Revisando…",
     "source": "fcc53388888f"
   },
-  "ui.previousAccounts": {
-    "text": "Cuentas anteriores",
-    "source": "c74522075fca"
-  },
   "ui.previousMonth": {
     "text": "Mes anterior",
     "source": "6a2769502a5d"
@@ -374,10 +366,6 @@
   "ui.recoveryUnavailable": {
     "text": "No enviada: el almacenamiento de recuperación no está disponible. Activa el almacenamiento del sitio o libera espacio y vuelve a intentarlo. Tu solicitud no se ha enviado.",
     "source": "d65945e86bb7"
-  },
-  "ui.refreshAccounts": {
-    "text": "Actualizar las cuentas aptas",
-    "source": "792e2d92a7aa"
   },
   "ui.refreshWork": {
     "text": "Actualizar la tramitación",
@@ -430,10 +418,6 @@
   "ui.scalarCount": {
     "text": "Caracteres: {count}/{maximum}",
     "source": "907b0d890dff"
-  },
-  "ui.selectedAccount": {
-    "text": "Cuenta seleccionada",
-    "source": "8b63d9475c25"
   },
   "ui.settings": {
     "text": "Ajustes",

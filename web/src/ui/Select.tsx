@@ -12,7 +12,10 @@ type Props = {
   label: string;
   value: string;
   help?: ReactNode;
-  description?: string;
+  description?: string | undefined;
+  fallbackLabel?: string;
+  invalid?: boolean;
+  describedBy?: string;
   inlineLabel?: boolean;
   options: ReadonlyArray<SelectOption>;
   disabled?: boolean;
@@ -40,7 +43,7 @@ const SelectLabel = ({
     );
   }
   return (
-    <div className="ui-select-label">
+    <div className="ui-select-label field-label-row">
       <label id={labelId} htmlFor={controlId}>
         {label}
       </label>
@@ -59,6 +62,9 @@ export const Select = ({
   onChange,
   help,
   description,
+  fallbackLabel = value,
+  invalid,
+  describedBy,
   inlineLabel = false,
 }: Props) => {
   const compact = useCompact();
@@ -84,7 +90,10 @@ export const Select = ({
       trigger.current?.focus();
     }
   };
-  const selected = options.find((option) => option.value === value);
+  const selected = options.find((option) => option.value === value) ?? {
+    label: fallbackLabel,
+    lang: undefined,
+  };
   const begin = (strategy: true | "first" | "last", pending = value) => {
     if (disabled || options.length === 0) {
       return;
@@ -116,7 +125,10 @@ export const Select = ({
         role="combobox"
         value={value}
         aria-labelledby={labelId}
-        aria-describedby={description === undefined ? valueId : `${valueId} ${descriptionId}`}
+        aria-describedby={[valueId, description === undefined ? null : descriptionId, describedBy]
+          .filter(Boolean)
+          .join(" ")}
+        aria-invalid={invalid}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -164,8 +176,8 @@ export const Select = ({
             {label}:
           </span>
         ) : null}
-        <span id={valueId} lang={selected?.lang}>
-          {selected?.label ?? value}
+        <span id={valueId} lang={selected.lang}>
+          {selected.label}
         </span>
         <Icon name="chevron-down" />
       </button>
@@ -212,6 +224,7 @@ export const Select = ({
             {(option) => (
               <ListBoxItem
                 id={option.value}
+                data-option-value={option.value}
                 textValue={option.label}
                 lang={option.lang}
                 className="ui-select-option"

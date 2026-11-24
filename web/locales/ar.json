@@ -319,10 +319,6 @@
     "text": "إجراءات إضافية",
     "source": "f8d46c2570e7"
   },
-  "ui.nextAccounts": {
-    "text": "المزيد من الحسابات",
-    "source": "743e1725ebd5"
-  },
   "ui.nextMonth": {
     "text": "الشهر التالي",
     "source": "74e53211fef4"
@@ -367,10 +363,6 @@
     "text": "جارٍ إعداد المراجعة…",
     "source": "fcc53388888f"
   },
-  "ui.previousAccounts": {
-    "text": "الحسابات السابقة",
-    "source": "c74522075fca"
-  },
   "ui.previousMonth": {
     "text": "الشهر السابق",
     "source": "6a2769502a5d"
@@ -410,10 +402,6 @@
   "ui.recoveryUnavailable": {
     "text": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
     "source": "d65945e86bb7"
-  },
-  "ui.refreshAccounts": {
-    "text": "تحديث الحسابات المؤهلة",
-    "source": "792e2d92a7aa"
   },
   "ui.refreshWork": {
     "text": "تحديث العمل",
@@ -470,10 +458,6 @@
   "ui.scalarCount": {
     "text": "الأحرف: {count}/{maximum}",
     "source": "907b0d890dff"
-  },
-  "ui.selectedAccount": {
-    "text": "الحساب المحدد",
-    "source": "8b63d9475c25"
   },
   "ui.settings": {
     "text": "الإعدادات",

@@ -109,6 +109,17 @@ export const RegionView = ({
       </TechnicalDetails>
     );
   }
+  if (region.content.kind === "STAGES" && embedded && region.titleId !== undefined) {
+    return (
+      <section className="screen-region" data-region={region.role} aria-labelledby={heading}>
+        <h2 className="sr-only" id={heading}>
+          {renderCatalogKey(p, region.titleId)}
+        </h2>
+        {body}
+        {actions}
+      </section>
+    );
+  }
   if (region.titleId === undefined) {
     return (
       <section className="screen-region" data-region={region.role}>

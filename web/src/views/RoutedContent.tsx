@@ -1,7 +1,10 @@
 import { DocumentTitleScope, useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Drawer } from "../ui/Drawer";
 import { Button } from "../ui/Button";
-import { ScreenView } from "../ui/ScreenView";
+import { DataTable } from "../ui/DataTable";
+import { SubjectHeader } from "../ui/SubjectHeader";
+import { renderCatalogKey } from "../presentation/messages";
+import "./case/payment-selection.css";
 import { operationTask } from "../protocol/taskCatalog";
 import {
   apiEndpoints,
@@ -12,7 +15,7 @@ import {
 import { useCaseCreationControl } from "../hooks/useRequesterContext";
 import { hasDocumentSubject } from "../protocol/types";
 import { useEndpointPage } from "../hooks/useEndpointPage";
-import type { Affordance, Screen } from "@contracts/client";
+import type { Affordance } from "@contracts/client";
 
 import {
   allActions,
@@ -113,20 +116,6 @@ const paymentSelectionPage = (reply: ServiceResponse<typeof apiEndpoints.casePay
 };
 const paymentSelectionKey = (page: NonNullable<ReturnType<typeof paymentSelectionPage>>) =>
   JSON.stringify(page.document.subject);
-const offeredPayments = (screen: Screen, route: EditorRoute): Screen => ({
-  ...screen,
-  regions: screen.regions.map((region) => {
-    if (region.content.kind !== "TABLE") {
-      return region;
-    }
-    const rows = region.content.rows.flatMap((row) => {
-      const actions = row.actions?.filter((action) => matchesEditorAction(action, route)) ?? [];
-      return actions.length === 0 ? [] : [{ ...row, actions }];
-    });
-    return { ...region, content: { ...region.content, rows } };
-  }),
-});
-
 type PaymentPage = NonNullable<ReturnType<typeof paymentSelectionPage>>;
 type PaymentQuery = ReturnType<
   typeof useEndpointPage<typeof apiEndpoints.casePayments, Affordance, PaymentPage>
@@ -148,6 +137,58 @@ const paymentSelection = (page: PaymentQuery, current: CurrentCase, route: Edito
   };
 };
 
+const focusSelectionPrompt = (element: HTMLParagraphElement | null) => {
+  if (element !== null) {
+    requestAnimationFrame(() => {
+      if (element.isConnected) {
+        element.focus();
+      }
+    });
+  }
+};
+
+const PaymentChoiceRows = ({
+  payment,
+  route,
+  current,
+  onReady,
+}: Pick<EditorSelectionProps, "route" | "current" | "onReady"> & {
+  payment: PaymentPage | null;
+}) => {
+  const p = usePresentation();
+  const table = payment?.screen.regions.find(({ role }) => role === "PAYMENTS")?.content;
+  const rows =
+    table?.kind === "TABLE"
+      ? table.rows.flatMap((row) => {
+          const offered = row.actions?.find((candidate) => matchesEditorAction(candidate, route));
+          return offered === undefined ? [] : [{ ...row, actions: [offered] }];
+        })
+      : [];
+  return payment === null || table?.kind !== "TABLE" || rows.length === 0 ? null : (
+    <div className="payment-entry-choices">
+      <DataTable
+        view={{ kind: "TABLE", columns: table.columns, rows }}
+        timeZone={payment.basis.timeZone}
+        renderControls={(row) => {
+          const offered = row.actions?.[0];
+          return offered !== undefined && matchesEditorAction(offered, route) ? (
+            <Button
+              className="data-table-recommended"
+              variant="secondary"
+              compact
+              onPress={() => {
+                onReady({ current, action: offered });
+              }}
+            >
+              {renderCatalogKey(p, offered.shortLabelId ?? offered.labelId)}
+            </Button>
+          ) : null;
+        }}
+      />
+    </div>
+  );
+};
+
 const PaymentEditorSelection = ({
   current,
   route,
@@ -155,7 +196,8 @@ const PaymentEditorSelection = ({
   onClose,
   onUnavailable,
   revalidate,
-}: EditorSelectionProps & { revalidate: () => void }) => {
+  promptId,
+}: EditorSelectionProps & { revalidate: () => void; promptId: string }) => {
   const p = usePresentation();
   const input = useCallback(
     (cursor: string | null) => ({
@@ -192,7 +234,6 @@ const PaymentEditorSelection = ({
   if (unavailable) {
     return null;
   }
-  const payment = outdated || exact ? null : page.page;
   const loading = page.loading || exact;
   return (
     <Drawer
@@ -200,12 +241,24 @@ const PaymentEditorSelection = ({
       closeLabel={p.text("ui.close")}
       isOpen
       isDismissable
+      identity={
+        <SubjectHeader
+          region={current.screen.regions.find(({ role }) => role === "IDENTITY")}
+          timeZone={current.basis.observation.timeZone}
+          renderTitle={(reference) => <h3 className="case-context-title">{reference}</h3>}
+        />
+      }
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
     >
+      {exact ? null : (
+        <p tabIndex={-1} ref={focusSelectionPrompt}>
+          {renderCatalogKey(p, promptId)}
+        </p>
+      )}
       {page.message === null ? null : (
         <>
           <p role="alert">
@@ -222,18 +275,12 @@ const PaymentEditorSelection = ({
         </>
       )}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
-      {payment === null ? null : (
-        <ScreenView
-          view={offeredPayments(payment.screen, route)}
-          roles={["PAYMENTS"]}
-          timeZone={payment.basis.timeZone}
-          onAction={(selected) => {
-            if (matchesEditorAction(selected, route)) {
-              onReady({ current, action: selected });
-            }
-          }}
-        />
-      )}
+      <PaymentChoiceRows
+        payment={outdated || exact ? null : page.page}
+        route={route}
+        current={current}
+        onReady={onReady}
+      />
       {page.cursor === null || exact ? null : (
         <Button
           variant="secondary"
@@ -288,8 +335,9 @@ const RoutableCaseEditor = ({
     }
   }, [onUnavailable, unavailable]);
   if (selection === null) {
-    return definition.binding.identity === null ? null : (
+    return definition.selectionPromptId === null ? null : (
       <PaymentEditorSelection
+        promptId={definition.selectionPromptId}
         route={route}
         current={current}
         onReady={setOpened}

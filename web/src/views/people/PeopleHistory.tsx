@@ -1,6 +1,6 @@
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { Page } from "../../ui/Page";
-import { DirectoryPersonPicker } from "../../components/AssigneeInput";
+import { DirectoryPersonPicker } from "../../components/DirectoryPersonPicker";
 import { useCallback, useMemo } from "react";
 import type { RegionTimelineEntry } from "@contracts/client";
 import { CsvExportButton } from "../../components/CsvExportButton";

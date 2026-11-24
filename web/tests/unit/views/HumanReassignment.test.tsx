@@ -298,11 +298,8 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
       refused={vi.fn()}
     />,
   );
-  expect(
-    await screen.findByRole("radio", {
-      name: "Core assignee Ω",
-    }),
-  ).toBeChecked();
+  expect(await screen.findByText("Core assignee Ω")).toBeVisible();
+  expect(screen.getByRole("combobox")).toHaveAttribute("value", actorId);
   await userEvent.click(
     screen.getByRole("button", {
       name: "Review changes",
@@ -351,8 +348,9 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
       name: "Return to editing",
     }),
   );
+  await userEvent.click(screen.getByRole("combobox"));
   await userEvent.click(
-    await screen.findByRole("radio", {
+    await screen.findByRole("option", {
       name: "Core replacement assignee Σ",
     }),
   );

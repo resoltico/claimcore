@@ -374,14 +374,65 @@ const primaryByFrame: Readonly<Record<string, string | null>> = {
   "case-erased": null,
   "history-comparison": "case.close",
 };
+const checkFocusIndication = async (page: Page) => {
+  const focusTargets = page.locator(
+    "[role=dialog] .control-box :is(input, button, [role=spinbutton]), [role=dialog] button.control-box, main .toolbar .field-search input",
+  );
+  const dialog = page.getByRole("dialog");
+  const menuOpen = await page.getByRole("listbox").count();
+  if (menuOpen === 0) {
+    for (const target of await focusTargets.all()) {
+      if (
+        !(await target.isVisible()) ||
+        !(await target.isEnabled()) ||
+        ((await dialog.count()) > 0 &&
+          (await target.locator("xpath=ancestor::*[@role='dialog']").count()) === 0)
+      ) {
+        continue;
+      }
+      await target.evaluate((element) => {
+        (element as HTMLElement).focus({ preventScroll: true });
+      });
+      const rings = await target.evaluate((element) => {
+        const box = element.closest(".control-box");
+        let count = 0;
+        for (
+          let current: Element | null = element;
+          current !== null;
+          current = current.parentElement
+        ) {
+          const style = getComputedStyle(current);
+          if (
+            (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0) ||
+            style.boxShadow !== "none"
+          ) {
+            count++;
+          }
+          if (current === box) {
+            break;
+          }
+        }
+        return { count, focused: document.activeElement === element };
+      });
+      if (rings.focused) {
+        expect(rings.count, "G23 one focus indication per field").toBe(1);
+      }
+      if ((await page.getByRole("listbox").count()) > 0) {
+        await page.keyboard.press("Escape");
+      }
+    }
+  }
+};
+
 export const checkFrame = async (
   page: Page,
   dimension: Dimension,
   frame: string,
   _info: TestInfo,
+  caseMarker: string,
 ) => {
   const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
-    await geometryReport(page, dimension.fixture === "limits");
+    await geometryReport(page, { limits: dimension.fixture === "limits", caseMarker });
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {
@@ -477,6 +528,7 @@ export const checkFrame = async (
       `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop, overflowingRegions, pageSpill })}`,
     ).toEqual([]);
   }
+  await checkFocusIndication(page);
   await expectNoInlineStyles(page);
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);

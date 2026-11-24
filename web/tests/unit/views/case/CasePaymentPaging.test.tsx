@@ -21,6 +21,7 @@ const last = "10000000-0000-7000-8000-000000000112";
 const table = (handles: ReadonlyArray<Handle>, currency: string, firstAmount: number): Region => ({
   role: "PAYMENTS",
   titleId: "label.payments",
+  count: { kind: "payments", value: 55 },
   content: {
     kind: "TABLE",
     columns: [

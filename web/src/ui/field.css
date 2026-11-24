@@ -81,31 +81,38 @@
 
   :is(.field-search, .field-control-group) > input {
     flex: 1;
-    block-size: var(--control-target);
+    block-size: 100%;
+    min-block-size: 0;
+    min-inline-size: 0;
     padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
-    outline: none;
+    font: inherit;
+    color: inherit;
   }
 
   :is(.field-search, .field-control-group) > button {
     flex: none;
-    margin-block: calc(-1 * var(--border-width));
+    block-size: 100%;
+    min-block-size: 0;
     padding-block: 0;
+    border: 0;
+    background: transparent;
   }
 
-  .control-box.field-control-group:has(> button, > .compact-picker) {
+  .control-box :is(input, button, [role="spinbutton"]):focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .control-box:is(.field-search, .field-control-group):has(> button, > .compact-picker) {
     padding-inline-end: var(--space-1);
   }
 
   .field-control-group > button {
     margin-inline-start: auto;
     border: 0;
-  }
-
-  .field-control-group > input {
-    min-inline-size: 0;
   }
 
   .field-search input::-webkit-search-cancel-button {

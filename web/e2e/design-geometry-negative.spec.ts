@@ -69,6 +69,7 @@ const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
     .chip-list { display: flex; align-items: center; list-style: none }
     .data-table { width: 100%; overflow: auto }
     .data-table table { --table-layout: wide }
+    td { padding-inline: 6px }
     :where(.toolbar input) { height: 40px; box-sizing: border-box }
     .extra { display: none }
   `,
@@ -97,6 +98,27 @@ for (const [id, defect] of witnesses) {
     expect(await geometryFailures(page)).toEqual([id]);
   });
 }
+test("G5 measures only the standard fixture rows when a case scope is supplied", async ({
+  page,
+}) => {
+  await authorFixture(page);
+  const result = page.locator(".data-table td").first();
+  await result.evaluate((cell) => {
+    const link = document.createElement("a");
+    const reference = document.createElement("span");
+    reference.className = "identifier-value";
+    reference.textContent = "earlier-fixture-row";
+    link.append(reference);
+    cell.replaceChildren(link);
+  });
+  await page.addStyleTag({ content: ".data-table tr { block-size: 120px }" });
+  expect(await geometryFailures(page, false, "current-fixture")).not.toContain("G5");
+  await result.locator(".identifier-value").evaluate((reference) => {
+    reference.textContent = "~current-fixture";
+  });
+  expect(await geometryFailures(page, false, "current-fixture")).toContain("G5");
+});
+
 test("G10 rejects two primary actions", async ({ page }) => {
   await authorFixture(page);
   await page.locator("main").evaluate((main) => {
@@ -267,3 +289,104 @@ test("G4 allows caret scrolling inside a bounded search field", async ({ page })
   expect(scrolls).toBe(true);
   expect(await geometryFailures(page)).not.toContain("G4");
 });
+
+const anatomyWitnesses = [
+  {
+    id: "G5b",
+    body: `<div class="worklist"><div class="data-table"><table><tbody><tr><td>
+      <div class="chip-list"><span class="chip">Undecided</span><span class="chip">No next action</span><span class="chip">Unassigned</span></div>
+      </td></tr></tbody></table></div></div>`,
+    css: ".worklist table { --table-layout: wide } .chip-list { display: flex; flex-wrap: wrap; width: 18rem } .chip { width: 5.5rem }",
+    defect: ".chip-list { width: 14rem }",
+  },
+  {
+    id: "G10",
+    body: `<div role="dialog"><div class="radio-option"><label>Choice</label></div><button>Review</button></div>`,
+    css: "[role=dialog] { --accent-solid: #065ebb } button { background: var(--accent-solid) }",
+    defect: ".radio-option > label { background: var(--accent-solid) }",
+  },
+  {
+    id: "G19b",
+    body: `<div class="control-box"><button>Open</button></div>`,
+    css: ".control-box { border: 1px solid; height: 36px; display: flex } button { background: transparent; border: 0 }",
+    defect: "button { margin-block: -1px }",
+  },
+  {
+    id: "G19c",
+    body: `<div class="task-field-grid"><div><div class="field-label-row">Payee</div><input class="control-box"><p class="field-hint">Choose a party</p></div>
+      <div><div class="field-label-row">Reference</div><input class="control-box"><p class="field-hint">Enter a reference</p></div></div>`,
+    css: ".task-field-grid { display: flex; gap: 12px }",
+    defect: ".task-field-grid > :first-child .control-box { margin-block-start: 2px }",
+  },
+  {
+    id: "G20b",
+    body: `<div class="subject-header-facts"><dl><div><dt>Claimed amount</dt><dd>100 EUR</dd></div><div><dt>State</dt><dd>Open</dd></div></dl></div>`,
+    css: "dl { display: grid; grid-template-columns: 10rem 10rem } dl > div { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid } dd { margin: 0 }",
+    defect: "dl > div { grid-template-columns: fit-content(45%) 1fr; width: 7rem }",
+  },
+  {
+    id: "G21",
+    body: `<section class="case-header-card"><section class="stages">Case stages</section></section>`,
+    css: ".case-header-card { width: 500px; border: 1px solid; padding: 16px } .stages { height: 80px }",
+    defect: ".stages { border: 1px solid }",
+  },
+  {
+    id: "G23",
+    body: `<div class="control-box"><input aria-label="Filter"></div>`,
+    css: ".control-box:focus-within { outline: 2px solid } input { outline: 0 }",
+    defect: "input:focus { outline: 2px solid }",
+    focus: "input",
+  },
+  {
+    id: "G24",
+    body: `<div class="data-table"><table><tbody><tr><td><div class="data-table-cell">First</div></td><td><div class="data-table-cell">Second</div></td></tr></tbody></table></div>`,
+    css: "table { border-collapse: collapse } td { padding-inline: 6px }",
+    defect: "td { padding-inline: 4px }",
+  },
+  {
+    id: "G25",
+    body: `<div class="data-table"><table><tbody><tr><td><div class="data-table-cell">First<br>Two lines</div></td><td><div class="data-table-cell">Second</div></td></tr></tbody></table></div>`,
+    css: "td { vertical-align: baseline; padding-inline: 6px }",
+    defect: "td { vertical-align: middle }",
+  },
+  {
+    id: "G26",
+    body: `<section class="section-card"><div class="entries-view"><dl><div>Paid 10</div></dl></div><div class="entries-view"><dl><div>Decision</div></dl></div></section>`,
+    css: ".section-card { display: grid; gap: 12px } dl { margin: 0 }",
+    defect: ".section-card { gap: 0 }",
+  },
+  {
+    id: "G27",
+    body: `<section class="section-card"><header>Parties</header><div class="row">Claimant</div></section>`,
+    css: "header { border-bottom: 1px solid } .row { margin-top: 18px }",
+    defect: ".row { border-top: 1px solid }",
+  },
+  {
+    id: "G28",
+    body: `<div class="case-workspace"><div class="case-work-panels"><div class="case-area-next">Next</div><div class="case-area-work">Work</div></div>
+      <div class="case-area-claim">Claim</div><div class="case-area-related">Related</div></div>`,
+    css: ".case-workspace { display: grid; grid-template-columns: 2fr 1fr; grid-template-areas: 'claim lead' 'claim related'; grid-template-rows: auto 1fr; gap: 16px } .case-work-panels { grid-area: lead; display: grid; gap: 16px } .case-area-claim { grid-area: claim; height: 240px } .case-area-related { grid-area: related; align-self: start }",
+    defect: ".case-work-panels { gap: 180px }",
+  },
+  {
+    id: "G30",
+    body: `<div class="worklist-toolbar"><div class="toolbar-actions"><button>More filters</button><button>Export</button></div></div>`,
+    css: ".toolbar-actions { display: flex; gap: 8px }",
+    defect: ".toolbar-actions { display: grid; justify-items: start }",
+  },
+] as const;
+
+for (const witness of anatomyWitnesses) {
+  test(`${witness.id} rejects its anatomy regression`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setContent(
+      `<!doctype html><style>${witness.css}</style><main>${witness.body}</main>`,
+    );
+    if ("focus" in witness) {
+      await page.locator(witness.focus).focus();
+    }
+    expect(await geometryFailures(page)).not.toContain(witness.id);
+    await page.addStyleTag({ content: witness.defect });
+    expect(await geometryFailures(page)).toContain(witness.id);
+  });
+}

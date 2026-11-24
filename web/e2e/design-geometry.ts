@@ -21,10 +21,24 @@ export type GeometryId =
   | "G19"
   | "G20"
   | "G21"
-  | "G22";
+  | "G22"
+  | "G5b"
+  | "G19b"
+  | "G19c"
+  | "G20b"
+  | "G23"
+  | "G24"
+  | "G25"
+  | "G26"
+  | "G27"
+  | "G28"
+  | "G30";
 
-export const geometryReport = (page: Page, limitsFixture = false) =>
-  page.evaluate((limits) => {
+type GeometryOptions = { limits?: boolean; caseMarker?: string | undefined };
+
+export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
+  page.evaluate((frame) => {
+    const { limits = false, caseMarker } = frame;
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 1 || rect.height <= 1) {
@@ -87,10 +101,16 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         ":is(.worklist, .reminder-list, .people-listing) .data-table",
       ),
     ].filter(visible);
-    const inflatedRows = (table: HTMLElement) =>
-      [...table.querySelectorAll("tbody tr:not(.table-group)")].some(
-        (row) => visible(row) && row.getBoundingClientRect().height > 72,
+    const fixtureRows = (table: Element) =>
+      [...table.querySelectorAll("tbody tr:not(.table-group)")].filter(
+        (row) =>
+          visible(row) &&
+          (caseMarker === undefined ||
+            table.closest(".worklist") === null ||
+            row.querySelector("a .identifier-value")?.textContent.includes(caseMarker) === true),
       );
+    const inflatedRows = (table: HTMLElement) =>
+      fixtureRows(table).some((row) => row.getBoundingClientRect().height > 72);
     const extraRowActions = (table: HTMLElement) =>
       [...table.querySelectorAll(".data-table-actions")].some(
         (controls) =>
@@ -114,7 +134,8 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         (control) =>
           visible(control) &&
           !control.matches("textarea") &&
-          control.closest(".data-table,[role=listbox]") === null,
+          control.closest(".data-table,[role=listbox]") === null &&
+          (control.matches(".control-box") || control.closest(".control-box") === null),
       );
       const bounds = controls.map((control) => control.getBoundingClientRect());
       return bounds.some(
@@ -276,11 +297,11 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
     const border = (element: Element) => {
       const style = getComputedStyle(element);
       return [
-        style.borderTopWidth,
-        style.borderRightWidth,
-        style.borderBottomWidth,
-        style.borderLeftWidth,
-      ].map(parseFloat);
+        parseFloat(style.borderTopWidth),
+        parseFloat(style.borderRightWidth),
+        parseFloat(style.borderBottomWidth),
+        parseFloat(style.borderLeftWidth),
+      ] as const;
     };
     const wrongFields = drawers.some((drawer) => {
       const badButton = [...drawer.querySelectorAll(".control-box button")]
@@ -392,6 +413,322 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         ".workspace-main :is(.worklist, .reminder-queue) .data-table tbody > tr:not(.table-group)",
       ),
     ].find(visible);
+    const anatomy = () => {
+      const rect = (element: Element) => element.getBoundingClientRect();
+      const withinBox = (box: Element, control: Element) => {
+        const [top, right, bottom, left] = border(box);
+        const outer = rect(box);
+        const inner = rect(control);
+        return (
+          inner.top >= outer.top + top - 0.5 &&
+          inner.right <= outer.right - right + 0.5 &&
+          inner.bottom <= outer.bottom - bottom + 0.5 &&
+          inner.left >= outer.left + left - 0.5
+        );
+      };
+      const boxes = [
+        ...document.querySelectorAll("main .control-box, [role=dialog] .control-box"),
+      ].filter(visible);
+      const spillsControl = boxes.some((box) =>
+        [...box.querySelectorAll('input, button, [role="spinbutton"], [role="group"]')]
+          .filter(visible)
+          .some(
+            (control) =>
+              !withinBox(box, control) ||
+              (control.matches("button") &&
+                (border(control).some((side) => side > 0) ||
+                  getComputedStyle(control).backgroundColor !== "rgba(0, 0, 0, 0)")),
+          ),
+      );
+      const misalignedFields = [...document.querySelectorAll(".task-field-grid")].some((grid) => {
+        const fields = [...grid.children].filter(visible);
+        const part = (field: Element, selector: string) =>
+          [...field.querySelectorAll(selector)].find(
+            (candidate) =>
+              visible(candidate) && !candidate.parentElement?.closest(".field-label-row, label"),
+          );
+        return fields.some((field, index) =>
+          fields.slice(index + 1).some((peer) => {
+            if (Math.abs(rect(field).top - rect(peer).top) > 1) {
+              return false;
+            }
+            return [
+              ".field-label-row, legend",
+              ".control-box, .radio-options, textarea",
+              ".field-hint, .field-description",
+            ].some((selector) => {
+              const left = part(field, selector);
+              const right = part(peer, selector);
+              return (
+                left !== undefined &&
+                right !== undefined &&
+                Math.abs(rect(left).top - rect(right).top) > 1
+              );
+            });
+          }),
+        );
+      });
+      const raggedFacts = [...document.querySelectorAll(".subject-header-facts")]
+        .filter(visible)
+        .some((facts) => {
+          const pairs = [...facts.querySelectorAll("dl > div")].filter(visible);
+          const rtl = getComputedStyle(facts).direction === "rtl";
+          const edges = pairs.flatMap((pair) => {
+            const value = pair.querySelector("dd");
+            return value === null ? [] : [rtl ? rect(value).right : rect(value).left];
+          });
+          const wraps = [...facts.querySelectorAll("dt")].some((label) => {
+            range.selectNodeContents(label);
+            return multipleLines(lineRects(range));
+          });
+          const stacked =
+            new Set(pairs.map((pair) => Math.round(rect(pair).top))).size === pairs.length;
+          return (
+            wraps || (stacked && edges.length > 1 && Math.max(...edges) - Math.min(...edges) > 1)
+          );
+        });
+      const active = document.activeElement;
+      const activeBox = active?.closest(".control-box") ?? null;
+      let focusRings = 0;
+      for (
+        let control = active;
+        control?.closest(".control-box") !== null && control !== null;
+        control = control.parentElement
+      ) {
+        const style = getComputedStyle(control);
+        if (
+          (parseFloat(style.outlineWidth) > 0 && style.outlineStyle !== "none") ||
+          style.boxShadow !== "none"
+        ) {
+          focusRings++;
+        }
+      }
+      const wideCases = [...document.querySelectorAll(".worklist .data-table table")].filter(
+        (table) =>
+          visible(table) &&
+          getComputedStyle(table).getPropertyValue("--table-layout").trim() === "wide",
+      );
+      const caseChipsWrap =
+        !limits &&
+        wideCases.some((table) =>
+          fixtureRows(table).some((row) =>
+            [...row.querySelectorAll(".chip-list")].some(
+              (chips) =>
+                new Set(
+                  [...chips.querySelectorAll(".chip")]
+                    .filter(visible)
+                    .map((chip) => Math.round(rect(chip).top)),
+                ).size > 1,
+            ),
+          ),
+        );
+      const rows = [...document.querySelectorAll(".data-table tbody tr:not(.table-group)")].filter(
+        visible,
+      );
+      const sideBySideRows = rows.filter((row) => getComputedStyle(row).display === "table-row");
+      const paintedInlineBounds = (cell: Element) => {
+        const painted = [...cell.querySelectorAll("img, svg, button, .person-avatar, .chip")]
+          .filter(visible)
+          .map(rect);
+        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+          const parent = node.parentElement;
+          if (parent !== null && visible(parent) && (node.textContent ?? "").trim() !== "") {
+            range.selectNodeContents(node);
+            painted.push(...lineRects(range));
+          }
+        }
+        return painted.length === 0
+          ? []
+          : [
+              {
+                left: Math.min(...painted.map((part) => part.left)),
+                right: Math.max(...painted.map((part) => part.right)),
+              },
+            ];
+      };
+      const tightCells = sideBySideRows.some((row) => {
+        const cellBounds = [...row.querySelectorAll(":scope > td")]
+          .filter(visible)
+          .flatMap(paintedInlineBounds)
+          .sort((a, b) => a.left - b.left);
+        return cellBounds.some(
+          (box, index) => index > 0 && box.left - cellBounds[index - 1]!.right < 11.5,
+        );
+      });
+      const rowsMisaligned = rows.some((row) => {
+        const lines = [...row.querySelectorAll(":scope > td > .data-table-cell")]
+          .filter(visible)
+          .flatMap((cell) => firstLine(cell) ?? []);
+        const bottoms = lines.map((line) => line.bottom);
+        const [first] = lines.sort((a, b) => a.top - b.top);
+        const textMisaligned =
+          getComputedStyle(row).display === "table-row" &&
+          bottoms.length > 1 &&
+          Math.max(...bottoms) - Math.min(...bottoms) > 2;
+        const offLine =
+          first !== undefined &&
+          [...row.querySelectorAll(":scope > .data-table-controls :is(button, .data-table-menu)")]
+            .filter(visible)
+            .some((control) => {
+              const { top, height } = rect(control);
+              const centre = top + height / 2;
+              return centre < first.top - 4 || centre > first.bottom + 4;
+            });
+        return textMisaligned || offLine;
+      });
+      const cards = [
+        ...document.querySelectorAll("main .section-card, main .case-header-card"),
+      ].filter(visible);
+      const nestedCard = cards.some((card) =>
+        [...card.querySelectorAll("div, section, ol, ul, table")]
+          .filter(visible)
+          .some(
+            (child) =>
+              child.closest(".control-box, .chip, button") === null &&
+              rect(child).width > rect(card).width * 0.6 &&
+              rect(child).height > 60 &&
+              getComputedStyle(child).borderTopStyle === "solid" &&
+              border(child).every((side) => side >= 1),
+          ),
+      );
+      const squeezedEntries = cards.some((card) => {
+        const entries = [...card.querySelectorAll(".entries-view dl > div")]
+          .filter(visible)
+          .map(rect);
+        return entries.some((entry) =>
+          entries.some(
+            (above) =>
+              above.top < entry.top - 1 &&
+              above.bottom <= entry.top + 1 &&
+              above.right > entry.left + 1 &&
+              entry.right > above.left + 1 &&
+              entry.top - above.bottom < 11.5,
+          ),
+        );
+      });
+      const doubleRules = cards.some((card) => {
+        const rules = [...card.querySelectorAll("*")]
+          .filter(visible)
+          .flatMap((element) => {
+            if (
+              element.closest(".control-box,input,textarea,button,.chip,meter,[role=tablist]") !==
+              null
+            ) {
+              return [];
+            }
+            const css = getComputedStyle(element);
+            const [top, right, bottom, left] = border(element);
+            if (left > 0 || right > 0) {
+              return [];
+            }
+            const r = rect(element);
+            const edges = [];
+            if (top > 0 && css.borderTopStyle === "solid") {
+              edges.push({ r, y: r.top });
+            }
+            if (bottom > 0 && css.borderBottomStyle === "solid") {
+              edges.push({ r, y: r.bottom });
+            }
+            return edges;
+          })
+          .sort((a, b) => a.y - b.y);
+        const visual = [...card.querySelectorAll("button,input,textarea,a,[role=combobox]")]
+          .filter(visible)
+          .map(rect);
+        const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+          if (
+            (node.textContent ?? "").trim() !== "" &&
+            node.parentElement !== null &&
+            visible(node.parentElement)
+          ) {
+            range.selectNodeContents(node);
+            visual.push(...lineRects(range));
+          }
+        }
+        return rules.some(({ r: a, y }, index) =>
+          rules.slice(index + 1).some(({ r: b, y: end }) => {
+            const left = Math.max(a.left, b.left);
+            const right = Math.min(a.right, b.right);
+            return (
+              end - y <= 32 &&
+              right - left > Math.min(a.width, b.width) / 2 &&
+              !visual.some(
+                (box) =>
+                  box.bottom > y + 1 && box.top < end - 1 && box.left < right && box.right > left,
+              )
+            );
+          }),
+        );
+      });
+      const floatingCards = [...document.querySelectorAll(".case-workspace")].some((workspace) => {
+        const next = workspace.querySelector(".case-area-next");
+        const claim = workspace.querySelector(".case-area-claim");
+        if (
+          next === null ||
+          claim === null ||
+          !visible(next) ||
+          !visible(claim) ||
+          Math.abs(rect(next).left - rect(claim).left) < 2
+        ) {
+          return false;
+        }
+        const gap = parseFloat(getComputedStyle(workspace).rowGap);
+        const side = [
+          ...workspace.querySelectorAll(".case-area-next, .case-area-work, .case-area-related"),
+        ]
+          .filter(visible)
+          .map(rect)
+          .sort((a, b) => a.top - b.top);
+        return side.some(
+          (card, index) => index > 0 && Math.abs(card.top - side[index - 1]!.bottom - gap) > 1,
+        );
+      });
+      const splitToolbar =
+        innerWidth === 1280 &&
+        [...document.querySelectorAll(".worklist-toolbar .toolbar-actions")].some((group) => {
+          const buttons = [...group.querySelectorAll("button, a")].filter(visible).map(rect);
+          return (
+            buttons.length > 1 &&
+            Math.max(...buttons.map(({ top }) => top)) -
+              Math.min(...buttons.map(({ top }) => top)) >
+              1
+          );
+        });
+      const canvas = document.createElement("canvas").getContext("2d")!;
+      const color = (value: string) => {
+        canvas.fillStyle = value;
+        return canvas.fillStyle;
+      };
+      const doubleAccent = [...document.querySelectorAll("[role=dialog]")]
+        .filter(visible)
+        .some((dialog) => {
+          const accent = color(getComputedStyle(dialog).getPropertyValue("--accent-solid").trim());
+          const solid = [...dialog.querySelectorAll("button, a, .radio-option > label")].filter(
+            (candidate) =>
+              visible(candidate) && color(getComputedStyle(candidate).backgroundColor) === accent,
+          );
+          return (
+            solid.length > 1 || solid.some((element) => element.matches(".radio-option > label"))
+          );
+        });
+      const checks: ReadonlyArray<readonly [GeometryId, boolean]> = [
+        ["G5b", caseChipsWrap],
+        ["G19b", spillsControl],
+        ["G19c", misalignedFields],
+        ["G20b", raggedFacts],
+        ["G23", activeBox !== null && focusRings !== 1],
+        ["G24", tightCells],
+        ["G25", rowsMisaligned],
+        ["G26", squeezedEntries],
+        ["G27", doubleRules],
+        ["G28", floatingCards],
+        ["G30", splitToolbar],
+      ];
+      return { checks, nestedCard, doubleAccent };
+    };
+    const { checks: anatomyChecks, nestedCard, doubleAccent } = anatomy();
     const findings: ReadonlyArray<readonly [GeometryId, boolean]> = [
       ["G1", headingDisplaced()],
       ["G2", footerClipped()],
@@ -412,7 +749,7 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       ["G6", tables.some(extraRowActions)],
       ["G8", controlGeometry],
       ["G9", splitWords.length > 0],
-      ["G10", primary.length > 1],
+      ["G10", primary.length > 1 || doubleAccent],
       ["G12", tinyText],
       [
         "G13",
@@ -431,8 +768,9 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       ["G18", rowControlsOutside],
       ["G19", wrongFields],
       ["G20", labelsMisaligned],
-      ["G21", crowdedDrawer],
+      ["G21", crowdedDrawer || nestedCard],
       ["G22", markers],
+      ...anatomyChecks,
     ];
     return {
       violations: findings.flatMap(([id, violated]) => (violated ? [id] : [])),
@@ -441,10 +779,13 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       pageSpill,
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
-  }, limitsFixture);
+  }, options);
 
-export const geometryFailures = async (page: Page, limits = false): Promise<GeometryId[]> =>
-  (await geometryReport(page, limits)).violations;
+export const geometryFailures = async (
+  page: Page,
+  limits = false,
+  caseMarker?: string,
+): Promise<GeometryId[]> => (await geometryReport(page, { limits, caseMarker })).violations;
 
 export const narrowTableFailures = (page: Page): Promise<string[]> =>
   page.evaluate(async () => {
@@ -507,3 +848,19 @@ export const feedbackFailures = (page: Page, message: string) =>
       ? []
       : ["G16"];
   }, message);
+
+export const tableLayoutState = (page: Page) =>
+  page
+    .locator("main .data-table table")
+    .first()
+    .evaluate((table) => ({
+      layout: getComputedStyle(table).getPropertyValue("--table-layout").trim(),
+      width: table.getBoundingClientRect().width,
+    }));
+
+export const isWideTable = (reading: Awaited<ReturnType<typeof tableLayoutState>>) =>
+  reading.layout === "wide";
+export const stableTableLayout = (
+  before: Awaited<ReturnType<typeof tableLayoutState>>,
+  after: Awaited<ReturnType<typeof tableLayoutState>>,
+) => before.layout === after.layout && Math.abs(before.width - after.width) <= 0.5;

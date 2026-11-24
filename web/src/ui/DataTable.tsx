@@ -257,7 +257,9 @@ const RowControls = (props: Parameters<typeof TableRowControls>[0]) =>
   props.renderControls === undefined ? (
     <TableRowControls {...props} />
   ) : (
-    <td className="data-table-controls">{props.renderControls(props.row)}</td>
+    <td className="data-table-controls">
+      <div className="data-table-actions">{props.renderControls(props.row)}</div>
+    </td>
   );
 
 const DataRow = ({
@@ -302,7 +304,6 @@ const DataRow = ({
             data-prominence={column.prominence}
             data-present={value.kind !== "ABSENT" || undefined}
             data-money={column.isMoney || undefined}
-            data-reference={value.kind === "REFERENCE" || undefined}
           >
             {column.prominence === "PRIMARY" ? (
               <span className="data-table-cell-label" aria-hidden="true">

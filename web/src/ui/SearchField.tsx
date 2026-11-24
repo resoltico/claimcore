@@ -1,7 +1,7 @@
 import { SearchField as AriaSearchField } from "react-aria-components/SearchField";
 import { Button } from "./Button";
 import { Icon } from "./icons";
-import { TextInput } from "./TextField";
+import { ControlInput } from "./TextField";
 import type { Ref } from "react";
 import "./field.css";
 
@@ -38,7 +38,7 @@ export const SearchField = ({
       {...(onClear === undefined ? {} : { onClear })}
       {...(invalid === undefined ? {} : { isInvalid: invalid })}
     >
-      <TextInput
+      <ControlInput
         id={id}
         ref={inputRef}
         aria-description={description}

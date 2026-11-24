@@ -5,6 +5,7 @@
   }
 
   html:root {
+    scrollbar-gutter: stable;
     --gutter: var(--space-6);
     --page-gap: var(--space-4);
     --toolbar-page-margin: var(--space-3);
@@ -17,10 +18,10 @@
     --dialog-width: var(--width-operation-dialog);
     --drawer-block-size: 100%;
     --measure-identifier: 10rem;
-    --measure-text: 11rem;
-    --measure-person: 10rem;
-    --measure-money: 8rem;
-    --measure-chips: 14rem;
+    --measure-text: 14rem;
+    --measure-person: 12rem;
+    --measure-money: 9rem;
+    --measure-chips: 18rem;
     --chip-padding-inline: var(--space-2);
   }
 
@@ -242,6 +243,11 @@
     }
   }
 
+  .phone-app-bar,
+  .workspace-mobile-tabs {
+    display: none;
+  }
+
   @media (width < 40rem) {
     .workspace-shell {
       display: block;
@@ -342,13 +348,24 @@
 }
 
 @layer layout {
-  @container data-table (width >= 70rem) {
-    .data-table :is(td, th) {
-      padding-inline: calc(var(--space-1) / 2);
+  @container data-table (width >= 64rem) {
+    .data-table table {
+      --table-layout: wide;
+      --secondary-cell-display: table-cell;
+      --stack-display: none;
     }
 
     .data-table td {
       font-size: var(--text-xs);
+    }
+
+    .data-table .chip-list {
+      --chip-list-alignment: stretch;
+    }
+
+    .data-table .chip-list > li {
+      flex: 1 0 min-content;
+      max-inline-size: max-content;
     }
 
     .data-table .chip {
@@ -365,19 +382,6 @@
     }
   }
 
-  @container data-table (width < 70rem) {
-    .data-table table {
-      --table-layout: medium;
-    }
-    .data-table :is(td, th)[data-prominence="SECONDARY"] {
-      --secondary-cell-display: none;
-    }
-
-    .data-table .data-table-stack {
-      --stack-display: block;
-    }
-  }
-
   @container data-table (width < 50rem) {
     .data-table table,
     .data-table tbody {
@@ -390,21 +394,17 @@
     }
 
     .data-table tbody tr {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) fit-content(48%);
+      align-items: baseline;
       gap: var(--space-2);
       padding: var(--space-3);
       block-size: auto;
     }
 
     .data-table tbody tr.table-group {
+      grid-template-columns: minmax(0, 1fr);
       padding-block: var(--space-1);
-    }
-
-    .data-table .data-table-menu,
-    .data-table .data-table-recommended {
-      position: relative;
     }
 
     .data-table thead {
@@ -416,10 +416,8 @@
     }
 
     .data-table td[data-prominence="PRIMARY"],
-    .data-table .data-table-controls,
-    .data-table .data-table-actions {
+    .data-table .data-table-controls {
       display: contents;
-      --table-controls-display: contents;
     }
 
     .data-table td[data-prominence="PRIMARY"]:not([data-present]) {
@@ -427,24 +425,22 @@
     }
 
     .data-table td[data-prominence="PRIMARY"] > .data-table-cell {
-      order: 0;
-      flex: 0 1 auto;
+      grid-column: 1;
       max-inline-size: 100%;
     }
 
-    .data-table .data-table-menu {
-      order: 1;
-      margin-inline-start: auto;
+    .data-table .data-table-actions {
+      grid-area: 1 / 2;
+      align-self: start;
+      inset-block-start: 0;
+      justify-self: end;
+      min-inline-size: 0;
     }
 
     .data-table .data-table-stack {
-      order: 2;
-      flex: 0 0 100%;
+      grid-column: 1 / -1;
+      order: 1;
       margin-block: 0;
-    }
-
-    .data-table .data-table-recommended {
-      order: 3;
     }
   }
 }

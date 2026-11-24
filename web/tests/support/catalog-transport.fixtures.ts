@@ -1,3 +1,4 @@
+import { workBasis } from "./inputs";
 import { changeField } from "./field-entry";
 import type { EndpointId, ResponseByEndpoint } from "@contracts/client";
 export type Dispatch<T> = {
@@ -22,5 +23,31 @@ export const response = <K extends EndpointId>(
     status: 200,
     headers: {
       "content-type": "application/json",
+    },
+  });
+
+export const emptyPartyChoices = (): Response =>
+  response("case.parties", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      document: {
+        subject: { kind: "LIST" },
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: { kind: "TABLE", columns: [], rows: [] },
+              emptyId: "empty.parties",
+            },
+          ],
+        },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      },
     },
   });

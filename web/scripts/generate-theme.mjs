@@ -128,7 +128,7 @@ lines.push(`:root[data-mode="light"] { color-scheme: light; }
     --text-primary: CanvasText; --text-secondary: CanvasText; --text-disabled: GrayText;
     --border-subtle: CanvasText; --border-control: ButtonText; --border-strong: CanvasText;
     --accent-text: LinkText; --accent-solid: ButtonFace; --on-accent-solid: ButtonText;
-    --accent-soft-bg: Canvas; --accent-soft-text: LinkText; --accent-soft-border: Highlight;
+    --accent-subtle: Canvas; --accent-soft-text: LinkText; --accent-soft-border: Highlight;
     --focus-ring: Highlight; --shadow-1: none; --shadow-2: none;
     ${Object.keys(tokens.semantic)
       .filter((name) => /^(?:tone-|avatar-|danger-|warning-|success-)/u.test(name))

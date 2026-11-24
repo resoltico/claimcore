@@ -28,7 +28,7 @@
   }
 
   .find-option[data-focused] {
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
     color: var(--accent-soft-text);
   }
 }

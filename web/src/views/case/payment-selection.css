@@ -1,0 +1,10 @@
+@layer views {
+  .payment-entry-choices .data-table {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .payment-entry-choices .data-table tbody tr:first-child {
+    border-block-start: 0;
+  }
+}

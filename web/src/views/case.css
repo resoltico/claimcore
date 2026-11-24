@@ -37,14 +37,9 @@
     min-inline-size: 0;
   }
 
-  .case-area-claim {
+  :is(.case-work-panels, .case-record-panels, .case-area-claim) {
     display: grid;
     gap: var(--space-4);
-  }
-
-  .case-workspace :is(.case-area-parties, .case-area-payments, .case-area-related) .data-table {
-    border: 0;
-    border-radius: 0;
   }
 
   @container (width >= 56rem) {
@@ -52,36 +47,19 @@
       grid-template-columns:
         minmax(0, 1fr)
         minmax(var(--width-work-column), var(--width-sidebar-detail));
+      grid-template-rows: auto 1fr auto;
       grid-template-areas:
-        "claim next"
-        "parties work"
-        "payments related"
-        "notes related"
-        "attachments related"
+        "main lead"
+        "main related"
         "activity activity";
       align-items: start;
     }
 
-    .case-area-next {
-      grid-area: next;
+    .case-work-panels {
+      grid-area: lead;
     }
-    .case-area-work {
-      grid-area: work;
-    }
-    .case-area-claim {
-      grid-area: claim;
-    }
-    .case-area-parties {
-      grid-area: parties;
-    }
-    .case-area-payments {
-      grid-area: payments;
-    }
-    .case-area-notes {
-      grid-area: notes;
-    }
-    .case-area-attachments {
-      grid-area: attachments;
+    .case-record-panels {
+      grid-area: main;
     }
     .case-area-related {
       grid-area: related;

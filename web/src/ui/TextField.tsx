@@ -7,6 +7,8 @@ export const TextInput = ({ className, ...props }: ComponentProps<typeof Input>)
   <Input className={["control-box", className].filter(Boolean).join(" ")} {...props} />
 );
 
+export const ControlInput = Input;
+
 export const ChoiceControl = (props: ComponentProps<"input"> & { type: "checkbox" | "radio" }) => (
   <input {...props} />
 );

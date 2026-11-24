@@ -379,17 +379,6 @@
   .work-due-overdue {
     color: var(--danger-text);
   }
-  .assignee-input ul {
-    list-style: none;
-    padding: 0;
-  }
-  .assignee-input li label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    min-block-size: var(--target-minimum);
-  }
   .exact-recorded-value {
     display: block;
     font-family: var(--font-mono);
@@ -504,7 +493,7 @@
     padding: var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--bg-sunken);
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
   }
   .review-comparison > .review-arrow {
     display: none;

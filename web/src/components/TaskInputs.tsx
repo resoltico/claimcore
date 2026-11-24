@@ -9,7 +9,7 @@ import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import { CatalogField } from "./CatalogField";
-import { AssigneeInput } from "./AssigneeInput";
+import { LookupInput } from "./LookupInput";
 import { editGrantInput } from "../operation/operationDraft";
 import { inputChoiceRestriction } from "../operation/inputChoices";
 import { CorrectionInputs } from "./CorrectionInputs";
@@ -154,41 +154,49 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
   if (input.choices.length > 0) {
     return <ChoiceInput input={input} errorKey={errorKey} {...props} />;
   }
+  const value = formValueText(props.values[input.id]);
+  const common = {
+    optional: input.mode === "OPTIONAL",
+    inputName: errorKey,
+    value,
+    disabled: props.disabled,
+    error,
+    sharedErrorId,
+    onChange: (next: string) => {
+      if (props.task.creates && input.mode === "OPTIONAL" && next === "") {
+        props.onFieldsChange({}, [input.id]);
+      } else {
+        props.onChange(input.id, next);
+      }
+    },
+  };
+  if (input.choicesFrom !== null && props.current !== null) {
+    return (
+      <LookupInput
+        {...common}
+        metadata={metadata}
+        caseId={props.current.subject.caseId}
+        lookup={input.choicesFrom}
+      />
+    );
+  }
   const field = taskScalar(input.id);
   if (field !== undefined) {
-    const common = {
-      field,
-      optional: input.mode === "OPTIONAL",
-      ...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
-        ? { description: p.text("label.existingCaseSelectionHint") }
-        : {}),
-      inputName: errorKey,
-      value: formValueText(props.values[input.id]),
-      disabled: props.disabled,
-      error,
-      sharedErrorId,
-      onChange: (value: string) => {
-        if (props.task.creates && input.mode === "OPTIONAL" && value === "") {
-          props.onFieldsChange({}, [input.id]);
-        } else {
-          props.onChange(input.id, value);
-        }
-      },
-    };
-    return input.choicesFrom !== null && props.current !== null ? (
-      <AssigneeInput
+    return (
+      <CatalogField
         {...common}
-        current={props.current}
-        lookup={input.choicesFrom}
-        seedInput={input.id}
+        field={field}
+        {...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
+          ? { description: p.text("label.existingCaseSelectionHint") }
+          : {})}
       />
-    ) : (
-      <CatalogField {...common} />
     );
   }
   return (
     <div className="text-field">
-      <label htmlFor={errorKey}>{label}</label>
+      <label className="field-label-row" htmlFor={errorKey}>
+        {label}
+      </label>
       <TextInput
         id={errorKey}
         name={errorKey}

@@ -38,7 +38,7 @@ type Run = {
 };
 const recordFrame = async (run: Run, frame: string) => {
   try {
-    await checkFrame(run.page, run.dimension, frame, run.info);
+    await checkFrame(run.page, run.dimension, frame, run.info, dataset.caseMarker);
   } catch (error) {
     try {
       await run.page.screenshot({
@@ -122,30 +122,29 @@ const casesLayoutBoundaries = async (page: Page) => {
   await expect(table.locator("tbody tr").first()).toBeVisible();
   const viewport = page.viewportSize()!;
   try {
-    for (const [width, layout] of [
-      [513, "narrow"],
-      [514, "narrow"],
-      [639, "narrow"],
-      [640, "narrow"],
-      [913, "narrow"],
-      [914, "medium"],
-      [1023, "medium"],
-      [1024, "narrow"],
-      [1105, "narrow"],
-      [1106, "medium"],
-    ] as const) {
+    for (const width of [
+      513, 514, 639, 640, 913, 914, 928, 929, 1023, 1024, 1105, 1106, 1120, 1121,
+    ]) {
       await page.setViewportSize({ ...viewport, width });
-      const failures = await geometryFailures(page);
+      const failures = await geometryFailures(page, false, dataset.caseMarker);
       expect(
         failures.filter((id) => id === "G4" || id === "G5" || id === "G9"),
         `Seeded Cases at ${width}px`,
       ).toEqual([]);
-      expect(
-        await table.evaluate((element) =>
-          getComputedStyle(element).getPropertyValue("--table-layout").trim(),
-        ),
-        `Cases layout at ${width}px`,
-      ).toBe(layout);
+      const observed = await table.evaluate((element) => ({
+        container: element.parentElement!.clientWidth,
+        rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
+        layout: getComputedStyle(element).getPropertyValue("--table-layout").trim(),
+      }));
+      const available = observed.container / observed.rem;
+      const thresholds = [
+        [64, "wide"],
+        [50, "medium"],
+      ] as const;
+      const layout = thresholds.find(([minimum]) => available >= minimum)?.[1] ?? "narrow";
+      expect(observed.layout, `Cases layout at ${width}px (${available}rem available)`).toBe(
+        layout,
+      );
     }
   } finally {
     await page.setViewportSize(viewport);
@@ -309,6 +308,30 @@ test.describe("adopted work surface design matrix", () => {
       await expect(heading).toBeFocused();
     },
   );
+  test("payment entry selection uses the declared prompt and visible row action @engine", async ({
+    page,
+  }) => {
+    const dimension: Dimension = { language: "en", width: 1440, mode: "light", accent: "green" };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    const route = dataset.routes.find(({ id }) => id === "case-paid")!;
+    await visitRoute(page, route, dimension);
+    const caseUrl = page.url();
+    await page.goto(`${caseUrl}/acts/case.correctPayment`);
+    const dialog = page.getByRole("dialog");
+    const prompt = dialog.getByText("Choose the payment entry to correct.");
+    await expect(prompt).toBeFocused();
+    await expect(dialog.locator(".case-title-line")).toHaveCount(1);
+    await expect(dialog.locator("meter, .money-meter, .section-card")).toHaveCount(0);
+    const action = dialog.locator("tbody").getByRole("button").first();
+    await expect(action).toBeVisible();
+    await action.click();
+    await expect(dialog.locator(".lookup-input").getByRole("combobox")).toBeVisible();
+    await expect(prompt).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(caseUrl);
+    await expect(page.locator("main h1")).toBeFocused();
+  });
   (["en", "ar"] as const).forEach(registerCasesLayoutBoundaries);
 });
 
@@ -362,6 +385,14 @@ const registerLimitBoundaries = () => {
           (rule) => rule === "G4" || rule === "G18",
         );
         const bounds = await list.boundingBox();
+        if (layout === "wide" && !isTimeline) {
+          const threshold = await list.evaluate((element) => ({
+            width: element.parentElement!.clientWidth,
+            rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
+          }));
+          expect(threshold.width).toBeGreaterThanOrEqual(64 * threshold.rem);
+          expect(threshold.width).toBeLessThanOrEqual(64 * threshold.rem + 1);
+        }
         expect(
           failures,
           `${route.id} ${layout} viewport ${left}px content ${bounds?.width}px`,

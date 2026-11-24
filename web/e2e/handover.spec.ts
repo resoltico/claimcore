@@ -163,9 +163,13 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   });
   await actions.click();
   await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
-  const selectedAssignee = page.locator(`.assignee-input input[type=radio][value="${actor}"]`);
+  const selectedAssignee = page.locator(".lookup-input").getByRole("combobox");
   await selectedAssignee.click();
-  await expect(selectedAssignee).toBeChecked();
+  await page
+    .getByRole("option")
+    .and(page.locator(`[data-option-value="${actor}"]`))
+    .click();
+  await expect(selectedAssignee).toHaveAttribute("value", actor);
   await expect(
     page.getByRole("dialog").getByRole("textbox", {
       name: "Handling summary",
@@ -249,7 +253,11 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const writtenBeforeReview = writes;
   await secondActions.click();
   await page.getByRole("menuitem", { name: "Reassign", exact: true }).click();
-  await page.locator(`.assignee-input input[type=radio][value="${actor}"]`).check();
+  await page.locator(".lookup-input").getByRole("combobox").click();
+  await page
+    .getByRole("option")
+    .and(page.locator(`[data-option-value="${actor}"]`))
+    .click();
   const stale = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );

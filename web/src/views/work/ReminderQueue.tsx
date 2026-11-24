@@ -343,8 +343,10 @@ const ReminderFilters = ({
           }
         }}
       />
-      <ReminderAdvancedFilters query={query} change={change} {...mode} />
-      {exportAction}
+      <div className="toolbar-actions">
+        <ReminderAdvancedFilters query={query} change={change} {...mode} />
+        {exportAction}
+      </div>
     </Toolbar>
   );
 };
