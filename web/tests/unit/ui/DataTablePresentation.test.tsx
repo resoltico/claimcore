@@ -249,3 +249,15 @@ it("puts declared joins in the target cell and prefixes a joined date", () => {
     container.querySelector('[data-column="status"] [data-kind="DATE"] .sr-only'),
   ).toHaveTextContent("Due date");
 });
+
+it("offers contact separator breaks and keeps the exact presented text", () => {
+  const contact = `${"x".repeat(90)}@the.example.test`;
+  const { container } = render(
+    <PresentedValue value={{ kind: "TEXT", value: contact }} timeZone="UTC" />,
+  );
+  const text = container.querySelector(".plain-text-value");
+  expect(text?.textContent).toBe(contact);
+  expect(
+    [...text!.querySelectorAll("wbr")].map((point) => point.previousSibling?.textContent),
+  ).toEqual(["@", ".", "."]);
+});

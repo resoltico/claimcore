@@ -224,3 +224,14 @@ test("lowering the wide transition by 2rem rejects overflowing controls at its b
   });
   expect(await fit()).toContain("G4");
 });
+
+test("G4 allows caret scrolling inside a bounded search field", async ({ page }) => {
+  await authorFixture(page);
+  await page.locator('input[type="search"]').fill("W".repeat(80));
+  await page.addStyleTag({ content: ".toolbar input { inline-size: 18ch; overflow: clip }" });
+  const scrolls = await page
+    .locator('input[type="search"]')
+    .evaluate((field) => field.scrollWidth > field.clientWidth);
+  expect(scrolls).toBe(true);
+  expect(await geometryFailures(page)).not.toContain("G4");
+});

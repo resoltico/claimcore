@@ -137,6 +137,10 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       new Set(rects.map(({ top }) => Math.round(top))).size > 1;
     const contained = (outer: DOMRect, inner: DOMRect) =>
       inner.left >= outer.left - 1 && inner.right <= outer.right + 1;
+    const isOverflowRegion = (element: Element) =>
+      element.matches(".data-table, .timeline-layout") ||
+      (!element.matches("input, textarea") &&
+        /auto|scroll|hidden|clip/u.test(getComputedStyle(element).overflowX));
     const overflow =
       document.documentElement.scrollWidth > innerWidth + 1 ||
       surfaces.some((surface) =>
@@ -144,8 +148,7 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
           (element) =>
             visible(element) &&
             element.closest(".view-tabs-bar") === null &&
-            (element.matches(".data-table, .timeline-layout") ||
-              /auto|scroll|hidden|clip/u.test(getComputedStyle(element).overflowX)) &&
+            isOverflowRegion(element) &&
             element.clientWidth > 2 &&
             element.scrollWidth > element.clientWidth + 1,
         ),
@@ -373,6 +376,10 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         parseFloat(getComputedStyle(element).fontSize) < 13,
     );
     const mainHeading = document.querySelector(".workspace-main h1");
+    const titleHeading =
+      location.pathname === "/cases/new"
+        ? document.querySelector('[role="dialog"] .ui-dialog-title')
+        : mainHeading;
     const firstRow = [
       ...document.querySelectorAll(
         ".workspace-main :is(.worklist, .reminder-queue) .data-table tbody > tr:not(.table-group)",
@@ -406,7 +413,7 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
           (detail) => detail.closest('[role="dialog"], .about-panel') === null,
         ),
       ],
-      ["G14", mainHeading !== null && !document.title.includes(mainHeading.textContent.trim())],
+      ["G14", titleHeading !== null && !document.title.includes(titleHeading.textContent.trim())],
       [
         "G15",
         innerWidth < 640 &&

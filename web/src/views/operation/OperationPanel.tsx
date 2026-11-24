@@ -490,7 +490,7 @@ export const OperationPanel = (props: Props) => {
       <OperationReview
         model={model}
         paused={!props.offered.includes(model.entry.kind)}
-        showsSubject={props.current !== null}
+        showsSubject={props.current !== null && model.task.subject === "CASE"}
       >
         {(review) => (
           <Drawer

@@ -9,6 +9,7 @@ import { ActorIdentity } from "./ActorIdentity";
 import { CharacterWarning } from "./CharacterWarning";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";
+import { breakAfter } from "./ValueBreaks";
 
 type Scalar = Extract<
   Value,
@@ -51,7 +52,7 @@ const ScalarValue = ({ value, timeZone }: { value: Scalar; timeZone: string }) =
       return (
         <>
           <bdi dir="auto" className="plain-text-value">
-            {value.value}
+            {breakAfter(value.value, /[-‐–—/._:@]+/gu)}
           </bdi>
           <CharacterWarning value={value.value} allowLineFeed={value.kind === "NARRATIVE"} />
         </>

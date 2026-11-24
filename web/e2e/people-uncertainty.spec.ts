@@ -201,7 +201,7 @@ test("people review and uncertainty survive locale changes while refusal clears 
       });
       await expect(review.locator("button[data-confirm-operation]")).toBeDisabled();
       await expect(review.getByRole("checkbox")).toHaveCount(0);
-      await expect(review.locator('.operation-target [data-region="IDENTITY"]')).toContainText(
+      await expect(review.locator('.ui-dialog-body [data-region="IDENTITY"]')).toContainText(
         subject,
       );
       await expect(review.locator(".screen-details")).toContainText(prepared.operationId);

@@ -142,9 +142,13 @@ const assertListPresentation = async (
     }
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
-    const material = table.columns.filter(({ prominence }) => prominence !== "DETAIL");
+    const material = table.columns.filter(
+      ({ prominence, joins }) => prominence !== "DETAIL" && joins === null,
+    );
     await expect(row.locator("td[data-column]")).toHaveCount(material.length);
-    for (const column of table.columns.filter(({ prominence }) => prominence === "DETAIL")) {
+    for (const column of table.columns.filter(
+      ({ prominence, joins }) => prominence === "DETAIL" || joins !== null,
+    )) {
       await expect(row.locator(`td[data-column="${column.key}"]`)).toHaveCount(0);
     }
   }

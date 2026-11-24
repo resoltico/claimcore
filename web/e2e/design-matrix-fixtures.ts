@@ -772,13 +772,15 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
   }
 
   const target = { kind: "SERVICE", issuer, subject: `matrix-limits-${randomUUID()}` } as const;
+  const domain = "@the.example.test";
+  const contact = "K".repeat(maximumLength("input:profile.contact") - domain.length) + domain;
   await execute(page, {
     operationId: mintOperationId(),
     task: "people.register",
     binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:profile.displayName": "D".repeat(maximumLength("input:profile.displayName")),
-      "input:profile.contact": "K".repeat(maximumLength("input:profile.contact")),
+      "input:profile.contact": contact,
       ...prefixedInputs("input:principal.", target),
     },
   });
