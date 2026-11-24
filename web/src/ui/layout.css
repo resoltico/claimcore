@@ -16,7 +16,7 @@
     --compact-target: var(--size-control-compact);
     --dialog-width: var(--width-operation-dialog);
     --drawer-block-size: 100%;
-    --measure-identifier: 8rem;
+    --measure-identifier: 10rem;
     --measure-text: 11rem;
     --measure-person: 10rem;
     --measure-money: 8rem;
@@ -341,13 +341,17 @@
 }
 
 @layer layout {
-  @container data-table (width >= 68rem) {
+  @container data-table (width >= 70rem) {
     .data-table :is(td, th) {
       padding-inline: calc(var(--space-1) / 2);
     }
 
     .data-table td {
       font-size: var(--text-xs);
+    }
+
+    .data-table .chip {
+      padding-inline: var(--space-1);
     }
 
     .data-table .actor-identity {
@@ -360,7 +364,7 @@
     }
   }
 
-  @container data-table (width < 68rem) {
+  @container data-table (width < 70rem) {
     .data-table table {
       --table-layout: medium;
     }

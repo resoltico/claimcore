@@ -55,10 +55,12 @@
     border-radius: var(--radius-sm);
   }
   .correction-group {
-    border: var(--border-width) solid var(--border-control);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-    margin-block: var(--space-4);
+    margin-block: var(--space-5);
+  }
+
+  .drawer .selected-fact {
+    border: 0;
+    padding-inline: 0;
   }
   .correction-group .correction-card {
     border: 0;

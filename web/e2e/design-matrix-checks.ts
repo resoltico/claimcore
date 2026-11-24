@@ -373,10 +373,8 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
-  const { violations, splitWords, firstRowTop } = await geometryReport(
-    page,
-    dimension.fixture === "limits",
-  );
+  const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
+    await geometryReport(page, dimension.fixture === "limits");
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {
@@ -469,7 +467,7 @@ export const checkFrame = async (
     });
     expect(
       violations,
-      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop })}`,
+      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop, overflowingRegions, pageSpill })}`,
     ).toEqual([]);
   }
   await expectNoInlineStyles(page);

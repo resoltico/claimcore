@@ -141,18 +141,24 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
       element.matches(".data-table, .timeline-layout") ||
       (!element.matches("input, textarea") &&
         /auto|scroll|hidden|clip/u.test(getComputedStyle(element).overflowX));
-    const overflow =
-      document.documentElement.scrollWidth > innerWidth + 1 ||
-      surfaces.some((surface) =>
-        [surface, ...surface.querySelectorAll("*")].some(
+    const overflowingRegions = surfaces.flatMap((surface) =>
+      [surface, ...surface.querySelectorAll("*")]
+        .filter(
           (element) =>
             visible(element) &&
             element.closest(".view-tabs-bar") === null &&
             isOverflowRegion(element) &&
             element.clientWidth > 2 &&
             element.scrollWidth > element.clientWidth + 1,
-        ),
-      );
+        )
+        .map((element) => ({
+          region: `${element.tagName.toLowerCase()}.${[...element.classList].join(".")}`,
+          client: element.clientWidth,
+          scroll: element.scrollWidth,
+        })),
+    );
+    const pageSpill = document.documentElement.scrollWidth - innerWidth;
+    const overflow = pageSpill > 1 || overflowingRegions.length > 0;
     const rowControlsOutside = [...document.querySelectorAll(".data-table, .timeline-layout")].some(
       (table) =>
         [...table.querySelectorAll("tbody button, .timeline-details")].some(
@@ -188,7 +194,8 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         }
         visited.add(node);
         const width = firstInlineContainer(parent);
-        measure.font = getComputedStyle(parent).font;
+        const style = getComputedStyle(parent);
+        measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
         for (const match of node.data.matchAll(/[^\s\-‐–—/_.@:]+/gu)) {
           range.setStart(node, match.index);
           range.setEnd(node, match.index + match[0].length);
@@ -430,6 +437,8 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
     return {
       violations: findings.flatMap(([id, violated]) => (violated ? [id] : [])),
       splitWords,
+      overflowingRegions,
+      pageSpill,
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
   }, limitsFixture);
