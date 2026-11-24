@@ -11,7 +11,9 @@ it("renders semantic worklist sets as independent Core-labelled checkboxes", asy
   render(
     <WorklistFilters query={{ lifecycle: ["ACTIVE"], progress: ["DECIDED"] }} onChange={change} />,
   );
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   const active = screen.getByRole("checkbox", { name: "Active" });
   expect(active).toBeChecked();
   await userEvent.click(active);

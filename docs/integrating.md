@@ -87,8 +87,10 @@ rather than presenting it as another set of current facts. Other section and row
 supplied bindings.
 
 Input `choicesFrom` names a Core lookup. In the HUMAN results table, each
-selectable row carries a `choice` value and presents its caption in the visible values. An operation's `selectionPromptId`
-gives its prompt when a case action requires selecting an entry. `choicesWhen` is an array of
+selectable row carries `choice: { value, label }`. The `label` is a core `PresentedMessage`
+with named arguments. Keep a submitted value when it is missing from the loaded choices and show
+`label.choiceNotListed`. An operation that requires an entry declares `selection: { promptId, from }`.
+Use the prompt and the case-scoped list named by `from`, and offer rows that carry the operation. `choicesWhen` is an array of
 `{input, value, choices, messageId}` conditions; intersect every matching condition with the offered
 choices. The optional Core message ID explains a restriction. Choice hints do not replace server
 admission. Removing a recognized stored role remains possible even if assigning it would now be refused.

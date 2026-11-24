@@ -159,6 +159,12 @@ const config: OxlintConfig = defineConfig({
   },
   jsPlugins: [
     {
+      name: "presenter-message",
+      specifier: fileURLToPath(
+        new URL("./scripts/presenter-message-lint.plugin.mjs", import.meta.url),
+      ),
+    },
+    {
       name: "react-hooks-js",
       specifier: "eslint-plugin-react-hooks",
     },
@@ -177,6 +183,10 @@ const config: OxlintConfig = defineConfig({
     },
   },
   overrides: [
+    {
+      files: ["src/**/*.ts", "src/**/*.tsx"],
+      rules: { "presenter-message/whole-messages": "error" },
+    },
     { files: ["**/contracts/**", "src/generated/**"], rules: { "max-lines": "off" } },
     {
       files: [

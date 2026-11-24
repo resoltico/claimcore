@@ -2,10 +2,12 @@
   .money-field > .compact-picker {
     flex: 0 0 45%;
     max-inline-size: 45%;
-    block-size: 100%;
+    align-self: stretch;
     min-inline-size: 0;
-    padding-inline-start: var(--space-3);
+    margin-inline-start: var(--space-2);
+    padding-inline-start: var(--space-2);
     border: 0;
+    border-inline-start: var(--border-width) solid var(--border-control);
 
     border-radius: 0;
     background: transparent;

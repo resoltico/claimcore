@@ -55,7 +55,7 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
           }
           const failures = await geometryFailures(page, fixture === "limits");
           expect(
-            failures.filter((id) => id === "G5b" || id === "G30"),
+            failures.filter((id) => ["G5", "G5b", "G5c", "G30"].includes(id)),
             path,
           ).toEqual([]);
           const viewport = page.viewportSize()!;

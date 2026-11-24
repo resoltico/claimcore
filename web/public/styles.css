@@ -312,10 +312,6 @@
     padding-inline: var(--space-1);
     font-variant-numeric: tabular-nums;
   }
-  .react-aria-DateSegment:focus {
-    outline: var(--focus-width) solid var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
   .calendar-popover,
   .code-popover {
     background: var(--bg-surface);

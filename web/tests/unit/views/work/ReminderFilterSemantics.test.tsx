@@ -24,7 +24,9 @@ it("shows the owner Pending/active default in manual mode while leaving ordinary
   expect(screen.getByRole("combobox", { name: "Reminder state" })).toHaveTextContent("Pending");
   expect(screen.getByText("Pending open reminder")).toBeVisible();
   expect(screen.queryByText("Completed open reminder")).toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   expect(screen.getByRole("checkbox", { name: "Include inactive case work" })).not.toBeChecked();
 });
 it("normal Any selection sends the explicit owner token and renders all three returned states without merging queries", async () => {
@@ -59,7 +61,9 @@ it("shows the owner view defaults and preserves an explicit false contrast again
   expect(await screen.findByText("Completed closed reminder")).toBeVisible();
   expect(reads.mock.calls[0]?.[1]).toEqual({ view: "COMPLETED", limit: 50 });
   expect(screen.getByRole("combobox", { name: "Reminder state" })).toHaveTextContent("Any");
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   const inactive = screen.getByRole("checkbox", { name: "Include inactive case work" });
   expect(inactive).toBeEnabled();
   expect(inactive).toBeChecked();
@@ -77,7 +81,9 @@ it("shows the owner view defaults and preserves an explicit false contrast again
   });
   expect(screen.getByText("Completed open reminder")).toBeVisible();
   expect(new URLSearchParams(location.search).get("includeInactive")).toBe("false");
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   expect(screen.getByRole("checkbox", { name: "Include inactive case work" })).not.toBeChecked();
 });
 it("keeps false and Any through a supplied-target page continuation, clear restriction and reload", async () => {
@@ -110,7 +116,9 @@ it("keeps false and Any through a supplied-target page continuation, clear restr
     });
   });
   expect(location.search).not.toMatch(/caseReference|cursor/u);
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   expect(screen.getByRole("checkbox", { name: "Include inactive case work" })).not.toBeChecked();
   view.unmount();
   render(<ReminderQueue />);

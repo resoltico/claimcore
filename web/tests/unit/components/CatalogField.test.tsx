@@ -76,3 +76,10 @@ it("does not silently strip LF from an authored single-line action", () => {
   fireEvent.change(screen.getByRole("textbox"), { target: { value: "first\nsecond" } });
   expect(changed).toHaveBeenCalledWith("first\nsecond");
 });
+
+it("keeps canonical guidance for a country code that can be typed", () => {
+  render(<CatalogField field={country} value="LV" onChange={vi.fn()} />);
+  const input = screen.getByRole("combobox");
+  fireEvent.focus(input);
+  expect(screen.getByText("Use an officially assigned ISO 3166-1 code or XK.")).toBeVisible();
+});

@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { HumanResponseByEndpoint } from "@contracts/client";
-import { render, screen } from "../../support/presentation-test-support";
+import { fireEvent, render, screen } from "../../support/presentation-test-support";
 import { LookupInput } from "../../../src/components/LookupInput";
 import { taskInput } from "../../../src/protocol/taskCatalog";
 const choice = "00000000-0000-4000-8000-000000000002";
@@ -105,3 +105,26 @@ it.each([
     expect(change).toHaveBeenCalledWith("");
   },
 );
+
+it("keeps an unlisted value and omits canonical typing guidance", async () => {
+  supply();
+  const change = vi.fn();
+  const previous = "00000000-0000-4000-8000-000000000004";
+  render(
+    <LookupInput
+      lookup="case.parties"
+      caseId={caseId}
+      metadata={taskInput("input:payee")}
+      inputName="payee"
+      value={previous}
+      disabled={false}
+      onChange={change}
+    />,
+  );
+  const picker = screen.getByRole("combobox", { name: "Payee" });
+  expect(await screen.findByText("The current choice is not among those listed.")).toBeVisible();
+  expect(picker).toHaveValue(previous);
+  fireEvent.focus(picker);
+  expect(screen.queryByText("Use a current party's ID.")).not.toBeInTheDocument();
+  expect(change).not.toHaveBeenCalled();
+});

@@ -536,7 +536,7 @@ it.each(["clear", "apply"])("%s of the last viewless filter keeps All", async (a
   if (action === "clear") {
     await user.click(await screen.findByRole("button", { name: "Clear filters" }));
   } else {
-    await user.click(await screen.findByRole("button", { name: "More filters (1)" }));
+    await user.click(await screen.findByRole("button", { name: "Filters (1)" }));
     await user.click(screen.getByRole("checkbox", { name: "Closed" }));
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
   }

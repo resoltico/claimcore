@@ -1,7 +1,7 @@
 @layer components {
   .chip {
     max-inline-size: 100%;
-    white-space: normal;
+    white-space: var(--chip-white-space, normal);
     display: inline-flex;
     align-items: center;
     min-block-size: var(--size-chip);

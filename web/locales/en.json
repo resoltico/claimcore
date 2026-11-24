@@ -1,4 +1,7 @@
 {
+  "ui.filtersWithCount": "Filters ({count})",
+  "ui.viewWithCount": "{view} · {count}",
+  "ui.calendarFor": "Calendar: {field}",
   "ui.caseReport": "Case report",
   "ui.reportPage": "Report page {page}",
   "ui.nextReportPage": "Next report page",
@@ -21,7 +24,6 @@
   "ui.anyFilter": "Any",
   "ui.appearance": "Appearance",
   "ui.before": "Before: {value}",
-  "ui.calendar": "Open calendar",
   "ui.canonicalCopyHint": "Copy this value.",
   "ui.changeActDescription": "Discard this draft and choose another act?",
   "ui.changeActTitle": "Discard these draft changes?",

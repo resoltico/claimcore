@@ -23,6 +23,7 @@ export type GeometryId =
   | "G21"
   | "G22"
   | "G5b"
+  | "G5c"
   | "G19b"
   | "G19c"
   | "G20b"
@@ -32,7 +33,13 @@ export type GeometryId =
   | "G26"
   | "G27"
   | "G28"
-  | "G30";
+  | "G30"
+  | "G31"
+  | "G32"
+  | "G33"
+  | "G34"
+  | "G35"
+  | "G36";
 
 type GeometryOptions = { limits?: boolean; caseMarker?: string | undefined };
 
@@ -256,6 +263,18 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       },
     );
 
+    const textBoxes = (element: Element) => {
+      const boxes: DOMRect[] = [];
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (parent !== null && visible(parent) && (node.textContent ?? "").trim() !== "") {
+          range.selectNodeContents(node);
+          boxes.push(...lineRects(range));
+        }
+      }
+      return boxes;
+    };
     const firstLine = (element: Element) => {
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
@@ -473,42 +492,29 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
         .some((facts) => {
           const pairs = [...facts.querySelectorAll("dl > div")].filter(visible);
           const rtl = getComputedStyle(facts).direction === "rtl";
-          const edges = pairs.flatMap((pair) => {
+          const columns = new Map<number, number[]>();
+          for (const pair of pairs) {
             const value = pair.querySelector("dd");
-            return value === null ? [] : [rtl ? rect(value).right : rect(value).left];
-          });
+            if (value === null || !visible(value)) {
+              continue;
+            }
+            const key = Math.round(rtl ? rect(pair).right : rect(pair).left);
+            const edge = rtl ? rect(value).right : rect(value).left;
+            columns.set(key, [...(columns.get(key) ?? []), edge]);
+          }
           const wraps = [...facts.querySelectorAll("dt")].some((label) => {
             range.selectNodeContents(label);
             return multipleLines(lineRects(range));
           });
-          const stacked =
-            new Set(pairs.map((pair) => Math.round(rect(pair).top))).size === pairs.length;
-          return (
-            wraps || (stacked && edges.length > 1 && Math.max(...edges) - Math.min(...edges) > 1)
-          );
+          return wraps || [...columns.values()].some(unequalCentres);
         });
-      const active = document.activeElement;
-      const activeBox = active?.closest(".control-box") ?? null;
-      let focusRings = 0;
-      for (
-        let control = active;
-        control?.closest(".control-box") !== null && control !== null;
-        control = control.parentElement
-      ) {
-        const style = getComputedStyle(control);
-        if (
-          (parseFloat(style.outlineWidth) > 0 && style.outlineStyle !== "none") ||
-          style.boxShadow !== "none"
-        ) {
-          focusRings++;
-        }
-      }
       const wideCases = [...document.querySelectorAll(".worklist .data-table table")].filter(
         (table) =>
           visible(table) &&
           getComputedStyle(table).getPropertyValue("--table-layout").trim() === "wide",
       );
       const caseChipsWrap =
+        innerWidth === 1440 &&
         !limits &&
         wideCases.some((table) =>
           fixtureRows(table).some((row) =>
@@ -527,17 +533,12 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       );
       const sideBySideRows = rows.filter((row) => getComputedStyle(row).display === "table-row");
       const paintedInlineBounds = (cell: Element) => {
-        const painted = [...cell.querySelectorAll("img, svg, button, .person-avatar, .chip")]
-          .filter(visible)
-          .map(rect);
-        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-          const parent = node.parentElement;
-          if (parent !== null && visible(parent) && (node.textContent ?? "").trim() !== "") {
-            range.selectNodeContents(node);
-            painted.push(...lineRects(range));
-          }
-        }
+        const painted = [
+          ...[...cell.querySelectorAll("img, svg, button, .person-avatar, .chip")]
+            .filter(visible)
+            .map(rect),
+          ...textBoxes(cell),
+        ];
         return painted.length === 0
           ? []
           : [
@@ -556,16 +557,14 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
           (box, index) => index > 0 && box.left - cellBounds[index - 1]!.right < 11.5,
         );
       });
-      const rowsMisaligned = rows.some((row) => {
+      const rowsMisaligned = sideBySideRows.some((row) => {
         const lines = [...row.querySelectorAll(":scope > td > .data-table-cell")]
           .filter(visible)
           .flatMap((cell) => firstLine(cell) ?? []);
         const bottoms = lines.map((line) => line.bottom);
         const [first] = lines.sort((a, b) => a.top - b.top);
         const textMisaligned =
-          getComputedStyle(row).display === "table-row" &&
-          bottoms.length > 1 &&
-          Math.max(...bottoms) - Math.min(...bottoms) > 2;
+          bottoms.length > 1 && Math.max(...bottoms) - Math.min(...bottoms) > 2;
         const offLine =
           first !== undefined &&
           [...row.querySelectorAll(":scope > .data-table-controls :is(button, .data-table-menu)")]
@@ -577,6 +576,129 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
             });
         return textMisaligned || offLine;
       });
+      const cardMenuIssue = (menu: Element | null, lines: DOMRect[][]) => {
+        const first = lines[0]?.[0];
+        if (menu === null || first === undefined) {
+          return false;
+        }
+        const menuBox = rect(menu);
+        const offLine =
+          Math.abs(menuBox.top + menuBox.height / 2 - (first.top + first.height / 2)) > 4;
+        return (
+          offLine ||
+          lines
+            .flat()
+            .some(
+              (box) =>
+                box.left < menuBox.right - 0.5 &&
+                menuBox.left + 0.5 < box.right &&
+                box.top < menuBox.bottom - 0.5 &&
+                menuBox.top + 0.5 < box.bottom,
+            )
+        );
+      };
+      const cardRowIssue = (row: Element) => {
+        const style = getComputedStyle(row);
+        const rtl = style.direction === "rtl";
+        const start = (bounds: { left: number; right: number }) =>
+          rtl ? -bounds.right : bounds.left;
+        const end = (bounds: { left: number; right: number }) =>
+          rtl ? -bounds.left : bounds.right;
+        const contentStart = start(rect(row)) + parseFloat(style.paddingInlineStart);
+        const contentEnd = end(rect(row)) - parseFloat(style.paddingInlineEnd);
+        const gap = parseFloat(style.columnGap) || 0;
+        const menu = row.querySelector(".data-table-menu button");
+        const values = [
+          ...row.querySelectorAll("td[data-prominence=PRIMARY] > .data-table-cell"),
+        ].filter(visible);
+        const lines = values.map(textBoxes);
+        const oneLine = (line: DOMRect[]) =>
+          line.length > 0 &&
+          line.every((box) => box.top < line[0]!.bottom - 2 && box.bottom > line[0]!.top + 2);
+
+        const idleSpace = values.some((value, index) => {
+          const before = lines[index - 1] ?? [];
+          const after = lines[index]!;
+          const [previousLine] = before;
+          const [nextLine] = after;
+          if (previousLine === undefined || nextLine === undefined) {
+            return false;
+          }
+          const sameLine =
+            nextLine.top < previousLine.bottom - 2 && previousLine.top < nextLine.bottom - 2;
+          if (!oneLine(before) || !oneLine(after)) {
+            return sameLine;
+          }
+          if (sameLine) {
+            return false;
+          }
+          const [previous] = paintedInlineBounds(values[index - 1]!);
+          const [next] = paintedInlineBounds(value);
+          return (
+            previous !== undefined &&
+            next !== undefined &&
+            end(previous) + gap + next.right - next.left <= contentEnd - 1
+          );
+        });
+
+        const paddedMoney = values.some((cell, index) => {
+          const amountLines = lines[index]!;
+          if (amountLines.length === 0 || cell.closest("td[data-money]") === null) {
+            return false;
+          }
+          const top = Math.min(...amountLines.map((box) => box.top));
+          const startOfLine = Math.min(
+            ...amountLines.filter((box) => box.top < top + 2).map(start),
+          );
+          return Math.abs(startOfLine - start(rect(cell))) > 1;
+        });
+        const recommendation = row.querySelector(".data-table-recommended");
+        const displacedAction = () => {
+          if (recommendation === null || !visible(recommendation)) {
+            return false;
+          }
+          const prior = [...values, ...row.querySelectorAll(".data-table-stack")].filter(visible);
+          const bounds = rect(recommendation);
+          return (
+            Math.abs(start(bounds) - contentStart) > 1 ||
+            prior.some((value) => rect(value).bottom > bounds.top + 1)
+          );
+        };
+        return idleSpace || cardMenuIssue(menu, lines) || paddedMoney || displacedAction();
+      };
+      const brokenCard = rows
+        .filter(
+          (row) =>
+            getComputedStyle(row.closest("table")!).getPropertyValue("--table-layout").trim() ===
+            "narrow",
+        )
+        .some(cardRowIssue);
+      const measure = document.createElement("canvas").getContext("2d")!;
+      const splitChip = [...document.querySelectorAll("main .chip, [role=dialog] .chip")]
+        .filter(visible)
+        .some((chip) => {
+          if (!multipleLines(textBoxes(chip))) {
+            return false;
+          }
+          const table = chip.closest(".data-table table");
+          if (
+            table !== null &&
+            getComputedStyle(table).getPropertyValue("--table-layout").trim() !== "narrow"
+          ) {
+            return true;
+          }
+          const list = chip.closest(".chip-list") ?? chip.parentElement;
+          const style = getComputedStyle(chip);
+          measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const occupied =
+            measure.measureText(chip.textContent.trim()).width +
+            parseFloat(style.paddingInlineStart) +
+            parseFloat(style.paddingInlineEnd) +
+            parseFloat(style.borderInlineStartWidth) +
+            parseFloat(style.borderInlineEndWidth);
+          return list !== null && occupied <= list.clientWidth;
+        });
+
       const cards = [
         ...document.querySelectorAll("main .section-card, main .case-header-card"),
       ].filter(visible);
@@ -713,18 +835,98 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
             solid.length > 1 || solid.some((element) => element.matches(".radio-option > label"))
           );
         });
+      const missingDivider = boxes
+        .filter((box) => box.matches(".money-field"))
+        .some((box) => {
+          const currency = box.querySelector(":scope > .compact-picker");
+          if (currency === null) {
+            return true;
+          }
+          const style = getComputedStyle(currency);
+          return (
+            parseFloat(style.borderInlineStartWidth) < 1 ||
+            style.borderInlineStartStyle === "none" ||
+            color(style.borderInlineStartColor) === color("transparent") ||
+            rect(currency).height < 0.6 * rect(box).height
+          );
+        });
+      const tokenSize = (element: Element, name: string) => {
+        const token = getComputedStyle(element).getPropertyValue(name).trim();
+        return (
+          parseFloat(token) *
+          (token.endsWith("rem")
+            ? parseFloat(getComputedStyle(document.documentElement).fontSize)
+            : 1)
+        );
+      };
+      const misplacedHint = [...document.querySelectorAll(".text-field")]
+        .filter(visible)
+        .some((field) => {
+          const hint = [...field.querySelectorAll(".field-hint, .field-description")].find(
+            (element) =>
+              visible(element) && element.closest(".field-label-row, legend, label") === null,
+          );
+          const control = [...field.querySelectorAll(".control-box, .radio-options, textarea")]
+            .filter(visible)
+            .at(-1);
+          return (
+            hint !== undefined &&
+            control !== undefined &&
+            Math.abs(rect(hint).top - rect(control).bottom - tokenSize(field, "--space-1")) > 1
+          );
+        });
+      const malformedStage = [...document.querySelectorAll(".case-stage-list")]
+        .filter(visible)
+        .some((list) => {
+          const steps = [...list.querySelectorAll(":scope > li")].filter(visible);
+          const stageRows = new Map<number, number[]>();
+          for (const step of steps) {
+            const label = step.querySelector(":scope > strong");
+            if (
+              label === null ||
+              step.querySelector(':scope > .stage-connector[aria-hidden="true"]') === null
+            ) {
+              return true;
+            }
+            const line = Math.round(rect(step).top);
+            stageRows.set(line, [...(stageRows.get(line) ?? []), rect(label).top]);
+          }
+          return (
+            [...stageRows.values()].some(unequalCentres) ||
+            [...list.querySelectorAll("meter, [role=meter], [role=progressbar]")].some(
+              (meter) => meter.closest(".money-meter, [aria-hidden=true]") === null,
+            )
+          );
+        });
+      const bar = document.querySelector(".phone-app-bar");
+      const malformedBar =
+        innerWidth === 390 &&
+        bar !== null &&
+        visible(bar) &&
+        (rect(bar).height > tokenSize(bar, "--shell-top-height") + 1 ||
+          (document.querySelector(".case-workspace") !== null &&
+            ![...document.querySelectorAll("main .identifier-value")].some(
+              (value) =>
+                visible(value) &&
+                value.textContent.trim() === bar.querySelector(":scope > span")?.textContent.trim(),
+            )));
       const checks: ReadonlyArray<readonly [GeometryId, boolean]> = [
         ["G5b", caseChipsWrap],
+        ["G5c", splitChip],
         ["G19b", spillsControl],
         ["G19c", misalignedFields],
         ["G20b", raggedFacts],
-        ["G23", activeBox !== null && focusRings !== 1],
         ["G24", tightCells],
         ["G25", rowsMisaligned],
         ["G26", squeezedEntries],
         ["G27", doubleRules],
         ["G28", floatingCards],
         ["G30", splitToolbar],
+        ["G31", brokenCard],
+        ["G33", missingDivider],
+        ["G34", misplacedHint],
+        ["G35", malformedStage],
+        ["G36", malformedBar],
       ];
       return { checks, nestedCard, doubleAccent };
     };
@@ -780,6 +982,52 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
   }, options);
+
+export const focusFailures = (page: Page) =>
+  page.evaluate((): GeometryId[] => {
+    const active = document.activeElement;
+    if (active === null) {
+      return [];
+    }
+    const box = active.closest(".control-box");
+    if (box === null) {
+      return [];
+    }
+    const field = box.closest(".text-field, .field-group") ?? box;
+    let rings = 0;
+    for (let element: Element | null = active; element !== null; element = element.parentElement) {
+      const style = getComputedStyle(element);
+      if (
+        (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0) ||
+        style.boxShadow !== "none"
+      ) {
+        rings++;
+      }
+      if (element === field) {
+        break;
+      }
+    }
+    const findings: GeometryId[] = rings === 1 ? [] : ["G23"];
+    const focusIndistinct = () => {
+      if (!active.matches('[role="spinbutton"]')) {
+        return false;
+      }
+      const focused = getComputedStyle(active);
+      return [...box.querySelectorAll('[role="spinbutton"]')]
+        .filter((sibling) => sibling !== active)
+        .some((sibling) => {
+          const unfocused = getComputedStyle(sibling);
+          return (
+            focused.backgroundColor === unfocused.backgroundColor &&
+            focused.color === unfocused.color
+          );
+        });
+    };
+    if (focusIndistinct()) {
+      findings.push("G32");
+    }
+    return findings;
+  });
 
 export const geometryFailures = async (
   page: Page,

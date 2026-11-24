@@ -10,7 +10,9 @@
 - Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
 - Client-cancelled requests without a reply record `ABANDONED` with null status. Classified replies keep their outcome after a disconnect. New acceptances use metric result `accepted`.
 - Cases, Reminders and People use wide lists at 1366px with classic scrollbars and keep the list width when a drawer opens.
-- Choose a payee from the case’s current parties when recording or correcting a payment.
+- Choose a payee by party name and role. A saved value missing from the loaded choices remains selected until it is changed.
+- Compact rows keep values together when they fit. Table chip labels stay whole, and the phone app bar leaves the full case reference in the breadcrumb.
+- Date focus highlights the active part, money fields separate amount and currency, and drawer hints and facts align consistently.
 - A payment correction or removal link prompts you to choose an eligible payment entry and opens its editor in the same drawer flow.
 - Lists wrap maximum-length values and keep row controls in view. Case actions open over the case page, with one subject summary in the drawer.
 - HUMAN lists omit observation regions and Cases relegates payable amount to details. DATA and CSV retain payable amount. The CLI prints the list basis in a footer.

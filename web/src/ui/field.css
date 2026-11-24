@@ -49,6 +49,7 @@
 
   .field-description {
     display: grid;
+    margin: 0;
     gap: var(--space-1);
     color: var(--text-secondary);
     font-size: var(--text-xs);
@@ -104,6 +105,19 @@
   .control-box :is(input, button, [role="spinbutton"]):focus {
     outline: none;
     box-shadow: none;
+  }
+
+  .control-box [role="spinbutton"]:focus {
+    border-radius: var(--radius-sm);
+    background: var(--accent-subtle);
+    color: var(--accent-soft-text);
+  }
+
+  @media (forced-colors: active) {
+    .control-box [role="spinbutton"]:focus {
+      background: Highlight;
+      color: HighlightText;
+    }
   }
 
   .control-box:is(.field-search, .field-control-group):has(> button, > .compact-picker) {

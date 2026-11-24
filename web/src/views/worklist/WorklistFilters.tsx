@@ -222,8 +222,9 @@ export const WorklistFilters = ({
             changeDraft(query);
           }}
         >
-          {p.text("ui.filters")}
-          {active === 0 ? "" : ` (${p.integer(active)})`}
+          {active === 0
+            ? p.text("ui.filters")
+            : p.text("ui.filtersWithCount", { count: p.integer(active) })}
         </Button>
         {exportAction}
       </div>

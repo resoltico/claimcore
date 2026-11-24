@@ -64,7 +64,7 @@ it("applies the whole date pair once and associates a reversed range with its en
       onChange={publish}
     />,
   );
-  fireEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  fireEvent.click(screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }));
   fireEvent.change(screen.getByLabelText("Received from"), { target: { value: "2026-09-09" } });
   expect(publish).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
