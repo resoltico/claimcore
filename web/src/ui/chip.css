@@ -5,7 +5,7 @@
     display: inline-flex;
     align-items: center;
     min-block-size: var(--size-chip);
-    padding: 0 var(--space-2);
+    padding: 0 var(--chip-padding-inline);
     border: var(--border-width) solid var(--chip-border, var(--tone-neutral-border));
     border-radius: var(--radius-pill);
     background: var(--chip-background, var(--tone-neutral-bg));

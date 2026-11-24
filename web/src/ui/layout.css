@@ -21,6 +21,7 @@
     --measure-person: 10rem;
     --measure-money: 8rem;
     --measure-chips: 14rem;
+    --chip-padding-inline: var(--space-2);
   }
 
   @media (width < 64rem) {
@@ -351,7 +352,7 @@
     }
 
     .data-table .chip {
-      padding-inline: var(--space-1);
+      --chip-padding-inline: var(--space-1);
     }
 
     .data-table .actor-identity {

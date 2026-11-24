@@ -143,6 +143,10 @@
     margin: 0;
   }
 
+  .data-table-stack time {
+    white-space: normal;
+  }
+
   .data-table-empty {
     padding: var(--space-5);
     text-align: center;
