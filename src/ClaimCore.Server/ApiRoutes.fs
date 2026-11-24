@@ -64,6 +64,8 @@ module internal ApiRoutes =
             Route.representedRead Api.context HumanReadDocuments.context Service.context
         | ActorEndpoint.Query QueryTaskId.CaseGet ->
             Route.representedRead Api.caseGet HumanCaseDocument.ofCore Service.get
+        | ActorEndpoint.Query QueryTaskId.CaseParties ->
+            Route.representedRead Api.caseParties HumanReadDocuments.parties Service.parties
         | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
             Route.representedRead Api.caseAssignees HumanReadDocuments.assignees Service.assignees
         | ActorEndpoint.Query QueryTaskId.CaseList ->

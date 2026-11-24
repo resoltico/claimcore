@@ -118,6 +118,7 @@ module EndpointDeclarations =
         [
             query QueryTaskId.CaseGet [ caseTarget ] None false
             query QueryTaskId.CaseAssignees (caseTarget :: page) ordinaryPage false
+            query QueryTaskId.CaseParties (caseTarget :: page) ordinaryPage false
             query
                 QueryTaskId.CaseList
                 (worklist @ page)

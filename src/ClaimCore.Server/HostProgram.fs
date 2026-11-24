@@ -221,7 +221,9 @@ let private configureRoutes
     |> ignore
 
     application.Use(
-        Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures Console.Error)
+        Func<HttpContext, RequestDelegate, Task>(
+            RouteSupport.handleFailures Console.Error application.Lifetime.ApplicationStopping
+        )
     )
     |> ignore
 

@@ -389,6 +389,7 @@ let invalidTables =
                 Link = None
                 Actions = []
                 RegionRow.Key = key
+                Choice = None
                 Transfers = []
                 Recommended = None
                 Prominence = None

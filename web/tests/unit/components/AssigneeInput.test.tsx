@@ -90,7 +90,8 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
               ],
               rows: [
                 {
-                  key: choice,
+                  key: "irrelevant-row-key",
+                  choice,
                   actions: [
                     operationAffordance(
                       "work.update",

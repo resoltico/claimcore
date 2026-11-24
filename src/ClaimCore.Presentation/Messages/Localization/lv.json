@@ -579,6 +579,14 @@
     "text": "Pieejamās atbildīgās personas",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "Pašreizējās lietas puses",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "Parādīt pašreizējās šīs lietas puses.",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "Uzskaitīt personas, kuras var norādīt kā atbildīgās par šo lietu.",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "Noņemt maksājuma ierakstu",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "Izvēlieties noņemamo maksājuma ierakstu.",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "Noņemt kļūdaini reģistrētu maksājuma ierakstu. Tas neatmaksā naudu un neatceļ pārskaitījumu. Iepriekšējā vēsture saglabājas.",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "Labot maksājuma ierakstu",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "Izvēlieties labojamo maksājuma ierakstu.",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "Aizstājiet kļūdainu maksājuma ierakstu ar pareizo datumu, virzienu, summu, atsauci un saņēmēju. Kvītī ir norādīti abi ieraksti.",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "Ievadiet šīs lietas pašreizējās puses identifikatoru.",
-    "source": "d84ebe3bf0f8"
+    "text": "Izvēlieties pusi, kura saņēma vai atdeva naudu.",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "Izvēlieties Samaksāts vai Atmaksāts.",

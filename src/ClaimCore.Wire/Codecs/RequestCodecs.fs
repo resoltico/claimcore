@@ -85,17 +85,17 @@ module RequestCodecs =
         |> caseOperand _.Target
         |> finishRead RequestSchemas.CaseGetRequest
 
-    let assigneeRequest =
+    let caseLookupRequest =
         (record (fun target cursor limit ->
             {
-                AssigneeRequest.Target = target
+                CaseLookupRequest.Target = target
                 AfterCursor = cursor
                 Limit = limit
             })
-        : Fields<AssigneeRequest, _>)
+        : Fields<CaseLookupRequest, _>)
         |> caseOperand _.Target
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AssigneeRequest
+        |> finishRead RequestSchemas.CaseLookupRequest
 
     let actorListRequest =
         (record (fun text role cursor limit ->

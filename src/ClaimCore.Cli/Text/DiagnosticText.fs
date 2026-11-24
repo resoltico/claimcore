@@ -45,6 +45,7 @@ module internal DiagnosticText =
                 Frames.value Api.reminder frame |> Option.map _.Target
                 Frames.value Api.reminders frame |> Option.bind _.Target
                 Frames.value Api.caseAssignees frame |> Option.map _.Target
+                Frames.value Api.caseParties frame |> Option.map _.Target
             ]
             |> List.tryPick id)
         |> Option.bind (function

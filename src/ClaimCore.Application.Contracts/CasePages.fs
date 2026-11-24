@@ -69,3 +69,17 @@ type AssigneePage =
         Items: ActorRef list
         NextCursor: string option
     }
+
+type PartyChoice =
+    {
+        PartyId: PartyId
+        Name: PartyName option
+        Role: PartyRole
+    }
+
+type PartyChoicePage =
+    {
+        Basis: WorkDateBasis
+        Items: PartyChoice list
+        NextCursor: string option
+    }

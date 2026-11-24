@@ -65,6 +65,7 @@ module internal Declarations =
             Target = target
             Creates = creates
             SubjectInput = None
+            SelectionPromptId = None
             Family = family
             Consequence = consequence
             Review = review

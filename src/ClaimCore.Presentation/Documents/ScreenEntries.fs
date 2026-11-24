@@ -352,6 +352,7 @@ module ScreenEntries =
                     {
                         RegionRow.Key = key row
                         Values = definitions |> List.map (fun definition -> definition.Read row)
+                        Choice = None
                         Detail = describe row
                         Link = link
                         Actions = actions
@@ -379,6 +380,21 @@ module ScreenEntries =
                     (RegionContent.Table(
                         tableWithControls key (fun _ -> None) definitions controls rows
                     ))
+                |> withEmpty emptyId
+            ]
+
+    let choiceScreen emptyId choice definitions controls rows =
+        let table = tableWithControls choice (fun _ -> None) definitions controls rows
+
+        let choices =
+            List.map2
+                (fun (row: RegionRow) value -> { row with Choice = Some(choice value) })
+                table.Rows
+                rows
+
+        Screen.create
+            [
+                region RegionRole.Results None (RegionContent.Table { table with Rows = choices })
                 |> withEmpty emptyId
             ]
 

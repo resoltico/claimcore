@@ -65,7 +65,7 @@ module CaseSummaryRequest =
                 }
         }
 
-type AssigneeRequest =
+type CaseLookupRequest =
     {
         Target: CaseSelector
         AfterCursor: string option

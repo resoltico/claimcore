@@ -6,7 +6,9 @@ open ClaimCore.Presentation
 open ClaimCore.Json
 
 
+open System
 open System.IO
+open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Authentication
@@ -82,14 +84,29 @@ module internal RouteSupport =
         else
             response
 
-    let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
+    let handleFailures
+        (sink: TextWriter)
+        (stopping: CancellationToken)
+        (context: HttpContext)
+        (next: RequestDelegate)
+        : Task =
         task {
+            use _request = StorageFailureLog.withinRequest context.RequestAborted stopping
+
+            let abandon () =
+                RequestLog.abandoned context
+                context.Abort()
+
             try
                 do! next.Invoke context
 
-                if context.Response.StatusCode = 405 && not context.Response.HasStarted then
+                if StorageFailureLog.abandoned () then
+                    abandon ()
+                elif context.Response.StatusCode = 405 && not context.Response.HasStarted then
                     do! (hostFailure context HostFailureReason.MethodRejected).ExecuteAsync context
-            with error ->
+            with
+            | :? OperationCanceledException when StorageFailureLog.abandoned () -> abandon ()
+            | error ->
                 RequestLog.reportException sink error
 
                 if context.Response.HasStarted then

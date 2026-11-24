@@ -579,6 +579,14 @@
     "text": "지정 가능한 담당자",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "현재 청구 건 당사자",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "이 청구 건의 현재 당사자를 나열합니다.",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "이 청구 건의 담당자가 될 수 있는 사람을 나열합니다.",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "지급 내역 제거",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "제거할 지급 기록을 선택하세요.",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "잘못 기록한 지급 내역을 제거합니다. 송금을 환불하거나 취소하지 않으며 이전 이력은 유지됩니다.",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "지급 기록 정정",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "정정할 지급 기록을 선택하세요.",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "잘못 기록한 지급 항목을 올바른 날짜, 방향, 금액, 참조 및 수취인으로 교체합니다. 확인서에는 두 항목이 표시됩니다.",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "이 청구 건의 현재 당사자 ID를 입력하세요.",
-    "source": "d84ebe3bf0f8"
+    "text": "금액을 받거나 반환한 당사자를 선택하세요.",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "지급 또는 반환을 선택하세요.",

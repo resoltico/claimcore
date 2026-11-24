@@ -37,12 +37,52 @@ let private rows document =
 [<Tests>]
 let tests =
     testList
-        "core assignee choice documents"
+        "core lookup and selection declarations"
         [
+            testCase "core declares both lookups and every payee uses the party lookup" (fun () ->
+                let payee = TaskInputId.Target InputTarget.PaymentPayee
+                let responsible = TaskAffordances.field BusinessField.ResponsibleActor
+
+                Expect.equal
+                    TaskInputDeclaration.lookups
+                    (Map.ofList [ responsible, "case.assignees"; payee, "case.parties" ])
+                    "The input owns its declared query"
+
+                let payeeInputs =
+                    ClaimCore.Domain.Tasks.Registry.declarations
+                    |> List.collect (fun task ->
+                        task.Inputs
+                        |> List.filter (fun input -> input.Input = payee)
+                        |> List.map (fun input -> TaskId.token task.Id, input.ChoicesFrom))
+                    |> Map.ofList
+
+                Expect.equal
+                    payeeInputs
+                    (Map.ofList
+                        [
+                            "case.recordPayment", Some "case.parties"
+                            "case.correctPayment", Some "case.parties"
+                        ])
+                    "Record and correction both use the same lookup")
+            testCase
+                "selection prompts belong to exactly the case tasks with a binding identity"
+                (fun () ->
+                    for task in ClaimCore.Domain.Tasks.Registry.declarations do
+                        let binding = SubmissionDeclarations.binding task
+
+                        Expect.equal
+                            task.SelectionPromptId.IsSome
+                            (binding.Subject = ActSubject.Case && binding.Identity.IsSome)
+                            (TaskId.token task.Id))
             testCase
                 "each choice carries its exact value and work binding independently of captions"
                 (fun () ->
                     let original = document ()
+
+                    Expect.equal
+                        (rows original |> List.map _.Choice)
+                        [ Some(ActorId.format (actor 1)); Some(ActorId.format (actor 2)) ]
+                        "Choice values are explicit in the results document"
 
                     let selections =
                         rows original |> List.map (fun row -> row.Actions |> List.exactlyOne)

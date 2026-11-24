@@ -71,6 +71,7 @@ module WorkViewsScreen =
             reply.CaseViews
             |> List.map (fun item ->
                 {
+                    Choice = None
                     RegionRow.Key = caseKey item.View
                     Transfers = []
                     Recommended = None
@@ -103,6 +104,7 @@ module WorkViewsScreen =
             reply.ReminderViews
             |> List.map (fun item ->
                 {
+                    Choice = None
                     RegionRow.Key = reminderKey item.View
                     Transfers = []
                     Recommended = None

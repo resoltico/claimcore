@@ -126,6 +126,7 @@ let tests =
                                         Link = None
                                         Actions = []
                                         Key = "entity-7"
+                                        Choice = None
                                         Transfers = []
                                         Recommended = None
                                         Prominence = None

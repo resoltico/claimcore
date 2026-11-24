@@ -429,7 +429,14 @@ module PresentationCodecs =
                     (function
                     | Link.CaseAssignees value -> Some value
                     | _ -> None)
-                    RequestCodecs.assigneeRequest
+                    RequestCodecs.caseLookupRequest
+                query
+                    QueryTaskId.CaseParties
+                    Link.CaseParties
+                    (function
+                    | Link.CaseParties value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseLookupRequest
                 query
                     QueryTaskId.CaseList
                     Link.CaseList
@@ -855,10 +862,11 @@ module PresentationCodecs =
         |> named "AttachmentTransferControl"
 
     let private row =
-        (record (fun key values detail link actions transfers recommended prominence ->
+        (record (fun key values choice detail link actions transfers recommended prominence ->
             {
                 RegionRow.Key = key
                 Values = values
+                Choice = choice
                 Detail = detail
                 Link = link
                 Actions = defaultArg actions []
@@ -869,6 +877,7 @@ module PresentationCodecs =
         : Fields<RegionRow, _>)
         |> field "key" _.Key key
         |> field "values" _.Values (list MaximumEntries value)
+        |> optionalField "choice" _.Choice key
         |> optionalField "detail" _.Detail rowDetail
         |> optionalField "link" _.Link link
         |> optionalField

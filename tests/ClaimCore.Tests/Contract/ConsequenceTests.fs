@@ -57,6 +57,7 @@ let private queries =
     [
         QueryTaskId.CaseGet, Consequence.Routine
         QueryTaskId.CaseAssignees, Consequence.Routine
+        QueryTaskId.CaseParties, Consequence.Routine
         QueryTaskId.CaseList, Consequence.Routine
         QueryTaskId.CaseSummary, Consequence.Routine
         QueryTaskId.CaseTimeline, Consequence.Routine

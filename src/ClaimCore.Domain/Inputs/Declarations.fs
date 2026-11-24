@@ -63,6 +63,14 @@ type TaskCollectionDeclaration =
     }
 
 module TaskInputDeclaration =
+    let lookups =
+        Map.ofList
+            [
+                TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor),
+                "case.assignees"
+                TaskInputId.Target InputTarget.PaymentPayee, "case.parties"
+            ]
+
     let create mode input =
         let source =
             match input with
@@ -86,11 +94,7 @@ module TaskInputDeclaration =
                 | _, TaskInputId.Scope -> InputRetention.Retained
                 | _ -> InputRetention.Erasable
             DefaultText = None
-            ChoicesFrom =
-                if input = TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor) then
-                    Some "case.assignees"
-                else
-                    None
+            ChoicesFrom = Map.tryFind input lookups
             ChoicesWhen = []
             Atom =
                 if

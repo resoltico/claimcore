@@ -499,7 +499,8 @@ schema surgery. Checkpoints, traffic isolation and restore admission remain requ
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
-use endpoint/result labels. Production storage diagnostics are bounded `storageFailure` records with
+use endpoint/result labels. A request cancelled by the client while the application is running
+has metric result `abandoned`. Production storage diagnostics are bounded `storageFailure` records with
 `phase`, `classification`, a distinct internal `attempt` GUID and an internal request/command
 `correlation` GUID where available. Request logs share that correlation. Primary failures and cleanup
 failures are distinct; diagnostics cannot replace confirmed outcomes or commit uncertainty. Records
@@ -508,7 +509,9 @@ Process counters reset on restart and are not a ledger inventory. Verification r
 invocation time, which is an observation rather than a response-time guarantee.
 
 Framework exception logging retains exception types and method names instead of message/state bodies.
-Request records retain endpoint, outcome, status, duration and account/operation identifiers. Treat
+Request records retain endpoint, outcome, status, duration and account/operation identifiers.
+The `ABANDONED` outcome records a client cancellation while the application is running. The host
+sends no failure response and emits no exception or storage failure record for that cancellation. Treat
 identifiers and private failure files as sensitive when preparing support reports.
 
 ## Erasure limits

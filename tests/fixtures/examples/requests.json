@@ -149,6 +149,19 @@
       }
     },
     {
+      "id": "case-parties-scoped-page",
+      "endpoint": "case.parties",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-7000-8000-000000000001"
+        },
+        "limit": 1
+      }
+    },
+    {
       "id": "reference-True-0",
       "endpoint": "case.get",
       "direction": "request",

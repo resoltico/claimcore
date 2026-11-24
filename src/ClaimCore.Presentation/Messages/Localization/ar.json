@@ -579,6 +579,14 @@
     "text": "الأشخاص المؤهلون للمسؤولية",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "الأطراف الحالية في الملف",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "اعرض الأطراف الحالية في هذا الملف.",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "سرد الأشخاص الذين يمكن إسناد مسؤولية هذا الملف إليهم.",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "إزالة دفعة",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "اختر قيد الدفعة المراد إزالته.",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "إزالة دفعة سُجلت بالخطأ. لا يؤدي ذلك إلى رد المال أو عكس التحويل. يبقى السجل السابق.",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "تصحيح قيد دفعة",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "اختر قيد الدفعة المراد تصحيحه.",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "استبدل قيد الدفع المسجّل بالخطأ بالتاريخ والاتجاه والمبلغ والمرجع والمستفيد الصحيحين. يحدّد الإيصال القيدين.",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "أدخل معرّف طرف حالي في هذا الملف.",
-    "source": "d84ebe3bf0f8"
+    "text": "اختر الطرف الذي استلم المال أو أعاده.",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "اختر مدفوع أو مُعاد.",

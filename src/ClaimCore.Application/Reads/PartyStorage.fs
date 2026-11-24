@@ -3,6 +3,7 @@ namespace ClaimCore.Application.Reads
 open System
 open ClaimCore.Application
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 
@@ -61,6 +62,35 @@ module internal PartyStorage =
                     Removed = DatabaseSession.namedValue<bool> "removed" value
                     Content = content
                 }
+        }
+
+    let choicePage (tx: ReadTx) caseId after limit =
+        task {
+            let! rows =
+                DatabaseSession.namedRows
+                    tx.Connection
+                    ("SELECT "
+                     + columns
+                     + " FROM claimcore.case_parties WHERE case_id=$1 AND NOT removed AND role IS NOT NULL AND ($2::uuid IS NULL OR party_id>$2) ORDER BY party_id LIMIT $3")
+                    [|
+                        box (CaseId.value caseId)
+                        DatabaseSession.parameter (Option.map PartyId.value after)
+                        box (limit + 1)
+                    |]
+                    tx.CancellationToken
+
+            return
+                rows
+                |> List.map (fun value ->
+                    let party = row value
+                    let content = Option.get party.Value.Content
+
+                    {
+                        PartyId = party.PartyId
+                        Name = content.Name
+                        Role = content.Role
+                    })
+                |> TransactionPages.page limit _.PartyId
         }
 
     let current connection ids ct =

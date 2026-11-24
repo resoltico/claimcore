@@ -34,6 +34,7 @@ work update R-1 --expected-work-revision 4 --handling-summary Current --operatio
 work update R-1 --expected-work-revision 4 --responsible-actor 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
 work update R-1 --expected-work-revision 4 --clear-handling-summary --operation-id 11111111-2222-7333-8444-555555555555 --clear-responsible-actor
 case assignees R-1 --limit 1
+case parties R-1 --limit 1
 reminder create R-1 --action Call --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
 reminder update R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-30 --operation-id 11111111-2222-7333-8444-555555555555
 reminder complete R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555

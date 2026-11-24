@@ -579,6 +579,14 @@
     "text": "符合条件的负责人",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "案件当前当事方",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "列出此案件的当前当事方。",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "列出可担任此案件负责人的人员。",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "移除付款记录",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "请选择要移除的付款记录。",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "移除误录的付款记录。此操作不会退款或撤销转账，既有历史记录仍会保留。",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "更正付款记录",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "请选择要更正的付款记录。",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "使用正确的日期、方向、金额、参考编号和收款人替换误录的付款条目。回执会标明两个条目。",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "请输入此案件当前当事方的 ID。",
-    "source": "d84ebe3bf0f8"
+    "text": "请选择收款或退款的当事方。",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "请选择已付款或已退回。",

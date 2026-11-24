@@ -604,7 +604,119 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssigneeRequest"
+                "$ref": "#/components/schemas/CaseLookupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/case.parties": {
+      "post": {
+        "operationId": "case.parties",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartyChoicePageReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseLookupRequest"
               }
             }
           }
@@ -7901,29 +8013,6 @@
           "data"
         ]
       },
-      "AssigneeRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "cursor": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 512
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50
-          }
-        },
-        "required": [
-          "target",
-          "limit"
-        ]
-      },
       "AssignmentCount": {
         "type": "object",
         "additionalProperties": false,
@@ -10729,6 +10818,29 @@
           }
         },
         "required": []
+      },
+      "CaseLookupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "target",
+          "limit"
+        ]
       },
       "CaseMoneyDifference": {
         "type": "object",
@@ -17317,6 +17429,7 @@
             "enum": [
               "case.get",
               "case.assignees",
+              "case.parties",
               "case.list",
               "case.summary",
               "case.timeline",
@@ -21004,6 +21117,138 @@
         "required": [
           "kind",
           "changes"
+        ]
+      },
+      "PartyChoice": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "partyId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "enum": [
+              "CLAIMANT",
+              "INSURER",
+              "REPRESENTATIVE",
+              "OTHER"
+            ]
+          }
+        },
+        "required": [
+          "partyId",
+          "name",
+          "role"
+        ]
+      },
+      "PartyChoicePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartyChoice"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "basis",
+          "items",
+          "nextCursor"
+        ]
+      },
+      "PartyChoicePageReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply"
+          },
+          {
+            "$ref": "#/components/schemas/PartyChoicePageReply.DATA"
+          }
+        ]
+      },
+      "PartyChoicePageReply.DATA": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/PartyChoicePageReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
+        ]
+      },
+      "PartyChoicePageReply.DATA_RESULT.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PartyChoicePageReply.DATA_RESULT.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejected"
+          },
+          {
+            "$ref": "#/components/schemas/Failed"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/PartyChoicePageReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
+          }
+        }
+      },
+      "PartyChoicePageReply.DATA_RESULT.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartyChoicePage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
         ]
       },
       "PartyContent": {
@@ -25627,6 +25872,11 @@
             },
             "minItems": 0,
             "maxItems": 327
+          },
+          "choice": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
           },
           "detail": {
             "$ref": "#/components/schemas/PresentedRowDetail"

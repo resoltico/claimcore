@@ -90,4 +90,4 @@ module RequestSchemas =
     let Empty = "Empty"
 
     [<Literal>]
-    let AssigneeRequest = "AssigneeRequest"
+    let CaseLookupRequest = "CaseLookupRequest"

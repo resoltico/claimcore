@@ -358,30 +358,42 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeAssignees installation caseId (after: ActorId) =
+    let private encodeCaseLookup kind installation caseId after =
         encode
             installation
             [
-                "kind", JsonValue.String "ASSIGNEES"
+                "kind", JsonValue.String kind
                 "v", JsonValue.Integer 1L
                 "caseId", JsonValue.String(CaseId.format caseId)
-                "after", JsonValue.String(ActorId.format after)
+                "after", JsonValue.String after
             ]
 
-    let decodeAssignees installation caseId token =
+    let private decodeCaseLookup kind create installation caseId token =
         decode
             installation
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ "after", JsonValue.String after
                                  "caseId", JsonValue.String target
-                                 "kind", JsonValue.String "ASSIGNEES"
+                                 "kind", JsonValue.String actualKind
                                  "v", JsonValue.Integer 1L ] when
-                uuid CaseId.create target = Some caseId
+                actualKind = kind && uuid CaseId.create target = Some caseId
                 ->
-                uuid ActorId.create after
+                uuid create after
             | _ -> None)
             token
+
+    let encodeAssignees installation caseId after =
+        encodeCaseLookup "ASSIGNEES" installation caseId (ActorId.format after)
+
+    let decodeAssignees installation caseId token =
+        decodeCaseLookup "ASSIGNEES" ActorId.create installation caseId token
+
+    let encodeParties installation caseId after =
+        encodeCaseLookup "PARTIES" installation caseId (PartyId.format after)
+
+    let decodeParties installation caseId token =
+        decodeCaseLookup "PARTIES" PartyId.create installation caseId token
 
     let encodeAccessRequests installation (after: AccessRequestPosition) =
         if after.LastSeen.Ticks % 10L <> 0L then
