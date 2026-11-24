@@ -340,9 +340,11 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   if (route.id === "not-found") {
     await expect(page.locator(".workspace-shell .missing-page")).toBeVisible();
     const readBootstrap = endpoints
-      .filter(({ id }) => ["session", "context", "case.views", "reminder.views"].includes(id))
+      .filter(({ id }) => ["session", "context", "work.views"].includes(id))
       .map(({ path }) => path);
-    expect(observed.every((request) => readBootstrap.some((path) => path === request))).toBe(true);
+    expect(observed.filter((request) => !readBootstrap.some((path) => path === request))).toEqual(
+      [],
+    );
   }
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
