@@ -7,6 +7,7 @@ import { browserRequest, openAuthenticated, sessionToken } from "./session-helpe
 import { casePath, referencePath } from "../src/routing/routes";
 import { workRequest } from "./work-workflow";
 import { operationId } from "../src/operation/operationId";
+import { geometryFailures } from "./design-geometry";
 const readCase = async (page: Page, target: CaseSelector) => {
   const response = await browserRequest(page, "/api/case.get", {
     method: "POST",
@@ -130,6 +131,34 @@ test("case inspection restores the live work query, selected row focus and scrol
     },
   });
 });
+
+test("phone Cases cards fit a maximal accepted reference @engine", async ({ page }) => {
+  await openAuthenticated(page);
+  const reference = "W".repeat(80);
+  const result = await workRequest(page, "operation.execute", {
+    operationId: operationId(),
+    task: "case.open",
+    binding: { kind: "CASE", expectedRevision: 0 },
+    inputs: { "field:caseReference": reference },
+  });
+  expect(result.outcome.kind).toBe("ACCEPTED");
+  await page.goto(`/cases?view=ALL&q=${reference}`);
+  const list = page.locator(".worklist");
+  await expect(list).toHaveAttribute("aria-busy", "false");
+  const link = list.locator(".data-table").getByRole("link", { name: reference, exact: true });
+  await expect(link).toHaveCount(1);
+
+  for (const width of [390, 513, 514, 560, 600, 639]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(link).toHaveText(reference);
+    const failures = await geometryFailures(page);
+    expect(
+      failures.filter((id) => id === "G4" || id === "G9"),
+      `Maximal case reference at ${width}px`,
+    ).toEqual([]);
+  }
+});
+
 test("historical exact Find admits the encoded reference and restores shortcut focus", async ({
   page,
 }) => {

@@ -15,6 +15,8 @@
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
 - The redesigned workspace adds the Cases breadcrumb, compact row menus, and About ClaimCore.
 - List controls share one height. Phone lists keep search visible, put filters in a sheet, and scroll the view tabs horizontally.
+- On phones, after Back focuses the loading Cases heading, Tab enters the selected view. Lists use cards below 50rem of container width.
+- Long case references wrap inside phone cards.
 - Case sections share a layout and show supplied counts. Read views omit unrecorded values, and technical details open in dialogs.
 - Accepted operations show a focused banner with View receipt, including reminder completion from a list.
 - Wide lists keep words intact. Stacked rows omit absent secondary values, and grouped reminders show timing in the group header.

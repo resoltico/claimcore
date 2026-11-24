@@ -1,4 +1,4 @@
-import { narrowTableFailures } from "./design-geometry";
+import { geometryFailures, narrowTableFailures } from "./design-geometry";
 import { dimensions, dimensionCaseTitle, type Dimension } from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
@@ -112,6 +112,40 @@ const recordPaymentReview = async (run: Run) => {
 const historyComparison = async (page: Page) => {
   await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
 };
+const casesLayoutBoundaries = async (page: Page) => {
+  const table = page.locator(".worklist .data-table table");
+  await expect(table.locator("tbody tr").first()).toBeVisible();
+  const viewport = page.viewportSize()!;
+  try {
+    for (const [width, layout] of [
+      [513, "narrow"],
+      [514, "narrow"],
+      [639, "narrow"],
+      [640, "narrow"],
+      [913, "narrow"],
+      [914, "medium"],
+      [1023, "medium"],
+      [1024, "narrow"],
+      [1105, "narrow"],
+      [1106, "medium"],
+    ] as const) {
+      await page.setViewportSize({ ...viewport, width });
+      const failures = await geometryFailures(page);
+      expect(
+        failures.filter((id) => id === "G4" || id === "G5" || id === "G9"),
+        `Seeded Cases at ${width}px`,
+      ).toEqual([]);
+      expect(
+        await table.evaluate((element) =>
+          getComputedStyle(element).getPropertyValue("--table-layout").trim(),
+        ),
+        `Cases layout at ${width}px`,
+      ).toBe(layout);
+    }
+  } finally {
+    await page.setViewportSize(viewport);
+  }
+};
 const editorLayout = async (page: Page) => {
   const section = page.locator(".task-field-section").filter({
     has: page.locator('[data-field-name="incidentDate"]'),
@@ -203,6 +237,18 @@ const registerDimension = (dimension: Dimension) => {
     expect(headingOffsetFailures(offsets), JSON.stringify(offsets)).toEqual([]);
   });
 };
+const registerCasesLayoutBoundaries = (language: "en" | "ar") => {
+  test(`seeded Cases fit at the table and sidebar transitions in ${language} @engine`, async ({
+    page,
+  }) => {
+    const dimension: Dimension = { language, width: 640, mode: "light", accent: "green" };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    const cases = dataset.routes.find(({ id }) => id === "cases-all")!;
+    await visitRoute(page, cases, dimension);
+    await casesLayoutBoundaries(page);
+  });
+};
 test.describe("adopted work surface design matrix", () => {
   test.beforeAll(async ({ browser, baseURL }, info) => {
     test.setTimeout(120_000);
@@ -217,4 +263,5 @@ test.describe("adopted work surface design matrix", () => {
     await dataset?.close();
   });
   plannedDimensions.forEach(registerDimension);
+  (["en", "ar"] as const).forEach(registerCasesLayoutBoundaries);
 });
