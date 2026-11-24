@@ -48,7 +48,12 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
         for (const path of [...cases, "/reminders", "/reminders?view=MINE", "/people"]) {
           await page.goto(path);
           await settledWorkspaceHeader(page);
-          await expect(list.locator("tbody tr").first()).toBeVisible();
+          const rows = list.locator("tbody tr");
+          await expect(rows.first()).toBeVisible();
+          if (fixture === "standard" && path.startsWith("/cases")) {
+            await expect(rows.first()).toContainText(dataset.caseMarker);
+            await expect(rows.filter({ hasNotText: dataset.caseMarker })).toHaveCount(0);
+          }
           const atTall = await tableLayoutState(page);
           if (width >= 1366) {
             expect(isWideTable(atTall), `G29 ${path}`).toBe(true);
