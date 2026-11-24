@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Page } from "../ui/Page";
 import { TextInput } from "../ui/TextField";
 import { useCallback, useState } from "react";
@@ -124,6 +125,7 @@ const TrailFilters = ({ apply }: { apply: (selection: TrailSelection) => void })
 type TrailPage = NonNullable<ReturnType<typeof select>>;
 export const DisclosureTrail = () => {
   const p = usePresentation();
+  useDocumentTitle(p.text("endpoint.disclosure.trail.label"));
   const [selection, setSelection] = useState<TrailSelection>({});
   const input = useCallback(
     (cursor: string | null) => ({

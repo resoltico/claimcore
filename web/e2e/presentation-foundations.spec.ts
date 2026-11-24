@@ -1594,19 +1594,14 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     name: "Check access",
     exact: true,
   });
-  // An automatic access check may still be in flight; restore access only for the explicit check.
+  const retry = page.getByRole("button", { name: "Send again", exact: true });
   await expect(checkAccess).toBeEnabled();
   hasAccess = true;
-  await checkAccess.click();
-  // Restoring the same requester reveals the retained request without submitting it.
-  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  // An automatic refresh can restore access while the explicit check is being activated.
+  await Promise.race([checkAccess.click(), retry.waitFor()]);
+  await expect(retry).toBeVisible();
   expect(bytes).toHaveLength(1);
-  await page
-    .getByRole("button", {
-      name: "Send again",
-      exact: true,
-    })
-    .click();
+  await retry.click();
   await expect.poll(() => bytes.length).toBe(2);
   expect(bytes[1]).toBe(bytes[0]);
   await expectAccessible(page);
@@ -1691,6 +1686,15 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
       },
     });
   });
+  await page.route("**/api/case.timeline", (route) =>
+    route.fulfill({
+      json: humanReadReply("case.timeline", {
+        ...timelineDocument([]),
+        subject: { ...caseSubject, caseId, revision: reads <= 1 ? 1 : 3 },
+        basis: { kind: "SNAPSHOT", observation: basis },
+      }),
+    }),
+  );
   const drafts: RequestByEndpoint["operation.preview"][] = [];
   await page.route("**/api/operation.preview", (route) => {
     const operationPreviewRequest = route
@@ -2446,13 +2450,17 @@ test("case panels follow compact reading order while a work draft survives respo
     await page
       .locator(".case-workspace")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual(["case-main-column", "case-work-rail"]);
-  expect(
-    await page
-      .locator(".case-work-rail")
-      .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual(["case-work", "case-reminders", "screen-view"]);
-  await expect(page.locator('.case-main-column [data-region="FACTS"]')).toHaveCount(1);
+  ).toEqual([
+    "case-area-next",
+    "case-area-work",
+    "case-area-claim",
+    "case-area-notes",
+    "case-area-attachments",
+    "case-area-related",
+  ]);
+  await expect(page.locator(".case-area-next .case-reminders")).toBeVisible();
+  await expect(page.locator(".case-area-work .case-work")).toBeVisible();
+  await expect(page.locator('.case-area-claim [data-region="FACTS"]')).toHaveCount(1);
   await expectAccessible(page);
   await page.locator("#case-work-summary").click();
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
@@ -2843,6 +2851,20 @@ for (const [language, displayLocale, dismiss, separator] of [
             },
           }),
         },
+      }),
+    );
+    await page.route("**/api/case.list", (route) =>
+      route.fulfill({
+        json: humanReadReply("case.list", {
+          screen: { regions: [] },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
+        }),
       }),
     );
     let writes = 0;

@@ -8,21 +8,18 @@
   }
 
   .toolbar > .toolbar-filter {
-    flex: 1 1 0;
+    flex: 1 1 var(--toolbar-filter-min);
     min-inline-size: var(--toolbar-filter-min);
-  }
-
-  .toolbar-sheet .ui-select-trigger {
-    flex-wrap: wrap;
-    justify-content: start;
-  }
-
-  .toolbar-sheet .ui-select-trigger > span {
-    overflow-wrap: normal;
+    max-inline-size: var(--toolbar-filter-max);
   }
 
   .toolbar-sheet {
     display: grid;
     gap: var(--space-3);
+    padding-block-start: var(--space-3);
+  }
+
+  .toolbar-sheet :is(.ui-select-field, .ui-button, .control-box) {
+    inline-size: 100%;
   }
 }

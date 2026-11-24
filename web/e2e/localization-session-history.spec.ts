@@ -57,7 +57,7 @@ test("updates supplied records without refetching while receipt disclosure refre
       }),
     ).toBeVisible();
     await expect(
-      page.locator(".case-header-actions button[aria-haspopup]").filter({
+      page.locator(".subject-header-actions button[aria-haspopup]").filter({
         hasText: ui(language, "ui.moreCaseActions"),
       }),
     ).toBeVisible();

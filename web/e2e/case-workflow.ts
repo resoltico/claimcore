@@ -187,7 +187,7 @@ export const startOpen = async (
 
 /** Reveal the offered global actions without opening an operation or sending a mutation. */
 const caseActionMenuTrigger = (page: Page) =>
-  page.locator(".case-header-actions button[aria-haspopup]").filter({ visible: true });
+  page.locator(".subject-header-actions button[aria-haspopup]").filter({ visible: true });
 
 export const showCaseActionMenu = async (page: Page): Promise<void> => {
   const more = caseActionMenuTrigger(page);

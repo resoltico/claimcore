@@ -38,7 +38,7 @@ export const CasePaymentPages = ({
   onChanged,
 }: {
   current: CurrentCase;
-  onAction: (action: Affordance) => void;
+  onAction: (action: Affordance, origin?: string) => void;
   onChanged: () => void;
 }) => {
   const p = usePresentation();

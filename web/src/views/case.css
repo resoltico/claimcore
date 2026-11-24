@@ -23,82 +23,74 @@
   .case-title-sticky[data-stuck] {
     box-shadow: inset 0 calc(-1 * var(--border-width)) 0 var(--border-subtle);
   }
-  .case-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: start;
-    justify-content: space-between;
-    gap: var(--space-4);
-    min-inline-size: 0;
-  }
-  .case-identity {
-    flex: 1 1 24rem;
-    min-inline-size: 0;
-  }
-  .case-title-line {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-    min-inline-size: 0;
-  }
-  .case-title-line .identifier-value {
-    font-family: inherit;
-    white-space: normal;
-    overflow-wrap: break-word;
-  }
-  .case-header-state {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .case-identity-facts {
-    margin-block-start: var(--space-2);
-    color: var(--text-secondary);
-  }
-  .case-identity-facts .entries-view dl {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-  }
-  .case-identity-facts .entries-view dt {
-    position: absolute;
-    inline-size: var(--border-width);
-    block-size: var(--border-width);
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .case-identity-facts .entries-view dd {
-    font-weight: 400;
-  }
-  .case-header-actions {
-    position: relative;
-    z-index: 1;
-    flex: 0 1 auto;
-    min-inline-size: 0;
-  }
   .case-header-card .screen-view {
     gap: 0;
   }
   .case-workspace {
     display: grid;
-    grid-template-columns: var(--case-workspace-columns);
-    align-items: start;
-    gap: var(--space-5);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
     margin-block: var(--space-5);
+  }
+
+  .case-workspace > * {
     min-inline-size: 0;
   }
-  .case-main-column,
-  .case-work-rail,
-  .case-fact-regions {
+
+  .case-area-claim {
     display: grid;
     gap: var(--space-4);
-    min-inline-size: 0;
   }
-  .case-main-column > .case-timeline-panel {
-    margin-block-start: 0;
+
+  .case-workspace :is(.case-area-parties, .case-area-payments, .case-area-related) .data-table {
+    border: 0;
+    border-radius: 0;
   }
+
+  @container (width >= 56rem) {
+    .case-workspace {
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(var(--width-work-column), var(--width-sidebar-detail));
+      grid-template-areas:
+        "claim next"
+        "parties work"
+        "payments related"
+        "notes related"
+        "attachments related"
+        "activity activity";
+      align-items: start;
+    }
+
+    .case-area-next {
+      grid-area: next;
+    }
+    .case-area-work {
+      grid-area: work;
+    }
+    .case-area-claim {
+      grid-area: claim;
+    }
+    .case-area-parties {
+      grid-area: parties;
+    }
+    .case-area-payments {
+      grid-area: payments;
+    }
+    .case-area-notes {
+      grid-area: notes;
+    }
+    .case-area-attachments {
+      grid-area: attachments;
+    }
+    .case-area-related {
+      grid-area: related;
+    }
+    .case-area-activity {
+      grid-area: activity;
+    }
+  }
+
   .case-work {
     min-inline-size: 0;
   }
@@ -170,16 +162,6 @@
     flex-wrap: wrap;
     gap: var(--space-2);
   }
-  @container (width < 56rem) {
-    .case-workspace {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .case-work-rail {
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-      align-items: start;
-    }
-  }
-
   .case-reminders .table-view table,
   .case-reminders .table-view tbody {
     display: block;
@@ -256,11 +238,8 @@
     white-space: nowrap;
   }
 
-  .case-breadcrumb > bdi {
+  .case-breadcrumb > .identifier-value {
     min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .case-title-line :is(h1, .case-context-title) {
@@ -271,7 +250,6 @@
     font-weight: 700;
     line-height: var(--line-heading);
     overflow-wrap: break-word;
-    font-family: var(--font-mono);
     font-size: var(--text-case-heading);
   }
 

@@ -318,17 +318,20 @@ const fact = (revision: number): RegionTimelineEntry => ({
   ],
   details: [],
 });
-const editor = () =>
+const editor = (onCaseObserved = vi.fn()) => (
   render(
     <OperationEditor
       definition={definition}
       current={current(1)}
       initialAct="case.amendRegistration"
+      onCaseObserved={onCaseObserved}
       onClose={vi.fn()}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
-  );
+  ),
+  onCaseObserved
+);
 const author = async (user: ReturnType<typeof userEvent.setup>) => {
   selectFact("policyNumber");
   const field = screen.getByLabelText("Policy number", {
@@ -456,13 +459,13 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   });
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  editor();
+  const observed = editor();
   const field = await author(user);
   await screen.findByRole("button", {
     name: "Review against latest",
   });
   expect(field).toHaveValue("My retained draft");
-  expect(document.querySelector(".case-detail")).toHaveTextContent("Latest stored name");
+  expect(JSON.stringify(observed.mock.calls.at(-1)?.[0])).toContain("Latest stored name");
   expect(
     document.querySelectorAll(
       ".revision-conflict .region-timeline > li, .revision-conflict .table-view tbody > tr",
@@ -580,7 +583,7 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
     .mockResolvedValueOnce(response("case.get", "SUCCEEDED", current(4, "Fresh name")));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  editor();
+  const observed = editor();
   const field = await author(user);
   await screen.findByRole("alert");
   expect(
@@ -600,7 +603,7 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
   await screen.findByRole("button", {
     name: "Review against latest",
   });
-  expect(document.querySelector(".case-detail")).toHaveTextContent("Fresh name");
+  expect(JSON.stringify(observed.mock.calls.at(-1)?.[0])).toContain("Fresh name");
   expect(fetch).toHaveBeenCalledTimes(3);
 });
 it.each(["NONE", "SUMMARY"] as const)(
@@ -665,7 +668,7 @@ it.each(["NONE", "SUMMARY"] as const)(
     });
     vi.stubGlobal("fetch", fetch);
     const user = userEvent.setup();
-    editor();
+    const observed = editor();
     const field = await author(user);
     await screen.findByRole("button", {
       name: "Review against latest",
@@ -677,7 +680,7 @@ it.each(["NONE", "SUMMARY"] as const)(
       }),
     );
     await waitFor(() => {
-      expect(document.querySelector(".case-detail")).toHaveTextContent("After access change");
+      expect(JSON.stringify(observed.mock.calls.at(-1)?.[0])).toContain("After access change");
     });
     expect(document.body).not.toHaveTextContent("Core change 53");
     expect(

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Page } from "../ui/Page";
 import { Section } from "../ui/Section";
 import { usePresentation } from "../presentation/context";
@@ -7,6 +8,7 @@ import { UnresolvedNotice } from "./operation/UnresolvedNotice";
 
 export const RecoveryPanel = ({ initialOperationId }: { initialOperationId?: string }) => {
   const p = usePresentation();
+  useDocumentTitle(p.text("ui.recovery"));
   const operation = initialOperationId === "" ? undefined : initialOperationId;
   return (
     <div className="recovery-panel">

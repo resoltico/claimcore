@@ -15,10 +15,16 @@ export type GeometryId =
   | "G13"
   | "G14"
   | "G15"
-  | "G16";
+  | "G16"
+  | "G17"
+  | "G18"
+  | "G19"
+  | "G20"
+  | "G21"
+  | "G22";
 
-export const geometryReport = (page: Page) =>
-  page.evaluate(() => {
+export const geometryReport = (page: Page, limitsFixture = false) =>
+  page.evaluate((limits) => {
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 1 || rect.height <= 1) {
@@ -124,39 +130,241 @@ export const geometryReport = (page: Page) =>
             ),
       );
     });
-    const words = [
-      ...document.querySelectorAll(
-        "main td, main th, .chip, button, [role=tab], nav a, main h1, main h2, main h3",
-      ),
-    ];
-    const splitWords: string[] = [];
-    const wrap = words.filter(visible).some((element) => {
-      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-      const range = document.createRange();
-      for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
+    const surfaces = [...document.querySelectorAll("main, [role=dialog]")];
+    const lineRects = (range: Range) =>
+      [...range.getClientRects()].filter((rect) => rect.width > 0);
+    const multipleLines = (rects: DOMRect[]) =>
+      new Set(rects.map(({ top }) => Math.round(top))).size > 1;
+    const contained = (outer: DOMRect, inner: DOMRect) =>
+      inner.left >= outer.left - 1 && inner.right <= outer.right + 1;
+    const isOverflowRegion = (element: Element) =>
+      element.matches(".data-table, .timeline-layout") ||
+      (!element.matches("input, textarea") &&
+        /auto|scroll|hidden|clip/u.test(getComputedStyle(element).overflowX));
+    const overflowingRegions = surfaces.flatMap((surface) =>
+      [surface, ...surface.querySelectorAll("*")]
+        .filter(
+          (element) =>
+            visible(element) &&
+            element.closest(".view-tabs-bar") === null &&
+            isOverflowRegion(element) &&
+            element.clientWidth > 2 &&
+            element.scrollWidth > element.clientWidth + 1,
+        )
+        .map((element) => ({
+          region: `${element.tagName.toLowerCase()}.${[...element.classList].join(".")}`,
+          client: element.clientWidth,
+          scroll: element.scrollWidth,
+        })),
+    );
+    const pageSpill = document.documentElement.scrollWidth - innerWidth;
+    const overflow = pageSpill > 1 || overflowingRegions.length > 0;
+    const rowControlsOutside = [...document.querySelectorAll(".data-table, .timeline-layout")].some(
+      (table) =>
+        [...table.querySelectorAll("tbody button, .timeline-details")].some(
+          (button) =>
+            visible(button) &&
+            !contained(table.getBoundingClientRect(), button.getBoundingClientRect()),
+        ),
+    );
+
+    const range = document.createRange();
+    const firstInlineContainer = (element: Element) => {
+      let box = element;
+      while (getComputedStyle(box).display === "inline" && box.parentElement !== null) {
+        box = box.parentElement;
+      }
+      const style = getComputedStyle(box);
+      return box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    };
+    const wordSplits = () => {
+      const measure = document.createElement("canvas").getContext("2d")!;
+      const splits: string[] = [];
+      const visited = new Set<Node>();
+      const inspectText = (node: Node) => {
+        const parent = node.parentElement;
         if (
-          !(text instanceof Text) ||
-          text.parentElement === null ||
-          !visible(text.parentElement) ||
-          (innerWidth < 640 && text.parentElement.closest(".identifier-value") !== null)
+          !(node instanceof Text) ||
+          parent === null ||
+          !visible(parent) ||
+          parent.closest(".identifier-value") !== null ||
+          visited.has(node)
         ) {
-          continue;
+          return;
         }
-        for (const word of text.data.matchAll(/\S+/gu)) {
-          range.setStart(text, word.index);
-          range.setEnd(text, word.index + word[0].length);
-          const lines = new Set(
-            [...range.getClientRects()]
-              .filter((rect) => rect.width > 0)
-              .map((rect) => Math.round(rect.top)),
-          );
-          if (lines.size > 1) {
-            splitWords.push(word[0].slice(0, 50));
-            return true;
+        visited.add(node);
+        const width = firstInlineContainer(parent);
+        const style = getComputedStyle(parent);
+        measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        for (const match of node.data.matchAll(/[^\s\-‐–—/_.@:]+/gu)) {
+          range.setStart(node, match.index);
+          range.setEnd(node, match.index + match[0].length);
+          if (multipleLines(lineRects(range)) && measure.measureText(match[0]).width <= width + 1) {
+            splits.push(match[0].slice(0, 50));
           }
         }
+      };
+      for (const element of document.querySelectorAll(
+        "main :is(td, th, dt, dd, p, li, h1, h2, h3), .chip, button, [role=tab], nav a",
+      )) {
+        if (!visible(element)) {
+          continue;
+        }
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
+          inspectText(text);
+        }
       }
-      return false;
+      return splits;
+    };
+    const splitWords = wordSplits();
+    const identifiersOut = [...document.querySelectorAll(".identifier-value:not(input)")].some(
+      (id) => {
+        if (!visible(id)) {
+          return false;
+        }
+        range.selectNodeContents(id);
+        const rects = lineRects(range);
+        if (Array.from(id.textContent.trim()).length <= 16 && multipleLines(rects)) {
+          return true;
+        }
+        const cell = id.closest(".data-table-value");
+        return (
+          cell !== null && rects.some((rect) => !contained(cell.getBoundingClientRect(), rect))
+        );
+      },
+    );
+
+    const firstLine = (element: Element) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
+        if (
+          text instanceof Text &&
+          text.data.trim() &&
+          text.parentElement &&
+          visible(text.parentElement)
+        ) {
+          range.selectNodeContents(text);
+          return lineRects(range)[0];
+        }
+      }
+      return undefined;
+    };
+    const labelsMisaligned = [
+      ...document.querySelectorAll("main dl > div, [role=dialog] dl > div"),
+    ].some((pair) => {
+      const label = pair.querySelector(":scope > dt");
+      const value = pair.querySelector(":scope > dd");
+      if (label === null || value === null || !visible(label) || !visible(value)) {
+        return false;
+      }
+      const a = label.getBoundingClientRect();
+      const b = value.getBoundingClientRect();
+      if (a.right > b.left + 1 && b.right > a.left + 1) {
+        return false;
+      }
+      const labelLine = firstLine(label);
+      const valueLine = firstLine(value);
+      return (
+        labelLine !== undefined &&
+        valueLine !== undefined &&
+        Math.abs(labelLine.bottom - valueLine.bottom) > 2
+      );
+    });
+
+    const drawers = [...document.querySelectorAll(".drawer")].filter(visible);
+    const border = (element: Element) => {
+      const style = getComputedStyle(element);
+      return [
+        style.borderTopWidth,
+        style.borderRightWidth,
+        style.borderBottomWidth,
+        style.borderLeftWidth,
+      ].map(parseFloat);
+    };
+    const wrongFields = drawers.some((drawer) => {
+      const badButton = [...drawer.querySelectorAll(".control-box button")]
+        .filter(visible)
+        .some((button) => {
+          const parent = button.closest(".control-box")!;
+          const box = parent.getBoundingClientRect();
+          const control = button.getBoundingClientRect();
+          const end =
+            getComputedStyle(parent).direction === "rtl"
+              ? control.left - box.left
+              : box.right - control.right;
+          return border(button).some((width) => width > 0) || end > 8 || end < -1;
+        });
+      const gap =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--space-5")) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const badGap = [...drawer.querySelectorAll(".task-field-grid")].some((grid) => {
+        const fields = [...grid.children]
+          .filter(visible)
+          .map((field) => field.getBoundingClientRect());
+        return fields.some((field, index) => {
+          const above = fields
+            .slice(0, index)
+            .filter(
+              (peer) =>
+                peer.top < field.top - 1 &&
+                peer.left < field.right - 1 &&
+                field.left < peer.right - 1,
+            )
+            .at(-1);
+          return above !== undefined && Math.abs(field.top - above.bottom - gap) > 1;
+        });
+      });
+      const groupGap = [...drawer.querySelectorAll(".task-field-section + .task-field-grid")]
+        .filter(visible)
+        .some(
+          (grid) =>
+            Math.abs(
+              grid.getBoundingClientRect().top -
+                grid.previousElementSibling!.getBoundingClientRect().bottom -
+                gap,
+            ) > 1,
+        );
+      return badButton || badGap || groupGap;
+    });
+
+    const crowdedDrawer = drawers.some((drawer) => {
+      const subject = drawer.querySelector(".case-title-line .identifier-value")?.textContent;
+      const duplicate =
+        subject !== undefined &&
+        [...drawer.querySelectorAll(".identifier-value")].filter(
+          (element) => visible(element) && element.textContent === subject,
+        ).length > 1;
+      const { width } = drawer.getBoundingClientRect();
+      const card = [
+        ...drawer.querySelectorAll(".ui-dialog-body :is(div, section, form, fieldset)"),
+      ].some(
+        (element) =>
+          visible(element) &&
+          element.closest(".control-box") === null &&
+          element.getBoundingClientRect().width > width * 0.6 &&
+          border(element).every((side) => side >= 1),
+      );
+      const firstInput = [
+        ...drawer.querySelectorAll(
+          "input:not([type=hidden]), textarea, [role=spinbutton], [role=combobox], [role=radio]",
+        ),
+      ].find(visible);
+      const late =
+        !limits &&
+        innerWidth === 390 &&
+        firstInput !== undefined &&
+        firstInput.getBoundingClientRect().top > innerHeight * 0.6;
+      return duplicate || card || late;
+    });
+    const markers = [...document.querySelectorAll("main li, [role=dialog] li")].some((item) => {
+      const style = getComputedStyle(item);
+      return (
+        visible(item) &&
+        style.display === "list-item" &&
+        style.listStyleType !== "none" &&
+        item.closest('[data-kind="NARRATIVE"], .note-text') === null
+      );
     });
     const primary = [...document.querySelectorAll(".ui-button--primary")].filter(
       (element) =>
@@ -175,6 +383,10 @@ export const geometryReport = (page: Page) =>
         parseFloat(getComputedStyle(element).fontSize) < 13,
     );
     const mainHeading = document.querySelector(".workspace-main h1");
+    const titleHeading =
+      location.pathname === "/cases/new"
+        ? document.querySelector('[role="dialog"] .ui-dialog-title')
+        : mainHeading;
     const firstRow = [
       ...document.querySelectorAll(
         ".workspace-main :is(.worklist, .reminder-queue) .data-table tbody > tr:not(.table-group)",
@@ -184,21 +396,22 @@ export const geometryReport = (page: Page) =>
       ["G1", headingDisplaced()],
       ["G2", footerClipped()],
       ["G3", [...document.querySelectorAll(".case-title-line .chip-list")].some(chipsMisaligned)],
-      ["G4", tables.some((table) => table.scrollWidth > table.clientWidth)],
+      ["G4", overflow],
       [
         "G5",
-        tables.some((table) => {
-          const inner = table.querySelector("table");
-          return (
-            inner !== null &&
-            getComputedStyle(inner).getPropertyValue("--table-layout").trim() === "wide" &&
-            inflatedRows(table)
-          );
-        }),
+        !limits &&
+          tables.some((table) => {
+            const inner = table.querySelector("table");
+            return (
+              inner !== null &&
+              getComputedStyle(inner).getPropertyValue("--table-layout").trim() === "wide" &&
+              inflatedRows(table)
+            );
+          }),
       ],
       ["G6", tables.some(extraRowActions)],
       ["G8", controlGeometry],
-      ["G9", wrap],
+      ["G9", splitWords.length > 0],
       ["G10", primary.length > 1],
       ["G12", tinyText],
       [
@@ -207,23 +420,31 @@ export const geometryReport = (page: Page) =>
           (detail) => detail.closest('[role="dialog"], .about-panel') === null,
         ),
       ],
-      ["G14", mainHeading !== null && !document.title.includes(mainHeading.textContent.trim())],
+      ["G14", titleHeading !== null && !document.title.includes(titleHeading.textContent.trim())],
       [
         "G15",
         innerWidth < 640 &&
           firstRow !== undefined &&
           firstRow.getBoundingClientRect().top > innerHeight * 0.6,
       ],
+      ["G17", identifiersOut],
+      ["G18", rowControlsOutside],
+      ["G19", wrongFields],
+      ["G20", labelsMisaligned],
+      ["G21", crowdedDrawer],
+      ["G22", markers],
     ];
     return {
       violations: findings.flatMap(([id, violated]) => (violated ? [id] : [])),
       splitWords,
+      overflowingRegions,
+      pageSpill,
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
-  });
+  }, limitsFixture);
 
-export const geometryFailures = async (page: Page): Promise<GeometryId[]> =>
-  (await geometryReport(page)).violations;
+export const geometryFailures = async (page: Page, limits = false): Promise<GeometryId[]> =>
+  (await geometryReport(page, limits)).violations;
 
 export const narrowTableFailures = (page: Page): Promise<string[]> =>
   page.evaluate(async () => {

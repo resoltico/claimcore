@@ -1,8 +1,19 @@
-import { createContext, useContext, useLayoutEffect, type ReactNode, type Ref } from "react";
-import { useRoute } from "../routing/useRoute";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import "./page.css";
 
-export const PhoneTitleTarget = createContext<((title: string) => void) | null>(null);
+type HeadingHandle = {
+  attach: (node: HTMLHeadingElement | null) => void;
+  focus: () => void;
+};
+export const PageHeadingTarget = createContext<HeadingHandle | null>(null);
 export const PageBanner = createContext<ReactNode>(null);
 
 export const PageTitle = ({
@@ -14,23 +25,20 @@ export const PageTitle = ({
   id: string;
   title: string;
   children?: ReactNode;
-  headingRef?: Ref<HTMLHeadingElement> | undefined;
+  headingRef?: RefObject<HTMLHeadingElement | null> | undefined;
 }) => {
-  const publishPhoneTitle = useContext(PhoneTitleTarget);
-  const route = useRoute();
-  useLayoutEffect(() => {
-    const heading = document.getElementById(id);
-    const active = heading !== null && heading.closest("[hidden]") === null;
-    if (
-      active &&
-      (route.screen !== "settings" || heading.closest(".settings-workspace") !== null)
-    ) {
-      document.title = `${title} · ClaimCore`;
-      publishPhoneTitle?.(title);
-    }
-  }, [id, publishPhoneTitle, route, title]);
+  const pageHeading = useContext(PageHeadingTarget);
+  const attach = useCallback(
+    (node: HTMLHeadingElement | null) => {
+      pageHeading?.attach(node);
+      if (headingRef !== undefined) {
+        headingRef.current = node;
+      }
+    },
+    [headingRef, pageHeading],
+  );
   return (
-    <h1 id={id} tabIndex={-1} className="page-title" ref={headingRef}>
+    <h1 id={id} tabIndex={-1} className="page-title" ref={attach}>
       {children ?? title}
     </h1>
   );
@@ -39,7 +47,7 @@ export const PageTitle = ({
 type HeadingProps = {
   id: string;
   title: string;
-  headingRef?: Ref<HTMLHeadingElement> | undefined;
+  headingRef?: RefObject<HTMLHeadingElement | null> | undefined;
   subtitle?: ReactNode;
   primaryAction?: ReactNode;
 };
@@ -58,6 +66,7 @@ export const Page = ({
   busy,
   as: Element = "div",
   labelledBy,
+  banner,
   tabs,
   toolbar,
   children,
@@ -67,22 +76,38 @@ export const Page = ({
   busy?: boolean;
   as?: "div" | "section";
   labelledBy?: string;
+  banner?: ReactNode;
   tabs?: ReactNode;
   toolbar?: ReactNode;
   children: ReactNode;
 }) => {
-  const banner = useContext(PageBanner);
+  const feedback = useContext(PageBanner);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const handle = useMemo<HeadingHandle>(
+    () => ({
+      attach: (node) => {
+        heading.current = node;
+      },
+      focus: () => {
+        heading.current?.focus();
+      },
+    }),
+    [],
+  );
   return (
     <Element
       className={["page", className].filter(Boolean).join(" ")}
       aria-busy={busy}
       aria-labelledby={labelledBy}
     >
-      {"header" in head ? head.header : <PageHeading {...head} />}
-      {banner}
-      {tabs}
-      {toolbar}
-      {children}
+      <PageHeadingTarget value={handle}>
+        {"header" in head ? head.header : <PageHeading {...head} />}
+        {feedback}
+        {banner}
+        {tabs}
+        {toolbar}
+        {children}
+      </PageHeadingTarget>
     </Element>
   );
 };

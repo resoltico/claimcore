@@ -270,7 +270,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(current, "case.correct"));
   const registration = document.querySelector<HTMLSelectElement>(
-    'fieldset[id="field-group:registration"]',
+    '[role="radiogroup"][id="field-group:registration"]',
   );
   if (registration === null) {
     throw new Error("Expected a registration correction selector.");

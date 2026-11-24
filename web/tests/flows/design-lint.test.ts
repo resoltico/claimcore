@@ -34,7 +34,7 @@ it.each([
   ["<small>Caption</small>", "form controls and small elements belong in src/ui"],
   ["@layer components {.control {overflow-wrap:anywhere}}", "word wrapping anywhere is restricted"],
   [
-    "@layer components {.identifier-value {overflow-wrap:anywhere}}",
+    "@layer components {.identifier-value, .ordinary-value {overflow-wrap:anywhere}}",
     "word wrapping anywhere is restricted",
   ],
   [".control {color: rgb(1 2 3)}", "colour literals"],
@@ -68,4 +68,8 @@ it("accepts semantic tokens, container queries and system colours", () => {
       "@layer components {.control {color: var(--text-primary); border: 1px solid ButtonText; background: transparent; font-size: var(--text-md)} @container (width < 20rem) {.control {display:block}}}",
     ),
   ).toBe("[]");
+});
+
+it("accepts identifier wrapping at every width", () => {
+  expect(inspect("@layer components {.identifier-value {overflow-wrap:anywhere}}")).toBe("[]");
 });

@@ -1,4 +1,7 @@
-import { Page } from "../ui/Page";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { IdentifierValue } from "../components/IdentifierValue";
+import { Page, PageTitle } from "../ui/Page";
+import { SubjectHeader } from "../ui/SubjectHeader";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { followLink } from "../routing/followLink";
 import { isNarrativeCreationId, type ActKind } from "../operation/metadata";
@@ -21,20 +24,32 @@ import "./case.css";
 
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseFactRegions } from "./case/CaseFactRegions";
-import { CaseIdentity, CaseTitleStrip } from "./case/CaseIdentity";
+import { CaseTitleStrip } from "./case/CaseTitleStrip";
 import { RegionView } from "../ui/regions/RegionView";
 import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 
 type CaseDetailProps = {
   target: CaseSelector;
-  unavailableAct?: ActKind;
+  operation?:
+    | {
+        key: string;
+        act: ActKind;
+        render: (
+          current: CurrentCase,
+          revalidate: () => void,
+          onUnavailable: () => void,
+          available: boolean,
+          onObserved: (value: CurrentCase) => void,
+        ) => ReactNode;
+      }
+    | undefined;
   reloadSignal: number;
   disclosureAvailable?: boolean;
   authoringAvailable?: boolean;
   definition: CatalogDocument;
   onBack: (worklist?: string) => void;
   onMutationLockChange?: MutationLockChange;
-  onAct: (current: CurrentCase, action: Affordance) => void;
+  onAct: (current: CurrentCase, action: Affordance, origin?: string) => void;
 };
 
 const CurrentFeedback = ({
@@ -101,24 +116,21 @@ const CurrentPresentation = ({
         current={current}
         view={view}
         onChanged={onChanged}
-        onAct={(action) => {
-          onAct(current, action);
+        onAct={(action, origin) => {
+          onAct(current, action, origin);
         }}
       />
     ) : null;
   return (
     <>
       <div className="case-workspace">
-        <div className="case-main-column">
-          {facts}
-          {panels.notes}
-          {panels.attachments}
-          {timeline}
-        </div>
-        <div className="case-work-rail">
-          {panels.work}
-          {panels.nextActions}
-          {view === null || !disclosureAvailable ? null : (
+        <div className="case-area-next">{panels.nextActions}</div>
+        <div className="case-area-work">{panels.work}</div>
+        {facts}
+        <div className="case-area-notes">{panels.notes}</div>
+        <div className="case-area-attachments">{panels.attachments}</div>
+        {view === null || !disclosureAvailable ? null : (
+          <div className="case-area-related">
             <ScreenView
               view={view}
               roles={["RELATED_CASES"]}
@@ -128,8 +140,9 @@ const CurrentPresentation = ({
                 panels.onLinkAction(action, origin);
               }}
             />
-          )}
-        </div>
+          </div>
+        )}
+        {timeline === null ? null : <div className="case-area-activity">{timeline}</div>}
       </div>
       {panels.operation}
     </>
@@ -138,20 +151,17 @@ const CurrentPresentation = ({
 
 const asCurrentCase = (state: HumanDocument | null) =>
   state !== null && isCurrentCase(state) ? state : null;
-const breadcrumbReference = (
-  target: CaseSelector,
-  identity: Screen["regions"][number] | undefined,
-) => {
-  if (target.kind === "REFERENCE") {
-    return target.caseReference;
-  }
-  if (identity?.content.kind === "ENTRIES") {
-    return identity.content.entries.flatMap(({ value }) =>
-      value.kind === "REFERENCE" ? [value.value] : [],
-    )[0];
-  }
-  return undefined;
+const caseReference = (identity: Screen["regions"][number] | undefined): string | undefined => {
+  const entry =
+    identity?.content.kind === "ENTRIES"
+      ? identity.content.entries.find((candidate) => candidate.value.kind === "REFERENCE")
+      : undefined;
+  return entry?.value.kind === "REFERENCE" ? entry.value.value : undefined;
 };
+
+const caseTimeZone = (state: HumanDocument | null) =>
+  state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC";
+
 const CloseReminderSelection = ({ onBack }: Pick<CaseDetailProps, "onBack">) => {
   const p = usePresentation();
   const route = useContentRoute();
@@ -176,14 +186,22 @@ const CaseHeader = ({
   state,
   onBack,
   onAct,
-}: Pick<CaseDetailProps, "target" | "onAct" | "onBack"> & {
+  operation,
+}: Pick<CaseDetailProps, "target" | "onAct" | "onBack" | "operation"> & {
   state: HumanDocument | null;
 }) => {
   const p = usePresentation();
   const back = lastWorklist();
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
-  const breadcrumb = breadcrumbReference(target, identity);
+  const reference = caseReference(identity);
+  const fallback = target.kind === "REFERENCE" ? target.caseReference : undefined;
+  const breadcrumb = fallback ?? reference;
+  const caseTitle = reference ?? breadcrumb ?? p.text("label.caseDetail");
+  const timeZone = caseTimeZone(state);
+  useDocumentTitle(
+    operation === undefined ? caseTitle : `${p.actLabel(operation.act)} · ${caseTitle}`,
+  );
   return (
     <div className="case-page-header">
       <nav className="case-breadcrumb" aria-label={p.text("ui.breadcrumb")}>
@@ -200,44 +218,38 @@ const CaseHeader = ({
         {breadcrumb === undefined ? null : (
           <>
             <span aria-hidden="true"> › </span>
-            <bdi title={breadcrumb}>{breadcrumb}</bdi>
+            <IdentifierValue value={breadcrumb} />
           </>
         )}
       </nav>
       <CloseReminderSelection onBack={onBack} />
-      <CaseIdentity
-        region={identity}
-        requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
-        timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
-        renderIdentity={(heading, facts) => (
-          <section className="case-header-card">
-            <CaseTitleStrip>{heading}</CaseTitleStrip>
-            <div className="case-heading">
-              {facts === null ? null : <div className="case-identity">{facts}</div>}
-              {current === null ? null : (
-                <div className="case-header-actions">
-                  <CaseActions
-                    current={current}
-                    phonePrimary
-                    onAct={(act) => {
-                      onAct(current, act);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-            {state === null ? null : (
-              <ScreenView
-                view={state.screen}
-                roles={["PROGRESS"]}
-                timeZone={
-                  state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"
-                }
+      <section className="case-header-card">
+        <SubjectHeader
+          region={identity}
+          fallback={fallback}
+          timeZone={timeZone}
+          renderTitleLine={(line) => <CaseTitleStrip>{line}</CaseTitleStrip>}
+          renderTitle={(heading, text) => (
+            <PageTitle id="case-detail-title" title={text ?? p.text("label.caseDetail")}>
+              {heading}
+            </PageTitle>
+          )}
+          actions={
+            current === null ? undefined : (
+              <CaseActions
+                current={current}
+                phonePrimary
+                onAct={(act, origin) => {
+                  onAct(current, act, origin);
+                }}
               />
-            )}
-          </section>
+            )
+          }
+        />
+        {state === null ? null : (
+          <ScreenView view={state.screen} roles={["PROGRESS"]} timeZone={caseTimeZone(state)} />
         )}
-      />
+      </section>
     </div>
   );
 };
@@ -262,8 +274,8 @@ const UnavailableAct = ({
         <CaseActions
           hideRecommendation
           current={current}
-          onAct={(act) => {
-            onAct(current, act);
+          onAct={(act, origin) => {
+            onAct(current, act, origin);
           }}
         />
       )}
@@ -351,22 +363,116 @@ const caseReadPresentation = (
     );
   return timeline;
 };
+const pageObservation = (
+  current: ReturnType<typeof useCaseDisclosure>,
+  disclosureAvailable: boolean,
+  operation: CaseDetailProps["operation"],
+  updated: { key: string; document: CurrentCase } | null,
+) => {
+  if (!disclosureAvailable) {
+    return null;
+  }
+  if (
+    updated !== null &&
+    updated.key === operation?.key &&
+    current.value?.disclosure === "CURRENT"
+  ) {
+    return updated.document;
+  }
+  return current.value;
+};
+
+const OperationBanner = ({
+  state,
+  act,
+  onAct,
+}: {
+  state: HumanDocument | null;
+  act: ActKind | null;
+  onAct: CaseDetailProps["onAct"];
+}) =>
+  state === null || act === null ? null : (
+    <UnavailableAct value={act} state={state} onAct={onAct} />
+  );
+
+const OperationLayer = ({
+  operation,
+  mounted,
+  availability,
+  revalidate,
+  onUnavailable,
+  onObserved,
+}: {
+  operation: CaseDetailProps["operation"];
+  mounted: CurrentCase | null;
+  availability: boolean;
+  revalidate: () => void;
+  onUnavailable: (act: ActKind) => void;
+  onObserved: (observation: { key: string; document: CurrentCase }) => void;
+}) => {
+  if (operation === undefined || mounted === null) {
+    return null;
+  }
+  return operation.render(
+    mounted,
+    revalidate,
+    () => {
+      onUnavailable(operation.act);
+    },
+    availability,
+    (document) => {
+      onObserved({ key: operation.key, document });
+    },
+  );
+};
+
+const useCaseOperationObservation = (operation: CaseDetailProps["operation"]) => {
+  const [unavailableAct, setUnavailableAct] = useState<ActKind | null>(null);
+  const [updated, setUpdated] = useState<{ key: string; document: CurrentCase } | null>(null);
+  if (updated !== null && updated.key !== operation?.key) {
+    setUpdated(null);
+  }
+  if (unavailableAct !== null && unavailableAct !== operation?.act) {
+    setUnavailableAct(null);
+  }
+  return { unavailableAct, updated, reportUnavailable: setUnavailableAct, observe: setUpdated };
+};
+
+const CaseNotices = ({ state }: { state: HumanDocument | null }) => {
+  if (state === null) {
+    return null;
+  }
+  return state.screen.regions
+    .filter((region) => region.role === "NOTICE")
+    .map((region) => (
+      <RegionView key={region.role} region={region} timeZone={caseTimeZone(state)} />
+    ));
+};
+
+const operationIsAvailable = (
+  available: boolean,
+  current: ReturnType<typeof useCaseDisclosure>,
+  lookup: CurrentCase | null,
+) => available && !current.denied && (lookup !== null || current.loading);
+
 const CaseDisclosure = ({
   target,
   onBack,
   onAct,
   onMutationLockChange = ignoreMutationLock,
-  unavailableAct,
+  operation,
   reloadSignal,
   disclosureAvailable = true,
   authoringAvailable = disclosureAvailable,
 }: CaseDetailProps) => {
   const current = useCaseDisclosure(target);
+  const { unavailableAct, updated, reportUnavailable, observe } =
+    useCaseOperationObservation(operation);
   useCaseRefresh(reloadSignal, disclosureAvailable, current.loading, current.revalidate);
   const retainedNoteOffer = useRetainedNoteOffer(current.value, current.denied);
-  const { historyAccess } = current;
+  const state = pageObservation(current, disclosureAvailable, operation, updated);
+  const historyAccess = state?.history ?? current.historyAccess;
   const timelineSelection = useTimelineSelection(historyAccess);
-  const state = disclosureAvailable ? current.value : null;
   const lookup = asCurrentCase(state);
   const mounted = useRetainedCase(lookup);
   const timeline = caseReadPresentation(
@@ -382,7 +488,16 @@ const CaseDisclosure = ({
       as="section"
       labelledBy="case-detail-title"
       className="case-detail"
-      header={<CaseHeader target={target} state={state} onAct={onAct} onBack={onBack} />}
+      header={
+        <CaseHeader
+          target={target}
+          state={state}
+          onAct={onAct}
+          onBack={onBack}
+          operation={operation}
+        />
+      }
+      banner={<OperationBanner state={state} act={unavailableAct} onAct={onAct} />}
     >
       <CurrentFeedback
         message={current.message}
@@ -392,32 +507,30 @@ const CaseDisclosure = ({
           document.getElementById("case-detail-title")?.focus();
         }}
       />
-      {state?.screen.regions
-        .filter((region) => region.role === "NOTICE")
-        .map((region) => (
-          <RegionView
-            key={region.role}
-            region={region}
-            timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
-          />
-        ))}
-      {state === null || unavailableAct === undefined ? null : (
-        <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
-      )}
-      {mounted === null ? null : (
+      <CaseNotices state={state} />
+      {mounted === null ? (
+        timeline
+      ) : (
         <CurrentPresentation
           current={mounted}
           timeline={timeline}
           disclosureAvailable={lookup !== null}
           authoringAvailable={authoringAvailable && retainedNoteOffer}
           attachmentAuthoringAvailable={authoringAvailable}
-          view={current.screen}
+          view={state?.screen ?? null}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}
           onAct={onAct}
         />
       )}
-      {mounted === null ? timeline : null}
+      <OperationLayer
+        operation={operation}
+        mounted={mounted}
+        revalidate={current.revalidate}
+        onUnavailable={reportUnavailable}
+        onObserved={observe}
+        availability={operationIsAvailable(disclosureAvailable, current, lookup)}
+      />
     </Page>
   );
 };

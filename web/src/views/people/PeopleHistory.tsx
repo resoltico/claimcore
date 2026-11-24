@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { Page } from "../../ui/Page";
 import { DirectoryPersonPicker } from "../../components/AssigneeInput";
 import { useCallback, useMemo } from "react";
@@ -34,6 +35,9 @@ const select = (reply: ServiceResponse<typeof apiEndpoints.peopleHistory>) => {
 type HistoryPage = NonNullable<ReturnType<typeof select>>;
 export const PeopleHistory = ({ actorId }: { actorId: string }) => {
   const p = usePresentation();
+  useDocumentTitle(
+    p.text(actorId === "" ? "endpoint.people.history.label" : "ui.accountAccessHistory"),
+  );
   const selection = useMemo(() => (actorId === "" ? {} : { actorId }), [actorId]);
   const input = useCallback(
     (cursor: string | null) => ({

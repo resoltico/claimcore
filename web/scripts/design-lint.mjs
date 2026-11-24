@@ -83,20 +83,8 @@ const inspectCss = (sheet, path, layers, selectors, add) => {
       if (decl.value.trim().toLowerCase() !== "anywhere") {
         return;
       }
-      const stacked =
-        rule.parent?.type === "atrule" &&
-        rule.parent.name === "container" &&
-        rule.parent.params === "data-table (width < 30rem)";
-      if (
-        !rule.selectors.every(
-          (selector) =>
-            selector === ".ui-dialog .identifier-value" ||
-            (stacked && selector === ".data-table .identifier-value"),
-        )
-      ) {
-        add(
-          `word wrapping anywhere is restricted to identifiers in stacked tables and dialogs: ${rule.selector}`,
-        );
+      if (!rule.selectors.every((selector) => selector === ".identifier-value")) {
+        add(`word wrapping anywhere is restricted to .identifier-value: ${rule.selector}`);
       }
     });
     if (/\[data-(?:code|headline|act)\s*=/u.test(rule.selector)) {

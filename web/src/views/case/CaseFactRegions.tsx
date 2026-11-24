@@ -11,45 +11,37 @@ export const CaseFactRegions = ({
 }: {
   current: CurrentCase;
   view: CurrentCase["screen"];
-  onAct: (action: Affordance) => void;
+  onAct: (action: Affordance, origin?: string) => void;
   onChanged: () => void;
-}) => (
-  <div className="case-fact-regions">
-    {view.regions
-      .filter((region) => ["FACTS", "PAYMENTS", "PARTIES"].includes(region.role))
-      .map((region, index) => {
-        if (region.role === "PAYMENTS") {
-          return (
-            <CasePayments
-              key={region.role}
-              region={region}
-              current={current}
-              onAct={onAct}
-              onChanged={onChanged}
-            />
-          );
-        }
-        return (
-          <RegionView
-            // oxlint-disable-next-line react/no-array-index-key -- Fact groups are ordered supplied read-only regions.
-            key={`${region.role}:${index}`}
-            region={
-              region.role === "FACTS" && region.content.kind === "ENTRIES"
-                ? {
-                    ...region,
-                    content: {
-                      ...region.content,
-                      entries: region.content.entries.filter((entry) => entry.recorded !== false),
-                    },
-                  }
-                : region
-            }
-            timeZone={current.basis.observation.timeZone}
-            onAction={(action) => {
-              onAct(action);
-            }}
-          />
-        );
-      })}
-  </div>
-);
+}) => {
+  const display = (region: CurrentCase["screen"]["regions"][number]) => (
+    <RegionView
+      region={region}
+      timeZone={current.basis.observation.timeZone}
+      onAction={(action, _row, origin) => {
+        onAct(action, origin);
+      }}
+    />
+  );
+  const facts = view.regions.filter(({ role }) => role === "FACTS");
+  const parties = view.regions.find(({ role }) => role === "PARTIES");
+  const payments = view.regions.find(({ role }) => role === "PAYMENTS");
+  return (
+    <>
+      {facts.length === 0 ? null : (
+        <div className="case-area-claim">
+          {facts.map((region, index) => (
+            // oxlint-disable-next-line react/no-array-index-key -- Fact groups are supplied in reading order.
+            <div key={index}>{display(region)}</div>
+          ))}
+        </div>
+      )}
+      {parties === undefined ? null : <div className="case-area-parties">{display(parties)}</div>}
+      {payments === undefined ? null : (
+        <div className="case-area-payments">
+          <CasePayments region={payments} current={current} onAct={onAct} onChanged={onChanged} />
+        </div>
+      )}
+    </>
+  );
+};

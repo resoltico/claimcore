@@ -18,23 +18,33 @@ const fractionDigits = (currency: string | undefined, own: number): number =>
   Math.max(own, currency === undefined ? 0 : (currencyMinorUnits.get(currency) ?? 0));
 
 /** Integer and fractional text stay exact; Intl supplies grouping and digits; currency padding comes from the core catalog. */
-const decimalText = (
+const decimalParts = (
   value: string,
   locale: DisplayLocale,
   minimumFractionDigits: number,
-): string => {
+): ReadonlyArray<Intl.NumberFormatPart> => {
   const [whole = "", own = ""] = value.split(".");
   const fraction = own.padEnd(minimumFractionDigits, "0");
   const numbers = localeNumbers(locale);
-  const integer = numbers.integer.format(whole === "-0" ? -0 : BigInt(whole));
+  const integer = numbers.integer.formatToParts(whole === "-0" ? -0 : BigInt(whole));
   if (fraction === "") {
     return integer;
   }
   const { decimal: separator, digits } = numbers;
-  return (
-    integer + separator + Array.from(fraction, (digit) => digits[digit.charCodeAt(0) - 48]).join("")
-  );
+  return [
+    ...integer,
+    { type: "decimal", value: separator },
+    {
+      type: "fraction",
+      value: Array.from(fraction, (digit) => digits[digit.charCodeAt(0) - 48]).join(""),
+    },
+  ];
 };
+
+const decimalText = (value: string, locale: DisplayLocale, scale: number): string =>
+  decimalParts(value, locale, scale)
+    .map((part) => part.value)
+    .join("");
 
 export const exactAmount = (value: string, locale: DisplayLocale, currency?: string): string =>
   isAmountText(value)
@@ -45,12 +55,16 @@ export const exactMoney = (value: string, currency: string, locale: DisplayLocal
   `${canonicalTotal.test(value) ? decimalText(value, locale, fractionDigits(currency, value.split(".")[1]?.length ?? 0)) : value} ${currency}`;
 
 /** The review's supplied display scale controls padding; exact fractional text is never truncated. */
-export const moneyWithScale = (
+export const moneyParts = (
   value: string,
   currency: string,
   displayScale: number,
   locale: DisplayLocale,
-): string => `${decimalText(value, locale, displayScale)} ${currency}`;
+): ReadonlyArray<Intl.NumberFormatPart> => [
+  ...decimalParts(value, locale, displayScale),
+  { type: "literal", value: " " },
+  { type: "currency", value: currency },
+];
 
 export const recordedTime = (value: string, zone: string, locale: DisplayLocale): string =>
   new Intl.DateTimeFormat(locale, {

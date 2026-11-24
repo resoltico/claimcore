@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import {
   caseSubject,
@@ -15,6 +16,11 @@ import { render, screen } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
 import { definition } from "../../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+const UnsupportedAction = ({ unavailable }: { unavailable: () => void }) => {
+  useEffect(unavailable, [unavailable]);
+  return null;
+};
+
 it("erased cases retain their exact reference and revision but expose no facts or acts", async () => {
   vi.mocked(fetch)
     .mockResolvedValueOnce(
@@ -112,7 +118,11 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   render(
     <CaseDetail
       target={{ kind: "REFERENCE", caseReference: "CLOSED-1" }}
-      unavailableAct="case.decide"
+      operation={{
+        act: "case.decide",
+        key: "unsupported",
+        render: (_current, _reload, unavailable) => <UnsupportedAction unavailable={unavailable} />,
+      }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -129,6 +139,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
       subject: expect.objectContaining({ revision: 4 }),
     }),
     expect.objectContaining({ task: "case.reopen" }),
+    expect.any(String),
   );
   expect(callout.querySelector(".primary")).toBeNull();
 });

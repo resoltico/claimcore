@@ -2,7 +2,8 @@ import { TechnicalDetails } from "../../ui/TechnicalDetails";
 import { useCompact } from "../../hooks/useCompact";
 import { Drawer } from "../../ui/Drawer";
 import { useReviewEntry } from "./useReviewEntry";
-import { ScreenView } from "../../ui/ScreenView";
+import { SubjectHeader } from "../../ui/SubjectHeader";
+import { Entries } from "../../ui/regions/Entries";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
 import type { HumanDocument } from "@contracts/client";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
@@ -19,59 +20,66 @@ import { Dialog } from "../../ui/Dialog";
 import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { operationTask, taskInput } from "../../protocol/taskCatalog";
-const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string, string]> => {
-  const input = model.prepared?.input;
-  if (input === undefined) {
+import { operationTask, taskInput, taskScalar } from "../../protocol/taskCatalog";
+type PendingEntry = {
+  label: string;
+  value: string;
+  identifier?: boolean;
+};
+
+const pendingMetadata = (
+  model: OperationModel,
+  p: ReturnType<typeof usePresentation>,
+): ReadonlyArray<PendingEntry> => {
+  const command = model.prepared?.input;
+  if (command === undefined) {
     return [];
   }
-  return [
-    ["operationId", input.operationId],
-    ["act", input.task],
-    ...(model.disclosureCurrent
-      ? operationTask(input.task).inputs.flatMap((declaration): [string, string][] => {
-          const metadata = taskInput(declaration.id);
-          const value: unknown = Object.entries(input.inputs).find(
-            ([key]) => key === declaration.id,
-          )?.[1];
-          return metadata.key === "caseReference" && typeof value === "string"
-            ? [[metadata.key, value]]
-            : [];
-        })
-      : []),
-    ...(input.binding.kind === "CASE" && "target" in input.binding && model.disclosureCurrent
-      ? ([
-          [
-            input.binding.target.kind === "REFERENCE" ? "caseReference" : "caseId",
-            input.binding.target.kind === "REFERENCE"
-              ? input.binding.target.caseReference
-              : input.binding.target.caseId,
-          ],
-          ["expectedRevision", String(input.binding.expectedRevision)],
-        ] as const)
-      : []),
+  const entries: PendingEntry[] = [
+    { label: p.fieldLabel("operationId"), value: command.operationId, identifier: true },
+    { label: p.fieldLabel("act"), value: command.task },
   ];
+  if (!model.disclosureCurrent) {
+    return entries;
+  }
+  const { subjectInput } = operationTask(command.task);
+  if (subjectInput !== null) {
+    const value: unknown = Object.entries(command.inputs).find(
+      ([key]) => key === subjectInput,
+    )?.[1];
+    if (typeof value === "string") {
+      const kind = taskScalar(subjectInput)?.valueKind;
+      entries.push({
+        label: renderCatalogKey(p, taskInput(subjectInput).labelId),
+        value,
+        identifier: kind === "REFERENCE",
+      });
+    }
+  } else if (command.binding.kind === "CASE" && "target" in command.binding) {
+    const { target, expectedRevision } = command.binding;
+    entries.push(
+      target.kind === "REFERENCE"
+        ? { label: p.fieldLabel("caseReference"), value: target.caseReference, identifier: true }
+        : { label: p.fieldLabel("caseId"), value: target.caseId, identifier: true },
+      { label: p.fieldLabel("expectedRevision"), value: String(expectedRevision) },
+    );
+  }
+  return entries;
 };
-const PendingMetadata = ({ metadata }: { metadata: ReturnType<typeof pendingMetadata> }) => {
-  const p = usePresentation();
-  return (
-    <dl>
-      {metadata.map(([name, value]) => (
-        <div key={name}>
-          <dt>{p.fieldLabel(name)}</dt>
-          <dd>
-            {["caseReference", "caseId", "operationId"].includes(name) ? (
-              <IdentifierValue value={value} />
-            ) : (
-              <bdi>{value}</bdi>
-            )}{" "}
-            <CopyValue label={p.fieldLabel(name)} value={value} />
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-};
+
+const PendingMetadata = ({ metadata }: { metadata: ReadonlyArray<PendingEntry> }) => (
+  <dl>
+    {metadata.map(({ label, value, identifier }) => (
+      <div key={label}>
+        <dt>{label}</dt>
+        <dd>
+          {identifier === true ? <IdentifierValue value={value} /> : <bdi>{value}</bdi>}{" "}
+          <CopyValue label={label} value={value} />
+        </dd>
+      </div>
+    ))}
+  </dl>
+);
 const UnknownOperation = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -80,7 +88,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
       heading.current?.focus();
     }
   }, [model.busy]);
-  const metadata = pendingMetadata(model);
+  const metadata = pendingMetadata(model, p);
   const notice =
     model.notice?.kind === "local" && model.notice.reason === "outcomeUnknown"
       ? null
@@ -344,30 +352,35 @@ const useFieldSelection = (editorIdentity: unknown) => {
   );
   return { onFieldBlur, onMount };
 };
-const OperationTarget = ({
-  model,
-  person,
+const DrawerSubject = ({
   current,
+  person,
 }: {
   current: Props["current"];
-  model: OperationModel;
-  person: HumanDocument | undefined;
+  person: Props["person"];
 }) => {
-  const document = model.review?.document ?? current ?? person ?? null;
-  if (document !== null) {
+  if (current !== null) {
     return (
-      <div className="operation-target">
-        <ScreenView
-          view={document.screen}
-          roles={["IDENTITY", "ACCOUNT"]}
-          timeZone={
-            document.basis.kind === "SNAPSHOT" ? document.basis.observation.timeZone : "UTC"
-          }
-        />
-      </div>
+      <SubjectHeader
+        region={current.screen.regions.find(({ role }) => role === "IDENTITY")}
+        timeZone={current.basis.observation.timeZone}
+        renderTitle={(reference) => <h3 className="case-context-title">{reference}</h3>}
+      />
     );
   }
-  return null;
+  if (person === undefined) {
+    return null;
+  }
+  return (
+    <Entries
+      entries={person.screen.regions.flatMap(({ role, content }) =>
+        (role === "ACCOUNT" || role === "IDENTITY") && content.kind === "ENTRIES"
+          ? content.entries
+          : [],
+      )}
+      timeZone={person.basis.kind === "SNAPSHOT" ? person.basis.observation.timeZone : "UTC"}
+    />
+  );
 };
 const OperationSteps = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
@@ -474,14 +487,20 @@ export const OperationPanel = (props: Props) => {
   };
   return (
     <DateEntryDraftContext value={{ entries: model.dateEntries, capture: model.captureDateEntry }}>
-      <OperationReview model={model} paused={!props.offered.includes(model.entry.kind)}>
+      <OperationReview
+        model={model}
+        paused={!props.offered.includes(model.entry.kind)}
+        showsSubject={props.current !== null && model.task.subject === "CASE"}
+      >
         {(review) => (
           <Drawer
             {...reviewEntry}
             title={renderCatalogKey(p, model.task.labelId)}
             identity={
               <>
-                <OperationTarget model={model} person={props.person} current={props.current} />
+                {hasCurrentDisclosure(model, disclosureAvailable) ? (
+                  <DrawerSubject person={props.person} current={props.current} />
+                ) : null}
                 {steps}
               </>
             }

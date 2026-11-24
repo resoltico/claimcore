@@ -3,8 +3,6 @@
     --table-row-size: var(--size-row);
     --table-layout: wide;
     min-inline-size: 0;
-    overflow-x: auto;
-    contain: paint;
     container-name: data-table;
     container-type: inline-size;
     background: var(--bg-surface);
@@ -53,15 +51,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .data-table [data-reference] .data-table-cell > :is(a, bdi) {
-    white-space: var(--table-reference-wrap, nowrap);
-  }
-
-  .data-table [data-reference] .identifier-value {
-    font-family: inherit;
-    font-size: var(--text-xs);
-  }
-
   .data-table time {
     white-space: nowrap;
   }
@@ -70,12 +59,41 @@
     overflow-wrap: normal;
   }
 
-  .data-table .chip-list:has(> li:nth-child(3)) {
-    min-inline-size: var(--table-chip-list-min-inline-size, 0);
-  }
-
   .data-table-cell {
     min-inline-size: 0;
+  }
+
+  .data-table-value {
+    --value-measure: none;
+    min-inline-size: 0;
+    max-inline-size: var(--value-measure);
+    overflow-wrap: break-word;
+  }
+
+  .data-table-value:is([data-kind="REFERENCE"], [data-kind="IDENTIFIER"]) {
+    --value-measure: var(--measure-identifier);
+  }
+
+  .data-table-value:is(
+    [data-kind="PARTY"],
+    [data-kind="TEXT"],
+    [data-kind="NARRATIVE"],
+    [data-kind="MESSAGE"]
+  ) {
+    --value-measure: var(--measure-text);
+  }
+
+  .data-table-value[data-kind="ACTOR"] {
+    --value-measure: var(--measure-person);
+  }
+
+  .data-table-value:is([data-kind="MONEY"], [data-kind="MONEY_TOTAL"]) {
+    --value-measure: var(--measure-money);
+    overflow-wrap: normal;
+  }
+
+  .data-table-value:is([data-kind="STATE"], [data-kind="CODE"], [data-kind="CODES"]) {
+    --value-measure: var(--measure-chips);
   }
 
   .data-table-cell-label {
@@ -111,8 +129,9 @@
   }
 
   .data-table-stack > div {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: fit-content(45%) minmax(0, 1fr);
+    align-items: baseline;
     gap: var(--space-1);
   }
 
@@ -122,6 +141,10 @@
 
   .data-table-stack dd {
     margin: 0;
+  }
+
+  .data-table-stack time {
+    white-space: normal;
   }
 
   .data-table-empty {

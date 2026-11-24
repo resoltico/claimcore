@@ -341,7 +341,7 @@ it("never dispatches execution when the original owner's journal write fails", a
 it("connects the actual dialog with supplied target content, Core review and final consent", async () => {
   const f = fixture(false, false, true);
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(2);
+  expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(1);
   await userEvent.click(within(dialog).getByRole("radio", { name: /^Other$/u }));
   await userEvent.click(
     within(dialog).getByRole("button", {

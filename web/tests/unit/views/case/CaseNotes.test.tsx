@@ -109,7 +109,7 @@ it("renders Core note text without history access and binds removal to the suppl
   expect(screen.getByText("7 notes")).toBeVisible();
   expect(screen.getByText("Supplied author")).toBeVisible();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "More actions" }));
+  await user.click(screen.getByRole("button", { name: "Actions for Notes" }));
   await user.click(screen.getByRole("menuitem", { name: "Remove note" }));
   expect(remove).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -164,7 +164,7 @@ it("keeps the composed text exact for shared review and obeys current permission
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(
     screen.queryByRole("button", {
-      name: "More actions",
+      name: "Actions for Notes",
     }),
   ).toBeNull();
 });

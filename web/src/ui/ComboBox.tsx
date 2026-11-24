@@ -39,9 +39,7 @@ export const ComboBox = ({
   onSubmit?: (() => void) | undefined;
 }) => (
   <AriaComboBox
-    className={
-      compact ? "control-box field-control-group compact-picker" : "control-box field-control-group"
-    }
+    className={compact ? "field-control-group compact-picker" : "control-box field-control-group"}
     aria-label={label}
     inputValue={value}
     onInputChange={onChange}

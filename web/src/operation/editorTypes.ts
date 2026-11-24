@@ -13,6 +13,7 @@ export type OperationEditorProps = {
   autoReview?: boolean;
   binding?: Extract<OperationBinding, { kind: "CASE" }>;
   disclosureAvailable?: boolean;
+  onCaseObserved?: (current: CurrentCase) => void;
   onClose: () => void;
   onCommitted: (receipt: CaseLinkedReceipt, operationId: string) => void;
   onMutationLockChange: MutationLockChange;

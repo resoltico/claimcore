@@ -39,7 +39,7 @@ export const startPeopleCreation = async (page: Page, label = "Add person") => {
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
 export const choiceGroup = (page: Page, name: string): Locator =>
-  page.locator(`fieldset[id="field-${name}"]`);
+  page.locator(`[role="radiogroup"][id="field-${name}"]`);
 export const showExactLookup = async (page: Page): Promise<Locator> => {
   await page.locator('.worklist[aria-busy="false"]').waitFor({ state: "visible" });
   const input = page.getByRole("dialog").getByRole("combobox");

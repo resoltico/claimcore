@@ -99,6 +99,7 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
       task: "case.removePayment",
       binding: expect.objectContaining({ paymentId: second }),
     }),
+    expect.any(String),
   );
 });
 it("offers no removal when Core withdraws its row controls", () => {

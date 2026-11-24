@@ -82,7 +82,7 @@ test("stores exact optional LF incident text and clears it without a financial a
     animations: "disabled",
   });
   await expect(
-    page.locator(".case-detail .case-fact-regions [data-entry='incidentDescription']"),
+    page.locator(".case-detail .case-area-claim [data-entry='incidentDescription']"),
   ).toContainText("حادث في الطريق");
   await startAct(page, "case.amendRegistration", "en");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();

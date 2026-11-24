@@ -2,8 +2,6 @@ import { documentActions } from "../operation/affordances";
 import { isCaseAct } from "../operation/metadata";
 import { linkedCaseReceipt } from "../protocol/types";
 
-import { CaseIdentity } from "./case/CaseIdentity";
-import { ScreenView } from "../ui/ScreenView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
@@ -71,24 +69,6 @@ const useCaseOperation = (props: OperationEditorProps) => {
   }, [model.receipt, model.ownerVerified, commit]);
   return { model, navigation, commit };
 };
-const CurrentObservation = ({
-  current,
-}: {
-  current: NonNullable<OperationEditorProps["current"]>;
-}) => (
-  <section className="case-detail">
-    <CaseIdentity
-      region={current.screen.regions.find((region) => region.role === "IDENTITY")}
-      requestedReference={undefined}
-      timeZone={current.basis.observation.timeZone}
-    />
-    <ScreenView
-      view={current.screen}
-      roles={["NOTICE", "PROGRESS", "FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS"]}
-      timeZone={current.basis.observation.timeZone}
-    />
-  </section>
-);
 const caseOffers = (
   _props: OperationEditorProps,
   current: OperationEditorProps["current"],
@@ -104,6 +84,16 @@ export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();
   const receipt = model.receipt === null ? null : linkedCaseReceipt(model.receipt);
+  const publish = useEffectEvent((value: NonNullable<typeof model.currentCase>) => {
+    props.onCaseObserved?.(value);
+  });
+  const { current: initialCase } = props;
+  const observed = model.currentCase;
+  useEffect(() => {
+    if (observed !== null && observed !== initialCase) {
+      publish(observed);
+    }
+  }, [observed, initialCase]);
   if (props.disclosureAvailable !== false && receipt !== null) {
     return (
       <AcceptedOperation
@@ -118,9 +108,6 @@ export const OperationEditor = (props: OperationEditorProps) => {
   const offered = caseOffers(props, current, requester);
   return (
     <>
-      {current === null || props.disclosureAvailable === false ? null : (
-        <CurrentObservation current={current} />
-      )}
       <OperationDiscard model={model} onClose={navigation.close} />
       <OperationPanel
         model={model}

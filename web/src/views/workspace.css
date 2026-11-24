@@ -2,39 +2,26 @@
   .task-field-grid {
     display: grid;
     grid-template-columns: repeat(var(--task-field-columns, 1), minmax(0, 1fr));
-    column-gap: var(--space-4);
+    gap: var(--space-5) var(--space-4);
   }
   .task-field-section {
-    margin-block: var(--space-4);
+    margin-block-start: var(--space-6);
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-width) solid var(--border-subtle);
+  }
+
+  .task-field-section + .task-field-grid {
+    margin-block-start: var(--space-5);
+  }
+
+  .task-field-section > h3 {
+    margin-block: 0 var(--space-3);
+    font-size: var(--text-md);
+    font-weight: 600;
   }
   .task-field-grid > :only-child,
   .task-field-wide {
     grid-column: 1 / -1;
-  }
-  .segmented-choice {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    padding-block: var(--space-2);
-  }
-  .segmented-choice label,
-  .radio-choice label {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-block-size: var(--control-target);
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-width) solid var(--text-secondary);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-  }
-  .segmented-choice .selected {
-    color: var(--on-accent-solid);
-    background: var(--accent-solid);
-    border-color: var(--accent-text);
   }
   .correction-card,
   .choice-card {
@@ -68,10 +55,12 @@
     border-radius: var(--radius-sm);
   }
   .correction-group {
-    border: var(--border-width) solid var(--border-control);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-    margin-block: var(--space-4);
+    margin-block: var(--space-5);
+  }
+
+  .drawer .selected-fact {
+    border: 0;
+    padding-inline: 0;
   }
   .correction-group .correction-card {
     border: 0;
@@ -88,19 +77,6 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-5);
-  }
-
-  .radio-choice {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    padding-block: var(--space-2);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-  :is(.segmented-choice, .radio-choice) input[type="radio"] {
-    inline-size: auto;
-    accent-color: var(--accent-text);
   }
 
   .people-tabs {

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { Page } from "../../ui/Page";
 import { apiEndpoints } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
@@ -246,6 +247,8 @@ export const SummaryBand = ({
 };
 
 export const CaseReport = ({ query, available }: { query: string; available: boolean }) => {
+  const p = usePresentation();
+  useDocumentTitle(p.text("ui.caseReport"));
   const { state } = useSessionContext();
   const selection = useMemo(() => parseWorklistQuery(query), [query]);
   if (state.kind !== "authenticated") {

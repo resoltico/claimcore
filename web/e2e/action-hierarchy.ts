@@ -4,13 +4,14 @@ const background = (button: Locator) =>
   button.evaluate((element) => getComputedStyle(element).backgroundColor);
 
 const checkCaseActions = async (page: Page, expected?: string | null) => {
-  const region = page.locator(".case-heading, .case-actions");
+  const region = page.locator(".subject-header-actions");
   if ((await region.locator("button").count()) === 0 && expected === undefined) {
     return;
   }
   const primary = region
     .locator("button.ui-button--primary")
-    .or(page.locator(".phone-primary-action button[data-act]"));
+    .or(page.locator(".phone-primary-action button[data-act]"))
+    .filter({ visible: true });
   if (expected === undefined && (await primary.count()) === 0) {
     return;
   }
@@ -85,7 +86,7 @@ export const checkActionHierarchy = async (page: Page, expected?: string | null)
       "Shell controls must not compete with the page action",
     ).not.toBe(fill);
   }
-  const form = task.locator(".operation-form-card");
+  const form = task.locator(".operation-form");
   for (const button of await form.locator("button:not([type=submit])").all()) {
     expect(await background(button), "Back and input controls must remain secondary").not.toBe(
       fill,

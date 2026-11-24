@@ -85,7 +85,9 @@ export const ActionMenu = ({
           ))}
           {stewardship.length === 0 ? null : (
             <MenuSection className="action-menu-stewardship">
-              {stewardshipLabel === undefined ? null : <Header>{stewardshipLabel}</Header>}
+              {stewardshipLabel === undefined ? null : (
+                <Header className="menu-section-header">{stewardshipLabel}</Header>
+              )}
               {stewardship.map((item) => (
                 <ActionMenuItem key={item.id} item={item} />
               ))}

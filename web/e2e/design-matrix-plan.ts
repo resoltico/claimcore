@@ -5,6 +5,7 @@ export type Dimension = {
   accent: "green" | "blue";
   width: number;
   reflowScale?: number;
+  fixture?: "limits";
 };
 /** Cover layout risks separately instead of multiplying every independent preference. */
 export const dimensions = (engine: string): Dimension[] => {
@@ -25,7 +26,28 @@ export const dimensions = (engine: string): Dimension[] => {
     { width: 640, language: "en", mode: "light", accent: "green", reflowScale: 2 },
   ];
 };
+export const limitDimensions = (engine: string): Dimension[] =>
+  (
+    [
+      { width: 1440, language: "en" },
+      { width: 390, language: "en" },
+      ...(engine === "chromium"
+        ? ([
+            { width: 1280, language: "ar" },
+            { width: 1440, language: "de" },
+          ] as const)
+        : []),
+    ] as const
+  ).map(({ width, language }) => ({
+    width,
+    language,
+    mode: "light",
+    accent: "green",
+    fixture: "limits",
+  }));
+
 export const screenshotDimension = (dimension: Dimension): boolean =>
+  dimension.fixture === undefined &&
   dimension.reflowScale === undefined &&
   dimension.language !== "en-XA" &&
   (dimension.width <= 390 ||
@@ -64,4 +86,4 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
 };
 
 export const dimensionCaseTitle = (dimension: Dimension): string =>
-  `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.reflowScale === undefined ? "" : " at 200% equivalent reflow"}`;
+  `${dimension.fixture === "limits" ? "limits " : ""}${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.reflowScale === undefined ? "" : " at 200% equivalent reflow"}`;

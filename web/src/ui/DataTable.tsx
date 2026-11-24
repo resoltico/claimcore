@@ -9,6 +9,8 @@ import { personLinkActorId } from "../routing/coreLinks";
 import { LinkNavigationContext } from "../routing/LinkNavigationContext";
 import { ActionMenu } from "./ActionMenu";
 import { Button } from "./Button";
+import { ChipList, chipValues } from "./ChipList";
+import { chipTone } from "./Chip";
 import { Dialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
 import { SectionsView } from "./SectionsView";
@@ -20,7 +22,8 @@ import "./data-table.css";
 
 type MenuItem = Parameters<typeof ActionMenu>[0]["items"][number];
 type TableContent = Extract<RegionContent, { kind: "TABLE" }>;
-type Column = TableContent["columns"][number] & { index: number };
+type IndexedColumn = TableContent["columns"][number] & { index: number };
+type Column = IndexedColumn & { joined: ReadonlyArray<IndexedColumn> };
 type Value = RegionRow["values"][number];
 type TableProps = RegionInteraction & {
   view: TableContent;
@@ -37,6 +40,81 @@ const Cell = ({ value, timeZone }: { value: Value; timeZone: string }) => {
     <>
       <span aria-hidden="true">—</span>
       <span className="sr-only">{renderCatalogKey(p, value.reasonId)}</span>
+    </>
+  );
+};
+
+const linkedValue = (link: RowLink | undefined, value: Value, timeZone: string) => {
+  const cell = <Cell value={value} timeZone={timeZone} />;
+  return link === undefined ? (
+    cell
+  ) : (
+    <a
+      href={link.href}
+      id={link.id}
+      aria-label={link.label}
+      title={value.kind === "REFERENCE" ? value.value : undefined}
+      className="row-link"
+      onClick={(event) => {
+        followLink(event, link.follow);
+      }}
+    >
+      {cell}
+    </a>
+  );
+};
+
+const asChips = (value: Value) => {
+  switch (value.kind) {
+    case "STATE":
+      return [value];
+    case "CODE":
+      return chipTone(value) === undefined ? null : [value];
+    case "CODES":
+      return chipValues(value);
+    default:
+      return null;
+  }
+};
+
+const JoinedCell = ({
+  column,
+  row,
+  value,
+  timeZone,
+  link,
+}: {
+  column: Column;
+  row: RegionRow;
+  value: Value;
+  timeZone: string;
+  link?: RowLink | undefined;
+}) => {
+  const p = usePresentation();
+  const joined = column.joined.flatMap((source) => {
+    const item = row.values[source.index];
+    return item === undefined || item.kind === "ABSENT"
+      ? []
+      : [{ source, item, chips: asChips(item) }];
+  });
+  const baseChips = asChips(value);
+  return (
+    <>
+      <div className="data-table-value" data-kind={value.kind}>
+        {baseChips === null || link !== undefined ? (
+          linkedValue(link, value, timeZone)
+        ) : (
+          <ChipList values={[...baseChips, ...joined.flatMap(({ chips }) => chips ?? [])]} />
+        )}
+      </div>
+      {joined.map(({ source, item, chips }) =>
+        baseChips !== null && link === undefined && chips !== null ? null : (
+          <div className="data-table-value" data-kind={item.kind} key={source.key}>
+            <span className="sr-only">{renderCatalogKey(p, source.labelId)}: </span>
+            <Cell value={item} timeZone={timeZone} />
+          </div>
+        ),
+      )}
     </>
   );
 };
@@ -76,7 +154,7 @@ const SecondaryCells = ({
             <div key={column.key}>
               <dt>{renderCatalogKey(p, column.labelId)}</dt>
               <dd>
-                <Cell value={value} timeZone={timeZone} />
+                <JoinedCell column={column} row={row} value={value} timeZone={timeZone} />
               </dd>
             </div>
           );
@@ -182,26 +260,6 @@ const RowControls = (props: Parameters<typeof TableRowControls>[0]) =>
     <td className="data-table-controls">{props.renderControls(props.row)}</td>
   );
 
-const linkedValue = (link: RowLink | undefined, value: Value, timeZone: string) => {
-  const cell = <Cell value={value} timeZone={timeZone} />;
-  return link === undefined ? (
-    cell
-  ) : (
-    <a
-      href={link.href}
-      id={link.id}
-      aria-label={link.label}
-      title={value.kind === "REFERENCE" ? value.value : undefined}
-      className="row-link"
-      onClick={(event) => {
-        followLink(event, link.follow);
-      }}
-    >
-      {cell}
-    </a>
-  );
-};
-
 const DataRow = ({
   row,
   columns,
@@ -252,7 +310,13 @@ const DataRow = ({
               </span>
             ) : null}
             <div className="data-table-cell">
-              {linkedValue(position === linkAt ? link : undefined, value, timeZone)}
+              <JoinedCell
+                column={column}
+                row={row}
+                value={value}
+                timeZone={timeZone}
+                link={position === linkAt ? link : undefined}
+              />
             </div>
             {position === firstPrimary ? (
               <SecondaryCells row={row} columns={columns} timeZone={timeZone} />
@@ -306,8 +370,11 @@ const DataGrid = ({
   showDetails: (key: string) => void;
 }) => {
   const p = usePresentation();
-  const columns = view.columns.flatMap((column, index) =>
-    column.prominence === "DETAIL" ? [] : [{ ...column, index }],
+  const indexed = view.columns.map((column, index) => ({ ...column, index }));
+  const columns = indexed.flatMap((column) =>
+    column.prominence === "DETAIL" || column.joins !== null
+      ? []
+      : [{ ...column, joined: indexed.filter(({ joins }) => joins === column.key) }],
   );
   const controls =
     interaction.renderControls !== undefined ||

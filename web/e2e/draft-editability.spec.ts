@@ -50,14 +50,14 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .first()
     .click();
   await startAct(page, "case.amendRegistration", "en");
-  const selectedFacts = page.locator(".operation-form-card input[data-selects-fields]");
+  const selectedFacts = page.locator(".operation-form input[data-selects-fields]");
   await selectedFacts.first().waitFor({
     state: "visible",
   });
   for (const selected of await selectedFacts.all()) {
     await selected.check();
   }
-  const fields = page.locator(".operation-form-card [data-field-name]");
+  const fields = page.locator(".operation-form [data-field-name]");
   await expect(fields).toHaveCount(8);
   await expect(
     page.getByRole("textbox", {
@@ -130,7 +130,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   const reference = `RECEIPT-${randomUUID()}`;
   await startOpen(page, reference);
   await reviewDraft(page);
-  await expect(page.locator(".operation-form-card")).toHaveCount(0);
+  await expect(page.locator(".operation-form")).toHaveCount(0);
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toBeEnabled();
   const disclosed = page.waitForResponse(async (response) => {
@@ -169,7 +169,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
       .getByRole("link", { name: "Cases", exact: true }),
   ).toBeVisible();
   await expect(page.locator("section.case-detail details[data-region=DETAILS]")).toHaveCount(0);
-  await expect(page.locator(".operation-form-card")).toHaveCount(0);
+  await expect(page.locator(".operation-form")).toHaveCount(0);
   await expect(await caseActionButton(page, "case.amendRegistration", "en")).toBeVisible();
 });
 

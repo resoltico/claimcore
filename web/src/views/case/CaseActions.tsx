@@ -20,10 +20,12 @@ export const CaseActions = ({
   current: CurrentCase;
   phonePrimary?: boolean;
   hideRecommendation?: boolean;
-  onAct: (action: Affordance) => void;
+  onAct: (action: Affordance, origin?: string) => void;
 }) => {
   const p = usePresentation();
   const blockedId = useId();
+  const primaryId = useId();
+  const menuId = useId();
   const recommendation = current.screen.regions
     .filter(({ role }) => role === "RECOMMENDATION")
     .flatMap(({ actions }) => actions ?? [])
@@ -47,7 +49,7 @@ export const CaseActions = ({
                   ),
                 }),
             select: () => {
-              onAct(action);
+              onAct(action, menuId);
             },
           },
         ]
@@ -57,6 +59,7 @@ export const CaseActions = ({
     recommendation === undefined ? null : (
       <div>
         <Button
+          id={`${primaryId}-${compact ? "compact" : "page"}`}
           data-act={recommendation.task}
           aria-label={renderCatalogKey(
             p,
@@ -66,7 +69,7 @@ export const CaseActions = ({
           compact={compact}
           isDisabled={recommendation.blocked !== null}
           onPress={() => {
-            onAct(recommendation);
+            onAct(recommendation, `${primaryId}-${compact ? "compact" : "page"}`);
           }}
         >
           {compact &&
@@ -99,6 +102,7 @@ export const CaseActions = ({
       {hideRecommendation ? null : primaryAction}
       {alternatives.length === 0 ? null : (
         <ActionMenu
+          id={menuId}
           label={p.text("ui.moreCaseActions")}
           stewardshipLabel={p.text("label.dataStewardship")}
           items={alternatives}

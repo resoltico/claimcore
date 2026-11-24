@@ -3,6 +3,7 @@ import { geometryFailures, geometryReport } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
+  endpoints,
   type ResponseFor,
   presentationDisplayOptions,
   presentationDefaults,
@@ -141,9 +142,13 @@ const assertListPresentation = async (
     }
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
-    const material = table.columns.filter(({ prominence }) => prominence !== "DETAIL");
+    const material = table.columns.filter(
+      ({ prominence, joins }) => prominence !== "DETAIL" && joins === null,
+    );
     await expect(row.locator("td[data-column]")).toHaveCount(material.length);
-    for (const column of table.columns.filter(({ prominence }) => prominence === "DETAIL")) {
+    for (const column of table.columns.filter(
+      ({ prominence, joins }) => prominence === "DETAIL" || joins !== null,
+    )) {
       await expect(row.locator(`td[data-column="${column.key}"]`)).toHaveCount(0);
     }
   }
@@ -333,7 +338,13 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
   const observed = apiRequests();
   if (route.id === "not-found") {
-    expect(observed).toEqual([]);
+    await expect(page.locator(".workspace-shell .missing-page")).toBeVisible();
+    const readBootstrap = endpoints
+      .filter(({ id }) => ["session", "context", "work.views"].includes(id))
+      .map(({ path }) => path);
+    expect(observed.filter((request) => !readBootstrap.some((path) => path === request))).toEqual(
+      [],
+    );
   }
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
@@ -364,7 +375,8 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
-  const { violations, splitWords, firstRowTop } = await geometryReport(page);
+  const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
+    await geometryReport(page, dimension.fixture === "limits");
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {
@@ -457,7 +469,7 @@ export const checkFrame = async (
     });
     expect(
       violations,
-      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop })}`,
+      `${frame} ${JSON.stringify({ tableBounds, controls, appearance, splitWords, firstRowTop, overflowingRegions, pageSpill })}`,
     ).toEqual([]);
   }
   await expectNoInlineStyles(page);

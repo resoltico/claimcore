@@ -4,6 +4,11 @@
     margin-inline: auto;
     padding: var(--space-6);
   }
+  .workspace-main .missing-page {
+    margin-inline: 0;
+    padding: 0;
+  }
+
   .missing-page > a {
     display: inline-flex;
     align-items: center;

@@ -14,6 +14,7 @@ export const TaskControls = ({
   compact = false,
   disabled = false,
   prominent = false,
+  rowLabel,
   timeZone = "UTC",
 }: {
   actions: ReadonlyArray<Affordance>;
@@ -22,6 +23,7 @@ export const TaskControls = ({
   compact?: boolean;
   disabled?: boolean;
   prominent?: boolean;
+  rowLabel?: string;
   timeZone?: string;
 }) => {
   const p = usePresentation();
@@ -51,7 +53,7 @@ export const TaskControls = ({
   });
   if (onAction === undefined) {
     return (
-      <ul>
+      <ul className="task-action-list">
         {described.map((item) => (
           <li key={item.id}>{item.label}</li>
         ))}
@@ -83,7 +85,12 @@ export const TaskControls = ({
   return (
     <ActionMenu
       id={id}
-      label={p.text("ui.moreCaseActions")}
+      label={
+        rowLabel === undefined
+          ? p.text("ui.moreCaseActions")
+          : p.text("ui.actionsFor", { row: rowLabel })
+      }
+      icon={rowLabel !== undefined}
       items={described.map(
         ({ id: key, label, consequence, disabled: itemDisabled, advice, select }) => ({
           id: key,

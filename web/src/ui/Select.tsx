@@ -1,3 +1,4 @@
+import { useCompact } from "../hooks/useCompact";
 import "./select.css";
 import "./button.css";
 import { useId, useRef, useState, type ReactNode, type KeyboardEvent } from "react";
@@ -60,6 +61,8 @@ export const Select = ({
   description,
   inlineLabel = false,
 }: Props) => {
+  const compact = useCompact();
+  const inline = inlineLabel && !compact;
   const generated = useId();
   const controlId = id ?? generated;
   const labelId = `${controlId}-label`;
@@ -102,7 +105,7 @@ export const Select = ({
         label={label}
         labelId={labelId}
         controlId={controlId}
-        inline={inlineLabel}
+        inline={inline}
         help={help}
       />
       <button
@@ -156,7 +159,7 @@ export const Select = ({
           }
         }}
       >
-        {inlineLabel ? (
+        {inline ? (
           <span aria-hidden="true" className="select-inline-label">
             {label}:
           </span>
@@ -167,7 +170,7 @@ export const Select = ({
         <Icon name="chevron-down" />
       </button>
       {description === undefined ? null : (
-        <span id={descriptionId} className={inlineLabel ? "sr-only" : "field-hint"}>
+        <span id={descriptionId} className={inline ? "sr-only" : "field-hint"}>
           {description}
         </span>
       )}

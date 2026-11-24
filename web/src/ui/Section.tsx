@@ -21,7 +21,7 @@ export const Section = ({
 }) => {
   const p = usePresentation();
   const caption =
-    count === undefined
+    count === undefined || count.value <= 0
       ? null
       : p.text(
           sectionCountMessages[count.kind][new Intl.PluralRules(p.language).select(count.value)],

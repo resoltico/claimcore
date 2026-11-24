@@ -13,6 +13,7 @@ import { casePath } from "../routing/routes";
 import { navigate } from "../routing/navigation";
 import { worklistPath } from "../routing/worklistQuery";
 import { Chip } from "../ui/Chip";
+import { IdentifierValue } from "../components/IdentifierValue";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import "./find-case.css";
@@ -204,7 +205,7 @@ const FindControl = ({
         >
           {(item) => (
             <ListBoxItem id={item.id} textValue={item.reference} className="find-option">
-              <bdi className="identifier-value">{item.reference}</bdi>
+              <IdentifierValue value={item.reference} />
               {item.claimant === null ? null : <bdi>{item.claimant}</bdi>}
               {item.state === null ? null : <Chip value={item.state} />}
             </ListBoxItem>

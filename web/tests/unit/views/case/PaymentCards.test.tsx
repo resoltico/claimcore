@@ -74,5 +74,5 @@ it("renders supplied payment columns and keeps the technical identity in the det
   expect(within(screen.getByRole("dialog")).getByText(paymentId)).toBeVisible();
   await user.keyboard("{Escape}");
   await selectRowAction(user, row, "Remove payment entry");
-  expect(remove).toHaveBeenCalledExactlyOnceWith(content.rows[0]!.actions![0]);
+  expect(remove).toHaveBeenCalledExactlyOnceWith(content.rows[0]!.actions![0], expect.any(String));
 });
