@@ -1,4 +1,77 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+
+/** Compare the control with the layout edges of the viewport and its rectangular scrollports. */
+export const clippedControlEdges = (control: Locator): Promise<string[]> =>
+  control.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const clipped: string[] = [];
+    const check = (source: string, edge: string, outside: boolean) => {
+      if (outside) {
+        clipped.push(`${source}: ${edge}`);
+      }
+    };
+    const viewport = document.documentElement;
+    check("viewport", "left", rect.left < 0);
+    check("viewport", "top", rect.top < 0);
+    check("viewport", "right", rect.right > viewport.clientWidth);
+    check("viewport", "bottom", rect.bottom > viewport.clientHeight);
+
+    const scrollport = (
+      start: number,
+      end: number,
+      startBorder: string,
+      endBorder: string,
+      clientStart: number,
+      clientSize: number,
+    ) => {
+      const border = parseFloat(startBorder);
+      const paddingStart = start + border;
+      const paddingEnd = end - parseFloat(endBorder);
+      // The client metrics are integers. Use them to locate scrollbars, then keep
+      // the fractional padding-box edges for the actual containment check.
+      const startScrollbar = Math.max(0, clientStart - Math.round(border));
+      const endScrollbar = Math.max(
+        0,
+        Math.round(paddingEnd - paddingStart) - clientSize - startScrollbar,
+      );
+      return [paddingStart + startScrollbar, paddingEnd - endScrollbar] as const;
+    };
+
+    for (
+      let parent = element.parentElement;
+      parent !== null && parent !== viewport;
+      parent = parent.parentElement
+    ) {
+      const style = getComputedStyle(parent);
+      const box = parent.getBoundingClientRect();
+      const source = parent.classList.item(0) ?? parent.tagName.toLowerCase();
+      if (style.overflowX !== "visible") {
+        const [left, right] = scrollport(
+          box.left,
+          box.right,
+          style.borderLeftWidth,
+          style.borderRightWidth,
+          parent.clientLeft,
+          parent.clientWidth,
+        );
+        check(source, "left", rect.left < left);
+        check(source, "right", rect.right > right);
+      }
+      if (style.overflowY !== "visible") {
+        const [top, bottom] = scrollport(
+          box.top,
+          box.bottom,
+          style.borderTopWidth,
+          style.borderBottomWidth,
+          parent.clientTop,
+          parent.clientHeight,
+        );
+        check(source, "top", rect.top < top);
+        check(source, "bottom", rect.bottom > bottom);
+      }
+    }
+    return clipped;
+  });
 
 type LayoutStage = "login" | "cases" | "narrow" | "zoom";
 

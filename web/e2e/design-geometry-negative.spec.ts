@@ -8,6 +8,38 @@ import {
   type GeometryId,
 } from "./design-geometry";
 import { expect, test } from "@playwright/test";
+import { clippedControlEdges } from "./layout-support";
+
+test("drawer containment accepts fractional fits and rejects clipping @engine", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.setContent(`<!doctype html>
+    <main dir="rtl"><div class="scrollport"><textarea></textarea></div></main>
+    <style>
+      .scrollport { width: 292.40625px; height: 128px; overflow: hidden; border: 1px solid; }
+      textarea { display: block; box-sizing: border-box; width: 100%; height: 100%; }
+    </style>
+  `);
+  const control = page.locator("textarea");
+  expect(await clippedControlEdges(control)).toEqual([]);
+  await page.addStyleTag({ content: "textarea { transform: translateX(0.5px); }" });
+  expect(await clippedControlEdges(control)).toEqual(["scrollport: right"]);
+  await page.addStyleTag({ content: "textarea { transform: translateY(1px); }" });
+  expect(await clippedControlEdges(control)).toEqual(["scrollport: bottom"]);
+});
+
+test("drawer containment rejects clipping at the viewport edge @engine", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.setContent(`<!doctype html>
+    <style>textarea { position: fixed; bottom: 0; left: 16px; }</style>
+    <textarea></textarea>
+  `);
+  const control = page.locator("textarea");
+  expect(await clippedControlEdges(control)).toEqual([]);
+  await page.addStyleTag({ content: "textarea { bottom: -1px; }" });
+  expect(await clippedControlEdges(control)).toEqual(["viewport: bottom"]);
+});
 
 const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
   await page.setViewportSize({ width: 1440, height: 900 });

@@ -20,7 +20,7 @@ import { mkdir, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { expect, type Page, type TestInfo, type Response, type Request } from "@playwright/test";
 import { expectAccessible } from "./session-helpers";
-import { noHorizontalOverflow } from "./layout-support";
+import { clippedControlEdges, noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import {} from "./localization-support";
 import type { MatrixRoute } from "./design-matrix-fixtures";
@@ -334,7 +334,12 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     await work.click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
     await summary.scrollIntoViewIfNeeded();
-    await expect(summary).toBeInViewport({ ratio: 1 });
+    await expect(summary).toBeVisible();
+    await expect
+      .poll(() => clippedControlEdges(summary), {
+        message: "The handling summary fits inside the drawer scrollport and viewport",
+      })
+      .toEqual([]);
   }
   const observed = apiRequests();
   if (route.id === "not-found") {
