@@ -123,7 +123,7 @@ jobs:
                 fi
               }
               trap restore_report_owner EXIT
-              apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1 python3=3.14.10-r1 tar=1.35-r5
+              apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1 python3=3.14.10-r2 tar=1.35-r5
               test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"
               git config --global --add safe.directory /workspace
               bash eng/verify.sh unit
