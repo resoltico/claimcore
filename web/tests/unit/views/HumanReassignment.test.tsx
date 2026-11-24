@@ -154,6 +154,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                       rows: [
                         {
                           key: actorId,
+                          choice: actorId,
                           actions: [
                             operationAffordance(
                               "work.update",
@@ -175,6 +176,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                         },
                         {
                           key: replacementActorId,
+                          choice: replacementActorId,
                           actions: [
                             operationAffordance(
                               "work.update",
