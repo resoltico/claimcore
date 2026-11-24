@@ -20,7 +20,7 @@ let private expectedKeys =
 let private allowedValues =
     function
     | "endpoint" -> "unknown" :: (Api.all |> List.map _.Token)
-    | "result" -> [ "succeeded"; "refused"; "failed"; "host_failure" ]
+    | "result" -> [ "succeeded"; "accepted"; "refused"; "failed"; "host_failure"; "abandoned" ]
     | "reason" -> [ "logout"; "expired"; "invalid" ]
     | _ -> failtest "A tag key must be declared"
 
@@ -89,6 +89,6 @@ let tests =
 
             Expect.equal
                 (values "result" "claimcore.requests")
-                (set [ "succeeded"; "refused"; "failed"; "host_failure" ])
-                "Every bounded request result is exercised"
+                (set [ "succeeded"; "accepted"; "refused"; "failed"; "host_failure" ])
+                "Every completed request result is exercised"
         })
