@@ -88,7 +88,7 @@ export const useReviewEntry = (
     if (node === null) {
       return;
     }
-    if (node.querySelector("form.operation-form-card") !== null) {
+    if (node.querySelector("form.operation-form") !== null) {
       authoring.current = node.scrollTop;
     } else if (attached.current?.node === node) {
       attached.current.position = node.scrollTop;

@@ -1,5 +1,10 @@
 import { geometryFailures, narrowTableFailures } from "./design-geometry";
-import { dimensions, dimensionCaseTitle, type Dimension } from "./design-matrix-plan";
+import {
+  dimensions,
+  limitDimensions,
+  dimensionCaseTitle,
+  type Dimension,
+} from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "./fixtures";
@@ -169,7 +174,7 @@ const editorLayout = async (page: Page) => {
   const parties = page.locator(".task-collection");
   await parties.getByRole("button").last().click();
   const party = parties.locator(".collection-item").last();
-  await expect(party.locator(".segmented-choice").getByRole("radio").first()).toBeVisible();
+  await expect(party.getByRole("radiogroup").getByRole("radio").first()).toBeVisible();
   await party.getByRole("button").last().click();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
@@ -233,8 +238,10 @@ const registerDimension = (dimension: Dimension) => {
         offsets.push(await headingOffset(page));
       }
     }
-    expect(offsets).toHaveLength(measured.size);
-    expect(headingOffsetFailures(offsets), JSON.stringify(offsets)).toEqual([]);
+    if (dimension.fixture === undefined) {
+      expect(offsets).toHaveLength(measured.size);
+      expect(headingOffsetFailures(offsets), JSON.stringify(offsets)).toEqual([]);
+    }
   });
 };
 const registerCasesLayoutBoundaries = (language: "en" | "ar") => {
@@ -264,4 +271,79 @@ test.describe("adopted work surface design matrix", () => {
   });
   plannedDimensions.forEach(registerDimension);
   (["en", "ar"] as const).forEach(registerCasesLayoutBoundaries);
+});
+
+const registerLimitBoundaries = () => {
+  test("limits fit at every list container transition @engine", async ({ page }) => {
+    test.setTimeout(180_000);
+    const dimension: Dimension = {
+      language: "en",
+      width: 1800,
+      mode: "light",
+      accent: "green",
+      fixture: "limits",
+    };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    for (const route of dataset.routes.filter(({ id }) =>
+      ["cases-all", "reminders", "people-list", "people-history"].includes(id),
+    )) {
+      await visitRoute(page, route, dimension);
+      const isTimeline = route.id === "people-history";
+      const list = page
+        .locator(isTimeline ? "main .region-timeline" : "main .data-table table")
+        .first();
+      await expect(
+        list.locator(isTimeline ? ":scope > li" : "tbody tr:not(.table-group)").first(),
+      ).toBeVisible();
+      const mode = () =>
+        list.evaluate((element) =>
+          getComputedStyle(element).getPropertyValue("--table-layout").trim(),
+        );
+      const resize = (width: number) => page.setViewportSize({ width, height: 900 });
+      for (const [layout, lower, upper] of [
+        ["narrow", 320, 320],
+        ["medium", 320, 1023],
+        ["wide", 1024, 1800],
+      ] as const) {
+        let left: number = lower;
+        let right: number = upper;
+        while (left < right) {
+          const middle = (left + right) >>> 1;
+          await resize(middle);
+          if ((await mode()) === layout) {
+            right = middle;
+          } else {
+            left = middle + 1;
+          }
+        }
+        await resize(left);
+        expect(await mode(), `${route.id} at ${left}px`).toBe(layout);
+        const failures = (await geometryFailures(page, true)).filter(
+          (rule) => rule === "G4" || rule === "G18",
+        );
+        const bounds = await list.boundingBox();
+        expect(
+          failures,
+          `${route.id} ${layout} viewport ${left}px content ${bounds?.width}px`,
+        ).toEqual([]);
+      }
+      await resize(dimension.width);
+    }
+  });
+};
+
+test.describe("work surface with maximum accepted values", () => {
+  test.beforeAll(async ({ browser, baseURL }) => {
+    test.setTimeout(120_000);
+    if (baseURL === undefined) {
+      throw new Error("E2E_MATRIX_BASE_URL_REQUIRED");
+    }
+    dataset = await prepareDesignDataset(browser, baseURL, "limits");
+  });
+  test.afterAll(async () => {
+    await dataset?.close();
+  });
+  limitDimensions(engine).forEach(registerDimension);
+  registerLimitBoundaries();
 });

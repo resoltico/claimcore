@@ -1,6 +1,8 @@
-import type { Link, CaseSelector } from "@contracts/client";
+import type { Affordance, Link, CaseSelector } from "@contracts/client";
 import { caseTargetPath, coreLinkPath, reminderLinkTarget } from "./coreLinks";
 import { useState } from "react";
+import { actPath, parseRoute } from "./routes";
+import type { CurrentCase } from "../protocol/types";
 import { navigate } from "./navigation";
 /** Return context belongs only to this verified case workspace, never browser history or a journal. */
 export const useCaseNavigation = (owner: object | null) => {
@@ -10,6 +12,15 @@ export const useCaseNavigation = (owner: object | null) => {
     scrollY: number;
     focusId: string;
   } | null>(null);
+  const [actOrigin, setActOrigin] = useState<{
+    owner: object;
+    url: string;
+    focusId?: string;
+    scrollY: number;
+  } | null>(null);
+  const creationOrigin =
+    returnTo?.owner === owner && returnTo.focusId === "open-case" ? returnTo.url : "/cases";
+  const originList = new URL(creationOrigin, location.origin);
   const remember = (focusId: string) => {
     if (owner !== null) {
       setReturnTo({
@@ -21,6 +32,43 @@ export const useCaseNavigation = (owner: object | null) => {
     }
   };
   return {
+    openCaseQuery: originList.pathname === "/cases" ? originList.search : "",
+    openAct: (current: CurrentCase, action: Affordance, focusId?: string) => {
+      const route = parseRoute(location);
+      const target =
+        route.screen === "case" || route.screen === "caseAct"
+          ? route.target
+          : { kind: "ID" as const, caseId: current.subject.caseId };
+      const path = actPath(target, action.task, action.binding);
+      const origin =
+        route.screen === "case"
+          ? {
+              url: location.pathname + location.search,
+              ...(focusId === undefined ? {} : { focusId }),
+              scrollY: window.scrollY,
+            }
+          : null;
+      if (
+        navigate(path, false, undefined, undefined, focusId) &&
+        origin !== null &&
+        owner !== null
+      ) {
+        setActOrigin({ owner, ...origin });
+      }
+    },
+    closeAct: (target: CaseSelector) => {
+      const origin = actOrigin?.owner === owner ? actOrigin : null;
+      if (
+        navigate(
+          origin?.url ?? caseTargetPath(target),
+          true,
+          origin?.focusId ?? "case-detail-title",
+          origin?.scrollY,
+        )
+      ) {
+        setActOrigin(null);
+      }
+    },
     linkNavigation: (link: Link) => {
       const selected = reminderLinkTarget(link);
       if (selected === undefined) {

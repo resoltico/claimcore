@@ -22,7 +22,7 @@ const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
       </div>
       <div class="worklist">
         <div class="data-table">
-          <table><tbody><tr><td>Case</td><td class="data-table-actions">
+          <table><tbody><tr><td>Other Case</td><td class="data-table-actions">
             <button>Complete</button><button aria-haspopup="menu">More</button>
             <button class="extra">Cancel</button>
           </td></tr></tbody></table>
@@ -33,7 +33,8 @@ const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
   await page.addStyleTag({
     content: `
     h1 { margin: 0 }
-    .chip-list { display: flex; align-items: center }
+    button, input { font: inherit }
+    .chip-list { display: flex; align-items: center; list-style: none }
     .data-table { width: 100%; overflow: auto }
     .data-table table { --table-layout: wide }
     :where(.toolbar input) { height: 40px; box-sizing: border-box }
@@ -47,13 +48,13 @@ const witnesses: ReadonlyArray<readonly [GeometryId, string]> = [
   ["G1", ".workspace-main { padding-top: 90px }"],
   ["G2", ".shell-footer { transform: translateY(100vh) }"],
   ["G3", ".chip-list li + li .chip { display: inline-block; transform: translateY(8px) }"],
-  ["G4", ".data-table table { min-width: 2000px }"],
+  ["G4", ".toolbar { width: 25px; overflow: hidden } .toolbar input { width: 200px }"],
   ["G5", ".data-table tr { height: 120px }"],
   ["G6", ".data-table button.extra { display: inline-block }"],
   ["G8", "input { block-size: 24px }"],
   [
     "G9",
-    ".data-table table { --table-layout: medium } td:first-child { overflow-wrap: anywhere; inline-size: 1ch }",
+    ".data-table table { --table-layout: medium; width: 100% } td:first-child { word-break: break-all; max-width: 7ch; display: inline-block }",
   ],
   ["G12", "h1 { font-size: 11px }"],
 ];
@@ -154,4 +155,72 @@ test("narrow table geometry rejects crushed words and clipped values", async ({ 
       ".data-table-cell { width: 3ch; height: 1em; overflow: hidden; overflow-wrap: anywhere }",
   });
   expect(await narrowTableFailures(page)).toEqual(["clipped-primary-cell", "split-ordinary-word"]);
+});
+
+const limitsWitnesses: ReadonlyArray<readonly [GeometryId, string, string]> = [
+  [
+    "G17",
+    '<div class="token"><bdi class="identifier-value">ABCDEFGH</bdi></div>',
+    ".token { width: 3ch; overflow-wrap: anywhere }",
+  ],
+  [
+    "G18",
+    "",
+    ".data-table { width: 30rem } .data-table-actions button { transform: translateX(30rem) }",
+  ],
+  [
+    "G19",
+    '<div class="drawer"><div class="control-box"><button>Options</button></div></div>',
+    ".control-box { width: 20rem } .control-box button { border: 1px solid }",
+  ],
+  [
+    "G20",
+    '<dl><div class="pair"><dt>Label</dt><dd>Value</dd></div></dl>',
+    ".pair { display: flex; gap: 12px } .pair dd { transform: translateY(8px) }",
+  ],
+  [
+    "G21",
+    '<div class="drawer"><div class="case-title-line"><bdi class="identifier-value">CASE-1</bdi></div><bdi class="identifier-value">CASE-1</bdi></div>',
+    "",
+  ],
+  ["G22", "<ul><li>Marker</li></ul>", ""],
+];
+for (const [id, markup, defect] of limitsWitnesses) {
+  test(`${id} rejects its workspace regression`, async ({ page }) => {
+    await authorFixture(page);
+    if (markup !== "") {
+      await page.locator("main").evaluate((main, content) => {
+        main.insertAdjacentHTML("beforeend", content);
+      }, markup);
+    }
+    if (defect !== "") {
+      await page.addStyleTag({ content: defect });
+    }
+    expect(await geometryFailures(page)).toContain(id);
+  });
+}
+
+test("lowering the wide transition by 2rem rejects overflowing controls at its boundary", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setContent(`
+    <title>Cases · ClaimCore</title>
+    <main><h1>Cases</h1>
+      <div class="data-table"><div class="sample-row">Case <button>Complete</button></div></div>
+    </main>
+    <style>
+      .data-table { inline-size: 62.5rem; container: boundary / inline-size; }
+      .sample-row { display: flex; justify-content: space-between; inline-size: 100%; }
+      @container boundary (width >= 64rem) { .sample-row { inline-size: 64rem; } }
+    </style>
+  `);
+  const fit = async () =>
+    (await geometryFailures(page, true)).filter((id) => id === "G4" || id === "G18");
+  expect(await fit()).toEqual([]);
+  await page.addStyleTag({
+    content:
+      "@container boundary (width >= 62rem) { .data-table .sample-row { inline-size: 64rem; } }",
+  });
+  expect(await fit()).toContain("G4");
 });

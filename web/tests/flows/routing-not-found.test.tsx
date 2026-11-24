@@ -11,7 +11,7 @@ it.each([
   ["en", "Page not found"],
   ["lv", "Lapa nav atrasta"],
   ["ar", "الصفحة غير موجودة"],
-])("keeps an unknown route offline and localized in %s", async (language, title) => {
+])("shows the localized anonymous unknown-route page in %s", async (language, title) => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
@@ -33,6 +33,6 @@ it.each([
     expect(document.title).toBe(`${title} · ClaimCore`);
   });
   expect(window.location.pathname + window.location.search).toBe("/unknown-page/deep?keep=1");
-  expect(fetch).not.toHaveBeenCalled();
+  expect(fetch.mock.calls.map(([path]) => path)).toEqual(["/api/session"]);
   expect(screen.getByRole("main").querySelector("a")).toHaveAttribute("href", "/cases");
 });

@@ -113,7 +113,7 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
   expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await chooseOption(
     user,
-    screen.getByRole("group", { name: locale.people["input.scope.label"] }),
+    screen.getByRole("radiogroup", { name: locale.people["input.scope.label"] }),
     "CASE",
   );
   const reference = screen.getByRole("textbox", {

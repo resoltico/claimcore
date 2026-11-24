@@ -24,7 +24,7 @@ it("renders the supplied recommendation and passes its control", async () => {
     "Update claim details",
   );
   await userEvent.setup().click(screen.getByRole("button", { name: "Update claim details" }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith(primary);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(primary, expect.any(String));
 });
 it("does not invent a primary", async () => {
   const view = render(
@@ -83,5 +83,5 @@ it("keeps a supplied nonrecommended action reachable through the overflow contro
   const action = screen.getByRole("menuitem", { name: "Record payment decision" });
   expect(action).toBeVisible();
   await userEvent.setup().click(action);
-  expect(onAct).toHaveBeenCalledExactlyOnceWith(alternative);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(alternative, expect.any(String));
 });

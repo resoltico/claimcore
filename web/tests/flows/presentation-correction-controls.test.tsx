@@ -109,10 +109,10 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
     }),
   );
   const registration = document.querySelector<HTMLSelectElement>(
-    'fieldset[id="field-group:registration"]',
+    '[role="radiogroup"][id="field-group:registration"]',
   )!;
   const decisionControls = document.querySelector<HTMLSelectElement>(
-    'fieldset[id="field-group:decision"]',
+    '[role="radiogroup"][id="field-group:decision"]',
   )!;
   await chooseOption(user, registration, "UPDATE");
   await chooseOption(user, decisionControls, "CLEAR");

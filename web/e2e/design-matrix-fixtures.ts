@@ -1,3 +1,4 @@
+import { taskScalar } from "../src/protocol/taskCatalog";
 import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { prefixedInputs } from "../tests/support/submission-inputs";
@@ -8,6 +9,7 @@ import {
   type RequestByEndpoint,
   type DataResponseByEndpoint,
   type OperationInputs_work_update,
+  type TaskInputId,
 } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { randomUUID } from "node:crypto";
@@ -691,6 +693,134 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   });
   expect(current.outcome.data.mine).toBe(false);
 };
+const maximumLength = (input: TaskInputId): number => {
+  const scalar = taskScalar(input)?.scalar;
+  if (scalar?.kind === "PLAIN_TEXT") {
+    return scalar.maximumScalars;
+  }
+  if (scalar?.kind === "TEXT") {
+    if (scalar.maximumCharacters !== null) {
+      return scalar.maximumCharacters;
+    }
+    // A permanent token grammar carries its own maximum, separately from authoring limits.
+    const bound = scalar.format.grammar?.match(/\{\d+,(\d+)\}$/u)?.[1];
+    if (bound !== undefined) {
+      return Number(bound);
+    }
+  }
+  throw new Error(`No declared character limit for ${input}`);
+};
+
+const seedLimits = async (page: Page, marker: string, date: string, issuer: string) => {
+  const referenceLimit = maximumLength("field:caseReference");
+  const prefix = marker.replaceAll("-", "");
+  const first = `${prefix}-A/`.padEnd(referenceLimit, "A");
+  const second = prefix.padEnd(referenceLimit, "B");
+  expect(first).toHaveLength(referenceLimit);
+  expect(second).toHaveLength(referenceLimit);
+  const amount = taskScalar("field:claimedAmount")?.scalar;
+  if (amount?.kind !== "AMOUNT") {
+    throw new Error("No declared claimed amount limits.");
+  }
+  const repeated = (input: TaskInputId, text: string) =>
+    text
+      .repeat(Math.ceil(maximumLength(input) / text.length))
+      .slice(0, maximumLength(input))
+      .trimEnd();
+  const party = "P".repeat(maximumLength("input:partyName"));
+  const fields = registrationInput({
+    incidentDate: date,
+    receivedDate: date,
+    incidentCountry: "LV",
+    policyNumber: "X".repeat(maximumLength("field:policyNumber")),
+    insurerClaimReference: repeated("field:insurerClaimReference", "LIM/"),
+    claimedAmount: `${"9".repeat(amount.maximumIntegerDigits)}.${"9".repeat(amount.maximumFractionalDigits)}`,
+    claimedCurrency: "EUR",
+    incidentDescription: repeated("field:incidentDescription", "Synthetic incident narrative. "),
+  });
+
+  for (const [index, caseReference] of [first, second].entries()) {
+    await caseAct(page, caseReference, 0, {
+      task: "case.open",
+      inputs: {
+        ...prefixedInputs("field:", fields, true),
+        "input:parties": [
+          {
+            "input:partyRole": "CLAIMANT",
+            "input:partyName":
+              index === 0 ? party : repeated("input:partyName", "Long synthetic compoundword "),
+          },
+        ],
+      },
+    });
+    const binding = { target: { kind: "REFERENCE" as const, caseReference } };
+    await execute(page, {
+      operationId: mintOperationId(),
+      task: "reminder.create",
+      binding: { kind: "REMINDER", ...binding },
+      inputs: {
+        "input:reminderAction": "R".repeat(maximumLength("input:reminderAction")),
+        "input:reminderDueDate": date,
+      },
+    });
+    await execute(page, {
+      operationId: mintOperationId(),
+      task: "note.add",
+      binding: { kind: "NOTE", ...binding },
+      inputs: { "input:noteText": repeated("input:noteText", "Synthetic limit note. ") },
+    });
+  }
+
+  const target = { kind: "SERVICE", issuer, subject: `matrix-limits-${randomUUID()}` } as const;
+  await execute(page, {
+    operationId: mintOperationId(),
+    task: "people.register",
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
+    inputs: {
+      "input:profile.displayName": "D".repeat(maximumLength("input:profile.displayName")),
+      "input:profile.contact": "K".repeat(maximumLength("input:profile.contact")),
+      ...prefixedInputs("input:principal.", target),
+    },
+  });
+  const selection = { kind: "REFERENCE", caseReference: first } as const;
+  return [
+    {
+      id: "cases-all",
+      path: `/cases?view=ALL&q=${encodeURIComponent(prefix)}`,
+      ready: "#case-list-title",
+      endpoint: "case.list",
+      expectedReference: first,
+    },
+    {
+      id: "case-limits-separated",
+      path: referencePath(first),
+      ready: "#case-detail-title",
+      endpoint: "case.get",
+      expectedInput: { target: selection },
+    },
+    {
+      id: "case-limits-unbroken",
+      path: referencePath(second),
+      ready: "#case-detail-title",
+      endpoint: "case.get",
+      expectedInput: { target: { kind: "REFERENCE", caseReference: second } },
+    },
+    {
+      id: "reminders",
+      path: "/reminders",
+      ready: "#reminder-queue-title",
+      endpoint: "reminder.list",
+    },
+    { id: "people-list", path: "/people", ready: "#people-title", endpoint: "people.list" },
+    {
+      id: "people-history",
+      path: "/people-history",
+      ready: "#people-history-title",
+      endpoint: "people.history",
+      expectedInput: { limit: 50 },
+    },
+  ] satisfies MatrixRoute[];
+};
 export type DesignDataset = {
   routes: ReadonlyArray<MatrixRoute>;
   businessDate: string;
@@ -700,6 +830,7 @@ export type DesignDataset = {
 export const prepareDesignDataset = async (
   browser: Browser,
   baseURL: string,
+  fixture: "standard" | "limits" = "standard",
 ): Promise<DesignDataset> => {
   const context = await browser.newContext({
     baseURL,
@@ -723,7 +854,23 @@ export const prepareDesignDataset = async (
       throw new Error("E2E_MATRIX_CONTEXT_REFUSED");
     }
     const marker = `DM-${randomUUID()}`;
-    const cases = await seedCases(page, marker, contextReply.outcome.data.requester.businessDate);
+    const date = contextReply.outcome.data.requester.businessDate;
+    if (fixture === "limits") {
+      const limitRoutes = await seedLimits(page, marker, date, stewardship.inventory.issuer);
+      return {
+        routes: limitRoutes,
+        businessDate: date,
+        cookies: await context.cookies(),
+        close: async () => {
+          try {
+            await restore();
+          } finally {
+            await context.close();
+          }
+        },
+      };
+    }
+    const cases = await seedCases(page, marker, date);
     restore = await setOwnerCaseWork(
       page,
       contextReply.outcome.data.requester.actorId,

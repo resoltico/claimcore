@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { PageTitle } from "../ui/Page";
 import { useEffect, useRef, useState } from "react";
 import { AboutPanel } from "../features/settings/AboutPanel";
@@ -14,6 +15,7 @@ import { productMetadata } from "../protocol/productMetadata";
 import type { Notice } from "../protocol/notices";
 export const LoginScreen = ({ message }: { message: Notice | null }) => {
   const p = usePresentation();
+  useDocumentTitle(p.text("ui.about"));
   const currentLanguage =
     p.language === presentationPseudolanguage
       ? p.text("ui.pseudo")

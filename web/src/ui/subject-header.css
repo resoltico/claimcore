@@ -1,0 +1,37 @@
+@layer components {
+  .case-title-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .subject-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-inline-start: auto;
+  }
+
+  .subject-header-facts .entries-view dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .subject-header-facts .entries-view dl > div {
+    display: grid;
+    grid-template-columns: fit-content(45%) minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-1);
+  }
+
+  .subject-header-facts .entries-view dt {
+    margin: 0;
+  }
+
+  .subject-header-facts .entries-view dd {
+    font-weight: 400;
+  }
+}

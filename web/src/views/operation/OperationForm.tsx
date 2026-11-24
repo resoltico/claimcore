@@ -65,13 +65,6 @@ const OperationInputs = ({ model, current, offered, capturedInputs }: OperationF
   const allowed = offered.includes(model.entry.kind);
   return (
     <>
-      {current === null ? null : (
-        <ScreenView
-          view={current.screen}
-          roles={["IDENTITY"]}
-          timeZone={current.basis.observation.timeZone}
-        />
-      )}
       <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
       <FormContext current={current} task={model.task.id} />
       {model.task.inputs.some((input) => taskInput(input.id).kind === "GROUP") ? (
@@ -124,7 +117,7 @@ export const OperationForm = (props: OperationFormProps) => {
   const allowed = offered.includes(model.entry.kind);
   return (
     <form
-      className="operation-form-card"
+      className="operation-form"
       id={props.formId}
       ref={form}
       onSubmit={(event) => {

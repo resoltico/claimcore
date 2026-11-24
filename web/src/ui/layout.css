@@ -1,15 +1,26 @@
 @layer layout {
+  .money-value {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
   html:root {
     --gutter: var(--space-6);
     --page-gap: var(--space-4);
     --toolbar-page-margin: var(--space-3);
-    --toolbar-filter-min: 12rem;
+    --toolbar-filter-min: 16rem;
+    --toolbar-filter-max: 28rem;
     --dialog-overlay-top: var(--space-4);
     --case-header-gutter: var(--space-5);
     --control-target: var(--size-control);
     --compact-target: var(--size-control-compact);
     --dialog-width: var(--width-operation-dialog);
     --drawer-block-size: 100%;
+    --measure-identifier: 8rem;
+    --measure-text: 11rem;
+    --measure-person: 10rem;
+    --measure-money: 8rem;
+    --measure-chips: 14rem;
   }
 
   @media (width < 64rem) {
@@ -39,9 +50,6 @@
       scroll-padding-inline: calc(var(--focus-width) + var(--focus-offset));
     }
 
-    .data-table [data-reference] .data-table-cell {
-      overflow-wrap: break-word;
-    }
     .view-tabs {
       --view-tabs-wrap: nowrap;
       --view-tabs-max-width: none;
@@ -74,7 +82,6 @@
       min-inline-size: var(--target-minimum);
       min-block-size: var(--target-minimum);
     }
-    .operation-form-card,
     .recovery-attempt,
     .recovery-lookup {
       padding: var(--space-3);
@@ -84,9 +91,6 @@
     }
     .review-values > div {
       grid-template-columns: minmax(0, 1fr);
-    }
-    .worklist-search {
-      flex-basis: 100%;
     }
   }
 
@@ -100,16 +104,12 @@
   }
 
   @media (width >= 40rem) {
-    .operation-form-card {
+    .operation-form {
       --task-field-columns: 2;
     }
   }
 
   @media (width >= 64rem) {
-    .case-workspace {
-      grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
-      align-items: start;
-    }
     .case-fact-groups {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -166,13 +166,7 @@
       --case-title-inset: var(--shell-top-height);
       --case-header-gutter: var(--space-4);
     }
-    .case-identity {
-      flex-basis: 100%;
-    }
     .ui-dialog .review-values > div {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .case-work-rail {
       grid-template-columns: minmax(0, 1fr);
     }
   }
@@ -347,12 +341,7 @@
 }
 
 @layer layout {
-  @container data-table (width >= 64rem) {
-    .data-table table {
-      --table-chip-list-min-inline-size: 14.75rem;
-      font-family: Arial, "Liberation Sans", var(--font-body);
-    }
-
+  @container data-table (width >= 68rem) {
     .data-table :is(td, th) {
       padding-inline: calc(var(--space-1) / 2);
     }
@@ -371,7 +360,7 @@
     }
   }
 
-  @container data-table (width < 64rem) {
+  @container data-table (width < 68rem) {
     .data-table table {
       --table-layout: medium;
     }
@@ -393,7 +382,6 @@
     .data-table table {
       --table-layout: narrow;
       --table-row-size: auto;
-      --table-reference-wrap: normal;
     }
 
     .data-table tbody tr {
@@ -454,31 +442,6 @@
       order: 3;
     }
   }
-
-  @container data-table (width < 30rem) {
-    .data-table .identifier-value {
-      overflow-wrap: anywhere;
-    }
-  }
-
-  .ui-dialog .identifier-value {
-    overflow-wrap: anywhere;
-  }
-}
-
-@layer layout {
-  @media (width >= 64rem) {
-    .case-workspace {
-      --case-workspace-columns: minmax(0, 1fr)
-        minmax(var(--width-work-column), var(--width-sidebar-detail));
-    }
-  }
-
-  @media (width < 64rem) {
-    .case-workspace {
-      --case-workspace-columns: minmax(0, 1fr);
-    }
-  }
 }
 
 @layer layout {
@@ -487,8 +450,8 @@
       --button-display: none;
     }
 
-    .worklist-toolbar .worklist-search {
-      --width-worklist-filter: 100%;
+    .toolbar > .toolbar-filter {
+      flex-basis: 0;
     }
   }
 }
@@ -513,14 +476,6 @@
 
 @layer layout {
   @media (width < 40rem) {
-    .region-timeline > li {
-      --timeline-columns: minmax(0, 1fr);
-    }
-  }
-}
-
-@layer layout {
-  @media (width < 40rem) {
     .workspace-main .page-title {
       position: absolute;
       inset-block-start: 0;
@@ -537,5 +492,12 @@
   .ui-dialog-overlay--top {
     --dialog-overlay-alignment: start center;
     --dialog-overlay-top: 12vh;
+  }
+}
+
+@layer layout {
+  :is(.workspace-main, .workspace-sidebar, [role="dialog"])
+    :where(ul, ol):not(:is([data-kind="NARRATIVE"], .note-text) *) {
+    list-style: none;
   }
 }

@@ -99,7 +99,9 @@ it.each(["en", "lv", "ar"] as const)(
       />,
     );
     for (const name of ["registration", "decision"] as const) {
-      const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
+      const group = screen.getByRole("radiogroup", {
+        name: catalogs[language][`group.${name}.label`],
+      });
       expect(group).toHaveAccessibleDescription(catalogs[language][`group.${name}.hint`]);
       expect(group).not.toHaveAttribute("aria-invalid");
       expect(group.querySelector('input[value="KEEP"]')).toBeChecked();

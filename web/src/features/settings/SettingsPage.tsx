@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { useEffect } from "react";
 import { OwnBrowserSessions } from "./BrowserSessions";
 import { AboutPanel } from "./AboutPanel";
@@ -17,6 +18,7 @@ const sections = [
 
 export const SettingsPage = () => {
   const p = usePresentation();
+  useDocumentTitle(p.text("ui.settings"));
   const route = useRoute();
   useEffect(() => {
     if (

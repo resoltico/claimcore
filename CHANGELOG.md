@@ -2,22 +2,17 @@
 
 ## [Unreleased]
 
-- Regenerate HUMAN clients for Cases column joins and the revised case IDENTITY. Task definitions add `subjectInput`.
-- Regenerate HUMAN clients for affordance `shortLabelId`, region counts, payment decision emptiness, and `recorded` on all entry regions.
-- HUMAN lists omit observation regions and Cases relegates payable amount to details. DATA and CSV retain payable amount. The CLI prints the list basis in a footer.
-- Actions inapplicable to the current subject no longer arrive as HUMAN affordances.
-
-- Regenerate HUMAN clients for state detail, empty labels, row recommendations, view prominence, next due dates, per-view reminder columns and creation summaries.
-- Regenerate clients for collection labels, review modes and the code tone table.
-- Regenerate HUMAN clients for reminder due dates that can carry a timing code.
+- Regenerate HUMAN clients for joins, case IDENTITY, region counts, recorded entries, payment empty labels, state detail, due dates, reminder timing and view columns, recommendations and short labels.
+- Regenerate clients for subjectInput, review modes, collection labels, code tones, view prominence and creation summaries.
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
 - Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
+- Lists wrap maximum-length values and keep row controls in view. Case actions open over the case page, with one subject summary in the drawer.
+- HUMAN lists omit observation regions and Cases relegates payable amount to details. DATA and CSV retain payable amount. The CLI prints the list basis in a footer.
+- Actions inapplicable to the current subject no longer arrive as HUMAN affordances.
 - If the CLI cannot launch a browser, it prints the sign-in address to stderr and waits for you to open it.
 - Case attention shows only the overdue deadline when a case also has an overdue next action. Case-list CSV uses the same attention rule.
 - The redesigned workspace adds the Cases breadcrumb, compact row menus, and About ClaimCore.
 - List controls share one height. Phone lists keep search visible, put filters in a sheet, and scroll the view tabs horizontally.
-- On phones, after Back focuses the loading Cases heading, Tab enters the selected view. Lists use cards below 50rem of container width.
-- Long case references wrap inside phone cards.
 - Case sections share a layout and show supplied counts. Read views omit unrecorded values, and technical details open in dialogs.
 - Accepted operations show a focused banner with View receipt, including reminder completion from a list.
 - Wide lists keep words intact. Stacked rows omit absent secondary values, and grouped reminders show timing in the group header.

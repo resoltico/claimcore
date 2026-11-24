@@ -33,6 +33,9 @@ const mount = (value: CurrentCase, act: string) => {
         linkNavigation: vi.fn(),
         selectCase: vi.fn(),
         openCase: vi.fn(),
+        openCaseQuery: "",
+        openAct: vi.fn(),
+        closeAct: vi.fn(),
         backToCases: vi.fn(),
       }}
     />,

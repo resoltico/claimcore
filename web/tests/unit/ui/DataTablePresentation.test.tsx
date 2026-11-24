@@ -1,6 +1,7 @@
 import { within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
+import { IdentifierValue } from "../../../src/components/IdentifierValue";
 import { PresentedValue } from "../../../src/components/PresentedValue";
 import type { RegionContent } from "@contracts/client";
 import { DataTable } from "../../../src/ui/DataTable";
@@ -166,3 +167,85 @@ it.each([
     expect(screen.getByText(label)).toHaveAttribute("data-tone", tone);
   },
 );
+
+it("keeps the exact identifier in the link and offers breaks after separator runs", () => {
+  const value = "CASE--PART/_NUMBER:17";
+  const { container } = render(
+    <a href={`/cases/reference/${encodeURIComponent(value)}`}>
+      <IdentifierValue value={value} />
+    </a>,
+  );
+  const link = screen.getByRole("link", { name: value });
+  expect(link.textContent).toBe(value);
+  expect(link).toHaveAttribute("href", `/cases/reference/${encodeURIComponent(value)}`);
+  expect(
+    [...container.querySelectorAll("wbr")].map((point) => point.previousSibling?.textContent),
+  ).toEqual(["--", "/_", ":"]);
+});
+
+it("adds amount break points between exact digit groups", () => {
+  const { container } = render(
+    <PresentedValue
+      value={{
+        kind: "MONEY",
+        amount: "123456789012345678.1234",
+        currency: "EUR",
+        displayScale: 4,
+      }}
+      timeZone="UTC"
+    />,
+  );
+  const amount = container.querySelector(".money-value");
+  expect(amount?.textContent).toBe("123,456,789,012,345,678.1234 EUR");
+  expect(
+    [...amount!.querySelectorAll("wbr")].map((point) => point.previousSibling?.textContent),
+  ).toEqual([",", ",", ",", ",", ","]);
+});
+
+it("puts declared joins in the target cell and prefixes a joined date", () => {
+  const { container } = render(
+    <DataTable
+      view={{
+        kind: "TABLE",
+        columns: [
+          {
+            key: "status",
+            labelId: "label.caseState",
+            prominence: "PRIMARY",
+            isMoney: false,
+            joins: null,
+          },
+          {
+            key: "attention",
+            labelId: "label.attention",
+            prominence: "PRIMARY",
+            isMoney: false,
+            joins: "status",
+          },
+          {
+            key: "due",
+            labelId: "field.reminderDueDate.label",
+            prominence: "SECONDARY",
+            isMoney: false,
+            joins: "status",
+          },
+        ],
+        rows: [
+          {
+            key: "row",
+            values: [
+              { kind: "STATE", vocabulary: "headline", token: "UNDECIDED" },
+              { kind: "CODES", vocabulary: "attention", tokens: ["DEADLINE_OVERDUE"] },
+              { kind: "DATE", value: "2026-11-24" },
+            ],
+          },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getAllByRole("columnheader")).toHaveLength(1);
+  expect(container.querySelectorAll('[data-column="status"] .chip-list > li')).toHaveLength(2);
+  expect(
+    container.querySelector('[data-column="status"] [data-kind="DATE"] .sr-only'),
+  ).toHaveTextContent("Due date");
+});

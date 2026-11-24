@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Page } from "../ui/Page";
 import { PhoneAction } from "../ui/PhoneAction";
 import { Icon } from "../ui/icons";
@@ -600,6 +601,8 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
 };
 
 export const PeoplePanel = (props: PeoplePanelProps) => {
+  const p = usePresentation();
+  useDocumentTitle(p.text("view.PEOPLE.label"));
   const { state } = useSessionContext();
   return state.kind === "authenticated" ? (
     <PeopleEditorPanel key={`${state.epoch}:${state.token}`} {...props} />

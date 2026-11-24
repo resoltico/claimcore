@@ -206,6 +206,7 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
       task: "case.removePayment",
       binding: expect.objectContaining({ paymentId }),
     }),
+    expect.any(String),
   );
   expect(
     screen.queryByRole("button", {

@@ -1,7 +1,7 @@
 @layer components {
   .ui-select-field {
     display: grid;
-    gap: var(--space-2);
+    gap: var(--space-1);
     min-inline-size: 0;
   }
   .ui-select-trigger {
@@ -14,6 +14,11 @@
     text-align: start;
     font-weight: 400;
   }
+  .ui-select-trigger > svg {
+    flex: none;
+    margin-inline-start: auto;
+  }
+
   .select-inline-label {
     color: var(--text-secondary);
   }

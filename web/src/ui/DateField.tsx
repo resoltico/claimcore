@@ -43,6 +43,7 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
       <DialogTrigger>
         <IconButton
           icon="calendar"
+          variant="quiet"
           isDisabled={disabled}
           label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
         />

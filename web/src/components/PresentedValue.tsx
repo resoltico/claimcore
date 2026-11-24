@@ -3,7 +3,8 @@ import { Chip, chipTone } from "../ui/Chip";
 import type { PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
-import { moneyWithScale } from "../presentation/format";
+import { Fragment, type ReactNode } from "react";
+import { moneyParts } from "../presentation/format";
 import { ActorIdentity } from "./ActorIdentity";
 import { CharacterWarning } from "./CharacterWarning";
 import { CountryValue } from "./CountryValue";
@@ -58,6 +59,31 @@ const ScalarValue = ({ value, timeZone }: { value: Scalar; timeZone: string }) =
   }
 };
 
+const MoneyAmount = ({ value }: { value: Extract<Value, { kind: "MONEY" | "MONEY_TOTAL" }> }) => {
+  const p = usePresentation();
+  let offset = 0;
+  const content: ReactNode[] = [];
+  const parts = moneyParts(value.amount, value.currency, value.displayScale, p.displayLocale);
+  for (const part of parts) {
+    offset += part.value.length;
+    content.push(
+      part.type === "group" ? (
+        <Fragment key={offset}>
+          {part.value}
+          <wbr />
+        </Fragment>
+      ) : (
+        part.value
+      ),
+    );
+  }
+  return (
+    <bdi dir="ltr" className="money-value">
+      {content}
+    </bdi>
+  );
+};
+
 /** Exhaustive presentation of supplied tagged values; no comparison, inference or name lookup. */
 export const PresentedValue = ({
   value,
@@ -72,11 +98,7 @@ export const PresentedValue = ({
   switch (value.kind) {
     case "MONEY":
     case "MONEY_TOTAL":
-      return (
-        <bdi dir="ltr">
-          {moneyWithScale(value.amount, value.currency, value.displayScale, p.displayLocale)}
-        </bdi>
-      );
+      return <MoneyAmount value={value} />;
     case "DATE_WITH_CODE":
       return (
         <span className="date-with-code">

@@ -363,14 +363,14 @@ it("renders the affected account link and the separate recorder without revealin
 });
 
 it.each(["", `${first}&actorId=${second}`])(
-  "keeps supplied invalid or duplicate actor query offline: %s",
+  "rejects invalid or duplicate actor queries before workspace reads: %s",
   async (actor) => {
     const fetch = vi.fn<typeof globalThis.fetch>();
     vi.stubGlobal("fetch", fetch);
     navigate(`/people-history?actorId=${actor}`, true);
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeVisible();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch.mock.calls.map(([path]) => path)).toEqual(["/api/session"]);
     expect(getEndpointMock("context")).not.toHaveBeenCalled();
   },
 );

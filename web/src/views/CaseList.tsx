@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import type { ReactNode } from "react";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
@@ -45,6 +46,7 @@ import { ScreenView } from "../ui/ScreenView";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
   onOpenCase?: () => void;
+  queryOverride?: string | undefined;
   onSelect: (target: CaseSelector, originId?: string) => void;
   onMutationLockChange?: MutationLockChange;
   disclosureAvailable?: boolean;
@@ -443,7 +445,7 @@ const DefaultCaseView = ({
 const AvailableCaseList = (props: Props) => {
   const context = useRequesterContext();
   const route = useContentRoute();
-  const search = route.screen === "cases" ? route.query : "";
+  const search = route.screen === "cases" ? route.query : (props.queryOverride ?? "");
   const admission = useMemo(() => parseWorklistQuery(search), [search]);
   const recovering = useRef(false);
   useEffect(() => {
@@ -467,7 +469,11 @@ const AvailableCaseList = (props: Props) => {
     );
     const view = cases === undefined ? undefined : caseLinkView(cases.link);
     if (view !== undefined) {
-      return <DefaultCaseView query={query} view={view} />;
+      return props.queryOverride === undefined ? (
+        <DefaultCaseView query={query} view={view} />
+      ) : (
+        <ReadyCaseList {...props} query={{ ...query, view }} />
+      );
     }
   }
   return <ReadyCaseList {...props} query={query} />;
@@ -475,6 +481,8 @@ const AvailableCaseList = (props: Props) => {
 
 /** List selection and editors belong to one authenticated session. */
 export const CaseList = (props: Props) => {
+  const p = usePresentation();
+  useDocumentTitle(p.text("label.cases"));
   const { state } = useSessionContext();
   return state.kind === "authenticated" ? (
     <AvailableCaseList key={`${state.epoch}:${state.token}`} {...props} />

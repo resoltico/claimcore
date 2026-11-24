@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../../components/IdentifierValue";
 import { TextInput } from "../../ui/TextField";
 import type { apiEndpoints } from "../../api/service";
 import { Button } from "../../ui/Button";
@@ -23,7 +24,15 @@ type ReviewModel = {
   execute: () => Promise<void>;
   returnToEdit: () => void;
 };
-const ReviewBody = ({ review, creation }: { review: HumanReview; creation: boolean }) => {
+const ReviewBody = ({
+  review,
+  creation,
+  showsSubject,
+}: {
+  review: HumanReview;
+  creation: boolean;
+  showsSubject: boolean;
+}) => {
   const p = usePresentation();
   if (review.document.basis.kind !== "SNAPSHOT") {
     return null;
@@ -32,7 +41,10 @@ const ReviewBody = ({ review, creation }: { review: HumanReview; creation: boole
   const { subject } = review.document;
   const stewardship = subject.kind === "REVIEW" && subject.consequence !== "ROUTINE";
   const ordinary = review.document.screen.regions.filter(
-    ({ role }) => role === "IDENTITY" || role === "NOTICE" || (stewardship && role === "FACTS"),
+    ({ role }) =>
+      (!showsSubject && role === "IDENTITY") ||
+      role === "NOTICE" ||
+      (stewardship && role === "FACTS"),
   );
   const absent = review.presentation.notEntered ?? [];
   return (
@@ -116,7 +128,7 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     body: exact ? (
       <div className="text-field irreversible-confirmation">
         <p>
-          <bdi dir="ltr">{expected}</bdi>
+          <IdentifierValue value={expected} />
         </p>
         <label htmlFor={id}>{label}</label>
         <TextInput
@@ -158,11 +170,13 @@ const ReviewContents = ({
   complete,
   creation,
   confirmation,
+  showsSubject,
 }: {
   review: HumanReview;
   complete: boolean;
   creation: boolean;
   confirmation: ReactNode;
+  showsSubject: boolean;
 }) => {
   const p = usePresentation();
   if (review.document.basis.kind !== "SNAPSHOT") {
@@ -172,7 +186,7 @@ const ReviewContents = ({
   return (
     <>
       {complete ? (
-        <ReviewBody review={review} creation={creation} />
+        <ReviewBody review={review} creation={creation} showsSubject={showsSubject} />
       ) : (
         <p role="alert" data-incomplete-review>
           <NoticeView value={{ kind: "local", reason: "incomplete" }} />
@@ -204,10 +218,12 @@ const ReviewContents = ({
 export const OperationReview = ({
   model,
   paused = false,
+  showsSubject = false,
   children,
 }: {
   model: ReviewModel;
   paused?: boolean;
+  showsSubject?: boolean;
   children?: (parts: { body: ReactNode; actions: ReactNode } | null) => ReactNode;
 }) => {
   const p = usePresentation();
@@ -222,6 +238,7 @@ export const OperationReview = ({
       complete={complete}
       creation={taskForCommand(model.prepared.input).creates}
       confirmation={controls.body}
+      showsSubject={showsSubject}
     />
   );
   const actions = (

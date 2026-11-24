@@ -58,13 +58,15 @@ const ReminderCard = ({
           <PresentedValue value={message} timeZone={zone} />
         </strong>
       )}
-      {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
-      {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
-      {timing?.kind === "CODE" ? (
-        <span data-column="timing">
-          <Chip value={timing} />
-        </span>
-      ) : null}
+      <div className="next-action-meta">
+        {due === undefined ? null : <PresentedValue value={due} timeZone={zone} />}
+        {kind?.kind === "CODE" ? <Chip value={kind} /> : null}
+        {timing?.kind === "CODE" ? (
+          <span data-column="timing">
+            <Chip value={timing} />
+          </span>
+        ) : null}
+      </div>
       <div className="next-action-controls">
         {recommended === undefined ? null : (
           <Button

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { Page } from "../../ui/Page";
 import { ChoiceControl } from "../../ui/TextField";
 import { SearchField } from "../../ui/SearchField";
@@ -438,6 +439,7 @@ const ReadyReminderQueue = ({
 export const ReminderQueue = (props: QueueProps) => {
   const route = useContentRoute();
   const p = usePresentation();
+  useDocumentTitle(p.text("label.reminders"));
   const parsed = useMemo(
     () =>
       route.screen === "reminders" && route.invalidSelection === true

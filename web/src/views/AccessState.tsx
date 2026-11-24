@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Page } from "../ui/Page";
 import { renderCatalogKey } from "../presentation/messages";
 import type { Notice } from "../protocol/notices";
@@ -28,11 +29,12 @@ export const AccessState = ({
     heading.current?.focus({ preventScroll: false });
   }, []);
   const { logout } = useSessionContext();
+  const identity = requester.screen.regions.find((region) => region.role === "IDENTITY");
+  const titleId = identity?.titleId ?? "label.account";
+  useDocumentTitle(requester.subject.state === "ACTIVE" ? null : renderCatalogKey(p, titleId));
   if (requester.subject.state === "ACTIVE") {
     return null;
   }
-  const identity = requester.screen.regions.find((region) => region.role === "IDENTITY");
-  const titleId = identity?.titleId ?? "label.account";
   const view = {
     ...requester.screen,
     regions: requester.screen.regions.map((region) => {

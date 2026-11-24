@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./icons";
+import { PageHeadingTarget } from "./Page";
 import { Button } from "./Button";
 import "./status-banner.css";
 
@@ -18,12 +19,13 @@ export const StatusBanner = ({
   dismiss?: () => void;
   shouldFocus?: (() => boolean) | undefined;
 }) => {
+  const heading = useContext(PageHeadingTarget);
   const banner = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const element = banner.current;
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        element?.closest(".page")?.querySelector("h1")?.focus();
+        heading?.focus();
       }
     };
     const reveal = () => {
@@ -44,7 +46,7 @@ export const StatusBanner = ({
       element?.removeEventListener("keydown", escape);
       window.removeEventListener("resize", reveal);
     };
-  }, [shouldFocus]);
+  }, [heading, shouldFocus]);
   return (
     <div className="status-banner" data-tone={tone} role="status" tabIndex={-1} ref={banner}>
       <Icon name={tone === "success" ? "check" : "info"} />

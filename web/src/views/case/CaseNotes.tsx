@@ -74,6 +74,7 @@ const NoteRows = ({
   onRemove?: (action: OperationAffordance) => void;
 }) => {
   const id = useId();
+  const p = usePresentation();
   const content = view.regions.find((region) => region.role === "NOTES")?.content;
   if (content?.kind !== "TABLE") {
     return null;
@@ -82,6 +83,13 @@ const NoteRows = ({
     <ul className="note-list">
       {content.rows.map((row) => (
         <li key={row.key}>
+          {row.values.map((value, index) =>
+            content.columns[index]?.key === "noteText" ? (
+              <div className="note-text" key={content.columns[index]?.key}>
+                <PresentedValue value={value} timeZone={zone} />
+              </div>
+            ) : null,
+          )}
           <div className="note-author" id={`${id}-${row.key}`}>
             {row.values.map((value, index) =>
               content.columns[index]?.key === "noteText" ? null : (
@@ -91,15 +99,9 @@ const NoteRows = ({
               ),
             )}
           </div>
-          {row.values.map((value, index) =>
-            content.columns[index]?.key === "noteText" ? (
-              <div className="note-text" key={content.columns[index]?.key}>
-                <PresentedValue value={value} timeZone={zone} />
-              </div>
-            ) : null,
-          )}
           {onRemove === undefined ? null : (
             <TaskControls
+              rowLabel={p.text("section.notes.label")}
               actions={row.actions ?? []}
               onAction={(action) => {
                 if (

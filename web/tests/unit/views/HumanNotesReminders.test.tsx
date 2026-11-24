@@ -106,7 +106,7 @@ it("renders supplied note narrative and author captions and binds remove to the 
   expect(screen.getByText("Core note narrative Ω")).toBeVisible();
   expect(screen.getByText("Core opaque author Ψ")).toBeVisible();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "More actions" }));
+  await user.click(screen.getByRole("button", { name: "Actions for Notes" }));
   await user.click(screen.getByRole("menuitem", { name: "Remove note" }));
   expect(remove).toHaveBeenCalledWith(
     expect.objectContaining({

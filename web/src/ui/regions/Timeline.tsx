@@ -58,26 +58,29 @@ export const Timeline = ({
       {content.entries.length === 0 && emptyId !== undefined ? (
         <EmptyState messageId={emptyId} />
       ) : (
-        <ol className="region-timeline">
-          {content.entries.map((entry) => {
-            const link = coreRowLink(entry.link, linkNavigation);
-            return (
-              <li key={entry.key} data-effect={entry.key}>
-                <PresentedValue
-                  value={{ kind: "INSTANT", value: entry.when }}
-                  timeZone={timeZone}
-                />
-                <span className="timeline-event">
-                  <SuppliedMessage message={entry.summary} timeZone={timeZone} />
-                </span>
-                {entry.target === undefined ? null : (
-                  <span className="timeline-subject">
-                    <TimelineTarget value={entry.target} link={link} timeZone={timeZone} />
+        <div className="timeline-layout">
+          <ol className="region-timeline">
+            {content.entries.map((entry) => {
+              const link = coreRowLink(entry.link, linkNavigation);
+              return (
+                <li key={entry.key} data-effect={entry.key}>
+                  <span className="timeline-event">
+                    <SuppliedMessage message={entry.summary} timeZone={timeZone} />
                   </span>
-                )}
-                <span className="timeline-actor">
-                  <PresentedValue value={entry.who} timeZone={timeZone} />
+                  <PresentedValue
+                    value={{ kind: "INSTANT", value: entry.when }}
+                    timeZone={timeZone}
+                  />
+                  {entry.target === undefined ? null : (
+                    <span className="timeline-subject">
+                      <TimelineTarget value={entry.target} link={link} timeZone={timeZone} />
+                    </span>
+                  )}
+                  <span className="timeline-actor">
+                    <PresentedValue value={entry.who} timeZone={timeZone} />
+                  </span>
                   <Button
+                    className="timeline-details"
                     variant="quiet"
                     compact
                     onPress={() => {
@@ -86,11 +89,11 @@ export const Timeline = ({
                   >
                     {p.text("ui.viewDetails")}
                   </Button>
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
       <Dialog
         title={p.text("ui.viewDetails")}

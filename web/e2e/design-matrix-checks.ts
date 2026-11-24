@@ -3,6 +3,7 @@ import { geometryFailures, geometryReport } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
+  endpoints,
   type ResponseFor,
   presentationDisplayOptions,
   presentationDefaults,
@@ -333,7 +334,11 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
   const observed = apiRequests();
   if (route.id === "not-found") {
-    expect(observed).toEqual([]);
+    await expect(page.locator(".workspace-shell .missing-page")).toBeVisible();
+    const readBootstrap = endpoints
+      .filter(({ id }) => ["session", "context", "case.views", "reminder.views"].includes(id))
+      .map(({ path }) => path);
+    expect(observed.every((request) => readBootstrap.some((path) => path === request))).toBe(true);
   }
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
@@ -364,7 +369,10 @@ export const checkFrame = async (
   frame: string,
   _info: TestInfo,
 ) => {
-  const { violations, splitWords, firstRowTop } = await geometryReport(page);
+  const { violations, splitWords, firstRowTop } = await geometryReport(
+    page,
+    dimension.fixture === "limits",
+  );
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {

@@ -6,4 +6,10 @@
   .drawer .ui-dialog-actions {
     border-block-start: var(--border-width) solid var(--border-subtle);
   }
+
+  .drawer :is(.correction-group, .choice-card, .collection-item, .selected-fact) {
+    border: 0;
+    border-radius: 0;
+    padding-inline: 0;
+  }
 }

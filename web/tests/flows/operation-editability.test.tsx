@@ -85,7 +85,7 @@ const current: CurrentCase = caseDocumentInput({
 });
 const expectAuthoringDisabled = () => {
   const controls = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
-    ".operation-form-card input, .operation-form-card button[role=combobox]",
+    ".operation-form input, .operation-form button[role=combobox]",
   );
   expect(controls.length).toBeGreaterThan(1);
   for (const control of controls) {
@@ -148,7 +148,9 @@ it.each(["case.amendRegistration", "case.correct"] as const)(
       }),
     );
     if (act === "case.correct") {
-      const mode = document.querySelector<HTMLElement>('fieldset[id="field-group:registration"]')!;
+      const mode = document.querySelector<HTMLElement>(
+        '[role="radiogroup"][id="field-group:registration"]',
+      )!;
       await chooseOption(user, mode, "UPDATE");
     }
     selectFact("policyNumber");

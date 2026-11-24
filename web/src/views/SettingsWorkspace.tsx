@@ -1,3 +1,4 @@
+import { DocumentTitleScope } from "../hooks/useDocumentTitle";
 import { useState, type ReactNode } from "react";
 import { SettingsDetourContext } from "../hooks/SettingsDetourContext";
 import { SettingsPage } from "../features/settings/SettingsPage";
@@ -35,7 +36,7 @@ export const SettingsWorkspace = ({
       }}
     >
       <div hidden={parked} inert={parked}>
-        {children(contentRoute)}
+        <DocumentTitleScope active={!parked}>{children(contentRoute)}</DocumentTitleScope>
       </div>
       {parked ? (
         <>

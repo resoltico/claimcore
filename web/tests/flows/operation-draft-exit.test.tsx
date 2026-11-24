@@ -167,7 +167,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
   const user = userEvent.setup();
   const close = open("case.correct");
   const mode = document.querySelector<HTMLSelectElement>(
-    'fieldset[id="field-group:registration"]',
+    '[role="radiogroup"][id="field-group:registration"]',
   )!;
   await chooseOption(user, mode, "UPDATE");
   selectFact("policyNumber");
@@ -188,7 +188,9 @@ it("protects hidden correction replacement edits after returning its mode to KEE
 it("leaves a correction whose mode was changed and reverted without value edits", async () => {
   const user = userEvent.setup();
   const close = open("case.correct");
-  const mode = document.querySelector<HTMLSelectElement>('fieldset[id="field-group:decision"]')!;
+  const mode = document.querySelector<HTMLSelectElement>(
+    '[role="radiogroup"][id="field-group:decision"]',
+  )!;
   await chooseOption(user, mode, "CLEAR");
   await chooseOption(user, mode, "KEEP");
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);

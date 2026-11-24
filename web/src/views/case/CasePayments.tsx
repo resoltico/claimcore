@@ -24,7 +24,7 @@ const PaymentPreview = ({
   content: PaymentTable;
   total: number | null;
   zone: string;
-  onAction: (action: Affordance) => void;
+  onAction: (action: Affordance, origin?: string) => void;
   onExpand: () => void;
 }) => {
   const p = usePresentation();
@@ -51,7 +51,7 @@ export const CasePayments = ({
 }: {
   region: Region;
   current: CurrentCase;
-  onAct: (action: Affordance) => void;
+  onAct: (action: Affordance, origin?: string) => void;
   onChanged: () => void;
 }) => {
   const p = usePresentation();

@@ -10,16 +10,22 @@ the sizing and border tokens in [field.css](../web/src/ui/field.css). MoneyField
 currency, with one written hint and error region. Toolbar groups search, filters and exports. On
 phones, the search stays in the toolbar and Filters opens a bottom sheet.
 
-Core supplies chip tones, table prominence, recommendations, consequences and empty wording.
-DataTable shows primary and secondary columns from 64rem of container width. Wide tables prefer Arial
-and Liberation Sans for consistent column widths across platforms. From 50rem up to 64rem, secondary
-values stack under a primary cell and can wrap onto the next line after their label. Below 50rem,
-rows use cards. The sidebar and page gutters affect the available container width. Cards put the
-reference and primary values first, then recorded secondary values and the recommended action.
-Chips stay intact. Case references can wrap in phone cards. Identifiers may also wrap within a word
-in table containers below 30rem and in dialogs.
-A row recommendation uses a short core label on a secondary
-button. Each page allows one solid primary outside dialogs.
+Core supplies chip tones, table prominence, column joins, recommendations, consequences and empty
+wording. Lists select wide, medium and card layouts from the available container width. The
+[layout styles](../web/src/ui/layout.css) declare the table thresholds and the value measures for
+identifiers, text, actors, money and chips. Wide rows give each primary or secondary value its
+column, with joined values in the target column. Medium rows stack recorded secondary values under
+the primary cell. Cards put the reference and primary values first, followed by secondary values
+and row controls.
+
+Text uses the workspace font. Identifiers use the mono font at the surrounding size and wrap first
+at separators. Amounts break between digit groups or before the currency. A word can split when it
+exceeds the width available to it. The browser matrix exercises maximum accepted values in the
+[limits fixture](../web/e2e/design-matrix-fixtures.ts) at each layout boundary. Row controls stay
+inside the list at every supported width.
+
+A row recommendation uses a short core label on a secondary button. Each page allows one solid
+primary outside dialogs.
 
 The cascade runs through reset, tokens, base, layout, components and views. The theme generator reads
 [tokens.json](../web/src/theme/tokens.json). Keep authored styles in the declared layer and use logical

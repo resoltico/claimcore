@@ -236,6 +236,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   expect(act).toHaveBeenCalledWith(
     expect.objectContaining(current),
     expect.objectContaining({ task: "case.close" }),
+    expect.any(String),
   );
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");

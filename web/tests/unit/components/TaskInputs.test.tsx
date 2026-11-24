@@ -329,7 +329,7 @@ it("edits admission rows independently while principal and scope restrict role c
   expect(screen.getByRole("button", { name: "Remove role" })).toBeDisabled();
   await user.click(screen.getByRole("radio", { name: "Owner" }));
   await user.click(screen.getByRole("button", { name: "Add role" }));
-  const groups = screen.getAllByRole("group", { name: "Role" });
+  const groups = screen.getAllByRole("radiogroup", { name: "Role" });
   expect(groups).toHaveLength(2);
   await user.click(within(groups[1]!).getByRole("radio", { name: "Case reader" }));
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
@@ -350,7 +350,7 @@ it("edits admission rows independently while principal and scope restrict role c
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
   await user.click(screen.getAllByRole("button", { name: "Remove role" })[0]!);
-  expect(screen.getAllByRole("group", { name: "Role" })).toHaveLength(1);
+  expect(screen.getAllByRole("radiogroup", { name: "Role" })).toHaveLength(1);
   expect(screen.getByRole("radio", { name: "Case reader" })).toBeChecked();
 });
 

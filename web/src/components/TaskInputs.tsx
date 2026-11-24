@@ -1,3 +1,4 @@
+import { RadioGroup } from "../ui/RadioGroup";
 import { codeSuggestions } from "../presentation/codeSuggestions";
 import { TextInput, ChoiceControl } from "../ui/TextField";
 import { MoneyField } from "../ui/MoneyField";
@@ -112,62 +113,34 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
       ? offered
       : [...offered, selected];
   const optional = input.mode === "OPTIONAL";
-  const segmented = options.length + Number(optional) <= 5;
+  const radioOptions = options.map((value) => {
+    const hint = choiceHint(input, props, offered, value);
+    return {
+      value,
+      label: caption(p, input.id, value),
+      unavailable: hint === null ? undefined : renderCatalogKey(p, hint),
+    };
+  });
   return (
-    <fieldset
-      className="task-choice"
+    <RadioGroup
       id={`field-${errorKey}`}
+      name={errorKey}
+      label={label}
       disabled={props.disabled}
-      aria-invalid={error !== undefined || undefined}
-      aria-describedby={helpIds(metadata.hintId, error, errorKey)}
+      invalid={error !== undefined}
+      describedBy={helpIds(metadata.hintId, error, errorKey)}
+      value={selected}
+      options={
+        optional
+          ? [{ value: "", label: p.text("ui.leaveUnchanged") }, ...radioOptions]
+          : radioOptions
+      }
+      onChange={(value) => {
+        props.onChange(input.id, value);
+      }}
     >
-      <legend>{label}</legend>
-      <div className={segmented ? "segmented-choice" : "radio-choice"}>
-        {optional ? (
-          <label className={selected === "" ? "selected" : undefined}>
-            <ChoiceControl
-              type="radio"
-              name={errorKey}
-              value=""
-              checked={selected === ""}
-              onChange={() => {
-                props.onChange(input.id, "");
-              }}
-            />
-            {p.text("ui.leaveUnchanged")}
-          </label>
-        ) : null}
-        {options.map((value) => {
-          const hint = choiceHint(input, props, offered, value);
-          const hintId = `${errorKey}-${value}-admission`;
-          return (
-            <span key={value} className="choice-option">
-              <label className={selected === value ? "selected" : undefined}>
-                <ChoiceControl
-                  type="radio"
-                  name={errorKey}
-                  value={value}
-                  disabled={props.disabled || hint !== null}
-                  aria-describedby={hint === null ? undefined : hintId}
-                  checked={selected === value}
-                  onChange={() => {
-                    props.onChange(input.id, value);
-                  }}
-                />
-                {caption(p, input.id, value)}
-              </label>
-              {hint === null ? null : (
-                <span className="field-hint" id={hintId}>
-                  {renderCatalogKey(p, hint)}
-                </span>
-              )}
-            </span>
-          );
-        })}
-      </div>
-      {input.id === "input:role" && selected === "" ? <p>{p.text("label.chooseRole")}</p> : null}
       <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
-    </fieldset>
+    </RadioGroup>
   );
 };
 const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: ControlProps) => {

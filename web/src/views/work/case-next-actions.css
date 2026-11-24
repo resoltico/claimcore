@@ -11,13 +11,16 @@
     display: grid;
     justify-items: start;
     gap: var(--space-1);
-    padding: var(--space-3);
-    border: var(--border-width) solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    padding-block: var(--space-3);
+    border-block-start: var(--border-width) solid var(--border-subtle);
+    min-inline-size: 0;
+    overflow-wrap: break-word;
   }
 
+  .next-action-meta,
   .next-action-controls {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
   }

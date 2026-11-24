@@ -136,7 +136,7 @@ it("keeps the same draft owner through workspace rerenders without sending a mut
   const view = render(detail("same-owner"));
   await screen.findByRole("heading", { name: "Next actions" });
   const workspace = view.container.querySelector(".case-workspace");
-  expect(view.container.querySelectorAll(".case-workspace .case-fact-regions")).toHaveLength(1);
+  expect(view.container.querySelectorAll(".case-workspace .case-area-next")).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "Edit summary" }));
   const field = screen.getByRole("textbox", { name: "Handling summary" });
   await user.type(field, "Saved across layout — ثانٍ");

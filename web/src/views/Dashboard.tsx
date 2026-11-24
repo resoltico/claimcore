@@ -1,5 +1,6 @@
 import { useAcceptedOperation } from "../hooks/useAcceptedOperation";
-import { Page, PhoneTitleTarget } from "../ui/Page";
+import { Page } from "../ui/Page";
+import { DocumentTitleScope, PhoneTitleTarget, useDocumentTitle } from "../hooks/useDocumentTitle";
 import { PhoneActionTarget } from "../ui/PhoneAction";
 import { hasStaticMessage } from "../presentation/messages";
 import { apiEndpoints, type CaseLinkedReceipt, type ServiceResponse } from "../api/service";
@@ -305,6 +306,7 @@ const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   } else if (route.screen === "people") {
     title = p.text("view.PEOPLE.label");
   }
+  useDocumentTitle(title);
   return (
     <Page id="workspace-unavailable-title" title={title}>
       <p role="alert">
@@ -331,6 +333,7 @@ const WorkspaceContents = ({
 }) => {
   const p = usePresentation();
   const [opened, setOpened] = useState(advertised);
+  useDocumentTitle(!advertised && !opened && noViews ? p.text("ui.noViews") : null);
   if (advertised && !opened) {
     setOpened(true);
   }
@@ -471,7 +474,7 @@ const WorkspacePresence = ({
     )}
     {retained ? (
       <div hidden={inactive !== null} inert={inactive !== null}>
-        {children}
+        <DocumentTitleScope active={inactive === null}>{children}</DocumentTitleScope>
       </div>
     ) : null}
   </>

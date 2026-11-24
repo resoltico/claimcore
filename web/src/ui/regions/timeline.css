@@ -1,5 +1,11 @@
 @layer components {
+  .timeline-layout {
+    container: timeline-list / inline-size;
+    min-inline-size: 0;
+  }
+
   .region-timeline {
+    --table-layout: wide;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -7,27 +13,46 @@
 
   .region-timeline > li {
     display: grid;
-    grid-template-columns: var(
-      --timeline-columns,
-      minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr)
-    );
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, max-content) max-content;
+    grid-template-areas: "time event actor details";
     align-items: baseline;
     gap: var(--space-2);
     min-block-size: var(--size-row);
-    padding: var(--space-2) 0;
+    padding-block: var(--space-2);
     border-block-end: var(--border-width) solid var(--border-subtle);
   }
 
+  .region-timeline > li:has(.timeline-subject) {
+    grid-template-columns:
+      max-content minmax(0, 1fr) minmax(0, max-content) minmax(0, max-content)
+      max-content;
+    grid-template-areas: "time event subject actor details";
+  }
+
   .timeline-event {
+    grid-area: event;
+  }
+  .region-timeline > li > time {
+    grid-area: time;
+  }
+  .timeline-actor {
+    grid-area: actor;
+  }
+  .timeline-subject {
+    grid-area: subject;
+  }
+  .timeline-details {
+    grid-area: details;
+    justify-self: end;
+  }
+
+  .region-timeline :is(.timeline-event, .timeline-actor, .timeline-subject) {
     min-inline-size: 0;
-    max-inline-size: 100%;
-    gap: var(--space-1);
     overflow-wrap: break-word;
   }
 
-  .timeline-event :is(a, .identifier-value) {
-    min-inline-size: 0;
-    white-space: inherit;
+  .region-timeline :is(.timeline-actor, .timeline-subject) {
+    max-inline-size: var(--measure-person);
   }
 
   .region-timeline time {
@@ -35,18 +60,31 @@
     font-size: var(--text-xs);
   }
 
-  .region-timeline > li:has(.timeline-subject) {
-    grid-template-columns: var(
-      --timeline-columns,
-      minmax(min-content, 1fr) minmax(0, 2fr) minmax(min-content, 1fr) minmax(min-content, 1fr)
-    );
+  @container timeline-list (width < 64rem) {
+    .region-timeline {
+      --table-layout: medium;
+    }
+
+    .region-timeline > li:has(.timeline-subject) {
+      grid-template-columns: max-content minmax(0, 1fr) minmax(0, max-content) max-content;
+      grid-template-areas: "time event actor details" ". subject subject .";
+    }
   }
 
-  .timeline-actor {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1);
+  @container timeline-list (width < 36rem) {
+    .region-timeline {
+      --table-layout: narrow;
+    }
+
+    .region-timeline > li {
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+      grid-template-areas: "event event" "time actor" "details details";
+    }
+
+    .region-timeline > li:has(.timeline-subject) {
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+      grid-template-areas: "event event" "time actor" "subject subject" "details details";
+    }
   }
 
   .timeline-comparison dd {

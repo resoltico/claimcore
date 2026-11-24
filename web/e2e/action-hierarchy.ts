@@ -85,7 +85,7 @@ export const checkActionHierarchy = async (page: Page, expected?: string | null)
       "Shell controls must not compete with the page action",
     ).not.toBe(fill);
   }
-  const form = task.locator(".operation-form-card");
+  const form = task.locator(".operation-form");
   for (const button of await form.locator("button:not([type=submit])").all()) {
     expect(await background(button), "Back and input controls must remain secondary").not.toBe(
       fill,

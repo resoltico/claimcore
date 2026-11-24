@@ -246,7 +246,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
     }),
     "people.admit",
   );
-  const group = screen.getByRole("group", {
+  const group = screen.getByRole("radiogroup", {
     name: "Role",
   });
   expect(group.querySelector("input:checked")).toBeNull();

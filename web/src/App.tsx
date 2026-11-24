@@ -1,3 +1,4 @@
+import { DocumentTitleScope } from "./hooks/useDocumentTitle";
 import { useState } from "react";
 import { useRoute } from "./routing/useRoute";
 import { MissingPage } from "./views/MissingPage";
@@ -31,6 +32,7 @@ const SessionFeedback = () => {
 };
 const SessionContent = () => {
   const { state } = useSessionContext();
+  const route = useRoute();
   const [established, setEstablished] = useState(false);
   const authenticated = state.kind === "authenticated";
   if (authenticated && !established) {
@@ -39,20 +41,17 @@ const SessionContent = () => {
   return (
     <>
       <div hidden={!authenticated} inert={!authenticated}>
-        {established ? <Dashboard /> : null}
+        <DocumentTitleScope active={authenticated}>
+          {established ? <Dashboard /> : null}
+        </DocumentTitleScope>
       </div>
-      {authenticated ? null : <SessionFeedback />}
+      {!authenticated && route.screen === "missing" ? <MissingPage /> : null}
+      {!authenticated && route.screen !== "missing" ? <SessionFeedback /> : null}
     </>
   );
 };
-export const App = () => {
-  const route = useRoute();
-  if (route.screen === "missing") {
-    return <MissingPage />;
-  }
-  return (
-    <SessionProvider>
-      <SessionContent />
-    </SessionProvider>
-  );
-};
+export const App = () => (
+  <SessionProvider>
+    <SessionContent />
+  </SessionProvider>
+);

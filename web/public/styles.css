@@ -29,7 +29,11 @@
     border: 0;
   }
 
-  .identifier-value,
+  .identifier-value {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+
   code,
   pre {
     font-family: var(--font-mono);
@@ -440,11 +444,12 @@
     color: var(--text-secondary);
     max-inline-size: var(--text-prose-measure);
   }
-  .operation-form-card {
-    padding: var(--space-5);
-    border: var(--border-width) solid var(--border-control);
-    border-radius: var(--radius-md);
-    background: var(--bg-surface);
+  .operation-form {
+    min-inline-size: 0;
+  }
+
+  .operation-form .operation-meaning {
+    margin-block: 0 var(--space-5);
   }
   .selected-fact {
     min-inline-size: 0;
