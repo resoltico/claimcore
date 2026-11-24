@@ -154,7 +154,18 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                       rows: [
                         {
                           key: actorId,
-                          choice: actorId,
+                          choice: {
+                            value: actorId,
+                            label: {
+                              messageId: "label.personChoice",
+                              arguments: [
+                                {
+                                  key: "person",
+                                  value: { kind: "TEXT", value: "Core assignee Ω" },
+                                },
+                              ],
+                            },
+                          },
                           actions: [
                             operationAffordance(
                               "work.update",
@@ -176,7 +187,18 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                         },
                         {
                           key: replacementActorId,
-                          choice: replacementActorId,
+                          choice: {
+                            value: replacementActorId,
+                            label: {
+                              messageId: "label.personChoice",
+                              arguments: [
+                                {
+                                  key: "person",
+                                  value: { kind: "TEXT", value: "Core replacement assignee Σ" },
+                                },
+                              ],
+                            },
+                          },
                           actions: [
                             operationAffordance(
                               "work.update",

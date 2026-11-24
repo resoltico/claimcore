@@ -225,6 +225,11 @@ type internal PrincipalAdmission(permits, queuedWriters) =
                             principalLease.Dispose()
                             return raise error
                 with
+                | :? OperationCanceledException as error when
+                    error.CancellationToken = waiting.Token && token.IsCancellationRequested
+                    ->
+                    owner.Dispose()
+                    return raise (OperationCanceledException(token))
                 | :? OperationCanceledException when not token.IsCancellationRequested ->
                     owner.Dispose()
                     return None

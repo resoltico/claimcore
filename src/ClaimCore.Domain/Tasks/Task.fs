@@ -15,6 +15,8 @@ type TaskExecution =
     | Structured
     | AttachmentUpload
 
+type TaskSelection = { PromptId: string; From: string }
+
 /// Business declarations are owned by the task, independently of any client or transport.
 type TaskDeclaration =
     {
@@ -24,7 +26,7 @@ type TaskDeclaration =
         Target: ActSubject
         Creates: bool
         SubjectInput: TaskInputId option
-        SelectionPromptId: string option
+        Selection: TaskSelection option
         Family: ActFamily
         Consequence: Consequence
         Review: TaskReview

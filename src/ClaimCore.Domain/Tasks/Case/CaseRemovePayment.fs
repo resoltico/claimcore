@@ -21,7 +21,12 @@ let declaration =
               revision
               required (target InputTarget.PaymentId) |> bound
           ] with
-        SelectionPromptId = Some "task.case.removePayment.selectionPrompt"
+        Selection =
+            Some
+                {
+                    PromptId = "task.case.removePayment.selectionPrompt"
+                    From = "case.payments"
+                }
     }
 
 let private capability = List.exactlyOne declaration.Capabilities

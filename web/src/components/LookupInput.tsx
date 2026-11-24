@@ -43,18 +43,8 @@ const choices = (reply: HumanReadReply) => {
   if (document.basis.kind !== "SNAPSHOT" || region?.content.kind !== "TABLE") {
     return null;
   }
-  const { columns, rows } = region.content;
   return {
-    items: rows.flatMap(({ choice, values }) =>
-      choice === undefined
-        ? []
-        : [
-            {
-              value: choice,
-              caption: values.filter((_, index) => columns[index]?.prominence !== "DETAIL"),
-            },
-          ],
-    ),
+    items: region.content.rows.flatMap(({ choice }) => (choice === undefined ? [] : [choice])),
     nextCursor: document.nextCursor,
     basis: document.basis.observation,
     screen: document.screen,
@@ -116,8 +106,12 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
   const errorId = sharedErrorId ?? `field-${inputName}-error`;
   const options = result.items.map((item) => ({
     value: item.value,
-    label: new Intl.ListFormat(p.displayLocale).format(
-      item.caption.map((part) => caption(p, part)),
+    label: renderCatalogKey(
+      p,
+      item.label.messageId,
+      Object.fromEntries(
+        item.label.arguments.map(({ key, value: argument }) => [key, caption(p, argument)]),
+      ),
     ),
   }));
   if (optional === true) {

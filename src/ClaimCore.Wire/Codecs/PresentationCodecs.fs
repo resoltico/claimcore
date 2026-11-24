@@ -861,6 +861,18 @@ module PresentationCodecs =
         |> build
         |> named "AttachmentTransferControl"
 
+    let private rowChoice =
+        (record (fun value label ->
+            {
+                ChoiceValue = value
+                ChoiceLabel = label
+            })
+        : Fields<RegionChoice, _>)
+        |> field "value" _.ChoiceValue key
+        |> field "label" _.ChoiceLabel message
+        |> build
+        |> named "RegionChoice"
+
     let private row =
         (record (fun key values choice detail link actions transfers recommended prominence ->
             {
@@ -877,7 +889,7 @@ module PresentationCodecs =
         : Fields<RegionRow, _>)
         |> field "key" _.Key key
         |> field "values" _.Values (list MaximumEntries value)
-        |> optionalField "choice" _.Choice key
+        |> optionalField "choice" _.Choice rowChoice
         |> optionalField "detail" _.Detail rowDetail
         |> optionalField "link" _.Link link
         |> optionalField

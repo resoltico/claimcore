@@ -304,11 +304,17 @@ type AttachmentTransferControl =
         Name: AttachmentName
     }
 
+type RegionChoice =
+    {
+        ChoiceValue: string
+        ChoiceLabel: PresentedMessage
+    }
+
 type RegionRow =
     {
         Key: string
         Values: PresentedValue list
-        Choice: string option
+        Choice: RegionChoice option
         Detail: RowDetail option
         Link: Link option
         Actions: Affordance list

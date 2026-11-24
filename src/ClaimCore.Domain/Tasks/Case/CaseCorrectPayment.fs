@@ -21,7 +21,12 @@ let declaration =
            :: revision
            :: (required (target InputTarget.PaymentId) |> bound)
            :: RecordPayment.paymentInputs) with
-        SelectionPromptId = Some "task.case.correctPayment.selectionPrompt"
+        Selection =
+            Some
+                {
+                    PromptId = "task.case.correctPayment.selectionPrompt"
+                    From = "case.payments"
+                }
     }
 
 let private capability = Capability.RecordPayment

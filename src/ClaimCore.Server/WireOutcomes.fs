@@ -19,13 +19,12 @@ type private EncodedJsonResult(bytes: byte array, status: int) =
     interface IResult with
         member _.ExecuteAsync context =
             task {
-                if StorageFailureLog.abandoned () then
-                    context.RequestAborted.ThrowIfCancellationRequested()
-
                 context.Response.StatusCode <- status
                 context.Response.ContentType <- "application/json; charset=utf-8"
                 context.Response.ContentLength <- int64 bytes.Length
-                do! context.Response.Body.WriteAsync(bytes, context.RequestAborted)
+
+                if not (StorageFailureLog.clientDisconnected ()) then
+                    do! context.Response.Body.WriteAsync(bytes, context.RequestAborted)
             }
             :> Task
 
@@ -45,7 +44,7 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
                         stopping
                     )
 
-                cancellation.Token.ThrowIfCancellationRequested()
+                stopping.ThrowIfCancellationRequested()
                 HttpHeaders.noTransform context
                 context.Response.StatusCode <- StatusCodes.Status200OK
                 context.Response.ContentType <- ExportTransport.mediaType
@@ -61,7 +60,14 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
                     Microsoft.Extensions.Primitives.StringValues(installation.ToString("D"))
 
                 context.Response.Headers.CacheControl <- "no-store, no-transform, max-age=0"
-                do! context.Response.Body.WriteAsync(bytes, cancellation.Token)
+
+                if not (StorageFailureLog.clientDisconnected ()) then
+                    try
+                        do! context.Response.Body.WriteAsync(bytes, cancellation.Token)
+                    with :? OperationCanceledException as error when
+                        error.CancellationToken = cancellation.Token
+                        && StorageFailureLog.clientDisconnected () ->
+                        context.RequestAborted.ThrowIfCancellationRequested()
             }
             :> Task
 
@@ -71,9 +77,6 @@ type private CompleteAttachmentResult
     interface IResult with
         member _.ExecuteAsync context =
             task {
-                if StorageFailureLog.abandoned () then
-                    context.RequestAborted.ThrowIfCancellationRequested()
-
                 let intent = VerifiedAttachment.intent bytes
                 let memory = VerifiedAttachment.memory bytes
                 HttpHeaders.noTransform context
@@ -92,7 +95,8 @@ type private CompleteAttachmentResult
                 disposition
                 |> Option.iter (fun value -> context.Response.Headers.ContentDisposition <- value)
 
-                do! context.Response.Body.WriteAsync(memory, context.RequestAborted)
+                if not (StorageFailureLog.clientDisconnected ()) then
+                    do! context.Response.Body.WriteAsync(memory, context.RequestAborted)
             }
             :> Task
 

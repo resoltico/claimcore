@@ -29,13 +29,16 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
               rows: [
                 {
                   key: "irrelevant-row-key",
-                  choice,
-                  values: [
-                    {
-                      kind: "TEXT",
-                      value: "Core opaque choice Ψ",
+                  choice: {
+                    value: choice,
+                    label: {
+                      messageId: "label.personChoice",
+                      arguments: [
+                        { key: "person", value: { kind: "TEXT", value: "Core opaque choice Ψ" } },
+                      ],
                     },
-                  ],
+                  },
+                  values: [{ kind: "TEXT", value: "Table cell" }],
                 },
               ],
             },

@@ -12,6 +12,7 @@ open ClaimCore.Application
 [<RequireQualifiedAccess>]
 type internal RequestMetricResult =
     | Succeeded
+    | Accepted
     | Refused
     | Failed
     | HostFailure
@@ -47,9 +48,9 @@ module internal WebMetrics =
         | ReplyKind.Rejected -> RequestMetricResult.Refused
         | ReplyKind.Failed
         | ReplyKind.OutcomeUnknown -> RequestMetricResult.Failed
+        | ReplyKind.Accepted -> RequestMetricResult.Accepted
         | ReplyKind.Succeeded
         | ReplyKind.Reviewed
-        | ReplyKind.Accepted
         | ReplyKind.AlreadyAccepted
         | ReplyKind.Pending
         | ReplyKind.NotAccepted -> RequestMetricResult.Succeeded
@@ -57,6 +58,7 @@ module internal WebMetrics =
     let private resultToken =
         function
         | RequestMetricResult.Succeeded -> "succeeded"
+        | RequestMetricResult.Accepted -> "accepted"
         | RequestMetricResult.Refused -> "refused"
         | RequestMetricResult.Failed -> "failed"
         | RequestMetricResult.HostFailure -> "host_failure"

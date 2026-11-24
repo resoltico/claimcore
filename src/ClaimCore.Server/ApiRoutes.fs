@@ -337,6 +337,14 @@ module internal ApiRoutes =
                                                     core
                                             | _ -> core
 
+                                        let core =
+                                            if Api.effect endpoint = EndpointEffect.Read then
+                                                Service.withReadCancellation
+                                                    context.RequestAborted
+                                                    core
+                                            else
+                                                core
+
                                         task {
                                             if
                                                 (Api.requiresInstallation endpoint

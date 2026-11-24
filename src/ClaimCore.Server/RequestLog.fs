@@ -22,6 +22,7 @@ type internal RequestLogEntry =
         CsvExport: bool
         mutable MetricResult: RequestMetricResult
         mutable Outcome: string
+        mutable Classified: bool
         mutable ActorId: ActorId option
         mutable OperationId: OperationId option
     }
@@ -51,6 +52,7 @@ module internal RequestLog =
                 CsvExport = csvExport
                 MetricResult = RequestMetricResult.HostFailure
                 Outcome = "HOST_FAILURE"
+                Classified = false
                 ActorId = None
                 OperationId = None
             }
@@ -63,9 +65,13 @@ module internal RequestLog =
         | true, (:? RequestLogEntry as value) -> Some value
         | _ -> None
 
+    let hasReply context =
+        entry context |> Option.exists _.Classified
+
     let hostFailure context =
         entry context
         |> Option.iter (fun value ->
+            value.Classified <- true
             value.Outcome <- "HOST_FAILURE"
             value.MetricResult <- RequestMetricResult.HostFailure)
 
@@ -78,6 +84,7 @@ module internal RequestLog =
     let reply classification context =
         entry context
         |> Option.iter (fun value ->
+            value.Classified <- true
             value.Outcome <- ReplyKind.token classification
             value.MetricResult <- WebMetrics.result classification)
 
@@ -153,7 +160,11 @@ module internal RequestLog =
                                 correlation = correlation
                                 endpoint = value.Endpoint
                                 outcome = value.Outcome
-                                status = context.Response.StatusCode
+                                status =
+                                    if value.MetricResult = RequestMetricResult.Abandoned then
+                                        Nullable()
+                                    else
+                                        Nullable(context.Response.StatusCode)
                                 durationMs = duration
                                 actorId =
                                     value.ActorId |> Option.map ActorId.value |> Option.toNullable

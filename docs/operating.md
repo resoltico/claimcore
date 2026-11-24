@@ -499,8 +499,9 @@ schema surgery. Checkpoints, traffic isolation and restore admission remain requ
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
-use endpoint/result labels. A request cancelled by the client while the application is running
-has metric result `abandoned`. Production storage diagnostics are bounded `storageFailure` records with
+use endpoint/result labels. The `ABANDONED` request outcome has metric result `abandoned`. Fresh
+write acceptances have metric result `accepted`.
+Production storage diagnostics are bounded `storageFailure` records with
 `phase`, `classification`, a distinct internal `attempt` GUID and an internal request/command
 `correlation` GUID where available. Request logs share that correlation. Primary failures and cleanup
 failures are distinct; diagnostics cannot replace confirmed outcomes or commit uncertainty. Records
@@ -510,9 +511,14 @@ invocation time, which is an observation rather than a response-time guarantee.
 
 Framework exception logging retains exception types and method names instead of message/state bodies.
 Request records retain endpoint, outcome, status, duration and account/operation identifiers.
-The `ABANDONED` outcome records a client cancellation while the application is running. The host
-sends no failure response and emits no exception or storage failure record for that cancellation. Treat
-identifiers and private failure files as sensitive when preparing support reports.
+The host records `ABANDONED` with `status: null` when the client cancels before dispatch or cancels
+a read before a reply is classified. It sends no response and emits no exception or storage failure record
+for that cancellation. Once classified, the reply keeps its outcome and metric even if the client leaves
+before it can receive the response. Dispatched JSON writes complete independently of the client connection. Attachment transfers keep
+their bounded transfer lifetime.
+An unexpected exception is logged with `HOST_FAILURE`, including after a disconnect. Shutdown
+cancellation continues to be logged as a host failure. Treat identifiers and private failure files as
+sensitive when preparing support reports.
 
 ## Erasure limits
 

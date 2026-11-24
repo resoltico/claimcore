@@ -1,4 +1,24 @@
 {
+  "label.partyChoice": {
+    "text": "{name} ({role})",
+    "source": "7f0526e40e7e",
+    "machineMade": true
+  },
+  "label.partyChoiceUnnamed": {
+    "text": "Puse bez vārda ({role})",
+    "source": "d8ec69a1fe25",
+    "machineMade": true
+  },
+  "label.personChoice": {
+    "text": "{person}",
+    "source": "c0f31295e50a",
+    "machineMade": true
+  },
+  "label.choiceNotListed": {
+    "text": "Pašreizējā izvēle nav sarakstā.",
+    "source": "949daf1f61f3",
+    "machineMade": true
+  },
   "notice.unsupportedDatabaseProfile": {
     "text": "Izmantojiet UTF8 kodējumu, iebūvēto lokalizāciju C.UTF-8 un PostgreSQL klasteri ar iespējotām datu kontrolsummām.",
     "source": "65d336cc3bee"
@@ -1688,8 +1708,9 @@
     "source": "50e0cf22224e"
   },
   "field.paymentDate.hint": {
-    "text": "Kad tika samaksāta visa summa.",
-    "source": "97718af60117"
+    "text": "Kad šī nauda tika samaksāta vai atmaksāta.",
+    "source": "a348fea3ea91",
+    "machineMade": true
   },
   "field.status.rule": {
     "text": "Vai lieta ir atvērta vai slēgta. Lietas slēgšana nenozīmē, ka veikts maksājums.",
@@ -3660,8 +3681,9 @@
     "source": "c566e9bce00d"
   },
   "field.doneOn.hint": {
-    "text": "Norādiet, kad darbs tika pabeigts. Ja lauks ir tukšs, izmanto šodienas datumu.",
-    "source": "910c65e2fb8c"
+    "text": "Kad darbs tika pabeigts. Datums nedrīkst būt vēlāks par šodienas darba datumu. Atstājiet lauku tukšu, lai izmantotu šodienas datumu.",
+    "source": "e6557cef8221",
+    "machineMade": true
   },
   "input.reminderKind.label": {
     "text": "Atgādinājuma veids",

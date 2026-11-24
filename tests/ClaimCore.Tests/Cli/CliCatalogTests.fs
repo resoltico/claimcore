@@ -157,6 +157,22 @@ let tests =
                             AfterCursor = None
                         })
                     "The CLI uses the case party lookup contract")
+            testCase "case assignees is available as a paged CLI query" (fun () ->
+                let prepared =
+                    prepare [ "case"; "assignees"; "SYNTHETIC"; "--limit"; "2"; "--dry-run" ]
+                    |> CaseBuilders.accepted
+
+                let frame = Frames.admit prepared.Bytes |> CaseBuilders.accepted
+
+                Expect.equal
+                    (Frames.value Api.caseAssignees frame)
+                    (Some
+                        {
+                            Target = CaseSelector.Reference "SYNTHETIC"
+                            Limit = 2
+                            AfterCursor = None
+                        })
+                    "The CLI uses the case assignee lookup contract")
             testCase "prepared frames enforce exact and multibyte request size bounds" byteLimits
             testCase "correction replacement retains authored values" replacement
             testCase "a dotted unknown verb cannot alias a known verb" (fun () ->

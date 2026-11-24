@@ -56,6 +56,33 @@ module Service =
                 })
             services
 
+    /// A caller can observe an interrupted read before the query maps store failures to replies.
+    let withReadCancellation (cancellation: CancellationToken) services =
+        let propagate (token: CancellationToken) pending =
+            task {
+                match! pending with
+                | Error StoreFailure.Cancelled when
+                    cancellation.IsCancellationRequested && token.IsCancellationRequested
+                    ->
+                    return! Task.FromCanceled<_> cancellation
+                | result -> return result
+            }
+
+        mapStore
+            (fun store ->
+                { new IStore with
+                    member _.Context query = store.Context query
+
+                    member _.Read operation =
+                        store.Read operation |> propagate operation.CancellationToken
+
+                    member _.RecordDisclosure(event, token) =
+                        store.RecordDisclosure(event, token) |> propagate token
+
+                    member _.Write operation = store.Write operation
+                })
+            services
+
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let executeSubmission = OperationService.executeSubmission

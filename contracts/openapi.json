@@ -25628,6 +25628,24 @@
           "content"
         ]
       },
+      "RegionChoice": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "label": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ]
+      },
       "RegionContent": {
         "oneOf": [
           {
@@ -25874,9 +25892,7 @@
             "maxItems": 327
           },
           "choice": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 256
+            "$ref": "#/components/schemas/RegionChoice"
           },
           "detail": {
             "$ref": "#/components/schemas/PresentedRowDetail"

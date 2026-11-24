@@ -1,4 +1,24 @@
 {
+  "label.partyChoice": {
+    "text": "{name} ({role})",
+    "source": "7f0526e40e7e",
+    "machineMade": true
+  },
+  "label.partyChoiceUnnamed": {
+    "text": "Parte sin nombre ({role})",
+    "source": "d8ec69a1fe25",
+    "machineMade": true
+  },
+  "label.personChoice": {
+    "text": "{person}",
+    "source": "c0f31295e50a",
+    "machineMade": true
+  },
+  "label.choiceNotListed": {
+    "text": "La opción actual no está en la lista.",
+    "source": "949daf1f61f3",
+    "machineMade": true
+  },
   "notice.unsupportedDatabaseProfile": {
     "text": "Use la codificación UTF8, la configuración regional integrada C.UTF-8 y un clúster de PostgreSQL con las sumas de comprobación de datos habilitadas.",
     "source": "65d336cc3bee"
@@ -1688,8 +1708,9 @@
     "source": "50e0cf22224e"
   },
   "field.paymentDate.hint": {
-    "text": "Cuándo se pagó la totalidad del importe.",
-    "source": "97718af60117"
+    "text": "Cuándo se pagó o se devolvió este dinero.",
+    "source": "a348fea3ea91",
+    "machineMade": true
   },
   "field.status.rule": {
     "text": "Si el expediente está abierto o cerrado. Cerrar un expediente no significa que se haya realizado el pago.",
@@ -3660,8 +3681,9 @@
     "source": "c566e9bce00d"
   },
   "field.doneOn.hint": {
-    "text": "Indique cuándo se terminó el trabajo. Deje el campo en blanco para usar la fecha de hoy.",
-    "source": "910c65e2fb8c"
+    "text": "Cuándo se terminó el trabajo. La fecha no puede ser posterior a la fecha operativa de hoy. Deje el campo en blanco para usar la fecha de hoy.",
+    "source": "e6557cef8221",
+    "machineMade": true
   },
   "input.reminderKind.label": {
     "text": "Tipo de recordatorio",
