@@ -38,6 +38,10 @@
       padding: calc(var(--focus-width) + var(--focus-offset));
       scroll-padding-inline: calc(var(--focus-width) + var(--focus-offset));
     }
+
+    .data-table [data-reference] .data-table-cell {
+      overflow-wrap: break-word;
+    }
     .view-tabs {
       --view-tabs-wrap: nowrap;
       --view-tabs-max-width: none;
@@ -380,7 +384,7 @@
     }
   }
 
-  @container data-table (width < 30rem) {
+  @container data-table (width < 50rem) {
     .data-table table,
     .data-table tbody {
       display: block;
@@ -449,7 +453,9 @@
     .data-table .data-table-recommended {
       order: 3;
     }
+  }
 
+  @container data-table (width < 30rem) {
     .data-table .identifier-value {
       overflow-wrap: anywhere;
     }

@@ -173,8 +173,11 @@ test("Back focuses the Cases heading while loading when a refreshed requester lo
     await expect(queue).toHaveAttribute("aria-busy", "true");
     await expect(queue.getByRole("heading", { name: "Cases", exact: true })).toBeFocused();
     await expect(menu).toBeHidden();
+    const tabsBar = queue.locator(".view-tabs-bar");
+    expect(await tabsBar.evaluate((bar) => bar.scrollWidth > bar.clientWidth)).toBe(true);
     await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
     await expect(all).toBeFocused();
+    await expect(all).toBeInViewport({ ratio: 1 });
   } finally {
     release.resolve();
   }

@@ -46,7 +46,8 @@ export const ViewTabs = ({
           }
         }}
       >
-        <div className="view-tabs-bar">
+        {/* Keep sequential focus on the roving tab stop inside the scrollport. */}
+        <div className="view-tabs-bar" tabIndex={-1}>
           <TabList className="view-tabs" aria-label={label} aria-busy={loading} items={tabs}>
             {(item) => (
               <Tab id={item.id} className="view-tab">
