@@ -67,7 +67,7 @@
   }
   .ui-select-option[data-selected] {
     border-color: var(--accent-soft-border);
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
     color: var(--accent-soft-text);
     font-weight: 600;
   }
@@ -86,5 +86,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: 600;
   }
 }

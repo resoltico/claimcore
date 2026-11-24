@@ -1,0 +1,72 @@
+import { expect, test } from "./fixtures";
+import { configureDimension } from "./design-matrix-checks";
+import {
+  geometryFailures,
+  tableLayoutState,
+  isWideTable,
+  stableTableLayout,
+} from "./design-geometry";
+import { prepareDesignDataset, type DesignDataset } from "./design-matrix-fixtures";
+import { settledWorkspaceHeader } from "./workspace-navigation";
+
+const registerFixture = (fixture: "standard" | "limits") => {
+  test.describe(`classic scrollbar ${fixture} fixture`, () => {
+    let dataset: DesignDataset;
+    test.beforeAll(async ({ browser, baseURL }) => {
+      test.setTimeout(120_000);
+      dataset = await prepareDesignDataset(browser, baseURL!, fixture);
+    });
+    test.afterAll(async () => {
+      await dataset?.close();
+    });
+
+    [1440, 1366, 1280].forEach((width) => {
+      test(`lists and drawer at ${width}px`, async ({ page }) => {
+        test.setTimeout(120_000);
+        await page.context().addCookies(dataset.cookies);
+        await configureDimension(page, { width, language: "en", mode: "light", accent: "blue" });
+        const list = page.locator("main .data-table");
+        const casesAll = dataset.routes.find(({ id }) => id === "cases-all")!;
+        for (const path of [
+          "/cases",
+          casesAll.path,
+          "/cases?view=MINE",
+          "/reminders",
+          "/reminders?view=MINE",
+          "/people",
+        ]) {
+          await page.goto(path);
+          await settledWorkspaceHeader(page);
+          await expect(list.locator("tbody tr").first()).toBeVisible();
+          const atTall = await tableLayoutState(page);
+          if (width >= 1366) {
+            expect(isWideTable(atTall), `G29 ${path}`).toBe(true);
+          }
+          const failures = await geometryFailures(page, fixture === "limits");
+          expect(
+            failures.filter((id) => id === "G5b" || id === "G30"),
+            path,
+          ).toEqual([]);
+          const viewport = page.viewportSize()!;
+          await page.setViewportSize({ width, height: 440 });
+          expect(
+            stableTableLayout(atTall, await tableLayoutState(page)),
+            `G29 ${path} document overflow`,
+          ).toBe(true);
+          await page.setViewportSize(viewport);
+
+          if (path.startsWith("/cases")) {
+            await page.locator(".open-case-link").click();
+            await expect(page.getByRole("dialog")).toBeVisible();
+            expect(
+              stableTableLayout(atTall, await tableLayoutState(page)),
+              `G29 ${path} drawer`,
+            ).toBe(true);
+            await page.keyboard.press("Escape");
+          }
+        }
+      });
+    });
+  });
+};
+(["standard", "limits"] as const).forEach(registerFixture);

@@ -309,6 +309,30 @@ test.describe("adopted work surface design matrix", () => {
       await expect(heading).toBeFocused();
     },
   );
+  test("payment entry selection uses the declared prompt and visible row action @engine", async ({
+    page,
+  }) => {
+    const dimension: Dimension = { language: "en", width: 1440, mode: "light", accent: "green" };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    const route = dataset.routes.find(({ id }) => id === "case-paid")!;
+    await visitRoute(page, route, dimension);
+    const caseUrl = page.url();
+    await page.goto(`${caseUrl}/acts/case.correctPayment`);
+    const dialog = page.getByRole("dialog");
+    const prompt = dialog.getByText("Choose the payment entry to correct.");
+    await expect(prompt).toBeFocused();
+    await expect(dialog.locator(".case-title-line")).toHaveCount(1);
+    await expect(dialog.locator("meter, .money-meter, .section-card")).toHaveCount(0);
+    const action = dialog.locator("tbody").getByRole("button").first();
+    await expect(action).toBeVisible();
+    await action.click();
+    await expect(dialog.locator(".lookup-input").getByRole("combobox")).toBeVisible();
+    await expect(prompt).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(caseUrl);
+    await expect(page.locator("main h1")).toBeFocused();
+  });
   (["en", "ar"] as const).forEach(registerCasesLayoutBoundaries);
 });
 
@@ -362,6 +386,14 @@ const registerLimitBoundaries = () => {
           (rule) => rule === "G4" || rule === "G18",
         );
         const bounds = await list.boundingBox();
+        if (layout === "wide" && !isTimeline) {
+          const threshold = await list.evaluate((element) => ({
+            width: element.parentElement!.clientWidth,
+            rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
+          }));
+          expect(threshold.width).toBeGreaterThanOrEqual(64 * threshold.rem);
+          expect(threshold.width).toBeLessThanOrEqual(64 * threshold.rem + 1);
+        }
         expect(
           failures,
           `${route.id} ${layout} viewport ${left}px content ${bounds?.width}px`,

@@ -1,4 +1,4 @@
-import { TextInput } from "./TextField";
+import { ControlInput } from "./TextField";
 import {
   codeSuggestions,
   rankCodeSuggestions,
@@ -81,7 +81,12 @@ export const CodePicker = (props: TypedFieldProps) => {
           ) : null}
         </div>
         <div className="control-box field-control-group code-input">
-          <TextInput data-field-name={field.name} autoComplete="off" spellCheck={false} dir="ltr" />
+          <ControlInput
+            data-field-name={field.name}
+            autoComplete="off"
+            spellCheck={false}
+            dir="ltr"
+          />
           <Button aria-label={p.fieldLabel(field.name)}>⌄</Button>
         </div>
         <CodeSuggestions items={filtered} />

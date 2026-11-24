@@ -9,7 +9,7 @@ import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import { CatalogField } from "./CatalogField";
-import { AssigneeInput } from "./AssigneeInput";
+import { LookupInput } from "./LookupInput";
 import { editGrantInput } from "../operation/operationDraft";
 import { inputChoiceRestriction } from "../operation/inputChoices";
 import { CorrectionInputs } from "./CorrectionInputs";
@@ -176,12 +176,7 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
       },
     };
     return input.choicesFrom !== null && props.current !== null ? (
-      <AssigneeInput
-        {...common}
-        current={props.current}
-        lookup={input.choicesFrom}
-        seedInput={input.id}
-      />
+      <LookupInput {...common} caseId={props.current.subject.caseId} lookup={input.choicesFrom} />
     ) : (
       <CatalogField {...common} />
     );

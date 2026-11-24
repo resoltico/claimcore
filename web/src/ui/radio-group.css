@@ -7,8 +7,8 @@
 
   .radio-option {
     display: grid;
-    grid-template-rows: subgrid;
-    grid-row: span 2;
+    grid-template-rows: minmax(var(--control-target), 1fr);
+    align-content: start;
     min-inline-size: 0;
   }
 
@@ -23,9 +23,13 @@
     cursor: pointer;
   }
 
+  .radio-option > .field-hint {
+    margin-block-start: var(--space-1);
+  }
+
   .radio-option > label:has(:checked) {
-    color: var(--on-accent-solid);
-    background: var(--accent-solid);
+    color: var(--text-primary);
+    background: var(--accent-subtle);
     border-color: var(--accent-text);
   }
 

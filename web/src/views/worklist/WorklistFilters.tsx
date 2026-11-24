@@ -3,7 +3,7 @@ import { TextInput, ChoiceControl } from "../../ui/TextField";
 import { apiEndpoints } from "../../api/service";
 import { Select } from "../../ui/Select";
 import { Dialog } from "../../ui/Dialog";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm, isVocabulary } from "../../presentation/terms";
@@ -179,7 +179,11 @@ const ReportDates = ({
 };
 const advancedKeys = ["lifecycle", "status", "progress", ...reportDateFields] as const;
 
-export const WorklistFilters = ({ query, onChange }: Props) => {
+export const WorklistFilters = ({
+  query,
+  onChange,
+  exportAction,
+}: Props & { exportAction?: ReactNode }) => {
   const p = usePresentation();
   const [draft, setDraft] = useState<WorklistQuery | null>(null);
   const [invalid, setInvalid] = useState<ReturnType<typeof invalidCaseDateEnd>>();
@@ -210,16 +214,19 @@ export const WorklistFilters = ({ query, onChange }: Props) => {
           <WorkChoice key={input.key} input={input} query={query} onChange={onChange} />
         ))}
       <OrderControl query={query} onChange={onChange} />
-      <Button
-        variant="secondary"
-        aria-haspopup="dialog"
-        onPress={() => {
-          changeDraft(query);
-        }}
-      >
-        {p.text("ui.filters")}
-        {active === 0 ? "" : ` (${p.integer(active)})`}
-      </Button>
+      <div className="toolbar-actions">
+        <Button
+          variant="secondary"
+          aria-haspopup="dialog"
+          onPress={() => {
+            changeDraft(query);
+          }}
+        >
+          {p.text("ui.filters")}
+          {active === 0 ? "" : ` (${p.integer(active)})`}
+        </Button>
+        {exportAction}
+      </div>
       <Dialog
         title={p.text("ui.filters")}
         closeLabel={p.text("ui.close")}

@@ -1,0 +1,104 @@
+import { afterEach, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import type { HumanResponseByEndpoint } from "@contracts/client";
+import { render, screen } from "../../support/presentation-test-support";
+import { LookupInput } from "../../../src/components/LookupInput";
+import { productMetadata } from "../../../src/protocol/productMetadata";
+const choice = "00000000-0000-4000-8000-000000000002";
+const caseId = "00000000-0000-4000-8000-000000000003";
+const page: HumanResponseByEndpoint["case.assignees"] = {
+  representation: "HUMAN",
+  outcome: {
+    kind: "SUCCEEDED",
+    document: {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caption",
+                  labelId: "field.profile.displayName.label",
+                  prominence: "PRIMARY",
+                  joins: null,
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "irrelevant-row-key",
+                  choice,
+                  values: [
+                    {
+                      kind: "TEXT",
+                      value: "Core opaque choice Ψ",
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
+      basis: {
+        kind: "SNAPSHOT",
+        observation: {
+          observedAt: "2026-11-09T12:00:00.000000Z",
+          businessDate: "2026-11-09",
+          timeZone: "Etc/UTC",
+        },
+      },
+      disclosure: "CURRENT",
+    },
+  },
+};
+const field = productMetadata.catalog.fields.find(
+  (inputField) => inputField.name === "responsibleActor",
+)!;
+afterEach(() => vi.unstubAllGlobals());
+const supply = () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(page), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    ),
+  );
+};
+
+it.each(["case.assignees", "case.parties"] as const)(
+  "renders choices from %s with their supplied labels and values",
+  async (lookup) => {
+    supply();
+    const change = vi.fn();
+    render(
+      <LookupInput
+        lookup={lookup}
+        caseId={caseId}
+        field={field}
+        inputName="responsible"
+        value={choice}
+        disabled={false}
+        optional
+        onChange={change}
+      />,
+    );
+    const selected = screen.getByRole("combobox");
+    expect(await screen.findByText("Core opaque choice Ψ")).toBeVisible();
+    expect(screen.queryByText(choice)).not.toBeInTheDocument();
+    await userEvent.click(selected);
+    await userEvent.click(await screen.findByRole("option", { name: "Not recorded" }));
+    expect(change).toHaveBeenCalledWith("");
+  },
+);

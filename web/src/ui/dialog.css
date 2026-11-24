@@ -109,7 +109,7 @@
     font-weight: 650;
   }
   .operation-steps [aria-current="step"] > span {
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
     border-color: var(--accent-soft-border);
   }
   .review-before > small,
@@ -191,7 +191,7 @@
     background: var(--bg-sunken);
   }
   .ui-dialog .review-after {
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
     color: var(--accent-soft-text);
   }
   .ui-dialog .review-values dt {

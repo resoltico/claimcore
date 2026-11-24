@@ -504,7 +504,7 @@
     padding: var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--bg-sunken);
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
   }
   .review-comparison > .review-arrow {
     display: none;

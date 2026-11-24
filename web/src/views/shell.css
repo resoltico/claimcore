@@ -65,7 +65,7 @@
   }
 
   :is(.workspace-sidebar, .workspace-mobile-tabs) a[data-active-area] {
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
     color: var(--accent-soft-text);
   }
 

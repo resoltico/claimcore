@@ -13,6 +13,22 @@
     max-inline-size: var(--toolbar-filter-max);
   }
 
+  .toolbar-actions {
+    display: flex;
+    align-items: start;
+    gap: var(--space-2);
+    margin-inline-start: auto;
+  }
+
+  .toolbar-actions > * {
+    flex-shrink: 0;
+  }
+
+  .toolbar-sheet .toolbar-actions {
+    display: grid;
+    margin-inline-start: 0;
+  }
+
   .toolbar-sheet {
     display: grid;
     gap: var(--space-3);

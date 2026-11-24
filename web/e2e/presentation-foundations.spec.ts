@@ -2450,14 +2450,15 @@ test("case panels follow compact reading order while a work draft survives respo
     await page
       .locator(".case-workspace")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual([
-    "case-area-next",
-    "case-area-work",
-    "case-area-claim",
-    "case-area-notes",
-    "case-area-attachments",
-    "case-area-related",
-  ]);
+  ).toEqual(["case-work-panels", "case-record-panels", "case-area-related"]);
+  await expect(page.locator(".case-work-panels > .case-area-next + .case-area-work")).toHaveCount(
+    1,
+  );
+  await expect(
+    page.locator(
+      ".case-record-panels > .case-area-claim + .case-area-notes + .case-area-attachments",
+    ),
+  ).toHaveCount(1);
   await expect(page.locator(".case-area-next .case-reminders")).toBeVisible();
   await expect(page.locator(".case-area-work .case-work")).toBeVisible();
   await expect(page.locator('.case-area-claim [data-region="FACTS"]')).toHaveCount(1);

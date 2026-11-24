@@ -126,7 +126,7 @@
     padding: var(--space-4);
     border: var(--border-width) solid var(--accent-text);
     border-radius: var(--radius-md);
-    background: var(--accent-soft-bg);
+    background: var(--accent-subtle);
   }
   .worklist-exact-match > p {
     margin: 0;

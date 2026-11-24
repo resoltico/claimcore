@@ -200,7 +200,10 @@ let private run engine =
         let arguments =
             [ "exec"; "--"; "playwright"; "test" ]
             @ (specification |> Option.toList)
-            @ [ "--project"; engine ]
+            @ (if engine = "chromium" then
+                   [ "--project"; engine; "--project"; "chromium-classic" ]
+               else
+                   [ "--project"; engine ])
             @ (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SHARD"
                |> Option.ofObj
                |> Option.filter (fun _ -> engine = "chromium")

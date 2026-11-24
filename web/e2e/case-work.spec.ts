@@ -46,10 +46,14 @@ test("records future planned work and scoped responsibility, then finds the case
     .locator('input[data-selects-fields="responsibleActor"]');
   await expect(selection).toBeVisible();
   await selection.check();
-  const roster = page.locator(".assignee-input");
-  const assignee = roster.locator(`input[type="radio"][value="${actorId}"]`);
+  const roster = page.locator(".lookup-input");
+  const assignee = roster.getByRole("combobox");
   await assignee.click();
-  await expect(assignee).toBeChecked();
+  await page
+    .getByRole("option")
+    .and(page.locator(`[data-option-value="${actorId}"]`))
+    .click();
+  await expect(assignee).toHaveAttribute("value", actorId);
   if (browserName === "chromium") {
     await page.setViewportSize({
       width: 1440,

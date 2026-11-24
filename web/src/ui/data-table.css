@@ -1,7 +1,9 @@
 @layer components {
   .data-table {
     --table-row-size: var(--size-row);
-    --table-layout: wide;
+    --table-layout: medium;
+    --secondary-cell-display: none;
+    --stack-display: block;
     min-inline-size: 0;
     container-name: data-table;
     container-type: inline-size;
@@ -21,7 +23,7 @@
     padding-block: var(--space-1);
     padding-inline: calc(var(--space-1) * 0.75);
     text-align: start;
-    vertical-align: middle;
+    vertical-align: baseline;
     overflow-wrap: normal;
   }
 
@@ -109,9 +111,14 @@
     content: "";
   }
 
+  .data-table-controls {
+    text-align: end;
+  }
+
   .data-table-actions {
     position: relative;
-    display: var(--table-controls-display, flex);
+    display: inline-flex;
+    vertical-align: middle;
     justify-content: flex-end;
     align-items: center;
     gap: var(--space-1);

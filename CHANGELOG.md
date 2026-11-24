@@ -7,6 +7,9 @@
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
 - Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
 - Abandoned requests record `ABANDONED` with metric result `abandoned` when the client disconnects while the server is running.
+- Cases, Reminders and People use wide lists at 1366px with classic scrollbars and keep the list width when a drawer opens.
+- Choose a payee from the case’s current parties when recording or correcting a payment.
+- A payment correction or removal link prompts you to choose an eligible payment entry and opens its editor in the same drawer flow.
 - Lists wrap maximum-length values and keep row controls in view. Case actions open over the case page, with one subject summary in the drawer.
 - HUMAN lists omit observation regions and Cases relegates payable amount to details. DATA and CSV retain payable amount. The CLI prints the list basis in a footer.
 - Actions inapplicable to the current subject no longer arrive as HUMAN affordances.

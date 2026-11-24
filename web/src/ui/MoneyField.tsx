@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { FieldGroup, FieldRule } from "./Field";
-import { TextInput } from "./TextField";
+import { ControlInput } from "./TextField";
 import { ComboBox } from "./ComboBox";
 import "./money-field.css";
 
@@ -41,7 +41,7 @@ export const MoneyField = ({
           {label}
         </label>
         <div className="control-box field-control-group money-field">
-          <TextInput
+          <ControlInput
             id={amount.id}
             name={amount.id}
             value={amount.value}
