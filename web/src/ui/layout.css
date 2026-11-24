@@ -354,6 +354,19 @@
       font-size: var(--text-xs);
     }
 
+    .data-table .data-table-value:has(> .chip-list) {
+      inline-size: max-content;
+    }
+
+    .data-table .chip-list {
+      --chip-list-alignment: stretch;
+    }
+
+    .data-table .chip-list > li {
+      flex: 1 0 min-content;
+      max-inline-size: max-content;
+    }
+
     .data-table .chip {
       --chip-padding-inline: var(--space-1);
     }
@@ -418,6 +431,7 @@
     .data-table .data-table-actions {
       grid-area: 1 / 2;
       align-self: start;
+      inset-block-start: 0;
       justify-self: end;
       min-inline-size: 0;
     }

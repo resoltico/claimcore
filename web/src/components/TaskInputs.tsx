@@ -154,36 +154,49 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
   if (input.choices.length > 0) {
     return <ChoiceInput input={input} errorKey={errorKey} {...props} />;
   }
+  const value = formValueText(props.values[input.id]);
+  const common = {
+    optional: input.mode === "OPTIONAL",
+    inputName: errorKey,
+    value,
+    disabled: props.disabled,
+    error,
+    sharedErrorId,
+    onChange: (next: string) => {
+      if (props.task.creates && input.mode === "OPTIONAL" && next === "") {
+        props.onFieldsChange({}, [input.id]);
+      } else {
+        props.onChange(input.id, next);
+      }
+    },
+  };
+  if (input.choicesFrom !== null && props.current !== null) {
+    return (
+      <LookupInput
+        {...common}
+        metadata={metadata}
+        caseId={props.current.subject.caseId}
+        lookup={input.choicesFrom}
+      />
+    );
+  }
   const field = taskScalar(input.id);
   if (field !== undefined) {
-    const common = {
-      field,
-      optional: input.mode === "OPTIONAL",
-      ...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
-        ? { description: p.text("label.existingCaseSelectionHint") }
-        : {}),
-      inputName: errorKey,
-      value: formValueText(props.values[input.id]),
-      disabled: props.disabled,
-      error,
-      sharedErrorId,
-      onChange: (value: string) => {
-        if (props.task.creates && input.mode === "OPTIONAL" && value === "") {
-          props.onFieldsChange({}, [input.id]);
-        } else {
-          props.onChange(input.id, value);
-        }
-      },
-    };
-    return input.choicesFrom !== null && props.current !== null ? (
-      <LookupInput {...common} caseId={props.current.subject.caseId} lookup={input.choicesFrom} />
-    ) : (
-      <CatalogField {...common} />
+    return (
+      <CatalogField
+        {...common}
+        field={field}
+        {...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
+          ? { description: p.text("label.existingCaseSelectionHint") }
+          : {})}
+      />
     );
   }
   return (
     <div className="text-field">
-      <label htmlFor={errorKey}>{label}</label>
+      <label className="field-label-row" htmlFor={errorKey}>
+        {label}
+      </label>
       <TextInput
         id={errorKey}
         name={errorKey}

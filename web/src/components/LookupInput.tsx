@@ -10,7 +10,8 @@ import { NoticeView } from "../presentation/Message";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import type { HumanReadReply, OperationTaskDefinition, PresentedValue } from "@contracts/client";
 
-type Props = TypedFieldProps & {
+type Props = Omit<TypedFieldProps, "field"> & {
+  metadata: { key: string; labelId: string; hintId: string | null; ruleId: string | null };
   caseId: string;
   lookup: NonNullable<OperationTaskDefinition["inputs"][number]["choicesFrom"]>;
 };
@@ -110,7 +111,7 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
     input,
     choices,
   );
-  const { field, inputName, disabled, error, optional, value, onChange, sharedErrorId } = props;
+  const { metadata, inputName, disabled, error, optional, value, onChange, sharedErrorId } = props;
   const ruleId = `field-${inputName}-rule`;
   const errorId = sharedErrorId ?? `field-${inputName}-error`;
   const options = result.items.map((item) => ({
@@ -127,20 +128,20 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
       <div className="text-field lookup-input">
         <Select
           id={`field-${inputName}`}
-          label={p.fieldLabel(field.name)}
+          label={renderCatalogKey(p, metadata.labelId)}
           value={value}
           fallbackLabel=""
           invalid={error !== undefined}
           describedBy={[ruleId, error === undefined ? "" : errorId].join(" ")}
           options={options}
-          description={p.hint(field) || undefined}
+          description={metadata.hintId === null ? undefined : renderCatalogKey(p, metadata.hintId)}
           disabled={disabled || options.length === 0}
           onChange={onChange}
         />
         <FieldRule
           id={ruleId}
-          name={field.name}
-          ruleId={field.ruleId}
+          name={metadata.key}
+          ruleId={metadata.ruleId}
           invalid={error !== undefined}
         />
         <LookupFeedback result={result} />
@@ -160,7 +161,7 @@ export const LookupInput = (props: Props) => {
     return (
       <Select
         id={`field-${props.inputName}`}
-        label={p.fieldLabel(props.field.name)}
+        label={renderCatalogKey(p, props.metadata.labelId)}
         value=""
         options={[]}
         disabled

@@ -42,32 +42,6 @@
     gap: var(--space-4);
   }
 
-  .case-workspace :is(.case-area-parties, .case-area-payments, .case-area-related) .data-table {
-    border: 0;
-    border-radius: 0;
-  }
-
-  .case-workspace .data-table tbody tr:not(.table-group) {
-    padding-inline: 0;
-  }
-
-  .case-workspace .data-table tr > :first-child {
-    padding-inline-start: 0;
-  }
-
-  .case-workspace .data-table tr > :last-child {
-    padding-inline-end: 0;
-  }
-
-  .case-workspace .data-table tbody tr:first-child {
-    border-block-start: 0;
-    padding-block-start: 0;
-  }
-
-  .case-workspace .data-table tbody tr:last-child {
-    padding-block-end: 0;
-  }
-
   @container (width >= 56rem) {
     .case-workspace {
       grid-template-columns:

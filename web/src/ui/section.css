@@ -35,6 +35,32 @@
     min-inline-size: 0;
     padding: var(--space-4);
   }
+  .section-card .data-table {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .section-card .data-table tbody tr:not(.table-group) {
+    padding-inline: 0;
+  }
+
+  .section-card .data-table tr > :first-child {
+    padding-inline-start: 0;
+  }
+
+  .section-card .data-table tr > :last-child {
+    padding-inline-end: 0;
+  }
+
+  .section-card .data-table tbody tr:first-child {
+    border-block-start: 0;
+    padding-block-start: 0;
+  }
+
+  .section-card .data-table tbody tr:last-child {
+    padding-block-end: 0;
+  }
+
   .task-action-list {
     list-style: none;
     margin: 0;

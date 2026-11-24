@@ -21,7 +21,7 @@
   .data-table :is(td, th) {
     min-inline-size: 0;
     padding-block: var(--space-1);
-    padding-inline: calc(var(--space-1) * 0.75);
+    padding-inline: calc(var(--space-3) / 2);
     text-align: start;
     vertical-align: baseline;
     overflow-wrap: normal;
@@ -117,6 +117,7 @@
 
   .data-table-actions {
     position: relative;
+    inset-block-start: calc(-1 * var(--border-width));
     display: inline-flex;
     vertical-align: middle;
     justify-content: flex-end;

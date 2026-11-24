@@ -9,15 +9,20 @@ import {
 import { prepareDesignDataset, type DesignDataset } from "./design-matrix-fixtures";
 import { settledWorkspaceHeader } from "./workspace-navigation";
 
-const registerFixture = (fixture: "standard" | "limits") => {
+const registerFixture = (fixture: "standard" | "limits", standard: () => DesignDataset) => {
   test.describe(`classic scrollbar ${fixture} fixture`, () => {
     let dataset: DesignDataset;
     test.beforeAll(async ({ browser, baseURL }) => {
       test.setTimeout(120_000);
-      dataset = await prepareDesignDataset(browser, baseURL!, fixture);
+      dataset =
+        fixture === "standard"
+          ? standard()
+          : await prepareDesignDataset(browser, baseURL!, fixture);
     });
     test.afterAll(async () => {
-      await dataset?.close();
+      if (fixture === "limits") {
+        await dataset?.close();
+      }
     });
 
     [1440, 1366, 1280].forEach((width) => {
@@ -69,4 +74,16 @@ const registerFixture = (fixture: "standard" | "limits") => {
     });
   });
 };
-(["standard", "limits"] as const).forEach(registerFixture);
+test.describe("classic scrollbar matrix", () => {
+  let standard: DesignDataset;
+  test.beforeAll(async ({ browser, baseURL }) => {
+    test.setTimeout(120_000);
+    standard = await prepareDesignDataset(browser, baseURL!);
+  });
+  test.afterAll(async () => {
+    await standard?.close();
+  });
+  (["standard", "limits"] as const).forEach((fixture) => {
+    registerFixture(fixture, () => standard);
+  });
+});

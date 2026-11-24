@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { HumanResponseByEndpoint } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { LookupInput } from "../../../src/components/LookupInput";
-import { productMetadata } from "../../../src/protocol/productMetadata";
+import { taskInput } from "../../../src/protocol/taskCatalog";
 const choice = "00000000-0000-4000-8000-000000000002";
 const caseId = "00000000-0000-4000-8000-000000000003";
 const page: HumanResponseByEndpoint["case.assignees"] = {
@@ -59,9 +59,6 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
     },
   },
 };
-const field = productMetadata.catalog.fields.find(
-  (inputField) => inputField.name === "responsibleActor",
-)!;
 afterEach(() => vi.unstubAllGlobals());
 const supply = () => {
   vi.stubGlobal(
@@ -77,16 +74,19 @@ const supply = () => {
   );
 };
 
-it.each(["case.assignees", "case.parties"] as const)(
+it.each([
+  ["case.assignees", "field:responsibleActor"],
+  ["case.parties", "input:payee"],
+] as const)(
   "renders choices from %s with their supplied labels and values",
-  async (lookup) => {
+  async (lookup, input) => {
     supply();
     const change = vi.fn();
     render(
       <LookupInput
         lookup={lookup}
         caseId={caseId}
-        field={field}
+        metadata={taskInput(input)}
         inputName="responsible"
         value={choice}
         disabled={false}
