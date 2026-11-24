@@ -109,7 +109,9 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
     label: renderCatalogKey(
       p,
       item.label.messageId,
-      Object.fromEntries(item.label.arguments.map(({ key, value }) => [key, caption(p, value)])),
+      Object.fromEntries(
+        item.label.arguments.map(({ key, value: argument }) => [key, caption(p, argument)]),
+      ),
     ),
   }));
   if (optional === true) {
