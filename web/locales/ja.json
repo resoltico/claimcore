@@ -283,10 +283,6 @@
     "text": "他の操作",
     "source": "f8d46c2570e7"
   },
-  "ui.nextAccounts": {
-    "text": "アカウントをさらに表示",
-    "source": "743e1725ebd5"
-  },
   "ui.nextMonth": {
     "text": "翌月",
     "source": "74e53211fef4"
@@ -331,10 +327,6 @@
     "text": "確認中…",
     "source": "fcc53388888f"
   },
-  "ui.previousAccounts": {
-    "text": "前のアカウント",
-    "source": "c74522075fca"
-  },
   "ui.previousMonth": {
     "text": "前月",
     "source": "6a2769502a5d"
@@ -374,10 +366,6 @@
   "ui.recoveryUnavailable": {
     "text": "未送信：復旧用ストレージを利用できません。サイトのストレージを有効にするか、空き容量を確保して再試行してください。リクエストは送信されていません。",
     "source": "d65945e86bb7"
-  },
-  "ui.refreshAccounts": {
-    "text": "割り当て可能なアカウントを更新",
-    "source": "792e2d92a7aa"
   },
   "ui.refreshWork": {
     "text": "業務を更新",
@@ -430,10 +418,6 @@
   "ui.scalarCount": {
     "text": "文字数：{count}/{maximum}",
     "source": "907b0d890dff"
-  },
-  "ui.selectedAccount": {
-    "text": "選択したアカウント",
-    "source": "8b63d9475c25"
   },
   "ui.settings": {
     "text": "設定",

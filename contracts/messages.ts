@@ -1230,7 +1230,6 @@ export type MessageArgs = {
   "ui.morePayments": Readonly<Record<string, never>>;
   "ui.moreRoles": Readonly<Record<string, never>>;
   "ui.moreViews": Readonly<Record<string, never>>;
-  "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
   "ui.nextPage": Readonly<Record<string, never>>;
   "ui.nextReportPage": Readonly<Record<string, never>>;
@@ -1246,7 +1245,6 @@ export type MessageArgs = {
   "ui.preferencesNotSaved": Readonly<Record<string, never>>;
   "ui.preparingRecovery": Readonly<Record<string, never>>;
   "ui.previewing": Readonly<Record<string, never>>;
-  "ui.previousAccounts": Readonly<Record<string, never>>;
   "ui.previousMonth": Readonly<Record<string, never>>;
   "ui.previousPage": Readonly<Record<string, never>>;
   "ui.primary": Readonly<Record<string, never>>;
@@ -1260,7 +1258,6 @@ export type MessageArgs = {
   "ui.recoveryListingUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryUnavailable": Readonly<Record<string, never>>;
   "ui.refresh": Readonly<Record<string, never>>;
-  "ui.refreshAccounts": Readonly<Record<string, never>>;
   "ui.refreshFailed": Readonly<Record<string, never>>;
   "ui.refreshWork": Readonly<Record<string, never>>;
   "ui.reloadContract": Readonly<Record<string, never>>;
@@ -1286,7 +1283,6 @@ export type MessageArgs = {
   "ui.rolesPartial": Readonly<Record<string, never>>;
   "ui.rowActionLabel": { readonly "action": string; readonly "row": string };
   "ui.scalarCount": { readonly "count": string; readonly "maximum": string };
-  "ui.selectedAccount": Readonly<Record<string, never>>;
   "ui.settings": Readonly<Record<string, never>>;
   "ui.settingsIntroduction": Readonly<Record<string, never>>;
   "ui.shell.businessDateChanged": { readonly "date": string };

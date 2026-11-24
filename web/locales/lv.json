@@ -319,10 +319,6 @@
     "text": "Citas darbības",
     "source": "f8d46c2570e7"
   },
-  "ui.nextAccounts": {
-    "text": "Vairāk kontu",
-    "source": "743e1725ebd5"
-  },
   "ui.nextMonth": {
     "text": "Nākamais mēnesis",
     "source": "74e53211fef4"
@@ -367,10 +363,6 @@
     "text": "Notiek pārskatīšana…",
     "source": "fcc53388888f"
   },
-  "ui.previousAccounts": {
-    "text": "Iepriekšējie konti",
-    "source": "c74522075fca"
-  },
   "ui.previousMonth": {
     "text": "Iepriekšējais mēnesis",
     "source": "6a2769502a5d"
@@ -410,10 +402,6 @@
   "ui.recoveryUnavailable": {
     "text": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Atļaujiet vietnes krātuvi vai atbrīvojiet vietu un mēģiniet vēlreiz. Pieprasījums nav nosūtīts.",
     "source": "d65945e86bb7"
-  },
-  "ui.refreshAccounts": {
-    "text": "Atjaunot atbilstošos kontus",
-    "source": "792e2d92a7aa"
   },
   "ui.refreshWork": {
     "text": "Atjaunināt darbu",
@@ -470,10 +458,6 @@
   "ui.scalarCount": {
     "text": "Rakstzīmes: {count}/{maximum}",
     "source": "907b0d890dff"
-  },
-  "ui.selectedAccount": {
-    "text": "Atlasītais konts",
-    "source": "8b63d9475c25"
   },
   "ui.settings": {
     "text": "Iestatījumi",
