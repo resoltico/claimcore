@@ -17,7 +17,7 @@ import {
   requestText,
   requestAddress,
 } from "../support/transport-response.fixtures";
-import { input } from "../support/catalog-transport.fixtures";
+import { emptyPartyChoices, input } from "../support/catalog-transport.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import { PaymentRows } from "../../src/views/case/PaymentRows";
 import { OperationEditor } from "../../src/views/OperationEditor";
@@ -166,6 +166,9 @@ it("selects the exact payment row, confirms frozen correction bytes and renders 
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof fetch>().mockImplementation((path, options) => {
+      if (requestAddress(path).endsWith("/api/case.parties")) {
+        return Promise.resolve(emptyPartyChoices());
+      }
       const bytes = requestText(options?.body);
       const command = JSON.parse(bytes) as Command;
       calls.push({ path: requestAddress(path), bytes, command });
