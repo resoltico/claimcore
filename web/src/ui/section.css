@@ -35,6 +35,17 @@
     min-inline-size: 0;
     padding: var(--space-4);
   }
+  .section-card :is(.section-card, .screen-region) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .section-card .section-card > :is(.section-card-heading, .section-card-body),
+  .section-card .screen-region {
+    padding-inline: 0;
+  }
+
   .section-card .data-table {
     border: 0;
     border-radius: 0;

@@ -515,26 +515,31 @@ export const geometryReport = (page: Page, limitsFixture = false) =>
         visible,
       );
       const sideBySideRows = rows.filter((row) => getComputedStyle(row).display === "table-row");
-      const contents = (row: Element) =>
-        [
-          ...row.querySelectorAll(
-            ":scope > td > .data-table-cell, :scope > .data-table-controls .data-table-actions",
-          ),
-        ].filter(visible);
+      const paintedInlineBounds = (cell: Element) => {
+        const painted = [...cell.querySelectorAll("img, svg, button, .person-avatar, .chip")]
+          .filter(visible)
+          .map(rect);
+        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+          const parent = node.parentElement;
+          if (parent !== null && visible(parent) && (node.textContent ?? "").trim() !== "") {
+            range.selectNodeContents(node);
+            painted.push(...lineRects(range));
+          }
+        }
+        return painted.length === 0
+          ? []
+          : [
+              {
+                left: Math.min(...painted.map((part) => part.left)),
+                right: Math.max(...painted.map((part) => part.right)),
+              },
+            ];
+      };
       const tightCells = sideBySideRows.some((row) => {
-        const cellBounds = contents(row)
-          .flatMap((cell) => {
-            range.selectNodeContents(cell);
-            const spans = lineRects(range);
-            return spans.length === 0
-              ? []
-              : [
-                  {
-                    left: Math.min(...spans.map((span) => span.left)),
-                    right: Math.max(...spans.map((span) => span.right)),
-                  },
-                ];
-          })
+        const cellBounds = [...row.querySelectorAll(":scope > td")]
+          .filter(visible)
+          .flatMap(paintedInlineBounds)
           .sort((a, b) => a.left - b.left);
         return cellBounds.some(
           (box, index) => index > 0 && box.left - cellBounds[index - 1]!.right < 11.5,

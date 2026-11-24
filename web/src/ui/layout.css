@@ -243,6 +243,11 @@
     }
   }
 
+  .phone-app-bar,
+  .workspace-mobile-tabs {
+    display: none;
+  }
+
   @media (width < 40rem) {
     .workspace-shell {
       display: block;
@@ -352,10 +357,6 @@
 
     .data-table td {
       font-size: var(--text-xs);
-    }
-
-    .data-table .data-table-value:has(> .chip-list) {
-      inline-size: max-content;
     }
 
     .data-table .chip-list {
