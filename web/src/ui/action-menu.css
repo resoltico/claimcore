@@ -40,7 +40,6 @@
     margin-block-start: var(--space-1);
     padding-block-start: var(--space-1);
     border-block-start: var(--border-width) solid var(--border-subtle);
-    font-size: var(--text-xs);
   }
 
   .menu-section-header {
