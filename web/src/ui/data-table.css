@@ -61,6 +61,10 @@
     overflow-wrap: normal;
   }
 
+  .data-table .plain-text-value {
+    white-space: break-spaces;
+  }
+
   .data-table-cell {
     min-inline-size: 0;
   }
