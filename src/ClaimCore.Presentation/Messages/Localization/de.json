@@ -1,4 +1,24 @@
 {
+  "label.partyChoice": {
+    "text": "{name} ({role})",
+    "source": "7f0526e40e7e",
+    "machineMade": true
+  },
+  "label.partyChoiceUnnamed": {
+    "text": "Partei ohne Namen ({role})",
+    "source": "d8ec69a1fe25",
+    "machineMade": true
+  },
+  "label.personChoice": {
+    "text": "{person}",
+    "source": "c0f31295e50a",
+    "machineMade": true
+  },
+  "label.choiceNotListed": {
+    "text": "Die aktuelle Auswahl ist nicht in der Liste enthalten.",
+    "source": "949daf1f61f3",
+    "machineMade": true
+  },
   "notice.unsupportedDatabaseProfile": {
     "text": "Verwenden Sie die Kodierung UTF8, die integrierte Locale C.UTF-8 und einen PostgreSQL-Cluster mit aktivierten Datenprüfsummen.",
     "source": "65d336cc3bee"
@@ -1688,8 +1708,9 @@
     "source": "50e0cf22224e"
   },
   "field.paymentDate.hint": {
-    "text": "Wann der gesamte Betrag bezahlt wurde.",
-    "source": "97718af60117"
+    "text": "Wann dieser Betrag gezahlt oder zurückgezahlt wurde.",
+    "source": "a348fea3ea91",
+    "machineMade": true
   },
   "field.status.rule": {
     "text": "Ob der Fall offen oder geschlossen ist. Die Schließung bedeutet nicht, dass eine Zahlung erfolgt ist.",
@@ -3660,8 +3681,9 @@
     "source": "c566e9bce00d"
   },
   "field.doneOn.hint": {
-    "text": "Geben Sie an, wann die Arbeit abgeschlossen wurde. Wenn das Feld leer bleibt, gilt der heutige Tag.",
-    "source": "910c65e2fb8c"
+    "text": "Wann die Arbeit abgeschlossen wurde. Das Datum darf nicht nach dem heutigen Geschäftsdatum liegen. Leer lassen, um das heutige Datum zu verwenden.",
+    "source": "e6557cef8221",
+    "machineMade": true
   },
   "input.reminderKind.label": {
     "text": "Erinnerungsart",

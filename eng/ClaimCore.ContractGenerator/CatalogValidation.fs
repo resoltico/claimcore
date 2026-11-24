@@ -21,7 +21,7 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "shortLabelId" | "reviewedLabelId" | "selectionPromptId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                    | ("labelId" | "shortLabelId" | "reviewedLabelId" | "promptId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
                       JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []
@@ -54,6 +54,10 @@ module CatalogValidation =
         matches PaymentsScreen.progressCaptionId (set [ "paid"; "payable" ])
         matches "headline.withDetail" (set [ "state"; "detail" ])
         matches "label.reviewNotEntered" (set [ "fields" ])
+        matches "label.partyChoice" (set [ "name"; "role" ])
+        matches "label.partyChoiceUnnamed" (set [ "role" ])
+        matches "label.personChoice" (set [ "person" ])
+        matches "label.choiceNotListed" Set.empty
 
         for KeyValue(_, categories) in Seq.append ListCounts.messages ListCounts.sectionMessages do
             for KeyValue(_, message) in categories do

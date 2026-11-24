@@ -41,11 +41,15 @@ module internal AttachmentRoutes =
             ExpireBrowserSession = false
         }
 
-    let private framingFailure =
+    let private framingFailure (token: CancellationToken) =
         function
-        | BodyProblem.BodyTooLarge -> HostFailureReason.BodyTooLarge
-        | BodyProblem.BodyUnreadable
-        | BodyProblem.BodyCancelled -> HostFailureReason.InputInvalid
+        | BodyProblem.BodyCancelled when StorageFailureLog.clientDisconnected () ->
+            raise (OperationCanceledException token)
+        | problem ->
+            match problem with
+            | BodyProblem.BodyTooLarge -> HostFailureReason.BodyTooLarge
+            | BodyProblem.BodyUnreadable
+            | BodyProblem.BodyCancelled -> HostFailureReason.InputInvalid
 
     let private uploadLimit maximum (context: HttpContext) =
         match context.Features.Get<IHttpMaxRequestBodySizeFeature>() |> Option.ofObj with
@@ -90,7 +94,7 @@ module internal AttachmentRoutes =
                     context.Request.Body
                     token
             with
-            | Error problem -> return Error(framingFailure problem)
+            | Error problem -> return Error(framingFailure token problem)
             | Ok(submission, bytes) ->
                 RequestLog.operation submission.OperationId context
                 let admission = context.RequestServices.GetRequiredService<PrincipalAdmission>()
@@ -127,7 +131,7 @@ module internal AttachmentRoutes =
         =
         task {
             match! HttpBody.readWithin manifestLimit context.Request.Body token with
-            | Error problem -> return Error(framingFailure problem)
+            | Error problem -> return Error(framingFailure token problem)
             | Ok bytes ->
                 match Codec.decode manifestLimit AttachmentTransport.request bytes with
                 | Error _ -> return Error HostFailureReason.InputInvalid
@@ -252,6 +256,11 @@ module internal AttachmentRoutes =
                                                         deadline.Token
                                             | AttachmentTransfer.Download
                                             | AttachmentTransfer.Preview ->
+                                                let core =
+                                                    Service.withReadCancellation
+                                                        context.RequestAborted
+                                                        core
+
                                                 return!
                                                     completeRead
                                                         transfer
@@ -263,7 +272,9 @@ module internal AttachmentRoutes =
                                                         deadline.Token
                                     })
 
-                            deadline.Token.ThrowIfCancellationRequested()
+                            if not (StorageFailureLog.clientDisconnected ()) then
+                                deadline.Token.ThrowIfCancellationRequested()
+
                             // The body publisher is still owned by the transfer lease when the deadline fires.
                             use _abort = deadline.Token.Register(fun () -> context.Abort())
 
@@ -283,7 +294,10 @@ module internal AttachmentRoutes =
                                             HostFailureReason.BeforeDispatchFailed
                                     )
 
-                            do! context.Response.CompleteAsync()
-                        with :? OperationCanceledException when deadline.IsCancellationRequested ->
+                            if not (StorageFailureLog.clientDisconnected ()) then
+                                do! context.Response.CompleteAsync()
+                        with :? OperationCanceledException when
+                            deadline.IsCancellationRequested
+                            && not (StorageFailureLog.clientDisconnected ()) ->
                             context.Abort()
         }

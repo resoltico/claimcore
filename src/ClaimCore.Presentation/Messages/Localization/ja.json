@@ -1,4 +1,24 @@
 {
+  "label.partyChoice": {
+    "text": "{name}（{role}）",
+    "source": "7f0526e40e7e",
+    "machineMade": true
+  },
+  "label.partyChoiceUnnamed": {
+    "text": "名前未登録の当事者（{role}）",
+    "source": "d8ec69a1fe25",
+    "machineMade": true
+  },
+  "label.personChoice": {
+    "text": "{person}",
+    "source": "c0f31295e50a",
+    "machineMade": true
+  },
+  "label.choiceNotListed": {
+    "text": "現在の選択肢は一覧にありません。",
+    "source": "949daf1f61f3",
+    "machineMade": true
+  },
   "notice.unsupportedDatabaseProfile": {
     "text": "UTF8 エンコーディングと組み込みの C.UTF-8 ロケールを使用し、データチェックサムを有効にした PostgreSQL クラスターを使用してください。",
     "source": "65d336cc3bee"
@@ -1688,8 +1708,9 @@
     "source": "50e0cf22224e"
   },
   "field.paymentDate.hint": {
-    "text": "全額が支払われた日。",
-    "source": "97718af60117"
+    "text": "この金額が支払われた日または返金された日。",
+    "source": "a348fea3ea91",
+    "machineMade": true
   },
   "field.status.rule": {
     "text": "案件が対応中か終了済みかを示します。案件の終了は支払の完了を意味しません。",
@@ -3660,8 +3681,9 @@
     "source": "c566e9bce00d"
   },
   "field.doneOn.hint": {
-    "text": "作業を終えた日です。空欄の場合は今日の日付を使用します。",
-    "source": "910c65e2fb8c"
+    "text": "作業が完了した日です。本日の業務日より後の日付は指定できません。空欄にすると本日の日付を使用します。",
+    "source": "e6557cef8221",
+    "machineMade": true
   },
   "input.reminderKind.label": {
     "text": "リマインダーの種類",

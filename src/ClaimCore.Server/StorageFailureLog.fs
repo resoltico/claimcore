@@ -9,7 +9,7 @@ open ClaimCore.Application
 module internal StorageFailureLog =
     let private request = AsyncLocal<(CancellationToken * CancellationToken) option>()
 
-    let abandoned () =
+    let clientDisconnected () =
         request.Value
         |> Option.exists (fun (client, stopping) ->
             client.IsCancellationRequested && not stopping.IsCancellationRequested)
@@ -24,7 +24,7 @@ module internal StorageFailureLog =
 
     let attach (writer: TextWriter) =
         ClaimCore.Application.Runtime.subscribeFailures (fun value ->
-            if value.Classification <> FailureClass.Cancelled || not (abandoned ()) then
+            if value.Classification <> FailureClass.Cancelled || not (clientDisconnected ()) then
                 // Closed union tokens and internally generated GUIDs only. Never format exceptions.
                 let line =
                     JsonSerializer.Serialize

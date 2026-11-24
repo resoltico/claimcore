@@ -727,6 +727,20 @@ module HumanReadDocuments =
             ScreenEntries.choiceScreen
                 "empty.parties"
                 (fun (party: PartyChoice) -> PartyId.format party.PartyId)
+                (fun party ->
+                    let role = "role", ScreenEntries.code PartyRole.vocabulary party.Role
+
+                    match party.Name with
+                    | Some name ->
+                        {
+                            MessageId = "label.partyChoice"
+                            Arguments = Map.ofList [ "name", PresentedValue.Party name; role ]
+                        }
+                    | None ->
+                        {
+                            MessageId = "label.partyChoiceUnnamed"
+                            Arguments = Map.ofList [ role ]
+                        })
                 columns
                 (fun _ -> None, [])
                 value.Items

@@ -298,10 +298,15 @@ module LocalizationPolicy =
                     fields language bytes
                     |> List.map (fun (key, value) ->
                         match value with
-                        | ClaimCore.Json.JsonValue.Object members when members.Length = 2 ->
+                        | ClaimCore.Json.JsonValue.Object members ->
                             match Map.ofList members with
                             | properties when
-                                properties.ContainsKey "text" && properties.ContainsKey "source"
+                                properties.ContainsKey "text"
+                                && properties.ContainsKey "source"
+                                && (members.Length = 2
+                                    || (members.Length = 3
+                                        && Map.tryFind "machineMade" properties =
+                                            Some(ClaimCore.Json.JsonValue.Boolean true)))
                                 ->
                                 match properties["text"], properties["source"] with
                                 | ClaimCore.Json.JsonValue.String text,

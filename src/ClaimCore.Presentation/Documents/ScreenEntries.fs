@@ -383,12 +383,20 @@ module ScreenEntries =
                 |> withEmpty emptyId
             ]
 
-    let choiceScreen emptyId choice definitions controls rows =
-        let table = tableWithControls choice (fun _ -> None) definitions controls rows
+    let choiceScreen emptyId key label definitions controls rows =
+        let table = tableWithControls key (fun _ -> None) definitions controls rows
 
         let choices =
             List.map2
-                (fun (row: RegionRow) value -> { row with Choice = Some(choice value) })
+                (fun (row: RegionRow) value ->
+                    { row with
+                        Choice =
+                            Some
+                                {
+                                    ChoiceValue = key value
+                                    ChoiceLabel = label value
+                                }
+                    })
                 table.Rows
                 rows
 

@@ -140,6 +140,8 @@ module internal ExportRoutes =
                                                             (AuthenticatedPrincipals.claims
                                                                 principal)
                                                             services
+                                                        |> Service.withReadCancellation
+                                                            context.RequestAborted
 
                                                     let! result =
                                                         task {
@@ -151,7 +153,11 @@ module internal ExportRoutes =
                                                                         (CsvExport.traversal
                                                                             services
                                                                             selection)
-                                                            with :? OperationCanceledException ->
+                                                            with :? OperationCanceledException when
+                                                                not (
+                                                                    StorageFailureLog
+                                                                        .clientDisconnected ()
+                                                                ) ->
                                                                 return
                                                                     Error(
                                                                         ExportFailure

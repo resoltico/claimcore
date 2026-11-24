@@ -3,10 +3,12 @@
 ## [Unreleased]
 
 - Regenerate HUMAN clients for joins, case IDENTITY, region counts, recorded entries, payment empty labels, state detail, due dates, reminder timing and view columns, recommendations and short labels.
-- Regenerate clients for subjectInput, review modes, collection labels, code tones, view prominence, creation summaries, `case.parties` and payment selection prompts.
+- Regenerate clients for subjectInput, review modes, collection labels, code tones, view prominence, creation summaries and `case.parties`.
+- Regenerate HUMAN clients for lookup row choices, which now carry a value and a core label message.
+- Regenerate clients for task selections, which now declare the prompt and case list source together.
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
 - Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
-- Abandoned requests record `ABANDONED` with metric result `abandoned` when the client disconnects while the server is running.
+- Client-cancelled requests without a reply record `ABANDONED` with null status. Classified replies keep their outcome after a disconnect. New acceptances use metric result `accepted`.
 - Cases, Reminders and People use wide lists at 1366px with classic scrollbars and keep the list width when a drawer opens.
 - Choose a payee from the case’s current parties when recording or correcting a payment.
 - A payment correction or removal link prompts you to choose an eligible payment entry and opens its editor in the same drawer flow.

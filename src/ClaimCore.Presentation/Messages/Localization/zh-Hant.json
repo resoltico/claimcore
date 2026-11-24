@@ -1,4 +1,24 @@
 {
+  "label.partyChoice": {
+    "text": "{name}（{role}）",
+    "source": "7f0526e40e7e",
+    "machineMade": true
+  },
+  "label.partyChoiceUnnamed": {
+    "text": "未具名當事方（{role}）",
+    "source": "d8ec69a1fe25",
+    "machineMade": true
+  },
+  "label.personChoice": {
+    "text": "{person}",
+    "source": "c0f31295e50a",
+    "machineMade": true
+  },
+  "label.choiceNotListed": {
+    "text": "目前選項不在清單中。",
+    "source": "949daf1f61f3",
+    "machineMade": true
+  },
   "notice.unsupportedDatabaseProfile": {
     "text": "請使用 UTF8 編碼、內建的 C.UTF-8 地區設定以及已啟用資料總和檢查碼的 PostgreSQL 叢集。",
     "source": "65d336cc3bee"
@@ -1688,8 +1708,9 @@
     "source": "50e0cf22224e"
   },
   "field.paymentDate.hint": {
-    "text": "全額款項付清的日期。",
-    "source": "97718af60117"
+    "text": "這筆款項支付或退還的日期。",
+    "source": "a348fea3ea91",
+    "machineMade": true
   },
   "field.status.rule": {
     "text": "案件是未結案還是已結案。結案不表示已付款。",
@@ -3660,8 +3681,9 @@
     "source": "c566e9bce00d"
   },
   "field.doneOn.hint": {
-    "text": "填寫事項完成的日期。留白則使用當天日期。",
-    "source": "910c65e2fb8c"
+    "text": "工作完成的日期。該日期不可晚於今天的業務日期。留空即使用今天的日期。",
+    "source": "e6557cef8221",
+    "machineMade": true
   },
   "input.reminderKind.label": {
     "text": "提醒類型",

@@ -73,7 +73,14 @@ module TaskMetadata =
                 consequence = consequence
                 creates = creates
                 subjectInput = ledger |> Option.bind _.SubjectInput |> Option.map TaskInputId.token
-                selectionPromptId = ledger |> Option.bind _.SelectionPromptId
+                selection =
+                    ledger
+                    |> Option.bind _.Selection
+                    |> Option.map (fun selection ->
+                        {|
+                            promptId = selection.PromptId
+                            from = selection.From
+                        |})
                 review =
                     ledger
                     |> Option.map (fun declaration ->

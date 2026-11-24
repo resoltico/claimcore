@@ -26,6 +26,11 @@ module AssigneesScreen =
         choiceScreen
             "label.noEligibleAccounts"
             (fun (row: ActorRef) -> ActorId.format row.ActorId)
+            (fun row ->
+                {
+                    MessageId = "label.personChoice"
+                    Arguments = Map.ofList [ "person", PresentedValue.Actor row ]
+                })
             columns
             (fun row ->
                 Some(Link.person row.ActorId),

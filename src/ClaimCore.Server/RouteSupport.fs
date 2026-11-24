@@ -48,8 +48,10 @@ module internal RouteSupport =
         | GateFailure.AntiforgeryRejected ->
             hostFailure context HostFailureReason.AntiforgeryRejected
 
-    let inputFailure context =
+    let inputFailure (context: HttpContext) =
         function
+        | BodyProblem.BodyCancelled when StorageFailureLog.clientDisconnected () ->
+            raise (OperationCanceledException(context.RequestAborted))
         | BodyProblem.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
         | _ -> hostFailure context HostFailureReason.InputInvalid
 
@@ -94,19 +96,24 @@ module internal RouteSupport =
             use _request = StorageFailureLog.withinRequest context.RequestAborted stopping
 
             let abandon () =
-                RequestLog.abandoned context
+                if not (RequestLog.hasReply context) then
+                    RequestLog.abandoned context
+
                 context.Abort()
 
             try
                 do! next.Invoke context
 
-                if StorageFailureLog.abandoned () then
-                    abandon ()
-                elif context.Response.StatusCode = 405 && not context.Response.HasStarted then
+                if context.Response.StatusCode = 405 && not context.Response.HasStarted then
                     do! (hostFailure context HostFailureReason.MethodRejected).ExecuteAsync context
             with
-            | :? OperationCanceledException when StorageFailureLog.abandoned () -> abandon ()
+            | :? OperationCanceledException as cancelled when
+                StorageFailureLog.clientDisconnected ()
+                && cancelled.CancellationToken.IsCancellationRequested
+                ->
+                abandon ()
             | error ->
+                RequestLog.hostFailure context
                 RequestLog.reportException sink error
 
                 if context.Response.HasStarted then

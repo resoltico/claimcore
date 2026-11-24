@@ -134,7 +134,15 @@ let private failurePhase dispatched completed phase =
 
     Expect.isFalse (sink.ToString().Contains "sensitive-exception-message") "Sanitized failure"
 
-let private requestOutcome abort stop =
+type private RequestEnd =
+    | BeforeDispatch
+    | AcceptedWrite
+    | CancelledRead
+    | DisconnectedFailure
+    | OpenFailure
+    | Shutdown
+
+let private requestOutcome ending =
     use disconnected = new CancellationTokenSource()
     use stopping = new CancellationTokenSource()
     use sink = new StringWriter()
@@ -160,24 +168,52 @@ let private requestOutcome abort stop =
     let context = DefaultHttpContext()
 
     context.Request.Path <-
-        PathString(Api.forActor (ActorEndpoint.Query QueryTaskId.WorkViews) |> Api.path)
+        PathString(
+            if ending = AcceptedWrite then
+                Api.forActor (ActorEndpoint.Operation OperationEndpoint.Execute) |> Api.path
+            else
+                Api.forActor (ActorEndpoint.Query QueryTaskId.WorkViews) |> Api.path
+        )
 
     context.RequestAborted <- disconnected.Token
     context.Response.Body <- body
 
+    let cancel () =
+        disconnected.Cancel()
+        let error = OperationCanceledException(disconnected.Token)
+        ClaimCore.Application.Storage.FailureDiagnostics.report error
+        Task.FromException error
+
     let dispatch =
         RequestDelegate(fun current ->
-            RouteSupport.markDispatched current
+            if ending <> BeforeDispatch then
+                RouteSupport.markDispatched current
 
-            if stop then
-                stopping.Cancel()
-
-            if abort then
+            match ending with
+            | BeforeDispatch ->
                 disconnected.Cancel()
-                let error = OperationCanceledException(disconnected.Token)
-                ClaimCore.Application.Storage.FailureDiagnostics.report error
-                Task.FromException error
-            else
+                (RouteSupport.inputFailure current BodyProblem.BodyCancelled).ExecuteAsync current
+            | AcceptedWrite ->
+                RouteSupport.markCompleted current
+
+                let response =
+                    RouteSupport.reply
+                        {
+                            Class = ReplyKind.Accepted
+                            Wire = ClaimCore.Json.JsonValue.Null
+                        }
+                        current
+
+                disconnected.Cancel()
+                response.ExecuteAsync current
+            | CancelledRead -> cancel ()
+            | Shutdown ->
+                stopping.Cancel()
+                cancel ()
+            | DisconnectedFailure ->
+                disconnected.Cancel()
+                Task.FromException(InvalidOperationException "synthetic dispatch fault")
+            | OpenFailure ->
                 Task.FromException(InvalidOperationException "synthetic dispatch fault"))
 
     let handle =
@@ -200,28 +236,35 @@ let private requestOutcome abort stop =
 
     use logged = JsonDocument.Parse(Array.last records)
 
-    if abort && not stop then
-        Expect.equal
-            (logged.RootElement.GetProperty("outcome").GetString())
-            "ABANDONED"
-            "Request outcome"
+    let outcome = logged.RootElement.GetProperty("outcome").GetString()
+    let status = logged.RootElement.GetProperty("status")
 
+    match ending with
+    | BeforeDispatch
+    | CancelledRead ->
+        Expect.equal outcome "ABANDONED" "Request outcome"
+        Expect.equal status.ValueKind JsonValueKind.Null "No response status"
         Expect.sequenceEqual results [ "abandoned" ] "Request metric"
         Expect.hasLength records 1 "No storage or exception diagnostics"
         Expect.equal body.Length 0L "No failure response was written"
-    else
-        Expect.equal
-            (logged.RootElement.GetProperty("outcome").GetString())
-            "HOST_FAILURE"
-            "Request outcome"
-
+    | AcceptedWrite ->
+        Expect.equal outcome "ACCEPTED" "Request outcome"
+        Expect.sequenceEqual results [ "accepted" ] "Request metric"
+        Expect.hasLength records 1 "No storage or exception diagnostics"
+        Expect.equal body.Length 0L "No response body was written"
+    | DisconnectedFailure
+    | OpenFailure
+    | Shutdown ->
+        Expect.equal outcome "HOST_FAILURE" "Request outcome"
         Expect.sequenceEqual results [ "host_failure" ] "Request metric"
         Expect.contains kinds "exception" "Exception is logged"
 
-        if stop then
+        if ending = Shutdown then
             Expect.contains kinds "storageFailure" "Shutdown cancellation is logged"
-        else
+        elif ending = OpenFailure then
             Expect.isGreaterThan body.Length 0L "An open request receives the failure response"
+        else
+            Expect.equal body.Length 0L "No failure response was written"
 
 [<Tests>]
 let tests =
@@ -237,13 +280,18 @@ let tests =
             testCase "before-dispatch and dispatched failure knowledge remain distinct" (fun () ->
                 failurePhase false false (Some "NOT_STARTED")
                 failurePhase true false (Some "STARTED_UNCONFIRMED"))
-            testCase "abandoned dispatch records only the request and abandonment metric" (fun () ->
-                requestOutcome true false)
-            testCase
-                "open dispatch failures and shutdown cancellations remain host failures"
-                (fun () ->
-                    requestOutcome false false
-                    requestOutcome true true)
+            testCase "client cancellation before dispatch has no reply" (fun () ->
+                requestOutcome BeforeDispatch)
+            testCase "client cancellation during a read has no reply" (fun () ->
+                requestOutcome CancelledRead)
+            testCase "an accepted write keeps its outcome after disconnect" (fun () ->
+                requestOutcome AcceptedWrite)
+            testCase "an unexpected exception after disconnect remains a host failure" (fun () ->
+                requestOutcome DisconnectedFailure)
+            testCase "open dispatch exceptions remain host failures" (fun () ->
+                requestOutcome OpenFailure)
+            testCase "shutdown cancellation remains a host failure" (fun () ->
+                requestOutcome Shutdown)
             testCase "completed response failures preserve execution knowledge" (fun () ->
                 failurePhase true true None)
         ]

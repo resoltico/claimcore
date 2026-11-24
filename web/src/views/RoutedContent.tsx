@@ -335,9 +335,9 @@ const RoutableCaseEditor = ({
     }
   }, [onUnavailable, unavailable]);
   if (selection === null) {
-    return definition.selectionPromptId === null ? null : (
+    return definition.selection === null ? null : (
       <PaymentEditorSelection
-        promptId={definition.selectionPromptId}
+        promptId={definition.selection.promptId}
         route={route}
         current={current}
         onReady={setOpened}

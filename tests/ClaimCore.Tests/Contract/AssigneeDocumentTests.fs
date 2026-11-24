@@ -71,18 +71,51 @@ let tests =
                         let binding = SubmissionDeclarations.binding task
 
                         Expect.equal
-                            task.SelectionPromptId.IsSome
+                            task.Selection.IsSome
                             (binding.Subject = ActSubject.Case && binding.Identity.IsSome)
-                            (TaskId.token task.Id))
+                            (TaskId.token task.Id)
+
+                        for selection in Option.toList task.Selection do
+                            let query =
+                                EndpointDeclarations.queries
+                                |> List.find (fun query -> query.Id = selection.From)
+
+                            Expect.isSome query.Page "Selection sources return paged lists"
+
+                            Expect.isTrue
+                                (query.Inputs
+                                 |> List.exists (fun input ->
+                                     input.Input =
+                                         TaskAffordances.field BusinessField.CaseReference
+                                     && input.Mode = TaskInputMode.Required))
+                                "A selection source requires a case")
             testCase
                 "each choice carries its exact value and work binding independently of captions"
                 (fun () ->
                     let original = document ()
 
                     Expect.equal
-                        (rows original |> List.map _.Choice)
+                        (rows original
+                         |> List.map (fun row -> row.Choice |> Option.map _.ChoiceValue))
                         [ Some(ActorId.format (actor 1)); Some(ActorId.format (actor 2)) ]
                         "Choice values are explicit in the results document"
+
+                    for row, id in List.zip (rows original) [ actor 1; actor 2 ] do
+                        Expect.equal
+                            (row.Choice |> Option.map _.ChoiceLabel)
+                            (Some
+                                {
+                                    MessageId = "label.personChoice"
+                                    Arguments =
+                                        Map.ofList
+                                            [
+                                                "person",
+                                                PresentedValue.Actor(
+                                                    DomainInputs.actorReference id
+                                                )
+                                            ]
+                                })
+                            "The choice label has one person argument"
 
                     let selections =
                         rows original |> List.map (fun row -> row.Actions |> List.exactlyOne)
@@ -154,6 +187,62 @@ let tests =
                         (rows opaque |> List.map _.Actions)
                         (rows original |> List.map _.Actions)
                         "Changing captions cannot change selection")
+            testCase
+                "party choice labels carry the role and distinguish an unrecorded name"
+                (fun () ->
+                    let party number name =
+                        {
+                            PartyId =
+                                PartyId.create (
+                                    Guid.Parse(sprintf "10000000-0000-4000-8000-%012d" number)
+                                )
+                                |> Option.get
+                            Name = name
+                            Role = PartyRole.Claimant
+                        }
+
+                    let named = party 1 (PartyName.parse "Synthetic claimant" |> Result.toOption)
+                    let unnamed = party 2 None
+
+                    let choices =
+                        HumanReadDocuments.parties
+                            {
+                                Basis = DomainInputs.workBasis
+                                Items = [ named; unnamed ]
+                                NextCursor = None
+                            }
+                        |> rows
+                        |> List.map (fun row -> Option.get row.Choice)
+
+                    let role = PresentedValue.Code("partyRole", "CLAIMANT")
+
+                    Expect.equal
+                        choices
+                        [
+                            {
+                                ChoiceValue = PartyId.format named.PartyId
+                                ChoiceLabel =
+                                    {
+                                        MessageId = "label.partyChoice"
+                                        Arguments =
+                                            Map.ofList
+                                                [
+                                                    "name",
+                                                    PresentedValue.Party(Option.get named.Name)
+                                                    "role", role
+                                                ]
+                                    }
+                            }
+                            {
+                                ChoiceValue = PartyId.format unnamed.PartyId
+                                ChoiceLabel =
+                                    {
+                                        MessageId = "label.partyChoiceUnnamed"
+                                        Arguments = Map.ofList [ "role", role ]
+                                    }
+                            }
+                        ]
+                        "Each row carries the authored vocabulary arguments with its exact value")
             testCase "an obsolete parallel handle member is rejected" (fun () ->
                 let encoded =
                     Codec.encode HumanDocumentCodecs.document (document ())
