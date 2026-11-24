@@ -208,7 +208,7 @@ module internal Queries =
                 return! DisclosureReads.complete services token result
         }
 
-    let assignees (services: ServiceContext) (request: AssigneeRequest) token =
+    let assignees (services: ServiceContext) (request: CaseLookupRequest) token =
         task {
             if not (validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
@@ -304,6 +304,80 @@ module internal Queries =
                                             | _ -> return unavailable
                                         }
                                 CancellationToken = token
+                            }
+
+                    return readResult result
+        }
+
+    let parties (services: ServiceContext) (request: CaseLookupRequest) token =
+        task {
+            if not (validLimit request.Limit) then
+                return! RequestRefusals.invalidLimit services token
+            else
+                match CaseRecords.validateSelector request.Target with
+                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Ok() ->
+                    let! result =
+                        services.Store.Read
+                            {
+                                CancellationToken = token
+                                Work =
+                                    fun tx ->
+                                        task {
+                                            let! record = CaseReadContext.find tx request.Target
+
+                                            let! actor =
+                                                AccessReads.access
+                                                    tx
+                                                    services.Principal
+                                                    (record |> Option.map _.CaseId)
+
+                                            match record with
+                                            | Some record when
+                                                CaseRecords.authorize
+                                                    services.Principal
+                                                    actor
+                                                    Capability.ReadCase
+                                                    (Some record)
+                                                && Access.can
+                                                    services.Principal
+                                                    actor
+                                                    Capability.RecordPayment
+                                                    (Scope.Case record.CaseId)
+                                                ->
+                                                let decode =
+                                                    Cursors.decodeParties
+                                                        services.InstallationId
+                                                        record.CaseId
+
+                                                match cursor decode request.AfterCursor with
+                                                | Error refusal -> return Outcome.Rejected refusal
+                                                | Ok after ->
+                                                    let! page =
+                                                        PartyStorage.choicePage
+                                                            tx
+                                                            record.CaseId
+                                                            after
+                                                            request.Limit
+
+                                                    return
+                                                        Outcome.Succeeded
+                                                            {
+                                                                PartyChoicePage.Basis =
+                                                                    ServiceContext.basis
+                                                                        services
+                                                                        tx.ObservedAt
+                                                                Items = page.Items
+                                                                NextCursor =
+                                                                    page.Next
+                                                                    |> Option.map (
+                                                                        Cursors.encodeParties
+                                                                            services.InstallationId
+                                                                            record.CaseId
+                                                                    )
+                                                            }
+                                            | _ -> return unavailable
+                                        }
                             }
 
                     return readResult result

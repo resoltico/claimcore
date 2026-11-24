@@ -24,6 +24,7 @@ type TaskDeclaration =
         Target: ActSubject
         Creates: bool
         SubjectInput: TaskInputId option
+        SelectionPromptId: string option
         Family: ActFamily
         Consequence: Consequence
         Review: TaskReview

@@ -19,6 +19,7 @@ import type {
   OperationTaskDefinition,
   TaskInputId,
 } from "@contracts/client";
+import { renderCatalogKey } from "../presentation/messages";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "../ui/DateField";
@@ -28,11 +29,7 @@ type Props = TypedFieldProps & {
   lookup: NonNullable<OperationTaskDefinition["inputs"][number]["choicesFrom"]>;
   seedInput: TaskInputId;
 };
-const AssigneeChoices = ({
-  page,
-  seedInput,
-  ...props
-}: TypedFieldProps & { page: HumanDocument; seedInput: TaskInputId }) => {
+const AssigneeChoices = ({ page, ...props }: TypedFieldProps & { page: HumanDocument }) => {
   const p = usePresentation();
   if (page.basis.kind !== "SNAPSHOT") {
     return (
@@ -42,9 +39,10 @@ const AssigneeChoices = ({
     );
   }
   const zone = page.basis.observation.timeZone;
-  const content = page.screen.regions.find((region) => region.role === "RESULTS")?.content;
+  const region = page.screen.regions.find((region) => region.role === "RESULTS");
+  const content = region?.content;
   if (content?.kind === "TABLE" && content.rows.length === 0) {
-    return <p>{p.text("label.noEligibleAccounts")}</p>;
+    return region?.emptyId == null ? null : <p>{renderCatalogKey(p, region.emptyId)}</p>;
   }
   if (content?.kind !== "TABLE") {
     return null;
@@ -52,10 +50,7 @@ const AssigneeChoices = ({
   return (
     <ul>
       {content.rows.map((row) => {
-        const action = row.actions?.find(
-          (candidate) => typeof candidate.seeds[seedInput] === "string",
-        );
-        const actorId = action?.seeds[seedInput];
+        const actorId = row.choice;
         return typeof actorId === "string" ? (
           <li key={actorId}>
             <label>
@@ -152,6 +147,18 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
         <legend>{p.fieldLabel(props.field.name)}</legend>
         <p id={hintId}>{p.hint(props.field)}</p>
         <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
+        {props.optional ? (
+          <label>
+            <ChoiceControl
+              type="radio"
+              name={props.inputName}
+              value=""
+              checked={props.value === ""}
+              onChange={() => props.onChange("")}
+            />
+            {p.text("label.notRecorded")}
+          </label>
+        ) : null}
         {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
         {result.message === null ? null : (
           <p role="alert">
@@ -160,7 +167,7 @@ export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) =
         )}
         {page === null ? null : (
           <>
-            <AssigneeChoices {...props} page={page} seedInput={seedInput} />
+            <AssigneeChoices {...props} page={page} />
             <div className="actions">
               <button
                 type="button"

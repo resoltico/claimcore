@@ -283,6 +283,33 @@ let private integration (database: PostgresFixture.Database) =
             (subject.Parties |> List.tail |> List.map _.PartyId)
             "Removal hides only the targeted party"
 
+        let lookup cursor =
+            Service.parties
+                owner
+                {
+                    Target = target
+                    AfterCursor = cursor
+                    Limit = 1
+                }
+                token
+
+        let! firstChoice = lookup None
+        let firstChoice = read firstChoice
+        Expect.hasLength firstChoice.Items 1 "The lookup honors the requested page size"
+        let! secondChoice = lookup firstChoice.NextCursor
+        let secondChoice = read secondChoice
+        Expect.isNone secondChoice.NextCursor "Final page has no continuation"
+
+        Expect.equal
+            (firstChoice.Items @ secondChoice.Items
+             |> List.map (fun choice -> choice.PartyId, choice.Name, choice.Role)
+             |> Set.ofList)
+            (subject.Parties
+             |> List.tail
+             |> List.map (fun party -> party.PartyId, party.Content.Name, party.Content.Role)
+             |> Set.ofList)
+            "Payee choices contain just the remaining parties and present their names and roles"
+
         let currentPayment = read current
         let removedPayee = currentPayment.PaymentPayees |> List.exactlyOne
         Expect.isTrue removedPayee.Removed "Existing payments retain the removed party marker"

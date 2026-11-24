@@ -308,6 +308,7 @@ type RegionRow =
     {
         Key: string
         Values: PresentedValue list
+        Choice: string option
         Detail: RowDetail option
         Link: Link option
         Actions: Affordance list

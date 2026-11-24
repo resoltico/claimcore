@@ -19,6 +19,9 @@ type private EncodedJsonResult(bytes: byte array, status: int) =
     interface IResult with
         member _.ExecuteAsync context =
             task {
+                if StorageFailureLog.abandoned () then
+                    context.RequestAborted.ThrowIfCancellationRequested()
+
                 context.Response.StatusCode <- status
                 context.Response.ContentType <- "application/json; charset=utf-8"
                 context.Response.ContentLength <- int64 bytes.Length
@@ -68,6 +71,9 @@ type private CompleteAttachmentResult
     interface IResult with
         member _.ExecuteAsync context =
             task {
+                if StorageFailureLog.abandoned () then
+                    context.RequestAborted.ThrowIfCancellationRequested()
+
                 let intent = VerifiedAttachment.intent bytes
                 let memory = VerifiedAttachment.memory bytes
                 HttpHeaders.noTransform context

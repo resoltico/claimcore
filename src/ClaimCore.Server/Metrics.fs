@@ -15,6 +15,7 @@ type internal RequestMetricResult =
     | Refused
     | Failed
     | HostFailure
+    | Abandoned
 
 /// Hosting observations use only closed endpoint, result and session-reason values.
 module internal WebMetrics =
@@ -59,6 +60,7 @@ module internal WebMetrics =
         | RequestMetricResult.Refused -> "refused"
         | RequestMetricResult.Failed -> "failed"
         | RequestMetricResult.HostFailure -> "host_failure"
+        | RequestMetricResult.Abandoned -> "abandoned"
 
     let private recordRequest endpoint result (elapsed: TimeSpan) =
         safe (fun () ->

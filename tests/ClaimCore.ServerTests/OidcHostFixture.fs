@@ -132,7 +132,11 @@ type Host
         application.Use(Func<HttpContext, RequestDelegate, Task>(RequestLog.middleware sink))
         |> ignore
 
-        application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures sink))
+        application.Use(
+            Func<HttpContext, RequestDelegate, Task>(
+                RouteSupport.handleFailures sink application.Lifetime.ApplicationStopping
+            )
+        )
         |> ignore
 
         application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))

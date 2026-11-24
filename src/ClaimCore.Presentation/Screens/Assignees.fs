@@ -23,7 +23,7 @@ module AssigneesScreen =
     let private rows caseId revision rows =
         let columns = assigneeColumns |> List.filter (fun column -> column.Key <> "actorId")
 
-        resultScreenWithControls
+        choiceScreen
             "label.noEligibleAccounts"
             (fun (row: ActorRef) -> ActorId.format row.ActorId)
             columns

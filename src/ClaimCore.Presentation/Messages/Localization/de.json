@@ -579,6 +579,14 @@
     "text": "Geeignete verantwortliche Personen",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "Aktuelle Beteiligte des Falls",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "Zeigt die aktuellen Beteiligten dieses Falls an.",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "Personen auflisten, die für diesen Fall verantwortlich sein können.",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "Zahlungseintrag entfernen",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "Wählen Sie den Zahlungseintrag aus, den Sie entfernen möchten.",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "Einen irrtümlich erfassten Zahlungseintrag entfernen. Dadurch wird keine Überweisung erstattet oder rückgängig gemacht. Der bisherige Verlauf bleibt erhalten.",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "Zahlungseintrag korrigieren",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "Wählen Sie den Zahlungseintrag aus, den Sie korrigieren möchten.",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "Ersetzen Sie einen irrtümlichen Zahlungseintrag durch das richtige Datum, die Richtung, den Betrag, die Referenz und den Empfänger. Der Beleg nennt beide Einträge.",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "Geben Sie die ID eines aktuellen Beteiligten dieses Falls ein.",
-    "source": "d84ebe3bf0f8"
+    "text": "Wählen Sie die Partei aus, die das Geld erhalten oder zurückgezahlt hat.",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "Wählen Sie Gezahlt oder Zurückgezahlt.",

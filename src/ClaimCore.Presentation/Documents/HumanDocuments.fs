@@ -705,6 +705,34 @@ module HumanReadDocuments =
     let assignees (value: AssigneePage) =
         listPage value.Basis (AssigneesScreen.view value) value.NextCursor
 
+    let parties (value: PartyChoicePage) =
+        let columns =
+            [
+                ScreenEntries.column
+                    "name"
+                    "field.partyName.label"
+                    Prominence.Primary
+                    false
+                    (fun (party: PartyChoice) ->
+                        ScreenEntries.optional PresentedValue.Party party.Name)
+                ScreenEntries.column
+                    "role"
+                    "field.partyRole.label"
+                    Prominence.Primary
+                    false
+                    (fun party -> ScreenEntries.code PartyRole.vocabulary party.Role)
+            ]
+
+        let screen =
+            ScreenEntries.choiceScreen
+                "empty.parties"
+                (fun (party: PartyChoice) -> PartyId.format party.PartyId)
+                columns
+                (fun _ -> None, [])
+                value.Items
+
+        listPage value.Basis screen value.NextCursor
+
     let summary (value: CaseWorklistSummary) =
         listPage value.Basis (CaseTotalsScreen.view value) value.NextCursor
 

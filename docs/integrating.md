@@ -86,7 +86,9 @@ A `CONTEXT` region associates form context with its supplied actions; show it fo
 rather than presenting it as another set of current facts. Other section and row actions retain their
 supplied bindings.
 
-Input `choicesFrom` names a Core lookup. `choicesWhen` is an array of
+Input `choicesFrom` names a Core lookup. In the HUMAN results table, each
+selectable row carries a `choice` value and presents its caption in the visible values. An operation's `selectionPromptId`
+gives its prompt when a case action requires selecting an entry. `choicesWhen` is an array of
 `{input, value, choices, messageId}` conditions; intersect every matching condition with the offered
 choices. The optional Core message ID explains a restriction. Choice hints do not replace server
 admission. Removing a recognized stored role remains possible even if assigning it would now be refused.

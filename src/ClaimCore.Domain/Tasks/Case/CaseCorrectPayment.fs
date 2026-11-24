@@ -9,18 +9,20 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 
 let declaration =
-    family
-        "case.correctPayment"
-        ActSubject.Case
-        false
-        ActFamily.Business
-        Consequence.Routine
-        [ Capability.RecordPayment ]
-        (operation
-         :: caseTarget
-         :: revision
-         :: (required (target InputTarget.PaymentId) |> bound)
-         :: RecordPayment.paymentInputs)
+    { family
+          "case.correctPayment"
+          ActSubject.Case
+          false
+          ActFamily.Business
+          Consequence.Routine
+          [ Capability.RecordPayment ]
+          (operation
+           :: caseTarget
+           :: revision
+           :: (required (target InputTarget.PaymentId) |> bound)
+           :: RecordPayment.paymentInputs) with
+        SelectionPromptId = Some "task.case.correctPayment.selectionPrompt"
+    }
 
 let private capability = Capability.RecordPayment
 let check = RecordPayment.check

@@ -79,6 +79,7 @@ module Service =
     let workViews = ViewQueries.work
 
     let assignees = Queries.assignees
+    let parties = Queries.parties
     let list = Queries.list
     let caseSummary = Queries.caseSummary
     let payments = PaymentQueries.page

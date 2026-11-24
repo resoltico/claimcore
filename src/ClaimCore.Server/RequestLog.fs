@@ -69,6 +69,12 @@ module internal RequestLog =
             value.Outcome <- "HOST_FAILURE"
             value.MetricResult <- RequestMetricResult.HostFailure)
 
+    let abandoned context =
+        entry context
+        |> Option.iter (fun value ->
+            value.Outcome <- "ABANDONED"
+            value.MetricResult <- RequestMetricResult.Abandoned)
+
     let reply classification context =
         entry context
         |> Option.iter (fun value ->

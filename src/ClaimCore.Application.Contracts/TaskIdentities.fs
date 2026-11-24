@@ -6,6 +6,7 @@ open ClaimCore.Domain
 type QueryTaskId =
     | CaseGet
     | CaseAssignees
+    | CaseParties
     | CaseList
     | CaseSummary
     | CaseTimeline
@@ -30,6 +31,7 @@ module QueryTaskId =
             [
                 QueryTaskId.CaseGet, "case.get"
                 QueryTaskId.CaseAssignees, "case.assignees"
+                QueryTaskId.CaseParties, "case.parties"
                 QueryTaskId.CaseList, "case.list"
                 QueryTaskId.CaseSummary, "case.summary"
                 QueryTaskId.CaseTimeline, "case.timeline"

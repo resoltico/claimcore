@@ -362,9 +362,16 @@ module Api =
     let caseAssignees =
         actorRead
             QueryTaskId.CaseAssignees
-            RequestCodecs.assigneeRequest
+            RequestCodecs.caseLookupRequest
             "AssigneePageReply"
             ResponseCodecs.assigneePage
+
+    let caseParties =
+        actorRead
+            QueryTaskId.CaseParties
+            RequestCodecs.caseLookupRequest
+            "PartyChoicePageReply"
+            ResponseCodecs.partyChoicePage
 
     let caseList =
         actorRead
@@ -651,6 +658,7 @@ module Api =
         | (ActorEndpoint.Query QueryTaskId.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryTaskId.CaseGet) -> EndpointDefinition.create caseGet
         | (ActorEndpoint.Query QueryTaskId.CaseAssignees) -> EndpointDefinition.create caseAssignees
+        | (ActorEndpoint.Query QueryTaskId.CaseParties) -> EndpointDefinition.create caseParties
         | (ActorEndpoint.Query QueryTaskId.CaseList) -> EndpointDefinition.create caseList
         | (ActorEndpoint.Query QueryTaskId.WorkViews) -> EndpointDefinition.create workViews
         | (ActorEndpoint.Query QueryTaskId.CaseSummary) -> EndpointDefinition.create caseSummary

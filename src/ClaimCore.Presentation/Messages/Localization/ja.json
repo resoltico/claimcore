@@ -579,6 +579,14 @@
     "text": "担当可能な利用者",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "現在の案件当事者",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "この案件の現在の当事者を一覧表示します。",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "この案件の担当者になれる利用者を一覧表示します。",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "支払記録を削除",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "削除する支払い記録を選択してください。",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "誤って登録した支払記録を削除します。送金の返金や取消は行いません。過去の履歴は残ります。",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "支払記録を訂正",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "訂正する支払い記録を選択してください。",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "誤って記録した支払いを、正しい日付、方向、金額、参照番号、受取人で置き換えます。受領記録には両方の記録が表示されます。",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "この案件の現行の関係者のIDを入力してください。",
-    "source": "d84ebe3bf0f8"
+    "text": "お金を受け取った、または返した当事者を選択してください。",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "支払いまたは返金を選択してください。",

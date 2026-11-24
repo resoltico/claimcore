@@ -579,6 +579,14 @@
     "text": "Personas responsables disponibles",
     "source": "5560b349dac5"
   },
+  "endpoint.case.parties.label": {
+    "text": "Partes actuales del caso",
+    "source": "5d8f5eacf8ed"
+  },
+  "endpoint.case.parties.meaning": {
+    "text": "Enumera las partes actuales de este caso.",
+    "source": "e7f7b6ed470d"
+  },
   "endpoint.case.assignees.meaning": {
     "text": "Mostrar las personas que pueden ser responsables de este expediente.",
     "source": "a35f48894530"
@@ -2551,6 +2559,10 @@
     "text": "Eliminar asiento de pago",
     "source": "3765d89e8401"
   },
+  "task.case.removePayment.selectionPrompt": {
+    "text": "Elija el registro de pago que desea quitar.",
+    "source": "58f0e00f40b7"
+  },
   "task.case.removePayment.meaning": {
     "text": "Eliminar un asiento de pago registrado por error. Esto no reembolsa ni revierte una transferencia. El historial anterior se conserva.",
     "source": "839063316dd5"
@@ -2923,6 +2935,10 @@
     "text": "Corregir asiento de pago",
     "source": "22b058e234e0"
   },
+  "task.case.correctPayment.selectionPrompt": {
+    "text": "Elija el registro de pago que desea corregir.",
+    "source": "480d7f933767"
+  },
   "task.case.correctPayment.meaning": {
     "text": "Sustituya un asiento de pago erróneo con la fecha, el sentido, el importe, la referencia y el beneficiario correctos. El recibo identifica ambos asientos.",
     "source": "a892687bc3b6"
@@ -3240,8 +3256,8 @@
     "source": "01f724213899"
   },
   "field.payee.hint": {
-    "text": "Introduzca el identificador de una parte actual de este expediente.",
-    "source": "d84ebe3bf0f8"
+    "text": "Elija la parte que recibió o devolvió el dinero.",
+    "source": "2386d2c68aff"
   },
   "field.direction.rule": {
     "text": "Elija Pagado o Devuelto.",

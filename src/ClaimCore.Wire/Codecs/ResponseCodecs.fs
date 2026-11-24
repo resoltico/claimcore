@@ -864,6 +864,37 @@ module ResponseCodecs =
         |> build
         |> named "CasesPage"
 
+    let private partyChoice =
+        (record (fun id name role ->
+            {
+                PartyId = id
+                Name = name
+                Role = role
+            })
+        : Fields<PartyChoice, _>)
+        |> field "partyId" _.PartyId ResponseScalars.partyId
+        |> field "name" _.Name (nullable ResponseScalars.partyName)
+        |> field "role" _.Role (VocabularyCodec.create PartyRole.vocabulary)
+        |> build
+        |> named "PartyChoice"
+
+    let partyChoicePage =
+        (record (fun basis items next ->
+            {
+                PartyChoicePage.Basis = basis
+                Items = items
+                NextCursor = next
+            })
+        : Fields<PartyChoicePage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
+        |> field "items" _.Items (list Paging.MaximumPageSize partyChoice)
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumActorCursorCharacters))
+        |> build
+        |> named "PartyChoicePage"
+
     let assigneePage =
         (record (fun caseId revision basis items next ->
             {

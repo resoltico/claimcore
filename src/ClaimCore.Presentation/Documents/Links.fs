@@ -8,7 +8,8 @@ open ClaimCore.Application.Contracts
 type Link =
     | Context
     | CaseGet of CaseGetRequest
-    | CaseAssignees of AssigneeRequest
+    | CaseAssignees of CaseLookupRequest
+    | CaseParties of CaseLookupRequest
     | CaseList of CaseListRequest
     | CaseSummary of CaseSummaryRequest
     | CaseTimeline of CaseTimelineRequest
@@ -32,6 +33,7 @@ module Link =
         | Link.Context -> QueryTaskId.Context
         | Link.CaseGet _ -> QueryTaskId.CaseGet
         | Link.CaseAssignees _ -> QueryTaskId.CaseAssignees
+        | Link.CaseParties _ -> QueryTaskId.CaseParties
         | Link.CaseList _ -> QueryTaskId.CaseList
         | Link.CaseSummary _ -> QueryTaskId.CaseSummary
         | Link.CaseTimeline _ -> QueryTaskId.CaseTimeline

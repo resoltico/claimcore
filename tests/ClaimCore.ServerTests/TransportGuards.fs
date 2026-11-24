@@ -1,11 +1,14 @@
 module ClaimCore.ServerTests.TransportGuards
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open System
 open System.IO
+open System.Diagnostics.Metrics
+open System.Text.Json
 open System.Text
 open System.Threading
 open System.Threading.Tasks
@@ -110,6 +113,7 @@ let private failurePhase dispatched completed phase =
 
     RouteSupport.handleFailures
         sink
+        System.Threading.CancellationToken.None
         context
         (RequestDelegate(fun _ ->
             Task.FromException(InvalidOperationException "sensitive-exception-message")))
@@ -130,6 +134,95 @@ let private failurePhase dispatched completed phase =
 
     Expect.isFalse (sink.ToString().Contains "sensitive-exception-message") "Sanitized failure"
 
+let private requestOutcome abort stop =
+    use disconnected = new CancellationTokenSource()
+    use stopping = new CancellationTokenSource()
+    use sink = new StringWriter()
+    use body = new MemoryStream()
+    use diagnostics = StorageFailureLog.attach sink
+    use listener = new MeterListener()
+    let results = ResizeArray<string>()
+
+    listener.InstrumentPublished <-
+        fun instrument observer ->
+            if instrument.Name = "claimcore.requests" then
+                observer.EnableMeasurementEvents instrument
+
+    listener.SetMeasurementEventCallback<int64>(
+        MeasurementCallback<int64>(fun _ _ tags _ ->
+            for i in 0 .. tags.Length - 1 do
+                if tags[i].Key = "result" then
+                    results.Add(string tags[i].Value))
+    )
+
+    listener.Start()
+
+    let context = DefaultHttpContext()
+
+    context.Request.Path <-
+        PathString(Api.forActor (ActorEndpoint.Query QueryTaskId.WorkViews) |> Api.path)
+
+    context.RequestAborted <- disconnected.Token
+    context.Response.Body <- body
+
+    let dispatch =
+        RequestDelegate(fun current ->
+            RouteSupport.markDispatched current
+
+            if stop then
+                stopping.Cancel()
+
+            if abort then
+                disconnected.Cancel()
+                let error = OperationCanceledException(disconnected.Token)
+                ClaimCore.Application.Storage.FailureDiagnostics.report error
+                Task.FromException error
+            else
+                Task.FromException(InvalidOperationException "synthetic dispatch fault"))
+
+    let handle =
+        RequestDelegate(fun current ->
+            RouteSupport.handleFailures sink stopping.Token current dispatch)
+
+    RequestLog.middleware sink context handle |> _.GetAwaiter().GetResult()
+
+    let records =
+        sink.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+
+    let kinds =
+        records
+        |> Array.choose (fun record ->
+            use parsed = JsonDocument.Parse record
+
+            match parsed.RootElement.TryGetProperty "kind" with
+            | true, kind -> Some(kind.GetString())
+            | _ -> None)
+
+    use logged = JsonDocument.Parse(Array.last records)
+
+    if abort && not stop then
+        Expect.equal
+            (logged.RootElement.GetProperty("outcome").GetString())
+            "ABANDONED"
+            "Request outcome"
+
+        Expect.sequenceEqual results [ "abandoned" ] "Request metric"
+        Expect.hasLength records 1 "No storage or exception diagnostics"
+        Expect.equal body.Length 0L "No failure response was written"
+    else
+        Expect.equal
+            (logged.RootElement.GetProperty("outcome").GetString())
+            "HOST_FAILURE"
+            "Request outcome"
+
+        Expect.sequenceEqual results [ "host_failure" ] "Request metric"
+        Expect.contains kinds "exception" "Exception is logged"
+
+        if stop then
+            Expect.contains kinds "storageFailure" "Shutdown cancellation is logged"
+        else
+            Expect.isGreaterThan body.Length 0L "An open request receives the failure response"
+
 [<Tests>]
 let tests =
     testList
@@ -144,6 +237,13 @@ let tests =
             testCase "before-dispatch and dispatched failure knowledge remain distinct" (fun () ->
                 failurePhase false false (Some "NOT_STARTED")
                 failurePhase true false (Some "STARTED_UNCONFIRMED"))
+            testCase "abandoned dispatch records only the request and abandonment metric" (fun () ->
+                requestOutcome true false)
+            testCase
+                "open dispatch failures and shutdown cancellations remain host failures"
+                (fun () ->
+                    requestOutcome false false
+                    requestOutcome true true)
             testCase "completed response failures preserve execution knowledge" (fun () ->
                 failurePhase true true None)
         ]

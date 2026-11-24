@@ -8,19 +8,21 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 
 let declaration =
-    family
-        "case.removePayment"
-        ActSubject.Case
-        false
-        ActFamily.Business
-        Consequence.Routine
-        [ Capability.RecordPayment ]
-        [
-            operation
-            caseTarget
-            revision
-            required (target InputTarget.PaymentId) |> bound
-        ]
+    { family
+          "case.removePayment"
+          ActSubject.Case
+          false
+          ActFamily.Business
+          Consequence.Routine
+          [ Capability.RecordPayment ]
+          [
+              operation
+              caseTarget
+              revision
+              required (target InputTarget.PaymentId) |> bound
+          ] with
+        SelectionPromptId = Some "task.case.removePayment.selectionPrompt"
+    }
 
 let private capability = List.exactlyOne declaration.Capabilities
 
