@@ -51,6 +51,14 @@ let all () : IEndpointInput list =
                 }
         yield
             EndpointValues.input
+                Api.caseParties
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = 20
+                }
+        yield
+            EndpointValues.input
                 Api.caseTimeline
                 {
                     Target = target

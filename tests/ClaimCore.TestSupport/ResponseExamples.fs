@@ -388,6 +388,27 @@ let internal replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
+                Api.caseParties
+                HumanReadDocuments.parties
+                (Outcome.Succeeded
+                    {
+                        PartyChoicePage.Basis = basis
+                        Items =
+                            [
+                                {
+                                    PartyId =
+                                        PartyId.create (
+                                            Guid.Parse "30000000-0000-7000-8000-000000000001"
+                                        )
+                                        |> Option.get
+                                    Name = PartyName.parse "Synthetic claimant" |> Result.toOption
+                                    Role = PartyRole.Claimant
+                                }
+                            ]
+                        NextCursor = None
+                    })
+        yield!
+            actorRead
                 Api.caseTimeline
                 HumanReadDocuments.timeline
                 (Outcome.Succeeded
