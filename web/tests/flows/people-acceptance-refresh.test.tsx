@@ -126,6 +126,7 @@ const listing = (): ApiResult<ServiceResponse<"people.list">> => ({
                 key: "actor",
                 labelId: "field.profile.displayName.label",
                 prominence: "PRIMARY",
+                joins: null,
                 isMoney: false,
               },
             ],

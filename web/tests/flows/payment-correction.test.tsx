@@ -42,7 +42,13 @@ const paid = (amount: string) => ({
 const source: Table = {
   kind: "TABLE",
   columns: [
-    { key: "amount", labelId: "field.paidAmount.label", prominence: "PRIMARY", isMoney: true },
+    {
+      key: "amount",
+      labelId: "field.paidAmount.label",
+      prominence: "PRIMARY",
+      joins: null,
+      isMoney: true,
+    },
   ],
   rows: [
     { key: "other", values: [paid("10")], actions: [] },
@@ -86,11 +92,18 @@ const receipt = (operationId: string): HumanDocument => ({
         content: {
           kind: "TABLE",
           columns: [
-            { key: "direction", labelId: "label.action", prominence: "PRIMARY", isMoney: false },
+            {
+              key: "direction",
+              labelId: "label.action",
+              prominence: "PRIMARY",
+              joins: null,
+              isMoney: false,
+            },
             {
               key: "paymentId",
               labelId: "field.paymentId.label",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

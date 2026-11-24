@@ -47,6 +47,7 @@ it.each([
                       key: "caseReference",
                       labelId: "field.caseReference.label",
                       prominence: "PRIMARY",
+                      joins: null,
                       isMoney: false,
                     },
                   ],

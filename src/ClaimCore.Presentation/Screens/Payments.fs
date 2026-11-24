@@ -14,6 +14,8 @@ module PaymentsScreen =
     let netPaid (totals: PaymentTotals) =
         PresentedValue.moneyTotal (Money.currencyValue totals.Payable) totals.NetPaid
 
+    let progressCaptionId = "label.paymentProgress"
+
     let meter (position: FinancialPosition) =
         FinancialPosition.totals position
         |> Option.bind (fun totals ->
@@ -37,7 +39,7 @@ module PaymentsScreen =
                             CaseProgress.ofFinancial position |> CaseProgress.completesPayment
                         Description =
                             {
-                                MessageId = "label.paymentProgress"
+                                MessageId = progressCaptionId
                                 Arguments =
                                     Map.ofList
                                         [
@@ -213,6 +215,7 @@ module PaymentsScreen =
                         Prominence = Prominence.Primary
                         IsMoney = false
                         Recorded = true
+                        Joins = None
                     }
                     {
                         Key = "paymentId"
@@ -220,6 +223,7 @@ module PaymentsScreen =
                         Prominence = Prominence.Primary
                         IsMoney = false
                         Recorded = true
+                        Joins = None
                     }
                 ]
             Rows =

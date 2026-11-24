@@ -56,6 +56,7 @@ it("focuses the selected person dialog and restores its originating control on r
                     key: "actor",
                     labelId: "field.profile.displayName.label",
                     prominence: "PRIMARY",
+                    joins: null,
                     isMoney: false,
                   },
                 ],

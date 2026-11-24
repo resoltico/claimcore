@@ -51,7 +51,7 @@ module CatalogValidation =
                 invalidOp ("Message producer arguments differ: " + key)
 
         matches "label.operationWindow" (set [ "minutes" ])
-        matches "label.paymentProgress" (set [ "paid"; "payable" ])
+        matches PaymentsScreen.progressCaptionId (set [ "paid"; "payable" ])
         matches "headline.withDetail" (set [ "state"; "detail" ])
         matches "label.reviewNotEntered" (set [ "fields" ])
 

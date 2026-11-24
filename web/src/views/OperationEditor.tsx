@@ -79,7 +79,6 @@ const CurrentObservation = ({
   <section className="case-detail">
     <CaseIdentity
       region={current.screen.regions.find((region) => region.role === "IDENTITY")}
-      attention={current.screen.regions.find((region) => region.role === "ATTENTION")}
       requestedReference={undefined}
       timeZone={current.basis.observation.timeZone}
     />

@@ -151,8 +151,20 @@ export const workViewsDocument = (
         content: {
           kind: "TABLE",
           columns: [
-            { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
-            { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
+            {
+              key: "view",
+              labelId: "label.views",
+              prominence: "PRIMARY",
+              joins: null,
+              isMoney: false,
+            },
+            {
+              key: "count",
+              labelId: "label.total",
+              prominence: "SECONDARY",
+              joins: null,
+              isMoney: false,
+            },
           ],
           rows: [
             ...caseItems.map(({ key, view, label, count }) => ({

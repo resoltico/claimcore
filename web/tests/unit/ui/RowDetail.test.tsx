@@ -68,6 +68,7 @@ const supplied: Screen = {
             key: "arbitrary-key",
             labelId: "label.sequence",
             prominence: "PRIMARY",
+            joins: null,
             isMoney: false,
           },
         ],

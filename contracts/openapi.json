@@ -23908,13 +23908,26 @@
           },
           "recorded": {
             "type": "boolean"
+          },
+          "joins": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "key",
           "labelId",
           "prominence",
-          "isMoney"
+          "isMoney",
+          "joins"
         ]
       },
       "PresentedEntry": {

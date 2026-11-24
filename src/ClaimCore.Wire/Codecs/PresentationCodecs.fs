@@ -751,13 +751,14 @@ module PresentationCodecs =
         |> named "PresentedSection"
 
     let private column =
-        (record (fun key label prominence money recorded ->
+        (record (fun key label prominence money recorded joins ->
             {
                 Column.Key = key
                 Recorded = defaultArg recorded false
                 LabelId = label
                 Prominence = prominence
                 IsMoney = money
+                Joins = joins
             })
         : Fields<Column, _>)
         |> field "key" _.Key key
@@ -768,6 +769,7 @@ module PresentationCodecs =
             "recorded"
             (fun value -> if value.Recorded then Some true else None)
             boolean
+        |> field "joins" _.Joins (nullable key)
         |> build
         |> named "PresentedColumn"
 

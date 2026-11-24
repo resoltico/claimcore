@@ -26,6 +26,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
                     key: "reference",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY",
+                    joins: null,
                     isMoney: false,
                   },
                 ],

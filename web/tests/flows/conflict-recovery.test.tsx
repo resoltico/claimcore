@@ -42,6 +42,7 @@ const suppliedContinuation = (): Screen => ({
             key: "server-continuation",
             labelId: "label.changes",
             prominence: "PRIMARY",
+            joins: null,
             isMoney: false,
           },
         ],

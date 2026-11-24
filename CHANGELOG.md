@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Regenerate HUMAN clients for Cases column joins and the revised case IDENTITY. Task definitions add `subjectInput`.
 - Regenerate HUMAN clients for affordance `shortLabelId`, region counts, payment decision emptiness, and `recorded` on all entry regions.
 - HUMAN lists omit observation regions and Cases relegates payable amount to details. DATA and CSV retain payable amount. The CLI prints the list basis in a footer.
 - Actions inapplicable to the current subject no longer arrive as HUMAN affordances.

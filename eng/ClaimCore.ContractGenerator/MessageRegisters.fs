@@ -91,17 +91,23 @@ module MessageRegisters =
             |> List.map (fun task -> "task." + ClaimCore.Domain.TaskId.token task.Id + ".label")
             |> Set.ofList
 
+        let captions =
+            Map.keys TimelineEventPresentation.contracts
+            |> Set.ofSeq
+            |> Set.union accessSummaries
+            |> Set.add PaymentsScreen.progressCaptionId
+
         for KeyValue(language, entries) in authored do
             let catalog = entries |> Map.ofList
 
             for key, text in entries do
                 if
                     (key.StartsWith("change.", StringComparison.Ordinal)
-                     || Set.contains key accessSummaries)
+                     || Set.contains key captions)
                     && (text.TrimEnd().EndsWith(".", StringComparison.Ordinal)
                         || text.TrimEnd().EndsWith("。", StringComparison.Ordinal))
                 then
-                    invalidOp ("Timeline caption ends with a full stop: " + language + " " + key)
+                    invalidOp ("Caption ends with a full stop: " + language + " " + key)
 
                 if
                     key.EndsWith(".hint", StringComparison.Ordinal)

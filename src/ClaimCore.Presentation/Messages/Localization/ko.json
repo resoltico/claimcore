@@ -2620,8 +2620,8 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "{payable} 중 {paid} 지급됨.",
-    "source": "accebf3db360"
+    "text": "{payable} 중 {paid} 지급됨",
+    "source": "6c78ba810cb0"
   },
   "progress.PARTLY_PAID.label": {
     "text": "일부 지급됨",

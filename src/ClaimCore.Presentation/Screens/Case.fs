@@ -96,7 +96,7 @@ module CaseScreen =
         }
 
 
-    let identityFacts (snapshot: CaseSnapshot) =
+    let private identityFacts (snapshot: CaseSnapshot) =
         CaseState.fields snapshot.State
         |> Option.map (fun facts ->
             let selected =
@@ -257,10 +257,7 @@ module CaseScreen =
                     }
         ]
 
-    let view (reply: CaseReadModel) =
-        let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
-        let groups = caseFacts reply.Snapshot
-
+    let identity (reply: CaseReadModel) =
         let identitySummary =
             [
                 yield! identityFacts reply.Snapshot
@@ -299,7 +296,9 @@ module CaseScreen =
             |> Option.bind (fun fields -> Handling.closure fields.Handling)
             |> Option.map _.Outcome
 
-        let identity =
+        entryRegion
+            RegionRole.Identity
+            None
             [
                 yield
                     value
@@ -307,56 +306,72 @@ module CaseScreen =
                         "field.caseReference.label"
                         Prominence.Primary
                         (PresentedValue.Reference reply.Snapshot.Reference)
-                match reply.MatchedReference with
-                | Some reference ->
-                    yield
-                        value
-                            "matchedReference"
-                            "label.referenceChangedFrom"
-                            Prominence.Secondary
-                            (PresentedValue.Reference reference)
-                | None -> ()
-                match CaseState.fields reply.Snapshot.State with
-                | Some facts ->
-                    if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
-                        yield
-                            value
-                                "lifecycle"
-                                "input.lifecycle.label"
-                                Prominence.Primary
-                                (code Lifecycle.vocabulary Lifecycle.Voided)
-                    else
-                        yield
-                            value
-                                "status"
-                                "field.status.label"
-                                Prominence.Primary
-                                (code CaseStatus.vocabulary facts.Status)
-
-                    yield
-                        value
-                            "progress"
-                            "input.progress.label"
-                            Prominence.Primary
-                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
-
-                    if reply.Mine then
-                        yield
-                            value
-                                "assignment"
-                                "input.assignment.label"
-                                Prominence.Secondary
-                                (code CaseAssignment.vocabulary CaseAssignment.Mine)
-                | None -> ()
-                if live then
+                if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
                     yield
                         value
                             "headline"
                             "label.caseState"
                             Prominence.Primary
                             (headline reply.Headline outcome)
+
+                    if not reply.Attention.IsEmpty then
+                        yield
+                            value
+                                "attention"
+                                "label.attention"
+                                Prominence.Primary
+                                (codes CaseAttention.vocabulary reply.Attention)
                 yield! identitySummary
             ]
+
+    let private statusFacts (reply: CaseReadModel) =
+        [
+            match reply.MatchedReference with
+            | Some reference ->
+                yield
+                    value
+                        "matchedReference"
+                        "label.referenceChangedFrom"
+                        Prominence.Secondary
+                        (PresentedValue.Reference reference)
+            | None -> ()
+            match CaseState.fields reply.Snapshot.State with
+            | Some facts ->
+                if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
+                    yield
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Voided)
+                else
+                    yield
+                        value
+                            "status"
+                            "field.status.label"
+                            Prominence.Primary
+                            (code CaseStatus.vocabulary facts.Status)
+
+                yield
+                    value
+                        "progress"
+                        "input.progress.label"
+                        Prominence.Primary
+                        (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
+
+                if reply.Mine then
+                    yield
+                        value
+                            "assignment"
+                            "input.assignment.label"
+                            Prominence.Secondary
+                            (code CaseAssignment.vocabulary CaseAssignment.Mine)
+            | None -> ()
+        ]
+
+    let view (reply: CaseReadModel) =
+        let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
+        let groups = caseFacts reply.Snapshot
 
         let notice =
             match reply.Snapshot.State, reply.Disposition with
@@ -481,7 +496,7 @@ module CaseScreen =
 
         Screen.create
             [
-                yield entryRegion RegionRole.Identity None identity
+                yield identity reply
                 yield!
                     notice
                     |> Option.map (fun notice ->
@@ -491,16 +506,6 @@ module CaseScreen =
                             (RegionContent.Notice(RegionNotice.single notice)))
                     |> Option.toList
                 if live then
-                    yield
-                        region
-                            RegionRole.Attention
-                            (Some "label.attention")
-                            (RegionContent.Codes(
-                                Vocabulary.name CaseAttention.vocabulary,
-                                reply.Attention
-                                |> List.map (Vocabulary.token CaseAttention.vocabulary)
-                            ))
-
                     yield!
                         progress
                         |> Option.map (fun progress ->
@@ -513,7 +518,11 @@ module CaseScreen =
 
                     for group, facts in List.zip scalarGroups groups do
                         if group = RecordGroup.Registration then
-                            yield entryRegion RegionRole.Facts (Some facts.TitleId) facts.Entries
+                            yield
+                                entryRegion
+                                    RegionRole.Facts
+                                    (Some facts.TitleId)
+                                    (statusFacts reply @ facts.Entries)
 
                     if not reply.Parties.IsEmpty || not reply.PartyOffers.IsEmpty then
                         yield parties reply

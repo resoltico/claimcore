@@ -119,6 +119,7 @@ const page = {
               key: "action",
               labelId: "field.reminderAction.label",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

@@ -28,6 +28,7 @@ const table = (role: Region["role"], key: string, caption: string): Region => ({
         key: role === "NEXT_ACTIONS" ? "action" : "caption",
         labelId: "label.details",
         prominence: "PRIMARY",
+        joins: null,
         isMoney: false,
       },
     ],

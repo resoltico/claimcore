@@ -342,6 +342,7 @@ module ScreenEntries =
                         Prominence = definition.Prominence
                         IsMoney = definition.IsMoney
                         Recorded = false
+                        Joins = None
                     })
             Rows =
                 rows

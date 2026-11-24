@@ -131,7 +131,7 @@ let tests =
                             "Only fact regions repeat"
 
                     let column =
-                        """{"key":"one","labelId":"label.details","prominence":"PRIMARY","isMoney":false}"""
+                        """{"key":"one","labelId":"label.details","prominence":"PRIMARY","isMoney":false,"joins":null}"""
 
                     let row = """{"key":"row-a","values":[{"kind":"TEXT","value":"Authored"}]}"""
 

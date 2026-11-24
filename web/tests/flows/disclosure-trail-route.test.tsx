@@ -40,6 +40,7 @@ const page = (recordedCase: string, nextCursor: string | null = null) =>
                 key: "caseId",
                 labelId: "input.caseId.label",
                 prominence: "PRIMARY",
+                joins: null,
                 isMoney: false,
               },
             ],

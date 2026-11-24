@@ -86,6 +86,7 @@ const disclosedListing = humanReadReply("people.list", {
               key: "person",
               labelId: "field.profile.displayName.label",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

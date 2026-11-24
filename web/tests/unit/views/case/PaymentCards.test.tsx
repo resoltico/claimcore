@@ -14,9 +14,16 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
       key: "paymentDate",
       labelId: "field.paymentDate.label",
       prominence: "PRIMARY",
+      joins: null,
       isMoney: false,
     },
-    { key: "paidAmount", labelId: "field.paidAmount.label", prominence: "PRIMARY", isMoney: true },
+    {
+      key: "paidAmount",
+      labelId: "field.paidAmount.label",
+      prominence: "PRIMARY",
+      joins: null,
+      isMoney: true,
+    },
   ],
   rows: [
     {

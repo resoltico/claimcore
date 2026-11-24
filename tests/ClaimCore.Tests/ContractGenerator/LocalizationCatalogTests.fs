@@ -225,8 +225,14 @@ let tests =
             testCase
                 "missing Latvian key, extra Arabic hole and English ICU plural each stop generation"
                 invalidCatalogs
-            testCase "timeline captions reject a terminal full stop" (fun () ->
-                for key in [ "change.PARTY.recorded"; "task.people.grant.label" ] do
+            testCase "captions reject a terminal full stop" (fun () ->
+                for key in
+                    [
+                        "change.PARTY.recorded"
+                        "task.people.grant.label"
+                        "timeline.event.reminderPlanned"
+                        "label.paymentProgress"
+                    ] do
                     let authored = AuthoredMessages.all ()
                     Expect.isTrue (authored["en"] |> List.exists (fst >> (=) key)) "Caption exists"
 

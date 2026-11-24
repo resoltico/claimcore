@@ -25,6 +25,7 @@ const succeeded = (
                 key: "private",
                 labelId: "field.handlingSummary.label",
                 prominence: "PRIMARY",
+                joins: null,
                 isMoney: false,
               },
             ],

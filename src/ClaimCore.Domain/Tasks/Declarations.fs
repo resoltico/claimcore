@@ -64,6 +64,7 @@ module internal Declarations =
             Aggregate = aggregate
             Target = target
             Creates = creates
+            SubjectInput = None
             Family = family
             Consequence = consequence
             Review = review

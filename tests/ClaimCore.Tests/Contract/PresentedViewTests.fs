@@ -16,9 +16,9 @@ let tests =
     testList
         "wire presentation screens"
         [
-            testCase "header progress and assignment codes have closed wire vocabularies" (fun () ->
+            testCase "progress and assignment codes have closed wire vocabularies" (fun () ->
                 let literal =
-                    """{"regions":[{"role":"IDENTITY","content":{"kind":"ENTRIES","entries":[{"key":"progress","labelId":"input.progress.label","prominence":"PRIMARY","value":{"kind":"CODE","vocabulary":"progress","token":"UNDECIDED"}},{"key":"assignment","labelId":"input.assignment.label","prominence":"SECONDARY","value":{"kind":"CODE","vocabulary":"assignment","token":"MINE"}}]}}]}"""
+                    """{"regions":[{"role":"FACTS","content":{"kind":"ENTRIES","entries":[{"key":"progress","labelId":"input.progress.label","prominence":"PRIMARY","value":{"kind":"CODE","vocabulary":"progress","token":"UNDECIDED"}},{"key":"assignment","labelId":"input.assignment.label","prominence":"SECONDARY","value":{"kind":"CODE","vocabulary":"assignment","token":"MINE"}}]}}]}"""
 
                 let value =
                     decode literal |> Result.defaultWith (fun error -> failtestf "%A" error)
@@ -84,11 +84,27 @@ let tests =
                     Expect.isError
                         (decode """{"kind":"RECORD","sections":[]}""")
                         "The retired view envelope is refused")
+            testCase "table joins reject missing hidden chained and self targets" (fun () ->
+                let literal =
+                    """{"regions":[{"role":"RESULTS","content":{"kind":"TABLE","columns":[{"key":"a","labelId":"label.sequence","prominence":"PRIMARY","isMoney":false,"joins":null},{"key":"b","labelId":"label.sequence","prominence":"SECONDARY","isMoney":false,"joins":"a"},{"key":"c","labelId":"label.sequence","prominence":"DETAIL","isMoney":false,"joins":null}],"rows":[]}}]}"""
+
+                Expect.isOk (decode literal) "A visible target in the same table is valid"
+
+                for target in [ "outside"; "c"; "b" ] do
+                    Expect.isError
+                        (decode (
+                            literal.Replace("\"joins\":\"a\"", "\"joins\":\"" + target + "\"")
+                        ))
+                        ("Invalid target: " + target)
+
+                Expect.isError
+                    (decode (literal.Replace("\"joins\":null", "\"joins\":\"b\"")))
+                    "A join cannot target another joining column")
             testCase
                 "table rows have stable unique keys complete values and optional details"
                 (fun () ->
                     let literal =
-                        """{"regions":[{"role":"RESULTS","content":{"kind":"TABLE","columns":[{"key":"future-count","labelId":"label.sequence","prominence":"PRIMARY","isMoney":false}],"rows":[{"key":"entity-7","values":[{"kind":"COUNT","value":7}]}]}}]}"""
+                        """{"regions":[{"role":"RESULTS","content":{"kind":"TABLE","columns":[{"key":"future-count","labelId":"label.sequence","prominence":"PRIMARY","isMoney":false,"joins":null}],"rows":[{"key":"entity-7","values":[{"kind":"COUNT","value":7}]}]}}]}"""
 
                     let column =
                         {
@@ -97,6 +113,7 @@ let tests =
                             LabelId = "label.sequence"
                             Prominence = Prominence.Primary
                             IsMoney = false
+                            Joins = None
                         }
 
                     let table =

@@ -2620,8 +2620,8 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "Pagado {paid} de {payable}.",
-    "source": "accebf3db360"
+    "text": "Pagado {paid} de {payable}",
+    "source": "6c78ba810cb0"
   },
   "progress.PARTLY_PAID.label": {
     "text": "Pagado parcialmente",

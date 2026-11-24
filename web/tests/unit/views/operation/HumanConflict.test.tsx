@@ -23,6 +23,7 @@ const document = (
               key: "caption",
               labelId: "label.details",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

@@ -33,6 +33,7 @@ it("renders the supplied person caption and navigates with its typed identity wi
                 key: "actor",
                 labelId: "field.profile.displayName.label",
                 prominence: "PRIMARY",
+                joins: null,
                 isMoney: false,
               },
             ],
