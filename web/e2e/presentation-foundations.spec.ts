@@ -1594,23 +1594,14 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     name: "Check access",
     exact: true,
   });
-  // Complete the explicit check while access is denied. A concurrent focus check
-  // can then restore access without removing the button before the click.
-  await checkAccess.click();
+  const retry = page.getByRole("button", { name: "Send again", exact: true });
   await expect(checkAccess).toBeEnabled();
   hasAccess = true;
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event("focus"));
-  });
-  // Restoring the same requester reveals the retained request without submitting it.
-  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  // An automatic refresh can restore access while the explicit check is being activated.
+  await Promise.race([checkAccess.click(), retry.waitFor()]);
+  await expect(retry).toBeVisible();
   expect(bytes).toHaveLength(1);
-  await page
-    .getByRole("button", {
-      name: "Send again",
-      exact: true,
-    })
-    .click();
+  await retry.click();
   await expect.poll(() => bytes.length).toBe(2);
   expect(bytes[1]).toBe(bytes[0]);
   await expectAccessible(page);
