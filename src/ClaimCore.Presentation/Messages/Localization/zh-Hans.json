@@ -2620,8 +2620,8 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "已付 {paid}，应付 {payable}。",
-    "source": "accebf3db360"
+    "text": "已付 {paid}，应付 {payable}",
+    "source": "6c78ba810cb0"
   },
   "progress.PARTLY_PAID.label": {
     "text": "部分已付",

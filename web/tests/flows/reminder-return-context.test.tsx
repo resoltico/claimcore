@@ -39,6 +39,7 @@ it("waits for the initial reminder page before restoring filtered queue focus an
                   key: "reference",
                   labelId: "field.caseReference.label",
                   prominence: "PRIMARY",
+                  joins: null,
                   isMoney: false,
                 },
               ],

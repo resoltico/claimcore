@@ -8,13 +8,11 @@ import { ChipList, chipValues } from "../../ui/ChipList";
 
 export const CaseIdentity = ({
   region,
-  attention,
   timeZone,
   requestedReference,
   renderIdentity,
 }: {
   region: Region | undefined;
-  attention: Region | undefined;
   timeZone: string;
   requestedReference: string | undefined;
   renderIdentity?: (heading: ReactNode, facts: ReactNode) => ReactNode;
@@ -23,7 +21,7 @@ export const CaseIdentity = ({
   const entries = region?.content.kind === "ENTRIES" ? region.content.entries : [];
   const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
   const headline = entries.flatMap(({ value }) => (value.kind === "STATE" ? [value] : []));
-  const reasons = attention?.content.kind === "CODES" ? chipValues(attention.content) : [];
+  const reasons = entries.flatMap(({ value }) => (value.kind === "CODES" ? chipValues(value) : []));
   const facts = entries.filter(
     (entry) =>
       entry !== reference &&

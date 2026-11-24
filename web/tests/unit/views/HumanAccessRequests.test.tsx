@@ -50,7 +50,13 @@ const document: HumanDocument = {
         content: {
           kind: "TABLE",
           columns: [
-            { key: "caption", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
+            {
+              key: "caption",
+              labelId: "label.details",
+              prominence: "PRIMARY",
+              joins: null,
+              isMoney: false,
+            },
           ],
           rows: [
             {

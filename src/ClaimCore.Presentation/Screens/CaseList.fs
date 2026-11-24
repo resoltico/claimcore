@@ -147,9 +147,20 @@ module CaseListScreen =
                     Some(Link.caseById row.CaseId), actions)
                 rows
 
+        let columns =
+            data.Columns
+            |> List.map (fun column ->
+                { column with
+                    Joins =
+                        match column.Key with
+                        | "attention" -> Some "headline"
+                        | "nextDue" -> Some "nextAction"
+                        | _ -> None
+                })
+
         Screen.create
             [
-                region RegionRole.Results None (RegionContent.Table data)
+                region RegionRole.Results None (RegionContent.Table { data with Columns = columns })
                 |> withEmpty "label.noCasesForView"
             ]
 

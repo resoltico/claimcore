@@ -52,6 +52,7 @@ module WorkViewsScreen =
                 {
                     Column.Key = "view"
                     Recorded = false
+                    Joins = None
                     LabelId = "label.views"
                     Prominence = Prominence.Primary
                     IsMoney = false
@@ -59,6 +60,7 @@ module WorkViewsScreen =
                 {
                     Column.Key = "count"
                     Recorded = false
+                    Joins = None
                     LabelId = "label.total"
                     Prominence = Prominence.Secondary
                     IsMoney = false

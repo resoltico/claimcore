@@ -28,6 +28,7 @@ const table = (handles: ReadonlyArray<Handle>, currency: string, firstAmount: nu
         key: "paidAmount",
         labelId: "field.paidAmount.label",
         prominence: "PRIMARY",
+        joins: null,
         isMoney: true,
       },
     ],

@@ -8,20 +8,24 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 open ClaimCore.Domain.Tasks.Party
 
+let private subjectInput = field BusinessField.CaseReference
+
 let declaration =
-    create
-        "case.open"
-        AggregateKind.Family
-        ActSubject.Case
-        true
-        ActFamily.Business
-        Consequence.Routine
-        [ Capability.Register ]
-        (operation
-         :: (required (field BusinessField.CaseReference) |> retained)
-         :: revision
-         :: group TaskInputMode.Optional RecordGroup.Registration)
-        [ PartyTasks.collection ]
+    { create
+          "case.open"
+          AggregateKind.Family
+          ActSubject.Case
+          true
+          ActFamily.Business
+          Consequence.Routine
+          [ Capability.Register ]
+          (operation
+           :: (required subjectInput |> retained)
+           :: revision
+           :: group TaskInputMode.Optional RecordGroup.Registration)
+          [ PartyTasks.collection ] with
+        SubjectInput = Some subjectInput
+    }
 
 let private capability = List.exactlyOne declaration.Capabilities
 

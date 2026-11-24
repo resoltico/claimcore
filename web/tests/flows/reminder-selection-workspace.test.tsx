@@ -27,6 +27,7 @@ const page = (reference: string | null, nextCursor: string | null) => ({
                       key: "reference",
                       labelId: "field.caseReference.label",
                       prominence: "PRIMARY",
+                      joins: null,
                       isMoney: false,
                     },
                   ],

@@ -23,6 +23,7 @@ type TaskDeclaration =
         Aggregate: AggregateKind
         Target: ActSubject
         Creates: bool
+        SubjectInput: TaskInputId option
         Family: ActFamily
         Consequence: Consequence
         Review: TaskReview

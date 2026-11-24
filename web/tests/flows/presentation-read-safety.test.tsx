@@ -65,6 +65,7 @@ const referenceRows = (value: string): Screen => ({
             key: "caseReference",
             labelId: "field.caseReference.label",
             prominence: "PRIMARY",
+            joins: null,
             isMoney: false,
           },
         ],

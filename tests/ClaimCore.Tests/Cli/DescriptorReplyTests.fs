@@ -117,6 +117,20 @@ let tests =
     testList
         "typed reply presentation"
         [
+            testCase "case get renders status and payment progress from the facts region" (fun () ->
+                let text =
+                    ResponseExamples.defaultHuman Api.caseGet
+                    |> CliReplies.ofValue Api.caseGet
+                    |> FrameResult.Reply
+                    |> ReplyText.resultLines (RenderingContext.forLanguage "en") None
+                    |> String.concat "\n"
+
+                Expect.stringContains text "Case status: Open" "Business status remains visible"
+
+                Expect.stringContains
+                    text
+                    "Payment progress: Undecided"
+                    "Payment progress remains visible")
             testCase "people review uses the typed branch and localized grants" (fun () ->
                 for language in [ "en"; "lv"; "ar" ] do
                     let lines =

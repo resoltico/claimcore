@@ -72,6 +72,7 @@ module TaskMetadata =
                 meaningId = meaningId
                 consequence = consequence
                 creates = creates
+                subjectInput = ledger |> Option.bind _.SubjectInput |> Option.map TaskInputId.token
                 review =
                     ledger
                     |> Option.map (fun declaration ->

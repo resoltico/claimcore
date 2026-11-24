@@ -654,7 +654,7 @@
   "label.paid": "Paid",
   "label.remaining": "Remaining",
   "label.paidTotals": "Net paid by currency",
-  "label.paymentProgress": "Paid {paid} of {payable}.",
+  "label.paymentProgress": "Paid {paid} of {payable}",
   "progress.PARTLY_PAID.label": "Partly paid",
   "headline.PARTLY_PAID.label": "Partly paid",
   "diagnostic.PAYMENT_AMOUNT_POSITIVE": "Enter a payment amount greater than zero.",

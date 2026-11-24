@@ -92,6 +92,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
                     key: "paidAmount",
                     labelId: "field.paidAmount.label",
                     prominence: "PRIMARY" as const,
+                    joins: null,
                     isMoney: true,
                   },
                 ],

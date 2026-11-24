@@ -84,6 +84,7 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
                   key: "caption",
                   labelId: "field.profile.displayName.label",
                   prominence: "PRIMARY",
+                  joins: null,
                   isMoney: false,
                 },
               ],

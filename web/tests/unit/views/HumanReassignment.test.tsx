@@ -147,6 +147,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                           key: "actor",
                           labelId: "label.details",
                           prominence: "PRIMARY",
+                          joins: null,
                           isMoney: false,
                         },
                       ],

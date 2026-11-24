@@ -183,7 +183,6 @@ const CaseHeader = ({
   const back = lastWorklist();
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
-  const attention = state?.screen.regions.find((region) => region.role === "ATTENTION");
   const breadcrumb = breadcrumbReference(target, identity);
   return (
     <div className="case-page-header">
@@ -208,7 +207,6 @@ const CaseHeader = ({
       <CloseReminderSelection onBack={onBack} />
       <CaseIdentity
         region={identity}
-        attention={attention}
         requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
         timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
         renderIdentity={(heading, facts) => (

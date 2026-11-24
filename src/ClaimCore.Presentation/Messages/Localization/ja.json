@@ -2620,8 +2620,8 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "{payable}のうち{paid}を支払済み。",
-    "source": "accebf3db360"
+    "text": "{payable}のうち{paid}を支払済み",
+    "source": "6c78ba810cb0"
   },
   "progress.PARTLY_PAID.label": {
     "text": "一部支払済み",

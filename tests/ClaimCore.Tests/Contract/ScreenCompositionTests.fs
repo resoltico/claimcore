@@ -29,6 +29,19 @@ let redesignDeclarations =
     testList
         "workspace presentation declarations"
         [
+            testCase "only case.open declares the input that names its subject" (fun () ->
+                let declared =
+                    ClaimCore.Domain.Tasks.Registry.clientDeclarations
+                    |> List.choose (fun task ->
+                        task.SubjectInput |> Option.map (fun input -> TaskId.token task.Id, input))
+
+                Expect.equal
+                    declared
+                    [
+                        "case.open",
+                        TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+                    ]
+                    "Other tasks have no subject input")
             testCase "all chip vocabularies declare exactly one supported tone per code" (fun () ->
                 let tokens vocabulary =
                     Vocabulary.name vocabulary, Set.ofList (Vocabulary.tokens vocabulary)
@@ -115,6 +128,13 @@ let redesignDeclarations =
                             "changedAt", detail
                         ]
                         "Human columns are independent of the machine projection"
+
+                    Expect.equal
+                        (table.Columns
+                         |> List.choose (fun column ->
+                             column.Joins |> Option.map (fun target -> column.Key, target)))
+                        [ "nextDue", "nextAction"; "attention", "headline" ]
+                        "Human Cases declares its two joins"
 
                     Expect.equal
                         region.EmptyId
@@ -383,6 +403,7 @@ let invalidTables =
                 LabelId = "label.details"
                 Prominence = Prominence.Primary
                 IsMoney = false
+                Joins = None
             }
 
         let values = [ PresentedValue.Text "retained" ]
@@ -563,11 +584,47 @@ let tests =
                         (item.Highlights |> List.collect _.Entries |> List.map _.Value)
                         [ PresentedValue.Absent "label.changesWithheld" ]
                         "The compact row discloses only the withheld state")
+            testCase "current case identity holds the subject and excludes status facts" (fun () ->
+                let current =
+                    { ResponseExamples.caseRead with
+                        Attention = [ CaseAttention.DeadlineOverdue ]
+                    }
+
+                let screen = CaseScreen.view current
+                let document = HumanCaseDocument.ofCore current
+
+                let identity (screen: Screen) =
+                    screen.Regions |> List.find (fun region -> region.Role = RegionRole.Identity)
+
+                Expect.equal
+                    (identity document.Screen)
+                    (identity screen)
+                    "The current-case document used by editors preserves the case screen identity"
+
+                let entries role =
+                    screen.Regions
+                    |> List.collect (fun region ->
+                        match region.Content with
+                        | RegionContent.Entries entries when region.Role = role -> entries
+                        | _ -> [])
+
+                Expect.equal
+                    (entries RegionRole.Identity |> List.map _.Key)
+                    [ "caseReference"; "headline"; "attention"; "claimedAmount" ]
+                    "Only subject facts appear in the identity"
+
+                Expect.contains
+                    (entries RegionRole.Identity |> List.map _.Value)
+                    (PresentedValue.Codes("attention", [ "DEADLINE_OVERDUE" ]))
+                    "Attention accompanies the headline"
+
+                let facts = entries RegionRole.Facts |> List.map _.Key
+                Expect.contains facts "status" "Case status belongs to facts"
+                Expect.contains facts "progress" "Payment progress belongs to facts")
             matches
                 "case workspace"
                 [
                     RegionRole.Identity
-                    RegionRole.Attention
                     RegionRole.Progress
                     RegionRole.Facts
                     RegionRole.Payments

@@ -61,7 +61,13 @@ it("renders only supplied groups in their order with stable row identities", () 
             content: {
               kind: "TABLE",
               columns: [
-                { key: "future", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
+                {
+                  key: "future",
+                  labelId: "label.details",
+                  prominence: "PRIMARY",
+                  joins: null,
+                  isMoney: false,
+                },
               ],
               rows: [
                 { key: "a", values: [{ kind: "TEXT", value: "First stored" }] },
@@ -118,7 +124,13 @@ it("routes grouped row actions by supplied identity rather than visible position
             content: {
               kind: "TABLE",
               columns: [
-                { key: "name", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
+                {
+                  key: "name",
+                  labelId: "label.details",
+                  prominence: "PRIMARY",
+                  joins: null,
+                  isMoney: false,
+                },
               ],
               rows: [
                 {

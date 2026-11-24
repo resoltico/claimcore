@@ -1,6 +1,7 @@
 namespace ClaimCore.Wire
 
 open ClaimCore.Json
+open ClaimCore.Presentation
 
 /// Relational rendering structure, applied after the child codecs admit all member shapes.
 module internal PresentationStructure =
@@ -40,8 +41,26 @@ module internal PresentationStructure =
                         count >= int64 (array "rowKeys" group).Length
                     | _ -> false)
 
+            let joins =
+                columns
+                |> List.choose (fun column ->
+                    match JsonValue.tryMember "key" column with
+                    | Some(JsonValue.String key) ->
+                        let visible =
+                            JsonValue.tryMember "prominence" column
+                            <> Some(JsonValue.String "DETAIL")
+
+                        let target =
+                            match JsonValue.tryMember "joins" column with
+                            | Some(JsonValue.String target) -> Some target
+                            | _ -> None
+
+                        Some(key, visible, target)
+                    | _ -> None)
+
             if
                 unique (keys columns)
+                && Column.validJoins joins
                 && unique rowKeys
                 && unique grouped
                 && counts
@@ -52,7 +71,7 @@ module internal PresentationStructure =
             else
                 fail
                     path
-                    "Table columns and rows require unique keys, matching widths and disjoint covering groups."
+                    "Table columns and rows require valid joins, unique keys, matching widths and disjoint covering groups."
 
     let singletonRegions =
         ClaimCore.Presentation.Screen.singletonRoles

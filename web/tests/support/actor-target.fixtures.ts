@@ -269,6 +269,7 @@ export const setupActorTargets = (
                   key: "actor",
                   labelId: "field.profile.displayName.label",
                   prominence: "PRIMARY",
+                  joins: null,
                   isMoney: false,
                 },
               ],

@@ -59,6 +59,7 @@ const attachmentList = (actions: NonNullable<RegionRow["actions"]> = []): HumanD
               key: "attachmentName",
               labelId: "field.attachmentName.label",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

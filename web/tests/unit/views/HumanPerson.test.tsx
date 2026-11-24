@@ -54,6 +54,7 @@ const document: HumanDocument = {
               key: "role",
               labelId: "field.role.label",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

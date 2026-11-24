@@ -33,6 +33,7 @@ const current: CurrentCase = {
               key: "caption",
               labelId: "label.details",
               prominence: "PRIMARY",
+              joins: null,
               isMoney: false,
             },
           ],

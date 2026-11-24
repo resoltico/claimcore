@@ -74,7 +74,20 @@ type Column =
         Prominence: Prominence
         IsMoney: bool
         Recorded: bool
+        Joins: string option
     }
+
+module Column =
+    let validJoins columns =
+        let targets =
+            columns
+            |> List.choose (fun (key, visible, joins) ->
+                if visible && Option.isNone joins then Some key else None)
+            |> Set.ofList
+
+        columns
+        |> List.forall (fun (_, _, joins) ->
+            joins |> Option.forall (fun key -> Set.contains key targets))
 
 type PresentedMessage =
     {
@@ -455,6 +468,10 @@ module Screen =
                 if
                     not (
                         unique (table.Columns |> List.map _.Key)
+                        && (table.Columns
+                            |> List.map (fun column ->
+                                column.Key, column.Prominence <> Prominence.Detail, column.Joins)
+                            |> Column.validJoins)
                         && unique keys
                         && unique grouped
                         && (table.Rows
@@ -472,7 +489,7 @@ module Screen =
                 then
                     invalidArg
                         (nameof regions)
-                        "Tables require unique keys, matching widths and disjoint covering groups."
+                        "Tables require valid joins, unique keys, matching widths and disjoint covering groups."
             | RegionContent.Notice notices when
                 notices.IsEmpty || notices.Length > RegionNotice.maximum
                 ->
