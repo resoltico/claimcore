@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.22.0] - 2026-11-25
+## [0.22.0] - 2026-11-26
 
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 9. Previous formats require their matching builds, including for restoring backups.
 - Supply the production HTTPS intermediates in the operator PFX. ClaimCore serves them with the configured leaf certificate.
