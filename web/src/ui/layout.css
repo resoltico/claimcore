@@ -381,7 +381,7 @@
       td:has(
         .data-table-value:is([data-kind="STATE"], [data-kind="CODES"]) .chip-list > :nth-child(2)
       ) {
-      inline-size: 26%;
+      inline-size: 27%;
     }
   }
 
