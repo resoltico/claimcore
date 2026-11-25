@@ -19,16 +19,19 @@ test("rotates a exposed OPEN identity when only its target reference changes", a
   expect(second.operationId).not.toBe(first.operationId);
 });
 
-test("an empty register can open a case and leave an untouched invalid drawer", async ({
-  page,
-}) => {
+test("case intake preserves focus and distinguishes empty lifecycle views", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await page.emulateMedia({ forcedColors: "active" });
   await openAuthenticated(page);
   await page.goto("/cases?view=ALL");
-  const fresh = page.getByText("There are no cases in your accessible scope.");
-  await expect(fresh).toBeVisible();
   const open = page.getByRole("link", { name: "Open a case", exact: true });
+  const executions: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/operation.execute") {
+      executions.push(path);
+    }
+  });
   await open.click();
   const drawer = page.getByRole("dialog", { name: "Open a case" });
   const reference = drawer.getByRole("textbox", { name: "Case reference", exact: true });
@@ -47,10 +50,11 @@ test("an empty register can open a case and leave an untouched invalid drawer", 
   await expect(drawer.getByRole("alert").first()).toBeVisible();
   await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(drawer).toHaveCount(0);
-  await expect(fresh).toBeVisible();
+  expect(executions).toEqual([]);
 
   await open.click();
-  await reference.fill(`INTAKE-${randomUUID()}`);
+  const query = `INTAKE-${randomUUID()}`;
+  await reference.fill(`${query}-ACTIVE`);
   await expect(
     drawer.getByText("Leave both blank, or enter both amount and currency."),
   ).toBeVisible();
@@ -61,9 +65,9 @@ test("an empty register can open a case and leave an untouched invalid drawer", 
   await recordReviewed(page);
 
   for (const lifecycle of ["ERASED", "VOIDED"]) {
-    await page.goto(`/cases?view=ALL&lifecycle=${lifecycle}`);
+    await page.goto(`/cases?view=ALL&lifecycle=${lifecycle}&q=${query}`);
     await expect(page.getByText("No cases match this view.")).toBeVisible();
-    await expect(fresh).toHaveCount(0);
+    await expect(page.getByText("There are no cases in your accessible scope.")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Clear filters" })).toBeVisible();
   }
 });

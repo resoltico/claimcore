@@ -121,6 +121,18 @@ test("the file chooser, drop and paste share bounded attachment intake", async (
   await target.focus();
   await expect(panel.locator(".file-drop")).toHaveAttribute("data-focused", "true");
 
+  const recordIntake = async (name: string) => {
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText(name);
+    const uploaded = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/attachment.upload",
+    );
+    await dialog.locator("button[data-confirm-operation]").click();
+    expect((await uploaded).status()).toBe(200);
+    await expect(dialog).toHaveCount(0);
+    await expect(panel.getByRole("row").filter({ hasText: name })).toHaveCount(1);
+  };
+
   const observed: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
@@ -162,9 +174,7 @@ test("the file chooser, drop and paste share bounded attachment intake", async (
   } finally {
     await session.detach();
   }
-  await expect(page.getByRole("dialog")).toContainText("dropped.txt");
-  await confirm(page, "/api/attachment.upload");
-  await expect(panel.getByText("dropped.txt", { exact: true })).toBeVisible();
+  await recordIntake("dropped.txt");
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.evaluate(async (base64) => {
     const image = new Blob([Uint8Array.fromBase64(base64)], { type: "image/png" });
@@ -172,9 +182,7 @@ test("the file chooser, drop and paste share bounded attachment intake", async (
   }, png.toString("base64"));
   await target.focus();
   await page.keyboard.press("ControlOrMeta+v");
-  await expect(page.getByRole("dialog")).toContainText("image.png");
-  await confirm(page, "/api/attachment.upload");
-  await expect(panel.getByText("image.png", { exact: true })).toBeVisible();
+  await recordIntake("image.png");
 });
 
 test("paste counts files independently of alternate text representations @engine", async ({
