@@ -719,6 +719,29 @@ module internal Queries =
                                                             tx
                                                             request.Filter.Text
 
+                                                    let! authorizedScopeEmpty =
+                                                        if
+                                                            List.isEmpty items
+                                                            && page.Next.IsNone
+                                                            && selection.AfterPosition.IsNone
+                                                            && exact.IsNone
+                                                        then
+                                                            task {
+                                                                let scope =
+                                                                    { selection.Selection with
+                                                                        Filter =
+                                                                            CaseListFilter.empty
+                                                                    }
+
+                                                                let! exists =
+                                                                    FamilyReads.caseExists tx scope
+
+                                                                return not exists
+                                                            }
+                                                        else
+                                                            System.Threading.Tasks.Task.FromResult
+                                                                false
+
                                                     return
                                                         Outcome.Succeeded
                                                             {
@@ -726,6 +749,8 @@ module internal Queries =
                                                                     selection.Selection.DateBasis
                                                                 Items = items
                                                                 ExactReference = exact
+                                                                AuthorizedScopeEmpty =
+                                                                    authorizedScopeEmpty
                                                                 Offers =
                                                                     if maintenance.Active then
                                                                         []

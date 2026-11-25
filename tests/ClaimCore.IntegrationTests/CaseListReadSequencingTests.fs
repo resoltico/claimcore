@@ -167,6 +167,47 @@ let tests =
         "case-list exact reference disclosure"
         [
             testCase
+                "empty scope ignores lifecycle filters and excludes continuation pages"
+                (fun () ->
+                    withCases (fun core _ _ ->
+                        let all =
+                            { CaseListFilter.empty with
+                                View = Some CaseView.All
+                            }
+
+                        let read filter after =
+                            Service.list
+                                core
+                                {
+                                    Page = { AfterCursor = after; Limit = 50 }
+                                    Filter = filter
+                                }
+                                CancellationToken.None
+                            |> fun pending -> pending.GetAwaiter().GetResult()
+                            |> page
+
+                        for lifecycle in [ Lifecycle.Erased; Lifecycle.Voided ] do
+                            let filtered = read { all with Lifecycles = [ lifecycle ] } None
+
+                            Expect.isEmpty filtered.Items "The fixture only has active cases"
+
+                            Expect.isFalse
+                                filtered.AuthorizedScopeEmpty
+                                "The active cases remain in scope"
+
+                        let after =
+                            Cursors.encodeCases
+                                core.InstallationId
+                                (CaseListFilter.admit all |> accepted)
+                                (CaseListPosition.Reference "ZZZ-AFTER")
+
+                        let trailing = read all (Some after)
+                        Expect.isEmpty trailing.Items "The cursor follows every readable case"
+
+                        Expect.isFalse
+                            trailing.AuthorizedScopeEmpty
+                            "Only initial pages assess scope"))
+            testCase
                 "visible exact identity and original spelling survive case-insensitive matching"
                 (fun () ->
                     withCases (fun core _ operationId ->
@@ -185,6 +226,11 @@ let tests =
                         read core "match-1" [] 1 |> page |> expectExact operationId
                         let empty = read core "match-1" [ CaseStatus.Closed ] 50 |> page
                         Expect.isEmpty empty.Items "No closed rows"
+
+                        Expect.isFalse
+                            empty.AuthorizedScopeEmpty
+                            "The authorized exact result remains available"
+
                         expectExact operationId empty))
             testCase
                 "partial, absent and malformed references do not become exact identities"
@@ -193,6 +239,11 @@ let tests =
                         for query, count in [ "match", 2; "MISSING", 0; "two words", 0 ] do
                             let result = read core query [] 50 |> page
                             Expect.equal result.Items.Length count "Independently selected rows"
+
+                            Expect.isFalse
+                                result.AuthorizedScopeEmpty
+                                "Display filters do not define authorized scope"
+
                             Expect.isNone result.ExactReference "No exact identity"))
             testCase
                 "unreadable exact target stays undisclosed beside a visible partial match"
@@ -211,6 +262,23 @@ let tests =
                             "The unreadable exact identity is withheld"
 
                         let visible = read scoped "a-match-1" [] 50 |> page
+                        let hidden = read scoped "match-1" [ CaseStatus.Closed ] 50 |> page
+                        let unknown = read scoped "unknown-2" [ CaseStatus.Closed ] 50 |> page
+
+                        Expect.isEmpty hidden.Items "The display filter excludes the visible peer"
+
+                        Expect.isNone
+                            hidden.ExactReference
+                            "The hidden reference still stays hidden"
+
+                        Expect.isFalse
+                            hidden.AuthorizedScopeEmpty
+                            "The principal has one readable case"
+
+                        Expect.equal
+                            hidden.AuthorizedScopeEmpty
+                            unknown.AuthorizedScopeEmpty
+                            "Hidden and unknown references give the same empty outcome"
 
                         Expect.equal
                             (visible.ExactReference

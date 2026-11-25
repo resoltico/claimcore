@@ -49,6 +49,11 @@ const sendResource = async (connection: Connection, { id, type, name }: Resource
   }
 };
 
+const isFailedPage = (data: unknown, requestId: number) =>
+  messageRecord(data, ["kind", "requestId"]) &&
+  data["kind"] === "failed" &&
+  data["requestId"] === requestId;
+
 export const DocumentPreview = ({
   bytes,
   title,
@@ -143,8 +148,14 @@ export const DocumentPreview = ({
         void sendResource(connection, resource).catch(() => undefined);
         return;
       }
+      if (!connection.awaiting) {
+        return;
+      }
+      if (isFailedPage(data, connection.requestId)) {
+        fail();
+        return;
+      }
       if (
-        connection.awaiting &&
         messageRecord(data, ["requestId", "page", "pageCount"]) &&
         data["requestId"] === connection.requestId &&
         data["page"] === connection.page &&

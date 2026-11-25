@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "（選填）",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "您的存取範圍內沒有案件。",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "檔案大小為 {actualBytes} 位元組。請選擇不超過 {maximumBytes} 位元組的檔案。",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "無法讀取所選檔案。請重新選擇該檔案。",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "檔案在讀取期間發生變更。請重新選擇該檔案。",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "每次拖放或貼上一個檔案。",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "將兩項都留空，或同時輸入金額和幣別。",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "請輸入金額和幣別。",
+    "source": "11da00ab5ba1"
   }
 }

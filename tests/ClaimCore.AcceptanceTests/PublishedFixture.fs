@@ -30,11 +30,19 @@ let private pinnedHandler (certificate: X509Certificate2) observe =
         new HttpClientHandler(AllowAutoRedirect = false, UseCookies = false, UseProxy = false)
 
     handler.ServerCertificateCustomValidationCallback <-
-        fun _ supplied _ errors ->
+        fun _ supplied presented errors ->
             use chain = new X509Chain()
             chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
             chain.ChainPolicy.CustomTrustStore.Add certificate |> ignore
             chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
+            chain.ChainPolicy.DisableCertificateDownloads <- true
+
+            match Option.ofObj presented with
+            | Some actual ->
+                for index in 1 .. actual.ChainElements.Count - 1 do
+                    chain.ChainPolicy.ExtraStore.Add actual.ChainElements[index].Certificate
+                    |> ignore
+            | None -> ()
 
             match supplied with
             | null -> false
@@ -301,13 +309,18 @@ type Fixture() =
 
     member this.ReplaceWebCertificate() =
         task {
-            use replacement = FixtureFiles.serverCertificate certificate
+            use intermediate = FixtureFiles.intermediateCertificate certificate
+            use publicIntermediate = X509CertificateLoader.LoadCertificate intermediate.RawData
+            use replacement = FixtureFiles.serverCertificate intermediate
+            let operatorBundle = X509Certificate2Collection()
+            operatorBundle.Add publicIntermediate |> ignore
+            operatorBundle.Add replacement |> ignore
             let path = webSettings["CLAIMCORE_WEB_CERTIFICATE_PATH"]
 
             FixtureFiles.write
                 directory
                 (Path.GetFileName path)
-                (replacement.Export X509ContentType.Pfx)
+                (operatorBundle.Export(X509ContentType.Pfx, "") |> nonNull)
             |> ignore
 
             do! this.RestartWeb()
@@ -472,8 +485,10 @@ type Fixture() =
             let proxiedRuntime =
                 FixtureFiles.text directory "proxied-runtime.connection" settings.ConnectionString
 
+            use server = FixtureFiles.serverCertificate certificate
+
             let pfx =
-                FixtureFiles.write directory "web.pfx" (certificate.Export(X509ContentType.Pfx))
+                FixtureFiles.write directory "web.pfx" (server.Export(X509ContentType.Pfx))
 
             webSettings <- webEnvironment directory origin identity proxiedRuntime pfx
             webSettings["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile

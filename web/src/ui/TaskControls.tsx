@@ -28,6 +28,8 @@ export const TaskControls = ({
 }) => {
   const p = usePresentation();
   const id = useId();
+  const actionLabel = (label: string) =>
+    rowLabel === undefined ? label : p.text("ui.rowActionLabel", { action: label, row: rowLabel });
   if (actions.length === 0) {
     return null;
   }
@@ -68,7 +70,7 @@ export const TaskControls = ({
             key={item.id}
             id={item.origin}
             data-act={item.id}
-            aria-label={prominent ? item.description : item.label}
+            aria-label={prominent ? item.description : actionLabel(item.label)}
             compact={compact}
             variant={prominent ? "primary" : "secondary"}
             isDisabled={item.disabled}

@@ -5,7 +5,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { CatalogField } from "../../src/components/CatalogField";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { preferenceKey } from "../../src/presentation/preferences";
-it("describes precise formatting rules when a field receives focus", async () => {
+it("keeps typed rules associated before, during and after focus", async () => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
@@ -38,8 +38,9 @@ it("describes precise formatting rules when a field receives focus", async () =>
   );
   const input = screen.getByRole("textbox", { name: "Claimed amount" });
   expect(input).toHaveValue("1,25");
-  expect(input).toHaveAccessibleDescription("How much the claimant is asking for.");
-  expect(input).not.toHaveAccessibleDescription(/ASCII|YYYY|redundant|decimal point/u);
+  const guidance =
+    /How much the claimant is asking for\..*up to 18 digits before the decimal point and up to 4 after it/u;
+  expect(input).toHaveAccessibleDescription(guidance);
   const segment = within(screen.getByRole("group", { name: "Incident date" })).getAllByRole(
     "spinbutton",
   )[0]!;
@@ -47,9 +48,7 @@ it("describes precise formatting rules when a field receives focus", async () =>
   expect(segment).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
   expect(screen.queryByLabelText("Explain fields: Claimed amount")).toBeNull();
   await userEvent.click(input);
-  expect(input).toHaveAccessibleDescription(
-    /up to 18 digits before the decimal point and up to 4 after it/u,
-  );
+  expect(input).toHaveAccessibleDescription(guidance);
   await userEvent.tab();
-  expect(input).toHaveAccessibleDescription("How much the claimant is asking for.");
+  expect(input).toHaveAccessibleDescription(guidance);
 });

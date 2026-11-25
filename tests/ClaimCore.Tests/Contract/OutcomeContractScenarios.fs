@@ -149,6 +149,7 @@ let internal queryCodecs () =
                     Items = []
                     NextCursor = None
                     Offers = []
+                    AuthorizedScopeEmpty = false
                     ExactReference = None
                 }
         ))

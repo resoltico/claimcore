@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "(pēc izvēles)",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "Jūsu piekļuves tvērumā nav lietu.",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "Faila lielums ir {actualBytes} baiti. Izvēlieties failu, kura lielums nepārsniedz {maximumBytes} baitus.",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "Atlasīto failu nevarēja nolasīt. Izvēlieties failu vēlreiz.",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "Fails lasīšanas laikā mainījās. Izvēlieties failu vēlreiz.",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "Velciet vai ielīmējiet pa vienam failam.",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "Atstājiet abus laukus tukšus vai ievadiet gan summu, gan valūtu.",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "Ievadiet gan summu, gan valūtu.",
+    "source": "11da00ab5ba1"
   }
 }

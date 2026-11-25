@@ -406,10 +406,17 @@ module VerifiedAttachment =
 /// The two disclosure fields shared by current lists and permitted history views.
 type AttachmentDisplay = { Name: AttachmentName; Length: int64 }
 
+[<RequireQualifiedAccess>]
+type AttachmentPreview =
+    | Png
+    | Jpeg
+    | Pdf
+
 type AttachmentDescriptor =
     {
         Blob: AttachmentId
         Intent: AttachmentIntent
+        Preview: AttachmentPreview option
     }
 
 module AttachmentDescriptor =

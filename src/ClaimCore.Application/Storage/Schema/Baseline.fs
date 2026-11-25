@@ -15,7 +15,7 @@ open ClaimCore.Application.Contracts
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore-format-7"
+    let identifier = "claimcore-format-9"
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()

@@ -704,9 +704,9 @@ let private previewEligibility (database: PostgresFixture.Database) =
                 Encoding.ASCII.GetBytes "%PDF-1.7\n",
                 true,
                 Some AttachmentPreview.Pdf
-                74, "fake.pdf", Encoding.ASCII.GetBytes "prefix before %PDF-1.7", true, None
-                75, "fake.png", Encoding.ASCII.GetBytes "not a PNG", true, None
-                76, "large.png", overProfile, true, None
+                74, "fake.pdf", Encoding.ASCII.GetBytes "prefix before %PDF-1.7", false, None
+                75, "fake.png", Encoding.ASCII.GetBytes "not a PNG", false, None
+                76, "large.png", overProfile, false, None
                 77, "neutral.txt", Encoding.ASCII.GetBytes "%PDF-2.0\n", false, None
             ]
 
@@ -725,19 +725,16 @@ let private previewEligibility (database: PostgresFixture.Database) =
         let expectedOffers =
             cases |> List.map (fun (_, name, _, offered, _) -> name, offered) |> Map.ofList
 
-        let assertOffers (result: Outcome<AttachmentPage>) =
+        let assertOffers expected (result: Outcome<AttachmentPage>) =
             let offers =
                 (read result).Items
                 |> List.map (fun item -> AttachmentName.value item.Name, item.CanPreview)
                 |> Map.ofList
 
-            Expect.equal
-                offers
-                expectedOffers
-                "Only canonical name suffixes govern list availability"
+            Expect.equal offers expected "Verified media profiles govern list availability"
 
         let! listed = list owner
-        assertOffers listed
+        assertOffers expectedOffers listed
         let page = read listed
         let document = ClaimCore.Presentation.HumanReadDocuments.attachments page
 
@@ -791,6 +788,32 @@ let private previewEligibility (database: PostgresFixture.Database) =
             let! downloaded = download owner id
             assertDownload payload downloaded
 
+        let neutral = attachmentGuid fixture 77
+        let! withdrawn = Service.executeSubmission owner (withdraw fixture 78 neutral) token
+        accepted withdrawn |> ignore
+
+        let data = Encoding.ASCII.GetBytes "%PDF-2.0\n"
+
+        let reattach =
+            draft fixture 79 "neutral.pdf" "9" (SHA256.HashData(data) |> Convert.ToHexStringLower)
+
+        let! added = upload owner reattach data
+        let newId = (accepted added |> attachmentReceipt).AttachmentId
+        let! replay = upload owner reattach data
+
+        Expect.equal
+            (replayReceipt replay |> attachmentReceipt).AttachmentId
+            newId
+            "Exact replay keeps the new identity"
+
+        let! inlineContent = preview owner newId
+        assertDownload data inlineContent
+
+        let expectedOffers =
+            expectedOffers |> Map.remove "neutral.txt" |> Map.add "neutral.pdf" true
+
+        let! changedOffers = list owner
+        assertOffers expectedOffers changedOffers
         let! _ = verified database
 
         let pdf = attachmentGuid fixture 73
@@ -804,7 +827,7 @@ let private previewEligibility (database: PostgresFixture.Database) =
         do! finding VerificationFinding.AttachmentPayloads database
 
         let! withoutVerifiedPayload = list owner
-        assertOffers withoutVerifiedPayload
+        assertOffers expectedOffers withoutVerifiedPayload
         let! failed = preview owner pdf
 
         Expect.equal

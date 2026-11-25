@@ -623,3 +623,6 @@ let nativeOutput = CliNativeOutput.publishedOutput
 
 [<Tests>]
 let nativeRelatedDirections = CliNativeOutput.publishedRelatedDirections
+
+[<Tests>]
+let lifecycleEmptyView = CliCaseWork.lifecycleEmptyView

@@ -384,6 +384,7 @@ module internal AttachmentStorage =
         connection
         cipher
         (expected: Map<CaseId * AttachmentId, EffectPosition * AttachmentDescriptor option>)
+        (descriptors: Map<CaseId * AttachmentId, AttachmentDescriptor list>)
         token
         =
         task {
@@ -444,7 +445,17 @@ module internal AttachmentStorage =
                                     let envelope = Array.zeroCreate<byte>(int storedLength)
                                     do! stream.ReadExactlyAsync(Memory envelope, token)
                                     let bytes = decrypt cipher caseId id digest envelope
-                                    matches <- SHA256.HashData bytes = expectedDigest
+
+                                    matches <-
+                                        SHA256.HashData bytes = expectedDigest
+                                        && (Map.find key descriptors
+                                            |> List.forall (fun descriptor ->
+                                                let media =
+                                                    AttachmentPreviewProfile.forName
+                                                        (AttachmentIntent.name descriptor.Intent)
+                                                        (ReadOnlySpan<byte> bytes)
+
+                                                descriptor.Preview = media))
                         | None ->
                             matches <-
                                 reader.IsDBNull 4

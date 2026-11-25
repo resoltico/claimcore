@@ -228,9 +228,22 @@ const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; pe
   const amountError = props.errors[input.id];
   const currencyError = props.errors[peer.id];
   const currencies = codeSuggestions(p.language === "en-XA" ? "en" : p.language, true);
+  const label = renderCatalogKey(p, taskInput(input.id).labelId);
+  const currencyLabel = renderCatalogKey(p, taskInput(peer.id).labelId);
+  const optional = props.task.creates && input.mode === "OPTIONAL" && peer.mode === "OPTIONAL";
+  const change = (id: TaskInputId, value: string) => {
+    if (optional && value === "") {
+      props.onFieldsChange({}, [id]);
+    } else {
+      props.onChange(id, value);
+    }
+  };
   return (
     <MoneyField
-      label={renderCatalogKey(p, taskInput(input.id).labelId)}
+      label={label}
+      groupLabel={p.text("ui.pairedFacts", { first: label, second: currencyLabel })}
+      optional={optional ? p.text("label.optional") : null}
+      presence={p.text(optional ? "label.moneyPairOptional" : "label.moneyPairTogether")}
       hint={p.hint(amountField)}
       rule={{ name: amountField.name, id: amountField.ruleId }}
       disabled={props.disabled}
@@ -239,18 +252,18 @@ const PairedInputs = ({ input, peer, ...props }: InputProps & { input: Input; pe
         fieldName: amountField.name,
         value: formValueText(props.values[input.id]),
         onChange: (value) => {
-          props.onChange(input.id, value);
+          change(input.id, value);
         },
       }}
       currency={{
         id: peer.id,
-        label: renderCatalogKey(p, taskInput(peer.id).labelId),
+        label: currencyLabel,
         hint: p.hint(currencyField),
         value: formValueText(props.values[peer.id]),
         fieldName: currencyField.name,
         options: currencies.map((currency) => ({ id: currency.code, label: currency.code })),
         onChange: (value) => {
-          props.onChange(peer.id, value);
+          change(peer.id, value);
         },
       }}
       {...(amountError === undefined && currencyError === undefined

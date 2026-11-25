@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "(اختياري)",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "لا توجد ملفات ضمن نطاق وصولك.",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "حجم الملف {actualBytes} بايت. اختر ملفًا لا يتجاوز {maximumBytes} بايت.",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "تعذّرت قراءة الملف المحدد. اختر الملف مرة أخرى.",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "تغيّر الملف أثناء قراءته. اختر الملف مرة أخرى.",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "أفلت أو ألصق ملفًا واحدًا في كل مرة.",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "اترك الحقلين فارغين، أو أدخل المبلغ والعملة معًا.",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "أدخل المبلغ والعملة معًا.",
+    "source": "11da00ab5ba1"
   }
 }

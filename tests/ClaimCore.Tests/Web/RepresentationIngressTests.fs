@@ -53,7 +53,11 @@ let tests =
                         Binding = WebBindings.create origin "127.0.0.1" origin.Port
                         ConnectionString = "Host=localhost;Database=synthetic;Username=synthetic"
                         DataKeyFile = "synthetic-not-opened"
-                        Certificate = certificate
+                        Certificate =
+                            {
+                                Leaf = certificate
+                                Chain = X509Certificate2Collection()
+                            }
                         SessionIdle = TimeSpan.FromMinutes 10.
                         SessionAbsolute = TimeSpan.FromHours 1.
                         RequestGate =

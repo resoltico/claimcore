@@ -11,6 +11,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Verification
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -40,7 +41,7 @@ let private draft fixture number (payload: byte array) =
 /// Model a previous writer which accepted a structurally correct, byte-verified addition
 /// without checking retained capacity. All ledger, compartment, payload and projection
 /// records use the ordinary accepting code.
-let private acceptWithoutQuota fixture (actor: ServiceContext) number payload =
+let private acceptAttachment fixture (actor: ServiceContext) number preview payload =
     task {
         let submission = draft fixture number payload
         let input = Submissions.command submission
@@ -91,9 +92,31 @@ let private acceptWithoutQuota fixture (actor: ServiceContext) number payload =
                                         failtestf "Fixture input cannot be reviewed: %A" error)
 
                                 let! committed =
+                                    let changes =
+                                        plan.Changes
+                                        |> List.map (fun change ->
+                                            match change.Value with
+                                            | PartValue.Attachment(AttachmentEffect.Added(true,
+                                                                                          Some descriptor)) ->
+                                                { change with
+                                                    Value =
+                                                        PartValue.Attachment(
+                                                            AttachmentEffect.Added(
+                                                                true,
+                                                                Some
+                                                                    { descriptor with
+                                                                        Preview = preview
+                                                                    }
+                                                            )
+                                                        )
+                                                }
+                                            | _ ->
+                                                failtest "Expected an accepted attachment shape.")
+
                                     Engine.commit
                                         tx
                                         { plan with
+                                            Changes = changes
                                             AttachmentPayload = Some verified
                                         }
 
@@ -206,7 +229,7 @@ let private slots (database: PostgresFixture.Database) =
 
         accepted withdrawn |> ignore
         let! trusted = qualifiedAtBoundary database
-        let! excess = acceptWithoutQuota fixture actor 601 [| 100uy |]
+        let! excess = acceptAttachment fixture actor 601 None [| 100uy |]
 
         do! rejectedByAll database trusted VerificationFinding.AttachmentReferences (Some excess) 2L
     }
@@ -234,9 +257,35 @@ let private bytes (database: PostgresFixture.Database) =
 
         accepted withdrawn |> ignore
         let! trusted = qualifiedAtBoundary database
-        let! excess = acceptWithoutQuota fixture actor 613 [| 1uy |]
+        let! excess = acceptAttachment fixture actor 613 None [| 1uy |]
 
         do! rejectedByAll database trusted VerificationFinding.AttachmentReferences (Some excess) 2L
+    }
+
+let private inconsistentPreview (database: PostgresFixture.Database) =
+    task {
+        let! actor = Attachments.setup database
+        let! trusted = qualifiedAtBoundary database
+        let fixture = database.Fixture
+        let! _ = acceptAttachment fixture actor 620 (Some AttachmentPreview.Png) [| 1uy |]
+
+        let! offered =
+            Service.previewAttachment
+                actor
+                {
+                    Target = Attachments.target
+                    AttachmentId = Attachments.attachmentGuid fixture 620
+                }
+                token
+
+        Expect.equal
+            (match offered with
+             | Outcome.Failed CoreFault.StoreIntegrityError -> true
+             | _ -> false)
+            true
+            "An offered transfer independently rejects inconsistent media evidence"
+
+        do! rejectedByAll database trusted VerificationFinding.AttachmentPayloads None 2L
     }
 
 let private malformedErasedDigest (database: PostgresFixture.Database) =
@@ -616,6 +665,9 @@ let tests =
             testCaseAsync
                 "erased-row verification detects a malformed present digest"
                 (run malformedErasedDigest)
+            testCaseAsync
+                "verified bytes reject a sealed descriptor with inconsistent media evidence"
+                (run inconsistentPreview)
             testCaseAsync
                 "attachment listing and timeline continuation succeed without payload-column access"
                 (run metadataWithoutPayloadAccess)

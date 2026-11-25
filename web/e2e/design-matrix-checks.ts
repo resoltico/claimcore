@@ -333,11 +333,16 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     });
     await work.click();
     const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
-    await summary.scrollIntoViewIfNeeded();
+    await summary.focus();
+    await summary.evaluate((element) => {
+      element.scrollIntoView({ block: "center" });
+    });
     await expect(summary).toBeVisible();
+    await expect(summary).toBeFocused();
     await expect
-      .poll(() => clippedControlEdges(summary), {
-        message: "The handling summary fits inside the drawer scrollport and viewport",
+      .poll(() => clippedControlEdges(summary, true), {
+        message:
+          "The handling summary's focus outline fits inside the drawer scrollport and viewport",
       })
       .toEqual([]);
   }

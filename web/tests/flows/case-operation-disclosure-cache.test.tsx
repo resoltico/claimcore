@@ -158,7 +158,7 @@ it.each([false, true])(
     await screen.findByRole("alert");
     expect(document.body).not.toHaveTextContent("PRIOR_CASE_DISCLOSURE_CANARY");
     await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
-    await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
+    expect(screen.queryByRole("button", { name: "Discard and leave" })).toBeNull();
     await waitFor(() => {
       expect(read).toHaveBeenCalledTimes(2);
     });

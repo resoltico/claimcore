@@ -67,6 +67,11 @@ embed that same document. Its closed subject identifies the resource; screen reg
 continuation, observation basis, disclosure and history describe the current presentation. DATA replies
 retain endpoint-specific automation types.
 
+An empty initial `case.list` DATA page sets `authorizedScopeEmpty` to true when there is no
+authorized exact-reference result and no case exists in the requester's readable scope with display
+filters removed. HUMAN supplies the corresponding empty-state message. Derive clear-filter controls
+from the active selection.
+
 An `Affordance` carries `task`, `labelId`, `binding`, scalar-or-null `seeds`, `editable`, contextual
 `choices` and `blocked`. The task-discriminated union associates each operation with its binding
 shape and its declared editable input IDs. A particular control may offer a subset. Read task kind,
@@ -242,9 +247,18 @@ full byte count and SHA-256 in `Content-Digest` before giving the file to the ca
 `application/octet-stream` and `Content-Disposition: attachment; filename*=UTF-8''<encoded>`.
 Compare the decoded name with the expected canonical name from the authorized attachment list.
 Eligible previews use `image/png`, `image/jpeg` or `application/pdf` according to the verified bytes.
+The DATA field `previewCandidate` and the HUMAN Preview control reflect the media profile of the
+verified bytes and canonical filename. Browser decoding can still fail. Keep Download available.
+Use the returned attachment ID to distinguish same-name files. HUMAN row details provide the full
+ID.
 If an accessible file lacks a supported preview, the endpoint returns the typed
 `ATTACHMENT_PREVIEW_UNAVAILABLE` refusal in JSON. The file remains available for download. Use the
 generated OpenAPI contract for the complete request and response grammar.
+
+A known oversize local file produces CLI usage exit 64 before review or upload. The
+[usage schema](../src/ClaimCore.CommandLine/UsageError.fs) represents this with
+`ATTACHMENT_FILE_TOO_LARGE`, an integer `maximumBytes` and a decimal-string `actualBytes`.
+Server upload admission independently enforces the applicable byte and framing limits.
 
 ## Post a command
 

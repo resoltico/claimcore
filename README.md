@@ -1,8 +1,9 @@
 # ClaimCore
 
 ClaimCore records claims case information through a browser or CLI, backed by an authenticated HTTPS
-service and PostgreSQL. Record claim facts, parties, related cases, payment decisions, payments and
-returns. Assign responsibility, plan deadlines and report on the cases you can read.
+service and PostgreSQL. Record claim facts, parties, related cases, evidence attachments, payment
+decisions, payments and returns. Assign responsibility, plan deadlines and report on the cases you
+can read.
 
 ## Try it
 
@@ -43,14 +44,15 @@ run `claimcore work views` to inspect work queues or `claimcore operation get OP
 
 | Need | ClaimCore provides | Operator or external responsibility |
 | --- | --- | --- |
-| Record case handling | Claim facts, parties, related cases, notes, responsibility and reminders | Coverage adjudication, fact checking and handling decisions |
+| Record case handling | Claim facts, parties, related cases, notes, responsibility, reminders and deadlines | Coverage adjudication, fact checking and handling decisions |
+| Handle evidence files | Case-scoped attachments, verified preview eligibility, exact downloads and withdrawal | Evidence collection, classification and control of exported copies |
 | Handle money | Payment decisions, recorded payments and returns, and net totals by currency | Transfers, refunds, banking and accounting |
 | Find and report on work | Case and reminder queues, paged case summaries, and bounded CSV downloads | Use, retention and disposal of exported copies |
 | Control access | OIDC sign-in, scoped roles and current read/write authorization | Identity-provider membership and account security |
 | Coordinate changes | Review, version checks, atomic acceptance and exact-operation recovery | Resolving business conflicts and confirming external actions |
-| Verify recorded work | Authorized receipts and history, verification and checkpoint comparison | Independent checkpoint custody and trusted administrator access |
+| Verify recorded work | Authorized receipts and history, a disclosure trail for covered reads and exports, and checkpoint comparison | Independent checkpoint custody, review of access, and trusted administrator access |
 | Erase private contents | Case and profile erasure in the live register | Retention and disposal of WAL, backups, replicas and other copies |
-| Run the service | Server image, CLI archives, production Compose template and local evaluation setup | Deployment, capacity, monitoring, certificates and backups |
+| Run the service | Attested server image and CLI archives, a production Compose template and a local evaluation setup | Deployment, capacity, monitoring, HTTPS credentials and backups |
 
 ## Languages
 

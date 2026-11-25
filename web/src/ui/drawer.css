@@ -7,6 +7,12 @@
     border-block-start: var(--border-width) solid var(--border-subtle);
   }
 
+  .ui-dialog-overlay--end .drawer .ui-dialog-body {
+    --drawer-focus-clearance: calc(var(--focus-width) + var(--focus-offset));
+    margin-inline: calc(-1 * var(--drawer-focus-clearance));
+    padding-inline: var(--drawer-focus-clearance);
+  }
+
   .drawer .collection-item {
     border: 0;
     border-radius: 0;

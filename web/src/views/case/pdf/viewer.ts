@@ -135,8 +135,12 @@ const initialize = (port: MessagePort, bytes: ArrayBuffer) => {
       data["requestId"] > request &&
       isPositiveInteger(data["page"])
     ) {
-      // Rendering failures leave the parent deadline in charge of removing the frame.
-      void draw(data["requestId"], data["page"]).catch(() => undefined);
+      const { requestId } = data;
+      void draw(requestId, data["page"]).catch(() => {
+        if (requestId === request) {
+          port.postMessage({ kind: "failed", requestId });
+        }
+      });
     } else if (
       messageRecord(data, ["resourceId", "bytes"]) &&
       isPositiveInteger(data["resourceId"]) &&

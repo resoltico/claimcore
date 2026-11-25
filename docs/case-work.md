@@ -32,6 +32,9 @@ An exact readable reference has an **Open** link even outside the selected view.
 reserved earlier references. The destination identifies the spelling you matched and shows the
 case's current reference. Unreadable cases remain undisclosed.
 
+An empty worklist distinguishes a view with no matches from an accessible scope with no cases.
+Use **Clear filters** to remove applied filters while keeping the view.
+
 When search text is incomplete or invalid, Cases keeps your draft and the last valid selection.
 Submit the draft to see the correction needed. For a malformed bookmark, correct or clear the listed
 filter before loading results. For a repeated single-value filter, choose the value to keep, edit
@@ -163,13 +166,15 @@ Open **Attachments** in the case workspace. Anyone who can read the case can lis
 current files. A human case handler can add and withdraw files on open and closed cases while
 writes are available. Voided cases retain readable files.
 
-Select a local file and review its saved filename before confirming. The register refuses file types
+Use **Choose a file**, or drop or paste one file on **Drop or paste a file** when your browser
+supplies a file. Review its saved filename before confirming. The register refuses file types
 that can run programs, such as `.exe`, `.js` and `.msi`. Put a refused file in an archive if the case
 needs it. The register preserves the exact bytes and stores one copy of identical bytes per case.
 Each file can be up to 25 MiB, including empty files. Each case can retain up to 100 distinct files
-and 256 MiB in total. **Preview** opens supported static PNG and JPEG images and PDFs in the browser.
-PDF preview shows the page and its static form appearances in a read-only view. Use **Download**
-for the original file, including when a preview is unavailable.
+and 256 MiB in total. **Preview** is available for verified static PNG and JPEG images and PDFs
+within the supported media profile. The PDF viewer displays pages and static form appearances in a
+read-only view. Use **Download** for the original file if the browser cannot display the preview.
+Same-name files show their attachment IDs. Use **View details** to copy the full ID of any file.
 
 Withdrawal records who acted and when. It hides the selected attachment's details in current
 reads, earlier receipts and history. Its bytes still count against the case's limits. Uploading the
@@ -250,8 +255,9 @@ See [erasure limits](operating.md#erasure-limits) for backups and external copie
 
 ## Review, confirmation and delivery
 
-Forms show short hints and precise rules in information tips. Language and regional formats are
-independent. A format change does not reinterpret an amount already entered. Input issues link to fields.
+Forms keep applicable hints, precise input rules and input issues with their fields. Language and
+regional formats are independent. A format change does not reinterpret an amount already entered.
+Input-issue summaries link to the corresponding controls.
 
 A new visible review starts at the beginning and focuses its heading. Reading position stays with the
 same review through Settings and display changes; returning to edit restores the authoring position.
@@ -266,13 +272,11 @@ If delivery is uncertain, keep the original change identity. **Unconfirmed chang
 automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
 request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.
 
-Browser Back and Forward preserve managed history entries, including a Settings detour with an authored
-draft. Declining departure preserves the original Forward branch. Additional navigation while a guarded
-traversal is being restored or awaiting consent is ignored until that transition settles. Reload and
-cross-document departure request the browser's native warning while drafts, prepared or uncertain work,
-or delivery need protection. Browser activation and prompting rules apply; this does not persist drafts
-or guarantee protection against forced termination. Unknown history entries have no provable offset and
-are followed without rewriting the history stack.
+The browser asks before leaving authored changes, a pending review or an uncertain delivery.
+Closing an untouched invalid attempt needs no discard confirmation. A Settings detour keeps the
+draft and reading position. Reload or departure from the workspace can show the browser's native
+warning while a change needs protection or delivery is in progress. Draft fields are held in the
+current page. The recovery identity can be checked after reload.
 
 ## Report on current case facts
 

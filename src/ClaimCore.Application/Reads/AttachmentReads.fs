@@ -101,10 +101,7 @@ module internal AttachmentReads =
                                     RecordedAt = change.Stamp.RecordedAt
                                     RecordedBy = author
                                     CanWithdraw = canEdit
-                                    CanPreview =
-                                        AttachmentIntent.name descriptor.Intent
-                                        |> AttachmentPreview.candidate
-                                        |> Option.isSome
+                                    CanPreview = descriptor.Preview.IsSome
                                 }
                         | _ -> Error CoreFault.StoreIntegrityError)
                     |> QueryResults.collect
@@ -162,18 +159,18 @@ module internal AttachmentReads =
                     let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
                     return Outcome.Succeeded { Bytes = bytes; Preview = None }
                 | Ok descriptor ->
-                    let candidate =
-                        AttachmentIntent.name descriptor.Intent |> AttachmentPreview.candidate
-
-                    match candidate with
+                    match descriptor.Preview with
                     | None -> return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
-                    | Some candidate ->
+                    | Some kind ->
                         let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
 
-                        match
-                            AttachmentPreview.classify candidate (VerifiedAttachment.bytes bytes)
-                        with
-                        | Some kind ->
+                        let actual =
+                            AttachmentPreviewProfile.forName
+                                (AttachmentIntent.name descriptor.Intent)
+                                (VerifiedAttachment.bytes bytes)
+
+                        if actual = descriptor.Preview then
                             return Outcome.Succeeded { Bytes = bytes; Preview = Some kind }
-                        | None -> return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
+                        else
+                            return Outcome.Failed CoreFault.StoreIntegrityError
             })

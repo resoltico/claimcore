@@ -8,13 +8,7 @@ type AttachmentPreviewCandidate =
     | Raster
     | Document
 
-[<RequireQualifiedAccess>]
-type AttachmentPreview =
-    | Png
-    | Jpeg
-    | Pdf
-
-module AttachmentPreview =
+module AttachmentPreviewProfile =
     [<Literal>]
     let MaximumSide = 8192u
 
@@ -244,3 +238,8 @@ module AttachmentPreview =
                 ->
                 Some AttachmentPreview.Pdf
             | _ -> None
+
+    let forName name (bytes: ReadOnlySpan<byte>) =
+        match candidate name with
+        | Some media -> classify media bytes
+        | None -> None

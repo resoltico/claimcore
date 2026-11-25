@@ -6,19 +6,19 @@ and identity configuration. Read [Operations](operating.md) before using real da
 
 ## Prepare your tools
 
-Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the Node/npm versions declared
-by [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json). Downloads need network
-access. When the NSS utility `certutil` is installed, configuration creates the isolated trusted Firefox
-profile automatically. Otherwise it prints the exact commands to run after installing NSS tools. The optional
-CLI section also needs the .NET SDK pinned in [`global.json`](../global.json).
+Use macOS or Linux with Git, Bash, OpenSSL, Docker with Compose, and the Node version in
+[`.node-version`](../.node-version). Downloads need network access. With the NSS utility
+`certutil`, configuration creates the isolated trusted Firefox profile automatically. Otherwise it
+prints the commands to run after installing NSS tools. The Playwright browser fallback needs the
+npm version in [`web/package.json`](../web/package.json). Building the optional CLI needs the
+.NET SDK in [`global.json`](../global.json).
 
-Choose a new absolute checkout path and install the locked browser tools:
+Choose a new absolute checkout path:
 
 ```sh
 claimcore_source="$HOME/claimcore-first-run"
 git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
-npm --prefix web ci
 ```
 
 ## Start a fresh installation
@@ -81,6 +81,7 @@ profile; on Linux its dependency installation may require administrator access:
 
 ```sh
 export PLAYWRIGHT_BROWSERS_PATH="$claimcore_config/browser-runtime"
+npm --prefix web ci
 if [ "$(uname -s)" = Linux ]; then
   (cd web && npm exec -- playwright install --with-deps firefox)
 else
@@ -138,7 +139,8 @@ Choose **Open a case** and enter a synthetic reference. Add optional facts and p
 | Claimed amount | 100.00 |
 | Currency | EUR |
 
-Leaving an optional field blank omits it. Use the Claimant and Insurer roles for the party rows.
+Leaving an optional field blank omits it. Enter claimed amount and currency together, or leave both
+blank. Use the Claimant and Insurer roles for the party rows.
 Incident description is optional; use it for a short account of what happened. Review the proposed
 facts and choose **Open a case**. The case workspace shows the outcome. Choose **View receipt** for
 the recorded details. Follow the **Cases** breadcrumb and

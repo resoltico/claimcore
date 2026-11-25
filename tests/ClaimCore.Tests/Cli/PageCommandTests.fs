@@ -88,6 +88,7 @@ let private page items next =
         Items = items
         Offers = []
         NextCursor = next
+        AuthorizedScopeEmpty = false
         ExactReference = None
     }
 

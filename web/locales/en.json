@@ -185,5 +185,6 @@
   "ui.retryRefresh": "Retry",
   "ui.filtersSheet": "Filters",
   "ui.filtersSheetCount": "Filters ({count})",
-  "ui.rowActionLabel": "{action}: {row}"
+  "ui.rowActionLabel": "{action}: {row}",
+  "ui.attachments.drop": "Drop or paste a file"
 }

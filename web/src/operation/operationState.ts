@@ -881,6 +881,24 @@ const phaseConfirmed = (phase: OperationPhase): boolean =>
   phase.kind === "REVIEWING"
     ? phase.confirmed
     : (phase.kind === "PREPARING" || phase.kind === "SUBMITTING") && phase.reviewIdentity !== null;
+/** A cached request can survive a refusal without representing authored or unconfirmed work. */
+const protectsIntent = (state: OperationState): boolean => {
+  const { phase } = state.delivery;
+  const { values, baseline, dateEntries } = state.draft;
+  const { inputs } = operationEntry(state.draft.entry);
+  const initiallyBlank = (key: string) =>
+    inputs.some((input) => input.id === key && input.mode === "REQUIRED");
+  return (
+    phase.kind !== "ACCEPTED" &&
+    (uncertain(phase) ||
+      (phase.kind === "REVIEWING" && disclosedReview(state) !== null) ||
+      Object.keys(dateEntries).length > 0 ||
+      Object.entries(baseline).some(([key, value]) => values[key] !== value) ||
+      Object.entries(values).some(
+        ([key, value]) => !Object.hasOwn(baseline, key) && (value !== "" || !initiallyBlank(key)),
+      ))
+  );
+};
 export const operationView = (state: OperationState) => {
   const { phase } = state.delivery;
   const source = operationSource(phase);
@@ -899,6 +917,7 @@ export const operationView = (state: OperationState) => {
     phase: phase.kind,
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
+    protectsIntent: protectsIntent(state),
     prepared: source?.prepared ?? null,
     review,
     reviewIdentity: review === null ? null : (state.disclosed.review?.identity ?? null),

@@ -58,7 +58,11 @@ let configuration certificate =
         Binding = WebBindings.create origin "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
         DataKeyFile = "synthetic-not-opened"
-        Certificate = certificate
+        Certificate =
+            {
+                Leaf = certificate
+                Chain = Security.Cryptography.X509Certificates.X509Certificate2Collection()
+            }
         SessionIdle = TimeSpan.FromMinutes 30.
         SessionAbsolute = TimeSpan.FromHours 8.
         RequestGate = limits

@@ -54,7 +54,7 @@ export const ActorOperation = ({
   onClose,
 }: Props) => {
   const p = usePresentation();
-  const retained = model.dirty || model.prepared !== null || model.priorUncertain;
+  const retained = model.protectsIntent;
   return (
     <>
       {!open && retained ? (

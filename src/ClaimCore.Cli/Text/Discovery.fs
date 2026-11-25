@@ -97,6 +97,29 @@ module Discovery =
                     key
                     Map.empty
 
+            let pairGuidance (input: CommandInput) =
+                match input.Name with
+                | TaskInputId.Target(InputTarget.Field field) ->
+                    (BusinessField.describe field).Pairs
+                    |> Option.bind (fun peer ->
+                        inputs
+                        |> List.tryFind (fun candidate ->
+                            candidate.Name = TaskInputId.Target(InputTarget.Field peer)
+                            && candidate.Argument <> CommandArgument.Implicit))
+                    |> Option.map (fun peer ->
+                        let key =
+                            if
+                                input.Declaration.Mode = TaskInputMode.Optional
+                                && peer.Declaration.Mode = TaskInputMode.Optional
+                            then
+                                "label.moneyPairOptional"
+                            else
+                                "label.moneyPairTogether"
+
+                        " " + message key)
+                    |> Option.defaultValue ""
+                | _ -> ""
+
             [
                 message (TaskRouting.labelId operation)
                 message (TaskRouting.meaningId operation)
@@ -154,7 +177,8 @@ module Discovery =
                    + ": "
                    + MessageCatalogs.render rendering.Language guidance.Key arguments
                    + allowed
-                   + defaultValue))
+                   + defaultValue
+                   + pairGuidance input))
             @ (CommandGrammar.collections operation
                |> List.map (fun definition ->
                    let binding = definition

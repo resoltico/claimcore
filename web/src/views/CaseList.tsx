@@ -110,6 +110,7 @@ const WorklistEmpty = ({
 }) => {
   const p = usePresentation();
   const emptyId = page.page?.screen.regions.find((region) => region.role === "RESULTS")?.emptyId;
+  const { view, order } = page.query;
   return (
     <EmptyState
       messageId={emptyId ?? "label.noCasesForView"}
@@ -120,7 +121,10 @@ const WorklistEmpty = ({
             <Button
               variant="secondary"
               onPress={() => {
-                page.change(page.query.view === undefined ? {} : { view: page.query.view });
+                page.change({
+                  ...(view === undefined ? {} : { view }),
+                  ...(order === undefined ? {} : { order }),
+                });
               }}
             >
               {p.text("ui.clearFilters")}
@@ -133,7 +137,7 @@ const WorklistEmpty = ({
 };
 const WorklistFeedback = ({ page, action }: { page: CaseListPage; action: ReactNode }) => {
   const p = usePresentation();
-  const filtered = Object.keys(page.query).some((key) => key !== "view");
+  const filtered = Object.keys(page.query).some((key) => key !== "view" && key !== "order");
   return (
     <>
       {page.message === null ? null : (

@@ -749,5 +749,9 @@
   "ui.rowActionLabel": {
     "text": "{action}: {row}",
     "source": "87eab2e0b1df"
+  },
+  "ui.attachments.drop": {
+    "text": "أفلت ملفًا أو ألصقه",
+    "source": "4ee57a15a346"
   }
 }

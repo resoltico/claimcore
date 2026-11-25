@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.CommandLine/ClaimCore.CommandLine.fsproj" />
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="FixtureFiles.fs" />

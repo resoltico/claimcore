@@ -23,8 +23,6 @@ missing or stale translations. All translations are AI-assisted; native-speaker 
 | Spanish (es) | AI-assisted; human review pending |
 | German (de) | AI-assisted; human review pending |
 
-The non-English translations added or changed for the web redesign and its follow-ups, including the payee and payment selection wording, are machine-made and await fluent review.
-
 Current Korean catalog terms are 청구 건 (case) and 후속 조치 (reminder); native-speaker review is unverified.
 Latvian uses versija for entity version, Datu pārvaldnieks for Data steward and Lietu apstrādātājs for
 Case handler. Arabic uses ملف for a case and مرجع الملف for its reference; the prohibited legal-case
@@ -78,9 +76,10 @@ removes the live case's erasable contents while retaining its reference and chan
 
 ## Case family
 
-A case family includes the case facts, payment entries, case work, reminders, notes, parties and source links. Each owned
-record has its own revision; each task declares the preconditions reviewed for its change. The family
-sequence advances for every accepted family change.
+A case family includes the case facts, payment entries, case work, reminders, notes, attachments,
+parties and source links. Each owned record has its own revision. Each task declares the
+preconditions reviewed for its change. The family sequence advances for every accepted family
+change.
 Erasing the family clears its live erasable contents together. A person has a separate lifetime and
 combines identity, profile, enablement and role assignments.
 
@@ -89,6 +88,12 @@ combines identity, profile, enablement and role assignments.
 A party belongs to one case and has a role and at least one of a name or contact details. Party
 summaries use creation order. A case link has a source and target. Readers can see incoming links
 from source cases they can read.
+
+## Attachment
+
+An attachment belongs to one case and has the ID of its accepted addition. Verified preview
+eligibility describes the supported media profile of the saved name and bytes. Withdrawal hides
+the attachment from ordinary reads while retaining the bytes until case erasure.
 
 ## Closure and net paid
 

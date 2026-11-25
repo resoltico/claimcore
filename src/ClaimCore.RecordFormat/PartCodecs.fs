@@ -443,11 +443,27 @@ module PartCodecs =
             | PartValue.Attachment(AttachmentEffect.Added(_, Some descriptor)) -> descriptor
             | _ -> wrong ()
 
-        (record (fun blob name length digest ->
+        let preview =
+            enumeration
+                [
+                    AttachmentPreview.Png, "PNG"
+                    AttachmentPreview.Jpeg, "JPEG"
+                    AttachmentPreview.Pdf, "PDF"
+                ]
+
+        (record (fun blob name length digest preview ->
             AttachmentIntent.create name length digest
             |> Option.map (fun intent ->
                 PartValue.Attachment(
-                    AttachmentEffect.Added(introduces, Some { Blob = blob; Intent = intent })
+                    AttachmentEffect.Added(
+                        introduces,
+                        Some
+                            {
+                                Blob = blob
+                                Intent = intent
+                                Preview = preview
+                            }
+                    )
                 ))
             |> function
                 | Some value -> Ok value
@@ -466,6 +482,7 @@ module PartCodecs =
             "digest"
             (descriptor >> _.Intent >> AttachmentIntent.digest)
             (parseCanonical AttachmentDigest.parse AttachmentDigest.value)
+        |> field "preview" (descriptor >> _.Preview) (nullable preview)
         |> buildResult (fun path _ ->
             {
                 Path = path

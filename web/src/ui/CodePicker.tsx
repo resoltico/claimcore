@@ -34,7 +34,7 @@ const CodeDescription = ({ field, value, error, sharedErrorId }: TypedFieldProps
       <Text slot="description" className="field-description">
         <span className="field-hint">{p.hint(field)}</span>
         {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}{" "}
-        <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+        <FieldRule name={field.name} ruleId={field.ruleId} />
       </Text>
       {error === undefined || sharedErrorId !== undefined ? null : (
         <FieldError>

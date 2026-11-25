@@ -133,6 +133,7 @@ module internal Verification =
                             connection
                             cipher
                             (Replay.attachmentBlobs state)
+                            (Replay.attachmentDescriptors state)
                             token
 
                     return require None VerificationFinding.AttachmentPayloads payloads

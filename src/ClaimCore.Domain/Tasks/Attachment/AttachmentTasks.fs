@@ -63,7 +63,14 @@ let private addDecision
         |> Result.map (fun intent ->
             let id = AttachmentId.ofOperationId context.Stamp.OperationId
 
-            let descriptor = intent |> Option.map (fun intent -> { Blob = id; Intent = intent })
+            let descriptor =
+                intent
+                |> Option.map (fun intent ->
+                    {
+                        Blob = id
+                        Intent = intent
+                        Preview = None
+                    })
 
             [
                 FamilyRules.change

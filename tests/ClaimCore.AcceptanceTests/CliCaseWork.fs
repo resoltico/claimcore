@@ -9,6 +9,59 @@ open System.Text.Json
 open Expecto
 open CliCalls
 
+let lifecycleEmptyView =
+    testCaseTask "published CLI distinguishes empty lifecycle views from empty scope" (fun () ->
+        task {
+            use fixture = new PublishedFixture.Fixture()
+            do! fixture.Start()
+            let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
+
+            let render arguments =
+                invoke
+                    fixture
+                    environment
+                    ([ "case"; "list"; "--view"; "all"; "--format"; "text"; "--language"; "en" ]
+                     @ arguments)
+                    Array.empty
+                    0
+                |> _.StandardOutput
+                |> Encoding.UTF8.GetString
+
+            let emptyScope = "There are no cases in your accessible scope."
+            Expect.stringContains (render []) emptyScope "The fresh register has no readable cases"
+
+            let reference = "CLI-LIFECYCLE"
+
+            invoke
+                fixture
+                environment
+                [ "case"; "open"; "--format"; "json"; "--"; reference ]
+                Array.empty
+                0
+            |> parse 0
+            |> require "ACCEPTED"
+            |> ignore
+
+            Expect.stringContains
+                (render [ "--limit"; "1" ])
+                reference
+                "The active case is readable"
+
+            for lifecycle in [ "erased"; "voided" ] do
+                let filtered = render [ "--lifecycle"; lifecycle ]
+
+                Expect.stringContains
+                    filtered
+                    "No cases match this view."
+                    "The lifecycle excludes the active case"
+
+                Expect.isFalse
+                    (filtered.Contains(emptyScope, StringComparison.Ordinal))
+                    "The readable case remains in scope"
+
+            fixture.Complete()
+        })
+
 let private historicalReference (fixture: PublishedFixture.Fixture) environment =
     let earlier = "-CLI:EARLIER-" + id ()
     let current = "CLI-CURRENT-" + id ()

@@ -42,6 +42,24 @@ test("drawer containment rejects clipping at the viewport edge @engine", async (
   expect(await clippedControlEdges(control)).toEqual(["viewport: bottom"]);
 });
 
+test("drawer containment detects focus paint outside an otherwise fitting scrollport @engine", async ({
+  page,
+}) => {
+  await page.setContent(`<!doctype html>
+    <style>
+      .scrollport { width: 280px; overflow: auto; padding: 8px; }
+      input { display: block; box-sizing: border-box; width: 100%; }
+      input:focus { outline: 2px solid; outline-offset: 2px; }
+    </style>
+    <div class="scrollport"><input aria-label="Reference"></div>`);
+  const input = page.getByRole("textbox");
+  await input.focus();
+  expect(await clippedControlEdges(input, true)).toEqual([]);
+  await page.addStyleTag({ content: ".scrollport { padding-inline: 0; }" });
+  expect(await clippedControlEdges(input)).toEqual([]);
+  expect(await clippedControlEdges(input, true)).toEqual(["scrollport: left", "scrollport: right"]);
+});
+
 const authorFixture = async (page: Parameters<typeof geometryFailures>[0]) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.setContent(`

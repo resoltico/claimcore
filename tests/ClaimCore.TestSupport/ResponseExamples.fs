@@ -343,6 +343,7 @@ let internal replies () : IEndpointOutput list =
                         Offers = []
                         NextCursor = None
                         ExactReference = None
+                        AuthorizedScopeEmpty = true
                     })
         yield!
             actorRead

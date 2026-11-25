@@ -1,9 +1,21 @@
 import type { Locator, Page } from "@playwright/test";
 
 /** Compare the control with the layout edges of the viewport and its rectangular scrollports. */
-export const clippedControlEdges = (control: Locator): Promise<string[]> =>
-  control.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
+export const clippedControlEdges = (control: Locator, includeOutline = false): Promise<string[]> =>
+  control.evaluate((element, paint) => {
+    const bounds = element.getBoundingClientRect();
+    const controlStyle = getComputedStyle(element);
+    const extent =
+      paint && controlStyle.outlineStyle !== "none"
+        ? parseFloat(controlStyle.outlineWidth) +
+          Math.max(0, parseFloat(controlStyle.outlineOffset))
+        : 0;
+    const rect = {
+      left: bounds.left - extent,
+      right: bounds.right + extent,
+      top: bounds.top - extent,
+      bottom: bounds.bottom + extent,
+    };
     const clipped: string[] = [];
     const check = (source: string, edge: string, outside: boolean) => {
       if (outside) {
@@ -71,7 +83,7 @@ export const clippedControlEdges = (control: Locator): Promise<string[]> =>
       }
     }
     return clipped;
-  });
+  }, includeOutline);
 
 type LayoutStage = "login" | "cases" | "narrow" | "zoom";
 

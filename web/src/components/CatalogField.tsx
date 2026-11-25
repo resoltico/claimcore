@@ -114,7 +114,7 @@ export const CatalogField = ({
       description={
         <>
           <span className="field-hint">{description ?? p.hint(field)}</span>{" "}
-          <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+          <FieldRule name={field.name} ruleId={field.ruleId} />
           <ScalarCounter field={field} value={value} />
           {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
         </>

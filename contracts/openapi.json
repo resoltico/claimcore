@@ -13350,6 +13350,9 @@
                 "type": "null"
               }
             ]
+          },
+          "authorizedScopeEmpty": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -13357,7 +13360,8 @@
           "nextCursor",
           "offers",
           "basis",
-          "exactReference"
+          "exactReference",
+          "authorizedScopeEmpty"
         ]
       },
       "ChangeReferences": {

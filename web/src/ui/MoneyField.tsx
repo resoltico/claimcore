@@ -6,6 +6,9 @@ import "./money-field.css";
 
 export const MoneyField = ({
   label,
+  groupLabel,
+  optional,
+  presence,
   hint,
   rule,
   amount,
@@ -14,6 +17,9 @@ export const MoneyField = ({
   disabled,
 }: {
   label: string;
+  groupLabel: string;
+  optional: string | null;
+  presence: string;
   hint: string;
   rule: { name: string; id: string | null };
   amount: { id: string; fieldName: string; value: string; onChange: (value: string) => void };
@@ -33,13 +39,20 @@ export const MoneyField = ({
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const currencyHintId = `${id}-currency-hint`;
+  const presenceId = `${id}-presence`;
   const invalid = error !== undefined;
   return (
     <FieldGroup>
-      <div className="text-field">
-        <label htmlFor={amount.id} className="field-label-row">
-          {label}
-        </label>
+      <div
+        className="text-field"
+        role="group"
+        aria-label={groupLabel}
+        aria-describedby={presenceId}
+      >
+        <div className="field-label-row">
+          <label htmlFor={amount.id}>{label}</label>
+          {optional === null ? null : <span className="field-hint">{optional}</span>}
+        </div>
         <div className="control-box field-control-group money-field">
           <ControlInput
             id={amount.id}
@@ -51,7 +64,9 @@ export const MoneyField = ({
             dir="ltr"
             disabled={disabled}
             aria-invalid={invalid || undefined}
-            aria-describedby={invalid ? `${hintId} ${errorId}` : hintId}
+            aria-describedby={
+              invalid ? `${hintId} ${presenceId} ${errorId}` : `${hintId} ${presenceId}`
+            }
             onChange={(event) => {
               amount.onChange(event.currentTarget.value);
             }}
@@ -62,7 +77,11 @@ export const MoneyField = ({
             inputName={currency.id}
             label={currency.label}
             invalid={invalid}
-            describedBy={invalid ? `${currencyHintId} ${errorId}` : currencyHintId}
+            describedBy={
+              invalid
+                ? `${currencyHintId} ${presenceId} ${errorId}`
+                : `${currencyHintId} ${presenceId}`
+            }
             value={currency.value}
             items={currency.options.filter(
               (item) =>
@@ -79,7 +98,10 @@ export const MoneyField = ({
         </span>
         <div id={hintId} className="field-description">
           {hint}
-          <FieldRule name={rule.name} ruleId={rule.id} invalid={invalid} />
+          <FieldRule name={rule.name} ruleId={rule.id} />
+        </div>
+        <div id={presenceId} className="field-description">
+          {presence}
         </div>
         {invalid ? (
           <div id={errorId} className="field-error">

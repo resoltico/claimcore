@@ -29,6 +29,14 @@ module internal ReviewDocumentParts =
                         "label.targetAccount"
                         Prominence.Primary
                         (ScreenEntries.optional PresentedValue.Actor actor)
+                match review.Binding with
+                | Binding.Attachment(_, attachmentId) ->
+                    ScreenEntries.value
+                        "attachmentId"
+                        "field.attachmentId.label"
+                        Prominence.Secondary
+                        (PresentedValue.Identifier(AttachmentId.format attachmentId))
+                | _ -> ()
             ]
 
         let identity =

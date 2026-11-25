@@ -1,5 +1,5 @@
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100@sha256:65f3c7c6a25a239ab3e6719f2896147e7b68242ff2d8818dd70498bde6ef8bea AS sdk
-FROM node:26.13.1-bookworm@sha256:b7087bc4d973034b30854b378ba107f9fab622b47514cb7e2592e41b8bab8d49 AS node
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100@sha256:2794448a07118a6eaf00f29ab5d2bf44928517ce5ff86505a63a69230374f599 AS sdk
+FROM node:26.13.1-bookworm@sha256:893ea48106e988a5f91e69629d6472600daa9d0494adf7db87eb0b886ce82255 AS node
 
 # Prepare SOURCE.tar.gz with eng/source-archive.sh before building. Both producers
 # consume that exact source inventory, which is also offered by the publications.
@@ -50,7 +50,7 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && find /published/server/wwwroot -type d -exec chmod 0755 {} + \
     && find /published/server/wwwroot -type f -exec chmod 0644 {} +
 
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-resolute-chiseled-extra@sha256:cea9d5494f358fe43082300c24d1cd9f651066b6b7de1e5735bca8d3ade68649 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-resolute-chiseled-extra@sha256:4f2b9809c1974acd91dc04777bf464808fb5d22a3455c6657a97847077878936 AS runtime
 WORKDIR /app
 COPY --from=build /published/server/ ./
 USER $APP_UID

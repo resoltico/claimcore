@@ -29,6 +29,7 @@ type TableProps = RegionInteraction & {
   view: TableContent;
   timeZone?: string;
   emptyId?: string | undefined;
+  renderDetailActions?: (row: RegionRow) => ReactNode;
 };
 
 const Cell = ({ value, timeZone }: { value: Value; timeZone: string }) => {
@@ -258,7 +259,11 @@ const RowControls = (props: Parameters<typeof TableRowControls>[0]) =>
     <TableRowControls {...props} />
   ) : (
     <td className="data-table-controls">
-      <div className="data-table-actions">{props.renderControls(props.row)}</div>
+      <div className="data-table-actions">
+        {props.renderControls(props.row, () => {
+          props.showDetails(props.row.key);
+        })}
+      </div>
     </td>
   );
 
@@ -456,23 +461,46 @@ const DataGrid = ({
   );
 };
 
-const DetailContents = ({
-  detail,
+const TableDetails = ({
+  row,
   timeZone,
+  onClose,
+  actions,
 }: {
-  detail: NonNullable<RegionRow["detail"]>;
+  row: RegionRow | undefined;
   timeZone: string;
-}) => (
-  <>
-    {detail.summary === null ? null : (
-      <p>
-        <SuppliedMessage message={detail.summary} timeZone={timeZone} />
-      </p>
-    )}
-    <SectionsView sections={detail.highlights} timeZone={timeZone} />
-    <SectionsView sections={detail.sections} timeZone={timeZone} />
-  </>
-);
+  onClose: () => void;
+  actions: TableProps["renderDetailActions"];
+}) => {
+  const p = usePresentation();
+  const detail = row?.detail;
+  return (
+    <Dialog
+      title={p.text("ui.viewDetails")}
+      closeLabel={p.text("ui.close")}
+      isOpen={detail !== undefined}
+      isDismissable
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      {row?.detail === undefined ? null : (
+        <>
+          {row.detail.summary === null ? null : (
+            <p>
+              <SuppliedMessage message={row.detail.summary} timeZone={timeZone} />
+            </p>
+          )}
+          <SectionsView sections={row.detail.highlights} timeZone={timeZone} />
+          <SectionsView sections={row.detail.sections} timeZone={timeZone} />
+          {actions?.(row)}
+        </>
+      )}
+    </Dialog>
+  );
+};
 
 export const DataTable = ({
   view,
@@ -480,11 +508,12 @@ export const DataTable = ({
   sectionLink,
   showTableSections = true,
   emptyId,
+  renderDetailActions,
   ...interaction
 }: TableProps) => {
   const p = usePresentation();
   const [detailKey, setDetailKey] = useState<string | null>(null);
-  const detail = view.rows.find((row) => row.key === detailKey)?.detail;
+  const detailRow = view.rows.find((row) => row.key === detailKey);
   return (
     <>
       {view.meter === undefined ? null : (
@@ -503,19 +532,14 @@ export const DataTable = ({
           {...(sectionLink === undefined ? {} : { link: sectionLink })}
         />
       )}
-      <Dialog
-        title={p.text("ui.viewDetails")}
-        closeLabel={p.text("ui.close")}
-        isOpen={detail !== undefined}
-        isDismissable
-        onOpenChange={(open) => {
-          if (!open) {
-            setDetailKey(null);
-          }
+      <TableDetails
+        row={detailRow}
+        timeZone={timeZone}
+        onClose={() => {
+          setDetailKey(null);
         }}
-      >
-        {detail === undefined ? null : <DetailContents detail={detail} timeZone={timeZone} />}
-      </Dialog>
+        actions={renderDetailActions}
+      />
     </>
   );
 };

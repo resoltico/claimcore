@@ -107,7 +107,7 @@ module CaseListScreen =
             }
         ]
 
-    let rows rows =
+    let private resultRows emptyId rows =
         let attention =
             column "attention" "label.attention" Prominence.Primary false (fun (row: CaseSummary) ->
                 codes CaseAttention.vocabulary row.Attention)
@@ -161,11 +161,17 @@ module CaseListScreen =
         Screen.create
             [
                 region RegionRole.Results None (RegionContent.Table { data with Columns = columns })
-                |> withEmpty "label.noCasesForView"
+                |> withEmpty emptyId
             ]
 
+    let rows items = resultRows "label.noCasesForView" items
+
     let view (reply: CaseSummaryPage) =
-        let screen = rows reply.Items
+        let screen =
+            if reply.AuthorizedScopeEmpty then
+                resultRows "label.noCasesInScope" reply.Items
+            else
+                rows reply.Items
 
         let screen =
             match reply.ExactReference with

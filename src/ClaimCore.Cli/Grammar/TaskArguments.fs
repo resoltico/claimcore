@@ -137,13 +137,18 @@ module internal TaskArguments =
 
         for input in declarations do
             match input.Name with
-            | TaskInputId.Target(InputTarget.Field field) when values.ContainsKey input.Name ->
+            | TaskInputId.Target(InputTarget.Field field) ->
                 let field = BusinessField.describe field
 
                 match field.Pairs with
-                | Some paired when not (values.ContainsKey(target (InputTarget.Field paired))) ->
-                    problems.Add(UsageError.MissingOption(flag (target (InputTarget.Field paired))))
-                | _ -> ()
+                | None -> ()
+                | Some paired ->
+                    let peer = target (InputTarget.Field paired)
+
+                    match values.ContainsKey input.Name, values.ContainsKey peer with
+                    | true, false -> problems.Add(UsageError.MissingOption(flag peer))
+                    | false, true -> problems.Add(UsageError.MissingOption(flag input.Name))
+                    | _ -> ()
             | _ -> ()
 
         remaining |> List.iter (UsageError.ExtraOperand >> problems.Add)

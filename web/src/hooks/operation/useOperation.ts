@@ -189,9 +189,6 @@ const identity = (options: Options, contextGeneration: number): EffectIdentity =
     target: targetKey(options),
   };
 };
-const dirtyValues = (left: FormValues, right: FormValues): boolean =>
-  Object.keys(left).length !== Object.keys(right).length ||
-  Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<
   | ServiceResponse<typeof apiEndpoints.operationExecute>
   | ServiceResponse<typeof apiEndpoints.operationPreview>
@@ -1216,9 +1213,6 @@ export const useOperation = (supplied: Options) => {
         });
       }
     },
-    dirty:
-      dirtyValues(state.draft.values, state.draft.baseline) ||
-      Object.keys(state.draft.dateEntries).length > 0,
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.disclosed.caseObservation : null,
     revalidating: state.disclosed.read !== null,
