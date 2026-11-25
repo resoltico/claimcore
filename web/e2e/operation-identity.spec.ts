@@ -64,10 +64,13 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
   await reviewDraft(page, { "Policy number": "SYNTHETIC-INTAKE" });
   await recordReviewed(page);
 
+  await page.goto(`/cases?view=ALL&q=${query}`);
+  await expect(page.getByRole("link", { name: `${query}-ACTIVE`, exact: true })).toBeVisible();
   for (const lifecycle of ["ERASED", "VOIDED"]) {
     await page.goto(`/cases?view=ALL&lifecycle=${lifecycle}&q=${query}`);
-    await expect(page.getByText("No cases match this view.")).toBeVisible();
+    const empty = page.locator(".empty-state").filter({ hasText: "No cases match this view." });
+    await expect(empty).toBeVisible();
     await expect(page.getByText("There are no cases in your accessible scope.")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Clear filters" })).toBeVisible();
+    await expect(empty.getByRole("button", { name: "Clear filters" })).toBeVisible();
   }
 });
