@@ -64,7 +64,7 @@ export default defineConfig({
     },
     {
       name: "chromium-classic",
-      testMatch: "**/design-anatomy-classic*.spec.ts",
+      testMatch: ["**/design-anatomy-classic*.spec.ts", "**/design-worklist-density.spec.ts"],
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] },

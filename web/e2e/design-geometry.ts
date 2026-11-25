@@ -41,11 +41,24 @@ export type GeometryId =
   | "G35"
   | "G36";
 
-type GeometryOptions = { limits?: boolean; caseMarker?: string | undefined };
+type GeometryOptions = {
+  limits?: boolean;
+  caseMarker?: string | undefined;
+  densityMarker?: string;
+  rowDensity?: boolean;
+  chipDensity?: boolean;
+};
+
+const evaluateOptions = (options: GeometryOptions) => ({
+  limits: false,
+  rowDensity: true,
+  chipDensity: true,
+  ...options,
+});
 
 export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
   page.evaluate((frame) => {
-    const { limits = false, caseMarker } = frame;
+    const { limits, caseMarker, densityMarker, rowDensity, chipDensity } = frame;
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 1 || rect.height <= 1) {
@@ -112,6 +125,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       [...table.querySelectorAll("tbody tr:not(.table-group)")].filter(
         (row) =>
           visible(row) &&
+          (densityMarker === undefined || row.textContent.includes(densityMarker)) &&
           (caseMarker === undefined ||
             table.closest(".worklist") === null ||
             row.querySelector("a .identifier-value")?.textContent.includes(caseMarker) === true),
@@ -514,6 +528,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
           getComputedStyle(table).getPropertyValue("--table-layout").trim() === "wide",
       );
       const caseChipsWrap =
+        chipDensity &&
         innerWidth === 1440 &&
         !limits &&
         wideCases.some((table) =>
@@ -908,7 +923,10 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
             ![...document.querySelectorAll("main .identifier-value")].some(
               (value) =>
                 visible(value) &&
-                value.textContent.trim() === bar.querySelector(":scope > span")?.textContent.trim(),
+                value.textContent.trim() ===
+                  (
+                    mainHeading?.textContent ?? bar.querySelector(":scope > span")?.textContent
+                  )?.trim(),
             )));
       const checks: ReadonlyArray<readonly [GeometryId, boolean]> = [
         ["G5b", caseChipsWrap],
@@ -938,7 +956,8 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       ["G4", overflow],
       [
         "G5",
-        !limits &&
+        rowDensity &&
+          !limits &&
           tables.some((table) => {
             const inner = table.querySelector("table");
             return (
@@ -981,7 +1000,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       pageSpill,
       firstRowTop: firstRow?.getBoundingClientRect().top,
     };
-  }, options);
+  }, evaluateOptions(options));
 
 export const focusFailures = (page: Page) =>
   page.evaluate((): GeometryId[] => {

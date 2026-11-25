@@ -412,7 +412,11 @@ export const checkFrame = async (
   caseMarker: string,
 ) => {
   const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
-    await geometryReport(page, { limits: dimension.fixture === "limits", caseMarker });
+    await geometryReport(page, {
+      limits: dimension.fixture === "limits",
+      caseMarker,
+      chipDensity: false,
+    });
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {

@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { configureDimension } from "./design-matrix-checks";
 import {
-  geometryFailures,
+  geometryReport,
   tableLayoutState,
   isWideTable,
   stableTableLayout,
@@ -58,9 +58,12 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
           if (width >= 1366) {
             expect(isWideTable(atTall), `G29 ${path}`).toBe(true);
           }
-          const failures = await geometryFailures(page, fixture === "limits");
+          const { violations } = await geometryReport(page, {
+            rowDensity: false,
+            chipDensity: false,
+          });
           expect(
-            failures.filter((id) => ["G5", "G5b", "G5c", "G30"].includes(id)),
+            violations.filter((id) => ["G4", "G5c", "G18", "G30"].includes(id)),
             path,
           ).toEqual([]);
           const viewport = page.viewportSize()!;
