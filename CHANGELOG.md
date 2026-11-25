@@ -2,10 +2,13 @@
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-25
+
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 9. Previous formats require their matching builds, including for restoring backups.
 - Supply the production HTTPS intermediates in the operator PFX. ClaimCore serves them with the configured leaf certificate.
 - Preview appears for attachments whose verified bytes meet the media profile. Original downloads remain available.
-- Cases distinguish an empty accessible scope from an empty view. Regenerate Cases DATA clients for `authorizedScopeEmpty` and CLI usage clients for the attachment size refusal.
+- Cases distinguish an empty accessible scope from a view with no matches. Regenerate Cases DATA clients for `authorizedScopeEmpty`.
+- Oversize files report the actual size and byte limit before upload. Regenerate CLI usage clients for the typed size refusal.
 - Case drawers retain edited and unconfirmed work, keep field rules in view, and explain when to enter both amount and currency.
 - Attachment intake distinguishes drop and paste from the file chooser. Same-name files show their IDs, and Details lets you copy the full ID.
 - Regenerate HUMAN clients for joins, case IDENTITY, region counts, recorded entries, payment empty labels, state detail, due dates, reminder timing and view columns, recommendations and short labels.
@@ -13,7 +16,7 @@
 - Regenerate HUMAN clients for lookup row choices, which now carry a value and a core label message.
 - Regenerate clients for task selections, which now declare the prompt and case list source together.
 - Update scripts to use `claimcore batch` for structured requests. `claimcore session` now selects browser-session commands.
-- Fresh visits go to the identity provider. Set the realm login theme to `claimcore` for both clients. See [Operating](docs/operating.md#access-review-and-sessions).
+- Fresh visits go to the identity provider. In a Keycloak realm with the installed ClaimCore theme, select `claimcore` as the login theme for both clients.
 - Client-cancelled requests without a reply record `ABANDONED` with null status. Classified replies keep their outcome after a disconnect. New acceptances use metric result `accepted`.
 - Cases, Reminders and People use wide lists at 1366px with classic scrollbars and keep the list width when a drawer opens.
 - Choose a payee by party name and role. A saved value missing from the loaded choices remains selected until it is changed.
@@ -32,6 +35,7 @@
 - Wide lists keep words intact. Stacked rows omit absent secondary values, and grouped reminders show timing in the group header.
 - Find opens with an empty query and inline suggestions. The shortcut selects the query when open. Editing or closing cancels stale lookups.
 - The app bar and browser tab follow the current page. The workspace, signed-out page and realm sign-in use the same brand mark.
+- Refresh the pinned .NET 11 and PostgreSQL 19.0 images and the Node.js build image.
 
 ## [0.21.0] - 2026-11-22
 
