@@ -156,8 +156,9 @@ const ReminderAdvancedFilters = ({
           });
         }}
       >
-        {p.text("ui.filters")}
-        {count === 0 ? "" : ` (${p.integer(count)})`}
+        {count === 0
+          ? p.text("ui.filters")
+          : p.text("ui.filtersWithCount", { count: p.integer(count) })}
       </button>
       <Dialog
         title={p.text("ui.filters")}
@@ -411,7 +412,10 @@ const ReadyReminderQueue = ({
               prominence,
               ...(label.kind === "MESSAGE" && count.kind === "COUNT"
                 ? {
-                    menuLabel: `${renderCatalogKey(p, label.messageId)} · ${p.integer(count.value)}`,
+                    menuLabel: p.text("ui.viewWithCount", {
+                      view: renderCatalogKey(p, label.messageId),
+                      count: p.integer(count.value),
+                    }),
                   }
                 : {}),
               label: (

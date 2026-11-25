@@ -1151,7 +1151,7 @@ export type MessageArgs = {
   "ui.before": { readonly "value": string };
   "ui.breadcrumb": Readonly<Record<string, never>>;
   "ui.browserSessions": Readonly<Record<string, never>>;
-  "ui.calendar": Readonly<Record<string, never>>;
+  "ui.calendarFor": { readonly "field": string };
   "ui.cancelChanges": Readonly<Record<string, never>>;
   "ui.canonicalCopyHint": Readonly<Record<string, never>>;
   "ui.caseReport": Readonly<Record<string, never>>;
@@ -1201,6 +1201,7 @@ export type MessageArgs = {
   "ui.filters": Readonly<Record<string, never>>;
   "ui.filtersSheet": Readonly<Record<string, never>>;
   "ui.filtersSheetCount": { readonly "count": string };
+  "ui.filtersWithCount": { readonly "count": string };
   "ui.findCase": Readonly<Record<string, never>>;
   "ui.formatPreview": { readonly "amount": string; readonly "date": string };
   "ui.generalOperationLookup": Readonly<Record<string, never>>;
@@ -1316,6 +1317,7 @@ export type MessageArgs = {
   "ui.viewLoadFailed": Readonly<Record<string, never>>;
   "ui.viewLoading": Readonly<Record<string, never>>;
   "ui.viewReceipt": Readonly<Record<string, never>>;
+  "ui.viewWithCount": { readonly "count": string; readonly "view": string };
   "ui.worklistSearch": Readonly<Record<string, never>>;
   "view.ALL.label": Readonly<Record<string, never>>;
   "view.CANCELLED.label": Readonly<Record<string, never>>;

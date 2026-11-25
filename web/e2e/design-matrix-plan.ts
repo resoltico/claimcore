@@ -34,6 +34,7 @@ export const limitDimensions = (engine: string): Dimension[] =>
       ...(engine === "chromium"
         ? ([
             { width: 1280, language: "ar" },
+            { width: 390, language: "ar" },
             { width: 1440, language: "de" },
           ] as const)
         : []),

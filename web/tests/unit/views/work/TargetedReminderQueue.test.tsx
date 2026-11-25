@@ -84,7 +84,9 @@ it("navigates from the supplied case workspace link into a visible targeted queu
   await userEvent.click(link);
   expect(await screen.findByRole("heading", { name: "Reminders" })).toBeVisible();
   expect(screen.getByText(reference)).toBeVisible();
-  await userEvent.click(screen.getByRole("button", { name: /^More filters/u }));
+  await userEvent.click(
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u }),
+  );
   expect(screen.getByRole("checkbox", { name: "Include inactive case work" })).toBeChecked();
   await waitFor(() => {
     expect(reads.mock.calls.at(-1)?.[1]).toEqual({

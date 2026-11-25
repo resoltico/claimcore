@@ -356,6 +356,21 @@ let private cookieQueue () =
         Expect.equal after (Some 1) "Expiration releases queue ownership"
     }
 
+let private expectAuthenticationCancellation close token (queued: Task<unit option>) =
+    task {
+        try
+            let! result = queued.WaitAsync(TimeSpan.FromSeconds 3.)
+            Expect.notEqual close "request" "Client cancellation reaches the request boundary"
+            Expect.isNone result "Host shutdown or disposal refuses admission"
+        with :? OperationCanceledException as cancelled ->
+            Expect.equal close "request" "Only the client cancels the request"
+
+            Expect.equal
+                cancelled.CancellationToken
+                token
+                "The cancellation carries the client token"
+    }
+
 let private cancelledCookies () =
     task {
         for close in [ "request"; "host"; "dispose" ] do
@@ -382,8 +397,7 @@ let private cancelledCookies () =
             | _ -> (budget :> IDisposable).Dispose()
 
             first.Dispose()
-            let! result = queued.WaitAsync(TimeSpan.FromSeconds 3.)
-            Expect.isNone result "Cancellation while waiting refuses acquisition"
+            do! expectAuthenticationCancellation close abort.Token queued
             Expect.isFalse called "No cancelled callback reaches provider/session work"
         // A promoted owner outlives the queue deadline; only its cleanup releases capacity.
         use budget = new AuthenticationAdmission(CancellationToken.None)
@@ -468,7 +482,7 @@ let private promotedCookieTransfer () =
                 "The acquisition genuinely waits behind two holders"
 
             first.Dispose()
-            let! result = queued.WaitAsync(TimeSpan.FromSeconds 3.)
+            do! expectAuthenticationCancellation close abort.Token queued
 
             // ConcurrencyLimiter publishes completion before incrementing its success counter.
             // The releasing holder has returned here; the ownership boundary above needs only
@@ -483,8 +497,6 @@ let private promotedCookieTransfer () =
                 reads
                 2
                 "Cancellation was injected at the successful acquisition-to-callback boundary"
-
-            Expect.isNone result "Observed cancellation or closure refuses callback ownership"
 
             Expect.isFalse
                 called
@@ -530,8 +542,7 @@ let private promotedCookieTransfer () =
                     "Recovered admission still allows only two active callbacks"
 
                 queuedAbort.Cancel()
-                let! refused = excess
-                Expect.isNone refused "The capacity control waiter cancels without entering"
+                do! expectAuthenticationCancellation "request" queuedAbort.Token excess
                 againFirst.Dispose()
                 againSecond.Dispose()
             elif close = "dispose" then

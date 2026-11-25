@@ -2,7 +2,7 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    align-items: var(--chip-list-alignment, center);
+    align-items: center;
     gap: var(--space-chip-list);
     margin: 0;
     padding: 0;
@@ -11,7 +11,7 @@
 
   .chip-list > li {
     display: flex;
-    align-items: var(--chip-list-alignment, center);
+    align-items: center;
     min-inline-size: 0;
   }
 }

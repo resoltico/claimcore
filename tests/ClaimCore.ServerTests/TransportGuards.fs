@@ -135,6 +135,7 @@ let private failurePhase dispatched completed phase =
     Expect.isFalse (sink.ToString().Contains "sensitive-exception-message") "Sanitized failure"
 
 type private RequestEnd =
+    | BeforeAuthentication
     | BeforeDispatch
     | AcceptedWrite
     | CancelledRead
@@ -187,10 +188,24 @@ let private requestOutcome ending =
 
     let dispatch =
         RequestDelegate(fun current ->
-            if ending <> BeforeDispatch then
+            if ending <> BeforeDispatch && ending <> BeforeAuthentication then
                 RouteSupport.markDispatched current
 
             match ending with
+            | BeforeAuthentication ->
+                task {
+                    use admission = new AuthenticationAdmission(stopping.Token)
+                    disconnected.Cancel()
+
+                    let! admitted = admission.Run(current, fun _ -> Task.FromResult())
+
+                    if admitted.IsNone then
+                        do!
+                            (RouteSupport.hostFailure current HostFailureReason.RateLimited)
+                                .ExecuteAsync
+                                current
+                }
+                :> Task
             | BeforeDispatch ->
                 disconnected.Cancel()
                 (RouteSupport.inputFailure current BodyProblem.BodyCancelled).ExecuteAsync current
@@ -244,6 +259,7 @@ let private requestOutcome ending =
     let status = logged.RootElement.GetProperty("status")
 
     match ending with
+    | BeforeAuthentication
     | BeforeDispatch
     | CancelledRead ->
         Expect.equal outcome "ABANDONED" "Request outcome"
@@ -285,6 +301,9 @@ let tests =
             testCase "before-dispatch and dispatched failure knowledge remain distinct" (fun () ->
                 failurePhase false false (Some "NOT_STARTED")
                 failurePhase true false (Some "STARTED_UNCONFIRMED"))
+            testCase
+                "authentication admission preserves client cancellation before dispatch"
+                (fun () -> requestOutcome BeforeAuthentication)
             testCase "client cancellation before dispatch has no reply" (fun () ->
                 requestOutcome BeforeDispatch)
             testCase "client cancellation during a read has no reply" (fun () ->

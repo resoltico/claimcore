@@ -1,7 +1,7 @@
 import { NoticeView } from "../presentation/Message";
 import { DateEntryDraft } from "../components/DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
-import { FieldGroup, FieldRule } from "./Field";
+import { FieldGroup } from "./Field";
 import { parseDate } from "@internationalized/date";
 import {
   DateField as AriaDateField,
@@ -45,7 +45,7 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
           icon="calendar"
           variant="quiet"
           isDisabled={disabled}
-          label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
+          label={p.text("ui.calendarFor", { field: p.fieldLabel(field.name) })}
         />
         <Popover className="calendar-popover">
           <Dialog aria-label={p.fieldLabel(field.name)}>
@@ -123,8 +123,7 @@ const DateEntry = ({
           />
         </div>
         <Text slot="description" className="field-description">
-          <span className="field-hint">{p.hint(field)}</span>{" "}
-          <FieldRule name={field.name} ruleId={field.ruleId} invalid={error !== undefined} />
+          <span className="field-hint">{p.hint(field)}</span>
         </Text>
         {error === undefined ? null : (
           <FieldError>

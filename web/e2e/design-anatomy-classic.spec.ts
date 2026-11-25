@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { configureDimension } from "./design-matrix-checks";
 import {
-  geometryFailures,
+  geometryReport,
   tableLayoutState,
   isWideTable,
   stableTableLayout,
@@ -48,14 +48,22 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
         for (const path of [...cases, "/reminders", "/reminders?view=MINE", "/people"]) {
           await page.goto(path);
           await settledWorkspaceHeader(page);
-          await expect(list.locator("tbody tr").first()).toBeVisible();
+          const rows = list.locator("tbody tr");
+          await expect(rows.first()).toBeVisible();
+          if (fixture === "standard" && path.startsWith("/cases")) {
+            await expect(rows.first()).toContainText(dataset.caseMarker);
+            await expect(rows.filter({ hasNotText: dataset.caseMarker })).toHaveCount(0);
+          }
           const atTall = await tableLayoutState(page);
           if (width >= 1366) {
             expect(isWideTable(atTall), `G29 ${path}`).toBe(true);
           }
-          const failures = await geometryFailures(page, fixture === "limits");
+          const { violations } = await geometryReport(page, {
+            rowDensity: false,
+            chipDensity: false,
+          });
           expect(
-            failures.filter((id) => id === "G5b" || id === "G30"),
+            violations.filter((id) => ["G4", "G5c", "G18", "G30"].includes(id)),
             path,
           ).toEqual([]);
           const viewport = page.viewportSize()!;

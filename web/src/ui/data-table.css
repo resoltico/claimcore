@@ -102,6 +102,12 @@
     --value-measure: var(--measure-chips);
   }
 
+  @container data-table (width < 50rem) {
+    .data-table-value {
+      max-inline-size: none;
+    }
+  }
+
   .data-table-cell-label {
     display: none;
     text-align: start;
@@ -122,11 +128,16 @@
   .data-table-actions {
     position: relative;
     inset-block-start: calc(-1 * var(--border-width));
-    display: inline-flex;
+    display: var(--table-actions-display, inline-flex);
     vertical-align: middle;
     justify-content: flex-end;
     align-items: center;
     gap: var(--space-1);
+  }
+
+  .data-table-menu > .ui-button {
+    inline-size: var(--compact-target);
+    padding-inline: var(--space-1);
   }
 
   .data-table :is(td, th)[data-prominence="SECONDARY"] {

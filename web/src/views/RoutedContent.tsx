@@ -4,18 +4,13 @@ import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
 import { SubjectHeader } from "../ui/SubjectHeader";
 import { renderCatalogKey } from "../presentation/messages";
-import "./case/payment-selection.css";
+import "./case/entry-selection.css";
 import { operationTask } from "../protocol/taskCatalog";
-import {
-  apiEndpoints,
-  type ServiceResponse,
-  type CurrentCase,
-  type CaseLinkedReceipt,
-} from "../api/service";
+import type { ServiceResponse, CurrentCase, CaseLinkedReceipt } from "../api/service";
 import { useCaseCreationControl } from "../hooks/useRequesterContext";
 import { hasDocumentSubject } from "../protocol/types";
 import { useEndpointPage } from "../hooks/useEndpointPage";
-import type { Affordance } from "@contracts/client";
+import type { Affordance, CaseSelector, EndpointId, RequestByEndpoint } from "@contracts/client";
 
 import {
   allActions,
@@ -97,7 +92,16 @@ const matchesEditorAction = (
       Object.hasOwn(binding, key) && JSON.stringify(binding[key]) === JSON.stringify(value),
   );
 };
-const paymentSelectionPage = (reply: ServiceResponse<typeof apiEndpoints.casePayments>) => {
+type EntrySelectionSource = {
+  [K in EndpointId]: RequestByEndpoint[K] extends { target: CaseSelector }
+    ? "cursor" extends keyof RequestByEndpoint[K]
+      ? K
+      : never
+    : never;
+}[EndpointId];
+type EntrySelectionDeclaration = { readonly promptId: string; readonly from: EntrySelectionSource };
+
+const entrySelectionPage = (reply: ServiceResponse<EntrySelectionSource>) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -107,21 +111,21 @@ const paymentSelectionPage = (reply: ServiceResponse<typeof apiEndpoints.casePay
   }
   return {
     document,
-    items: allActions(document),
+    items: document.screen.regions.flatMap(({ content }) =>
+      content.kind === "TABLE" ? content.rows.flatMap((row) => row.actions ?? []) : [],
+    ),
     nextCursor: document.nextCursor,
     basis: document.basis.observation,
     screen: document.screen,
     disclosure: document.disclosure,
   };
 };
-const paymentSelectionKey = (page: NonNullable<ReturnType<typeof paymentSelectionPage>>) =>
+const entrySelectionKey = (page: NonNullable<ReturnType<typeof entrySelectionPage>>) =>
   JSON.stringify(page.document.subject);
-type PaymentPage = NonNullable<ReturnType<typeof paymentSelectionPage>>;
-type PaymentQuery = ReturnType<
-  typeof useEndpointPage<typeof apiEndpoints.casePayments, Affordance, PaymentPage>
->;
+type EntryPage = NonNullable<ReturnType<typeof entrySelectionPage>>;
+type EntryQuery = ReturnType<typeof useEndpointPage<EntrySelectionSource, Affordance, EntryPage>>;
 
-const paymentSelection = (page: PaymentQuery, current: CurrentCase, route: EditorRoute) => {
+const entrySelection = (page: EntryQuery, current: CurrentCase, route: EditorRoute) => {
   const exact = route.binding !== undefined;
   const matching = page.items.filter((candidate): candidate is OperationAffordance =>
     matchesEditorAction(candidate, route),
@@ -147,79 +151,72 @@ const focusSelectionPrompt = (element: HTMLParagraphElement | null) => {
   }
 };
 
-const PaymentChoiceRows = ({
-  payment,
+const EntryChoiceRows = ({
+  page,
   route,
   current,
   onReady,
 }: Pick<EditorSelectionProps, "route" | "current" | "onReady"> & {
-  payment: PaymentPage | null;
+  page: EntryPage | null;
 }) => {
   const p = usePresentation();
-  const table = payment?.screen.regions.find(({ role }) => role === "PAYMENTS")?.content;
-  const rows =
-    table?.kind === "TABLE"
-      ? table.rows.flatMap((row) => {
-          const offered = row.actions?.find((candidate) => matchesEditorAction(candidate, route));
-          return offered === undefined ? [] : [{ ...row, actions: [offered] }];
-        })
-      : [];
-  return payment === null || table?.kind !== "TABLE" || rows.length === 0 ? null : (
-    <div className="payment-entry-choices">
-      <DataTable
-        view={{ kind: "TABLE", columns: table.columns, rows }}
-        timeZone={payment.basis.timeZone}
-        renderControls={(row) => {
-          const offered = row.actions?.[0];
-          return offered !== undefined && matchesEditorAction(offered, route) ? (
-            <Button
-              className="data-table-recommended"
-              variant="secondary"
-              compact
-              onPress={() => {
-                onReady({ current, action: offered });
-              }}
-            >
-              {renderCatalogKey(p, offered.shortLabelId ?? offered.labelId)}
-            </Button>
-          ) : null;
-        }}
-      />
-    </div>
-  );
+  return page?.screen.regions.map(({ role, content }) => {
+    if (content.kind !== "TABLE") {
+      return null;
+    }
+    const rows = content.rows.flatMap((row) => {
+      const offered = row.actions?.find((candidate) => matchesEditorAction(candidate, route));
+      return offered === undefined ? [] : [{ ...row, actions: [offered] }];
+    });
+    return rows.length === 0 ? null : (
+      <div key={role} className="entry-choices">
+        <DataTable
+          view={{ kind: "TABLE", columns: content.columns, rows }}
+          timeZone={page.basis.timeZone}
+          renderControls={(row) => {
+            const offered = row.actions?.[0];
+            return offered !== undefined && matchesEditorAction(offered, route) ? (
+              <Button
+                className="data-table-recommended"
+                variant="secondary"
+                compact
+                onPress={() => {
+                  onReady({ current, action: offered });
+                }}
+              >
+                {renderCatalogKey(p, offered.shortLabelId ?? offered.labelId)}
+              </Button>
+            ) : null;
+          }}
+        />
+      </div>
+    );
+  });
 };
 
-const PaymentEditorSelection = ({
+export const EntrySelection = ({
   current,
   route,
   onReady,
   onClose,
   onUnavailable,
   revalidate,
-  promptId,
-}: EditorSelectionProps & { revalidate: () => void; promptId: string }) => {
+  declaration,
+}: EditorSelectionProps & { revalidate: () => void; declaration: EntrySelectionDeclaration }) => {
   const p = usePresentation();
   const input = useCallback(
     (cursor: string | null) => ({
       target: route.target,
-      limit: 50,
       ...(cursor === null ? {} : { cursor }),
     }),
     [route.target],
   );
   const page = useEndpointPage<
-    typeof apiEndpoints.casePayments,
+    EntrySelectionSource,
     Affordance,
-    NonNullable<ReturnType<typeof paymentSelectionPage>>
-  >(
-    apiEndpoints.casePayments,
-    input,
-    paymentSelectionPage,
-    revalidate,
-    undefined,
-    paymentSelectionKey,
-  );
-  const { exact, action, outdated, unavailable } = paymentSelection(page, current, route);
+    NonNullable<ReturnType<typeof entrySelectionPage>>
+  >(declaration.from, input, entrySelectionPage, revalidate, undefined, entrySelectionKey);
+  const { exact, action, outdated, unavailable } = entrySelection(page, current, route);
   useEffect(() => {
     if (outdated) {
       revalidate();
@@ -256,7 +253,7 @@ const PaymentEditorSelection = ({
     >
       {exact ? null : (
         <p tabIndex={-1} ref={focusSelectionPrompt}>
-          {renderCatalogKey(p, promptId)}
+          {renderCatalogKey(p, declaration.promptId)}
         </p>
       )}
       {page.message === null ? null : (
@@ -275,8 +272,8 @@ const PaymentEditorSelection = ({
         </>
       )}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
-      <PaymentChoiceRows
-        payment={outdated || exact ? null : page.page}
+      <EntryChoiceRows
+        page={outdated || exact ? null : page.page}
         route={route}
         current={current}
         onReady={onReady}
@@ -323,12 +320,12 @@ const RoutableCaseEditor = ({
   const action = candidates.find((candidate): candidate is OperationAffordance =>
     matchesEditorAction(candidate, route),
   );
-  const direct = definition.binding.identity === null || route.binding !== undefined;
+  const direct = definition.selection === null || route.binding !== undefined;
   const selection = opened ?? (direct && action !== undefined ? { current, action } : null);
   if (opened === null && selection !== null) {
     setOpened(selection);
   }
-  const unavailable = selection === null && definition.binding.identity === null;
+  const unavailable = selection === null && definition.selection === null;
   useEffect(() => {
     if (unavailable) {
       onUnavailable();
@@ -336,8 +333,8 @@ const RoutableCaseEditor = ({
   }, [onUnavailable, unavailable]);
   if (selection === null) {
     return definition.selection === null ? null : (
-      <PaymentEditorSelection
-        promptId={definition.selection.promptId}
+      <EntrySelection
+        declaration={definition.selection}
         route={route}
         current={current}
         onReady={setOpened}

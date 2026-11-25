@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Button } from "../ui/Button";
 import { Select } from "../ui/Select";
-import { FieldGroup, FieldRule } from "../ui/Field";
+import { FieldGroup } from "../ui/Field";
 import type { TypedFieldProps } from "../ui/DateField";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
@@ -11,12 +11,12 @@ import { useEndpointPage } from "../hooks/useEndpointPage";
 import type { HumanReadReply, OperationTaskDefinition, PresentedValue } from "@contracts/client";
 
 type Props = Omit<TypedFieldProps, "field"> & {
-  metadata: { key: string; labelId: string; hintId: string | null; ruleId: string | null };
+  metadata: { labelId: string; hintId: string | null };
   caseId: string;
   lookup: NonNullable<OperationTaskDefinition["inputs"][number]["choicesFrom"]>;
 };
 
-const caption = (p: ReturnType<typeof usePresentation>, value: PresentedValue) => {
+const choiceArgument = (p: ReturnType<typeof usePresentation>, value: PresentedValue) => {
   switch (value.kind) {
     case "ACTOR":
       return actorName(p, value.value);
@@ -25,12 +25,8 @@ const caption = (p: ReturnType<typeof usePresentation>, value: PresentedValue) =
       return value.value;
     case "CODE":
       return p.term(value.vocabulary, value.token);
-    case "ABSENT":
-      return renderCatalogKey(p, value.reasonId);
-    case "MESSAGE":
-      return renderCatalogKey(p, value.messageId);
     default:
-      throw new Error("Unsupported lookup caption.");
+      throw new Error("Unsupported lookup label argument.");
   }
 };
 
@@ -102,7 +98,6 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
     choices,
   );
   const { metadata, inputName, disabled, error, optional, value, onChange, sharedErrorId } = props;
-  const ruleId = `field-${inputName}-rule`;
   const errorId = sharedErrorId ?? `field-${inputName}-error`;
   const options = result.items.map((item) => ({
     value: item.value,
@@ -110,7 +105,7 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
       p,
       item.label.messageId,
       Object.fromEntries(
-        item.label.arguments.map(({ key, value: argument }) => [key, caption(p, argument)]),
+        item.label.arguments.map(({ key, value: argument }) => [key, choiceArgument(p, argument)]),
       ),
     ),
   }));
@@ -124,19 +119,15 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
           id={`field-${inputName}`}
           label={renderCatalogKey(p, metadata.labelId)}
           value={value}
-          fallbackLabel=""
+          fallbackLabel={
+            value === "" || result.page === null ? "" : p.text("label.choiceNotListed")
+          }
           invalid={error !== undefined}
-          describedBy={[ruleId, error === undefined ? "" : errorId].join(" ")}
+          {...(error === undefined ? {} : { describedBy: errorId })}
           options={options}
           description={metadata.hintId === null ? undefined : renderCatalogKey(p, metadata.hintId)}
           disabled={disabled || options.length === 0}
           onChange={onChange}
-        />
-        <FieldRule
-          id={ruleId}
-          name={metadata.key}
-          ruleId={metadata.ruleId}
-          invalid={error !== undefined}
         />
         <LookupFeedback result={result} />
         {error === undefined ? null : (

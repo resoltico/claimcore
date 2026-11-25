@@ -109,7 +109,12 @@ const workAct = (
     },
     inputs,
   });
-const planReminder = (page: Page, reference: string, date: string) =>
+const planReminder = (
+  page: Page,
+  reference: string,
+  date: string,
+  action = "Review synthetic case",
+) =>
   execute(page, {
     operationId: mintOperationId(),
     task: "reminder.create",
@@ -120,7 +125,7 @@ const planReminder = (page: Page, reference: string, date: string) =>
         caseReference: reference,
       },
     },
-    inputs: { "input:reminderAction": "Review synthetic case", "input:reminderDueDate": date },
+    inputs: { "input:reminderAction": action, "input:reminderDueDate": date },
   });
 const states = ["undecided", "decided", "paid", "closed", "voided", "erased"] as const;
 type CaseState = (typeof states)[number];
@@ -570,7 +575,12 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     operationId,
   };
 };
-const registerActor = async (page: Page, issuer: string, reference: string) => {
+const registerActor = async (
+  page: Page,
+  issuer: string,
+  reference: string,
+  displayName = "Synthetic matrix account",
+) => {
   const target = {
     kind: "SERVICE",
     issuer,
@@ -581,7 +591,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
     task: "people.register",
     binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
-      "input:profile.displayName": "Synthetic matrix account",
+      "input:profile.displayName": displayName,
       ...prefixedInputs("input:principal.", target),
     },
   });
@@ -917,5 +927,46 @@ export const prepareDesignDataset = async (
       await context.close();
     }
     throw error;
+  }
+};
+
+/** Ordinary list rows for the density requirements. The design matrix separately seeds stress cases. */
+export const prepareWorklistDensity = async (browser: Browser, baseURL: string) => {
+  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  try {
+    const page = await context.newPage();
+    await openAuthenticated(page);
+    await expect(page.locator('.worklist[aria-busy="false"]')).toBeVisible();
+    await expect(page.locator('.summary-band[aria-busy="true"]')).toHaveCount(0);
+    const { issuer } = await syntheticPrincipals();
+    const observed = await request(page, "context", {});
+    if (
+      observed.outcome.kind !== "SUCCEEDED" ||
+      observed.outcome.data.requester.kind !== "ACTIVE"
+    ) {
+      throw new Error("Density fixture requires an active requester.");
+    }
+    const { actorId, businessDate } = observed.outcome.data.requester;
+    const marker = `AN-${randomUUID().slice(0, 8)}`;
+    const registration = registrationInput({
+      incidentDate: businessDate,
+      receivedDate: businessDate,
+      incidentCountry: "LV",
+      claimedAmount: "1234.56",
+      claimedCurrency: "EUR",
+    });
+    for (const number of [1, 2, 3, 4, 5, 6]) {
+      await caseAct(page, `${marker}-${number}`, 0, {
+        task: "case.open",
+        inputs: prefixedInputs("field:", registration, true),
+      });
+    }
+    await workAct(page, `${marker}-1`, 0, { "field:responsibleActor": actorId });
+    await planReminder(page, `${marker}-1`, businessDate, `Review ${marker}`);
+    await planReminder(page, `${marker}-2`, businessDate, `Review ${marker}`);
+    await registerActor(page, issuer, `${marker}-1`, `Analyst ${marker}`);
+    return { marker, cookies: await context.cookies() };
+  } finally {
+    await context.close();
   }
 };

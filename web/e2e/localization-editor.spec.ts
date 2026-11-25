@@ -41,11 +41,6 @@ const widgetHints = {
     policyNumber: "رقم وثيقة التأمين الذي تستخدمه شركة التأمين.",
   },
 } as const;
-const calendarRules = {
-  en: "Use YYYY-MM-DD, for example 2026-10-06.",
-  lv: "Izmantojiet YYYY-MM-DD, piemēram, 2026-10-06.",
-  ar: "استخدم YYYY-MM-DD، مثل 2026-10-06.",
-} as const;
 const unacceptedCase = async (page: Page, reference: string) => {
   const reply = await browserRequest(page, "/api/case.get", {
     method: "POST",
@@ -142,10 +137,8 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
     },
   );
   const date = page.locator('[data-field-name="incidentDate"]');
-  await expect(date.getByRole("spinbutton").first()).toHaveAccessibleDescription(/YYYY/u);
-  const rule = date.locator(".field-rule");
-  await expect(rule).toBeVisible();
-  await expect(rule).toHaveText(calendarRules[language]);
+  await expect(date.getByRole("spinbutton").first()).not.toHaveAccessibleDescription(/YYYY/u);
+  await expect(date.locator(".field-rule")).toHaveCount(0);
   await expect(date.locator(".field-help")).toHaveCount(0);
   await expect(date.locator('input[type="hidden"]')).toHaveValue("");
   await expect(page.locator('input[data-field-name="policyNumber"]')).toHaveValue(

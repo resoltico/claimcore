@@ -54,19 +54,24 @@ type internal AuthenticationAdmission(stopping: CancellationToken) =
                 else
                     bearer
 
+            let client = context.RequestAborted
+
+            let clientCancelled () =
+                client.IsCancellationRequested && not stopping.IsCancellationRequested
+
             let! acquired =
                 task {
-                    try
-                        if Volatile.Read(&disposed) <> 0 then
-                            return None
-                        else
-                            use deadline = new CancellationTokenSource()
+                    if Volatile.Read(&disposed) <> 0 then
+                        return None
+                    else
+                        use deadline = new CancellationTokenSource()
 
-                            use waiting =
-                                CancellationTokenSource.CreateLinkedTokenSource(
-                                    [| context.RequestAborted; stopping; closure; deadline.Token |]
-                                )
+                        use waiting =
+                            CancellationTokenSource.CreateLinkedTokenSource(
+                                [| client; stopping; closure; deadline.Token |]
+                            )
 
+                        try
                             if queued then
                                 deadline.CancelAfter AdmissionPolicy.authenticationQueueWait
 
@@ -78,14 +83,21 @@ type internal AuthenticationAdmission(stopping: CancellationToken) =
                             // The waiting deadline must never become an active provider-work deadline.
                             deadline.CancelAfter Timeout.InfiniteTimeSpan
 
-                            if not lease.IsAcquired || waiting.IsCancellationRequested then
+                            if waiting.IsCancellationRequested then
+                                lease.Dispose()
+                                return raise (OperationCanceledException(waiting.Token))
+                            elif not lease.IsAcquired then
                                 lease.Dispose()
                                 return None
                             else
                                 return Some lease
-                    with
-                    | :? OperationCanceledException
-                    | :? ObjectDisposedException -> return None
+                        with
+                        | :? OperationCanceledException as error when
+                            error.CancellationToken = waiting.Token && clientCancelled ()
+                            ->
+                            return raise (OperationCanceledException(client))
+                        | :? OperationCanceledException
+                        | :? ObjectDisposedException -> return None
                 }
 
             match acquired with
@@ -93,8 +105,13 @@ type internal AuthenticationAdmission(stopping: CancellationToken) =
             | Some lease ->
                 use owner = AdmissionLease.once lease.Dispose
 
+                let activeClient = context.RequestAborted
+
+                if activeClient.IsCancellationRequested && not stopping.IsCancellationRequested then
+                    activeClient.ThrowIfCancellationRequested()
+
                 if
-                    context.RequestAborted.IsCancellationRequested
+                    activeClient.IsCancellationRequested
                     || stopping.IsCancellationRequested
                     || Volatile.Read(&disposed) <> 0
                 then

@@ -411,7 +411,10 @@ const DataGrid = ({
         <tbody key={group.titleId}>
           <tr className="table-group">
             <th scope="rowgroup" colSpan={columnsCount}>
-              {renderCatalogKey(p, group.titleId)} · {p.integer(group.count)}
+              {p.text("ui.viewWithCount", {
+                view: renderCatalogKey(p, group.titleId),
+                count: p.integer(group.count),
+              })}
             </th>
           </tr>
           {group.rowKeys.flatMap((key) => {

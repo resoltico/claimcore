@@ -87,12 +87,13 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
 });
 it("does not manufacture authorization advice when the supplied HUMAN document offers no task", async () => {
   const value = caseDocumentInput({ actions: [], history: "NONE" });
-  const { view, preview, execute } = mount(value, "case.decide");
+  const { preview, execute } = mount(value, "case.decide");
   await screen.findByRole("heading", {
     level: 1,
     name: (_name, element) => element.id === "case-detail-title",
   });
-  const callout = view.container.querySelector(".case-action-refusal")!;
+  const callout = await screen.findByRole("alert");
+  expect(callout.classList.contains("case-action-refusal")).toBe(true);
   expect(callout).toHaveTextContent("This action is not currently offered for this case.");
   expect(callout).not.toHaveTextContent("Case handler");
   expect(callout).not.toHaveTextContent("Undecided");

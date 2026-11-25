@@ -37,6 +37,16 @@
     font-weight: 600;
   }
 
+  .case-stage-list .stage-connector {
+    block-size: var(--focus-width);
+    border-radius: var(--radius-pill);
+    background: var(--border-control);
+  }
+
+  .case-stage-list > li[data-complete="true"] > .stage-connector {
+    background: var(--accent-solid);
+  }
+
   .case-stage-list .progress-meter {
     block-size: var(--focus-width);
     inline-size: 100%;

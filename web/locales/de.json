@@ -1,4 +1,19 @@
 {
+  "ui.filtersWithCount": {
+    "text": "Filter ({count})",
+    "source": "da897ba78973",
+    "machineMade": true
+  },
+  "ui.viewWithCount": {
+    "text": "{view} · {count}",
+    "source": "4f68d246b148",
+    "machineMade": true
+  },
+  "ui.calendarFor": {
+    "text": "Kalender: {field}",
+    "source": "21b82ed744df",
+    "machineMade": true
+  },
   "ui.caseReport": {
     "text": "Fallbericht",
     "source": "de231f61cd50"
@@ -82,10 +97,6 @@
   "ui.before": {
     "text": "Vorher: {value}",
     "source": "f1db066ec43d"
-  },
-  "ui.calendar": {
-    "text": "Kalender öffnen",
-    "source": "a1ad37d0c5e8"
   },
   "ui.canonicalCopyHint": {
     "text": "Diesen Wert kopieren.",

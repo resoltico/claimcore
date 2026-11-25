@@ -52,13 +52,9 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-receipt");
   await expectAccessible(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  const meters = page.locator(".case-stage-list meter");
-  await expect(meters).toHaveCount(1);
-  await expect(meters).toHaveAccessibleName("Opened");
-  for (const meter of await meters.all()) {
-    await expect(meter).toHaveAccessibleName(/.+/u);
-    expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");
-  }
+  const stages = page.locator(".case-stage-list");
+  await expect(stages.locator("meter")).toHaveCount(0);
+  await expect(stages.locator('.stage-connector[aria-hidden="true"]')).toHaveCount(4);
   await expect(page.locator(".case-title-line .chip-list")).toContainText("Undecided");
   const timeline = page.locator(".case-timeline-panel");
   await expect(timeline).toHaveAttribute("aria-busy", "false");

@@ -66,7 +66,8 @@ it("changes only the selected view when switching mode and shows owner defaults 
     expect(reads).toHaveBeenCalledOnce();
   });
   const user = userEvent.setup();
-  const moreFilters = () => screen.getByRole("button", { name: /^More filters/u });
+  const moreFilters = () =>
+    screen.getByRole("button", { name: /^(?:More filters|Filters \(\d+\))$/u });
   await user.click(moreFilters());
   const inactive = () => screen.getByRole("checkbox", { name: "Include inactive case work" });
   expect(inactive()).toBeEnabled();

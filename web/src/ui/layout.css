@@ -287,7 +287,9 @@
     .phone-app-bar > span {
       flex: 1;
       min-inline-size: 0;
-      overflow-wrap: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       font-weight: 650;
     }
 
@@ -359,15 +361,6 @@
       font-size: var(--text-xs);
     }
 
-    .data-table .chip-list {
-      --chip-list-alignment: stretch;
-    }
-
-    .data-table .chip-list > li {
-      flex: 1 0 min-content;
-      max-inline-size: max-content;
-    }
-
     .data-table .chip {
       --chip-padding-inline: var(--space-1);
     }
@@ -382,6 +375,22 @@
     }
   }
 
+  @container data-table (width >= 69rem) {
+    /* Prefer one line for chip groups while retaining their measure and the table's minimum widths. */
+    .data-table
+      td:has(
+        .data-table-value:is([data-kind="STATE"], [data-kind="CODES"]) .chip-list > :nth-child(2)
+      ) {
+      inline-size: 27%;
+    }
+  }
+
+  @container data-table (width >= 50rem) {
+    .data-table table {
+      --chip-white-space: nowrap;
+    }
+  }
+
   @container data-table (width < 50rem) {
     .data-table table,
     .data-table tbody {
@@ -391,19 +400,28 @@
     .data-table table {
       --table-layout: narrow;
       --table-row-size: auto;
+      --table-actions-display: contents;
     }
 
     .data-table tbody tr {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) fit-content(48%);
+      --card-menu-reserve: 0px;
+      display: flex;
+      flex-wrap: wrap;
       align-items: baseline;
-      gap: var(--space-2);
-      padding: var(--space-3);
+      gap: var(--space-1) var(--space-3);
+      padding: var(--card-row-block-start, var(--space-3))
+        var(--card-row-inline-padding, var(--space-3)) var(--space-3);
       block-size: auto;
     }
 
+    .data-table tbody tr:has(.data-table-menu) {
+      --card-menu-reserve: calc(var(--compact-target) + var(--space-2));
+      padding-inline-end: calc(
+        var(--card-row-inline-padding, var(--space-3)) + var(--card-menu-reserve)
+      );
+    }
+
     .data-table tbody tr.table-group {
-      grid-template-columns: minmax(0, 1fr);
       padding-block: var(--space-1);
     }
 
@@ -425,22 +443,40 @@
     }
 
     .data-table td[data-prominence="PRIMARY"] > .data-table-cell {
-      grid-column: 1;
+      flex: 0 1 auto;
       max-inline-size: 100%;
+      text-align: start;
     }
 
-    .data-table .data-table-actions {
-      grid-area: 1 / 2;
-      align-self: start;
-      inset-block-start: 0;
-      justify-self: end;
-      min-inline-size: 0;
+    .data-table .data-table-value {
+      text-align: match-parent;
+    }
+
+    .data-table .data-table-menu {
+      position: absolute;
+      inset-inline-end: var(--card-row-inline-padding, var(--space-3));
+      inset-block-start: calc(
+        var(--card-row-block-start, var(--space-3)) + var(--text-sm) * var(--line-body) / 2 -
+          var(--compact-target) / 2
+      );
     }
 
     .data-table .data-table-stack {
-      grid-column: 1 / -1;
       order: 1;
+      flex: 0 0 calc(100% + var(--card-menu-reserve));
       margin-block: 0;
+    }
+
+    .data-table tbody tr:has(.data-table-recommended):not(:has(.data-table-stack))::after {
+      content: "";
+      flex: 0 0 100%;
+      order: 2;
+      margin-block-end: calc(-1 * var(--space-1));
+    }
+
+    .data-table .data-table-recommended {
+      order: 3;
+      margin-block-start: var(--space-1);
     }
   }
 }

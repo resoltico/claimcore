@@ -1,5 +1,5 @@
 import { expectNoInlineStyles } from "./inline-styles";
-import { geometryFailures, geometryReport } from "./design-geometry";
+import { focusFailures, geometryFailures, geometryReport } from "./design-geometry";
 import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
@@ -393,29 +393,9 @@ const checkFocusIndication = async (page: Page) => {
       await target.evaluate((element) => {
         (element as HTMLElement).focus({ preventScroll: true });
       });
-      const rings = await target.evaluate((element) => {
-        const box = element.closest(".control-box");
-        let count = 0;
-        for (
-          let current: Element | null = element;
-          current !== null;
-          current = current.parentElement
-        ) {
-          const style = getComputedStyle(current);
-          if (
-            (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0) ||
-            style.boxShadow !== "none"
-          ) {
-            count++;
-          }
-          if (current === box) {
-            break;
-          }
-        }
-        return { count, focused: document.activeElement === element };
-      });
-      if (rings.focused) {
-        expect(rings.count, "G23 one focus indication per field").toBe(1);
+      const isFocused = await target.evaluate((element) => document.activeElement === element);
+      if (isFocused) {
+        expect(await focusFailures(page), "Control focus anatomy").toEqual([]);
       }
       if ((await page.getByRole("listbox").count()) > 0) {
         await page.keyboard.press("Escape");
@@ -432,7 +412,11 @@ export const checkFrame = async (
   caseMarker: string,
 ) => {
   const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
-    await geometryReport(page, { limits: dimension.fixture === "limits", caseMarker });
+    await geometryReport(page, {
+      limits: dimension.fixture === "limits",
+      caseMarker,
+      chipDensity: false,
+    });
   if (violations.length > 0) {
     const tableBounds = await page.locator(".data-table").evaluateAll((tables) =>
       tables.map((table) => {

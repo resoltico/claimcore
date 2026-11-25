@@ -1,6 +1,7 @@
 import { expectNoInlineStyles } from "./inline-styles";
 import {
   feedbackFailures,
+  focusFailures,
   headingOffset,
   headingOffsetFailures,
   geometryFailures,
@@ -300,6 +301,14 @@ const anatomyWitnesses = [
     defect: ".chip-list { width: 14rem }",
   },
   {
+    id: "G5c",
+    body: `<div class="data-table"><table><tbody><tr><td>
+      <div class="chip-list"><span class="chip">No next action</span></div>
+      </td></tr></tbody></table></div>`,
+    css: ".chip-list { width: 18rem } .chip { display: inline-block; width: 8rem }",
+    defect: ".chip { width: 3rem }",
+  },
+  {
     id: "G10",
     body: `<div role="dialog"><div class="radio-option"><label>Choice</label></div><button>Review</button></div>`,
     css: "[role=dialog] { --accent-solid: #065ebb } button { background: var(--accent-solid) }",
@@ -320,9 +329,12 @@ const anatomyWitnesses = [
   },
   {
     id: "G20b",
-    body: `<div class="subject-header-facts"><dl><div><dt>Claimed amount</dt><dd>100 EUR</dd></div><div><dt>State</dt><dd>Open</dd></div></dl></div>`,
-    css: "dl { display: grid; grid-template-columns: 10rem 10rem } dl > div { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid } dd { margin: 0 }",
-    defect: "dl > div { grid-template-columns: fit-content(45%) 1fr; width: 7rem }",
+    body: `<div class="subject-header-facts"><dl>
+      <div><dt>Claimed amount</dt><dd>100 EUR</dd></div><div><dt>Last updated</dt><dd>Monday</dd></div>
+      <div><dt>State</dt><dd>Open</dd></div><div><dt>Deadline</dt><dd>Friday</dd></div>
+      </dl></div>`,
+    css: "dl { display: grid; grid-template-columns: repeat(2, max-content 10rem) } dl > div { grid-column: span 2; display: grid; grid-template-columns: subgrid } dd { margin: 0 }",
+    defect: "dl > div { grid-template-columns: max-content 1fr }",
   },
   {
     id: "G21",
@@ -332,9 +344,9 @@ const anatomyWitnesses = [
   },
   {
     id: "G23",
-    body: `<div class="control-box"><input aria-label="Filter"></div>`,
+    body: `<div class="text-field"><div class="control-box"><input aria-label="Filter"></div></div>`,
     css: ".control-box:focus-within { outline: 2px solid } input { outline: 0 }",
-    defect: "input:focus { outline: 2px solid }",
+    defect: ".text-field:focus-within { outline: 2px solid }",
     focus: "input",
   },
   {
@@ -374,19 +386,138 @@ const anatomyWitnesses = [
     css: ".toolbar-actions { display: flex; gap: 8px }",
     defect: ".toolbar-actions { display: grid; justify-items: start }",
   },
+  {
+    id: "G31",
+    body: `<div class="data-table"><table><tbody><tr>
+      <td data-prominence="PRIMARY"><div class="data-table-cell">Claimant</div></td>
+      <td data-prominence="PRIMARY"><div class="data-table-cell">Synthetic Party</div></td>
+      <td><span class="data-table-menu"><button>More</button></span></td>
+      </tr></tbody></table></div>`,
+    css: "table { --table-layout: narrow; width: 360px; display: block } tbody { display: block } tr { position: relative; display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px 56px 8px 8px } td { display: contents } .data-table-menu { position: absolute; top: 4px; right: 8px } button { height: 24px }",
+    defect: ".data-table-cell { flex-basis: 100% }",
+  },
+  {
+    id: "G32",
+    body: `<div class="control-box"><span role="spinbutton" tabindex="0">Day</span> <span role="spinbutton" tabindex="0">Month</span></div>`,
+    css: ".control-box:focus-within { outline: 2px solid } [role=spinbutton]:focus { background: Highlight; color: HighlightText; outline: 0 }",
+    defect: "[role=spinbutton]:focus { background: transparent; color: inherit }",
+    focus: "[role=spinbutton]:first-child",
+  },
+  {
+    id: "G33",
+    body: `<div class="control-box money-field"><input><div class="compact-picker">EUR</div></div>`,
+    css: ".money-field { display: flex; height: 40px } .compact-picker { border-inline-start: 1px solid }",
+    defect: ".compact-picker { border-inline-start: 0 }",
+  },
+  {
+    id: "G34",
+    body: `<div class="text-field"><div class="radio-options">Direction</div><p class="field-description">Choose how it was paid.</p></div>`,
+    css: ".text-field { --space-1: 4px; display: grid; gap: var(--space-1) } p { margin: 0 }",
+    defect: "p { margin-block-start: 1em }",
+  },
+  {
+    id: "G35",
+    body: `<ol class="case-stage-list">
+      <li><span class="stage-connector" aria-hidden="true"></span><strong>Opened</strong></li>
+      <li><span class="stage-connector" aria-hidden="true"></span><strong>Paid</strong><div class="money-meter"><meter value="1"></meter></div></li>
+      </ol>`,
+    css: "ol { display: flex; align-items: start } li { display: grid; margin-inline: 1rem } .stage-connector { height: 4px }",
+    defect: "li:first-child strong { margin-block-start: 6px }",
+  },
+  {
+    id: "G36",
+    body: `<header class="phone-app-bar"><span>TEST-REFERENCE / 2026 / PROPERTY / SYNTHETIC / LIMIT / A-1234567 / CLAIM</span></header>
+      <div class="case-workspace"><bdi class="identifier-value">TEST-REFERENCE / 2026 / PROPERTY / SYNTHETIC / LIMIT / A-1234567 / CLAIM</bdi></div>`,
+    css: ".phone-app-bar { --shell-top-height: 56px; min-height: var(--shell-top-height); width: 100px } .phone-app-bar > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }",
+    defect: ".phone-app-bar > span { white-space: normal }",
+  },
 ] as const;
+
+const witnessWidths: Partial<Record<GeometryId, number>> = { G5b: 1440, G36: 390 };
 
 for (const witness of anatomyWitnesses) {
   test(`${witness.id} rejects its anatomy regression`, async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
+    const width = witnessWidths[witness.id] ?? 1280;
+    await page.setViewportSize({ width, height: 900 });
     await page.setContent(
       `<!doctype html><style>${witness.css}</style><main>${witness.body}</main>`,
     );
     if ("focus" in witness) {
       await page.locator(witness.focus).focus();
     }
-    expect(await geometryFailures(page)).not.toContain(witness.id);
+    const failures = "focus" in witness ? focusFailures : geometryFailures;
+    expect(await failures(page)).not.toContain(witness.id);
     await page.addStyleTag({ content: witness.defect });
-    expect(await geometryFailures(page)).toContain(witness.id);
+    expect(await failures(page)).toContain(witness.id);
   });
 }
+
+test("G35 rejects a decorative meter alongside the paid amount", async ({ page }) => {
+  await page.setContent(`<!doctype html><main><ol class="case-stage-list">
+    <li><span class="stage-connector" aria-hidden="true"></span><strong>Paid</strong>
+      <div class="money-meter"><meter value="1"></meter></div>
+    </li></ol></main>`);
+  expect(await geometryFailures(page)).not.toContain("G35");
+  await page.locator(".case-stage-list li").evaluate((step) => {
+    step.append(document.createElement("meter"));
+  });
+  expect(await geometryFailures(page)).toContain("G35");
+});
+
+const cardMoneyAndMenu = `
+  <div class="data-table"><table><tbody><tr>
+    <td data-prominence="PRIMARY" data-money><div class="data-table-cell">35.00 EUR</div></td>
+    <td><span class="data-table-menu"><button>More</button></span></td>
+  </tr></tbody></table></div>
+`;
+for (const [issue, defect] of [
+  ["a menu lower than the first line", ".data-table-menu { top: 14px }"],
+  ["a menu over the value", ".data-table-menu { left: 8px; right: auto }"],
+  ["end-aligned money", ".data-table-cell { text-align: end }"],
+] as const) {
+  test(`G31 rejects ${issue}`, async ({ page }) => {
+    await page.setContent(`<!doctype html><style>
+      table { --table-layout: narrow; width: 360px; display: block }
+      tbody { display: block }
+      tr { position: relative; display: flex; gap: 12px; padding: 8px 56px 8px 8px }
+      td { display: contents }
+      .data-table-cell { width: 140px }
+      .data-table-menu { position: absolute; top: 4px; right: 8px }
+      button { height: 24px }
+    </style><main>${cardMoneyAndMenu}</main>`);
+    expect(await geometryFailures(page)).not.toContain("G31");
+    await page.addStyleTag({ content: defect });
+    expect(await geometryFailures(page)).toContain("G31");
+  });
+}
+
+test("G31 gives a wrapped value and its successor their own lines", async ({ page }) => {
+  await page.setContent(`<!doctype html><style>
+    table { --table-layout: narrow; width: 290px; display: block }
+    tbody { display: block }
+    tr { display: flex; flex-wrap: wrap; gap: 4px 12px }
+    td { display: contents }
+    .long-value { flex-basis: 100% }
+  </style><main><div class="data-table"><table><tbody><tr>
+    <td data-prominence="PRIMARY"><div class="data-table-cell">Role</div></td>
+    <td data-prominence="PRIMARY"><div class="data-table-cell long-value">
+      A synthetic claimant name with enough words to wrap across more than one line
+    </div></td>
+    <td data-prominence="PRIMARY"><div class="data-table-cell">Current</div></td>
+  </tr></tbody></table></div></main>`);
+  expect(await geometryFailures(page)).not.toContain("G31");
+  await page.addStyleTag({ content: ".long-value { flex-basis: 140px }" });
+  expect(await geometryFailures(page)).toContain("G31");
+});
+
+test("G36 requires the full case reference outside the phone app bar", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.setContent(`<!doctype html>
+    <style>.phone-app-bar { --shell-top-height: 56px; height: var(--shell-top-height) }</style>
+    <header class="phone-app-bar"><span>TEST-REFERENCE</span></header>
+    <main class="case-workspace"><bdi class="identifier-value">TEST-REFERENCE</bdi></main>
+  `);
+  expect(await geometryFailures(page)).not.toContain("G36");
+  await page.addStyleTag({ content: ".identifier-value { display: none }" });
+  expect(await geometryFailures(page)).toContain("G36");
+});

@@ -365,7 +365,10 @@ const ReadyCaseList = ({
           prominence,
           menuLabel:
             label.kind === "MESSAGE" && count.kind === "COUNT"
-              ? `${renderCatalogKey(p, label.messageId)} · ${p.integer(count.value)}`
+              ? p.text("ui.viewWithCount", {
+                  view: renderCatalogKey(p, label.messageId),
+                  count: p.integer(count.value),
+                })
               : undefined,
           label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
           count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
