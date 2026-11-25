@@ -105,11 +105,13 @@ type internal AuthenticationAdmission(stopping: CancellationToken) =
             | Some lease ->
                 use owner = AdmissionLease.once lease.Dispose
 
-                if clientCancelled () then
-                    client.ThrowIfCancellationRequested()
+                let activeClient = context.RequestAborted
+
+                if activeClient.IsCancellationRequested && not stopping.IsCancellationRequested then
+                    activeClient.ThrowIfCancellationRequested()
 
                 if
-                    context.RequestAborted.IsCancellationRequested
+                    activeClient.IsCancellationRequested
                     || stopping.IsCancellationRequested
                     || Volatile.Read(&disposed) <> 0
                 then
