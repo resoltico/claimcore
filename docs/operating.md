@@ -8,7 +8,8 @@ For a separate synthetic installation, see [Getting started](getting-started.md)
 subcommands; it requires a subcommand and returns usage status 64 when none is supplied. Use
 `claimcore-server help` for administration and `claimcore-server serve --help` for host settings.
 Owner credentials belong only in the administration environment. The runtime image contains the
-server and its assets and uses the ASP.NET chiseled Ubuntu 26.04 base with ICU and time-zone data.
+server and its assets and uses a [chiseled ASP.NET base](../deployment/Dockerfile) with ICU and
+time-zone data.
 The image contains no shell. Run the server's administration commands directly and inspect container
 files with `docker cp`. The human CLI is distributed separately.
 
@@ -62,7 +63,8 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 | `postgres/superuser.password` | Separate bootstrap password for `postgres`, mounted only in PostgreSQL. Use 64 lowercase hexadecimal characters and mode 0600. |
 | `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for each. |
 | `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
-| `web/server.pfx`, `web/client.secret` | A passwordless PFX with one private key, its publicly trusted HTTPS leaf certificate for the web origin, and all required intermediate certificates. Provide the OIDC client secret separately. |
+| `web/server.pfx` | A passwordless PFX with one private key, its publicly trusted HTTPS leaf certificate for the web origin, and all required intermediate certificates. |
+| `web/client.secret` | The confidential browser client's OIDC client secret. |
 | `web/runtime.connection`, `web/ca.pem` | Runtime connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/runtime/ca.pem`. |
 | `administration/owner.connection`, `administration/ca.pem` | Owner connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/administration/ca.pem`. |
 | `key-ring/` | Persistent Web key ring directory with mode 0700. |
@@ -100,10 +102,6 @@ or owner command checks the database against the supported
 before accessing installation data. Use a fresh database when the format changes. Preserve any
 existing database and recovery records separately. The available owner commands initialize,
 verify, rebuild or restore matching data. There is no migration or cross-format reader.
-
-Format 9 records verified preview eligibility in each encrypted attachment descriptor. Both the
-published format 8 and the unreleased format-8 attachments build from PR #178 require their
-matching builds for access and recovery. Initialize a fresh register to use format 9.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
@@ -413,10 +411,11 @@ restoring an older database can lose later accepted history and confirmed expiry
 
 ## Certificate, key and host replacement
 
-Prepare the replacement certificate/private key with the configured hostname, server-authentication
-purpose, supported algorithm and validity. Distribute the issuing trust chain before changing issuer.
-Replace the complete PFX, stop new traffic and restart the host; file replacement does not hot-reload
-its admitted certificate. Verify the actual peer certificate, hostname and readiness before returning traffic.
+Prepare the replacement PFX with one private key, its valid server-authentication leaf for the
+configured hostname, and all required intermediates. Arrange client trust before changing the
+certificate issuer. Stop new traffic, replace the complete PFX and restart the host. Verify the
+served certificate chain and hostname from a client with the issuing root, then verify readiness
+before returning traffic.
 
 ASP.NET Core Data Protection owns key creation and rollover. Distribute a new key before hosts need it,
 retain old keys and verify propagation to every host. A certificate change does not require key loss.

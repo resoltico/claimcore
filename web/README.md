@@ -10,8 +10,8 @@ The React browser uses the authenticated HTTPS service, with no database access.
 
 - [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) parses server replies and checks representation and operation-ID echoes.
 - [protocol](src/protocol/) keeps JSON parsing, byte bounds and typed DTO handling independent of React, DOM and Node.
-- [taskForm](src/operation/taskForm.ts) assembles typed commands from semantic task inputs and reviewed bindings; [operationForm](src/operation/operationForm.ts) owns draft values and seeds.
-- [useOperation](src/hooks/operation/useOperation.ts) owns prepared bytes, consent and delivery uncertainty.
+- [taskForm](src/operation/taskForm.ts) assembles typed commands from semantic task inputs and reviewed bindings.
+- [operationState](src/operation/operationState.ts) governs drafts, review consent, disclosed reads and delivery. [useOperation](src/hooks/operation/useOperation.ts) wires those transitions to browser effects.
 - [ScreenView](src/ui/ScreenView.tsx) and [region components](src/ui/regions/) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
 - [views](src/views/) own navigation and interactions. Domain/Application own eligibility, transitions, disclosure and timing.
 

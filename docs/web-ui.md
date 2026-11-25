@@ -12,9 +12,10 @@ sits at the inline end with a transparent background and zero border. Focused da
 the subtle accent pair or the system highlight pair in forced colours. MoneyField joins the amount
 and currency under one border with an inline-start divider on the currency. Shared rows align
 labels, controls and hints. A hint sits one `--space-1` gap under its control or option group.
-Canonical typing rules appear on controls that accept the canonical form. The Filters
-and export buttons wrap together. On phones, the search stays in the toolbar and Filters opens a
-bottom sheet.
+Canonical typing rules stay visible with controls that accept the canonical form. Input errors
+remain associated with the relevant controls. Money pairs show whether both inputs can be omitted.
+The Filters and export buttons wrap together. On phones, the search stays in the toolbar and
+Filters opens a bottom sheet.
 
 Core supplies chip tones, table prominence, column joins, recommendations, consequences and empty
 wording. DataTables use wide rows from a 64rem container, medium rows from 50rem and cards at
@@ -52,3 +53,4 @@ motion and forced colours.
 L5 confines form controls to the UI components. L6 protects word wrapping. The browser matrix checks
 control geometry, word integrity, primary emphasis, page offsets, minimum type size, disclosure
 placement, page titles, first-row position and feedback focus. See [Verification](contributing.md#verification).
+Drawer geometry checks also measure the focus outline against the clipping scroll container.

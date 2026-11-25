@@ -178,10 +178,6 @@ Merge keys only when their concepts agree. Keep grammatical gender and singular/
 Use labelled counts, rather than choosing a singular template from a numeric comparison.
 Automated checks establish structure, not human linguistic approval; record the language and review scope.
 
-The attachment copy, corresponding case erasure wording, unsupported database profile notice,
-access-request hints, admission confirmation, disclosure-trail wording, empty case scope and
-money-pair guidance in translated catalogs are agent-authored drafts pending fluent review.
-
 ## Theme and layout
 
 [Theme tokens](../web/src/theme/tokens.json) own colours; run `npm --prefix web run theme` after editing
