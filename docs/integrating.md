@@ -242,6 +242,8 @@ full byte count and SHA-256 in `Content-Digest` before giving the file to the ca
 `application/octet-stream` and `Content-Disposition: attachment; filename*=UTF-8''<encoded>`.
 Compare the decoded name with the expected canonical name from the authorized attachment list.
 Eligible previews use `image/png`, `image/jpeg` or `application/pdf` according to the verified bytes.
+The DATA field `previewCandidate` and the HUMAN Preview control reflect the media profile of the
+verified bytes and canonical filename. Browser decoding can still fail. Keep Download available.
 If an accessible file lacks a supported preview, the endpoint returns the typed
 `ATTACHMENT_PREVIEW_UNAVAILABLE` refusal in JSON. The file remains available for download. Use the
 generated OpenAPI contract for the complete request and response grammar.

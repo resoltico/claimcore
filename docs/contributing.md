@@ -179,8 +179,8 @@ Use labelled counts, rather than choosing a singular template from a numeric com
 Automated checks establish structure, not human linguistic approval; record the language and review scope.
 
 The attachment copy, corresponding case erasure wording, unsupported database profile notice,
-access-request hints, admission confirmation and disclosure-trail wording in translated catalogs
-are agent-authored drafts pending fluent review.
+access-request hints, admission confirmation, disclosure-trail wording, empty case scope and
+money-pair guidance in translated catalogs are agent-authored drafts pending fluent review.
 
 ## Theme and layout
 

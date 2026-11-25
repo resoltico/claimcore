@@ -9,7 +9,7 @@ export const useOperationNavigation = (
   scope?: string,
 ) => {
   const settings = useSettingsDetour();
-  const { dirty, priorUncertain, requestDiscard, phase, prepared } = model;
+  const { busy, protectsIntent, requestDiscard } = model;
   const pending = useRef<(() => void) | null>(null);
   const release = useRef<(() => void) | null>(null);
   useEffect(
@@ -20,7 +20,7 @@ export const useOperationNavigation = (
     [],
   );
   useEffect(() => {
-    if (phase === "ACCEPTED" || (!dirty && !priorUncertain && prepared === null)) {
+    if (!protectsIntent && !busy) {
       return;
     }
     const dispose = setNavigationBlocker((proceed, destination) => {
@@ -34,13 +34,16 @@ export const useOperationNavigation = (
       ) {
         return true;
       }
+      if (busy) {
+        return false;
+      }
       pending.current = proceed;
       requestDiscard("LEAVE");
       return false;
     });
     release.current = dispose;
     return dispose;
-  }, [dirty, priorUncertain, requestDiscard, phase, scope, prepared, settings]);
+  }, [busy, protectsIntent, requestDiscard, scope, settings]);
   useEffect(() => {
     if (model.pendingDiscard === null) {
       if (pending.current !== null) {

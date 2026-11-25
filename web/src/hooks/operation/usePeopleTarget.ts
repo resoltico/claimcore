@@ -22,8 +22,7 @@ type Snapshot = {
   actions: ReadonlyArray<OperationAffordance>;
 };
 type Intent = { epoch: string; source: Snapshot; action: OperationAffordance };
-const retained = (model: OperationModel) =>
-  model.phase !== "ACCEPTED" && (model.dirty || model.prepared !== null || model.priorUncertain);
+const retained = (model: OperationModel) => model.protectsIntent;
 const boundActor = (model: OperationModel) =>
   "actorId" in model.bindingSource ? model.bindingSource.actorId : undefined;
 const useActorDisclosure = (revision: number, available: boolean) => {

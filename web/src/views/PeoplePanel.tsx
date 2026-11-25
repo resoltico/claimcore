@@ -224,11 +224,7 @@ const PendingPeopleRequests = ({
       available &&
       context?.links.some((named) => named.link.endpoint === apiEndpoints.peopleRequests) === true
     }
-    busy={
-      model.busy ||
-      (model.phase !== "ACCEPTED" &&
-        (model.dirty || model.prepared !== null || model.priorUncertain))
-    }
+    busy={model.busy || model.protectsIntent}
     mayAdmit={
       context?.actions.some(
         (action) =>
@@ -273,10 +269,7 @@ const PeopleWorkspace = ({
               action.task === clientCompositions.admission),
         ) ?? [])
       : [];
-  const blocked =
-    model.busy ||
-    (model.phase !== "ACCEPTED" &&
-      (model.dirty || model.prepared !== null || model.priorUncertain));
+  const blocked = model.busy || model.protectsIntent;
   const items = additions.map((action) => ({
     id: action.task,
     label: renderCatalogKey(p, action.labelId),

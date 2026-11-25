@@ -39,7 +39,7 @@ let tests =
     testList
         "generic retained accepted values"
         [
-            testCase "attachment descriptors retain identity and intent only" (fun () ->
+            testCase "attachment descriptors require nullable preview evidence" (fun () ->
                 let blobId = Guid.Parse "10000000-0000-7000-8000-000000000001"
                 let blob = AttachmentId.create blobId |> Option.get
                 let name = AttachmentName.parse "Evidence.pdf" |> Option.get
@@ -49,7 +49,15 @@ let tests =
 
                 let effect =
                     PartValue.Attachment(
-                        AttachmentEffect.Added(true, Some { Blob = blob; Intent = intent })
+                        AttachmentEffect.Added(
+                            true,
+                            Some
+                                {
+                                    Blob = blob
+                                    Intent = intent
+                                    Preview = None
+                                }
+                        )
                     )
 
                 let vector =
@@ -59,12 +67,13 @@ let tests =
                             "name", JsonValue.String "Evidence.pdf"
                             "length", JsonValue.Integer 0L
                             "digest", JsonValue.String digestText
+                            "preview", JsonValue.Null
                         ]
 
                 Expect.equal
                     (PartCodecs.privateValue blobId effect)
                     (Ok(Some vector))
-                    "Format 8 descriptor"
+                    "Format 9 descriptor"
 
                 let codec = PartCodecs.privateValueCodec blobId effect
                 Expect.equal (codec.Read "$" vector) (Ok effect) "The descriptor round-trips"
@@ -74,8 +83,8 @@ let tests =
                     Expect.isError
                         (codec.Read
                             "$"
-                            (JsonValue.Object(fields @ [ "preview", JsonValue.String "PNG" ])))
-                        "The earlier preview field is refused"
+                            (JsonValue.Object(fields |> List.filter (fst >> (<>) "preview"))))
+                        "The published format 8 descriptor is refused"
                 | _ -> failtest "Expected an attachment descriptor object")
             testCase
                 "live records keep structured inputs and accepted values without reparsing"

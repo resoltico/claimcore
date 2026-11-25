@@ -19,7 +19,7 @@ let private id (value: string) =
     AttachmentId.create (Guid.Parse value) |> Option.get
 
 let private classify bytes =
-    AttachmentPreview.classify
+    AttachmentPreviewProfile.classify
         AttachmentPreviewCandidate.Raster
         (ReadOnlySpan<byte>(bytes: byte array))
 
@@ -219,6 +219,7 @@ let tests =
                         {
                             Blob = blob
                             Intent = VerifiedAttachment.intent one
+                            Preview = None
                         }
 
                     let matchBytes active =
@@ -258,6 +259,7 @@ let tests =
                             blob
                             { descriptor with
                                 Intent = VerifiedAttachment.intent two
+                                Preview = None
                             }
                             None
                             (ReadOnlySpan<byte> [| 97uy |]))
@@ -402,6 +404,7 @@ let tests =
                     {
                         Blob = first
                         Intent = intent 0L |> Option.get
+                        Preview = None
                     }
 
                 let added = AttachmentEffect.Added(true, Some descriptor)

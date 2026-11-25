@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "（选填）",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "您的访问范围内没有案件。",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "文件大小为 {actualBytes} 字节。请选择不超过 {maximumBytes} 字节的文件。",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "无法读取所选文件。请重新选择该文件。",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "文件在读取期间发生了变化。请重新选择该文件。",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "每次拖放或粘贴一个文件。",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "将两项都留空，或同时输入金额和币种。",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "请输入金额和币种。",
+    "source": "11da00ab5ba1"
   }
 }

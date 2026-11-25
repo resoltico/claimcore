@@ -239,7 +239,7 @@ const requestClose = (model: OperationModel, onClose: Props["onClose"]) => {
   if (model.busy) {
     return;
   }
-  if (model.dirty || model.prepared !== null || model.priorUncertain) {
+  if (model.protectsIntent) {
     model.requestDiscard("LEAVE");
   } else {
     onClose?.();
@@ -265,7 +265,7 @@ const usePreviewReturnFocus = (model: OperationModel) => {
 const EnterOperation = (props: Props) => {
   const { model } = props;
   const requestChange = (kind: string) => {
-    if (model.dirty || model.prepared !== null) {
+    if (model.protectsIntent) {
       model.requestDiscard(kind);
     } else {
       model.discard(false, kind);

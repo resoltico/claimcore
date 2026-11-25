@@ -844,13 +844,14 @@ module ResponseCodecs =
         |> named "ExactCaseReference"
 
     let casesPage =
-        (record (fun items next offers basis exact ->
+        (record (fun items next offers basis exact authorizedScopeEmpty ->
             {
                 Basis = basis
                 Items = items
                 NextCursor = next
                 Offers = offers
                 ExactReference = exact
+                AuthorizedScopeEmpty = authorizedScopeEmpty
             })
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
@@ -861,6 +862,7 @@ module ResponseCodecs =
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "exactReference" _.ExactReference (nullable exactCaseReference)
+        |> field "authorizedScopeEmpty" _.AuthorizedScopeEmpty boolean
         |> build
         |> named "CasesPage"
 

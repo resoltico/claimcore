@@ -40,7 +40,7 @@ type WebConfiguration =
         Binding: WebBinding
         ConnectionString: string
         DataKeyFile: string
-        Certificate: X509Certificate2
+        Certificate: ServerCertificateBundle
         SessionIdle: TimeSpan
         SessionAbsolute: TimeSpan
         RequestGate: RequestGateLimits

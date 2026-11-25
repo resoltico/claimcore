@@ -59,6 +59,7 @@ type CaseSummaryPage =
         Offers: InstallationOffer list
         NextCursor: string option
         ExactReference: ExactCaseReference option
+        AuthorizedScopeEmpty: bool
     }
 
 type AssigneePage =

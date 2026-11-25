@@ -1151,5 +1151,12 @@
   "label.paymentDecision": "Payment decision",
   "label.person": "Person",
   "label.useAccountId": "Use account ID {id}",
-  "label.optional": "(optional)"
+  "label.optional": "(optional)",
+  "label.noCasesInScope": "There are no cases in your accessible scope.",
+  "label.attachmentFileTooLarge": "The file is {actualBytes} bytes. Choose one of {maximumBytes} bytes or fewer.",
+  "label.attachmentFileUnreadable": "The selected file could not be read. Choose the file again.",
+  "label.attachmentFileChanged": "The file changed while it was being read. Choose the file again.",
+  "label.attachmentSingleFile": "Drop or paste one file at a time.",
+  "label.moneyPairOptional": "Leave both blank, or enter both amount and currency.",
+  "label.moneyPairTogether": "Enter both amount and currency."
 }

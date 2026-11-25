@@ -92,7 +92,12 @@ let private configureKestrel (configuration: WebConfiguration) (builder: WebAppl
         options.Listen(
             configuration.Binding.ListenAddress,
             configuration.Binding.ListenPort,
-            fun listen -> listen.UseHttps(configuration.Certificate) |> ignore
+            fun listen ->
+                listen.UseHttps(
+                    configuration.Certificate.Leaf,
+                    fun https -> https.ServerCertificateChain <- configuration.Certificate.Chain
+                )
+                |> ignore
         ))
     |> ignore
 

@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "(optional)",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "In Ihrem Zugriffsbereich gibt es keine Fälle.",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "Die Datei ist {actualBytes} Byte groß. Wählen Sie eine Datei mit höchstens {maximumBytes} Byte.",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "Die ausgewählte Datei konnte nicht gelesen werden. Wählen Sie die Datei erneut aus.",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "Die Datei wurde während des Lesens geändert. Wählen Sie die Datei erneut aus.",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "Ziehen Sie jeweils eine Datei hierher oder fügen Sie eine Datei ein.",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "Lassen Sie beide Felder leer oder geben Sie Betrag und Währung ein.",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "Geben Sie Betrag und Währung ein.",
+    "source": "11da00ab5ba1"
   }
 }

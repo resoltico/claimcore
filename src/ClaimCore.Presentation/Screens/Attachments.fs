@@ -20,6 +20,12 @@ module AttachmentsScreen =
         ]
 
     let page (page: AttachmentPage) =
+        let sharedNames =
+            page.Items
+            |> List.countBy (fun item -> AttachmentName.value item.Name)
+            |> List.choose (fun (name, count) -> if count > 1 then Some name else None)
+            |> Set.ofList
+
         let columns =
             [
                 column
@@ -39,6 +45,17 @@ module AttachmentsScreen =
                     PresentedValue.Actor item.RecordedBy)
                 column "recordedAt" "label.recordedAt" Prominence.Secondary false (fun item ->
                     PresentedValue.Instant item.RecordedAt)
+                if not sharedNames.IsEmpty then
+                    column
+                        "attachmentId"
+                        "field.attachmentId.label"
+                        Prominence.Secondary
+                        false
+                        (fun item ->
+                            if Set.contains (AttachmentName.value item.Name) sharedNames then
+                                PresentedValue.Identifier(AttachmentId.format item.AttachmentId)
+                            else
+                                absent)
             ]
 
         let table =

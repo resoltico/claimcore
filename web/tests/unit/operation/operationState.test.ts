@@ -28,6 +28,24 @@ const submitted = (state = reviewed(), id = "execute") =>
       identity: effect(id),
     },
   );
+it("protects authored or frozen intent without discarding refused preparation", () => {
+  const rejected = refused();
+  expect(operationView(rejected).prepared).not.toBeNull();
+  expect(operationView(rejected).protectsIntent).toBe(false);
+  const change = (state: OperationState, value: string) =>
+    operationReducer(state, { type: "EDIT", path: "field:reason", value });
+  const edited = change(rejected, "B");
+  expect(operationView(edited).protectsIntent).toBe(true);
+  const restored = operationReducer(edited, {
+    type: "EDIT_FIELDS",
+    values: {},
+    omitted: ["field:reason"],
+  });
+  expect(operationView(restored).protectsIntent).toBe(false);
+  const frozen = reviewed();
+  expect(operationView(frozen).protectsIntent).toBe(true);
+  expect(operationView(operationReducer(frozen, { type: "RETURN" })).protectsIntent).toBe(false);
+});
 it("edits invalidate exposed preparation without putting executable identity in authored values", () => {
   const untouched = initial();
   const changed = operationReducer(refused(), {
@@ -63,6 +81,7 @@ it("uncertainty survives later definite failures and blocks edits while allowing
   });
   const rejected = refused(unknown);
   expect(operationView(rejected).priorUncertain).toBe(true);
+  expect(operationView(rejected).protectsIntent).toBe(true);
   expect(operationView(rejected).prepared).toBe(operationView(submitting).prepared);
   expect(
     operationReducer(rejected, {

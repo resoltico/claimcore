@@ -171,6 +171,30 @@ let certificate () =
     request.CertificateExtensions.Add(names.Build())
     request.CreateSelfSigned(DateTimeOffset.UtcNow.AddHours(-1.), DateTimeOffset.UtcNow.AddDays(1.))
 
+let intermediateCertificate (issuer: X509Certificate2) =
+    use key = RSA.Create(2048)
+
+    let request =
+        CertificateRequest(
+            "CN=ClaimCore synthetic service intermediate",
+            key,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        )
+
+    request.CertificateExtensions.Add(X509BasicConstraintsExtension(true, true, 0, true))
+    request.CertificateExtensions.Add(X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, true))
+
+    use publicCertificate =
+        request.Create(
+            issuer,
+            DateTimeOffset.UtcNow.AddMinutes(-5.),
+            DateTimeOffset.UtcNow.AddHours(18.),
+            RandomNumberGenerator.GetBytes 16
+        )
+
+    publicCertificate.CopyWithPrivateKey key
+
 /// A replacement leaf preserves the owned trust anchor and localhost identity.
 let serverCertificate (issuer: X509Certificate2) =
     use key = RSA.Create(2048)

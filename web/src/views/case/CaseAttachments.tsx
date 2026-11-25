@@ -1,6 +1,6 @@
 import type { Region } from "@contracts/client";
 import { Section } from "../../ui/Section";
-import { FileDrop } from "../../ui/FileDrop";
+import { FileDrop, type FileSelection } from "../../ui/FileDrop";
 import {
   attachmentTransport,
   clientCompositions,
@@ -23,6 +23,7 @@ import {
 import {
   attachmentNotice,
   captureAttachment,
+  type CapturedAttachment,
   isAttachmentDisclosureRefused,
   requestAttachment,
 } from "../../api/attachments";
@@ -42,6 +43,7 @@ import { useSessionContext } from "../../session/SessionContext";
 import { TaskControls } from "../../ui/TaskControls";
 import { Button } from "../../ui/Button";
 import { ButtonControl } from "../../ui/ButtonControl";
+import { CopyValue } from "../../components/CopyValue";
 import { DocumentPreview } from "./pdf/DocumentPreview";
 import "./attachments.css";
 
@@ -62,7 +64,6 @@ const suppressTransferActivation = (event: KeyboardEvent<HTMLDivElement>) => {
   }
 };
 
-type CapturedFile = Awaited<ReturnType<typeof captureAttachment>>;
 type Preview = { id: string; generation: number; labelId: string; focusOrigin: Element | null } & (
   { kind: "image"; name: string; url: string; error: boolean } | { kind: "pdf"; bytes: ArrayBuffer }
 );
@@ -71,7 +72,7 @@ type Props = {
   editing: boolean;
   disclosureAvailable: boolean;
   authoringAvailable: boolean;
-  onAdd: (action: OperationAffordance, upload: CapturedFile) => void;
+  onAdd: (action: OperationAffordance, upload: CapturedAttachment) => void;
   onWithdraw: (action: OperationAffordance) => void;
   onDisclosureChanged: () => void;
 };
@@ -163,6 +164,57 @@ const useAttachmentList = (target: Target, available: boolean, onDisclosureChang
   return { owner, credential, document, sequence, query };
 };
 
+const intakeNotice = (messageId: string, counts: Record<string, number> = {}): Notice => ({
+  kind: "human",
+  advice: {
+    action: "NONE_REQUIRED",
+    message: {
+      messageId,
+      arguments: Object.entries(counts).map(([key, value]) => ({
+        key,
+        value: { kind: "COUNT", value },
+      })),
+    },
+  },
+});
+
+const captureSelection = async (file: File | null) => {
+  if (file === null) {
+    return { kind: "unreadable" } as const;
+  }
+  try {
+    return await captureAttachment(file);
+  } catch {
+    return { kind: "failed" } as const;
+  }
+};
+
+const captureNotice = (
+  failure: Exclude<Awaited<ReturnType<typeof captureSelection>>, { kind: "captured" }>,
+): Notice => {
+  switch (failure.kind) {
+    case "tooLarge":
+      return intakeNotice("label.attachmentFileTooLarge", {
+        maximumBytes: attachmentTransport.maximumFileBytes,
+        actualBytes: failure.actualBytes,
+      });
+    case "changed":
+      return intakeNotice("label.attachmentFileChanged");
+    case "unreadable":
+      return intakeNotice("label.attachmentFileUnreadable");
+    case "failed":
+      return intakeNotice("fault.CORE_INTERNAL_ERROR");
+  }
+};
+
+const materialize = async (selection: NonNullable<FileSelection>): Promise<File | null> => {
+  try {
+    return await selection();
+  } catch {
+    return null;
+  }
+};
+
 const useAttachmentInteraction = (
   owner: OwnerScope,
   target: Target,
@@ -174,10 +226,12 @@ const useAttachmentInteraction = (
   const cache = useEndpointCache()!;
   const alive = useRef(true);
   const active = useRef<AbortController | null>(null);
+  const picking = useRef<AbortController | null>(null);
   const url = useRef<string | null>(null);
   const generation = useRef(0);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pickerBusy, setPickerBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
 
@@ -209,12 +263,18 @@ const useAttachmentInteraction = (
     (cache.attachmentDisclosure(target.caseId) ?? sequence) === sequence
       ? owner
       : null;
-  const begin = () => {
-    if (currentOwner() === null || active.current !== null) {
+  const begin = (intake = false) => {
+    if (
+      currentOwner() === null ||
+      (active.current !== null && (!intake || active.current !== picking.current))
+    ) {
       return null;
     }
+    active.current?.abort();
     const controller = new AbortController();
     active.current = controller;
+    picking.current = intake ? controller : null;
+    setPickerBusy(!intake);
     setBusy(true);
     setNotice(null);
     clearRefusal();
@@ -226,6 +286,8 @@ const useAttachmentInteraction = (
       return false;
     }
     active.current = null;
+    picking.current = null;
+    setPickerBusy(false);
     setBusy(false);
     return true;
   };
@@ -313,19 +375,34 @@ const useAttachmentInteraction = (
       }
     }
   };
-  const choose = async (source: File, selected: (value: CapturedFile) => void) => {
-    const request = begin();
+  const choose = async (
+    selection: FileSelection,
+    available: () => boolean,
+    selected: (value: CapturedAttachment) => void,
+  ) => {
+    const request = available() ? begin(true) : null;
     if (request === null) {
       return;
     }
-    try {
-      const file = await captureAttachment(source);
+    if (selection === null) {
       if (finish(request)) {
-        selected(file);
+        setNotice(intakeNotice("label.attachmentSingleFile"));
       }
-    } catch {
-      if (finish(request)) {
-        setNotice(localNotice("invalidInput"));
+      return;
+    }
+    const file = await materialize(selection);
+    if (request.signal.aborted || currentOwner() === null || !available()) {
+      finish(request);
+      return;
+    }
+    picking.current = null;
+    setPickerBusy(true);
+    const result = await captureSelection(file);
+    if (finish(request) && available()) {
+      if (result.kind === "captured") {
+        selected(result.value);
+      } else {
+        setNotice(captureNotice(result));
       }
     }
   };
@@ -335,7 +412,7 @@ const useAttachmentInteraction = (
       setPreview({ ...value, error: true });
     }
   };
-  return { preview, busy, notice, receive, choose, close, decodeError };
+  return { preview, busy, pickerBusy, notice, receive, choose, close, decodeError };
 };
 type Interaction = ReturnType<typeof useAttachmentInteraction>;
 
@@ -396,17 +473,23 @@ const AttachmentPreview = ({
 };
 const AttachmentControls = ({
   row,
+  rowLabel,
+  showDetails,
   interaction,
   editing,
   onWithdraw,
 }: {
   row: RegionRow;
+  rowLabel: string | undefined;
+  showDetails: () => void;
   interaction: Interaction;
   editing: boolean;
   onWithdraw: Props["onWithdraw"];
 }) => {
   const p = usePresentation();
   const { busy } = interaction;
+  const actionLabel = (action: string) =>
+    rowLabel === undefined ? action : p.text("ui.rowActionLabel", { action, row: rowLabel });
   return (
     <div className="attachment-actions" onKeyDownCapture={suppressTransferActivation}>
       {row.transfers?.map((transfer) => (
@@ -415,6 +498,7 @@ const AttachmentControls = ({
           variant="secondary"
           data-attachment-control
           isPending={busy}
+          aria-label={actionLabel(renderCatalogKey(p, transfer.labelId))}
           onPress={({ target }) => {
             void interaction.receive(transfer, target);
           }}
@@ -426,6 +510,7 @@ const AttachmentControls = ({
         <TaskControls
           actions={row.actions ?? []}
           compact
+          {...(rowLabel === undefined ? {} : { rowLabel })}
           onAction={(action) => {
             if (
               isOperationAffordance(action) &&
@@ -436,6 +521,15 @@ const AttachmentControls = ({
             }
           }}
         />
+      )}
+      {row.detail === undefined ? null : (
+        <Button
+          variant="secondary"
+          aria-label={actionLabel(p.text("ui.viewDetails"))}
+          onPress={showDetails}
+        >
+          {p.text("ui.viewDetails")}
+        </Button>
       )}
     </div>
   );
@@ -451,7 +545,7 @@ const AttachmentPicker = ({
 }: {
   enabled: boolean;
   busy: boolean;
-  choose: (file: File) => void;
+  choose: (selection: FileSelection) => void;
 }) => {
   const p = usePresentation();
   return (
@@ -460,6 +554,7 @@ const AttachmentPicker = ({
       busy={busy}
       choose={choose}
       label={p.text("ui.attachments.file")}
+      dropLabel={p.text("ui.attachments.drop")}
       hint={p.fieldHint("attachmentName")}
     />
   );
@@ -490,22 +585,35 @@ const AttachmentRows = ({
   editing: boolean;
   onWithdraw: Props["onWithdraw"];
 }) => {
+  const p = usePresentation();
   if (table === null) {
     return null;
   }
   const { preview } = interaction;
+  const identityColumn = table.columns.findIndex(({ key }) => key === "attachmentId");
+  const rowLabel = (row: RegionRow) => {
+    const name = row.transfers?.[0]?.name ?? row.key;
+    return row.values[identityColumn]?.kind === "IDENTIFIER"
+      ? p.text("ui.pairedFacts", { first: name, second: row.key })
+      : undefined;
+  };
   return (
     <DataTable
       view={table}
       timeZone={zone}
       emptyId={emptyId ?? "ui.attachments.empty"}
-      renderControls={(row) => (
+      renderControls={(row, showDetails) => (
         <AttachmentControls
           row={row}
+          rowLabel={rowLabel(row)}
+          showDetails={showDetails}
           interaction={interaction}
           editing={editing}
           onWithdraw={onWithdraw}
         />
+      )}
+      renderDetailActions={(row) => (
+        <CopyValue label={p.fieldLabel("attachmentId")} value={row.key} />
       )}
       renderSupplement={(row) =>
         preview === null || preview.id !== row.key ? null : (
@@ -525,12 +633,13 @@ const useCurrentUpload = (
   useLayoutEffect(() => {
     current.current = { enabled, offer, onAdd };
   }, [enabled, offer, onAdd]);
-  return (file: CapturedFile) => {
+  const select = (file: CapturedAttachment) => {
     const active = current.current;
     if (active.enabled && active.offer !== undefined) {
       active.onAdd(active.offer, file);
     }
   };
+  return { available: () => current.current.enabled, select };
 };
 
 const AttachmentWorkspace = ({
@@ -566,15 +675,15 @@ const AttachmentWorkspace = ({
   const table = content?.kind === "TABLE" ? content : null;
   const add = addOffer(document);
   const editing = props.editing || !props.authoringAvailable;
-  const addSelected = useCurrentUpload(!editing, add, props.onAdd);
+  const upload = useCurrentUpload(!editing, add, props.onAdd);
   return (
     <div aria-busy={interaction.busy}>
       {add === undefined || !props.authoringAvailable ? null : (
         <AttachmentPicker
           enabled={!editing}
-          busy={interaction.busy}
-          choose={(file) => {
-            void interaction.choose(file, addSelected);
+          busy={interaction.pickerBusy}
+          choose={(selection) => {
+            void interaction.choose(selection, upload.available, upload.select);
           }}
         />
       )}

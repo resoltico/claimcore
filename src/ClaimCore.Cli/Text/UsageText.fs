@@ -58,6 +58,13 @@ module UsageText =
         | UsageError.MissingValue flag -> message language (CliMessage.MissingValue flag)
         | UsageError.RequestTooLarge maximum ->
             message language (CliMessage.RequestTooLarge(string maximum))
+        | UsageError.AttachmentFileTooLarge(maximum, actual) ->
+            let number = ReplyTextFormat.number (RenderingContext.forLanguage language)
+
+            MessageCatalogs.render
+                language
+                "label.attachmentFileTooLarge"
+                (Map.ofList [ "maximumBytes", number (int64 maximum); "actualBytes", number actual ])
 
         | UsageError.UnknownTopic _ -> message language CliMessage.UnknownHelpTopic
 

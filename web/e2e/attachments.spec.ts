@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { deflateSync } from "node:zlib";
 import {
   errors,
@@ -109,6 +110,175 @@ test("refuses retained attachment metadata before confirmation or upload @engine
   await expect(page.getByRole("dialog").locator("[data-confirm-operation]")).toHaveCount(0);
   expect(uploads).toEqual([]);
   await expect(attachments.locator(".data-table tbody")).toHaveCount(1);
+});
+
+test("the file chooser, drop and paste share bounded attachment intake", async ({ page }, info) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-INTAKE-${randomUUID()}`);
+  const panel = documentPanel(page);
+  await expect(panel.getByRole("button", { name: "Choose a file", exact: true })).toHaveCount(1);
+  const target = panel.getByRole("button", { name: "Drop or paste a file", exact: true });
+  await target.focus();
+  await expect(panel.locator(".file-drop")).toHaveAttribute("data-focused", "true");
+
+  const observed: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/operation.preview" || path === "/api/attachment.upload") {
+      observed.push(path);
+    }
+  });
+  await panel.locator('input[type="file"]').setInputFiles({
+    name: "oversize.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.alloc(26_214_401),
+  });
+  await expect(panel.getByRole("alert")).toContainText("26,214,401 bytes");
+  await expect(panel.getByRole("alert")).toContainText("26,214,400 bytes or fewer");
+  expect(observed).toEqual([]);
+
+  const drop = panel.locator(".file-drop");
+  const path = info.outputPath("dropped.txt");
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, "drop source");
+  await drop.scrollIntoViewIfNeeded();
+  const box = await drop.boundingBox();
+  expect(box).not.toBeNull();
+  const { x, y, width, height } = box!;
+  const session = await page.context().newCDPSession(page);
+  try {
+    for (const type of ["dragEnter", "dragOver", "drop"] as const) {
+      await session.send("Input.dispatchDragEvent", {
+        type,
+        x: x + width / 2,
+        y: y + height / 2,
+        data: {
+          items: [{ mimeType: "text/plain", data: "Alternative drop representation" }],
+          files: [path],
+          dragOperationsMask: 1,
+        },
+      });
+    }
+  } finally {
+    await session.detach();
+  }
+  await expect(page.getByRole("dialog")).toContainText("dropped.txt");
+  await confirm(page, "/api/attachment.upload");
+  await expect(panel.getByText("dropped.txt", { exact: true })).toBeVisible();
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(async (base64) => {
+    const image = new Blob([Uint8Array.fromBase64(base64)], { type: "image/png" });
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": image })]);
+  }, png.toString("base64"));
+  await target.focus();
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(page.getByRole("dialog")).toContainText("image.png");
+  await confirm(page, "/api/attachment.upload");
+  await expect(panel.getByText("image.png", { exact: true })).toBeVisible();
+});
+
+test("paste counts files independently of alternate text representations @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-PASTE-${randomUUID()}`);
+  const panel = documentPanel(page);
+  const target = panel.getByRole("button", { name: "Drop or paste a file", exact: true });
+  const paste = async (names: string[]) => {
+    await target.focus();
+    const fileCount = await target.evaluate((button, files) => {
+      const transfer = new DataTransfer();
+      for (const name of files) {
+        transfer.items.add(new File(["Synthetic attachment"], name, { type: "text/plain" }));
+      }
+      transfer.setData("text/plain", "Alternate text");
+      const event = new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+      });
+      // Firefox drops clipboardData passed to the synthetic event constructor.
+      Object.defineProperty(event, "clipboardData", { value: transfer });
+      const count = event.clipboardData?.files.length;
+      button.dispatchEvent(event);
+      return count;
+    }, names);
+    expect(fileCount).toBe(names.length);
+  };
+  const prepared: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/operation.preview" || path === "/api/attachment.upload") {
+      prepared.push(path);
+    }
+  });
+  for (const names of [[], ["first.txt", "second.txt"]]) {
+    await paste(names);
+    await expect(panel.getByRole("alert")).toHaveText("Drop or paste one file at a time.");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(prepared).toEqual([]);
+  }
+  await paste(["pasted.txt"]);
+  await expect(page.getByRole("dialog")).toContainText("pasted.txt");
+  await confirm(page, "/api/attachment.upload");
+  await expect(panel.getByText("pasted.txt", { exact: true })).toBeVisible();
+});
+
+test("the chooser recovers from read and digest failures without sending the file", async ({
+  page,
+}) => {
+  const canary = "/synthetic-private-path/attachment.png";
+  await page.addInitScript((detail) => {
+    File.prototype.arrayBuffer = function arrayBuffer(this: File) {
+      return this.name === "unreadable.png"
+        ? Promise.reject(new DOMException(detail, "NotReadableError"))
+        : Blob.prototype.arrayBuffer.call(this);
+    };
+    const digestOriginal = crypto.subtle.digest.bind(crypto.subtle);
+    SubtleCrypto.prototype.digest = function digest(algorithm, data) {
+      if (document.documentElement.dataset["rejectAttachmentDigest"] === "true") {
+        delete document.documentElement.dataset["rejectAttachmentDigest"];
+        return Promise.reject(new Error(detail));
+      }
+      return digestOriginal(algorithm, data);
+    };
+  }, canary);
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-LOCAL-FAULT-${randomUUID()}`);
+  const panel = documentPanel(page);
+  const picker = panel.getByRole("button", { name: "Choose a file", exact: true });
+  const alert = panel.getByRole("alert");
+  const requests: string[] = [];
+  const diagnostics: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/operation.preview" || path === "/api/attachment.upload") {
+      requests.push(path);
+    }
+  });
+  page.on("console", (message) => diagnostics.push(message.text()));
+  page.on("pageerror", (error) => diagnostics.push(error.message));
+  const select = async (name: string) => {
+    const chooser = page.waitForEvent("filechooser");
+    await picker.click();
+    await (await chooser).setFiles({ name, mimeType: "image/png", buffer: png });
+  };
+
+  await select("unreadable.png");
+  await expect(alert).toHaveText("The selected file could not be read. Choose the file again.");
+  await expect(picker).toBeEnabled();
+  await page.evaluate(() => {
+    document.documentElement.dataset["rejectAttachmentDigest"] = "true";
+  });
+  await select("readable.png");
+  await expect(alert).toHaveText("An internal error occurred. Stop and investigate.");
+  await expect(picker).toBeEnabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(requests).toEqual([]);
+  expect(diagnostics.join("\n")).not.toContain(canary);
+
+  await select("readable.png");
+  await expect(page.getByRole("dialog")).toContainText("readable.png");
+  await confirm(page, "/api/attachment.upload");
 });
 
 test("renders and pages through PDFs inside the opaque viewer @engine", async ({
@@ -509,10 +679,10 @@ for (const transfer of ["preview", "download"] as const) {
     test.setTimeout(90_000);
     await openAuthenticated(page);
     await openCase(page, `ATTACH-TRANSFER-FOCUS-${randomUUID()}`);
-    const name = "unsupported-preview.png";
-    const bytes = Buffer.from("synthetic bytes outside the PNG profile");
+    const name = "unrenderable-preview.pdf";
+    const bytes = Buffer.from("%PDF-1.7\n");
     const panel = documentPanel(page);
-    const { row } = await upload(page, panel, name, name, "image/png", bytes);
+    const { row } = await upload(page, panel, name, name, "application/pdf", bytes);
     const trigger = row.getByRole("button", {
       name: transfer === "preview" ? "Preview" : "Download",
       exact: true,
@@ -561,6 +731,7 @@ for (const transfer of ["preview", "download"] as const) {
 
     if (delivery === null) {
       await expect(panel.getByRole("alert")).toHaveText("This attachment cannot be previewed.");
+      await row.getByRole("button", { name: "Close", exact: true }).click();
     } else {
       const downloaded = await delivery;
       expect(downloaded.suggestedFilename()).toBe(name);
@@ -813,7 +984,7 @@ for (const { focusOutside, pointerTarget, gesture } of [
         });
       }
       await expect(panel.getByRole("alert")).toHaveText(
-        "Complete this input using the required format.",
+        "The selected file could not be read. Choose the file again.",
       );
       await expect(picker).toBeEnabled();
       if (pointerDown) {
@@ -938,6 +1109,17 @@ test("reviews private files, displays native previews and withdraws disclosure @
   );
   await expect(ordinary.row.getByRole("button", { name: "Preview", exact: true })).toHaveCount(0);
   await download(page, ordinary.row, "evidence.bin", evidence);
+  const opaqueBytes = Buffer.from("Opaque evidence with a PNG suffix.");
+  const opaque = await upload(
+    page,
+    attachments,
+    "mislabeled.png",
+    "mislabeled.png",
+    "image/png",
+    opaqueBytes,
+  );
+  await expect(opaque.row.getByRole("button", { name: "Preview", exact: true })).toHaveCount(0);
+  await download(page, opaque.row, "mislabeled.png", opaqueBytes);
 
   await raster.preview.click();
   await expect(raster.img).toBeVisible();
@@ -956,6 +1138,65 @@ test("reviews private files, displays native previews and withdraws disclosure @
     attachments.getByRole("button", { name: "Choose a file", exact: true }),
   ).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
+});
+
+test("same-name attachments expose distinct actions and exact bytes at narrow widths", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openAuthenticated(page);
+  await openCase(page, `ATTACH-SAME-NAME-${randomUUID()}`);
+  const panel = documentPanel(page);
+  const files = [
+    {
+      bytes: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAEElEQVR4nGM4oNAAQQxwFgBUFAhBAthTxgAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+      digest: "549589e4a2db4b28585f4196e2bb561f8f440f7bf72599e1e8202dfc63374d19",
+    },
+    {
+      bytes: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAEElEQVR4nGNgt7kMQQxwFgA8dAaFrLvEcQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+      digest: "5e0cc84ef3452a965bc454ba3d186d277290b3dd7eae5ad043a7217687b7c51e",
+    },
+  ];
+  const pick = panel.locator('input[type="file"]');
+  const ids: string[] = [];
+  for (const { bytes } of files) {
+    await pick.setInputFiles({ name: "collision.png", mimeType: "image/png", buffer: bytes });
+    ids.push((await confirm(page, "/api/attachment.upload")).operationId);
+  }
+  const rows = ids.map((id) => panel.locator(".data-table tbody").filter({ hasText: id }));
+  for (const [index, id] of ids.entries()) {
+    const row = rows[index]!;
+    await expect(row).toBeVisible();
+    const details = row.getByRole("button", { name: new RegExp(`View details.*${id}`, "u") });
+    await details.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText(id);
+    await expect(dialog.getByRole("button", { name: "Copy Attachment ID" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    const delivery = page.waitForEvent("download");
+    await row.getByRole("button", { name: new RegExp(`Download.*${id}`, "u") }).click();
+    const file = await delivery;
+    expect(file.suggestedFilename()).toBe("collision.png");
+    expect(
+      createHash("sha256")
+        .update(await readFile(await file.path()))
+        .digest("hex"),
+    ).toBe(files[index]!.digest);
+  }
+  await noHorizontalOverflow(page, "narrow");
+  await rows[0]!.getByRole("button", { name: /Withdraw attachment/u }).click();
+  await expect(page.getByRole("dialog")).toContainText(ids[0]!);
+  await confirm(page, "/api/operation.execute");
+  const remaining = panel.locator(".data-table tbody").filter({ hasText: "collision.png" });
+  await expect(remaining).toHaveCount(1);
+  await download(page, remaining, "collision.png", files[1]!.bytes);
 });
 
 test("settles a lost upload acknowledgement with an identity-only recovery record", async ({

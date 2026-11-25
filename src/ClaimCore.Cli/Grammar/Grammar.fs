@@ -162,7 +162,15 @@ module Grammar =
                     | true, [ Some path ] ->
                         match AttachmentFiles.capture path with
                         | Ok source -> Some source, None
-                        | Error() -> None, Some(UsageError.InvalidValue("--file", ""))
+                        | Error(AttachmentCaptureFailure.TooLarge actual) ->
+                            None,
+                            Some(
+                                UsageError.AttachmentFileTooLarge(
+                                    AttachmentLimits.FileBytes,
+                                    actual
+                                )
+                            )
+                        | Error _ -> None, Some(UsageError.InvalidValue("--file", ""))
                     | _ -> None, Some(UsageError.MissingOption "--file")
 
             let body =

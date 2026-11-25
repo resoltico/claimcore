@@ -8,4 +8,9 @@
   .file-drop[data-drop-target] {
     background: var(--accent-subtle);
   }
+
+  .file-drop[data-focused] {
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
 }

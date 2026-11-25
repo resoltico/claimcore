@@ -54,6 +54,18 @@ module internal FamilyReads =
         let token = tx.CancellationToken
         TransactionPages.cases connection installation query token
 
+    let caseExists (tx: ReadTx) selection =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    ($"SELECT EXISTS(SELECT 1 FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection})")
+                    (CaseSelectionSql.parameters selection)
+                    tx.CancellationToken
+
+            return DatabaseSession.value<bool> 0 rows.Head
+        }
+
     let caseSummary (tx: ReadTx) query groupBy after limit =
         let connection = tx.Connection
         let token = tx.CancellationToken

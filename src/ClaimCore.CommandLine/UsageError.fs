@@ -3,6 +3,7 @@ namespace ClaimCore.CommandLine
 
 
 open System
+open System.Globalization
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
@@ -33,6 +34,7 @@ type UsageError =
     | DuplicateOption of flag: string
     | MissingValue of flag: string
     | RequestTooLarge of maximumBytes: int
+    | AttachmentFileTooLarge of maximumBytes: int * actualBytes: int64
     | UnknownTopic of topic: string
 
 module UsageError =
@@ -114,6 +116,23 @@ module UsageError =
         ]
 
     let private cardinality =
+        let byteCount =
+            text
+            |> interpret
+                (fun path value ->
+                    match
+                        Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture)
+                    with
+                    | true, bytes when bytes.ToString(CultureInfo.InvariantCulture) = value ->
+                        Ok bytes
+                    | _ ->
+                        Error
+                            {
+                                Path = path
+                                Reason = "Invalid byte count."
+                            })
+                (fun (bytes: int64) -> bytes.ToString(CultureInfo.InvariantCulture))
+
         [
             variant
                 "DUPLICATE_OPTION"
@@ -137,6 +156,15 @@ module UsageError =
                 | _ -> None)
                 (record id
                  |> field "maximumBytes" id (integer 0L (int64 Int32.MaxValue) |> map int int64))
+            variant
+                "ATTACHMENT_FILE_TOO_LARGE"
+                UsageError.AttachmentFileTooLarge
+                (function
+                | UsageError.AttachmentFileTooLarge(maximum, actual) -> Some(maximum, actual)
+                | _ -> None)
+                (record (fun maximum actual -> maximum, actual)
+                 |> field "maximumBytes" fst (integer 0L (int64 Int32.MaxValue) |> map int int64)
+                 |> field "actualBytes" snd byteCount)
             variant
                 "UNKNOWN_TOPIC"
                 UsageError.UnknownTopic

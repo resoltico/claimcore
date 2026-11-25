@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 9. Previous formats require their matching builds, including for restoring backups.
+- Supply the production HTTPS intermediates in the operator PFX. ClaimCore serves them with the configured leaf certificate.
+- Preview appears for attachments whose verified bytes meet the media profile. Original downloads remain available.
+- Cases distinguish an empty accessible scope from an empty view. Regenerate Cases DATA clients for `authorizedScopeEmpty` and CLI usage clients for the attachment size refusal.
+- Case drawers retain edited and unconfirmed work, keep field rules in view, and explain when to enter both amount and currency.
+- Attachment intake distinguishes drop and paste from the file chooser. Same-name files show their IDs, and Details lets you copy the full ID.
 - Regenerate HUMAN clients for joins, case IDENTITY, region counts, recorded entries, payment empty labels, state detail, due dates, reminder timing and view columns, recommendations and short labels.
 - Regenerate clients for subjectInput, review modes, collection labels, code tones, view prominence, creation summaries and `case.parties`.
 - Regenerate HUMAN clients for lookup row choices, which now carry a value and a core label message.

@@ -236,15 +236,30 @@ export const readAttachmentPreviewResource = async (
   return response.ok ? response.arrayBuffer() : null;
 };
 
-export const captureAttachment = async (file: File) => {
-  if (file.size > attachmentTransport.maximumFileBytes) {
-    throw new Error("File exceeds the attachment size limit.");
+export type CapturedAttachment = { file: File; digest: string };
+
+type AttachmentCapture =
+  | { kind: "captured"; value: CapturedAttachment }
+  | { kind: "tooLarge"; actualBytes: number }
+  | { kind: "changed" }
+  | { kind: "unreadable" };
+
+export const captureAttachment = async (file: File): Promise<AttachmentCapture> => {
+  const actualBytes = file.size;
+  if (actualBytes > attachmentTransport.maximumFileBytes) {
+    return { kind: "tooLarge", actualBytes };
   }
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  if (bytes.length !== file.size || bytes.length > attachmentTransport.maximumFileBytes) {
-    throw new Error("The selected file changed.");
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await file.arrayBuffer();
+  } catch {
+    return { kind: "unreadable" };
   }
+  if (buffer.byteLength !== actualBytes) {
+    return { kind: "changed" };
+  }
+  const bytes = new Uint8Array(buffer);
   const hash = new Uint8Array(await digestBytes(bytes));
   const digest = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return { file: new File([bytes], file.name), digest };
+  return { kind: "captured", value: { file: new File([bytes], file.name), digest } };
 };

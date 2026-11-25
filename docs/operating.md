@@ -62,7 +62,7 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 | `postgres/superuser.password` | Separate bootstrap password for `postgres`, mounted only in PostgreSQL. Use 64 lowercase hexadecimal characters and mode 0600. |
 | `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for each. |
 | `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
-| `web/server.pfx`, `web/client.secret` | A passwordless PFX with the private key and publicly trusted HTTPS certificate for the web origin, and the OIDC client secret. |
+| `web/server.pfx`, `web/client.secret` | A passwordless PFX with one private key, its publicly trusted HTTPS leaf certificate for the web origin, and all required intermediate certificates. Provide the OIDC client secret separately. |
 | `web/runtime.connection`, `web/ca.pem` | Runtime connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/runtime/ca.pem`. |
 | `administration/owner.connection`, `administration/ca.pem` | Owner connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/administration/ca.pem`. |
 | `key-ring/` | Persistent Web key ring directory with mode 0700. |
@@ -93,7 +93,7 @@ workload and host capacity.
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 8 and
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 9 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
 [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
@@ -101,10 +101,9 @@ before accessing installation data. Use a fresh database when the format changes
 existing database and recovery records separately. The available owner commands initialize,
 verify, rebuild or restore matching data. There is no migration or cross-format reader.
 
-If you used the unreleased format-8 attachments build from PR #178, preserve that database with its
-matching build and use a fresh installation for this build. Both builds report format 8 and share a
-SQL baseline identity. The earlier build stored a `preview` field in attachment descriptors. The
-current [record codec](../src/ClaimCore.RecordFormat/PartCodecs.fs) rejects that field.
+Format 9 records verified preview eligibility in each encrypted attachment descriptor. Both the
+published format 8 and the unreleased format-8 attachments build from PR #178 require their
+matching builds for access and recovery. Initialize a fresh register to use format 9.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and

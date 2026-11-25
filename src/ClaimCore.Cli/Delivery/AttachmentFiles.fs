@@ -15,6 +15,12 @@ type internal AttachmentSource =
         Digest: AttachmentDigest
     }
 
+[<RequireQualifiedAccess>]
+type internal AttachmentCaptureFailure =
+    | TooLarge of actualBytes: int64
+    | Unreadable
+    | Changed
+
 module internal AttachmentFiles =
     // The shipped .NET Unix runtime supplies a common stat layout across glibc, musl and Darwin.
     // See src/native/libs/System.Native/pal_io.h in the runtime source.
@@ -108,7 +114,7 @@ module internal AttachmentFiles =
             let descriptor = openFile (path, nonblocking)
 
             if descriptor < 0 then
-                Error()
+                Error AttachmentCaptureFailure.Unreadable
             else
                 use handle = new SafeFileHandle(nativeint descriptor, true)
                 let mutable before = Unchecked.defaultof<FileStatus>
@@ -117,21 +123,21 @@ module internal AttachmentFiles =
                     status (handle, &before) <> 0
                     || before.Mode &&& 0xF000 <> 0x8000
                     || before.Size < 0L
-                    || before.Size > int64 AttachmentLimits.FileBytes
                 then
-                    Error()
+                    Error AttachmentCaptureFailure.Unreadable
+                elif before.Size > int64 AttachmentLimits.FileBytes then
+                    Error(AttachmentCaptureFailure.TooLarge before.Size)
                 else
                     use source = new FileStream(handle, FileAccess.Read)
                     let bytes = GC.AllocateUninitializedArray<byte>(int before.Size)
                     source.ReadExactly(bytes.AsSpan())
+                    let extra = source.ReadByte()
                     let mutable after = Unchecked.defaultof<FileStatus>
 
-                    if
-                        source.ReadByte() <> -1
-                        || status (handle, &after) <> 0
-                        || not (sameVersion before after)
-                    then
-                        Error()
+                    if status (handle, &after) <> 0 then
+                        Error AttachmentCaptureFailure.Unreadable
+                    elif extra <> -1 || not (sameVersion before after) then
+                        Error AttachmentCaptureFailure.Changed
                     else
                         Ok
                             {
@@ -140,10 +146,11 @@ module internal AttachmentFiles =
                                 Digest = AttachmentDigest.hash (ReadOnlySpan<byte> bytes)
                             }
         with
+        | :? EndOfStreamException -> Error AttachmentCaptureFailure.Changed
         | :? IOException
         | :? UnauthorizedAccessException
         | :? ArgumentException
-        | :? NotSupportedException -> Error()
+        | :? NotSupportedException -> Error AttachmentCaptureFailure.Unreadable
 
     let private create path =
         new FileStream(

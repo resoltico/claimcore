@@ -6,6 +6,9 @@ it("joins amount and currency in one box with one visible hint and one shared er
   const { container } = render(
     <MoneyField
       label="Claimed amount"
+      groupLabel="Claimed amount and currency"
+      optional="(optional)"
+      presence="Leave both blank, or enter both amount and currency."
       hint="Enter the claimed amount."
       rule={{ name: "claimedAmount", id: null }}
       amount={{
@@ -32,18 +35,16 @@ it("joins amount and currency in one box with one visible hint and one shared er
   const box = container.querySelector(".money-field.control-box");
   expect(box?.contains(amount)).toBe(true);
   expect(box?.contains(currency)).toBe(true);
-  for (const selector of [
-    ".money-field.control-box",
-    ".field-label-row",
-    ".field-description",
-    ".field-error",
-  ]) {
+  for (const selector of [".money-field.control-box", ".field-label-row", ".field-error"]) {
     expect(container.querySelectorAll(selector)).toHaveLength(1);
   }
+  expect(
+    screen.getByRole("group", { name: "Claimed amount and currency" }),
+  ).toHaveAccessibleDescription("Leave both blank, or enter both amount and currency.");
   expect(amount).toHaveAccessibleDescription(
-    "Enter the claimed amount. Enter a valid amount and currency.",
+    "Enter the claimed amount. Leave both blank, or enter both amount and currency. Enter a valid amount and currency.",
   );
   expect(currency).toHaveAccessibleDescription(
-    "Use a currency code. Enter a valid amount and currency.",
+    "Use a currency code. Leave both blank, or enter both amount and currency. Enter a valid amount and currency.",
   );
 });

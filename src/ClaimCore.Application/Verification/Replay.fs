@@ -231,6 +231,15 @@ module internal Replay =
                 None)
         |> Map.ofSeq
 
+    let attachmentDescriptors state =
+        attachmentOrigins state
+        |> Seq.choose (fun ((caseId, _), origin) ->
+            origin.Descriptor
+            |> Option.map (fun descriptor -> (caseId, descriptor.Blob), descriptor))
+        |> Seq.groupBy fst
+        |> Seq.map (fun (blob, entries) -> blob, (entries |> Seq.map snd |> Seq.toList))
+        |> Map.ofSeq
+
     let attachmentProjection state =
         state.Attachments
         |> Map.toSeq

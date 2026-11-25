@@ -10,6 +10,7 @@ open System.Text
 open System.Threading
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.CommandLine
 open ClaimCore.Wire
 open ClaimCore.Domain
 
@@ -122,7 +123,7 @@ let tests =
 
                             let snapshot =
                                 AttachmentFiles.capture path
-                                |> Result.defaultWith (fun () -> failtest "Regular file refused")
+                                |> Result.defaultWith (fun _ -> failtest "Regular file refused")
 
                             File.WriteAllText(path, "replacement")
 
@@ -144,9 +145,42 @@ let tests =
                             use writer = File.OpenWrite path
                             writer.SetLength(int64 AttachmentLimits.FileBytes + 1L)
 
-                            Expect.isError
-                                (AttachmentFiles.capture path)
-                                "Length rejected before allocation"
+                            match AttachmentFiles.capture path with
+                            | Error(AttachmentCaptureFailure.TooLarge 26_214_401L) -> ()
+                            | _ -> failtest "The known regular-file length was not reported."
+
+                            let arguments = [ "attachment"; "add"; "SYNTHETIC"; "--file"; path ]
+
+                            match
+                                Grammar.prepare
+                                    (fun () -> Guid.CreateVersion7().ToString("D"))
+                                    arguments
+                            with
+                            | Error [ UsageError.AttachmentFileTooLarge(26_214_400, 26_214_401L) as issue ] ->
+                                let bytes = ClaimCore.Json.Codec.encode UsageError.codec issue
+                                use frame = System.Text.Json.JsonDocument.Parse bytes
+                                let summary = frame.RootElement
+
+                                Expect.equal
+                                    (summary.GetProperty("kind").GetString())
+                                    "ATTACHMENT_FILE_TOO_LARGE"
+                                    "The machine error kind"
+
+                                Expect.equal
+                                    (summary.GetProperty("maximumBytes").GetInt32())
+                                    26_214_400
+                                    "The declared byte limit"
+
+                                Expect.equal
+                                    (summary.GetProperty("actualBytes").GetString())
+                                    "26214401"
+                                    "Exact observed bytes"
+                            | _ ->
+                                failtest "Expected only a typed, local size refusal from the CLI."
+
+                            match AttachmentFiles.capture (path + ".missing") with
+                            | Error AttachmentCaptureFailure.Unreadable -> ()
+                            | _ -> failtest "The missing source was not reported as unreadable."
                         finally
                             directory.Delete true)
             testCase "opening a FIFO without a writer completes and rejects the handle" (fun () ->

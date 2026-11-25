@@ -86,6 +86,7 @@ let private documents () =
                 Items = [ case ]
                 Offers = []
                 NextCursor = Some "case-next"
+                AuthorizedScopeEmpty = false
                 ExactReference = None
             }
         (HumanReadDocuments.reminders (
@@ -137,6 +138,7 @@ let tests =
                                     Items = []
                                     Offers = []
                                     NextCursor = None
+                                    AuthorizedScopeEmpty = false
                                     ExactReference =
                                         Some
                                             {

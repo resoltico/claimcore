@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "（任意）",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "アクセスできる範囲に案件がありません。",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "ファイルのサイズは{actualBytes}バイトです。{maximumBytes}バイト以下のファイルを選択してください。",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "選択したファイルを読み込めませんでした。ファイルを選び直してください。",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "読み込み中にファイルが変更されました。ファイルを選び直してください。",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "ファイルは一度に1つずつドロップまたは貼り付けてください。",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "両方を空欄にするか、金額と通貨の両方を入力してください。",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "金額と通貨の両方を入力してください。",
+    "source": "11da00ab5ba1"
   }
 }

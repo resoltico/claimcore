@@ -4616,5 +4616,33 @@
   "label.optional": {
     "text": "(opcional)",
     "source": "0059798b7f70"
+  },
+  "label.noCasesInScope": {
+    "text": "No hay expedientes en su ámbito de acceso.",
+    "source": "c012e1ce62e8"
+  },
+  "label.attachmentFileTooLarge": {
+    "text": "El archivo tiene {actualBytes} bytes. Elija uno de {maximumBytes} bytes como máximo.",
+    "source": "3557e2c1cfae"
+  },
+  "label.attachmentFileUnreadable": {
+    "text": "No se pudo leer el archivo seleccionado. Vuelva a elegirlo.",
+    "source": "f46bfa171169"
+  },
+  "label.attachmentFileChanged": {
+    "text": "El archivo cambió mientras se leía. Vuelva a elegirlo.",
+    "source": "aa3223e6c972"
+  },
+  "label.attachmentSingleFile": {
+    "text": "Suelte o pegue un archivo a la vez.",
+    "source": "98f09bc70ddb"
+  },
+  "label.moneyPairOptional": {
+    "text": "Deje ambos campos en blanco o introduzca el importe y la moneda.",
+    "source": "f12bbc47ecaa"
+  },
+  "label.moneyPairTogether": {
+    "text": "Introduzca el importe y la moneda.",
+    "source": "11da00ab5ba1"
   }
 }

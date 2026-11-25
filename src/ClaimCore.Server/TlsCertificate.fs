@@ -10,6 +10,19 @@ open System.Security.Cryptography.X509Certificates
 open ClaimCore.Server.Composition
 open ClaimCore.HostSecurity
 
+[<NoEquality; NoComparison>]
+type ServerCertificateBundle =
+    {
+        Leaf: X509Certificate2
+        Chain: X509Certificate2Collection
+    }
+
+    member this.Dispose() =
+        this.Leaf.Dispose()
+
+        for certificate in this.Chain do
+            certificate.Dispose()
+
 module internal TlsCertificate =
     let private certificateBytes path =
         match PrivateFile.read (8 * 1024 * 1024) path with
@@ -32,7 +45,7 @@ module internal TlsCertificate =
         let loaded =
             try
                 try
-                    X509CertificateLoader.LoadPkcs12(
+                    X509CertificateLoader.LoadPkcs12Collection(
                         ReadOnlySpan<byte>(bytes),
                         ReadOnlySpan<char>.Empty,
                         keyStorage
@@ -43,15 +56,18 @@ module internal TlsCertificate =
                 CryptographicOperations.ZeroMemory(Span<byte>(bytes))
 
         try
-            if not loaded.HasPrivateKey then
-                WebStartupDiagnostics.refuse WebStartupProblem.CertificateKeyMissing
+            let leaf =
+                match loaded |> Seq.filter _.HasPrivateKey |> Seq.toList with
+                | [ certificate ] -> certificate
+                | [] -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateKeyMissing
+                | _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
 
             let usable =
                 try
                     let now = DateTime.UtcNow
 
                     let serverAuthentication =
-                        loaded.Extensions
+                        leaf.Extensions
                         |> Seq.tryPick (function
                             | :? X509EnhancedKeyUsageExtension as value -> Some value
                             | _ -> None)
@@ -60,17 +76,33 @@ module internal TlsCertificate =
                             |> Seq.cast<Oid>
                             |> Seq.exists (fun usage -> usage.Value = "1.3.6.1.5.5.7.3.1"))
 
-                    loaded.NotBefore.ToUniversalTime() <= now
-                    && now < loaded.NotAfter.ToUniversalTime()
-                    && loaded.MatchesHostname(hostname, true, false)
+                    let authority =
+                        leaf.Extensions
+                        |> Seq.exists (function
+                            | :? X509BasicConstraintsExtension as value ->
+                                value.CertificateAuthority
+                            | _ -> false)
+
+                    leaf.NotBefore.ToUniversalTime() <= now
+                    && now < leaf.NotAfter.ToUniversalTime()
+                    && leaf.MatchesHostname(hostname, true, false)
                     && serverAuthentication
+                    && not authority
                 with :? CryptographicException ->
                     false
 
             if not usable then
                 WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
 
-            loaded
+            let chain = X509Certificate2Collection()
+
+            for certificate in loaded do
+                if not (Object.ReferenceEquals(certificate, leaf)) then
+                    chain.Add certificate |> ignore
+
+            { Leaf = leaf; Chain = chain }
         with _ ->
-            loaded.Dispose()
+            for certificate in loaded do
+                certificate.Dispose()
+
             reraise ()
