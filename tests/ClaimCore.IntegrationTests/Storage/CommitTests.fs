@@ -238,12 +238,18 @@ let private resolveInitialization (database: PostgresFixture.Database) =
                         administration.Initialize(
                             "Etc/UTC",
                             DatabaseScenarios.initialOwner database,
+                            None,
                             token
                         ))
                     "A landed initialization is inspected, not repeated"
         else
             let! _ =
-                administration.Initialize("Etc/UTC", DatabaseScenarios.initialOwner database, token)
+                administration.Initialize(
+                    "Etc/UTC",
+                    DatabaseScenarios.initialOwner database,
+                    None,
+                    token
+                )
 
             let! status = administration.Status token
             Expect.isSome status.InitialOwner "A fresh retry after rollback records its owner"
@@ -327,15 +333,11 @@ let tests =
                             let throughProxy = proxyCore database source
 
                             let operation =
-                                request
-                                    (database.Fixture)
-                                    (20)
-                                    ("synthetic-commit")
-                                    (0L)
+                                Submissions.create
                                     "case.open"
-                                    (ClaimCore.TestSupport.Submissions.fields (
-                                        RegistrationInput.values (registration)
-                                    ))
+                                    (id database.Fixture 20)
+                                    (Binding.CaseNew Revision.zero)
+                                    (Submissions.fields (RegistrationInput.values registration))
 
                             let! result =
                                 (Service.executeSubmission throughProxy ((operation)) (token))
@@ -413,6 +415,7 @@ let tests =
                                     administration.Initialize(
                                         "Etc/UTC",
                                         DatabaseScenarios.initialOwner database,
+                                        None,
                                         token
                                     ) in
 

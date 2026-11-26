@@ -147,6 +147,8 @@ module internal WorkQueries =
                                                                             Offers =
                                                                                 CaseWorkReads
                                                                                     .reminderActs
+                                                                                    tx
+                                                                                        .CaseReferencePolicy
                                                                                     services
                                                                                         .Principal
                                                                                     view.Actor
@@ -438,6 +440,8 @@ module internal WorkQueries =
                                                                         Offers =
                                                                             CaseWorkReads
                                                                                 .reminderActs
+                                                                                tx
+                                                                                    .CaseReferencePolicy
                                                                                 services.Principal
                                                                                 pageActor
                                                                                 maintenance.Active

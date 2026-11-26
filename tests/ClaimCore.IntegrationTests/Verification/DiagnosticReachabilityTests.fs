@@ -13,6 +13,8 @@ open System.Text.Json
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Tasks
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -24,9 +26,50 @@ open ClaimCore.IntegrationTests.DiagnosticWitnesses
 open ClaimCore.IntegrationTests.DiagnosticEvidence
 
 
+let private installationPolicyEvidence () =
+    task {
+        let! database =
+            PostgresFixture.createWithReferencePolicy CaseReferencePolicy.SystemAssignedOnly
+
+        try
+            let fixture = database.Fixture
+            let actor = core fixture fixture.Owner
+            let! refusedOverride = execute actor (opening fixture registration)
+            let kind, issuer, subject = PrincipalKey.parts fixture.Owner
+
+            let fields =
+                [
+                    InputTarget.PrincipalKind, Vocabulary.token PrincipalKind.vocabulary kind
+                    InputTarget.PrincipalIssuer, issuer
+                    InputTarget.PrincipalSubject, subject
+                    InputTarget.ProfileDisplayName, "Synthetic owner"
+                    InputTarget.CaseReferencePolicy, "UNRECOGNIZED"
+                ]
+                |> List.map (fun (target, value) ->
+                    TaskInputId.Target target, InputValue.Text value)
+                |> Map.ofList
+
+            let input = InputMap.create fields Map.empty |> Option.get
+
+            let policyRefusal =
+                match Registry.provisionOwner with
+                | Task.Person task ->
+                    task.Check input
+                    |> TaskInputIssues.ofList
+                    |> Option.bind (Rejection.Input >> OperationSubmission.refusal)
+                | _ -> failtest "Bootstrap declares a person task."
+
+            match policyRefusal with
+            | Some invalid -> return refused refusedOverride @ diagnostic invalid
+            | None -> return failtest "Malformed bootstrap input must yield a typed diagnostic."
+        finally
+            database.Fixture.Dispose()
+    }
+
 let private completeVocabulary () =
     async {
         let! scalar = scalarEvidence () |> Async.AwaitTask
+        let! policy = installationPolicyEvidence () |> Async.AwaitTask
 
         let! states = stateEvidence () |> Async.AwaitTask
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
@@ -41,7 +84,7 @@ let private completeVocabulary () =
         let evidence =
             scalar @ states @ boundaries @ entries @ associations @ authored @ attachments
             |> List.collect (fun items -> items)
-            |> fun observed -> observed @ DiagnosticEntryEvidence.technicalCountEvidence ()
+            |> fun observed -> observed @ policy @ DiagnosticEntryEvidence.technicalCountEvidence ()
 
         let identifiers = evidence |> List.map fst |> Set.ofList
 

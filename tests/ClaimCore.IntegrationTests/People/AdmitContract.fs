@@ -75,8 +75,8 @@ let private effectKinds (receipt: OperationReceipt) =
 let internal lifecycle fixture =
     task {
         let! owner = caseWorker fixture
-        let first = "ADMIT@CASE"
-        let uuidReference = "10000000-0000-4000-8000-000000000777"
+        let first = "ADMIT-CASE"
+        let uuidReference = "a0000000000040008000000000000777"
 
         let! a =
             Service.executeSubmission
@@ -670,14 +670,17 @@ let internal atomicWrites fixture =
                                             input.Inputs
                                             None
 
-                                    let plan = prepared |> required
+                                    let plan =
+                                        match prepared |> required with
+                                        | PreparedDecision.Ordinary(plan, _) -> plan
+                                        | _ -> failtest "Expected an ordinary decision."
 
                                     let record =
                                         RetainedOperation.create
-                                            plan.Header
+                                            plan.Frame.Header
                                             submission.Task
-                                            plan.Binding
-                                            plan.Inputs
+                                            plan.Frame.Binding
+                                            plan.Frame.Inputs
                                             plan.Changes
                                             tx.NewPayloadNonce
                                         |> required

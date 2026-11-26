@@ -39,6 +39,7 @@ type internal ContextQuery =
 type internal ContextFacts =
     {
         Facts: GlobalReadFacts
+        CaseReferencePolicy: CaseReferencePolicy
         ObservedAt: DateTimeOffset
     }
 

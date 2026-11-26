@@ -665,7 +665,7 @@ let private referenceOwnership database =
 
             Expect.equal
                 duplicate.Outcome
-                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
                 "Inherited references stay reserved"
 
         let! returned = change 53 "REF-ALIAS" 2L "synthetic-a"
@@ -743,7 +743,7 @@ let private referenceOwnership database =
 
             Expect.equal
                 duplicate.Outcome
-                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
                 "Erasure does not release a reserved key"
 
         let! _ = VerificationSupport.verified database

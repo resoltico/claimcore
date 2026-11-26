@@ -65,7 +65,7 @@ test("native beforeunload blocks document navigation only while execution is in 
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `UNLOAD-${randomUUID()}`;
+  const reference = `UNLOAD-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await startClose(page);
   const identity = await reviewDraft(page);
@@ -124,7 +124,7 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
-  const reference = `LOGIN.${randomUUID()}/part?#`;
+  const reference = `LOGIN-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const destination = new URL(referencePath(reference), page.url());
   const anonymous = await browser.newContext({
@@ -158,7 +158,7 @@ test("canonical case links reload and browser back and forward preserve the case
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `ROUTE.${randomUUID()}/part?#`;
+  const reference = `ROUTE-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const response = await browserRequest(page, "/api/case.get", {
     method: "POST",

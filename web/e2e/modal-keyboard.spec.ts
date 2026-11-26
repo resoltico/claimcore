@@ -16,7 +16,7 @@ test("contains keyboard focus and preserves the reviewed draft through guarded E
   await page.keyboard.press("Enter");
   await expect(initial).toHaveCount(0);
   await expect(open).toBeFocused();
-  const reference = `KEYBOARD-${randomUUID()}`;
+  const reference = `KEYBOARD-${randomUUID().slice(0, 8)}`;
   const executions: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/api/operation.execute") {

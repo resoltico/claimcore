@@ -384,7 +384,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
       name: "Open a case",
     }),
   );
-  await screen.findByLabelText("Case reference");
+  await screen.findByRole("checkbox", { name: "Use a custom case reference" });
   const fill = (label: string, value: string): void => {
     changeField(label, value);
   };

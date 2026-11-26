@@ -84,7 +84,8 @@ module internal Advice =
 
                 let environment =
                     {
-                        FamilyEnvironment.Requester = actor
+                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
+                        Requester = actor
                         RequesterPrincipal = services.Principal
                         Maintenance = maintenance.Active
                         RelatedCase = fun _ -> None
@@ -141,14 +142,19 @@ module internal Advice =
                 let offers =
                     Registry.all
                     |> List.choose (function
+                        | Task.Opening task ->
+                            let binding = Binding.CaseNew Revision.zero
+
+                            Some(
+                                (task.Declaration, binding),
+                                task.Availability environment (Some state) binding
+                            )
                         | Task.Family task when
                             task.Declaration.Exposure = TaskExposure.Client
                             && task.Declaration.Target = ActSubject.Case
                             ->
                             let binding =
-                                if task.Declaration.Creates then
-                                    Binding.CaseNew Revision.zero
-                                elif task.Declaration.ReviewsFamilySequence then
+                                if task.Declaration.ReviewsFamilySequence then
                                     Binding.CaseErase(
                                         CaseSelector.Id state.Id,
                                         state.Case.Revision,
@@ -267,7 +273,7 @@ module internal Advice =
             | _ -> return Error CoreFault.StoreIntegrityError
         }
 
-    let installationOffers principal actor =
+    let installationOffers policy principal actor =
         Registry.clientDeclarations
         |> List.choose (fun declaration ->
             if
@@ -278,7 +284,8 @@ module internal Advice =
                        Access.can principal actor capability Scope.Installation)
             then
                 match declaration.Target with
-                | ActSubject.Case -> Some InstallationOffer.Open
+                | ActSubject.Case ->
+                    Some(InstallationOffer.Open(Registry.openCase.EditableInputs policy))
                 | ActSubject.People -> Some(InstallationOffer.PeopleAct declaration.Id)
                 | _ -> None
             else

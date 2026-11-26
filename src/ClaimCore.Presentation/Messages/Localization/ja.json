@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "参照番号を指定して案件を開きます。分かっている登録情報を記録してください。",
-    "source": "39967b35166c"
+    "text": "分かっている登録情報を使って案件を登録します。案件番号を空欄にすると、自動的に割り当てられます。登録簿で許可されている場合は、独自の案件番号を入力できます。",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "最初の所有者を設定",
@@ -423,10 +424,6 @@
     "text": "YYYY-MM-DD形式の有効な日付を指定してください。",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "この案件番号は既に存在します。",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "制御文字は使用できません。",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "空白以外の表示可能なASCII文字を1～80文字使用してください。",
-    "source": "a4d1a5f9f416"
+    "text": "有効な案件参照番号を使用してください。独自の参照番号は ASCII の英字で始まり、英数字とグループ間の単一ハイフンを合わせて最大32文字です。CC- はシステム割り当て用です。",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "保守のため変更を停止しています。案件の閲覧と以前の変更の確認は引き続き行えます。",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "空白を含まない表示可能なASCII文字を1～{maximumCharacters}文字使用してください。大文字・小文字は同じ案件として扱い、元の表記は保持します。",
-    "source": "b43a33360aed"
+    "text": "ASCII 文字を1〜{maximumCharacters}文字使用してください。独自の参照番号は英字で始め、英数字とグループ間の単一ハイフンを使用します。CC- はシステム割り当て用です。",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "この案件に付ける独自の参照番号です。例：CLM-2026-0001。",
-    "source": "adde9fba1cc3"
+    "text": "案件を消去しても独自の参照番号は予約されたままです。個人情報を含めないでください。",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "支払額を決定した日。",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "空白を含まない案件番号を入力してください。",
-    "source": "5722da0c601c"
+    "text": "案件参照番号とハイフンを確認してください。独自の参照番号は英字で始め、英数字とハイフンを合わせて32文字以内にしてください。CC- は予約済みです。",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "ここで使用できる役割を選択してください。",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "今後この案件に使用する参照番号を入力します。",
-    "source": "d66b4efc4776"
+    "text": "以前の参照番号でもこの案件を検索できます。新しい参照番号に個人情報を含めないでください。",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "変更前の参照番号",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "金額と通貨の両方を入力してください。",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "この案件参照番号は使用できません。",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "この登録簿では、すべての案件参照番号が自動的に割り当てられます。独自の参照番号を削除して続行してください。",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "案件の登録時に割り当てられます。",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "独自の案件参照番号を使用",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "システムによる割り当てのみ",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "任意の案件番号を許可",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "案件番号の設定",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "初期設定時に選択した案件番号の割り当て方法です。",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "任意の案件番号を入力できるようにするか選択してください。",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "対応している案件番号の設定を選択してください。",
+    "machineMade": true
   }
 }

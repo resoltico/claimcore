@@ -59,7 +59,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
 
 test("keeps absent cases private and unknown operation outcomes pending", async ({ page }) => {
   await openAuthenticated(page);
-  await (await showExactLookup(page)).fill(`ABSENT-${randomUUID()}`);
+  await (await showExactLookup(page)).fill(`ABSENT-${randomUUID().slice(0, 8)}`);
   await (await showExactLookup(page)).press("Enter");
   const find = page.getByRole("dialog", { name: "Find a case" });
   await expect(find.getByRole("alert")).toBeVisible();

@@ -76,9 +76,10 @@ module internal Fold =
         |> Option.map Person.access
         |> AccessView.ofActor
 
-    let familyEnvironment state principal maintenance caseId =
+    let familyEnvironment policy state principal maintenance caseId =
         {
-            FamilyEnvironment.Requester = requester state principal
+            FamilyEnvironment.CaseReferencePolicy = policy
+            Requester = requester state principal
             RequesterPrincipal = principal
             Maintenance = maintenance
             ReferenceOwner =
@@ -105,16 +106,27 @@ module internal Fold =
                         |> Option.exists (Access.eligibleAssignee person.Actor.Principal access))
         }
 
-    let personEnvironment state principal maintenance targetPrincipal principalOwner =
+    let private personEnvironment
+        state
+        principal
+        maintenance
+        inputs
+        targetPrincipal
+        principalOwner
+        =
         let cases =
-            state.Families
-            |> Map.values
-            |> Seq.collect (fun family ->
-                [
-                    GrantTarget.CaseId family.Id, family.Id
-                    GrantTarget.CaseReference(CaseReference.identity family.Reference), family.Id
-                ])
-            |> Map.ofSeq
+            InputSelection.grantTargets inputs
+            |> List.choose (fun target ->
+                let selector =
+                    match target with
+                    | GrantTarget.CaseId id -> Some(CaseSelector.Id id)
+                    | GrantTarget.CaseReference reference -> Some(CaseSelector.Reference reference)
+                    | GrantTarget.Installation -> None
+
+                selector
+                |> Option.bind (resolveCase state)
+                |> Option.map (fun id -> GrantTarget.canonical target, id))
+            |> Map.ofList
 
         {
             PersonEnvironment.Requester = requester state principal
@@ -141,13 +153,6 @@ module internal Fold =
             PrincipalOwner = principalOwner
         }
 
-    let private family state binding inputs =
-        match Binding.caseTarget binding with
-        | Some target -> resolveFamily state target
-        | None ->
-            InputSelection.target (InputTarget.Field BusinessField.CaseReference) inputs
-            |> Option.bind (CaseSelector.Reference >> resolveFamily state)
-
     let private person state binding inputs =
         match binding with
         | Binding.People(id, _) -> Map.tryFind id state.People
@@ -165,14 +170,14 @@ module internal Fold =
             state.NaturalKeys
         |> Option.bind ActorId.create
 
-    let snapshot state principal maintenance selected binding inputs =
+    let snapshot policy state principal maintenance selected binding inputs =
         match selected with
         | Task.Family task ->
-            let before = family state binding inputs
+            let before = Binding.caseTarget binding |> Option.bind (resolveFamily state)
 
             DecisionSnapshot.family
                 task
-                (familyEnvironment state principal maintenance (before |> Option.map _.Id))
+                (familyEnvironment policy state principal maintenance (before |> Option.map _.Id))
                 (before |> Option.map DecisionFacts.fromReplay)
                 (state.Parts
                  |> Map.values
@@ -182,6 +187,7 @@ module internal Fold =
                          change.Aggregate = AggregateReference.Family family.Id))
                  |> Seq.toList)
                 state.Origins
+        | Task.Opening _ -> invalidOp "Opening uses its own recorded evidence."
         | Task.Person task ->
             let before = person state binding inputs
             let current = before |> Option.map _.Actor.Principal
@@ -195,28 +201,10 @@ module internal Fold =
                     state
                     principal
                     maintenance
+                    inputs
                     (current |> Option.orElse proposed)
                     (proposed |> Option.bind (principalOwner state)))
                 before
-
-    let decide state context selected binding inputs =
-        (snapshot
-            state
-            context.Decision.Principal
-            context.Decision.Maintenance
-            selected
-            binding
-            (Some inputs))
-            .Decide
-            context
-            binding
-            inputs
-
-    let availability state principal maintenance selected binding inputs =
-        (snapshot state principal maintenance selected binding inputs).Availability binding
-
-    let describe state principal selected binding changes =
-        (snapshot state principal false selected binding None).Describe changes
 
     let apply state changes =
         let summaries =
@@ -365,8 +353,6 @@ module internal Fold =
     let private rejected =
         function
         | Rejection.InvalidState violation -> FoldProblem.State violation
-        | Rejection.Refused(Refusal.Case CaseRefusal.CaseAlreadyExists) ->
-            FoldProblem.State RecordViolation.InvalidHistoryStart
         | Rejection.Refused(Refusal.People PeopleRefusal.HumanPrincipalRequired) ->
             FoldProblem.TargetHumanRequired
         | _ -> FoldProblem.Decision
@@ -424,7 +410,7 @@ module internal Fold =
         | _ -> expected
 
     /// Validates every accepted root, including executor and structural rules after private erasure.
-    let append installation state (record: RetainedOperation) =
+    let append installation policy state (record: RetainedOperation) =
         let header = record.Root.Header
 
         if
@@ -476,28 +462,54 @@ module internal Fold =
                                     }
                             }
 
-                        let current =
-                            snapshot
-                                state
-                                principal
-                                false
-                                selected
-                                record.Root.Structure.Binding
-                                record.Inputs
+                        let binding = record.Root.Structure.Binding
+
+                        let decide () =
+                            match selected with
+                            | Task.Opening opening ->
+                                let id = CaseId.ofOperationId header.OperationId
+
+                                let before =
+                                    Map.tryFind id state.Families
+                                    |> Option.map DecisionFacts.fromReplay
+
+                                let environment =
+                                    familyEnvironment policy state principal false (Some id)
+
+                                opening.Replay
+                                    context
+                                    environment
+                                    before
+                                    binding
+                                    (defaultArg record.Inputs record.Root.Structure.Retained)
+                                    record.Inputs.IsNone
+                                    record.Changes
+                            | _ ->
+                                let current =
+                                    snapshot
+                                        policy
+                                        state
+                                        principal
+                                        false
+                                        selected
+                                        binding
+                                        (Some(
+                                            defaultArg record.Inputs record.Root.Structure.Retained
+                                        ))
+
+                                match record.Inputs with
+                                | Some inputs when current.FactsAvailable binding ->
+                                    current.Decide context binding inputs
+                                | _ ->
+                                    current.DecideRetained
+                                        context
+                                        binding
+                                        record.Root.Structure.Retained
 
                         let decision =
                             revisions state record.Changes
                             |> Result.bind (fun () ->
-                                match record.Inputs with
-                                | Some inputs when
-                                    current.FactsAvailable record.Root.Structure.Binding
-                                    ->
-                                    current.Decide context record.Root.Structure.Binding inputs
-                                | _ ->
-                                    current.DecideRetained
-                                        context
-                                        record.Root.Structure.Binding
-                                        record.Root.Structure.Retained
+                                decide ()
                                 |> Result.mapError rejected
                                 |> Result.bind (fun expected ->
                                     if

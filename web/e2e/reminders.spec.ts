@@ -56,7 +56,7 @@ test("stores exact optional LF incident text and clears it without a financial a
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `NARRATIVE-${randomUUID()}`;
+  const reference = `NARRATIVE-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   const description = `حادث في الطريق\n\n${"😀".repeat(584)}`;
   expect(Array.from(description)).toHaveLength(600);
@@ -116,7 +116,7 @@ test("supports multiple independently revised reminders, terminal records, reope
   // This complete lifecycle includes multiple writes, independent DATA reads and an accessibility scan.
   test.slow();
   await openAuthenticated(page);
-  const reference = `REMINDERS-${randomUUID()}`;
+  const reference = `REMINDERS-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const first = await plan(page, "Call claimant", "0001-01-01");
   const second = await plan(page, "Ask insurer", "9999-12-31");
@@ -185,7 +185,7 @@ test("a compound action has one correlated accepting operation and a new reminde
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `COMPOUND-${randomUUID()}`;
+  const reference = `COMPOUND-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await plan(page, "First action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
@@ -259,7 +259,7 @@ test("a lost compound acknowledgement retries the identical pair without another
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `LOST-COMPOUND-${randomUUID()}`;
+  const reference = `LOST-COMPOUND-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await plan(page, "Current action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
@@ -343,7 +343,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await seedPresentation(page, language, locale);
       await openAuthenticated(page, ui(language, "label.cases"));
       const caseId = mintOperationId();
-      const reference = `LOCAL-WORK-${randomUUID()}`;
+      const reference = `LOCAL-WORK-${randomUUID().slice(0, 8)}`;
       const prefix = "الملخص\n\n";
       const text = `${prefix}${"😀".repeat(600 - Array.from(prefix).length)}`;
       const opened = await workRequest(page, "operation.execute", {
@@ -434,7 +434,7 @@ test("paid description correction preserves payment, then a closed case accepts 
 }) => {
   await seedPresentation(page, "en", "en-GB");
   await openAuthenticated(page);
-  const reference = `PAID-WORK-${randomUUID()}`;
+  const reference = `PAID-WORK-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await plan(page, "Finish existing action", "2026-01-01");
   for (const [revision, act] of [
@@ -581,7 +581,7 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `ACTION-LF-${randomUUID()}`;
+  const reference = `ACTION-LF-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await page
     .getByRole("button", {
@@ -646,7 +646,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `STALE-COMPOUND-${randomUUID()}`;
+  const reference = `STALE-COMPOUND-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const initial = await plan(page, "Original action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
@@ -774,7 +774,7 @@ test("published reminder rows show server timing in case and queue views across 
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `TIMING-${randomUUID()}`;
+  const reference = `TIMING-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const observed = await workRequest(page, "work.views", {});
   if (observed.outcome.kind !== "SUCCEEDED") {
@@ -924,11 +924,11 @@ const seedReminder = async (
   return { operationId };
 };
 
-test("@engine exact reminder URLs retain completed selection and UUID-shaped references across reload", async ({
+test("@engine exact reminder URLs retain completed selection and the case reference across reload", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = randomUUID();
+  const reference = `EXACT-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const first = await seedReminder(page, reference, "Exact completed reminder", "2026-01-01");
   const second = await seedReminder(page, reference, "Another pending reminder", "2026-01-02");
@@ -1022,7 +1022,7 @@ test("@engine returns from an exact reminder to its filtered queue scroll and cl
 }) => {
   await page.setViewportSize({ width: 640, height: 500 });
   await openAuthenticated(page);
-  const reference = `QUEUE-RETURN-${randomUUID()}`;
+  const reference = `QUEUE-RETURN-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   let last = "";
   for (let index = 0; index < 12; index += 1) {
@@ -1060,10 +1060,10 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
   page,
 }) => {
   await openAuthenticated(page);
-  const first = `FOREIGN-${randomUUID()}`;
+  const first = `FOREIGN-${randomUUID().slice(0, 8)}`;
   await openCase(page, first);
   const foreign = await seedReminder(page, first, "Private foreign reminder", "2026-01-01");
-  const parent = `READABLE-${randomUUID()}`;
+  const parent = `READABLE-${randomUUID().slice(0, 8)}`;
   await page.goto("/cases");
   await openCase(page, parent);
   for (const id of [foreign.operationId, randomUUID()]) {
@@ -1093,7 +1093,7 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
 
 test("completing a list reminder focuses its receipt banner", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = `FEEDBACK-${randomUUID()}`;
+  const reference = `FEEDBACK-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const action = `Confirm the synthetic delivery ${reference}`;
   const operationId = mintOperationId();

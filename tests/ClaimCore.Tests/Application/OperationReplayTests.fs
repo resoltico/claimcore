@@ -787,7 +787,7 @@ let tests =
                 let before = scan [ first ] |> required
 
                 Expect.equal
-                    (Fold.append installation before forged)
+                    (Fold.append installation CaseReferencePolicy.CustomAllowed before forged)
                     (Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled))
                     "Authorization observes earlier people only")
             testCase "public mutations cannot hide behind erased profile inputs" (fun () ->
@@ -867,7 +867,11 @@ let tests =
                     "The valid prefix retains the public account"
 
                 Expect.equal
-                    (Fold.append installation before (clear forged))
+                    (Fold.append
+                        installation
+                        CaseReferencePolicy.CustomAllowed
+                        before
+                        (clear forged))
                     (Error FoldProblem.Decision)
                     "The profile task did not decide a disable or role revocation"
 
@@ -930,12 +934,32 @@ let tests =
                             (profile "Changed")
 
                     let prefix =
-                        Replay.append installation None (Replay.initial None) first |> required
+                        Replay.append
+                            installation
+                            CaseReferencePolicy.CustomAllowed
+                            None
+                            (Replay.initial None)
+                            first
+                        |> required
 
-                    let prefix = Replay.append installation None prefix registered |> required
+                    let prefix =
+                        Replay.append
+                            installation
+                            CaseReferencePolicy.CustomAllowed
+                            None
+                            prefix
+                            registered
+                        |> required
 
                     let requireFinding finding record =
-                        match Replay.append installation None prefix record with
+                        match
+                            Replay.append
+                                installation
+                                CaseReferencePolicy.CustomAllowed
+                                None
+                                prefix
+                                record
+                        with
                         | Error issue ->
                             Expect.equal issue.Finding finding "Specific requester finding"
                         | Ok _ -> failtest "Forged executor was accepted"
@@ -975,13 +999,29 @@ let tests =
                             (profile "Changed")
 
                     let servicePrefix =
-                        Replay.append installation None (Replay.initial None) first
+                        Replay.append
+                            installation
+                            CaseReferencePolicy.CustomAllowed
+                            None
+                            (Replay.initial None)
+                            first
                         |> required
                         |> fun state ->
-                            Replay.append installation None state serviceRecord |> required
+                            Replay.append
+                                installation
+                                CaseReferencePolicy.CustomAllowed
+                                None
+                                state
+                                serviceRecord
+                            |> required
 
                     match
-                        Replay.append installation None servicePrefix (executor (person 2) changed)
+                        Replay.append
+                            installation
+                            CaseReferencePolicy.CustomAllowed
+                            None
+                            servicePrefix
+                            (executor (person 2) changed)
                     with
                     | Error issue ->
                         Expect.equal
@@ -1164,4 +1204,227 @@ let tests =
                     match after.Parts[(PartKind.Note, OperationId.value (operation 8))].Value with
                     | PartValue.Note value -> Expect.isNone value.Text "Note content unavailable"
                     | _ -> failtest "Expected the accepted note part")
+        ]
+
+let private referenceInput =
+    TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+
+let private openingRecord state number reference =
+    build state number principal "case.open" (Binding.CaseNew Revision.zero) (opening reference)
+    |> fst
+
+let private openingWithoutReference (record: RetainedOperation) =
+    InputMap.create (Map.remove referenceInput record.Inputs.Value.Values) Map.empty
+    |> Option.get
+
+let private issuedReference raw (change: PartChange) =
+    let reference = CaseReference.parse raw |> required
+
+    match change.Value with
+    | PartValue.Case value ->
+        { change with
+            NaturalKey = Some raw
+            Value =
+                PartValue.Case
+                    { value with
+                        Reference = Some reference
+                    }
+        }
+    | _ -> failtest "Expected a first case effect."
+
+let private reencodeOpening (record: RetainedOperation) inputs change =
+    RetainedOperation.create
+        record.Root.Header
+        record.Root.Structure.Task
+        record.Root.Structure.Binding
+        inputs
+        [ change ]
+        (fun () -> Array.create 32 (byte (Sequence.value record.Root.Header.Sequence + 32L)))
+    |> required
+    |> restore
+
+let private generated = "CC-7K3M-Q8T2-PW6D-X9HR-49"
+
+let private automaticOpening (record: RetainedOperation) =
+    reencodeOpening
+        record
+        (openingWithoutReference record)
+        (issuedReference generated record.Changes.Head)
+
+[<Tests>]
+let caseReferenceEvidence =
+    testList
+        "case reference issuance evidence"
+        [
+            testCase
+                "a generated reference survives private erasure and retains occupancy"
+                (fun () ->
+                    for policy in
+                        [
+                            CaseReferencePolicy.SystemAssignedOnly
+                            CaseReferencePolicy.CustomAllowed
+                        ] do
+                        let first, one = ownerWithPolicy policy
+                        let opened = openingRecord one 2 "GENERATED-FIXTURE" |> automaticOpening
+                        let scan = scanWithPolicy policy
+
+                        Expect.isFalse
+                            (Map.containsKey referenceInput opened.Root.Structure.Retained.Values)
+                            "The accepted generated value is absent from retained intent"
+
+                        let caseId = CaseId.ofOperationId (operation 2)
+                        let two = scan [ first; opened ] |> required
+                        let family = two.Families[caseId]
+
+                        Expect.equal
+                            family.Reference
+                            (CaseReference.parse generated |> required)
+                            "Generated readback"
+
+                        let erased, _ =
+                            build
+                                two
+                                3
+                                principal
+                                "case.erase"
+                                (Binding.CaseErase(
+                                    CaseSelector.Id caseId,
+                                    family.Case.Revision,
+                                    family.Sequence
+                                ))
+                                InputMap.empty
+
+                        let retained = clear opened
+                        Expect.isNone retained.Inputs "The opening no longer has private inputs"
+
+                        let replayed =
+                            scan [ first; retained; erased ]
+                            |> required
+                            |> Fold.complete
+                            |> required
+
+                        let family = replayed.Families[caseId]
+                        Expect.equal family.Case.Value.Lifecycle Lifecycle.Erased "Erasure"
+                        Expect.isNone family.Case.Value.Content "Private registration was removed"
+
+                        Expect.equal
+                            (CaseReference.format family.Reference)
+                            generated
+                            "Issuance evidence survives"
+
+                        Expect.equal
+                            (Map.tryFind (PartKind.Case, generated) replayed.NaturalKeys)
+                            (Some(CaseId.value caseId))
+                            "The original case owns its retired reservation"
+
+                        let contender = openingRecord replayed 4 "CONTENDER-FIXTURE"
+
+                        let otherReference =
+                            reencodeOpening
+                                contender
+                                (openingWithoutReference contender)
+                                (issuedReference "CC-0000-0000-0000-0000-98" contender.Changes.Head)
+
+                        Expect.isOk
+                            (scan [ first; retained; erased; otherReference ])
+                            "The contender can use a different generated reference"
+
+                        Expect.equal
+                            (scan [ first; retained; erased; automaticOpening contender ]
+                             |> Result.map ignore)
+                            (Error FoldProblem.Decision)
+                            "A different operation cannot take an erased case's generated reference")
+
+            testCase
+                "a valid commitment cannot establish noncanonical or contradictory opening effects"
+                (fun () ->
+                    let first, one = owner ()
+                    let original = openingRecord one 2 "CUSTOM-CASING"
+                    let automatic = automaticOpening original
+                    let generatedEffect = automatic.Changes.Head
+                    let generatedInput = automatic.Inputs.Value
+                    let customInput = original.Inputs.Value
+                    let customEffect = original.Changes.Head
+                    let unrelatedId = CaseId.ofOperationId (operation 27)
+
+                    let withoutReference =
+                        match generatedEffect.Value with
+                        | PartValue.Case value ->
+                            { generatedEffect with
+                                Value = PartValue.Case { value with Reference = None }
+                            }
+                        | _ -> failtest "Expected a generated case effect."
+
+                    let wrongFamily =
+                        { generatedEffect with
+                            Aggregate = AggregateReference.Family unrelatedId
+                            PartId = CaseId.value unrelatedId
+                        }
+
+                    let ordinary = restore original
+                    Expect.isOk (scan [ first; ordinary ]) "Genuine complete custom opening"
+                    Expect.isOk (scan [ first; clear ordinary ]) "Genuine retained custom opening"
+                    Expect.isOk (scan [ first; automatic ]) "Genuine complete generated opening"
+
+                    Expect.isOk
+                        (scan [ first; clear automatic ])
+                        "Genuine retained generated opening"
+
+                    for label, input, effect, expected in
+                        [
+                            "generated lowercase",
+                            generatedInput,
+                            issuedReference "cc-7k3m-q8t2-pw6d-x9hr-49" generatedEffect,
+                            RecordViolation.ReferenceMismatch
+                            "generated key case",
+                            generatedInput,
+                            { generatedEffect with
+                                NaturalKey = Some "cc-7k3m-q8t2-pw6d-x9hr-49"
+                            },
+                            RecordViolation.ReferenceMismatch
+                            "missing assigned value",
+                            generatedInput,
+                            withoutReference,
+                            RecordViolation.ReferenceMismatch
+                            "wrong Case ID",
+                            generatedInput,
+                            wrongFamily,
+                            RecordViolation.InvalidHistoryStart
+                            "custom issued spelling",
+                            customInput,
+                            issuedReference "custom-casing" customEffect,
+                            RecordViolation.ReferenceMismatch
+                            "custom intent with generated value",
+                            customInput,
+                            generatedEffect,
+                            RecordViolation.ReferenceMismatch
+                            "automatic intent with custom value",
+                            generatedInput,
+                            customEffect,
+                            RecordViolation.ReferenceMismatch
+                        ] do
+                        let forged = reencodeOpening original input effect
+
+                        for evidence in [ forged; clear forged ] do
+                            Expect.equal
+                                (scan [ first; evidence ] |> Result.map ignore)
+                                (Error(FoldProblem.State expected))
+                                label)
+
+            testCase
+                "system policy refuses custom issuance even with a matching retained input and a valid commitment"
+                (fun () ->
+                    let policy = CaseReferencePolicy.SystemAssignedOnly
+                    let first, one = ownerWithPolicy policy
+                    let custom = openingRecord one 2 "CUSTOM-FIXTURE" |> restore
+
+                    Expect.isOk
+                        (scanWithPolicy policy [ first; automaticOpening custom ])
+                        "The same system installation accepts genuine automatic issuance"
+
+                    for evidence in [ custom; clear custom ] do
+                        Expect.equal
+                            (scanWithPolicy policy [ first; evidence ] |> Result.map ignore)
+                            (Error FoldProblem.Decision)
+                            "System policy protects both complete and erased replay")
         ]

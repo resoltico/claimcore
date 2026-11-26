@@ -126,8 +126,8 @@ module Runtime =
                             | OperatorFault.UnsupportedDatabase ->
                                 RuntimeOpenFault.UnsupportedDatabase
                             | _ -> RuntimeOpenFault.InstallationInvalid
-                        | :? InstallationConfigurationException ->
-                            RuntimeOpenFault.InstallationInvalid
+                        | :? InstallationConfigurationException
+                        | :? RecordCorruptException -> RuntimeOpenFault.InstallationInvalid
                         | :? OperationCanceledException -> RuntimeOpenFault.Cancelled
                         | :? PostgresException as error when
                             error.SqlState.StartsWith("42", StringComparison.Ordinal)

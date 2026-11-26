@@ -14,7 +14,7 @@ let private qualify () =
         do! fixture.Start()
         setup fixture
         let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
-        let reference = "ATTACH-CLI-" + id ()
+        let reference = "ATTACH-CLI-" + (id ()).Substring(24)
         let add = id ()
         let caseId = id ()
         let withdrawal = id ()

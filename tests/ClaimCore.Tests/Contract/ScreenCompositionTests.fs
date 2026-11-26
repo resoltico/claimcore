@@ -29,19 +29,21 @@ let redesignDeclarations =
     testList
         "workspace presentation declarations"
         [
-            testCase "only case.open declares the input that names its subject" (fun () ->
-                let declared =
-                    ClaimCore.Domain.Tasks.Registry.clientDeclarations
-                    |> List.choose (fun task ->
-                        task.SubjectInput |> Option.map (fun input -> TaskId.token task.Id, input))
+            testCase "opening declares an optional retained reference override" (fun () ->
+                let input =
+                    ClaimCore.Domain.Tasks.Case.Open.declaration.Inputs
+                    |> List.find (fun input ->
+                        input.Input =
+                            TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+
+                Expect.equal input.Mode TaskInputMode.Optional "Omission requests assignment"
 
                 Expect.equal
-                    declared
-                    [
-                        "case.open",
-                        TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
-                    ]
-                    "Other tasks have no subject input")
+                    input.Retention
+                    InputRetention.Retained
+                    "Authored reference survives erasure"
+
+                Expect.isFalse input.Clearable "Null is refused")
             testCase "all chip vocabularies declare exactly one supported tone per code" (fun () ->
                 let tokens vocabulary =
                     Vocabulary.name vocabulary, Set.ofList (Vocabulary.tokens vocabulary)

@@ -45,7 +45,7 @@ test("the supplied case link and ordinary Any control expose pending completed a
   test.setTimeout(90_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const reference = `MIXED-${randomUUID()}`;
+  const reference = `MIXED-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const pending = `${reference} pending`;
   const completed = `${reference} completed`;
@@ -90,7 +90,7 @@ test("a Completed view shows its owner inactive default and explicit false remov
   test.setTimeout(90_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const marker = `INACTIVE-${randomUUID()}`;
+  const marker = `INACTIVE-${randomUUID().slice(0, 8)}`;
   const opened = `${marker}-open`;
   const closed = `${marker}-closed`;
   for (const [reference, caption, close] of [

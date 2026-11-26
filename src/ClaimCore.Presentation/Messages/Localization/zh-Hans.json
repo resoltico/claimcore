@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "使用参考编号开立案件，并记录已知的登记信息。",
-    "source": "39967b35166c"
+    "text": "使用已知的登记信息开立案件。将案件编号留空，系统便会自动分配编号。如果登记册允许，可以输入自定义案件编号。",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "设置首位所有者",
@@ -423,10 +424,6 @@
     "text": "请使用 YYYY-MM-DD 格式的有效日历日期。",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "此案件编号已存在。",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "不允许使用控制字符。",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "请使用 1 至 80 个可打印的非空格 ASCII 字符。",
-    "source": "a4d1a5f9f416"
+    "text": "请输入有效的案件引用编号。自定义编号以 ASCII 字母开头，最多 32 个字符，由字母、数字及组间单个连字符组成。CC- 前缀保留给系统分配的编号。",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "因维护暂停更改。您仍可查看案件并检查此前的更改。",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "请使用 1 至 {maximumCharacters} 个可打印的非空格 ASCII 字符。字母大小写不同仍视为同一案件编号，并保留原始写法。",
-    "source": "b43a33360aed"
+    "text": "使用 1 至 {maximumCharacters} 个 ASCII 字符。自定义编号以字母开头，使用字母、数字及组间单个连字符。CC- 前缀保留给系统分配的编号。",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "您为此案件指定的编号，例如 CLM-2026-0001。",
-    "source": "adde9fba1cc3"
+    "text": "案件擦除后，自定义编号仍会保留。请勿在其中包含个人信息。",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "决定赔付金额的日期。",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "请输入不含空格的案件编号。",
-    "source": "5722da0c601c"
+    "text": "请检查案件引用编号及连字符。自定义编号以字母开头，最多使用 32 个字母、数字和连字符。CC- 是保留前缀。",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "请选择适用于此处的角色。",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "输入此案件今后使用的编号。",
-    "source": "d66b4efc4776"
+    "text": "仍可使用原编号查找此案件。请勿在新编号中包含个人信息。",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "更改前的编号",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "请输入金额和币种。",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "案件引用编号不可用。",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "此登记册自动分配所有案件引用编号。请移除自定义编号以继续。",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "开立案件时分配。",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "使用自定义案件引用编号",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "仅由系统分配",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "允许自定义案件编号",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "案件编号策略",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "在初始设置时选择的编号分配策略。",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "请选择是否允许输入自定义案件编号。",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "请选择受支持的案件编号策略。",
+    "machineMade": true
   }
 }

@@ -333,7 +333,6 @@ module DiagnosticCodecs =
             List.contains
                 variant.Tag
                 [
-                    "CASE_ALREADY_EXISTS"
                     "NOT_OFFERED"
                     "RESOURCE_UNAVAILABLE"
                     "NOT_AUTHORIZED"

@@ -144,6 +144,7 @@ let preview: PreviewReply =
                     {
                         OperationReview.ChangesOwnSignInIdentity = false
                         Task = TaskId.ofLiteral "case.void"
+                        Opening = None
                         Target = ReviewTarget.Case(snapshot.CaseId, reference)
                         References = { Actors = []; Cases = [] }
                         Binding = Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first)
@@ -279,7 +280,13 @@ let internal replies () : IEndpointOutput list =
                                             ClaimCore.Application.Contracts.View.People
                                             ClaimCore.Application.Contracts.View.Operations
                                         ]
-                                    Offers = [ InstallationOffer.Open ]
+                                    Offers =
+                                        [
+                                            InstallationOffer.Open(
+                                                ClaimCore.Domain.Tasks.Case.Open.editableInputs
+                                                    CaseReferencePolicy.CustomAllowed
+                                            )
+                                        ]
                                 }
                     })
         yield! actorRead Api.caseGet HumanCaseDocument.ofCore (Outcome.Succeeded caseRead)

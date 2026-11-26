@@ -8,216 +8,268 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 open ClaimCore.Domain.Tasks.Party
 
-let private subjectInput = field BusinessField.CaseReference
+let private referenceTarget = InputTarget.Field BusinessField.CaseReference
+let private referenceInput = target referenceTarget
 
 let declaration =
-    { create
-          "case.open"
-          AggregateKind.Family
-          ActSubject.Case
-          true
-          ActFamily.Business
-          Consequence.Routine
-          [ Capability.Register ]
-          (operation
-           :: (required subjectInput |> retained)
-           :: revision
-           :: group TaskInputMode.Optional RecordGroup.Registration)
-          [ PartyTasks.collection ] with
-        SubjectInput = Some subjectInput
-    }
+    create
+        "case.open"
+        AggregateKind.Family
+        ActSubject.Case
+        true
+        ActFamily.Business
+        Consequence.Routine
+        [ Capability.Register ]
+        (operation
+         :: (optional referenceInput |> retained)
+         :: revision
+         :: group TaskInputMode.Optional RecordGroup.Registration)
+        [ PartyTasks.collection ]
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command =
-    {
-        Reference: CaseReference
-        Registration: Registration
-    }
+let private intent policy (inputs: InputMap) =
+    match Map.tryFind referenceInput inputs.Values with
+    | None -> Ok OpeningIntent.Automatic
+    | Some(InputValue.Text value) ->
+        CaseReference.parseCustom value
+        |> Parsing.at referenceTarget
+        |> Result.bind (fun reference ->
+            if CaseReferencePolicy.allowsCustom policy then
+                Ok(OpeningIntent.Custom reference)
+            else
+                Error(Parsing.issue referenceTarget Violation.CustomReferenceNotAllowed))
+    | Some _ -> Error(Parsing.issue referenceTarget Violation.TextRequired)
 
-let private reference inputs =
-    Parsing.scalar (InputTarget.Field BusinessField.CaseReference) CaseReference.parse inputs
-
-let private parse admit reference fields =
+let private facts policy admit inputs =
     Admission.map2
-        (fun reference registration ->
-            {
-                Reference = reference
-                Registration = registration
-            })
-        reference
-        (CaseParsing.registration admit fields)
+        (fun reference registration -> reference, registration)
+        (intent policy inputs)
+        (CaseParsing.registration admit (CaseParsing.values inputs))
 
 let check inputs =
-    let facts =
-        Parsing.check
-            (fun inputs -> parse (fun _ -> Ok) (reference inputs) (CaseParsing.values inputs))
-            inputs
+    let syntax =
+        Parsing.check (facts CaseReferencePolicy.CustomAllowed (fun _ -> Ok)) inputs
 
     match PartyTasks.parseRows true inputs with
-    | Error(Rejection.Input issues) -> facts @ TaskInputIssues.toList issues
-    | _ -> facts
+    | Error(Rejection.Input issues) -> syntax @ TaskInputIssues.toList issues
+    | _ -> syntax
 
-let private gate (state: DecisionFacts option) =
-    match state with
-    | Some _ -> Some(Refusal.Case CaseRefusal.CaseAlreadyExists)
-    | None -> None
+let editableInputs policy =
+    TaskDeclaration.editableInputs declaration
+    |> List.filter (fun input -> input <> referenceInput || CaseReferencePolicy.allowsCustom policy)
 
-let availability environment state binding =
-    let admission = FamilyRules.permission environment Scope.Installation capability
+let availability (environment: FamilyEnvironment) (state: DecisionFacts option) binding =
+    let permission = FamilyRules.permission environment Scope.Installation capability
 
     let blocked =
-        match admission, binding with
+        match permission, binding with
         | Error refusal, _ -> Some refusal
-        | _, Binding.CaseNew expected when expected = Revision.zero ->
-            gate state
-            |> Option.orElse (
-                if environment.Maintenance then
-                    Some Refusal.RegisterMaintenance
-                else
-                    None
-            )
-        | _ -> Some(Refusal.revisionConflict Revision.zero)
+        | _, Binding.CaseNew expected when expected = Revision.zero && state.IsNone ->
+            if environment.Maintenance then
+                Some Refusal.RegisterMaintenance
+            else
+                None
+        | _, Binding.CaseNew expected when expected <> Revision.zero ->
+            Some(Refusal.revisionConflict Revision.zero)
+        | _ -> Some FamilyRules.unavailable
 
-    Declarations.availability declaration blocked
+    let available = Declarations.availability declaration blocked
 
-let decide
+    { available with
+        Applicable = available.Applicable && state.IsNone
+        Editable = editableInputs environment.CaseReferencePolicy
+    }
+
+let private gates
     (context: TaskContext)
     (environment: FamilyEnvironment)
     (state: DecisionFacts option)
-    binding
-    inputs
+    expected
+    syntaxValid
     =
-    let fields = CaseParsing.values inputs
-    let reference = reference inputs
-    let syntax = check inputs
+    let decision =
+        { context.Decision with
+            Access = environment.Requester
+            Maintenance = environment.Maintenance
+        }
 
+    (if decision.Principal = environment.RequesterPrincipal then
+         FamilyRules.permission environment Scope.Installation capability
+     else
+         Error FamilyRules.unavailable)
+    |> Result.bind (fun () -> DecisionContext.lifetime decision context.Stamp.OperationId)
+    |> Parsing.reject
+    |> Result.bind (fun () ->
+        if syntaxValid && state.IsSome then
+            Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
+        else
+            DecisionContext.maintenance decision |> Parsing.reject)
+    |> Result.bind (fun () ->
+        if syntaxValid && expected <> Revision.zero then
+            Error(Rejection.Refused(Refusal.revisionConflict Revision.zero))
+        else
+            Ok())
+
+let private opening context reference registration parties =
+    {
+        Context = context
+        ReferenceIntent = reference
+        Registration = registration
+        Parties = parties
+    }
+
+let private combine facts rows =
+    match facts, rows with
+    | Ok(reference, registration), Ok parties -> Ok(reference, registration, parties)
+    | Error(Rejection.Input first), Error(Rejection.Input last) ->
+        let issues = TaskInputIssues.toList first @ TaskInputIssues.toList last
+        Error(Rejection.Input(TaskInputIssues.ofList issues |> Option.get))
+    | Error error, _
+    | _, Error error -> Error error
+
+let admit (context: TaskContext) (environment: FamilyEnvironment) state binding inputs =
     match binding, context.Decision.BusinessDate with
     | Binding.CaseNew expected, Some today ->
-        let decision =
-            { context.Decision with
-                Access = environment.Requester
-                Maintenance = environment.Maintenance
-            }
-
-        DecisionContext.admit
-            decision
-            context.Stamp.OperationId
-            (if decision.Principal <> environment.RequesterPrincipal then
-                 Error FamilyRules.unavailable
-             else
-                 FamilyRules.permission environment Scope.Installation capability)
-            (fun () ->
-                (if not syntax.IsEmpty then None else gate state)
-                |> Option.map Error
-                |> Option.defaultValue (Ok()))
+        gates context environment state expected (List.isEmpty (check inputs))
         |> Result.bind (fun () ->
-            if not syntax.IsEmpty || expected = Revision.zero then
-                Ok()
-            else
-                Error(Refusal.revisionConflict Revision.zero))
-        |> Result.bind (fun () -> parse (CaseAdmission.fieldAdmission today None) reference fields)
-        |> Result.bind (fun command ->
-            if (environment.ReferenceOwner command.Reference).IsSome then
-                Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
-            else
-                Ok command)
-        |> Parsing.reject
-        |> Result.bind (fun command ->
-            PartyTasks.parseRows (context.Decision.Lifetime = DecisionLifetime.Recorded) inputs
-            |> Result.map (fun parties -> command, parties))
-        |> Result.map (fun (command, parties) ->
-            let id = CaseId.ofOperationId context.Stamp.OperationId
-
-            [
-                { FamilyRules.change
-                      context
-                      id
-                      (CaseId.value id)
-                      Revision.first
-                      (PartValue.Case
-                          {
-                              Disposition = None
-                              ReopenReason = None
-                              Reference = Some command.Reference
-                              Lifecycle = Lifecycle.Active
-                              Handling = Handling.Open
-                              Content =
-                                  Some
-                                      {
-                                          Registration = command.Registration
-                                          Finance = FinancialPosition.undecided
-                                      }
-                          }) with
-                    NaturalKey = Some(CaseReference.format command.Reference)
-                }
-            ]
-            @ (parties
-               |> List.map (fun (ordinal, party) ->
-                   PartyTasks.initial
-                       context
-                       id
-                       (PartyId.derive context.Stamp.OperationId ordinal)
-                       (Some party))))
-        |> Result.map (TaskContext.changes context)
+            combine
+                (facts
+                    environment.CaseReferencePolicy
+                    (CaseAdmission.fieldAdmission today None)
+                    inputs
+                 |> Parsing.reject)
+                (PartyTasks.parseRows
+                    (context.Decision.Lifetime = DecisionLifetime.Recorded)
+                    inputs))
+        |> Result.map (fun (reference, registration, parties) ->
+            opening context reference registration parties)
     | _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained (context: TaskContext) (environment: FamilyEnvironment) state binding inputs =
-    match binding with
-    | Binding.CaseNew expected when expected = Revision.zero ->
-        DecisionContext.admit
-            { context.Decision with
-                Access = environment.Requester
-                Maintenance = environment.Maintenance
-            }
-            context.Stamp.OperationId
-            (FamilyRules.permission environment Scope.Installation capability)
-            (fun () -> gate state |> Option.map Error |> Option.defaultValue (Ok()))
-        |> Result.bind (fun () -> reference inputs)
-        |> Result.map (fun reference ->
-            let id = CaseId.ofOperationId context.Stamp.OperationId
+let preview (opening: AdmittedOpening) =
+    {
+        OpeningReview.Case =
+            CaseDescription.opening (OpeningIntent.requested opening.Intent) opening.Registration
+        Parties = opening.Parties |> List.map (snd >> PartDescriptions.openingParty)
+    }
 
-            [
-                { FamilyRules.change
-                      context
-                      id
-                      (CaseId.value id)
-                      Revision.first
-                      (PartValue.Case
-                          {
-                              Reference = Some reference
-                              Lifecycle = Lifecycle.Active
-                              Handling = Handling.Open
-                              Content = None
-                              Disposition = None
-                              ReopenReason = None
-                          }) with
-                    NaturalKey = Some(CaseReference.format reference)
-                }
-            ]
-            @ (PartyTasks.rows inputs
-               |> List.map (fun row ->
-                   PartyTasks.initial
-                       context
-                       id
-                       (PartyId.derive context.Stamp.OperationId row.Ordinal)
-                       None)))
-        |> Parsing.reject
-        |> Result.map (TaskContext.changes context)
-    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+let private changes (context: TaskContext) reference registration parties =
+    let id = CaseId.ofOperationId context.Stamp.OperationId
+
+    [
+        { FamilyRules.change
+              context
+              id
+              (CaseId.value id)
+              Revision.first
+              (PartValue.Case
+                  {
+                      Disposition = None
+                      ReopenReason = None
+                      Reference = Some reference
+                      Lifecycle = Lifecycle.Active
+                      Handling = Handling.Open
+                      Content =
+                          registration
+                          |> Option.map (fun registration ->
+                              {
+                                  Registration = registration
+                                  Finance = FinancialPosition.undecided
+                              })
+                  }) with
+            NaturalKey = Some(CaseReference.format reference)
+        }
+        yield!
+            parties
+            |> List.map (fun (ordinal, party) ->
+                PartyTasks.initial
+                    context
+                    id
+                    (PartyId.derive context.Stamp.OperationId ordinal)
+                    party)
+    ]
+    |> TaskContext.changes context
+
+let private issuance intent reference owner =
+    let matches =
+        match intent with
+        | OpeningIntent.Automatic ->
+            CaseReference.isGenerated reference
+            && reference = CaseReference.canonical reference
+        | OpeningIntent.Custom requested -> requested = reference
+
+    if not matches then
+        Error(Rejection.InvalidState RecordViolation.ReferenceMismatch)
+    elif Option.isSome owner then
+        Error(Rejection.Refused(Refusal.Case CaseRefusal.ReferenceUnavailable))
+    else
+        Ok()
+
+let accept candidate owner (opening: AdmittedOpening) =
+    issuance opening.Intent candidate owner
+    |> Result.map (fun () ->
+        changes
+            opening.Context
+            candidate
+            (Some opening.Registration)
+            (opening.Parties |> List.map (fun (ordinal, party) -> ordinal, Some party)))
+
+let private referenceEvidence (context: TaskContext) (accepted: PartChange list) =
+    let id = CaseId.ofOperationId context.Stamp.OperationId
+
+    match accepted with
+    | first :: rest when
+        first.Aggregate = AggregateReference.Family id
+        && first.PartId = CaseId.value id
+        && first.Revision = Revision.first
+        && first.Stamp = context.Stamp
+        && not (rest |> List.exists (fun change -> change.Kind = PartKind.Case))
+        ->
+        match first.Value with
+        | PartValue.Case { Reference = Some reference } when
+            first.NaturalKey = Some(CaseReference.format reference)
+            ->
+            Ok reference
+        | _ -> Error(Rejection.InvalidState RecordViolation.ReferenceMismatch)
+    | _ -> Error(Rejection.InvalidState RecordViolation.InvalidHistoryStart)
+
+let replay context (environment: FamilyEnvironment) state binding inputs retainedOnly accepted =
+    if retainedOnly then
+        match binding with
+        | Binding.CaseNew expected ->
+            gates context environment state expected true
+            |> Result.bind (fun () ->
+                intent environment.CaseReferencePolicy inputs |> Parsing.reject)
+            |> Result.bind (fun intent ->
+                referenceEvidence context accepted
+                |> Result.bind (fun candidate ->
+                    issuance intent candidate (environment.ReferenceOwner candidate)
+                    |> Result.map (fun () ->
+                        changes
+                            context
+                            candidate
+                            None
+                            (PartyTasks.rows inputs |> List.map (fun row -> row.Ordinal, None)))))
+        | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+    else
+        admit context environment state binding inputs
+        |> Result.bind (fun opening ->
+            referenceEvidence context accepted
+            |> Result.bind (fun candidate ->
+                accept candidate (environment.ReferenceOwner candidate) opening))
 
 let task =
-    Task.Family
-        {
-            Declaration = declaration
-            Authorize =
-                fun principal access _ _ ->
-                    FamilyRules.permissionFor principal access Scope.Installation capability
-            Check = check
-            Availability = availability
-            Decide = decide
-            DecideRetained = decideRetained
-            DecisionFactsAvailable = fun _ _ -> true
-            Describe = PartDescriptions.family
-        }
+    {
+        OpeningTask.Declaration = declaration
+        Authorize =
+            fun principal access _ _ ->
+                FamilyRules.permissionFor principal access Scope.Installation capability
+        Check = check
+        Availability = availability
+        EditableInputs = editableInputs
+        Admit = admit
+        Preview = preview
+        Accept = accept
+        Replay = replay
+    }

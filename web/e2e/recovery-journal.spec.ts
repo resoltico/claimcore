@@ -256,7 +256,7 @@ test("a first explicit non-start keeps the draft and leaves no unconfirmed recor
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `JOURNAL-REFUSED-${randomUUID()}`;
+  const reference = `JOURNAL-REFUSED-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   const { operationId } = await reviewDraft(page);
   let intercepted = 0;
@@ -285,7 +285,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   context,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `JOURNAL-COMMIT-${randomUUID()}`);
+  await startOpen(page, `JOURNAL-COMMIT-${randomUUID().slice(0, 8)}`);
   const identity = await reviewDraft(page);
   // Inject loss of the native completion notification after the real transaction has committed.
   await page.evaluate(() => {
@@ -381,7 +381,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
-  await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
+  await openCase(page, `JOURNAL-ACCEPTED-${randomUUID().slice(0, 8)}`);
   await adapter(page);
   const scope = await scopeFor(page);
   await startClose(page);
@@ -833,7 +833,7 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     expect(await records(page, scope)).toEqual([record]);
     await goToView(page, "cases");
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
-    await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
+    await openCase(page, `RECOVERY-REFRESH-${randomUUID().slice(0, 8)}`);
     const contextReply = (await (await refreshed).json()) as ResponseFor<"context", "HUMAN">;
     if (
       contextReply.representation !== "HUMAN" ||
@@ -977,7 +977,7 @@ test("one-step note delivery journals first and recovers the same interrupted op
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
-  await openCase(page, `JOURNAL-NOTE-${randomUUID()}`);
+  await openCase(page, `JOURNAL-NOTE-${randomUUID().slice(0, 8)}`);
   await adapter(page);
   const scope = await scopeFor(page);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));

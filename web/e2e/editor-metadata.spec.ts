@@ -8,7 +8,7 @@ import { expectAccessible, openAuthenticated, progress } from "./session-helpers
 test("prefills routed metadata and confirms discard before changing acts from the case", async ({
   page,
 }) => {
-  const caseReference = `DESCRIPTORS-${randomUUID()}`;
+  const caseReference = `DESCRIPTORS-${randomUUID().slice(0, 8)}`;
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await startAct(page, "case.amendRegistration", "en");

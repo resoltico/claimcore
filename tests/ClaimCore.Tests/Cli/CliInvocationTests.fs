@@ -540,6 +540,7 @@ let private peoplePreviewFrame
             OperationReview.ChangesOwnSignInIdentity = false
             Task = input.Task
             Binding = (Submissions.command input).Binding
+            Opening = None
             Target = ReviewTarget.Person target
             References =
                 {

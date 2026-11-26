@@ -107,6 +107,14 @@ module ReplyCodecs =
                      |> field "caseId" fst ResponseScalars.caseId
                      |> field "caseReference" snd ResponseScalars.caseReference)
                 variant
+                    "OPENING"
+                    ReviewTarget.Opening
+                    (function
+                    | ReviewTarget.Opening value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> optionalField "requestedReference" id ResponseScalars.caseReference)
+                variant
                     "PERSON"
                     ReviewTarget.Person
                     (function
@@ -116,22 +124,25 @@ module ReplyCodecs =
             ]
 
     let review =
-        (record (fun task target references binding changes context changesOwnSignInIdentity ->
-            {
-                OperationReview.Task = task
-                Target = target
-                References = references
-                Binding = binding
-                Changes = changes
-                Context = context
-                ChangesOwnSignInIdentity = defaultArg changesOwnSignInIdentity false
-            })
+        (record
+            (fun task target references binding changes opening context changesOwnSignInIdentity ->
+                {
+                    OperationReview.Task = task
+                    Target = target
+                    References = references
+                    Binding = binding
+                    Changes = changes
+                    Opening = opening
+                    Context = context
+                    ChangesOwnSignInIdentity = defaultArg changesOwnSignInIdentity false
+                })
         : Fields<OperationReview, _>)
         |> field "task" _.Task TaskVocabulary.codec
         |> field "target" _.Target target
         |> field "references" _.References PartDescriptionCodecs.references
         |> field "binding" _.Binding ClaimCore.RecordFormat.BindingCodecs.binding
-        |> field "changes" _.Changes (boundedList 1 50 PartDescriptionCodecs.part)
+        |> field "changes" _.Changes (list 50 PartDescriptionCodecs.part)
+        |> optionalField "opening" _.Opening PartDescriptionCodecs.opening
         |> field "context" _.Context ResponseCodecs.runtimeContext
         |> optionalField
             "changesOwnSignInIdentity"

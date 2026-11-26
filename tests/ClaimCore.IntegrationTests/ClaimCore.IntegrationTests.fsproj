@@ -9,6 +9,7 @@
     <Compile Include="Storage/LedgerStructureTests.fs" />
     <Compile Include="Attachments/AttachmentLedgerTests.fs" />
     <Compile Include="Operations/SubmissionServiceTests.fs" />
+    <Compile Include="Operations/CaseReferenceTests.fs" />
     <Compile Include="Operations/ReceiptDisclosureTests.fs" />
     <Compile Include="Cases/PaymentPositionTests.fs" />
     <Compile Include="Operations/OperationStorageTests.fs" />

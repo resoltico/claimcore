@@ -18,6 +18,7 @@ module internal RequesterContextQueries =
     let contextResult
         (services: ServiceContext)
         observedAt
+        policy
         (maintenance: RegisterMaintenance)
         (actor: AccessView)
         (roles: ActorRoleSummary list)
@@ -41,7 +42,7 @@ module internal RequesterContextQueries =
                     if maintenance.Active then
                         []
                     else
-                        Advice.installationOffers principal actor
+                        Advice.installationOffers policy principal actor
                 Capability =
                     Capability.all
                     |> List.filter (fun capability ->
@@ -106,6 +107,7 @@ module internal RequesterContextQueries =
                     contextResult
                         services
                         facts.ObservedAt
+                        facts.CaseReferencePolicy
                         facts.Facts.Maintenance
                         facts.Facts.People
                         facts.Facts.AssignedRoles)

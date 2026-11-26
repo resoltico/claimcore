@@ -220,13 +220,14 @@ module internal CaseWorkReads =
             return families
         }
 
-    let reminderActs principal actor maintenance (family: DecisionFacts option) value =
+    let reminderActs policy principal actor maintenance (family: DecisionFacts option) value =
         match family with
         | None -> []
         | Some family ->
             let environment =
                 {
-                    FamilyEnvironment.Requester = actor
+                    FamilyEnvironment.CaseReferencePolicy = policy
+                    Requester = actor
                     RequesterPrincipal = principal
                     Maintenance = maintenance
                     RelatedCase = fun _ -> None
@@ -350,6 +351,7 @@ module internal CaseWorkReads =
                                     RecordedBy = author
                                     Offers =
                                         reminderActs
+                                            tx.CaseReferencePolicy
                                             services.Principal
                                             actor
                                             maintenance

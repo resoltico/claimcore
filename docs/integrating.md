@@ -157,8 +157,11 @@ only the fields that the task declares. Send `{operationId, task, binding, input
 tokens. Omit Update inputs to keep values; use `null` only where `clearable` permits it. Existing-person
 changes select an actor ID and require `binding.expectedRevision`. Acquire the positive account
 `revision` from the DATA `people.grants` reply (or use the supplied HUMAN action binding). Creation
-of a case or person uses an explicit zero revision and no new-target selector. `case.open` authors
-`field:caseReference` in `inputs`. Creating a reminder or note selects its parent case, without a
+of a case or person uses an explicit zero revision and no new-target selector. For `case.open`, omit
+`field:caseReference` to request assignment at acceptance. Only `CUSTOM_ALLOWED` installations
+permit a caller to supply it. The raw scalar schema allows null so the server can identify the
+invalid field. Admission rejects null, an empty string and malformed input. The same rules apply to
+people and service accounts. Creating a reminder or note selects its parent case, without a
 child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
 selection, work, reminder, note and person shapes. A nonledger command control supplies its typed
 request directly.
@@ -172,6 +175,20 @@ from the same review. `ACTOR_CHANGED` and `FAMILY_CHANGED` require explicit fres
 authored input; never refresh and execute automatically. Exact accepted retries retain their original
 binding, including these preconditions. The exact operation request is specified by OpenAPI; use
 `claimcore schema operation.preview request` or `claimcore schema operation.execute request` to inspect it.
+
+The DATA opening preview identifies an `OPENING` target and supplies typed `opening` changes.
+There is no Case ID or case link to use during preview. A custom request can appear as
+`requestedReference`; reservation is checked only when the operation is submitted. Preserve the
+same inputs and operation ID from review to submission. The accepted receipt contains the issued
+reference and Case ID. Use the ID to navigate to the current record. Access to the original opening
+snapshot determines whether a replay or operation lookup returns the historical opening reference.
+
+Generated references use `CC-XXXX-XXXX-XXXX-XXXX-DD`, with sixteen Crockford Base32 payload symbols
+and two decimal check digits. Exact selectors require the hyphens and validate the check digits.
+ASCII letter case is ignored for exact reference identity. Partial search accepts fragments.
+Custom values use 1–32 ASCII letters, digits and single hyphens between groups, starting with a
+letter. The whole `CC-` prefix is reserved. For CLI callers, replace the former positional opening
+reference with `--case-reference REF` when using custom assignment.
 
 Typed offline checks apply the same ranges and applicability rules to supplied preconditions.
 Draft syntax may omit metadata for later explicit acquisition; complete erasure input requires its

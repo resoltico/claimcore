@@ -7,6 +7,7 @@ open System.Text.Json
 open System.Collections.Generic
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Application.Contracts
@@ -161,15 +162,20 @@ let grammar =
                                 "A standalone alias requests this command's help"
                         | other -> failtestf "Expected command help: %A" other
 
-                        let input =
-                            (verb [ "case"; "get"; "--"; alias ]).Invocation
-                            |> Frames.value Api.caseGet
-                            |> Option.get
-
-                        Expect.equal
-                            input.Target
-                            (CaseSelector.Reference alias)
-                            "The sentinel protects even a help alias")
+                        match CliInvocations.admit [ "case"; "get"; "--"; alias ] |> required with
+                        | CliInvocation.Verb values ->
+                            match
+                                Grammar.prepare
+                                    (fun () -> failtest "Queries never allocate")
+                                    values
+                            with
+                            | Error issues ->
+                                Expect.equal
+                                    issues
+                                    [ UsageError.InvalidValue("--case-reference", alias) ]
+                                    "The sentinel makes a help alias an invalid literal reference"
+                            | Ok _ -> failtest "Expected a malformed literal reference."
+                        | other -> failtestf "Expected literal command: %A" other)
         ]
 
 [<Tests>]

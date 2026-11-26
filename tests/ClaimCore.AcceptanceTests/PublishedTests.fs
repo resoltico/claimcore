@@ -35,10 +35,7 @@ let private verbArguments verb (bytes: byte array) =
         | _ -> scalarFlag value |> Seq.ofList
 
     let values (element: JsonElement) =
-        element.EnumerateObject()
-        |> Seq.filter (fun field -> field.Name <> "field:caseReference")
-        |> Seq.collect flags
-        |> Seq.toList
+        element.EnumerateObject() |> Seq.collect flags |> Seq.toList
 
     let details = values (input.GetProperty "inputs")
 
@@ -48,15 +45,10 @@ let private verbArguments verb (bytes: byte array) =
         else
             [ "--expected-revision"; binding.GetProperty("expectedRevision").GetRawText() ]
 
-    [
-        "case"
-        verb
-        (match binding.TryGetProperty "target" with
-         | true, target -> target.GetProperty("caseReference")
-         | _ -> input.GetProperty("inputs").GetProperty("field:caseReference"))
-            .GetString()
-        |> nonNull
-    ]
+    [ "case"; verb ]
+    @ (match binding.TryGetProperty "target" with
+       | true, target -> [ target.GetProperty("caseReference").GetString() |> nonNull ]
+       | _ -> [])
     @ (match input.TryGetProperty "operationId" with
        | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
        | _ -> [])
@@ -541,7 +533,7 @@ let private inputBoundaries fixture =
         "Forged PKCE state refuses"
 
 let private supplementary fixture =
-    let reference = Guid.NewGuid().ToString("N") + "-unicode"
+    let reference = "Unicode-" + Guid.NewGuid().ToString("N").Substring(0, 16)
     let name = String.replicate 80 "🙂"
 
     let values =
@@ -594,6 +586,43 @@ let private qualify () =
         PublishedAssets.qualify fixture
         CliDiscovery.qualify fixture
         setup fixture
+        let operation = id ()
+        let command = [ "case"; "open"; "--operation-id"; operation ]
+
+        let review =
+            verb fixture fixture.Environment (command @ [ "--preview" ]) 0
+            |> require "REVIEWED"
+
+        let target = review.GetProperty("review").GetProperty("target")
+
+        Expect.equal
+            (target.GetProperty("kind").GetString())
+            "OPENING"
+            "Preview has a pending target"
+
+        Expect.isFalse
+            (fst (target.TryGetProperty "caseId"))
+            "Opening preview has no routable Case ID"
+
+        let accepted = verb fixture fixture.Environment command 0 |> require "ACCEPTED"
+        let subject = accepted.GetProperty "subject"
+
+        Expect.equal
+            (subject.GetProperty("caseId").GetString())
+            operation
+            "Acceptance uses the operation's Case ID"
+
+        Expect.isTrue
+            (System.Text.RegularExpressions.Regex.IsMatch(
+                subject.GetProperty("caseReference").GetString() |> nonNull,
+                "^CC-[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}-[0-9]{2}$"
+            ))
+            "Published CLI returns the generated case reference"
+
+        sameRecordedReceipt fixture "automatic-opening" accepted (fun () ->
+            verb fixture fixture.Environment command 0 |> require "ALREADY_ACCEPTED")
+        |> ignore
+
         CliCaseWork.qualify fixture
         CliRecovery.qualify fixture
         CliDelivery.qualify fixture
@@ -614,6 +643,74 @@ let tests =
         "published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint"
         (async { do! qualify () |> Async.AwaitTask })
 
+
+let private qualifySystemOnly () =
+    task {
+        use fixture =
+            new PublishedFixture.Fixture(referencePolicy = CaseReferencePolicy.SystemAssignedOnly)
+
+        do! fixture.Start()
+        setup fixture
+
+        let requester =
+            verb fixture fixture.Environment [ "context" ] 0
+            |> require "SUCCEEDED"
+            |> fun value -> value.GetProperty "requester"
+
+        Expect.equal
+            (requester.GetProperty("kind").GetString())
+            "ACTIVE"
+            "The service account is authorized"
+
+        let operation = id ()
+        let command = [ "case"; "open"; "--operation-id"; operation ]
+
+        let refusal =
+            verb
+                fixture
+                fixture.Environment
+                (command @ [ "--case-reference"; "SERVICE-OVERRIDE" ])
+                2
+            |> require "REJECTED"
+
+        Expect.equal
+            (refusal.GetProperty("code").GetString())
+            "INVALID_INPUT"
+            "The API rejects the override"
+
+        let issue = refusal.GetProperty("issues").EnumerateArray() |> Seq.exactlyOne
+
+        Expect.equal
+            (issue.GetProperty("input").GetString())
+            "field:caseReference"
+            "The API identifies the authored field"
+
+        Expect.equal
+            (issue.GetProperty("code").GetString())
+            "CUSTOM_REFERENCE_NOT_ALLOWED"
+            "The installed system-only policy applies to the service"
+
+        let accepted = verb fixture fixture.Environment command 0 |> require "ACCEPTED"
+        let subject = accepted.GetProperty "subject"
+
+        Expect.equal
+            (subject.GetProperty("caseId").GetString())
+            operation
+            "The refusal leaves the operation available"
+
+        Expect.stringStarts
+            (subject.GetProperty("caseReference").GetString() |> nonNull)
+            "CC-"
+            "Omission accepts an automatic reference"
+
+        fixture.Complete()
+    }
+
+[<Tests>]
+let systemReferencePolicy =
+    testCaseAsync
+        "published system-only policy applies to a service account"
+        (async { do! qualifySystemOnly () |> Async.AwaitTask })
 
 [<Tests>]
 let receiptContentGuards = ReceiptObservations.contentGuards

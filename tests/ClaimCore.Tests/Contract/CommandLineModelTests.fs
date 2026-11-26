@@ -56,7 +56,8 @@ let tests =
                 let successes =
                     [
                         DatabaseSuccess.Initialized(
-                            Guid.Parse "10000000-0000-7000-8000-000000000001"
+                            Guid.Parse "10000000-0000-7000-8000-000000000001",
+                            CaseReferencePolicy.SystemAssignedOnly
                         )
                         DatabaseSuccess.MasterKeyRotated(
                             Guid.Parse "10000000-0000-7000-8000-000000000001"

@@ -197,7 +197,7 @@ test("preserves historical profile contact and distinguishes global and case rol
 }) => {
   await openAuthenticated(page);
   const subject = `AUDIT-VIEW-${randomUUID()}`;
-  const reference = `ROLE-VIEW-${randomUUID()}`;
+  const reference = `ROLE-VIEW-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const target = {
     kind: "HUMAN",

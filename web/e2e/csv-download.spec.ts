@@ -86,7 +86,7 @@ test("downloads complete filtered CSV bytes for the four existing query selectio
   test.setTimeout(120_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const reference = `CSV-${randomUUID()}`;
+  const reference = `CSV-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await applyPeople(page, {
     operationId: operationId(),

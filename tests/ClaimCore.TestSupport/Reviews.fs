@@ -35,6 +35,7 @@ let caseReview task binding (before: CaseSnapshot option) (after: CaseSnapshot) 
     {
         OperationReview.ChangesOwnSignInIdentity = false
         Task = task
+        Opening = None
         Target = ReviewTarget.Case(after.CaseId, after.Reference)
         Binding = binding
         References = { Actors = []; Cases = [] }
@@ -83,6 +84,7 @@ let workReview
         OperationReview.ChangesOwnSignInIdentity = false
         Task = task
         Binding = binding
+        Opening = None
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = actors; Cases = [] }
         Context = context
@@ -122,6 +124,7 @@ let reminderReview
         OperationReview.ChangesOwnSignInIdentity = false
         Task = task
         Binding = binding
+        Opening = None
         Target = ReviewTarget.Case(parent.CaseId, parent.Reference)
         References = { Actors = []; Cases = [] }
         Context = context
@@ -157,6 +160,7 @@ let personReview
         OperationReview.ChangesOwnSignInIdentity = false
         Task = task
         Binding = binding
+        Opening = None
         Target = ReviewTarget.Person target
         References = references
         Context = context

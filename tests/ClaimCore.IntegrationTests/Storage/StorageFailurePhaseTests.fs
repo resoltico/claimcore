@@ -91,13 +91,15 @@ let private controls (database: PostgresFixture.Database) =
                  + "'; RETURN NEW; END $$")
                 [||]
 
+        let requestCanary = "STORAGE-REFERENCE-CANARY"
+
         let execute number =
             Service.executeSubmission
                 actor
                 (((request
                     (database.Fixture)
                     (number)
-                    (sensitive)
+                    (requestCanary)
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
@@ -116,7 +118,8 @@ let private controls (database: PostgresFixture.Database) =
                 |> Text.Encoding.UTF8.GetString
 
             Expect.isFalse
-                (wire.Contains(sensitive, StringComparison.Ordinal))
+                (wire.Contains(sensitive, StringComparison.Ordinal)
+                 || wire.Contains(requestCanary, StringComparison.Ordinal))
                 "No request or provider canary reaches the public fault"
 
         do!

@@ -220,7 +220,10 @@ let private ordering () =
     let provision =
         {
             Task = "people.provisionOwner"
-            Inputs = T.inputs T.profileInputs
+            Inputs =
+                T.inputs (
+                    T.text InputTarget.CaseReferencePolicy "CUSTOM_ALLOWED" :: T.profileInputs
+                )
         }
     // Hand-authored expectations pin refusal priority, not the current implementation's output.
     // Actor counts include other unloaded actors; last-owner rows target the requesting owner itself.

@@ -26,6 +26,8 @@ let private signalled () =
         let mutable complete = false
 
         try
+            let! _ = ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
+
             let configuration =
                 typeof<Administration>
                     .Assembly
@@ -237,6 +239,7 @@ let private confirmedCleanup () =
         let! database = PostgresFixture.create ()
 
         try
+            let! _ = ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
             use cancellation = new CancellationTokenSource()
 
             let mutable confirmedBeforeReturn = false

@@ -71,12 +71,7 @@ let private admissionInsideFormat () =
     let name = String.replicate 80 "😀"
 
     let decide value =
-        ClaimCore.Domain.Tasks.Case.Open.decide
-            (context 1)
-            environment
-            None
-            (Binding.CaseNew Revision.zero)
-            (authored value)
+        openCustom (context 1) environment None (Binding.CaseNew Revision.zero) (authored value)
 
     Expect.isOk (decide name) "320 UTF-8 bytes admit"
     Expect.isOk (format (String.replicate 81 "a")) "Format still admits"

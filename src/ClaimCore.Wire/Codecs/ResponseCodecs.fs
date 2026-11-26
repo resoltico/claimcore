@@ -341,10 +341,23 @@ module ResponseCodecs =
         |> named "CaseView"
 
     let installationOffer =
+        let editable =
+            let opening = TaskDeclarations.describe "case.open" |> _.EditableInputs
+
+            Vocabulary.define TaskInputId.vocabularyName TaskInputId.all TaskInputId.token
+            |> VocabularyCodec.select (fun input -> List.contains input opening)
+            |> list opening.Length
+
         tagged
             "InstallationOffer"
             [
-                unitVariant "case.open" InstallationOffer.Open
+                variant
+                    "case.open"
+                    InstallationOffer.Open
+                    (function
+                    | InstallationOffer.Open value -> Some value
+                    | _ -> None)
+                    (record id |> field "editable" id editable)
                 variant
                     "PEOPLE_ACT"
                     InstallationOffer.PeopleAct

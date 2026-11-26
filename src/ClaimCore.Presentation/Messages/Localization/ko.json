@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "참조 번호로 사건을 여세요. 알고 있는 등록 정보를 기록하세요.",
-    "source": "39967b35166c"
+    "text": "알고 있는 등록 정보를 입력하여 청구 건을 여세요. 청구 건 참조번호를 비워 두면 자동으로 배정됩니다. 등록부에서 허용하는 경우 사용자 지정 참조번호를 입력할 수 있습니다.",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "첫 소유자 설정",
@@ -423,10 +424,6 @@
     "text": "YYYY-MM-DD 형식의 유효한 날짜를 사용하세요.",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "이미 존재하는 청구 건 참조번호입니다.",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "제어 문자는 사용할 수 없습니다.",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "공백이 아닌 출력 가능한 ASCII 문자 1~80자를 사용하세요.",
-    "source": "a4d1a5f9f416"
+    "text": "유효한 청구 건 참조를 사용하세요. 사용자 지정 참조는 ASCII 문자로 시작하며 문자, 숫자 및 그룹 사이의 하이픈 한 개를 포함하여 최대 32자입니다. CC- 접두사는 시스템 배정 참조에 사용됩니다.",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "유지보수로 변경이 일시 중지되었습니다. 청구 건을 보고 이전 변경을 확인할 수는 있습니다.",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "공백 없는 출력 가능한 ASCII 문자 1~{maximumCharacters}자를 사용하세요. 대소문자가 달라도 같은 청구 건으로 식별되며 원래 표기는 유지됩니다.",
-    "source": "b43a33360aed"
+    "text": "ASCII 문자를 1자 이상 {maximumCharacters}자 이하로 사용하세요. 사용자 지정 참조는 문자로 시작하며 문자, 숫자와 그룹 사이의 하이픈 한 개를 사용합니다. CC- 접두사는 시스템 배정 참조에 사용됩니다.",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "이 청구 건에 사용하는 자체 참조입니다. 예: CLM-2026-0001.",
-    "source": "adde9fba1cc3"
+    "text": "사용자 지정 참조는 삭제 후에도 예약됩니다. 개인정보를 포함하지 마세요.",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "지급 금액을 결정한 날짜입니다.",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "공백 없는 청구 건 참조번호를 입력하세요.",
-    "source": "5722da0c601c"
+    "text": "청구 건 참조와 하이픈을 확인하세요. 사용자 지정 참조는 문자로 시작하고 문자, 숫자, 하이픈을 합쳐 32자 이내로 입력하세요. CC- 접두사는 예약되어 있습니다.",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "여기에서 사용할 수 있는 역할을 선택하세요.",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "이 청구 건에 사용할 참조를 입력하세요.",
-    "source": "d66b4efc4776"
+    "text": "이전 참조로도 이 청구 건을 찾을 수 있습니다. 새 참조에 개인정보를 포함하지 마세요.",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "이전 참조",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "금액과 통화를 모두 입력하세요.",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "사용할 수 없는 청구 건 참조입니다.",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "이 등록부는 모든 청구 건 참조를 자동 배정합니다. 계속하려면 사용자 지정 참조를 제거하세요.",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "청구 건을 열 때 배정됩니다.",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "사용자 지정 청구 건 참조 사용",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "시스템에서만 할당",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "사용자 지정 청구 건 참조번호 허용",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "청구 건 참조번호 정책",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "초기 설정에서 선택한 청구 건 참조번호 할당 정책입니다.",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "사용자가 지정한 청구 건 참조번호를 입력할 수 있게 할지 선택하세요.",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "지원되는 청구 건 참조번호 정책을 선택하세요.",
+    "machineMade": true
   }
 }

@@ -7699,6 +7699,9 @@
           "input:principal.subject": {
             "$ref": "#/components/schemas/InputAtom"
           },
+          "input:caseReferencePolicy": {
+            "$ref": "#/components/schemas/InputAtom"
+          },
           "input:profile.displayName": {
             "$ref": "#/components/schemas/InputAtom"
           },
@@ -8146,9 +8149,9 @@
           },
           "reference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "disclosure": {
             "type": "integer",
@@ -8804,9 +8807,6 @@
       "CaseActAvailabilityReason": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseActAvailabilityReason.CASE_ALREADY_EXISTS"
-          },
-          {
             "$ref": "#/components/schemas/CaseActAvailabilityReason.NOT_OFFERED"
           },
           {
@@ -8822,29 +8822,12 @@
         "discriminator": {
           "propertyName": "code",
           "mapping": {
-            "CASE_ALREADY_EXISTS": "#/components/schemas/CaseActAvailabilityReason.CASE_ALREADY_EXISTS",
             "NOT_OFFERED": "#/components/schemas/CaseActAvailabilityReason.NOT_OFFERED",
             "REGISTER_MAINTENANCE": "#/components/schemas/CaseActAvailabilityReason.REGISTER_MAINTENANCE",
             "RESOURCE_UNAVAILABLE": "#/components/schemas/CaseActAvailabilityReason.RESOURCE_UNAVAILABLE",
             "NOT_AUTHORIZED": "#/components/schemas/CaseActAvailabilityReason.NOT_AUTHORIZED"
           }
         }
-      },
-      "CaseActAvailabilityReason.CASE_ALREADY_EXISTS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "CASE_ALREADY_EXISTS"
-          },
-          "action": {
-            "const": "CHOOSE_ANOTHER_REFERENCE"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
       },
       "CaseActAvailabilityReason.NOT_AUTHORIZED": {
         "type": "object",
@@ -10171,9 +10154,9 @@
           },
           "value": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
@@ -10225,9 +10208,9 @@
         "properties": {
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "handling": {
             "$ref": "#/components/schemas/Handling"
@@ -10969,9 +10952,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "notes": {
             "$ref": "#/components/schemas/CaseNotes"
@@ -11273,9 +11256,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "revision": {
             "type": "integer",
@@ -11488,9 +11471,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
@@ -11786,9 +11769,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "revision": {
             "type": "integer",
@@ -12607,9 +12590,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "items": {
             "type": "array",
@@ -12774,9 +12757,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "revision": {
             "type": "integer",
@@ -12900,9 +12883,9 @@
           },
           "matchedReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "relatedCases": {
             "$ref": "#/components/schemas/RelatedCaseLinks"
@@ -13529,9 +13512,9 @@
           },
           "reference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
@@ -13845,7 +13828,7 @@
             "$ref": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE"
           },
           {
-            "$ref": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS"
+            "$ref": "#/components/schemas/DataRejection.REFERENCE_UNAVAILABLE"
           },
           {
             "$ref": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE"
@@ -13894,7 +13877,7 @@
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "CASE_ALREADY_EXISTS": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS",
+            "REFERENCE_UNAVAILABLE": "#/components/schemas/DataRejection.REFERENCE_UNAVAILABLE",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "SELF_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "DUPLICATE_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -13975,22 +13958,6 @@
           "code",
           "action",
           "attachmentId"
-        ]
-      },
-      "DataRejection.CASE_ALREADY_EXISTS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "CASE_ALREADY_EXISTS"
-          },
-          "action": {
-            "const": "CHOOSE_ANOTHER_REFERENCE"
-          }
-        },
-        "required": [
-          "code",
-          "action"
         ]
       },
       "DataRejection.CASE_DATE_RANGE": {
@@ -14237,6 +14204,22 @@
           "phase",
           "issuedAt",
           "observedAt"
+        ]
+      },
+      "DataRejection.REFERENCE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REFERENCE_UNAVAILABLE"
+          },
+          "action": {
+            "const": "CHOOSE_ANOTHER_REFERENCE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
         ]
       },
       "DataRejection.REMINDER_NOT_OFFERED": {
@@ -15093,17 +15076,17 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "matchedReference": {
             "oneOf": [
               {
                 "type": "string",
-                "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
                 "minLength": 1,
-                "maxLength": 80
+                "maxLength": 32
               },
               {
                 "type": "null"
@@ -15885,9 +15868,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
@@ -16985,8 +16968,10 @@
             "CONTROL_CHARACTERS": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "FORMATTING_CHARACTER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "REFERENCE_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CUSTOM_REFERENCE_NOT_ALLOWED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CASE_REFERENCE_POLICY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CASE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CASE_SELECTION_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -17149,8 +17134,10 @@
               "CONTROL_CHARACTERS",
               "FORMATTING_CHARACTER",
               "REFERENCE_FORMAT",
+              "CUSTOM_REFERENCE_NOT_ALLOWED",
               "COUNTRY_FORMAT",
               "PRINCIPAL_FORMAT",
+              "CASE_REFERENCE_POLICY_FORMAT",
               "CASE_ID_REQUIRED",
               "CASE_SELECTION_INVALID",
               "ACTOR_ID_REQUIRED",
@@ -17274,6 +17261,7 @@
           "input:principal.kind",
           "input:principal.issuer",
           "input:principal.subject",
+          "input:caseReferencePolicy",
           "input:profile.displayName",
           "input:profile.contact",
           "input:profile.digestEmail",
@@ -17366,10 +17354,30 @@
         "properties": {
           "kind": {
             "const": "case.open"
+          },
+          "editable": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "field:incidentDate",
+                "field:receivedDate",
+                "field:incidentCountry",
+                "field:incidentDescription",
+                "field:policyNumber",
+                "field:insurerClaimReference",
+                "field:claimedAmount",
+                "field:claimedCurrency",
+                "field:caseReference",
+                "input:parties"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 10
           }
         },
         "required": [
-          "kind"
+          "kind",
+          "editable"
         ]
       },
       "LifecycleChange": {
@@ -18027,6 +18035,61 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "OpeningCaseDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseFieldDifference"
+            },
+            "minItems": 0,
+            "maxItems": 22
+          },
+          "money": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseMoneyDifference"
+            },
+            "minItems": 0,
+            "maxItems": 22
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "VOIDED",
+              "ERASED"
+            ]
+          }
+        },
+        "required": [
+          "fields",
+          "money",
+          "lifecycle"
+        ]
+      },
+      "OpeningReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "$ref": "#/components/schemas/OpeningCaseDescription"
+          },
+          "parties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartyPartDescription"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "case",
+          "parties"
         ]
       },
       "OperationGetReply": {
@@ -18699,9 +18762,7 @@
             "maxItems": 20
           }
         },
-        "required": [
-          "field:caseReference"
-        ]
+        "required": []
       },
       "OperationInputs.case.recordPayment": {
         "type": "object",
@@ -19772,8 +19833,11 @@
             "items": {
               "$ref": "#/components/schemas/DescribedPart"
             },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 50
+          },
+          "opening": {
+            "$ref": "#/components/schemas/OpeningReview"
           },
           "context": {
             "$ref": "#/components/schemas/RuntimeContext"
@@ -24750,9 +24814,9 @@
           },
           "value": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
@@ -25232,9 +25296,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "attachmentId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25270,9 +25334,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "revision": {
             "type": "integer",
@@ -25322,9 +25386,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "linkId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25356,9 +25420,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "noteId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25394,9 +25458,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "partyId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25480,9 +25544,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "act": {
             "enum": [
@@ -25518,9 +25582,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "revision": {
             "type": "integer",
@@ -26319,9 +26383,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "lifecycle": {
             "enum": [
@@ -27034,9 +27098,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           },
           "claimants": {
             "type": "array",
@@ -27679,6 +27743,9 @@
             "$ref": "#/components/schemas/ReviewTarget.CASE"
           },
           {
+            "$ref": "#/components/schemas/ReviewTarget.OPENING"
+          },
+          {
             "$ref": "#/components/schemas/ReviewTarget.PERSON"
           }
         ],
@@ -27686,6 +27753,7 @@
           "propertyName": "kind",
           "mapping": {
             "CASE": "#/components/schemas/ReviewTarget.CASE",
+            "OPENING": "#/components/schemas/ReviewTarget.OPENING",
             "PERSON": "#/components/schemas/ReviewTarget.PERSON"
           }
         }
@@ -27702,15 +27770,33 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 32
           }
         },
         "required": [
           "kind",
           "caseId",
           "caseReference"
+        ]
+      },
+      "ReviewTarget.OPENING": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "OPENING"
+          },
+          "requestedReference": {
+            "type": "string",
+            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "kind"
         ]
       },
       "ReviewTarget.PERSON": {
@@ -28549,6 +28635,7 @@
           "input:principal.kind",
           "input:principal.issuer",
           "input:principal.subject",
+          "input:caseReferencePolicy",
           "input:profile.displayName",
           "input:profile.contact",
           "input:profile.digestEmail",

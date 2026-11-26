@@ -42,8 +42,8 @@ let private calendar () =
 let private references () =
     for expected, values in
         [
-            true, [ "Demo-1"; String.replicate 80 "A"; "!~<>\"" ]
-            false, [ ""; "a b"; "é"; String.replicate 81 "A"; "a\u0000b"; "a\n" ]
+            true, [ "Demo-1"; String.replicate 32 "A"; "CC-0123-4567-89AB-CDEF-41" ]
+            false, [ ""; "a b"; "é"; String.replicate 33 "A"; "a\u0000b"; "a\n"; "A--B"; "CC-123" ]
         ] do
         for value in values do
             Expect.equal
@@ -52,9 +52,19 @@ let private references () =
                 "Accepted history has permanent reference grammar"
 
             Expect.equal
-                (ClaimCore.Domain.CaseReference.parse value |> Result.isOk)
+                (admits ResponseScalars.caseReference value)
                 expected
                 "Permanent format matches Domain"
+
+    let wrongCheckDigits = "CC-0000-0000-0000-0000-01"
+
+    Expect.isTrue
+        (admits ResponseScalars.reference wrongCheckDigits)
+        "The lexical schema accepts decimal digits"
+
+    Expect.isFalse
+        (admits ResponseScalars.caseReference wrongCheckDigits)
+        "Typed case references validate their checksum"
 
 let private businessAdmission () =
     for reference in [ ""; "a b"; "é" ] do
@@ -138,7 +148,7 @@ let tests =
             testCase "disjoint literal alternatives use equivalent compact enums" literalEnums
             testCase "instants use exact UTC microsecond spelling" timestamps
             testCase "calendar dates exist and have exact spelling" calendar
-            testCase "accepted references preserve printable ASCII identity" references
+            testCase "accepted references have the custom or checked generated grammar" references
             testCase
                 "business request admission and accepted response grammars are distinct"
                 businessAdmission

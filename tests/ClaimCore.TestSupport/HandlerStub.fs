@@ -176,6 +176,7 @@ type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?read
                     {
                         ContextFacts.Facts = facts query.Principal
                         ObservedAt = observed
+                        CaseReferencePolicy = CaseReferencePolicy.CustomAllowed
                     }
             )
 

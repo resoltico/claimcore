@@ -8,7 +8,7 @@ test("confirmed compact departure focuses Recovery and restores the initiating l
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `GUARD-FOCUS-${randomUUID()}`;
+  const reference = `GUARD-FOCUS-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await page.setViewportSize({ width: 320, height: 900 });
   const draft = page.locator('[data-region="NOTES"]').getByRole("textbox", { name: "Note" });
@@ -190,7 +190,7 @@ test("@engine preserves dirty drafts and the Forward branch through Settings and
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `HISTORY-${randomUUID()}`;
+  const reference = `HISTORY-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   const draft = page.getByRole("textbox", { name: "Case reference", exact: true });
   await expect(draft).toHaveValue(reference);
@@ -226,7 +226,7 @@ test("@engine requests a native reload warning after activation and preserves th
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `EXIT-${randomUUID()}`;
+  const reference = `EXIT-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   const warning = page.waitForEvent("dialog");
   await page.evaluate(() => {
@@ -247,7 +247,7 @@ test("@engine preserves the intended multi-entry target during repeated pending 
 }) => {
   await openAuthenticated(page);
   const target = page.url();
-  const reference = `MULTI-${randomUUID()}`;
+  const reference = `MULTI-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/settings$/u);

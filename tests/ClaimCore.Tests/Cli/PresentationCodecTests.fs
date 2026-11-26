@@ -266,8 +266,12 @@ let producerBudgets =
                                         Guid.Parse(sprintf "0f82efaf-3882-7f58-b639-%012d" number)
                                     ),
                                     CaseFixtures.reference (
-                                        number.ToString("D2")
-                                        + String('"', CaseReference.MaximumCharacters - 2)
+                                        "A"
+                                        + number.ToString(
+                                            "D2",
+                                            Globalization.CultureInfo.InvariantCulture
+                                        )
+                                        + String('Z', 29)
                                     )
                                 )
                         }

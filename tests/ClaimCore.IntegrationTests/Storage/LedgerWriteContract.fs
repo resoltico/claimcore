@@ -43,6 +43,7 @@ let internal genesis fixture =
                                         (id fixture 1)
                                         DomainInputs.ownerProfile
                                         []
+                                        CaseReferencePolicy.CustomAllowed
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -271,16 +272,16 @@ let internal operatorFamilyRefusal fixture =
 
         let client, operator =
             match ClaimCore.Domain.Tasks.Registry.find submission.Task with
-            | Some(ClaimCore.Domain.Tasks.Task.Family selected as client) ->
+            | Some(ClaimCore.Domain.Tasks.Task.Opening selected as client) ->
                 client,
-                ClaimCore.Domain.Tasks.Task.Family
+                ClaimCore.Domain.Tasks.Task.Opening
                     { selected with
                         Declaration =
                             { selected.Declaration with
                                 Exposure = TaskExposure.Operator
                             }
                     }
-            | _ -> failtest "Expected a family task"
+            | _ -> failtest "Expected an opening task"
 
         let! result =
             fixture.Store.Write

@@ -246,7 +246,6 @@ module TaskAffordances =
                     ]
             | Refusal.Case(CaseRefusal.NotOffered state) ->
                 "NOT_OFFERED", Map.ofList [ "state", PresentedValue.State(state, None) ]
-            | Refusal.Case CaseRefusal.CaseAlreadyExists -> "CASE_ALREADY_EXISTS", Map.empty
             | Refusal.RegisterMaintenance -> "REGISTER_MAINTENANCE", Map.empty
             | _ ->
                 invalidArg
@@ -301,14 +300,14 @@ module TaskAffordances =
 
     let installationOffer issuer =
         function
-        | InstallationOffer.Open ->
+        | InstallationOffer.Open editable ->
             let task =
                 ClaimCore.Domain.Tasks.Registry.clientDeclarations
                 |> List.find (fun declaration ->
                     TaskDeclaration.bindingShape declaration = BindingShape.CaseNew)
                 |> _.Id
 
-            offered task (Some(Binding.CaseNew Revision.zero)) Map.empty (authored task) Map.empty
+            offered task (Some(Binding.CaseNew Revision.zero)) Map.empty editable Map.empty
         | InstallationOffer.PeopleAct kind ->
             let task = kind
 

@@ -54,6 +54,20 @@ type PartyPartDescription =
         Removed: ValueChange<bool> option
     }
 
+/// A review describes admitted facts without creating a case snapshot or a durable effect.
+type OpeningCaseDescription =
+    {
+        Lifecycle: Lifecycle
+        Fields: CaseFieldDifference list
+        Money: CaseMoneyDifference list
+    }
+
+type OpeningReview =
+    {
+        Case: OpeningCaseDescription
+        Parties: PartyPartDescription list
+    }
+
 type GrantAssignmentChange =
     {
         Grant: ActorGrant

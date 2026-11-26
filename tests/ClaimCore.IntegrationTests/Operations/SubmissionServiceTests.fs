@@ -81,12 +81,8 @@ let private lifecycle (database: PostgresFixture.Database) =
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed review) ->
             Expect.equal review.Task (TaskId.ofLiteral "case.open") "Preview uses the selected task"
-            Expect.equal review.Changes.Length 1 "Preview describes one case part"
-
-            Expect.equal
-                review.Changes.Head.Revision
-                Revision.first
-                "The same first revision is reviewed"
+            Expect.isEmpty review.Changes "Opening review has no accepted part changes"
+            Expect.isSome review.Opening "The new case has an opening description"
         | other -> failtestf "Expected review: %A" other
 
         let! stillBefore = OperationStorage.position inspector token
@@ -109,7 +105,7 @@ let private lifecycle (database: PostgresFixture.Database) =
 
         Expect.equal
             alreadyExists.Outcome
-            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
             "An earlier preview cannot authorize a second creation after acceptance"
 
         let alias =
@@ -440,7 +436,13 @@ let private replayPermission (database: PostgresFixture.Database) =
         replayReceipt replay |> ignore
 
         let! bootstrap =
-            Service.provisionOwner first (id fixture 1) DomainInputs.ownerProfile [] token
+            Service.provisionOwner
+                first
+                (id fixture 1)
+                DomainInputs.ownerProfile
+                []
+                CaseReferencePolicy.CustomAllowed
+                token
 
         match bootstrap with
         | Ok(Verdict.Replay _) -> ()

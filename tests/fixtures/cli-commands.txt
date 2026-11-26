@@ -1,4 +1,4 @@
-case open R-1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --party {"input:partyRole":"CLAIMANT","input:partyName":"Ann"} --party {"input:partyRole":"INSURER","input:partyName":"Ins"} --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case open --case-reference R-1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --party {"input:partyRole":"CLAIMANT","input:partyName":"Ann"} --party {"input:partyRole":"INSURER","input:partyName":"Ins"} --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case amend-registration R-1 --expected-revision 1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case correct R-1 --expected-revision 4 --registration keep --decision update --payment-decision-date 2026-02-01 --payable-amount 5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 case correct R-1 --expected-revision 4 --registration update --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 1 --claimed-currency EUR --decision keep --operation-id 11111111-2222-7333-8444-555555555555
@@ -58,7 +58,7 @@ case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all
 people requests
 people requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1
-people admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@00000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
+people admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@Case-A --operation-id 11111111-2222-7333-8444-555555555555
 people list --text Name
 note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
 note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555

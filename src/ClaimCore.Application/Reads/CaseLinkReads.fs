@@ -82,7 +82,8 @@ module internal CaseLinkReads =
 
                 let environment =
                     {
-                        FamilyEnvironment.Requester = view.Actor
+                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
+                        Requester = view.Actor
                         RequesterPrincipal = principal
                         Maintenance = view.Maintenance.Active
                         AssigneeEligible = fun _ -> false

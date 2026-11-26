@@ -114,7 +114,7 @@ for (const status of ["CLOSED"] as const) {
         page,
         browserName,
       }, testInfo) => {
-        const reference = `GROUP-${randomUUID()}-A`;
+        const reference = `GROUP-${randomUUID().slice(0, 8)}-A`;
         const modes = { registration, decision, payable };
         await openAuthenticated(page);
         const before = await paidInStatus(page, reference, status);

@@ -159,6 +159,7 @@ let private fixture () =
                     Contact = None
                 }
                 []
+                CaseReferencePolicy.CustomAllowed
                 token
             |> get
 

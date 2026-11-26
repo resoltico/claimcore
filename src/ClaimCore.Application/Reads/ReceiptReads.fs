@@ -213,6 +213,11 @@ module internal ReceiptReads =
                                             match accepted with
                                             | None -> return fault
                                             | Some(change, snapshot) ->
+                                                let historicalReference =
+                                                    match root.Structure.Binding with
+                                                    | Binding.CaseNew _ -> snapshot.Reference
+                                                    | _ -> current.Snapshot.Reference
+
                                                 let! shown =
                                                     task {
                                                         if
@@ -253,7 +258,7 @@ module internal ReceiptReads =
                                                                 CaseDescription.fromChanges
                                                                     (defaultArg
                                                                         basisReference
-                                                                        current.Snapshot.Reference)
+                                                                        historicalReference)
                                                                     before
                                                                     change
                                                             with
@@ -296,7 +301,11 @@ module internal ReceiptReads =
                                                             {
                                                                 CaseId = id
                                                                 Reference =
-                                                                    current.Snapshot.Reference
+                                                                    match shown with
+                                                                    | SnapshotDisclosure.Disclosed _ ->
+                                                                        historicalReference
+                                                                    | _ ->
+                                                                        current.Snapshot.Reference
                                                                 Revision = snapshot.Revision
                                                                 Act = declaration.Id
                                                                 Snapshot = shown

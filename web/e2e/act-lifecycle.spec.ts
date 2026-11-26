@@ -19,7 +19,7 @@ import { expectAccessible, openAuthenticated } from "./session-helpers";
 const expectRevision = async (page: Page, revision: string) => {
   await expectCaseRevision(page, Number(revision));
 };
-const reference = (): string => `BROWSER-${randomUUID()}`;
+const reference = (): string => `BROWSER-${randomUUID().slice(0, 8)}`;
 
 const decide = async (page: Page): Promise<void> => {
   await completeAct(page, "case.decide", {

@@ -23,6 +23,16 @@ module internal ReviewDocumentParts =
                         "field.caseReference.label"
                         Prominence.Primary
                         (PresentedValue.Reference reference)
+                | None, ReviewTarget.Opening requested ->
+                    ScreenEntries.value
+                        "reference"
+                        "field.caseReference.label"
+                        Prominence.Primary
+                        (requested
+                         |> Option.map (CaseReference.format >> PresentedValue.Identifier)
+                         |> Option.defaultValue (
+                             PresentedValue.Message "label.caseReferencePending"
+                         ))
                 | None, ReviewTarget.Person actor ->
                     ScreenEntries.value
                         "target"
@@ -180,6 +190,7 @@ module internal ReviewDocumentParts =
                     && (match input.Input with
                         | TaskInputId.Target(InputTarget.Field field) ->
                             not (Set.contains field paired)
+                            && (field <> BusinessField.CaseReference || review.Opening.IsNone)
                         | _ -> true))
                 |> List.map (fun input -> TaskInputPresentation.messageKey input.Input "label")
 

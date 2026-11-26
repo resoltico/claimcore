@@ -141,6 +141,50 @@ let tests =
         "CLI catalog behavior"
         [
             testCase "typed CLI admits every authored command example" commandExamples
+            testCase
+                "opening accepts named custom input and leaves automatic assignment absent"
+                (fun () ->
+                    let dryRun operands =
+                        Grammar.prepareOffline ([ "case"; "open"; "--dry-run" ] @ operands)
+
+                    for args, expected in
+                        [ [], None; [ "--case-reference"; "Case-A" ], Some "Case-A" ] do
+                        let prepared = dryRun args |> CaseBuilders.accepted |> Option.get
+                        use document = System.Text.Json.JsonDocument.Parse prepared.Bytes
+                        let input = document.RootElement.GetProperty "input"
+                        let values = input.GetProperty "inputs"
+
+                        let actual =
+                            match values.TryGetProperty "field:caseReference" with
+                            | true, value -> Some(value.GetString() |> nonNull)
+                            | _ -> None
+
+                        Expect.isNone prepared.Issues "No business input issues"
+
+                        Expect.isFalse
+                            (fst (input.TryGetProperty "operationId"))
+                            "Dry-run does not mint an ID"
+
+                        Expect.equal
+                            (input
+                                .GetProperty("binding")
+                                .GetProperty("expectedRevision")
+                                .GetInt64())
+                            0L
+                            "Initial binding"
+
+                        Expect.equal actual expected "Exact authored intent"
+
+                    Expect.isError (dryRun [ "Case-A" ]) "Former positional form refuses"
+
+                    let reserved =
+                        dryRun [ "--case-reference"; "CC-0000-0000-0000-0000-98" ]
+                        |> CaseBuilders.accepted
+                        |> Option.get
+
+                    Expect.isSome
+                        reserved.Issues
+                        "A generated spelling cannot be authored as a custom reference")
             testCase "case parties is available as a paged CLI query" (fun () ->
                 let prepared =
                     prepare [ "case"; "parties"; "SYNTHETIC"; "--limit"; "2"; "--dry-run" ]

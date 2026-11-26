@@ -45,6 +45,8 @@ type VerificationFinding =
     | PeopleProfileProjection
     | Head
     | CheckpointInstallation
+    | CheckpointPredatesBootstrap
+    | BootstrapPolicy
     | ExpiryFrontier
     | ExpectedPosition
 

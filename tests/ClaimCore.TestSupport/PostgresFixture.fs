@@ -14,6 +14,7 @@ open DotNet.Testcontainers.Builders
 open DotNet.Testcontainers.Configurations
 open Testcontainers.PostgreSql
 open ClaimCore.Application
+open ClaimCore.Application.Administration
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
@@ -58,13 +59,8 @@ type internal Database =
         Cipher: InstallationCipher
         DataKeyFile: string
         Fixture: Fixture
+        Installation: Installation
     }
-
-    member this.Installation =
-        {
-            InstallationId = this.Fixture.InstallationId
-            BusinessTimeZone = this.Fixture.Calendar.TimeZoneId
-        }
 
 let private withKeyBytes action =
     let bytes = RandomNumberGenerator.GetBytes MasterKey.Size
@@ -248,9 +244,8 @@ let private admittedDatabase
     (container: PostgreSqlContainer)
     sources
     (connections: AdmittedConnections)
-    installationId
+    (installation: Installation)
     owner
-    timeZone
     cipher
     masterKey
     keyFile
@@ -265,21 +260,12 @@ let private admittedDatabase
 
     let fixture =
         {
-            Store =
-                LedgerStore(
-                    runtime,
-                    {
-                        InstallationId = installationId
-                        BusinessTimeZone = timeZone
-                    },
-                    cipher,
-                    Transactions.timeouts
-                )
-                :> IStore
+            Store = LedgerStore(runtime, installation, cipher, Transactions.timeouts) :> IStore
             OperationIds = OperationIds.Scope()
-            InstallationId = installationId
+            InstallationId = installation.InstallationId
             Owner = owner
-            Calendar = ClaimCore.Server.Composition.BusinessCalendar.resolve timeZone
+            Calendar =
+                ClaimCore.Server.Composition.BusinessCalendar.resolve installation.BusinessTimeZone
             Dispose = dispose
         }
 
@@ -292,9 +278,10 @@ let private admittedDatabase
         Cipher = cipher
         DataKeyFile = keyFile
         Fixture = fixture
+        Installation = installation
     }
 
-let private createInZone seeded configure owner timeZone poolCapacity =
+let private createInZone seeded configure owner timeZone poolCapacity policy =
     task {
         let! container =
             if seeded && TestcontainersSettings.ResourceReaperEnabled then
@@ -329,12 +316,31 @@ let private createInZone seeded configure owner timeZone poolCapacity =
             keyDisposal <- (fun () -> (masterKey :> IDisposable).Dispose()) :: keyDisposal
 
             let! installationId =
-                SchemaAdministration.initialize
-                    ownerSource
-                    masterKey
-                    timeZone
-                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
-                    CancellationToken.None
+                task {
+                    match policy with
+                    | None ->
+                        return!
+                            SchemaAdministration.initialize
+                                ownerSource
+                                masterKey
+                                timeZone
+                                (fun _ _ _ -> Task.FromResult(()))
+                                CancellationToken.None
+                    | Some _ ->
+                        use setup = new Administration(ownerConnection container, "test", masterKey)
+
+                        let initial =
+                            {
+                                Principal = owner
+                                Profile = DomainInputs.ownerProfile
+                                Roles = ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
+                            }
+
+                        let! installation =
+                            setup.Initialize(timeZone, initial, policy, CancellationToken.None)
+
+                        return installation.InstallationId
+                }
 
             stage <- SetupStage.RuntimeAdmission
             let settings = runtimeSettings container
@@ -343,7 +349,24 @@ let private createInZone seeded configure owner timeZone poolCapacity =
             sources <- runtime :: sources
 
             let! admitted, cipher =
-                InstallationCheck.openRuntime runtime masterKey CancellationToken.None
+                match policy with
+                | Some _ -> InstallationCheck.openRuntime runtime masterKey CancellationToken.None
+                | None ->
+                    // Schema-only tests provision the first owner themselves. They exercise storage
+                    // directly, because real runtime admission requires sequence-one evidence.
+                    DatabaseSession.read runtime CancellationToken.None (fun connection ->
+                        task {
+                            let! installation = Baseline.require connection CancellationToken.None
+
+                            let! cipher =
+                                Baseline.loadCipher
+                                    connection
+                                    installation.InstallationId
+                                    masterKey
+                                    CancellationToken.None
+
+                            return installation, cipher
+                        })
 
             keyDisposal <- (fun () -> (cipher :> IDisposable).Dispose()) :: keyDisposal
 
@@ -359,9 +382,8 @@ let private createInZone seeded configure owner timeZone poolCapacity =
                         Superuser = superuser
                         Runtime = runtime
                     }
-                    installationId
+                    admitted
                     owner
-                    admitted.BusinessTimeZone
                     cipher
                     masterKey
                     keyFile
@@ -387,21 +409,24 @@ let private createInZone seeded configure owner timeZone poolCapacity =
 let private defaults builder = builder
 
 let internal createFor principal =
-    createInZone true defaults principal "Etc/UTC" None
+    createInZone true defaults principal "Etc/UTC" None None
 
 let internal createWithZone timeZone =
-    createInZone true defaults owner timeZone None
+    createInZone true defaults owner timeZone None None
 
 let internal createForPool principal capacity =
-    createInZone true defaults principal "Etc/UTC" (Some capacity)
+    createInZone true defaults principal "Etc/UTC" (Some capacity) None
 
 let internal create () = createFor owner
+
+let internal createWithReferencePolicy policy =
+    createInZone true defaults owner "Etc/UTC" None (Some policy)
 
 let internal createWithStatementCounts () =
     let configure (builder: PostgreSqlBuilder) =
         builder.WithCommand("-c", "shared_preload_libraries=pg_stat_statements")
 
-    createInZone false configure owner "Etc/UTC" None
+    createInZone false configure owner "Etc/UTC" None None
 
 /// The two additional ports belong to independent, promoted physical restores inside the
 /// owned fixture. The primary archives to an atomic, test-only sibling of its data directory.
@@ -425,7 +450,7 @@ let internal createArchived () =
                 "archive_command=mkdir -p /var/lib/postgresql/attachment-wal && cp %p /var/lib/postgresql/attachment-wal/%f.tmp && mv /var/lib/postgresql/attachment-wal/%f.tmp /var/lib/postgresql/attachment-wal/%f"
             )
 
-    createInZone false configure owner "Etc/UTC" None
+    createInZone false configure owner "Etc/UTC" None None
 
 let internal fixture () =
     task { let! database = create () in return database.Fixture }

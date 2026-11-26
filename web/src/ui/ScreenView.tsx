@@ -9,12 +9,14 @@ export const ScreenView = ({
   timeZone = "UTC",
   roles,
   embedded = false,
+  copyReferences = false,
   ...interaction
 }: RegionInteraction & {
   view: Screen;
   timeZone?: string;
   roles?: ReadonlyArray<Region["role"]>;
   embedded?: boolean;
+  copyReferences?: boolean;
 }) => {
   const navigation = useContext(LinkNavigationContext);
   return (
@@ -27,6 +29,7 @@ export const ScreenView = ({
             key={`${region.role}:${index}`}
             region={region}
             embedded={embedded}
+            copyReferences={copyReferences}
             timeZone={timeZone}
             {...interaction}
             {...(interaction.linkNavigation !== undefined || navigation === undefined

@@ -8,7 +8,6 @@ open Hedgehog.FSharp
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
-open ClaimCore.Domain.Tasks
 open ClaimCore.Json
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -46,13 +45,8 @@ let private variedCase =
                     }
             }
 
-        let selected =
-            match Registry.find (TaskId.ofLiteral "case.open") with
-            | Some(Task.Family task) -> task
-            | _ -> failtest "Expected opening task."
-
         let changes =
-            selected.Decide context Tasks.environment None (Binding.CaseNew Revision.zero) input
+            Tasks.openCustom context Tasks.environment None (Binding.CaseNew Revision.zero) input
             |> required
 
         let record = create "case.open" (Binding.CaseNew Revision.zero) input changes

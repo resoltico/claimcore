@@ -29,11 +29,11 @@ const readCase = async (page: Page, target: CaseSelector) => {
   }
   return caseGetReply.outcome.data;
 };
-test("canonical CaseId links and explicit UUID-shaped reference lookup select different actual cases", async ({
+test("canonical Case ID links and explicit reference lookup select different actual cases", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `CANON-${randomUUID()}`;
+  const reference = `CANON-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await page.waitForLoadState("networkidle");
   const first = await readCase(page, {
@@ -42,19 +42,20 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
   });
   await expect(page).toHaveURL((url) => url.pathname === `/cases/id/${first.caseId}`);
   await goToView(page, "cases");
-  await openCase(page, first.caseId);
+  const alias = `Case-${first.caseId.slice(-12)}`;
+  await openCase(page, alias);
   await page.waitForLoadState("networkidle");
   const second = await readCase(page, {
     kind: "REFERENCE",
-    caseReference: first.caseId,
+    caseReference: alias.toLowerCase(),
   });
   expect(second.caseId).not.toBe(first.caseId);
-  expect(second.caseReference.toUpperCase()).toBe(first.caseId.toUpperCase());
+  expect(second.caseReference).toBe(alias);
   await page.goto(casePath(first.caseId), {
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(first.caseReference);
-  await page.goto(referencePath(first.caseId), {
+  await page.goto(referencePath(alias), {
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
@@ -78,7 +79,7 @@ test("case inspection restores the live work query, selected row focus and scrol
   page,
 }) => {
   await openAuthenticated(page);
-  const marker = `INSPECT-${randomUUID()}`;
+  const marker = `INSPECT-${randomUUID().slice(0, 8)}`;
   for (let index = 0; index < 8; index += 1) {
     const result = await workRequest(page, "operation.execute", {
       operationId: operationId(),
@@ -134,7 +135,7 @@ test("case inspection restores the live work query, selected row focus and scrol
 
 test("phone Cases cards fit a maximal accepted reference @engine", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = "W".repeat(80);
+  const reference = "W".repeat(32);
   const result = await workRequest(page, "operation.execute", {
     operationId: operationId(),
     task: "case.open",
@@ -159,12 +160,12 @@ test("phone Cases cards fit a maximal accepted reference @engine", async ({ page
   }
 });
 
-test("historical exact Find admits the encoded reference and restores shortcut focus", async ({
+test("historical exact Find admits a case-folded reference and restores shortcut focus", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  const earlier = `OLD-${randomUUID()}+:/?#`;
-  const current = `NEW-${randomUUID()}`;
+  const earlier = `OLD-${randomUUID().slice(0, 8)}`;
+  const current = `NEW-${randomUUID().slice(0, 8)}`;
   await openCase(page, earlier);
   const changed = await workRequest(page, "operation.execute", {
     operationId: operationId(),
@@ -177,10 +178,13 @@ test("historical exact Find admits the encoded reference and restores shortcut f
     inputs: { "input:newReference": current },
   });
   expect(changed.outcome.kind).toBe("ACCEPTED");
-  const expectedHref = `/cases/reference/${earlier.slice(0, -5)}%2B%3A%2F%3F%23`;
+  const selectedReference = earlier.toLowerCase();
+  const expectedHref = referencePath(selectedReference);
   await page.goto(expectedHref, { waitUntil: "commit" });
   await expect(page.locator("#case-detail-title")).toHaveText(current);
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(earlier);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+    selectedReference,
+  );
 
   await page.goto("/cases?view=ALL");
   const before = page.url();

@@ -2,6 +2,7 @@ namespace ClaimCore.Domain
 
 open System
 open System.Globalization
+open System.Numerics
 open System.Text
 open System.Text.RegularExpressions
 
@@ -295,17 +296,67 @@ module Reason =
     let admit (Reason value) =
         PartyName.admit value |> Result.map Reason
 
+[<RequireQualifiedAccess>]
+type CaseReferencePolicy =
+    | SystemAssignedOnly
+    | CustomAllowed
+
+module CaseReferencePolicy =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseReferencePolicy>
+            "caseReferencePolicy"
+            TokenCasing.ScreamingSnake
+            None
+
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+    let allowsCustom policy =
+        policy = CaseReferencePolicy.CustomAllowed
+
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CaseReference = private CaseReference of authored: string * key: string
 
 module CaseReference =
     [<Literal>]
-    let MaximumCharacters = 80
+    let MaximumCharacters = 32
 
-    let Grammar =
-        "[!-~]{1," + MaximumCharacters.ToString(CultureInfo.InvariantCulture) + "}"
+    [<Literal>]
+    let EntropyBytes = 10
 
-    let descriptor = ScalarText.descriptor (Some Grammar) None
+    let private prefix = "CC-"
+    let private alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+    let private letters = alphabet.Substring 10
+    let private symbols = "[0-9" + letters + letters.ToLowerInvariant() + "]"
+    let private group = symbols + "{4}"
+
+    let private generatedGrammar =
+        "[Cc][Cc]-" + group + "(" + "-" + group + "){3}-[0-9]{2}"
+
+    // A case-insensitive CC- is absent from the custom lexical grammar, including the
+    // spelling where it would be followed by only one character.
+    let CustomGrammar =
+        let alphaNumeric = "[A-Za-z0-9]"
+        let lettersExceptC = "[A-BD-Za-bd-z]"
+        let alphaNumericExceptC = "[A-BD-Za-bd-z0-9]"
+
+        let firstGroup =
+            "("
+            + lettersExceptC
+            + alphaNumeric
+            + "*"
+            + "|[Cc]("
+            + alphaNumericExceptC
+            + alphaNumeric
+            + "*)?"
+            + "|[Cc][Cc]"
+            + alphaNumeric
+            + "+)"
+
+        "(" + firstGroup + "(-" + alphaNumeric + "+)*|[Cc][Cc])"
+
+    let Grammar = "(" + generatedGrammar + "|" + CustomGrammar + ")"
+    let descriptor = ScalarText.descriptor (Some Grammar) (Some MaximumCharacters)
 
     /// ASCII identity folding never consults culture or Unicode normalization.
     let key (reference: string) =
@@ -318,6 +369,66 @@ module CaseReference =
     let identity (CaseReference(_, key)) = key
     let canonical (CaseReference(_, key)) = CaseReference(key, key)
 
+    let isGenerated value =
+        (identity value).StartsWith(prefix, StringComparison.Ordinal)
+
+    let private admitted value = CaseReference(value, key value)
+
+    let private checkDigits (payload: string) =
+        let remainder =
+            payload
+            |> Seq.fold (fun residue symbol -> (32 * residue + alphabet.IndexOf symbol) % 97) 0
+
+        (98 - ((remainder * 100) % 97)).ToString("D2", CultureInfo.InvariantCulture)
+
+    let private parseText value =
+        ScalarText.parse None 0 value
+        |> Result.bind (fun text ->
+            if text.Length > MaximumCharacters then
+                Error Violation.ReferenceFormat
+            else
+                Ok text)
+
+    let private custom text =
+        if ScalarText.matches CustomGrammar text then
+            Ok(admitted text)
+        else
+            Error Violation.ReferenceFormat
+
+    let parseCustom value = parseText value |> Result.bind custom
+
     let parse value =
-        ScalarText.token Grammar Violation.ReferenceFormat value
-        |> Result.map (fun value -> CaseReference(value, key value))
+        parseText value
+        |> Result.bind (fun text ->
+            let folded = key text
+
+            if folded.StartsWith(prefix, StringComparison.Ordinal) then
+                if ScalarText.matches generatedGrammar text then
+                    let payload = folded.Substring(prefix.Length, 19).Replace("-", "")
+
+                    if folded.EndsWith(checkDigits payload, StringComparison.Ordinal) then
+                        Ok(CaseReference(text, folded))
+                    else
+                        Error Violation.ReferenceFormat
+                else
+                    Error Violation.ReferenceFormat
+            else
+                custom text)
+
+    /// Encode all 80 input bits in big-endian order. The caller supplies entropy.
+    let generate (entropy: byte array) =
+        if entropy.Length <> EntropyBytes then
+            invalidArg (nameof entropy) "Case reference generation requires exactly ten bytes."
+
+        let value =
+            BigInteger(ReadOnlySpan<byte>(entropy), isUnsigned = true, isBigEndian = true)
+
+        let payload =
+            String(
+                Array.init 16 (fun index -> alphabet[int ((value >>> (5 * (15 - index))) &&& 31I)])
+            )
+
+        let groups =
+            [ for index in 0..3 -> payload.Substring(index * 4, 4) ] |> String.concat "-"
+
+        admitted (prefix + groups + "-" + checkDigits payload)

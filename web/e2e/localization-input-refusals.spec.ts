@@ -87,7 +87,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     page,
   }) => {
     await openAuthenticated(page);
-    await startOpen(page, `SYNTAX-${randomUUID()}`);
+    await startOpen(page, `SYNTAX-${randomUUID().slice(0, 8)}`);
     await selectLanguage(page, language);
     const requests = trackForegroundRequests(page);
     for (const [name, value, diagnostic] of [
@@ -133,7 +133,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     page,
   }) => {
     await openAuthenticated(page);
-    const reference = `MISSING-${randomUUID()}`;
+    const reference = `MISSING-${randomUUID().slice(0, 8)}`;
     await openCase(page, reference);
     await startClose(page);
     // Close through the existing native workflow, then try to correct an absent decision.

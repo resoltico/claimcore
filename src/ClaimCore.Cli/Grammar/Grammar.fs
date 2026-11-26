@@ -470,7 +470,12 @@ module Grammar =
                 | Error problem ->
                     problems.Add problem
                     None
-            | None, [ reference; attachment ] -> Some(CaseSelector.Reference reference, attachment)
+            | None, [ reference; attachment ] ->
+                match CaseReference.parse reference with
+                | Ok _ -> Some(CaseSelector.Reference reference, attachment)
+                | Error _ ->
+                    problems.Add(UsageError.InvalidValue("CASE-REFERENCE", reference))
+                    None
             | _ ->
                 problems.Add(UsageError.MissingOperand "CASE ATTACHMENT-ID")
                 None

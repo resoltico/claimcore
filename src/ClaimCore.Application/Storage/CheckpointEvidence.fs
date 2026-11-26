@@ -21,6 +21,18 @@ module internal CheckpointEvidence =
                     Finding = VerificationFinding.CheckpointInstallation
                 }
 
+    let trustedInstallation actual (checkpoint: InstallationCheckpoint) =
+        installation actual checkpoint
+        |> Result.bind (fun () ->
+            if checkpoint.Position.Sequence < Sequence.first then
+                Error
+                    {
+                        Sequence = Some checkpoint.Position.Sequence
+                        Finding = VerificationFinding.CheckpointPredatesBootstrap
+                    }
+            else
+                Ok())
+
     let frontier connection (checkpoint: InstallationCheckpoint option) token =
         task {
             let! actual = ExpiryFrontierStorage.read connection token

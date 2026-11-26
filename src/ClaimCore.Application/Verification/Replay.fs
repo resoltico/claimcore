@@ -190,8 +190,8 @@ module internal Replay =
             )
         | _ -> Ok families
 
-    let append installation expected state record =
-        Fold.append installation state.Fold record
+    let append installation policy expected state record =
+        Fold.append installation policy state.Fold record
         |> Result.mapError (fun problem ->
             divergence (Some record.Root.Header.Sequence) (finding problem))
         |> Result.bind (fun next ->

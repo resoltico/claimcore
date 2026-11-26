@@ -53,9 +53,12 @@ A display name or email address is not a sign-in identity and grants no access.
 
 ## Case identity and reference
 
-A CaseId is the UUID of its accepted `case.open` change. References remain reserved to that case
-under ASCII-case-insensitive comparison even after a correction or erasure. Tagged ID and reference
-selectors make UUID-shaped references unambiguous. Earlier references resolve to the current case.
+A **Case ID** is the stable UUID of the accepted `case.open` change. A **case reference** is the
+identifier people use to find and discuss a case. The system issues references such as
+`CC-7K3M-Q8T2-PW6D-X9HR-49` with a random payload and two check digits. A register can also allow
+custom references. References remain reserved to their case under ASCII-case-insensitive comparison
+after correction or erasure. Use tagged selectors to choose exact lookup by ID or reference. An
+earlier authorized reference resolves to the current case.
 
 ## Facts, decision and payment
 

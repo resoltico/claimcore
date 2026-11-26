@@ -104,18 +104,19 @@ it("rejects duplicate local row keys before correlating diagnostics", () => {
     ),
   ).toThrow("row keys must be unique");
 });
-it("keeps a UUID-shaped authored case reference as a reference", () => {
-  const value = assembleTask(
-    "case.open",
-    { "field:caseReference": operationId },
-    { kind: "CASE", expectedRevision: 0 },
-    operationId,
-  );
-  expect(value.command.binding).toEqual({
-    kind: "CASE",
-    expectedRevision: 0,
-  });
-  expect(value.command.inputs).toEqual({ "field:caseReference": operationId });
+it("preserves explicit opening intent even when a fresh offer omits the override", () => {
+  const binding = { kind: "CASE", expectedRevision: 0 } as const;
+  const automaticOnly = operationAffordance("case.open", binding, {}, ["field:policyNumber"]);
+  for (const inputs of [
+    {},
+    { "field:caseReference": "Case-A" },
+    { "field:caseReference": "" },
+    { "field:caseReference": null },
+  ]) {
+    const value = assembleTask("case.open", inputs, binding, operationId, automaticOnly);
+    expect(value.command.binding).toEqual(binding);
+    expect(value.command.inputs).toEqual(inputs);
+  }
 });
 
 it("submits untouched required text controls as empty text for Core field advice", () => {

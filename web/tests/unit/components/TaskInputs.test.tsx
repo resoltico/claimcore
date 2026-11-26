@@ -365,9 +365,9 @@ it("edits plain optional open-case fields and omits a cleared blank input", asyn
     "field:insurerClaimReference": "Insurer / 17",
   });
   await user.clear(screen.getByRole("textbox", { name: /Policy number/u }));
-  expect(JSON.parse(screen.getByRole("status").textContent ?? "null")).not.toHaveProperty(
-    "field:policyNumber",
-  );
+  expect(
+    JSON.parse(screen.getByTestId("authored-inputs").textContent ?? "null"),
+  ).not.toHaveProperty("field:policyNumber");
 });
 
 it.each([

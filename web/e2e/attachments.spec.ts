@@ -80,7 +80,7 @@ test("refuses retained attachment metadata before confirmation or upload @engine
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-DUPLICATE-${randomUUID()}`);
+  await openCase(page, `ATTACH-DUPLICATE-${randomUUID().slice(0, 8)}`);
   const attachments = documentPanel(page);
   await upload(page, attachments, "initial.txt", "initial.txt", "text/plain", evidence);
   const uploads: string[] = [];
@@ -114,7 +114,7 @@ test("refuses retained attachment metadata before confirmation or upload @engine
 
 test("the file chooser, drop and paste share bounded attachment intake", async ({ page }, info) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-INTAKE-${randomUUID()}`);
+  await openCase(page, `ATTACH-INTAKE-${randomUUID().slice(0, 8)}`);
   const panel = documentPanel(page);
   await expect(panel.getByRole("button", { name: "Choose a file", exact: true })).toHaveCount(1);
   const target = panel.getByRole("button", { name: "Drop or paste a file", exact: true });
@@ -189,7 +189,7 @@ test("paste counts files independently of alternate text representations @engine
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PASTE-${randomUUID()}`);
+  await openCase(page, `ATTACH-PASTE-${randomUUID().slice(0, 8)}`);
   const panel = documentPanel(page);
   const target = panel.getByRole("button", { name: "Drop or paste a file", exact: true });
   const paste = async (names: string[]) => {
@@ -251,7 +251,7 @@ test("the chooser recovers from read and digest failures without sending the fil
     };
   }, canary);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-LOCAL-FAULT-${randomUUID()}`);
+  await openCase(page, `ATTACH-LOCAL-FAULT-${randomUUID().slice(0, 8)}`);
   const panel = documentPanel(page);
   const picker = panel.getByRole("button", { name: "Choose a file", exact: true });
   const alert = panel.getByRole("alert");
@@ -295,7 +295,7 @@ test("renders and pages through PDFs inside the opaque viewer @engine", async ({
 }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-${randomUUID()}`);
+  await openCase(page, `ATTACH-PDF-${randomUUID().slice(0, 8)}`);
   const bytes = syntheticPdf([redPage, bluePage]);
   const { row } = await upload(
     page,
@@ -411,7 +411,7 @@ test("keeps the PDF pager usable in narrow Arabic and forced colors @engine", as
   browserName,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-RTL-${randomUUID()}`);
+  await openCase(page, `ATTACH-RTL-${randomUUID().slice(0, 8)}`);
   await upload(
     page,
     documentPanel(page),
@@ -461,7 +461,7 @@ test("paints a filled PDF widget into the canvas without interactive elements @e
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-WIDGET-${randomUUID()}`);
+  await openCase(page, `ATTACH-WIDGET-${randomUUID().slice(0, 8)}`);
   const { row } = await upload(
     page,
     documentPanel(page),
@@ -520,7 +520,7 @@ for (const moveFocusOutside of [false, true]) {
       });
     }, viewerPath);
     await openAuthenticated(page);
-    await openCase(page, `ATTACH-PDF-REPLY-${randomUUID()}`);
+    await openCase(page, `ATTACH-PDF-REPLY-${randomUUID().slice(0, 8)}`);
     const bytes = syntheticPdf([redPage, bluePage]);
     const { row } = await upload(
       page,
@@ -573,7 +573,7 @@ const navigateWhileRendering = (row: Locator, label: "Next page" | "Close") =>
 test("keeps Next and Close responsive during heavy PDF rendering @engine", async ({ page }) => {
   test.setTimeout(120_000);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-RENDER-${randomUUID()}`);
+  await openCase(page, `ATTACH-PDF-RENDER-${randomUUID().slice(0, 8)}`);
   const heavy = "0 0 m 5 5 l S\n".repeat(750_000);
   const bytes = syntheticPdf([redPage, { flate: deflateSync(heavy) }, bluePage]);
   const { row } = await upload(
@@ -625,7 +625,7 @@ test("a delayed PDF preview preserves deliberately moved keyboard focus @engine"
 }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-FOCUS-${randomUUID()}`);
+  await openCase(page, `ATTACH-PDF-FOCUS-${randomUUID().slice(0, 8)}`);
   const { row } = await upload(
     page,
     documentPanel(page),
@@ -686,7 +686,7 @@ for (const transfer of ["preview", "download"] as const) {
   test(`keyboard focus survives a held attachment ${transfer} @engine`, async ({ page }) => {
     test.setTimeout(90_000);
     await openAuthenticated(page);
-    await openCase(page, `ATTACH-TRANSFER-FOCUS-${randomUUID()}`);
+    await openCase(page, `ATTACH-TRANSFER-FOCUS-${randomUUID().slice(0, 8)}`);
     const name = "unrenderable-preview.pdf";
     const bytes = Buffer.from("%PDF-1.7\n");
     const panel = documentPanel(page);
@@ -761,7 +761,7 @@ for (const [transfer, key] of [
   }) => {
     test.setTimeout(90_000);
     await openAuthenticated(page);
-    await openCase(page, `ATTACH-SETTLEMENT-${randomUUID()}`);
+    await openCase(page, `ATTACH-SETTLEMENT-${randomUUID().slice(0, 8)}`);
     const bytes = syntheticPdf([redPage]);
     const { row } = await upload(
       page,
@@ -895,7 +895,7 @@ for (const { focusOutside, pointerTarget, gesture } of [
       };
     });
     await openAuthenticated(page);
-    await openCase(page, `ATTACH-PICKER-FOCUS-${randomUUID()}`);
+    await openCase(page, `ATTACH-PICKER-FOCUS-${randomUUID().slice(0, 8)}`);
     const panel = documentPanel(page);
     const picker = panel.getByRole("button", { name: "Choose a file", exact: true });
     const input = panel.locator('input[type="file"]');
@@ -1030,7 +1030,7 @@ test("held Enter closes a PDF preview once before a separate press can reopen it
 }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-CLOSE-${randomUUID()}`);
+  await openCase(page, `ATTACH-PDF-CLOSE-${randomUUID().slice(0, 8)}`);
   const { row } = await upload(
     page,
     documentPanel(page),
@@ -1081,7 +1081,7 @@ test("reviews private files, displays native previews and withdraws disclosure @
 }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  const reference = `ATTACH-WEB-${randomUUID()}`;
+  const reference = `ATTACH-WEB-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const attachments = page.getByRole("region", { name: "Attachments", exact: true });
   await expect(page.getByRole("link", { name: "Attachments", exact: true })).toHaveCount(0);
@@ -1153,7 +1153,7 @@ test("same-name attachments expose distinct actions and exact bytes at narrow wi
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 390, height: 844 });
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-SAME-NAME-${randomUUID()}`);
+  await openCase(page, `ATTACH-SAME-NAME-${randomUUID().slice(0, 8)}`);
   const panel = documentPanel(page);
   const files = [
     {
@@ -1210,7 +1210,7 @@ test("settles a lost upload acknowledgement with an identity-only recovery recor
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-RECOVER-${randomUUID()}`);
+  await openCase(page, `ATTACH-RECOVER-${randomUUID().slice(0, 8)}`);
   const panel = page.getByRole("region", { name: "Attachments", exact: true });
   await panel.locator('input[type="file"]').setInputFiles({
     name: "recovery canary.bin",
@@ -1266,7 +1266,7 @@ test("settles a lost upload acknowledgement with an identity-only recovery recor
 
 test("a rejected session masks the previously disclosed attachments", async ({ page }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-SESSION-${randomUUID()}`);
+  await openCase(page, `ATTACH-SESSION-${randomUUID().slice(0, 8)}`);
   const panel = page.getByRole("region", { name: "Attachments", exact: true });
   const name = "session-canary.png";
   const { row } = await upload(page, panel, name, name, "image/png", png);
@@ -1307,7 +1307,7 @@ const holdPreviewDigest = async (page: Page) => {
 test("drops a preview verified after observing withdrawal in another tab", async ({ page }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-LATE-${randomUUID()}`);
+  await openCase(page, `ATTACH-LATE-${randomUUID().slice(0, 8)}`);
   const panel = page.getByRole("region", { name: "Attachments", exact: true });
   const name = "delayed-preview.png";
   const { row } = await upload(page, panel, name, name, "image/png", png);
@@ -1398,7 +1398,7 @@ test("withdrawal closes a pending PDF frame and discards its queued page reply @
     };
   });
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-PDF-LATE-${randomUUID()}`);
+  await openCase(page, `ATTACH-PDF-LATE-${randomUUID().slice(0, 8)}`);
   const panel = documentPanel(page);
   const { row } = await upload(
     page,
@@ -1439,7 +1439,7 @@ test("masks the case workspace when an admitted attachment list rejects the sess
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-LIST-${randomUUID()}`);
+  await openCase(page, `ATTACH-LIST-${randomUUID().slice(0, 8)}`);
   const entered = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   const upstream = Promise.withResolvers<unknown>();
@@ -1509,7 +1509,7 @@ test("confirmed withdrawal stays hidden through a list fault and a delayed timel
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-WITHDRAW-FAULT-${randomUUID()}`);
+  await openCase(page, `ATTACH-WITHDRAW-FAULT-${randomUUID().slice(0, 8)}`);
   const panel = page.getByRole("region", { name: "Attachments", exact: true });
   const name = "withdrawal_fault_canary.png";
   const { row, receipt } = await upload(page, panel, name, name, "image/png", png);

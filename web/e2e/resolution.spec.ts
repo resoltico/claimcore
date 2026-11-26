@@ -13,7 +13,7 @@ import {
 import { pauseJsonReply, confirmReview, ui } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 const loseAcceptedClose = async (page: Page) => {
-  await openCase(page, `UNCONFIRMED-${randomUUID()}`);
+  await openCase(page, `UNCONFIRMED-${randomUUID().slice(0, 8)}`);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   await startClose(page);
   await reviewDraft(page);
@@ -100,7 +100,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `STORAGE-REFUSAL-${randomUUID()}`;
+  const reference = `STORAGE-REFUSAL-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await startClose(page);
   const previewed = page.waitForRequest((request) =>

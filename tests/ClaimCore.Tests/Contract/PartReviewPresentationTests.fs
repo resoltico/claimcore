@@ -51,6 +51,7 @@ let reminderCreationReview =
         let review =
             {
                 Task = TaskId.ofLiteral "reminder.create"
+                Opening = None
                 Target = ReviewTarget.Case(snapshot.CaseId, snapshot.Reference)
                 References = references
                 Binding = Binding.ReminderNew(CaseSelector.Id snapshot.CaseId)
@@ -113,6 +114,7 @@ let noteCreationReview =
         let review =
             {
                 Task = TaskId.ofLiteral "note.add"
+                Opening = None
                 Target = ReviewTarget.Case(snapshot.CaseId, snapshot.Reference)
                 References = references
                 Binding = Binding.NoteNew(CaseSelector.Id snapshot.CaseId)

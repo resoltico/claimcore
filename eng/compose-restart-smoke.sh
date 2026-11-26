@@ -179,6 +179,7 @@ bash "${build_source}/deployment/configure-local.sh" "${config}" "Smoke owner" E
 
 start --build
 require_log '"kind":"INITIALIZED"'
+require_log '"caseReferencePolicy":"SYSTEM_ASSIGNED_ONLY"'
 verify_database_owner
 verify_database_network
 verify_owner_commands
@@ -190,5 +191,6 @@ verify_container_settings administration 256
 "${compose[@]}" down --timeout 20
 start
 require_log '"kind":"INITIALIZATION_SKIPPED"'
+require_log '"caseReferencePolicy":"SYSTEM_ASSIGNED_ONLY"'
 
 echo "Compose restart smoke passed: the installation survived down and up."

@@ -193,6 +193,7 @@ let private run words (answer: string option) =
                                     OperationReview.ChangesOwnSignInIdentity = false
                                     Task = people.Task
                                     Binding = (Submissions.command people).Binding
+                                    Opening = None
                                     Target = ReviewTarget.Person(Some targetActor)
                                     References = { Actors = [ targetActor ]; Cases = [] }
                                     Context =

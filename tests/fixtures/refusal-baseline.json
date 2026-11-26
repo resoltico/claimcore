@@ -42,7 +42,7 @@
       "target": null
     },
     {
-      "code": "CASE_ALREADY_EXISTS",
+      "code": "REFERENCE_UNAVAILABLE",
       "action": "ChooseAnotherReference",
       "target": null
     },
@@ -123,6 +123,26 @@
         {
           "field": "paymentDecisionDate",
           "code": "CALENDAR_DATE_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseReference",
+          "code": "CUSTOM_REFERENCE_NOT_ALLOWED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseReferencePolicy",
+          "code": "CASE_REFERENCE_POLICY_FORMAT"
         }
       ]
     },

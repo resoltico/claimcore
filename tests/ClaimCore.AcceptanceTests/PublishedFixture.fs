@@ -1,6 +1,7 @@
 module internal ClaimCore.AcceptanceTests.PublishedFixture
 
 open ClaimCore.TestSupport
+open ClaimCore.Domain
 
 open System
 open System.Collections.Generic
@@ -140,6 +141,7 @@ let private initialize
     directory
     (postgres: PostgreSqlContainer)
     (identity: IdentityServer.Identity)
+    referencePolicy
     admin
     (environment: Dictionary<string, string>)
     =
@@ -157,6 +159,8 @@ let private initialize
             [
                 "initialize"
                 "Etc/UTC"
+                "--case-reference-policy"
+                CaseReferencePolicy.token referencePolicy
                 "--owner-issuer"
                 identity.Issuer
                 "--owner-subject"
@@ -194,7 +198,7 @@ let private initialize
                 (PostgresFixture.runtimeConnection postgres)
     }
 
-type Fixture() =
+type Fixture(?referencePolicy: CaseReferencePolicy) =
     let postgresImage, initdbArguments = PostgresBaseline.configuration ()
     let ownedDirectory = FixtureCleanup.OwnedDirectory()
     let directory = ownedDirectory.Path
@@ -473,7 +477,16 @@ type Fixture() =
             admin <- webBinary
             do! startPrerequisites postgres identity
             adminEnvironment["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
-            let! runtime = initialize directory postgres identity admin adminEnvironment
+
+            let! runtime =
+                initialize
+                    directory
+                    postgres
+                    identity
+                    (defaultArg referencePolicy CaseReferencePolicy.CustomAllowed)
+                    admin
+                    adminEnvironment
+
             let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)
             let relay = new CommitReplyProxy.Proxy(settings.Host |> nonNull, settings.Port)
             commitProxy <- Some relay

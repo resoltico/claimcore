@@ -126,11 +126,11 @@ case work, payment entry and stewardship rights. ClaimCore roles remain separate
 
 On a phone, use the plus button in the app bar to open a case. After recording it, use **View receipt** in the feedback banner.
 
-Choose **Open a case** and enter a synthetic reference. Add optional facts and party rows. Use observed dates at or before the current business date, for example:
+Choose **Open a case**. The register assigns a reference when you record the case. Add optional facts
+and party rows. Use observed dates at or before the current business date, as in this example.
 
 | Input | Value |
 | --- | --- |
-| Reference | START-0001 |
 | Incident | 1 September 2026 |
 | Received | 2 September 2026 |
 | Country | LV |
@@ -143,8 +143,8 @@ Leaving an optional field blank omits it. Enter claimed amount and currency toge
 blank. Use the Claimant and Insurer roles for the party rows.
 Incident description is optional; use it for a short account of what happened. Review the proposed
 facts and choose **Open a case**. The case workspace shows the outcome. Choose **View receipt** for
-the recorded details. Follow the **Cases** breadcrumb and
-search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.
+the recorded details and copy the case reference. Follow the **Cases** breadcrumb and search for
+that reference. Its row shows the claimant, claimed amount, headline and work attention.
 **Needs attention** includes the new case. **Mine** includes it only after responsibility is explicitly
 assigned to your account.
 

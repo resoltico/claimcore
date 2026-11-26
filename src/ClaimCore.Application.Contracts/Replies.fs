@@ -13,6 +13,7 @@ type OperationReview =
         References: ChangeReferences
         Binding: Binding
         Changes: ClaimCore.Domain.Changes.DescribedPart list
+        Opening: ClaimCore.Domain.Changes.OpeningReview option
         Context: RuntimeContext
         ChangesOwnSignInIdentity: bool
     }

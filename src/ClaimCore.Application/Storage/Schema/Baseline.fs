@@ -11,6 +11,8 @@ open System.Security.Cryptography
 open System.Text
 open System.Threading
 open Npgsql
+open ClaimCore.Domain
+open ClaimCore.Domain.Tasks
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 
@@ -93,7 +95,7 @@ module internal Baseline =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ("SELECT installation_id,business_time_zone,installation_format, "
+                    ("SELECT installation_id,business_time_zone,installation_format,case_reference_policy, "
                      + "(SELECT months FROM claimcore.disclosure_retention WHERE singleton) "
                      + "FROM claimcore.installation")
                     [||]
@@ -101,10 +103,20 @@ module internal Baseline =
 
             match rows with
             | [ row ] when DatabaseSession.value<int16> 2 row = int16 InstallationFormat.Current ->
-                if DatabaseSession.optional<int> 3 row <> Some DisclosureTrail.retentionMonths then
+                if DatabaseSession.optional<int> 4 row <> Some DisclosureTrail.retentionMonths then
                     raise (InstallationConfigurationException())
 
-                return DatabaseSession.value<Guid> 0 row, DatabaseSession.value<string> 1 row
+                let policy =
+                    DatabaseSession.optional<string> 3 row
+                    |> Option.bind CaseReferencePolicy.parse
+                    |> Option.defaultWith (fun () -> raise (InstallationConfigurationException()))
+
+                return
+                    {
+                        InstallationId = DatabaseSession.value<Guid> 0 row
+                        BusinessTimeZone = DatabaseSession.value<string> 1 row
+                        CaseReferencePolicy = policy
+                    }
             | [ _ ] -> return raise (OperatorFaultException OperatorFault.FormatMismatch)
             | _ -> return raise (InstallationConfigurationException())
         }
@@ -127,27 +139,67 @@ module internal Baseline =
     let require connection token =
         task {
             do! requireIdentity connection token
-            let! id, timeZone = installation connection token
+            let! admitted = installation connection token
 
             try
-                zone timeZone |> ignore
+                zone admitted.BusinessTimeZone |> ignore
             with
             | :? ArgumentException
             | :? OperatorFaultException -> raise (InstallationConfigurationException())
 
-            if id = Guid.Empty then
+            if admitted.InstallationId = Guid.Empty then
                 raise (InstallationConfigurationException())
 
-            return id, timeZone
+            return admitted
         }
 
-    /// Assert the admitted tuple in the transaction that will access installation data.
+    /// Assert the admitted configuration in the transaction that will access installation data.
     let requireExpected (expected: Installation) connection token =
         task {
-            let! id, zone = require connection token
+            let! actual = require connection token
 
-            if id <> expected.InstallationId || zone <> expected.BusinessTimeZone then
+            if actual <> expected then
                 raise (InstallationConfigurationException())
+        }
+
+    let matchesBootstrap (installation: Installation) (record: RetainedOperation) =
+        let root = record.Root
+
+        root.Header.InstallationId = installation.InstallationId
+        && root.Header.Sequence = Sequence.first
+        && root.Header.PreviousHash = EntryHash.zero
+        && root.Header.Authority = Authority.Operator
+        && root.Structure.Task = (Task.declaration Registry.provisionOwner).Id
+        && Registry.initialReferencePolicy root.Structure.Retained =
+            Some installation.CaseReferencePolicy
+
+    /// Decode and authenticate the first public root without loading any private profile bytes.
+    let requireBootstrap (installation: Installation) connection token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT operation_id FROM claimcore.ledger WHERE sequence=1"
+                    [||]
+                    token
+
+            match rows with
+            | [ row ] ->
+                let operation = DatabaseSession.value<Guid> 0 row |> OperationId.create
+
+                match operation with
+                | Some operation ->
+                    let! record =
+                        OperationStorage.findStructure
+                            connection
+                            installation.InstallationId
+                            operation
+                            token
+
+                    if not (Option.exists (matchesBootstrap installation) record) then
+                        raise (InstallationConfigurationException())
+                | None -> raise (InstallationConfigurationException())
+            | _ -> raise (InstallationConfigurationException())
         }
 
     let private wrappedKey lockRow connection installationId token =
@@ -177,30 +229,38 @@ module internal Baseline =
             (fun connection transaction ->
                 task {
                     do! OwnerAdmission.require connection token
-                    let! installationId, _ = require connection token
-                    let! wrapped = wrappedKey true connection installationId token
-                    use cipher = InstallationCipher.unwrap masterKey installationId wrapped
+                    let! installation = require connection token
+                    let! wrapped = wrappedKey true connection installation.InstallationId token
+
+                    use cipher =
+                        InstallationCipher.unwrap masterKey installation.InstallationId wrapped
 
                     let! _ =
                         DatabaseSession.execute
                             connection
                             "UPDATE claimcore.installation SET wrapped_data_key=$1 WHERE singleton AND installation_id=$2"
-                            [| box (cipher.Wrap newMasterKey); box installationId |]
+                            [| box (cipher.Wrap newMasterKey); box installation.InstallationId |]
                             token
 
                     do! DatabaseSession.commit transaction token
-                    return installationId
+                    return installation.InstallationId
                 })
 
-    let private install connection timeZone id wrapped token =
+    let private install connection (installation: Installation) wrapped token =
         task {
             do! apply connection token
 
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ($1,$2,$3,$4)"
-                    [| box id; box timeZone; box (int16 InstallationFormat.Current); box wrapped |]
+                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,case_reference_policy,wrapped_data_key) VALUES ($1,$2,$3,$4,$5)"
+                    [|
+                        box installation.InstallationId
+                        box installation.BusinessTimeZone
+                        box (int16 InstallationFormat.Current)
+                        box (CaseReferencePolicy.token installation.CaseReferencePolicy)
+                        box wrapped
+                    |]
                     token
 
             let! _ =
@@ -217,6 +277,7 @@ module internal Baseline =
         (source: NpgsqlDataSource)
         masterKey
         timeZone
+        requestedPolicy
         initializeOwner
         initialized
         existing
@@ -247,26 +308,46 @@ module internal Baseline =
                                 let! installation = require connection token
 
                                 use! _admitted =
-                                    loadCipher connection (fst installation) masterKey token
+                                    loadCipher
+                                        connection
+                                        installation.InstallationId
+                                        masterKey
+                                        token
 
                                 return! existing connection installation token
                             else
-                                let id = Guid.NewGuid()
-                                use cipher = InstallationCipher.create id
-                                do! install connection timeZone id (cipher.Wrap masterKey) token
-                                do! initializeOwner connection id cipher
+                                let installation =
+                                    {
+                                        InstallationId = Guid.NewGuid()
+                                        BusinessTimeZone = timeZone
+                                        CaseReferencePolicy =
+                                            defaultArg
+                                                requestedPolicy
+                                                CaseReferencePolicy.SystemAssignedOnly
+                                    }
+
+                                use cipher = InstallationCipher.create installation.InstallationId
+                                do! install connection installation (cipher.Wrap masterKey) token
+                                do! initializeOwner connection installation cipher
                                 do! DatabaseSession.commit transaction token
-                                return initialized id
+                                return initialized installation
                         })
         }
 
     let refuseExisting _ _ _ =
         raise (OperatorFaultException OperatorFault.AlreadyInitialized)
 
-    let initialize source masterKey timeZone initializeOwner token =
-        initializeWith source masterKey timeZone initializeOwner id refuseExisting token
-
-/// Owner-only schema initialization; no upgrade, adoption or conversion is provided.
+/// Schema-only fixture construction. This creates no bootstrap evidence, so serving and
+/// skip-existing admission refuse it until the fixture records the first owner.
 module internal SchemaAdministration =
     let initialize source masterKey timeZone initializeOwner cancellationToken =
-        Baseline.initialize source masterKey timeZone initializeOwner cancellationToken
+        Baseline.initializeWith
+            source
+            masterKey
+            timeZone
+            (Some CaseReferencePolicy.CustomAllowed)
+            (fun connection (installation: Installation) cipher ->
+                initializeOwner connection installation.InstallationId cipher)
+            (fun (installation: Installation) -> installation.InstallationId)
+            Baseline.refuseExisting
+            cancellationToken

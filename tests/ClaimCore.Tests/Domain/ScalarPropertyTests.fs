@@ -90,7 +90,7 @@ let private invalidAmount =
     |> Gen.map (fun raw -> { Raw = raw; Accepted = false })
 
 let private admitOpening inputs =
-    ClaimCore.Domain.Tasks.Case.Open.decide
+    TaskBuilders.openCustom
         (TaskBuilders.context 2)
         TaskBuilders.environment
         None
@@ -140,7 +140,7 @@ let private textTargets = [ Reference; Country; Claimant; Insurer ]
 
 let private textLimit =
     function
-    | Reference -> 80
+    | Reference -> 32
     | Country -> 2
     | Claimant
     | Insurer -> 80

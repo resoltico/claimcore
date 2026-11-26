@@ -7,6 +7,7 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
@@ -83,14 +84,22 @@ let private freshOwner () =
             use owner = NpgsqlDataSource.Create(ownerSettings.ConnectionString)
             use key = PostgresFixture.newMasterKey ()
 
-            let! installed =
-                SchemaAdministration.initialize
-                    owner
-                    key
-                    "Etc/UTC"
-                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
-                    token
+            use administration = new Administration(ownerSettings.ConnectionString, "test", key)
+
+            let initialOwner =
+                {
+                    Principal =
+                        PrincipalKey.human "https://issuer.example/" "synthetic-owner"
+                        |> Result.defaultWith (string >> failtest)
+                    Profile = DomainInputs.ownerProfile
+                    Roles = []
+                }
+
+            let! installation =
+                administration.Initialize("Etc/UTC", initialOwner, None, token)
                 |> Async.AwaitTask
+
+            let installed = installation.InstallationId
 
             let! repeated =
                 task {

@@ -3,6 +3,55 @@ namespace ClaimCore.Domain.Changes
 open ClaimCore.Domain
 
 module CaseDescription =
+    let private isMoney =
+        function
+        | BusinessField.ClaimedAmount
+        | BusinessField.ClaimedCurrency
+        | BusinessField.PayableAmount
+        | BusinessField.PayableCurrency -> true
+        | _ -> false
+
+    let private differences before after =
+        BusinessField.declarations
+        |> List.choose (fun declaration ->
+            let field = declaration.Field
+
+            if isMoney field then
+                None
+            else
+                Difference.value (before field) (after field)
+                |> Option.map (fun difference ->
+                    {
+                        CaseFieldDifference.FieldName = field
+                        Before = difference.Before
+                        After = difference.After
+                    }))
+
+    let private moneyDifferences claimed payable =
+        [ BusinessField.ClaimedAmount, claimed; BusinessField.PayableAmount, payable ]
+        |> List.choose (fun (field, (before, after)) ->
+            Difference.value before after
+            |> Option.map (fun change ->
+                {
+                    CaseMoneyDifference.FieldName = field
+                    Change = change
+                }))
+
+    let opening requested registration =
+        let values = Registration.values registration |> Map.ofList
+
+        let value =
+            function
+            | BusinessField.CaseReference -> requested |> Option.map CaseFieldValue.Reference
+            | BusinessField.Status -> Some(CaseFieldValue.Status CaseStatus.Opened)
+            | field -> Map.tryFind field values |> Option.map CaseFieldValue.Business
+
+        {
+            OpeningCaseDescription.Lifecycle = Lifecycle.Active
+            Fields = differences (fun _ -> None) value
+            Money = moneyDifferences (None, Registration.claimed registration) (None, None)
+        }
+
     let private fields reference (value: CaseValue) =
         value.Content
         |> Option.map (fun content ->
@@ -17,14 +66,6 @@ module CaseDescription =
         let nextReference = defaultArg after.Reference reference
         let prior = before |> Option.bind (fields reference)
         let next = fields nextReference after
-
-        let moneyFields =
-            [
-                BusinessField.ClaimedAmount
-                BusinessField.ClaimedCurrency
-                BusinessField.PayableAmount
-                BusinessField.PayableCurrency
-            ]
 
         let value isAfter field =
             if field = BusinessField.CaseReference then
@@ -44,21 +85,7 @@ module CaseDescription =
                 (if isAfter then next else prior) |> Option.bind (CaseFields.typedValue field)
 
         let changes =
-            BusinessField.declarations
-            |> List.choose (fun declaration ->
-                if List.contains declaration.Field moneyFields then
-                    None
-                else
-                    Difference.value (value false declaration.Field) (value true declaration.Field)
-                    |> Option.map (fun difference ->
-                        {
-                            CaseFieldDifference.FieldName = declaration.Field
-                            Before = difference.Before
-                            After = difference.After
-                        }))
-
-        let changes =
-            changes
+            differences (value false) (value true)
             @ (after.ReopenReason
                |> Option.map (fun reason ->
                    {
@@ -69,22 +96,12 @@ module CaseDescription =
                |> Option.toList)
 
         let money select =
-            Difference.value (prior |> Option.bind select) (next |> Option.bind select)
+            prior |> Option.bind select, next |> Option.bind select
 
         let amounts =
-            [
-                BusinessField.ClaimedAmount,
-                money (fun fields -> Registration.claimed fields.Registration)
-                BusinessField.PayableAmount,
-                money (fun fields -> fields.Finance.Decision |> Option.map Decision.payable)
-            ]
-            |> List.choose (fun (field, change) ->
-                change
-                |> Option.map (fun change ->
-                    {
-                        CaseMoneyDifference.FieldName = field
-                        Change = change
-                    }))
+            moneyDifferences
+                (money (fun fields -> Registration.claimed fields.Registration))
+                (money (fun fields -> fields.Finance.Decision |> Option.map Decision.payable))
 
         {
             CasePartDescription.Values = { Before = prior; After = next }

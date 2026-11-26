@@ -427,6 +427,7 @@ let tests =
                             [
                                 "case"
                                 "open"
+                                "--case-reference"
                                 "LONG-REVIEW"
                                 "--incident-date"
                                 "2026-01-01"

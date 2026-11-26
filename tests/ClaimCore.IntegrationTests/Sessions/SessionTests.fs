@@ -411,6 +411,7 @@ let private suite () =
         let! database = PostgresFixture.create ()
 
         try
+            let! _ = StoreFixtures.bootstrap database.Fixture
             do! SessionHosts.run database
             do! lifecycle database
             do! deadlines database

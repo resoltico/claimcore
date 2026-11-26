@@ -128,8 +128,8 @@ let tests =
                     for matched, target in
                         [
                             None, CaseSelector.Id parent
-                            Some(DomainInputs.reference "-CASE:+OLD"),
-                            CaseSelector.Reference "-CASE:+OLD"
+                            Some(DomainInputs.reference "Case-Old"),
+                            CaseSelector.Reference "Case-Old"
                         ] do
                         let value =
                             CaseListScreen.document

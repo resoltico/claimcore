@@ -16,11 +16,20 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 type internal LedgerStore
-    (source: NpgsqlDataSource, installation: Installation, cipher: InstallationCipher, settings) =
-    let installationId = installation.InstallationId
+    (
+        source: NpgsqlDataSource,
+        installation: Installation,
+        cipher: InstallationCipher,
+        settings,
+        ?caseReferenceEntropy: unit -> byte array
+    ) =
+    static let drawEntropy () =
+        System.Security.Cryptography.RandomNumberGenerator.GetBytes CaseReference.EntropyBytes
 
-    static member InTransaction(connection, installationId, cipher, head, observedAt, token) =
-        WriteTx(connection, installationId, cipher, head, observedAt, token)
+    let caseReferenceEntropy = defaultArg caseReferenceEntropy drawEntropy
+
+    static member InTransaction(connection, installation, cipher, head, observedAt, token) =
+        WriteTx(connection, installation, cipher, head, observedAt, drawEntropy, token)
 
     interface IStore with
         member _.Context query =
@@ -60,6 +69,7 @@ type internal LedgerStore
                         {
                             ContextFacts.Facts = facts
                             ObservedAt = observedAt
+                            CaseReferencePolicy = installation.CaseReferencePolicy
                         },
                         true
                 })
@@ -73,7 +83,7 @@ type internal LedgerStore
             Transactions.read source token (fun connection observedAt ->
                 task {
                     do! Baseline.requireExpected installation connection token
-                    return! work (ReadTx(connection, installationId, cipher, observedAt, token))
+                    return! work (ReadTx(connection, installation, cipher, observedAt, token))
                 })
 
         member _.RecordDisclosure(event, token) =
@@ -98,7 +108,15 @@ type internal LedgerStore
 
                     let! verdict =
                         work (
-                            WriteTx(connection, installationId, cipher, head, observedAt, token)
+                            WriteTx(
+                                connection,
+                                installation,
+                                cipher,
+                                head,
+                                observedAt,
+                                caseReferenceEntropy,
+                                token
+                            )
 
                         )
 

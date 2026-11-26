@@ -18,6 +18,7 @@ const Content = ({
   content,
   timeZone,
   copy,
+  copyReferences,
   avatars,
   emptyId,
   ...interaction
@@ -25,6 +26,7 @@ const Content = ({
   content: RegionContent;
   timeZone: string;
   copy: boolean;
+  copyReferences: boolean;
   avatars: boolean;
   emptyId?: string | undefined;
 }) => {
@@ -39,6 +41,7 @@ const Content = ({
           entries={entries}
           timeZone={timeZone}
           copy={copy}
+          copyReferences={copyReferences}
           avatars={avatars}
           {...(interaction.countLink === undefined ? {} : { countLink: interaction.countLink })}
           {...(interaction.sectionLink === undefined ? {} : { link: interaction.sectionLink })}
@@ -81,8 +84,14 @@ export const RegionView = ({
   timeZone = "UTC",
   headerActions,
   embedded = false,
+  copyReferences = false,
   ...interaction
-}: RegionInteraction & { region: Region; timeZone?: string; embedded?: boolean }) => {
+}: RegionInteraction & {
+  region: Region;
+  timeZone?: string;
+  embedded?: boolean;
+  copyReferences?: boolean;
+}) => {
   const p = usePresentation();
   const heading = useId();
   const body = (
@@ -91,6 +100,7 @@ export const RegionView = ({
       content={region.content}
       timeZone={timeZone}
       copy={region.role === "DETAILS"}
+      copyReferences={copyReferences}
       avatars={region.role === "WORK" || region.role === "ACCOUNT"}
       {...interaction}
     />

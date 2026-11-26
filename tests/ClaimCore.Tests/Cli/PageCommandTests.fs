@@ -559,14 +559,14 @@ let tests =
                     (Map.containsKey "paymentDate" columns)
                     "There is no obsolete single-date column")
             testCase
-                "CSV protects formula-leading references claimant and insurer values"
+                "CSV protects formula-leading claimant and insurer values and preserves case references"
                 (fun () ->
                     for prefix in [ "="; "+"; "-"; "@"; "\t"; "\r" ] do
                         let reference =
                             if prefix = "\t" || prefix = "\r" then
-                                "SAFE"
+                                "Safe-Custom"
                             else
-                                prefix + "CASE"
+                                "CC-0123-4567-89AB-CDEF-41"
 
                         let claimant = prefix + "call,\"quoted\"\r\nclaimant"
                         let insurer = prefix + "insurer"
@@ -582,10 +582,7 @@ let tests =
                         Expect.equal code 0 "Export succeeds without changing admission"
                         let cells = (parseCsv bytes)[1]
 
-                        Expect.equal
-                            cells[0]
-                            (if reference = "SAFE" then "SAFE" else "'" + reference)
-                            "Formula-leading references are protected"
+                        Expect.equal cells[0] reference "Issued case references are preserved"
 
                         Expect.equal
                             cells[6]
@@ -671,7 +668,7 @@ let tests =
                     | _ -> failtest "Expected a structured reply")
             testCase "JSON and text preserve formula-leading authored values" (fun () ->
                 let exported =
-                    { row "=CASE" with
+                    { row "Safe-Custom" with
                         State = CaseState.Active(parties "=1+1" "@insurer")
                     }
 
@@ -682,7 +679,7 @@ let tests =
                     let rendered = Encoding.UTF8.GetString bytes
                     Expect.equal code 0 "Exact-value output succeeds"
 
-                    for authored in [ "=CASE"; "=1+1"; "@insurer" ] do
+                    for authored in [ "Safe-Custom"; "=1+1"; "@insurer" ] do
                         Expect.stringContains rendered authored "Authored spelling remains"
 
                         Expect.isFalse
@@ -706,7 +703,7 @@ let tests =
                     let code, bytes, errors, _ =
                         run
                             [ "--format"; "csv" ]
-                            [ Outcome.Succeeded(page [ row "A,1"; erased ] None) ]
+                            [ Outcome.Succeeded(page [ row "A-1"; erased ] None) ]
 
                     Expect.equal code 0 "CSV export succeeds"
                     Expect.isEmpty errors "Successful final-page CSV needs no error output"
@@ -757,7 +754,7 @@ let tests =
                     Expect.equal
                         parsed[1]
                         [
-                            "A,1"
+                            "A-1"
                             "1"
                             "0"
                             "ACTIVE"

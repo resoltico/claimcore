@@ -53,7 +53,7 @@ test("renders Japanese from a relayed CMap and ignores names outside the publish
     });
   });
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-CMAP-${randomUUID()}`);
+  await openCase(page, `ATTACH-CMAP-${randomUUID().slice(0, 8)}`);
 
   const attachments = page.getByRole("region", { name: "Attachments", exact: true });
   const name = "synthetic-japanese.pdf";
@@ -114,7 +114,7 @@ test("renders Japanese from a relayed CMap and ignores names outside the publish
 
 test("decodes JPEG 2000 with WASM relayed by the workspace @engine", async ({ page }) => {
   await openAuthenticated(page);
-  await openCase(page, `ATTACH-JPX-${randomUUID()}`);
+  await openCase(page, `ATTACH-JPX-${randomUUID().slice(0, 8)}`);
   const name = "synthetic-jpeg2000.pdf";
   const { row } = await uploadAttachment(
     page,

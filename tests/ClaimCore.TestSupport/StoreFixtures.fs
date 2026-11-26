@@ -253,6 +253,7 @@ let internal bootstrap fixture =
                 (id fixture 1)
                 DomainInputs.ownerProfile
                 []
+                CaseReferencePolicy.CustomAllowed
                 CancellationToken.None
 
         match result with

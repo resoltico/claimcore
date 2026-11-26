@@ -269,7 +269,7 @@ let private publishedFaults () =
             // Deliberately bypass the schema CHECK in this owned fixture to exercise stored-format admission.
             do!
                 sql
-                    "ALTER TABLE claimcore.installation DROP CONSTRAINT installation_installation_format_check; UPDATE claimcore.installation SET installation_format=8"
+                    "ALTER TABLE claimcore.installation DROP CONSTRAINT installation_installation_format_check; UPDATE claimcore.installation SET installation_format=9"
                     [||]
 
             for arguments in
@@ -287,7 +287,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=9; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=9)"
+                    "UPDATE claimcore.installation SET installation_format=10; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=10)"
                     [||]
 
             let! wrapped =
@@ -310,7 +310,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,wrapped_data_key) VALUES(9,$1,'Etc/UTC',$2)"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,case_reference_policy,wrapped_data_key) VALUES(10,$1,'Etc/UTC','CUSTOM_ALLOWED',$2)"
                     [| box database.Fixture.InstallationId; box wrapped |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
@@ -398,14 +398,7 @@ let private publishedFaults () =
 
             waiting.Stop()
 
-            let! result =
-                AdministrationProcess.invoke binary connection database.DataKeyFile [ "status" ] 0
-                |> Async.AwaitTask
-
-            Expect.equal
-                (result.GetProperty("kind").GetString())
-                "STATUS"
-                "Valid source still works after negative controls"
+            do! fault connection [ "status" ] "INSTALLATION_INVALID" ExitCode.Rejected
 
             do!
                 fault
@@ -417,6 +410,22 @@ let private publishedFaults () =
             let! _ =
                 ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
                 |> Async.AwaitTask
+
+            let! result =
+                AdministrationProcess.invoke binary connection database.DataKeyFile [ "status" ] 0
+                |> Async.AwaitTask
+
+            Expect.equal
+                (result.GetProperty("kind").GetString())
+                "STATUS"
+                "Valid source still works after negative controls"
+
+            let setPolicy policy =
+                sql "UPDATE claimcore.installation SET case_reference_policy=$1" [| box policy |]
+
+            do! setPolicy "SYSTEM_ASSIGNED_ONLY"
+            do! fault connection [ "status" ] "INSTALLATION_INVALID" ExitCode.Rejected
+            do! setPolicy "CUSTOM_ALLOWED"
 
             do! fault connection recovery "OWNER_RECOVERY_NAME_REQUIRED" ExitCode.Rejected
 

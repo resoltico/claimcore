@@ -15,7 +15,7 @@ import { inputChoiceRestriction } from "../operation/inputChoices";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
-import { taskInput, taskScalar } from "../protocol/taskCatalog";
+import { openingReferenceInput, taskInput, taskScalar } from "../protocol/taskCatalog";
 import {
   isFormCollection,
   formValueText,
@@ -163,7 +163,12 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
     error,
     sharedErrorId,
     onChange: (next: string) => {
-      if (props.task.creates && input.mode === "OPTIONAL" && next === "") {
+      if (
+        props.task.creates &&
+        input.mode === "OPTIONAL" &&
+        input.id !== openingReferenceInput(props.task)?.id &&
+        next === ""
+      ) {
         props.onFieldsChange({}, [input.id]);
       } else {
         props.onChange(input.id, next);
@@ -295,7 +300,7 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
         });
   const clear = input.clearable;
   let control = null;
-  if (selected && props.values[input.id] !== null) {
+  if (selected && (!clear || props.values[input.id] !== null)) {
     control =
       peer === undefined ? (
         <InputControl input={input} {...props} />
@@ -323,9 +328,11 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
               );
             }}
           />
-          {p.text(input.mode === "OPTIONAL" ? "ui.recordOptionalFact" : "ui.changeFact", {
-            field: title,
-          })}
+          {input.id === openingReferenceInput(props.task)?.id
+            ? p.text("label.useCustomCaseReference")
+            : p.text(input.mode === "OPTIONAL" ? "ui.recordOptionalFact" : "ui.changeFact", {
+                field: title,
+              })}
         </label>
       </legend>
       {selected && clear ? (
@@ -356,7 +363,9 @@ const permitted = (input: Input, props: Props): boolean => {
     input.id !== "field:caseReference" ||
     props.task.subject !== "PEOPLE" ||
     grantScope(props.values) === "CASE";
-  return authored && (editable === undefined || editable.has(input.id)) && scoped;
+  const retainedDraft =
+    input.id === openingReferenceInput(props.task)?.id && Object.hasOwn(props.values, input.id);
+  return authored && (editable === undefined || editable.has(input.id) || retainedDraft) && scoped;
 };
 const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
   // The grant scope already controls omission; a visible case reference is required.
@@ -369,6 +378,10 @@ const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean 
       (taskInput(input.id).kind === "FIELD" || input.id === "input:profile.contact"))
   );
 };
+const selectsField = (input: Input, task: Props["task"]) =>
+  input.id === openingReferenceInput(task)?.id ||
+  (!task.creates && selectsValue(input, task.subject));
+
 const maySelectGrantTarget = (editable: ReadonlyArray<string> | undefined) =>
   editable === undefined ||
   editable.includes("input:caseId") ||
@@ -474,7 +487,7 @@ const Fields = ({
       return null;
     }
     const peer = inputs.find((candidate) => taskInput(candidate.id).key === field?.pairs);
-    if (!props.task.creates && selectsValue(input, props.task.subject)) {
+    if (selectsField(input, props.task)) {
       return (
         <div key={input.id} className="task-field-wide">
           <SelectedValue input={input} {...(peer === undefined ? {} : { peer })} {...props} />
@@ -627,6 +640,8 @@ const CollectionRows = ({
   );
 };
 export const TaskInputs = (props: Props) => {
+  const p = usePresentation();
+  const reference = openingReferenceInput(props.task);
   const inputProps = { ...props, defaults: props.task.defaults };
   const visible = props.task.inputs.filter((input) => permitted(input, props));
   const groups = visible.filter((input) => taskInput(input.id).kind === "GROUP");
@@ -636,6 +651,9 @@ export const TaskInputs = (props: Props) => {
   );
   return (
     <>
+      {reference !== undefined && !Object.hasOwn(props.values, reference.id) ? (
+        <p role="status">{p.text("label.caseReferencePending")}</p>
+      ) : null}
       <Fields inputs={ordinary} showSections {...inputProps} />
       {groups.map((group) => {
         const metadata = taskInput(group.id);

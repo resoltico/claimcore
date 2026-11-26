@@ -198,9 +198,9 @@ let tests =
 
                     Expect.equal request.Page.Limit 17 "Pagination stays a named argument")
             testCase
-                "query and bound operation hints preserve option-looking case references"
+                "query and bound operation hints preserve custom and generated reference spelling"
                 (fun () ->
-                    for reference in [ "--claim"; "--claim'O=Brien ; $(printf untouched)" ] do
+                    for reference in [ "Claim-Mixed"; "cc-0000-0000-0000-0000-98" ] do
                         let query =
                             ControlHints.link (
                                 Link.CaseGet
@@ -264,41 +264,17 @@ let tests =
                             "--text=--urgent"
                             "--"
                         ] do
-                        let prepared = prepare [ "case"; "get"; "--"; reference ]
-                        let input = Frames.value Api.caseGet prepared.Invocation |> Option.get
-
-                        Expect.equal
-                            input.Target
-                            (CaseSelector.Reference reference)
-                            "Every token after the sentinel is literal"
-
-                        Expect.equal
-                            prepared.Language
-                            "en"
-                            "A literal language flag does not change rendering"
-
-                    let submission =
-                        preview
-                            [
-                                "case"
-                                "close"
-                                "--outcome"
-                                "other"
-                                "--expected-revision=7"
-                                "--preview"
-                                "--"
-                                "--language"
-                            ]
-
-                    Expect.equal
-                        (TaskId.token submission.Task)
-                        "case.close"
-                        "The real preview flag precedes the sentinel"
-
-                    Expect.equal
-                        submission.Envelope.Binding
-                        (OperationBinding.Case(CaseSelector.Reference "--language", 7L, None, None))
-                        "The later locale spelling remains the bound reference")
+                        match
+                            withAdmittedVerb
+                                [ "case"; "get"; "--"; reference ]
+                                (Grammar.prepare noAllocation)
+                        with
+                        | Error issues ->
+                            Expect.equal
+                                issues
+                                [ UsageError.InvalidValue("--case-reference", reference) ]
+                                "The literal is refused as a malformed reference"
+                        | Ok _ -> failtest "Expected a malformed literal reference.")
             testCase
                 "explicit assigned named values preserve leading prefixes quotes and equals"
                 (fun () ->
@@ -356,7 +332,7 @@ let tests =
                         subject
                         "The complete subject remains one authored value")
             testCase
-                "required collection hint acquisition admits option-looking quoted case references"
+                "required collection hint acquisition preserves custom and generated case references"
                 (fun () ->
                     let task = TaskId.ofLiteral "people.admit"
 
@@ -375,7 +351,7 @@ let tests =
                         "<ROLE[@CASE-REF]>"
                         "The required collection has an acquisition row"
 
-                    for reference in [ "--claim"; "--claim'O=Brien" ] do
+                    for reference in [ "Claim-Mixed"; "cc-0000-0000-0000-0000-98" ] do
                         let supplied =
                             hint
                                 .Replace("'<principalKind>'", "HUMAN")
@@ -499,7 +475,10 @@ let tests =
 
                     let expanded = TextInputs.expand false literal |> required
                     Expect.equal expanded literal "A literal operand does not request file input"
-                    let submission = preview expanded
+                    let prepared = prepare (explicitOperation expanded)
+
+                    let submission =
+                        Frames.value Api.operationPreview prepared.Invocation |> Option.get
 
                     Expect.equal
                         (TaskId.token submission.Task)
@@ -510,6 +489,10 @@ let tests =
                         submission.Envelope.Binding
                         (OperationBinding.Note(CaseSelector.Reference "--text-file", None))
                         "The source-like operand remains the exact case reference"
+
+                    Expect.isError
+                        submission.Operation
+                        "The literal operand has invalid reference syntax"
 
                     let directory = Directory.CreateTempSubdirectory "claimcore-no-text-io-"
 
@@ -545,7 +528,7 @@ let tests =
                                     path
                                     "--preview"
                                     "--"
-                                    "--claim"
+                                    "Claim-Mixed"
                                 ]
                             |> required
 
@@ -567,8 +550,8 @@ let tests =
 
                         Expect.equal
                             submission.Envelope.Binding
-                            (OperationBinding.Note(CaseSelector.Reference "--claim", None))
-                            "Source expansion preserves the option-looking selector"
+                            (OperationBinding.Note(CaseSelector.Reference "Claim-Mixed", None))
+                            "Source expansion preserves the supplied selector"
 
                         let command = ClaimCore.TestSupport.Submissions.command submission
 

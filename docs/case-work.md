@@ -54,7 +54,11 @@ business date.
 
 ## Open a case
 
-Choose **Open a case** and enter your reference. You can add the incident date and country, Received
+Choose **Open a case**. The register assigns a reference when you record the case, and the receipt
+shows the assigned value. In a register that allows custom case references, select **Use a custom
+case reference** to enter your own. Use a reference free of personal data because it remains
+reserved after erasure. The review shows your request, and the register checks availability when
+you record the case. You can add the incident date and country, Received
 date, narrative, policy number, insurer claim reference and claimed amount with its currency. Received
 means the date your office received the claim. Each observed date must be a valid calendar date at
 or before the business date. Record the actual dates even when they arrived out of order.
@@ -69,11 +73,15 @@ name, contact details or both. Party changes require Register and access to the 
 party hides it from current party lists. Its history stays available to authorized readers until
 case erasure. Case CSV joins current claimant and insurer names in creation order.
 
+From the CLI, `claimcore case open` requests automatic assignment. Where permitted, supply
+`--case-reference REF` to request a custom reference.
+
 ## Change the reference or link a case
 
-With Register, use **Change case reference** on an active open or closed case. Every recorded
-reference remains reserved to that case, including after erasure. Opening an earlier reference
-shows the current one and identifies the matched reference.
+With Register, use **Change case reference** on an active open or closed case that has a custom
+reference. System-assigned references stay fixed. Every recorded reference remains reserved to its
+case, including after erasure. Opening an earlier reference shows the current one and identifies the
+matched reference.
 
 Adding or removing a link requires Manage case work, read access to both cases, and a target that
 has not been erased. You can include a note when adding a link. The source shows its outgoing links.

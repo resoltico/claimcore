@@ -7,7 +7,7 @@ import { TaskInputs } from "../../components/TaskInputs";
 import { ScreenView } from "../../ui/ScreenView";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { taskForAct, taskInput } from "../../protocol/taskCatalog";
+import { openingReferenceInput, taskForAct, taskInput } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues, FormValue } from "../../protocol/forms";
 import type { Notice } from "../../protocol/notices";
@@ -111,9 +111,16 @@ export const OperationForm = (props: OperationFormProps) => {
   }, [onMount, onFieldBlur]);
   useEffect(() => {
     if (model.notice !== null) {
-      form.current?.querySelector<HTMLElement>("[data-error-summary]")?.focus();
+      const openingReference = openingReferenceInput(model.task);
+      const reference =
+        openingReference === undefined || model.fieldErrors[openingReference.id] === undefined
+          ? null
+          : form.current?.querySelector<HTMLElement>(
+              `[data-field-name="${taskInput(openingReference.id).key}"]`,
+            );
+      (reference ?? form.current?.querySelector<HTMLElement>("[data-error-summary]"))?.focus();
     }
-  }, [model.notice]);
+  }, [model.notice, model.task, model.fieldErrors]);
   const allowed = offered.includes(model.entry.kind);
   return (
     <form

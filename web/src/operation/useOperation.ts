@@ -8,7 +8,7 @@ import {
   type OperationAffordance,
 } from "./affordances";
 
-import { operationTask } from "../protocol/taskCatalog";
+import { openingReferenceInput, operationTask } from "../protocol/taskCatalog";
 import { createDraft } from "./operationDraft";
 import { ownerScope, sameOwnerScope } from "../protocol/ownerScope";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
@@ -99,6 +99,13 @@ const suppliedAffordance = (options: Options, kind: string) => {
     (action): action is OperationAffordance =>
       action.task === kind && isOperationAffordance(action),
   );
+};
+const currentAffordance = (state: OperationState, options: Options) => {
+  const task = operationEntry(state.draft.entry);
+  const supplied = suppliedAffordance(options, task.id);
+  return openingReferenceInput(task) === undefined
+    ? (state.draft.affordance ?? supplied)
+    : supplied;
 };
 const fresh = (
   options: Options,
@@ -338,7 +345,7 @@ const prepareValues = (
   binding: OperationBinding = state.draft.binding,
 ): LocalSource => {
   const task = operationEntry(state.draft.entry);
-  const affordance = state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind);
+  const affordance = currentAffordance(state, options);
   if (affordance === undefined || affordance.blocked !== null) {
     throw new Error("A current Core affordance is required.");
   }
@@ -794,7 +801,7 @@ export const useOperation = (supplied: Options) => {
     ...view,
     task: operationEntry(state.draft.entry),
     bindingSource: state.draft.binding,
-    affordance: state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind),
+    affordance: currentAffordance(state, options),
     ownerVerified,
     ...controls,
     refreshPrecondition: () => {

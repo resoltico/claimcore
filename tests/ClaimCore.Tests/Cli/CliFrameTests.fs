@@ -322,11 +322,6 @@ let private exampleFrames () =
         let command = Submissions.command submission
         let selected = ClaimCore.Domain.Tasks.Registry.find submission.Task |> Option.get
 
-        let task =
-            match selected with
-            | ClaimCore.Domain.Tasks.Task.Family task -> task
-            | _ -> failtest "Family task expected"
-
         let stamp =
             {
                 SubjectStamp.Position =
@@ -348,12 +343,20 @@ let private exampleFrames () =
             }
 
         let changes =
-            task.Decide
-                context
-                ClaimCore.Tests.TaskBuilders.environment
-                (current |> Option.map DecisionFacts.fromReplay)
-                command.Binding
-                command.Inputs
+            let environment = ClaimCore.Tests.TaskBuilders.environment
+            let facts = current |> Option.map DecisionFacts.fromReplay
+
+            match selected with
+            | ClaimCore.Domain.Tasks.Task.Opening task ->
+                task.Admit context environment facts command.Binding command.Inputs
+                |> Result.bind (fun opening ->
+                    ClaimCore.Domain.Tasks.Case.Open.accept
+                        (CaseFixtures.reference "DEMO-0001")
+                        None
+                        opening)
+            | ClaimCore.Domain.Tasks.Task.Family task ->
+                task.Decide context environment facts command.Binding command.Inputs
+            | _ -> failtest "Case task expected"
             |> CaseBuilders.accepted
 
         current <-

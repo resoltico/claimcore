@@ -90,6 +90,7 @@ let private owner fixture =
                 (OperationIds.fresh ())
                 DomainInputs.ownerProfile
                 []
+                CaseReferencePolicy.CustomAllowed
                 CancellationToken.None
 
         match provision with

@@ -23,13 +23,26 @@ let declaration =
         ]
 
 let private capability = List.exactlyOne declaration.Capabilities
-let private active = FamilyRules.active false
-let private parse = Parsing.scalar InputTarget.NewCaseReference CaseReference.parse
+
+let private eligible policy (state: DecisionFacts) =
+    CaseReferencePolicy.allowsCustom policy
+    && not (CaseReference.isGenerated state.Reference)
+
+let private gate policy = CaseRules.gate false (eligible policy)
+
+let private parse =
+    Parsing.scalar InputTarget.NewCaseReference CaseReference.parseCustom
 
 let check inputs = Parsing.check parse inputs
 
-let availability environment state binding =
-    CaseRules.availability declaration environment state binding capability active
+let availability (environment: FamilyEnvironment) state binding =
+    CaseRules.availability
+        declaration
+        environment
+        state
+        binding
+        capability
+        (gate environment.CaseReferencePolicy)
 
 let decide context (environment: FamilyEnvironment) (state: DecisionFacts option) binding inputs =
     match state, binding with
@@ -39,7 +52,7 @@ let decide context (environment: FamilyEnvironment) (state: DecisionFacts option
         CaseRules.admitInputs syntax context environment state binding capability
         |> Result.bind (fun () -> syntax)
         |> Result.bind (fun reference ->
-            match active state with
+            match gate environment.CaseReferencePolicy state with
             | Some refusal -> Error refusal
             | None when state.Reference = reference ->
                 Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
@@ -47,7 +60,7 @@ let decide context (environment: FamilyEnvironment) (state: DecisionFacts option
                 let owner = environment.ReferenceOwner reference
 
                 if owner |> Option.exists ((<>) state.Id) then
-                    Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
+                    Error(Refusal.Case CaseRefusal.ReferenceUnavailable)
                 else
                     let change = CaseRules.change context state state.Case.Value
 

@@ -62,6 +62,8 @@ module internal InputSelection =
                 |> Seq.collect id
                 |> Seq.map _.Values
                 |> Seq.toList)
+            |> List.filter (fun values ->
+                text TaskInputId.Scope values = Some(ScopeKind.token ScopeKind.Case))
             |> List.collect (fun values ->
                 [
                     text

@@ -12,7 +12,7 @@ test("notes use one-step unversioned writes, latest three, paging, removal and A
   page,
 }) => {
   await openAuthenticated(page);
-  await openCase(page, `NOTE-${randomUUID()}`);
+  await openCase(page, `NOTE-${randomUUID().slice(0, 8)}`);
   const notes = page.locator('.case-detail [data-region="NOTES"]');
   let writes = 0;
   page.on("request", (request) => {

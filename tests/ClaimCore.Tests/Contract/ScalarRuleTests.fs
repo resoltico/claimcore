@@ -85,21 +85,21 @@ let private textAndDateRuleTests =
                 expectText BusinessField.PolicyNumber 80
                 expectText BusinessField.InsurerClaimReference 80
 
-                for name, expected in
-                    [
-                        BusinessField.IncidentCountry, "[A-Z]{2}"
-                        BusinessField.CaseReference, "[!-~]{1,80}"
-                    ] do
-                    let constraints =
-                        match scalar name with
-                        | ScalarRule.Text value -> value
-                        | _ -> failtest "Expected a text scalar"
+                match scalar BusinessField.IncidentCountry with
+                | ScalarRule.Text constraints ->
+                    Expect.equal constraints.Format.Grammar (Some "[A-Z]{2}") "Permanent syntax"
+                    Expect.isNone constraints.MaximumCharacters "No separate admission bound"
+                | _ -> failtest "Expected a country scalar"
 
-                    Expect.equal constraints.Format.Grammar (Some expected) "Permanent syntax"
-
-                    Expect.isNone
+                match scalar BusinessField.CaseReference with
+                | ScalarRule.Text constraints ->
+                    Expect.equal
                         constraints.MaximumCharacters
-                        "Identifiers do not have grandfatherable syntax")
+                        (Some 32)
+                        "Exact reference length bound"
+
+                    Expect.isSome constraints.Format.Grammar "Public lexical grammar is present"
+                | _ -> failtest "Expected a reference scalar")
             testCase "date rules retain the Gregorian input range" (fun () ->
                 for name in
                     [

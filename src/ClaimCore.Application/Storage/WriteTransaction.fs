@@ -9,10 +9,15 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// The store constructs writes only after lock_ledger_head returns in IStore.Write.
-type internal WriteTx(connection, installation, cipher, head: LedgerPosition, observedAt, token) =
+type internal WriteTx
+    (connection, installation, cipher, head: LedgerPosition, observedAt, caseReferenceEntropy, token)
+    =
     inherit ReadTx(connection, installation, cipher, observedAt, token)
 
     member _.Head = head
+
+    member _.DrawCaseReference() =
+        CaseReference.generate (caseReferenceEntropy ())
 
     member _.AdvanceExpiryFrontier candidate =
         ExpiryFrontierStorage.advance connection candidate token

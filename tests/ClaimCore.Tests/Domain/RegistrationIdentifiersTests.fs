@@ -59,17 +59,20 @@ let private run number revision task members previous =
 
     let input = InputMap.create members Map.empty |> Option.get
 
-    let selected =
+    let environment = ClaimCore.Tests.TaskBuilders.environment
+
+    let state =
+        previous |> Option.map ClaimCore.Domain.Aggregates.DecisionFacts.fromReplay
+
+    let changes =
         match ClaimCore.Domain.Tasks.Registry.find (TaskId.ofLiteral task) with
-        | Some(ClaimCore.Domain.Tasks.Task.Family task) -> task
+        | Some(ClaimCore.Domain.Tasks.Task.Opening _) ->
+            ClaimCore.Tests.TaskBuilders.openCustom context environment state binding input
+        | Some(ClaimCore.Domain.Tasks.Task.Family task) ->
+            task.Decide context environment state binding input
         | _ -> failtest "Expected family task."
 
-    selected.Decide
-        context
-        ClaimCore.Tests.TaskBuilders.environment
-        (previous |> Option.map ClaimCore.Domain.Aggregates.DecisionFacts.fromReplay)
-        binding
-        input
+    changes
     |> required
     |> List.fold
         (fun state change ->

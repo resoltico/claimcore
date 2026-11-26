@@ -73,11 +73,11 @@ let private databaseProfile (database: PostgresFixture.Database) =
 
         do!
             expectProfileRefusal "Initialize" (fun () ->
-                administration.Initialize("Etc/UTC", owner, token))
+                administration.Initialize("Etc/UTC", owner, None, token))
 
         do!
             expectProfileRefusal "Initialize if missing" (fun () ->
-                administration.InitializeIfMissing("Etc/UTC", owner, token))
+                administration.InitializeIfMissing("Etc/UTC", owner, None, token))
 
         do! expectProfileRefusal "Status" (fun () -> administration.Status token)
         do! expectProfileRefusal "Checkpoint capture" (fun () -> administration.Head token)
@@ -125,6 +125,8 @@ let private databaseProfile (database: PostgresFixture.Database) =
 
 let private ownerAdmission (database: PostgresFixture.Database) =
     task {
+        let! _ = ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
+
         use owner =
             new Administration(
                 PostgresFixture.ownerConnectionString database,
@@ -536,6 +538,7 @@ let tests =
                                     administration.Initialize(
                                         "Etc/UTC",
                                         initialOwner database,
+                                        None,
                                         token
                                     ))
                                 "Public initialization refuses an existing schema"
@@ -559,6 +562,7 @@ let tests =
                                         administration.InitializeIfMissing(
                                             "Etc/UTC",
                                             initialOwner database,
+                                            None,
                                             token
                                         )
 

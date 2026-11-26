@@ -139,6 +139,13 @@ module internal OperationService =
             let! proposed =
                 Engine.prepare tx tx.Head decisionContext selected operation binding inputs verified
 
+            let! proposed =
+                match proposed with
+                | Ok(PreparedDecision.Opening(frame, facts)) -> Engine.acceptOpening tx frame facts
+                | Ok(PreparedDecision.Ordinary(plan, _)) ->
+                    System.Threading.Tasks.Task.FromResult(Ok plan)
+                | Error stop -> System.Threading.Tasks.Task.FromResult(Error stop)
+
             match proposed with
             | Error(ExecutionStop.Refused refusal) ->
                 let! explained, disclosure = explainRefusal services tx binding refusal
@@ -159,7 +166,7 @@ module internal OperationService =
                         ReceiptReads.read
                             (ServiceContext.basis services tx.ObservedAt)
                             services.Principal
-                            plan.Snapshot.Requester
+                            plan.Frame.Requester
                             tx
                             record
 
@@ -205,7 +212,23 @@ module internal OperationService =
                      |> Result.map (Previewed.AlreadyAccepted >> Outcome.Succeeded)
                      |> Result.defaultWith Outcome.Failed),
                     disclosure
-            | Ok plan ->
+            | Ok(PreparedDecision.Opening(frame, facts)) ->
+                return
+                    Outcome.Succeeded(
+                        Previewed.Reviewed
+                            {
+                                OperationReview.Task = frame.Declaration.Id
+                                Target = ReviewTarget.Opening(OpeningIntent.requested facts.Intent)
+                                References = { Actors = []; Cases = [] }
+                                Binding = frame.Binding
+                                Changes = []
+                                Opening = Some(Registry.openCase.Preview facts)
+                                ChangesOwnSignInIdentity = false
+                                Context = ServiceContext.runtime services tx.ObservedAt
+                            }
+                    ),
+                    None
+            | Ok(PreparedDecision.Ordinary(plan, descriptions)) ->
                 let! duplicate = duplicateReview tx plan
 
                 match duplicate with
@@ -213,7 +236,7 @@ module internal OperationService =
                     return Outcome.Rejected(Refusal.AttachmentDuplicate id), None
                 | None ->
                     let target =
-                        match plan.Snapshot.State, plan.After with
+                        match plan.Before, plan.After with
                         | _, AggregateState.Family(Some family) ->
                             ReviewTarget.Case(family.Id, family.Reference)
                         | AggregateState.Person before, AggregateState.Person _ ->
@@ -224,12 +247,12 @@ module internal OperationService =
                         | _ -> invalidOp "An admitted decision has no resulting aggregate."
 
                     let! references =
-                        ChangeReferenceReads.read tx plan.Changes.Head.Aggregate plan.Descriptions
+                        ChangeReferenceReads.read tx plan.Changes.Head.Aggregate descriptions
 
                     let changesOwnSignInIdentity =
-                        plan.Snapshot.Requester.Actor
+                        plan.Frame.Requester.Actor
                         |> Option.exists (fun actor ->
-                            plan.Descriptions
+                            descriptions
                             |> List.exists (fun part ->
                                 match part.Description with
                                 | ClaimCore.Domain.Changes.PartDescription.Person description ->
@@ -243,11 +266,12 @@ module internal OperationService =
                         Outcome.Succeeded(
                             Previewed.Reviewed
                                 {
-                                    OperationReview.Task = plan.Snapshot.Declaration.Id
+                                    OperationReview.Task = plan.Frame.Declaration.Id
                                     Target = target
                                     References = references
-                                    Binding = plan.Binding
-                                    Changes = plan.Descriptions
+                                    Binding = plan.Frame.Binding
+                                    Changes = descriptions
+                                    Opening = None
                                     ChangesOwnSignInIdentity = changesOwnSignInIdentity
                                     Context = ServiceContext.runtime services tx.ObservedAt
                                 }
@@ -421,7 +445,12 @@ module internal OperationService =
                 }
         }
 
-    let private initialOwnerInput (services: ServiceContext) (profile: ActorProfileInput) roles =
+    let private initialOwnerInput
+        (services: ServiceContext)
+        (profile: ActorProfileInput)
+        roles
+        policy
+        =
         let kind, issuer, subject = PrincipalKey.parts services.Principal
 
         let text input value =
@@ -429,6 +458,7 @@ module internal OperationService =
 
         let values =
             [
+                text InputTarget.CaseReferencePolicy (CaseReferencePolicy.token policy)
                 text InputTarget.PrincipalKind (Vocabulary.token PrincipalKind.vocabulary kind)
                 text InputTarget.PrincipalIssuer issuer
                 text InputTarget.PrincipalSubject subject
@@ -450,9 +480,11 @@ module internal OperationService =
 
         InputMap.create values (Map.ofList [ TaskCollectionId.PeopleGrants, grants ])
 
-    let internal provisionOwnerInTransaction services tx operationId profile roles =
+    let internal provisionOwnerInTransaction services tx operationId profile roles policy =
         task {
-            match OperationId.create operationId, initialOwnerInput services profile roles with
+            match
+                OperationId.create operationId, initialOwnerInput services profile roles policy
+            with
             | None, _ ->
                 return
                     Verdict.Refuse(
@@ -484,11 +516,13 @@ module internal OperationService =
                         ignore
         }
 
-    let internal provisionOwner services operationId profile roles token =
+    let internal provisionOwner services operationId profile roles policy token =
         services.Store.Write
             {
                 CancellationToken = token
-                Work = fun tx -> provisionOwnerInTransaction services tx operationId profile roles
+                Work =
+                    fun tx ->
+                        provisionOwnerInTransaction services tx operationId profile roles policy
             }
 
     let internal recoverOwnerInTransaction (services: ServiceContext) tx operation binding name =

@@ -145,8 +145,13 @@ let tests =
                         "Case-scoped registration rights still permit edits to that existing case"
 
                     Expect.isFalse
-                        (Advice.installationOffers principal scoped
-                         |> List.contains InstallationOffer.Open)
+                        (Advice.installationOffers
+                            CaseReferencePolicy.CustomAllowed
+                            principal
+                            scoped
+                         |> List.exists (function
+                             | InstallationOffer.Open _ -> true
+                             | _ -> false))
                         "Opening is an installation offer, not the shared registration capability in any scope"
 
                 Expect.stringContains

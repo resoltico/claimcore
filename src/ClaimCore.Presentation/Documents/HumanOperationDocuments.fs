@@ -10,7 +10,8 @@ module HumanReviewDocument =
             | Some principal, _ ->
                 (PrincipalKey.toInput principal).Subject |> ConfirmationTarget.principal
             | None, ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
-            | None, ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
+            | None, (ReviewTarget.Opening _ | ReviewTarget.Person _) ->
+                ConfirmationTarget.Operation operationId
 
         let screen, presentation =
             ReviewDocumentParts.describe (Some operationId) principal seeds review

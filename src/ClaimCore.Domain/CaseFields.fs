@@ -54,6 +54,7 @@ type InputTarget =
     | PrincipalKind
     | PrincipalIssuer
     | PrincipalSubject
+    | CaseReferencePolicy
     | ProfileDisplayName
     | ProfileContact
     | ProfileDigestEmail

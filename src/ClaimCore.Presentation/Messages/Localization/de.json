@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Eröffnen Sie einen Fall mit einem Aktenzeichen. Erfassen Sie die bekannten Angaben.",
-    "source": "39967b35166c"
+    "text": "Eröffnen Sie einen Fall mit den bekannten Registrierungsdaten. Lassen Sie die Fallreferenz leer, damit sie automatisch vergeben wird. Wenn Ihr Register es erlaubt, können Sie eine eigene Fallreferenz eingeben.",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "Ersten Inhaber einrichten",
@@ -423,10 +424,6 @@
     "text": "Verwenden Sie ein gültiges Kalenderdatum im Format YYYY-MM-DD.",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "Das Aktenzeichen ist bereits vorhanden.",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "Steuerzeichen sind nicht erlaubt.",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "Verwenden Sie 1 bis 80 druckbare ASCII-Zeichen ohne Leerzeichen.",
-    "source": "a4d1a5f9f416"
+    "text": "Verwenden Sie eine gültige Fallreferenz. Eine eigene Referenz beginnt mit einem ASCII-Buchstaben und besteht aus bis zu 32 Buchstaben, Ziffern und einzelnen Bindestrichen zwischen Gruppen. Das Präfix CC- ist für automatisch vergebene Referenzen reserviert.",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "Änderungen sind wegen Wartung pausiert. Sie können weiterhin Fälle ansehen und frühere Änderungen prüfen.",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "Verwenden Sie 1 bis {maximumCharacters} druckbare ASCII-Zeichen ohne Leerzeichen. Groß- und Kleinschreibung bezeichnen denselben Fall; die ursprüngliche Schreibweise bleibt erhalten.",
-    "source": "b43a33360aed"
+    "text": "Verwenden Sie 1 bis {maximumCharacters} ASCII-Zeichen. Eigene Referenzen beginnen mit einem Buchstaben und verwenden Buchstaben, Ziffern und einzelne Bindestriche zwischen Gruppen. Das Präfix CC- ist für automatisch vergebene Referenzen reserviert.",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Ihre eigene Referenz für diesen Fall, zum Beispiel CLM-2026-0001.",
-    "source": "adde9fba1cc3"
+    "text": "Eine eigene Referenz bleibt auch nach dem Löschen reserviert. Geben Sie darin keine personenbezogenen Daten an.",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "Wann Sie den zu zahlenden Betrag beschlossen haben.",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "Geben Sie ein Aktenzeichen ohne Leerzeichen ein.",
-    "source": "5722da0c601c"
+    "text": "Prüfen Sie die Fallreferenz und ihre Bindestriche. Beginnen Sie eine eigene Referenz mit einem Buchstaben und verwenden Sie höchstens 32 Buchstaben, Ziffern und Bindestriche. Das Präfix CC- ist reserviert.",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "Wählen Sie eine hier anwendbare Rolle.",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "Geben Sie die künftig verwendete Referenz ein.",
-    "source": "d66b4efc4776"
+    "text": "Der Fall bleibt über die frühere Referenz auffindbar. Geben Sie in der neuen Referenz keine personenbezogenen Daten an.",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "Vorherige Referenz",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "Geben Sie Betrag und Währung ein.",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "Fallreferenz nicht verfügbar.",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "Dieses Register vergibt alle Fallreferenzen automatisch. Entfernen Sie die eigene Referenz, um fortzufahren.",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "Wird beim Eröffnen des Falls vergeben.",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "Eigene Fallreferenz verwenden",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "Nur vom System vergeben",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "Benutzerdefinierte Fallreferenzen erlaubt",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "Regel für Fallreferenzen",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "Die bei der Einrichtung gewählte Regel zur Vergabe von Fallreferenzen.",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "Legen Sie fest, ob eigene Fallreferenzen eingegeben werden dürfen.",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "Wählen Sie eine unterstützte Regel für Fallreferenzen.",
+    "machineMade": true
   }
 }

@@ -49,7 +49,7 @@ type View =
 
 [<RequireQualifiedAccess>]
 type InstallationOffer =
-    | Open
+    | Open of editable: TaskInputId list
     | PeopleAct of TaskId
 
 type CorrectionChoices =
@@ -83,7 +83,7 @@ type CaseAdvice =
 module CaseAdvice =
     let private availabilityReason =
         function
-        | Refusal.Case(CaseRefusal.CaseAlreadyExists | CaseRefusal.NotOffered _)
+        | Refusal.Case(CaseRefusal.NotOffered _)
         | Refusal.Access _
         | Refusal.RegisterMaintenance -> true
         | _ -> false

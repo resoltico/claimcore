@@ -16,6 +16,7 @@ module InputTarget =
         | InputTarget.PrincipalKind -> "principal.kind"
         | InputTarget.PrincipalIssuer -> "principal.issuer"
         | InputTarget.PrincipalSubject -> "principal.subject"
+        | InputTarget.CaseReferencePolicy -> "caseReferencePolicy"
         | InputTarget.ProfileDisplayName -> "profile.displayName"
         | InputTarget.ProfileContact -> "profile.contact"
         | InputTarget.ProfileDigestEmail -> "profile.digestEmail"
