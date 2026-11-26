@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "أفلت ملفًا أو ألصقه",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "يتعذر على ClaimCore قراءة تفضيلاتك المحفوظة. تسري التغييرات على هذه الجلسة فقط حتى تعيد ضبطها.",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "إعادة ضبط التفضيلات المحفوظة",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

@@ -870,8 +870,7 @@ for (const { focusOutside, pointerTarget, gesture } of [
     pointerTarget === null
       ? `a failed attachment file read preserves ${focusOutside ? "external" : "picker"} focus`
       : `a held ${useTouch ? gesture : "pointer gesture"} on the attachment picker ${pointerTarget} stays inactive after settlement`;
-  test(`${name} ${useTouch ? "@chromium" : "@engine"}`, async ({ page, browserName }) => {
-    test.skip(useTouch && browserName !== "chromium", "Split touch gestures require Chromium CDP.");
+  test(`${name} ${useTouch ? "@chromium" : "@engine"}`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.addInitScript(() => {
       let blockFirstRead = true;

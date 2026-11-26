@@ -112,6 +112,11 @@ the supplied application images include their pinned runtime.
 
 ### PostgreSQL database profile
 
+Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings.
+Npgsql 11 rejects either setting, even when multiplexing was disabled. If you collect Npgsql metrics
+and set `Application Name`, use that value when filtering `db.client.connection.pool.name`.
+See the [Npgsql 11 release notes](https://www.npgsql.org/doc/release-notes/11.0.html).
+
 Use PostgreSQL 19. Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
 The PostgreSQL cluster must have data checksums enabled. The Compose files initialize this profile.
 On a self-managed server, provision separate login roles and set their passwords securely. Create an
@@ -622,8 +627,10 @@ downloads.
 ## Browser preferences and assets
 
 Settings owns language, regional format, green/blue accent and light/dark/system preferences, including
-the sign-in dialog. Preferences use `claimcore.presentation.v3`. Invalid records use defaults; invalid
-individual values fall back. Direction, contrast and forced-colour preferences remain effective.
+the sign-in dialog. Preferences use `claimcore.presentation.v3`. When saved preferences cannot be read,
+ClaimCore shows a notice and uses browser defaults. Changes apply to the current session until you
+choose **Reset saved preferences**, which replaces the unreadable preferences with your current
+session choices. Direction, contrast and forced-colour preferences remain effective.
 These choices do not alter facts, business dates or rights.
 
 Publish the entire frontend build directory, including the private `public-assets.json` inventory.

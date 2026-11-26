@@ -13,7 +13,7 @@ WORKDIR /source
 COPY --from=source /source/ ./
 RUN --mount=type=cache,target=/root/.npm \
     test "$(node --version)" = "v$(cat .node-version)" \
-    && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
+    && npm install --global --ignore-scripts "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && npm --prefix web ci \
     && npm --prefix web run build
 

@@ -1,4 +1,10 @@
-import { browserTransportPolicy } from "./browser-transport-lint.config.ts";
+import {
+  browserTransportPolicy,
+  coordinatorFiles,
+  siblingTransportImport,
+  transportAdapters,
+  transportImport,
+} from "./browser-transport-lint.config.ts";
 import { defineConfig, type OxlintConfig } from "oxlint";
 import { fileURLToPath } from "node:url";
 import { parse } from "node:path";
@@ -54,6 +60,11 @@ const typedPresentationPolicy: NonNullable<OxlintConfig["overrides"]>[number] = 
 const checkout = fileURLToPath(new URL("../", import.meta.url));
 const { root } = parse(checkout);
 const allowed = (path: string) => fileURLToPath(new URL(path, import.meta.url)).slice(root.length);
+
+const presentationImport = {
+  group: ["**/views/**", "**/components/**", "**/presentation/**"],
+  message: "Lower layers must not import presentation layers.",
+};
 
 const config: OxlintConfig = defineConfig({
   categories: {
@@ -126,12 +137,7 @@ const config: OxlintConfig = defineConfig({
     "no-restricted-imports": [
       "error",
       {
-        patterns: [
-          {
-            group: ["**/api/transport", "**/api/transport.ts"],
-            message: "Use the service facade (src/api/service.ts).",
-          },
-        ],
+        patterns: [transportImport],
       },
     ],
     "import/consistent-type-specifier-style": "off",
@@ -187,7 +193,6 @@ const config: OxlintConfig = defineConfig({
       files: ["src/**/*.ts", "src/**/*.tsx"],
       rules: { "presenter-message/whole-messages": "error" },
     },
-    { files: ["**/contracts/**", "src/generated/**"], rules: { "max-lines": "off" } },
     {
       files: [
         "src/**/*.ts",
@@ -230,112 +235,7 @@ const config: OxlintConfig = defineConfig({
       },
     },
     typedPresentationPolicy,
-    browserTransportPolicy,
-    {
-      files: [
-        "src/api/**/*.ts",
-        "src/api/**/*.tsx",
-        "src/operation/**/*.ts",
-        "src/operation/**/*.tsx",
-        "src/hooks/**/*.ts",
-        "src/hooks/**/*.tsx",
-        "src/hooks/operation/operationDelivery.ts",
-      ],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
-              {
-                group: ["**/presentation", "**/presentation/**"],
-                message: "Keep locale and rendered text out of operation and request coordination.",
-              },
-            ],
-          },
-        ],
-        "no-restricted-globals": [
-          "error",
-          {
-            globals: [
-              {
-                name: "Intl",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "localStorage",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "sessionStorage",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "navigator",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "fetch",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "XMLHttpRequest",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "WebSocket",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "EventSource",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-            ],
-            checkGlobalObject: true,
-          },
-        ],
-      },
-      excludeFiles: ["src/api/transport.ts"],
-    },
-    {
-      files: ["src/api/transport.ts"],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
-              {
-                group: ["**/presentation", "**/presentation/**"],
-                message: "Keep locale and rendered text out of operation and request coordination.",
-              },
-            ],
-          },
-        ],
-        "no-restricted-globals": [
-          "error",
-          {
-            globals: [
-              {
-                name: "Intl",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "localStorage",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "sessionStorage",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-              {
-                name: "navigator",
-                message: "Operation state and transport must remain presentation-independent.",
-              },
-            ],
-            checkGlobalObject: true,
-          },
-        ],
-      },
-    },
+    ...browserTransportPolicy,
     {
       files: ["tests/**", "e2e/**"],
       env: {
@@ -357,37 +257,36 @@ const config: OxlintConfig = defineConfig({
       },
     },
     {
-      files: ["src/api/**", "src/hooks/**", "src/operation/**"],
+      files: coordinatorFiles,
+      excludeFiles: transportAdapters,
       rules: {
         "no-restricted-imports": [
           "error",
           {
-            patterns: [
-              {
-                group: ["**/api/transport", "**/api/transport.ts"],
-                message: "Use the service facade (src/api/service.ts).",
-              },
-              {
-                group: ["**/views/**", "**/components/**", "**/presentation/**"],
-                message: "Lower layers must not import presentation layers.",
-              },
-            ],
+            patterns: [transportImport, presentationImport],
           },
         ],
       },
     },
     {
-      files: ["src/api/service.ts"],
+      files: ["src/api/**"],
+      excludeFiles: transportAdapters,
       rules: {
         "no-restricted-imports": [
           "error",
           {
-            patterns: [
-              {
-                group: ["**/views/**", "**/components/**", "**/presentation/**"],
-                message: "Lower layers must not import presentation layers.",
-              },
-            ],
+            patterns: [transportImport, siblingTransportImport, presentationImport],
+          },
+        ],
+      },
+    },
+    {
+      files: transportAdapters,
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            patterns: [presentationImport],
           },
         ],
       },
@@ -503,7 +402,7 @@ const config: OxlintConfig = defineConfig({
       },
     },
     {
-      files: ["src/api/**", "src/operation/**", "src/hooks/**"],
+      files: coordinatorFiles,
       rules: {
         "import-boundary/no-restricted-paths": [
           "error",

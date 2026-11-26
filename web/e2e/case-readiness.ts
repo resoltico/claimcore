@@ -1,10 +1,11 @@
 import { expect, type Page, type Locator } from "@playwright/test";
-import { parsePreferences, preferenceKey } from "../src/presentation/preferences";
+import { defaults, parsePreferences, preferenceKey } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 
 const presenterFor = async (page: Page) =>
   createPresenter(
-    parsePreferences(await page.evaluate((key) => localStorage.getItem(key), preferenceKey)),
+    parsePreferences(await page.evaluate((key) => localStorage.getItem(key), preferenceKey)) ??
+      defaults,
   );
 
 export const acceptanceBanner = (page: Page) =>

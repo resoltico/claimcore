@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "파일 놓기 또는 붙여넣기",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore에서 저장된 환경설정을 읽을 수 없습니다. 환경설정을 초기화할 때까지 변경 사항은 이 세션에만 적용됩니다.",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "저장된 환경설정 초기화",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

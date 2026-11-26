@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "ファイルをドロップまたは貼り付け",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore は保存済みの設定を読み込めません。設定をリセットするまで、変更はこのセッションにのみ適用されます。",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "保存済みの設定をリセット",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

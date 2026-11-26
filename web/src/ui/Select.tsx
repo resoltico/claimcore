@@ -209,7 +209,7 @@ export const Select = ({
             selectionBehavior="replace"
             disallowEmptySelection
             selectedKeys={[draft]}
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- Focus follows explicit popup opening; the listbox is absent on initial load.
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- Focus follows explicit popup opening; the listbox is absent on initial load.
             autoFocus={focus}
             escapeKeyBehavior="none"
             onSelectionChange={(keys) => {

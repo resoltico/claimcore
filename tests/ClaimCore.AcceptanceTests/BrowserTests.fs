@@ -96,39 +96,33 @@ let private failedResults (spec: JsonElement) =
     |> Seq.distinct
     |> String.concat "; "
 
+let rec private specifications (suite: JsonElement) =
+    seq {
+        let mutable specs = Unchecked.defaultof<JsonElement>
+
+        if suite.TryGetProperty("specs", &specs) then
+            yield! specs.EnumerateArray()
+
+        let mutable children = Unchecked.defaultof<JsonElement>
+
+        if suite.TryGetProperty("suites", &children) then
+            for child in children.EnumerateArray() do
+                yield! specifications child
+    }
+
 let private failedSources output =
     try
         use document =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
 
-        let rec collect (suite: JsonElement) =
-            let mutable children = Unchecked.defaultof<JsonElement>
-
-            let nested =
-                if suite.TryGetProperty("suites", &children) then
-                    children.EnumerateArray() |> Seq.toList |> List.collect collect
-                else
-                    []
-
-            let mutable specs = Unchecked.defaultof<JsonElement>
-
-            let failed =
-                if suite.TryGetProperty("specs", &specs) then
-                    specs.EnumerateArray()
-                    |> Seq.toList
-                    |> List.filter (fun spec -> not (spec.GetProperty("ok").GetBoolean()))
-                    |> List.map (fun spec ->
-                        let definition =
-                            sourceLocation spec |> Option.defaultValue "unknown source"
-
-                        let failure = failedResults spec
-                        definition + (if failure = "" then "" else " at " + failure))
-                else
-                    []
-
-            nested @ failed
-
-        collect document.RootElement |> List.distinct |> String.concat ", "
+        specifications document.RootElement
+        |> Seq.filter (fun spec -> not (spec.GetProperty("ok").GetBoolean()))
+        |> Seq.map (fun spec ->
+            let definition = sourceLocation spec |> Option.defaultValue "unknown source"
+            let failure = failedResults spec
+            definition + (if failure = "" then "" else " at " + failure))
+        |> Seq.distinct
+        |> String.concat ", "
     with _ ->
         "standard report unavailable"
 
@@ -152,18 +146,67 @@ let private retainFailureFiles output destination =
             Directory.CreateDirectory(Path.GetDirectoryName target |> nonNull) |> ignore
             File.Copy(source, target, true)
 
-let rec private includesUnicode (suite: JsonElement) =
-    let mutable children = Unchecked.defaultof<JsonElement>
-    let mutable specs = Unchecked.defaultof<JsonElement>
+let private includesUnicode report =
+    specifications report
+    |> Seq.exists (fun spec ->
+        spec.GetProperty("file").GetString()
+        |> nonNull
+        |> fun file -> file.Contains("unicode-parity"))
 
-    (suite.TryGetProperty("specs", &specs)
-     && (specs.EnumerateArray()
-         |> Seq.exists (fun spec ->
-             spec.GetProperty("file").GetString()
-             |> nonNull
-             |> fun file -> file.Contains("unicode-parity"))))
-    || (suite.TryGetProperty("suites", &children)
-        && (children.EnumerateArray() |> Seq.exists includesUnicode))
+let private requirePassingReport (report: JsonElement) =
+    let stats = report.GetProperty("stats")
+    let count (field: string) = stats.GetProperty(field).GetInt32()
+    let expected = count "expected"
+    Expect.isGreaterThan expected 0 "Selected browser scope is nonempty"
+    Expect.equal (count "skipped") 0 "Selected browser scope contains no skipped checks"
+    Expect.equal (count "unexpected") 0 "Every selected browser check passed"
+    Expect.equal (count "flaky") 0 "Browser evidence does not hide a failed attempt"
+
+    let occurrences =
+        specifications report
+        |> Seq.collect (fun spec ->
+            let location = sourceLocation spec |> Option.defaultValue "unknown source"
+
+            spec.GetProperty("tests").EnumerateArray()
+            |> Seq.map (fun test -> location, test))
+        |> Seq.toArray
+
+    Expect.equal occurrences.Length expected "The report accounts for every selected browser check"
+
+    for location, test in occurrences do
+        Expect.equal
+            (test.GetProperty("expectedStatus").GetString())
+            "passed"
+            (location + " must be expected to pass")
+
+        let results = test.GetProperty("results")
+        Expect.equal (results.GetArrayLength()) 1 (location + " must finish in one attempt")
+
+        Expect.equal
+            (results[0].GetProperty("status").GetString())
+            "passed"
+            (location + " must pass")
+
+    expected
+
+let private reportSpecTimings (report: JsonElement) =
+    let timings =
+        seq {
+            for spec in specifications report do
+                let name = spec.GetProperty("file").GetString() |> nonNull |> Path.GetFileName
+
+                for test in spec.GetProperty("tests").EnumerateArray() do
+                    let result = test.GetProperty("results")[0]
+                    yield name, result.GetProperty("duration").GetDouble()
+        }
+
+    for name, duration in
+        timings
+        |> Seq.groupBy fst
+        |> Seq.map (fun (name, cases) -> name, Seq.sumBy snd cases)
+        |> Seq.sortBy (fun (name, duration) -> -duration, name)
+        |> Seq.truncate 5 do
+        printfn "Browser spec %s: %.0f ms across selected tests." name duration
 
 
 let private run engine =
@@ -243,17 +286,15 @@ let private run engine =
         use report =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
 
-        let stats = report.RootElement.GetProperty("stats")
-        let count (field: string) = stats.GetProperty(field).GetInt32()
-        Expect.isGreaterThan (count "expected") 0 "Selected browser scope is nonempty"
-        Expect.equal (count "skipped") 0 "Selected browser scope contains no skipped checks"
-        Expect.equal (count "unexpected") 0 "Every selected browser check passed"
-        Expect.equal (count "flaky") 0 "Browser evidence does not hide a failed attempt"
+        let passed =
+            try
+                requirePassingReport report.RootElement
+            with _ ->
+                failureReport |> Option.iter (retainFailureFiles output)
+                reraise ()
 
-        printfn
-            "Published browser %s: %d passed; zero skipped, unexpected or flaky."
-            engine
-            (count "expected")
+        printfn "Published browser %s: %d passed on the first attempt." engine passed
+        reportSpecTimings report.RootElement
 
         if
             engine = "chromium"
@@ -264,6 +305,24 @@ let private run engine =
 
         fixture.Complete()
     }
+
+[<Tests>]
+let reportTest =
+    testCase "Playwright report rejects expected failures and incomplete results" (fun () ->
+        let check expectedStatus results =
+            use report =
+                JsonDocument.Parse(
+                    $$"""{"stats":{"expected":1,"skipped":0,"unexpected":0,"flaky":0},"suites":[{"specs":[{"file":"synthetic.spec.ts","line":1,"tests":[{"expectedStatus":"{{expectedStatus}}","results":{{results}}}]}]}]}"""
+                )
+
+            requirePassingReport report.RootElement
+
+        let passed = """[{"status":"passed"}]"""
+        let failed = """[{"status":"failed"}]"""
+        Expect.equal (check "passed" passed) 1 "One passing attempt qualifies"
+        Expect.throws (fun () -> check "failed" failed |> ignore) "An expected failure is refused"
+        Expect.throws (fun () -> check "passed" failed |> ignore) "A failed attempt is refused"
+        Expect.throws (fun () -> check "passed" "[]" |> ignore) "A missing attempt is refused")
 
 [<Tests>]
 let tests =

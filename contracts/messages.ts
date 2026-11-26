@@ -1213,6 +1213,7 @@ export type MessageArgs = {
   "ui.findCase": Readonly<Record<string, never>>;
   "ui.formatPreview": { readonly "amount": string; readonly "date": string };
   "ui.generalOperationLookup": Readonly<Record<string, never>>;
+  "ui.incompatiblePreferences": Readonly<Record<string, never>>;
   "ui.incompleteResponse": Readonly<Record<string, never>>;
   "ui.keepEditing": Readonly<Record<string, never>>;
   "ui.language": Readonly<Record<string, never>>;
@@ -1279,6 +1280,7 @@ export type MessageArgs = {
   "ui.reloadRoles": Readonly<Record<string, never>>;
   "ui.reportPage": { readonly "page": string };
   "ui.reportingDates": Readonly<Record<string, never>>;
+  "ui.resetSavedPreferences": Readonly<Record<string, never>>;
   "ui.resourceUnavailable": Readonly<Record<string, never>>;
   "ui.restartReport": Readonly<Record<string, never>>;
   "ui.restartSignIn": Readonly<Record<string, never>>;

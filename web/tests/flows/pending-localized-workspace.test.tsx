@@ -16,7 +16,9 @@ import { recoveryRecord, testJournal } from "../support/recovery.fixtures";
 it.each(["ar", "en-XA"] as const)(
   "renders the actual pending recovery screen in %s with a semantic deadline and accessible controls",
   async (language) => {
-    expect(savePreferences({ ...defaults, language, displayLocale: "ar-EG" })).toBe(true);
+    expect(savePreferences({ ...defaults, language, displayLocale: "ar-EG" }).kind).toBe(
+      "available",
+    );
     const record = recoveryRecord();
     await testJournal.put(record);
     const lookup = vi

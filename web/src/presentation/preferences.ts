@@ -47,10 +47,9 @@ export const defaults: Preferences = Object.freeze({
   mode: "system",
   accent: accents.find((accent) => accent === tokens.$extensions.claimcore.defaultAccent)!,
 });
-export const preferenceKey = "claimcore.presentation.v3";
-const resolveMode = (value: unknown): Mode => modes.find((mode) => mode === value) ?? defaults.mode;
-const resolveAccent = (value: unknown): Accent =>
-  accents.find((accent) => accent === value) ?? defaults.accent;
+const preferenceVersion = 3;
+const keyPrefix = "claimcore.presentation.v";
+export const preferenceKey = `${keyPrefix}${preferenceVersion}`;
 const canonicalTag = (value: unknown): string | null => {
   if (typeof value !== "string" || value.length > 64) {
     return null;
@@ -118,58 +117,146 @@ const isStoredPreferences = (value: unknown): value is StoredPreferences =>
   value !== null &&
   !Array.isArray(value) &&
   Object.keys(value).sort().join(",") === "accent,displayLocale,language,mode,version";
-export const parsePreferences = (
-  text: string | null,
-  fallback: Preferences = defaults,
-): Preferences => {
+export const parsePreferences = (text: string | null): Preferences | null => {
   if (text === null || text.length > 256) {
-    return fallback;
+    return null;
   }
   try {
     const value: unknown = JSON.parse(text);
-    if (!isStoredPreferences(value) || value.version !== 3) {
-      return fallback;
+    if (!isStoredPreferences(value) || value.version !== preferenceVersion) {
+      return null;
     }
-    return {
-      language: resolveLanguage(value.language),
-      displayLocale: resolveDisplayLocale(value.displayLocale),
-      mode: resolveMode(value.mode),
-      accent: resolveAccent(value.accent),
-    };
+    const language = languages.find((candidate) => candidate === value.language);
+    const displayLocale = displayLocales.find((candidate) => candidate === value.displayLocale);
+    const mode = modes.find((candidate) => candidate === value.mode);
+    const accent = accents.find((candidate) => candidate === value.accent);
+    return language === undefined ||
+      displayLocale === undefined ||
+      mode === undefined ||
+      accent === undefined
+      ? null
+      : { language, displayLocale, mode, accent };
   } catch {
-    return fallback;
+    return null;
   }
 };
+
+type IncompatiblePreferences = {
+  kind: "incompatible";
+  records: ReadonlyMap<string, string>;
+};
+export type PreferencePersistence =
+  { kind: "available" } | { kind: "unavailable" } | IncompatiblePreferences;
+
+const readStoredPreferences = ():
+  | IncompatiblePreferences
+  | {
+      kind: "available";
+      preferences: Preferences | null;
+    } => {
+  const raw = localStorage.getItem(preferenceKey);
+  const current = parsePreferences(raw);
+  if (current !== null) {
+    return { kind: "available", preferences: current };
+  }
+
+  const incompatible = new Map<string, string>();
+  if (raw !== null) {
+    incompatible.set(preferenceKey, raw);
+  }
+  // Retired keys are recognized as evidence of stored preferences. They are never decoded.
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (
+      key !== null &&
+      key.startsWith(keyPrefix) &&
+      key !== preferenceKey &&
+      /^[1-9][0-9]*$/u.test(key.slice(keyPrefix.length))
+    ) {
+      const retired = localStorage.getItem(key);
+      if (retired !== null) {
+        incompatible.set(key, retired);
+      }
+    }
+  }
+  return incompatible.size === 0
+    ? { kind: "available", preferences: null }
+    : { kind: "incompatible", records: incompatible };
+};
+
 export const loadPreferenceState = (): Readonly<{
   preferences: Preferences;
   detected: boolean;
+  persistence: PreferencePersistence;
 }> => {
   const fallback = negotiatePreferences(
     typeof navigator === "undefined" ? [] : navigator.languages,
   );
   try {
-    const preferences = parsePreferences(localStorage.getItem(preferenceKey), fallback);
-    return { preferences, detected: preferences === fallback };
+    const stored = readStoredPreferences();
+    if (stored.kind === "available" && stored.preferences !== null) {
+      return {
+        preferences: stored.preferences,
+        detected: false,
+        persistence: { kind: "available" },
+      };
+    }
+    return {
+      preferences: fallback,
+      detected: true,
+      persistence: stored.kind === "incompatible" ? stored : { kind: "available" },
+    };
   } catch {
-    return { preferences: fallback, detected: true };
+    return { preferences: fallback, detected: true, persistence: { kind: "unavailable" } };
   }
 };
-export const loadPreferences = (): Preferences => loadPreferenceState().preferences;
-export const savePreferences = (value: Preferences): boolean => {
+const writePreferences = (value: Preferences): PreferencePersistence => {
+  localStorage.setItem(
+    preferenceKey,
+    JSON.stringify({
+      version: preferenceVersion,
+      language: value.language,
+      displayLocale: value.displayLocale,
+      mode: value.mode,
+      accent: value.accent,
+    }),
+  );
+  return { kind: "available" };
+};
+export const savePreferences = (value: Preferences): PreferencePersistence => {
   try {
-    localStorage.setItem(
-      preferenceKey,
-      JSON.stringify({
-        version: 3,
-        language: value.language,
-        displayLocale: value.displayLocale,
-        mode: value.mode,
-        accent: value.accent,
-      }),
-    );
-    return true;
+    const stored = readStoredPreferences();
+    return stored.kind === "incompatible" ? stored : writePreferences(value);
   } catch {
-    return false;
+    return { kind: "unavailable" };
+  }
+};
+export const resetPreferences = (
+  value: Preferences,
+  acknowledged: IncompatiblePreferences,
+): PreferencePersistence => {
+  try {
+    const stored = readStoredPreferences();
+    if (stored.kind === "available") {
+      return { kind: "available" };
+    }
+    if (
+      stored.records.size !== acknowledged.records.size ||
+      [...stored.records].some(([key, raw]) => acknowledged.records.get(key) !== raw)
+    ) {
+      return stored;
+    }
+
+    // Replace the current key atomically before clearing confirmed retired entries.
+    const written = writePreferences(value);
+    for (const [key, raw] of stored.records) {
+      if (key !== preferenceKey && localStorage.getItem(key) === raw) {
+        localStorage.removeItem(key);
+      }
+    }
+    return written;
+  } catch {
+    return { kind: "unavailable" };
   }
 };
 export const languageDirection = (language: Language): "ltr" | "rtl" => {

@@ -259,8 +259,8 @@ let private confirmedCleanup () =
 
             builder.UseLoggerFactory factory |> ignore
             use source = builder.Build()
-            // Npgsql 10.0.3 emits CommittedTransaction after awaiting the server's COMMIT response:
-            // https://github.com/npgsql/npgsql/blob/v10.0.3/src/Npgsql/NpgsqlTransaction.cs#L125-L126
+            // Npgsql emits CommittedTransaction after awaiting the server's COMMIT response.
+            // https://github.com/npgsql/npgsql/blob/v11.0.0/src/Npgsql/NpgsqlTransaction.cs#L164-L165
             let! confirmed =
                 RegisterMaintenanceStore.change
                     source

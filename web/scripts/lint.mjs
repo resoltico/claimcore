@@ -57,7 +57,7 @@ if (findings.length > 0) {
 
 const completion = spawnSync(
   process.execPath,
-  [oxlint, "--config", "test-completion-lint.config.ts", "tests"],
+  [oxlint, "--config", "test-completion-lint.config.ts", "tests", "e2e"],
   { cwd: root, stdio: "inherit" },
 );
 if (completion.status !== 0) {

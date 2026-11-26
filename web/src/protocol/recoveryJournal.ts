@@ -4,8 +4,9 @@ import { taskDefinitions } from "@contracts/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 export type RecoveryScope = PrincipalScope;
+export const recoveryRecordFormat = 2;
 export type RecoveryRecord = RecoveryScope & {
-  readonly format: 2;
+  readonly format: typeof recoveryRecordFormat;
   readonly attemptId: string;
   readonly operationId: string;
   readonly subject:
@@ -38,7 +39,7 @@ const isAttempt = (value: Record<string, unknown>): boolean =>
 export const isRecoveryRecord = (value: unknown): value is RecoveryRecord =>
   isObject(value) &&
   Object.keys(value).length === 8 &&
-  value["format"] === 2 &&
+  value["format"] === recoveryRecordFormat &&
   isScope(value) &&
   isAttempt(value);
 export const sameRecoveryScope = (left: RecoveryScope, right: RecoveryScope): boolean =>

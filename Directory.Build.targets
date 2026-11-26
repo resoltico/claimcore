@@ -1,0 +1,14 @@
+<Project>
+  <!-- F# SDK 11.0.100 can preserve the ref assembly MVID across assembly version changes.
+       CopyRefAssembly then skips a stale destination. Let SDK copy it again on version mismatch. -->
+  <Target Name="RefreshVersionedFSharpReferenceAssembly"
+          BeforeTargets="CopyFilesToOutputDirectory"
+          Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(ProduceReferenceAssembly)' == 'true'
+                     and '$(CopyBuildOutputToOutputDirectory)' != 'false' and '$(SkipCopyBuildProduct)' != 'true'
+                     and Exists('$(TargetRefPath)')">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetRefPath)">
+      <Output TaskParameter="Assemblies" ItemName="_ExistingFSharpReferenceAssembly" />
+    </GetAssemblyIdentity>
+    <Delete Files="$(TargetRefPath)" Condition="'%(_ExistingFSharpReferenceAssembly.Version)' != '$(AssemblyVersion)'" />
+  </Target>
+</Project>

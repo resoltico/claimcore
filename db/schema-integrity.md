@@ -6,6 +6,9 @@ admission, permissions, roles, state transitions and business limits. The curren
 belongs to [RecordFormat](../src/ClaimCore.RecordFormat), with permanent scalar representations in
 [Domain values](../src/ClaimCore.Domain/Values.fs). Native decoding and verification retain
 responsibility for semantic and per-field agreement; SQL guards do not reproduce task policy.
+The [ledger structure checks](../tests/ClaimCore.IntegrationTests/LedgerStructureTests.fs)
+exercise the current installation format with a fresh database and require the installation row,
+ledger row and append operation to reject an incompatible format.
 
 The following inventory covers the structural boundaries affected by the current baseline. SQL names
 identify their implementation, rather than making this document a second source for expressions or

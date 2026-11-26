@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "Soltar o pegar un archivo",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore no puede leer tus preferencias guardadas. Los cambios se aplican solo a esta sesión hasta que las restablezcas.",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "Restablecer las preferencias guardadas",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

@@ -17,12 +17,16 @@ export default defineConfig({
     "vitest/no-focused-tests": "error",
     "eslint/no-restricted-properties": [
       "error",
-      {
-        property: "todo",
-        message: "Required tests must execute; runner name filters are local selection.",
-      },
-      { property: "skipIf", message: "Required tests must execute on the configured platform." },
-      { property: "runIf", message: "Required tests must execute on the configured platform." },
+      ...["todo", "skipIf", "runIf", "fails", "fixme"].map((property) => ({
+        property,
+        message: "Required tests must execute and pass in their configured scope.",
+      })),
+      ...["skip", "fail"].map((property) => ({
+        object: "test",
+        property,
+        message:
+          "Select the supported test scope in runner configuration. Assert expected product errors in ordinary tests.",
+      })),
     ],
   },
 });

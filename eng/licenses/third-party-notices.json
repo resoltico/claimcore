@@ -34,8 +34,8 @@
     },
     {
       "file": "PostgreSQL-NPGSQL.txt",
-      "sha256": "2e1d9cc6ed4eb7fe6fa82091846c06b4f58571a2c3b54777db6baeca10dd2d74",
-      "source": "https://raw.githubusercontent.com/npgsql/npgsql/d3768398c17877b3a916c3c4d87e8e11698991fc/LICENSE"
+      "sha256": "3c0c71ba8971ad9a06b1b0f9626fca6d9ca3def83ace0c88b15981eb976728fc",
+      "source": "https://raw.githubusercontent.com/npgsql/npgsql/4d174200ed48e3e3ab16419dbf84dd655da59de6/LICENSE"
     },
     {
       "file": "Duende-Apache-2.0.txt",
@@ -236,7 +236,7 @@
     },
     {
       "id": "Npgsql",
-      "version": "10.0.3",
+      "version": "11.0.0",
       "repository": "https://github.com/npgsql/npgsql",
       "texts": [
         "PostgreSQL-NPGSQL.txt"
@@ -244,8 +244,8 @@
       "assets": [
         "runtime:Npgsql.dll"
       ],
-      "packageRevision": "d3768398c17877b3a916c3c4d87e8e11698991fc",
-      "licenseRevision": "d3768398c17877b3a916c3c4d87e8e11698991fc"
+      "packageRevision": "4d174200ed48e3e3ab16419dbf84dd655da59de6",
+      "licenseRevision": "4d174200ed48e3e3ab16419dbf84dd655da59de6"
     },
     {
       "id": "System.IdentityModel.Tokens.Jwt",

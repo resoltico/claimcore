@@ -1,9 +1,9 @@
-import { languageDirection, loadPreferences } from "./presentation/preferences";
+import { languageDirection, loadPreferenceState } from "./presentation/preferences";
 import { loadLanguage } from "./presentation/languageCatalog";
 import { translate } from "./presentation/messages";
 import { loginPath } from "./routing/loginPath";
 
-const preferences = loadPreferences();
+const { preferences, persistence } = loadPreferenceState();
 void loadLanguage(preferences.language)
   .then(() => {
     const heading = document.getElementById("sign-in-incomplete");
@@ -14,6 +14,12 @@ void loadLanguage(preferences.language)
     document.documentElement.lang = preferences.language;
     document.documentElement.dir = languageDirection(preferences.language);
     heading.textContent = translate(preferences, "ui.signInIncomplete");
+    if (persistence.kind === "incompatible") {
+      const warning = document.createElement("p");
+      warning.setAttribute("role", "status");
+      warning.textContent = translate(preferences, "ui.incompatiblePreferences");
+      heading.after(warning);
+    }
     restart.textContent = translate(preferences, "ui.restartSignIn");
     restart.href = loginPath(preferences.language);
   })

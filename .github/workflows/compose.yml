@@ -1,35 +1,14 @@
 name: Compose restart
 
-# The evaluation Compose stack is not part of the required Gate. This workflow builds it from the
-# checkout and proves that a stop and restart keeps the installation, whenever deployment inputs change
-# and weekly for image and toolchain drift.
+# CI calls the same smoke script for qualification. This workflow checks scheduled and on-demand runs.
 on:
-  pull_request:
-    paths:
-      - "deployment/**"
-      - "db/**"
-      - "src/ClaimCore.Server/**"
-      - "src/ClaimCore.Application/**"
-      - "eng/compose-restart-smoke.sh"
-      - "eng/source-archive.sh"
-      - ".github/workflows/compose.yml"
-  push:
-    branches: [main]
-    paths:
-      - "deployment/**"
-      - "db/**"
-      - "src/ClaimCore.Server/**"
-      - "src/ClaimCore.Application/**"
-      - "eng/compose-restart-smoke.sh"
-      - "eng/source-archive.sh"
-      - ".github/workflows/compose.yml"
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: compose-restart-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read

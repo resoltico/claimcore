@@ -186,5 +186,7 @@
   "ui.filtersSheet": "Filters",
   "ui.filtersSheetCount": "Filters ({count})",
   "ui.rowActionLabel": "{action}: {row}",
-  "ui.attachments.drop": "Drop or paste a file"
+  "ui.attachments.drop": "Drop or paste a file",
+  "ui.incompatiblePreferences": "ClaimCore cannot read your saved preferences. Changes apply only to this session until you reset them.",
+  "ui.resetSavedPreferences": "Reset saved preferences"
 }

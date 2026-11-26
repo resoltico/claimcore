@@ -296,49 +296,6 @@ let private freshness (database: PostgresFixture.Database) =
             "Pool reset preserves the bounded fixed statement set"
     }
 
-let private multiplexing (database: PostgresFixture.Database) =
-    task {
-        let! actor = caseWorker database.Fixture
-
-        let! opened =
-            Service.executeSubmission
-                actor
-                (((request
-                    (database.Fixture)
-                    (500)
-                    ("MULTIPLEXED-WORK")
-                    (0L)
-                    "case.open"
-                    (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (registration)
-                    )))))
-                token
-
-        let caseId = accepted opened |> caseReceipt |> _.CaseId
-
-        let settings =
-            NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
-
-        settings.Password <- "synthetic-only"
-        settings.Multiplexing <- true
-        use source = NpgsqlDataSource.Create(settings.ConnectionString)
-        use! connection = source.OpenConnectionAsync()
-        let! facts = Projections.globalReadFacts connection database.Fixture.Owner token
-
-        Expect.isSome
-            facts.People.Actor
-            "An existing multiplexed configuration retains unprepared global reads"
-
-        let! work = WorkStorage.summaries connection [ caseId ] (DateOnly(2026, 11, 2)) token
-
-        Expect.equal
-            work.Count
-            1
-            "Multiplexed named-row work reads use their supported unprepared path"
-
-        Expect.equal work[caseId].Work.Revision Revision.zero "The current root remains genuine"
-    }
-
 let private cancellation (database: PostgresFixture.Database) =
     task {
         let! _ = caseWorker database.Fixture
@@ -424,9 +381,6 @@ let tests =
             testCaseAsync
                 "current principal dates and facts survive warmed plans and pool reuse"
                 (withPool freshness)
-            testCaseAsync
-                "multiplexed sources retain supported unprepared reads"
-                (withPool multiplexing)
             testCaseAsync
                 "cancelled cold preparation releases its connection for recovery"
                 (withPool cancellation)

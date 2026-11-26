@@ -16,11 +16,13 @@ import { catalogLanguage, languageLoaded, loadLanguage } from "./languageCatalog
 import { bootMessages } from "./chromeMessages";
 import {
   loadPreferenceState,
+  resetPreferences,
   savePreferences,
   changePreferences,
   languageDirection,
   type PreferenceChange,
   type Preferences,
+  type PreferencePersistence,
   type Language,
 } from "./preferences";
 
@@ -29,7 +31,7 @@ type State = {
   ready: boolean;
   pending: Language | null;
   failed: Language | null;
-  persistenceFailed: boolean;
+  persistence: PreferencePersistence;
   changed: PreferenceChange | null;
   detected: boolean;
 };
@@ -41,7 +43,7 @@ const activate = (current: State, language: Language, initiated: boolean): State
     ready: true,
     pending: null,
     failed: null,
-    persistenceFailed: initiated ? !savePreferences(preferences) : current.persistenceFailed,
+    persistence: initiated ? savePreferences(preferences) : current.persistence,
     changed: initiated ? { kind: "LANGUAGE", language } : current.changed,
     detected: initiated ? false : current.detected,
   };
@@ -54,7 +56,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     ready: languageLoaded(initial.language),
     pending: languageLoaded(initial.language) ? null : initial.language,
     failed: null,
-    persistenceFailed: false,
+    persistence: initialState.persistence,
     changed: null,
     detected: initialState.detected,
   }));
@@ -113,7 +115,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...current,
         preferences: next,
-        persistenceFailed: !savePreferences(next),
+        persistence: savePreferences(next),
         changed: change,
         detected: false,
       };
@@ -122,6 +124,12 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
   const retryLanguage = () => {
     if (state.failed !== null) {
       requestLanguage(state.failed);
+    }
+  };
+  const resetSavedPreferences = () => {
+    if (state.persistence.kind === "incompatible") {
+      const persistence = resetPreferences(state.preferences, state.persistence);
+      setState((current) => ({ ...current, persistence }));
     }
   };
   if (presenter === null) {
@@ -157,7 +165,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
       value={{
         ...presenter,
         setPreferences,
-        persistenceFailed: state.persistenceFailed,
+        persistenceFailed: state.persistence.kind === "unavailable",
         changed: state.changed,
         detectedLanguage: state.detected,
         requestedLanguage: state.pending,
@@ -165,7 +173,17 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
         retryLanguage,
       }}
     >
-      <I18nProvider locale={catalogLanguage(preferences.language)}>{children}</I18nProvider>
+      <I18nProvider locale={catalogLanguage(preferences.language)}>
+        {state.persistence.kind === "incompatible" ? (
+          <div className="incompatible-preferences">
+            <p role="alert">{presenter.text("ui.incompatiblePreferences")}</p>
+            <button type="button" onClick={resetSavedPreferences}>
+              {presenter.text("ui.resetSavedPreferences")}
+            </button>
+          </div>
+        ) : null}
+        {children}
+      </I18nProvider>
     </PresentationContext>
   );
 };

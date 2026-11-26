@@ -1,8 +1,5 @@
 import { isRepresentable, strictByteProfile } from "@contracts/client";
 const inProfile = (value: unknown, depth: number): boolean => {
-  if (depth > strictByteProfile.maximumDepth) {
-    return false;
-  }
   if (typeof value === "string") {
     return isRepresentable(value);
   }
@@ -10,11 +7,16 @@ const inProfile = (value: unknown, depth: number): boolean => {
     return Number.isSafeInteger(value);
   }
   if (Array.isArray(value)) {
-    return value.every((item) => inProfile(item, depth + 1));
+    return (
+      depth < strictByteProfile.maximumDepth && value.every((item) => inProfile(item, depth + 1))
+    );
   }
   if (typeof value === "object" && value !== null) {
-    return Object.entries(value).every(
-      ([key, item]) => isRepresentable(key) && inProfile(item, depth + 1),
+    return (
+      depth < strictByteProfile.maximumDepth &&
+      Object.entries(value).every(
+        ([key, item]) => isRepresentable(key) && inProfile(item, depth + 1),
+      )
     );
   }
   return value === null || typeof value === "boolean";

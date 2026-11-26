@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings for Npgsql 11.0.0.
+- If you set `Application Name`, update any Npgsql connection pool metric filters that select the previous pool label.
+- PostgreSQL enforces read-only snapshots for ClaimCore's shared read and verification paths.
+- Release checks reject stale project versions in NuGet locks and require the tag and dated changelog to match the built product version.
+- Incremental F# builds refresh stale reference assemblies after a product version change.
+- Browser preferences preserve incompatible data until you explicitly reset them.
+- Browser JSON admission enforces the published nesting limit for empty and populated containers.
+- CI requires selected tests to pass, checks shipping project references, and qualifies dependency and Compose changes before merge.
+
 ## [0.22.0] - 2026-11-26
 
 - Use a [fresh installation](docs/operating.md#install-a-fresh-register) for format 9. Previous formats require their matching builds, including for restoring backups.

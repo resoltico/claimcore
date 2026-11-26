@@ -1,5 +1,5 @@
 import { chooseOption } from "../support/choice-entry";
-import { renderHook } from "@testing-library/react";
+import { render as renderRaw, renderHook } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useRef } from "react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -9,7 +9,7 @@ import { usePresentation } from "../../src/presentation/context";
 import { Message } from "../../src/presentation/Message";
 import {
   defaults,
-  loadPreferences,
+  loadPreferenceState,
   parsePreferences,
   preferenceKey,
   resolveDisplayLocale,
@@ -24,26 +24,6 @@ it("resolves explicit language and display-format preferences independently with
   for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "it-IT"]) {
     expect(resolveLanguage(input)).toBe("en");
   }
-  expect(
-    parsePreferences(
-      '{"version":3,"language":null,"displayLocale":"lv-LV","mode":"system","accent":"green"}',
-    ),
-  ).toEqual({
-    language: "en",
-    displayLocale: "lv-LV",
-    mode: "system" as const,
-    accent: "green" as const,
-  });
-  expect(
-    parsePreferences(
-      '{"version":3,"language":"ar","displayLocale":null,"mode":"system","accent":"green"}',
-    ),
-  ).toEqual({
-    language: "ar",
-    displayLocale: "en-GB",
-    mode: "system" as const,
-    accent: "green" as const,
-  });
   expect(resolveLanguage("LV-lv")).toBe("lv");
   expect(resolveLanguage("ar-EG")).toBe("ar");
   expect(resolveLanguage("en-xa")).toBe("en-XA");
@@ -55,7 +35,7 @@ it("resolves explicit language and display-format preferences independently with
     parsePreferences(
       JSON.stringify({
         version: 3,
-        language: "lv-LV",
+        language: "lv",
         displayLocale: "ar-EG",
         mode: "system" as const,
         accent: "green" as const,
@@ -69,7 +49,7 @@ it("resolves explicit language and display-format preferences independently with
   });
 });
 
-it("refuses corrupt, oversized and unknown preference records without retaining arbitrary data", () => {
+it("refuses corrupt, oversized and unknown preference records without interpreting arbitrary data", () => {
   for (const text of [
     null,
     "",
@@ -83,15 +63,16 @@ it("refuses corrupt, oversized and unknown preference records without retaining 
     '{"version":1,"language":"ar"}',
     '{"version":1,"language":"ar","displayLocale":"ar-EG","claimant":"secret"}',
   ]) {
-    expect(parsePreferences(text)).toEqual(defaults);
+    expect(parsePreferences(text)).toBeNull();
   }
   expect(
     parsePreferences(
       '{"version":3,"language":null,"displayLocale":42,"mode":"system","accent":"green"}',
     ),
-  ).toEqual({ ...defaults, accent: "green" });
+  ).toBeNull();
   localStorage.setItem(preferenceKey, "private-invalid-text");
-  expect(loadPreferences()).toEqual(defaults);
+  expect(loadPreferenceState().persistence.kind).toBe("incompatible");
+  expect(loadPreferenceState().preferences).toEqual(defaults);
 });
 
 it("persists only presentation preferences and remains usable when storage is denied", () => {
@@ -101,17 +82,17 @@ it("persists only presentation preferences and remains usable when storage is de
     mode: "system" as const,
     accent: "green" as const,
   };
-  expect(savePreferences(next)).toBe(true);
+  expect(savePreferences(next).kind).toBe("available");
   expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({ version: 3, ...next });
-  expect(loadPreferences()).toEqual(next);
+  expect(loadPreferenceState().preferences).toEqual(next);
   vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
     throw new Error("denied");
   });
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
     throw new Error("denied");
   });
-  expect(loadPreferences()).toEqual(defaults);
-  expect(savePreferences(next)).toBe(false);
+  expect(loadPreferenceState().preferences).toEqual(defaults);
+  expect(savePreferences(next).kind).toBe("unavailable");
 });
 
 it("projects owned preference fields from typed width subtypes", () => {
@@ -123,7 +104,7 @@ it("projects owned preference fields from typed width subtypes", () => {
     mode: "system" as const,
     accent: "green" as const,
   };
-  expect(savePreferences(extended)).toBe(true);
+  expect(savePreferences(extended).kind).toBe("available");
   expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({
     version: 3,
     language: "lv",
@@ -131,7 +112,7 @@ it("projects owned preference fields from typed width subtypes", () => {
     mode: "system" as const,
     accent: "green" as const,
   });
-  expect(loadPreferences()).toEqual({
+  expect(loadPreferenceState().preferences).toEqual({
     language: "lv",
     displayLocale: "ar-EG",
     mode: "system" as const,
@@ -192,6 +173,22 @@ it("announces unsaved preferences in the chosen language without blocking the sw
   expect(document.documentElement.lang).toBe("lv");
   expect(document.querySelector('[aria-live="polite"]')).not.toHaveTextContent("denied-secret");
   expect(document.querySelector('[aria-live="polite"]')?.textContent).not.toBe("");
+});
+
+it("reports incompatible preferences even on the standalone sign-in recovery page", async () => {
+  const unreadable = '{"version":2}';
+  localStorage.setItem(preferenceKey, unreadable);
+  renderRaw(
+    <main>
+      <h1 id="sign-in-incomplete">Sign-in could not be completed.</h1>
+      <a id="restart-sign-in" href="/auth/login">
+        Restart sign-in
+      </a>
+    </main>,
+  );
+  await import("../../src/authRecovery");
+  expect(await screen.findByRole("status")).toHaveTextContent("cannot read your saved preferences");
+  expect(localStorage.getItem(preferenceKey)).toBe(unreadable);
 });
 
 it("requires an explicit presentation provider instead of silently using ambient locale", () => {

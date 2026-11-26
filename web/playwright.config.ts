@@ -73,11 +73,13 @@ export default defineConfig({
     {
       name: "firefox",
       testIgnore: "**/design-anatomy-classic*.spec.ts",
+      grepInvert: /@chromium\b/u,
       use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
       testIgnore: "**/design-anatomy-classic*.spec.ts",
+      grepInvert: /@chromium\b/u,
       use: { ...devices["Desktop Safari"] },
     },
   ],
