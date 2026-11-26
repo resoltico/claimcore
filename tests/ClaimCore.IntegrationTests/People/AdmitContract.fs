@@ -75,8 +75,8 @@ let private effectKinds (receipt: OperationReceipt) =
 let internal lifecycle fixture =
     task {
         let! owner = caseWorker fixture
-        let first = "ADMIT@CASE"
-        let uuidReference = "10000000-0000-4000-8000-000000000777"
+        let first = "ADMIT-CASE"
+        let uuidReference = "a0000000000040008000000000000777"
 
         let! a =
             Service.executeSubmission

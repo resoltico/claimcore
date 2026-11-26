@@ -66,8 +66,7 @@ let private qualify () =
         let input = frame["input"] |> nonNull
         input["operationId"] <- JsonValue.Create operation
 
-        (input["inputs"] |> nonNull)["field:caseReference"] <-
-            JsonValue.Create("DRAIN-" + operation)
+        (input["inputs"] |> nonNull).AsObject().Remove("field:caseReference") |> ignore
 
         let bytes = Encoding.UTF8.GetBytes(frame.ToJsonString())
         let pending = Task.Run(fun () -> run fixture fixture.Environment bytes 0)
@@ -91,6 +90,13 @@ let private qualify () =
             (outcomeKind reply)
             "ACCEPTED"
             "The admitted case write returns its committed receipt during graceful stop"
+
+        let subject = (data reply).GetProperty "subject"
+
+        Expect.stringStarts
+            (subject.GetProperty("caseReference").GetString() |> nonNull)
+            "CC-"
+            "Draining preserves the generated assignment"
 
         let! exitCode = fixture.WaitForWebExit(TimeSpan.FromSeconds 10.)
         Expect.equal exitCode 0 "The owned process exits normally after admitted work drains"

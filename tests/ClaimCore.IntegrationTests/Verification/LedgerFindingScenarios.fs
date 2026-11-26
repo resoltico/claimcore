@@ -121,54 +121,22 @@ let internal revision (database: PostgresFixture.Database) =
 
 let internal start (database: PostgresFixture.Database) =
     task {
-        let! actor = populated database
-
-        let! reply =
-            Service.executeSubmission
-                actor
-                (((request
-                    (database.Fixture)
-                    (12)
-                    ("other-reference")
-                    (0L)
-                    "case.open"
-                    (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (registration)
-                    )))))
-                token
-
-        let second = accepted reply
-
-        do! sql database "DROP INDEX claimcore.ledger_natural_key" [||]
+        let! _ = populated database
 
         do!
-            rewrite database second.Position.Sequence (fun value ->
-                let request, snapshot = livePayload (CaseFixtures.reference "synthetic-a") value
-                let reference = CaseFixtures.reference "synthetic-a"
+            rewrite database (CaseFixtures.sequence 4L) (fun value ->
+                let root = value.Root
 
-                let snapshot =
-                    { snapshot with
-                        Reference = reference
-                        State =
-                            CaseState.map
-                                (fun fields ->
-                                    { fields with
-                                        CaseReference = reference
-                                    })
-                                snapshot.State
+                // Retain the first case effect and rebuild the commitment with a different opening identity.
+                rehashed
+                    { root.Header with
+                        OperationId = CaseFixtures.operationId (id database.Fixture 12)
                     }
-
-                updateCase
-                    (Submissions.createRaw
-                        (TaskId.token request.Task)
-                        request.OperationId
-                        request.Envelope.Binding
-                        (request.Envelope.Inputs
-                         |> Map.add
-                             (Submissions.field BusinessField.CaseReference)
-                             (SubmissionValue.Text "synthetic-a")))
-                    snapshot
-                    value)
+                    root.Structure.Task
+                    root.Structure.Binding
+                    root.Structure.Retained
+                    root.Structure.Effects
+                    root.Structure.Compartments)
 
         do! finding VerificationFinding.HistoryStart database
     }

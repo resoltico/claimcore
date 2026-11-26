@@ -80,6 +80,10 @@
     --value-measure: var(--measure-identifier);
   }
 
+  .data-table-value .short-identifier {
+    white-space: nowrap;
+  }
+
   .data-table-value:is(
     [data-kind="PARTY"],
     [data-kind="TEXT"],

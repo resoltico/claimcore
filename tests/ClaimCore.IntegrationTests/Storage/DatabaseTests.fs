@@ -125,6 +125,8 @@ let private databaseProfile (database: PostgresFixture.Database) =
 
 let private ownerAdmission (database: PostgresFixture.Database) =
     task {
+        let! _ = ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
+
         use owner =
             new Administration(
                 PostgresFixture.ownerConnectionString database,

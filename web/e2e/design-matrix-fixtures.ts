@@ -521,7 +521,7 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
 };
 const seedCases = async (page: Page, marker: string, date: string) => {
   const references = Object.fromEntries(
-    states.map((state) => [state, state === "undecided" ? `~${marker}/?#` : `${marker}-${state}`]),
+    states.map((state) => [state, `${marker}-${state}`]),
   ) as Record<CaseState, string>;
   const registration = registrationInput({
     incidentDate: date,

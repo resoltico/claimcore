@@ -132,6 +132,26 @@
       "issues": [
         {
           "field": "caseReference",
+          "code": "CUSTOM_REFERENCE_NOT_ALLOWED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseReferencePolicy",
+          "code": "CASE_REFERENCE_POLICY_FORMAT"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseReference",
           "code": "REFERENCE_FORMAT"
         }
       ]

@@ -178,10 +178,13 @@ test("historical exact Find admits a case-folded reference and restores shortcut
     inputs: { "input:newReference": current },
   });
   expect(changed.outcome.kind).toBe("ACCEPTED");
-  const expectedHref = referencePath(earlier.toLowerCase());
+  const selectedReference = earlier.toLowerCase();
+  const expectedHref = referencePath(selectedReference);
   await page.goto(expectedHref, { waitUntil: "commit" });
   await expect(page.locator("#case-detail-title")).toHaveText(current);
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(earlier);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+    selectedReference,
+  );
 
   await page.goto("/cases?view=ALL");
   const before = page.url();
