@@ -16,11 +16,11 @@ export const chooseAdmissionRole = async () => {
   await user.click(screen.getByRole("radio", { name: "Case reader" }));
 };
 
-/** The person drawer has both a header and footer Close action. */
+/** The person dialog has both a header and footer Close action. */
 export const closePersonDetails = async () => {
   const user = userEvent.setup();
-  const drawer = screen.getByRole("dialog");
-  const close = within(drawer).getAllByRole("button", { name: "Close" })[0]!;
+  const dialog = screen.getByRole("dialog");
+  const close = within(dialog).getAllByRole("button", { name: "Close" })[0]!;
   close.focus();
   await user.click(close);
   await waitFor(() => {
@@ -30,7 +30,7 @@ export const closePersonDetails = async () => {
   });
 };
 
-/** Exercise external cache invalidation without clicking the inert directory behind a drawer. */
+/** Exercise external cache invalidation without clicking the inert directory behind a dialog. */
 export const DisclosureRefreshDriver = ({
   capture,
 }: {

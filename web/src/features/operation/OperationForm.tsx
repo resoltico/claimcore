@@ -65,7 +65,9 @@ const OperationInputs = ({ model, current, offered, capturedInputs }: OperationF
   const allowed = offered.includes(model.entry.kind);
   return (
     <>
-      <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
+      {openingReferenceInput(model.task) === undefined ? (
+        <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
+      ) : null}
       <FormContext current={current} task={model.task.id} />
       {model.task.inputs.some((input) => taskInput(input.id).kind === "GROUP") ? (
         <p>{p.text("label.correctionSelection")}</p>

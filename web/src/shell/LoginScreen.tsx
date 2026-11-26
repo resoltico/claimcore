@@ -1,3 +1,4 @@
+import { ProductBrand } from "./ProductBrand";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { PageTitle } from "../ui/Page";
 import { useEffect, useRef, useState } from "react";
@@ -52,7 +53,7 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
     <main className="login-shell">
       <section aria-labelledby="login-title" className="login-card">
         <p className="product-name">
-          <img className="product-mark" src="/brand.svg" alt="" /> ClaimCore
+          <ProductBrand />
         </p>
         <PageTitle
           id="login-title"

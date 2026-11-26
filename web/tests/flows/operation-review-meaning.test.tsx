@@ -3,14 +3,14 @@ import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { fireEvent, within } from "@testing-library/react";
 import { render, screen } from "../support/presentation-test-support";
-import { OperationReview } from "../../src/features/operation/OperationReview";
+import { ReviewDialog } from "../support/operation-review.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import type { OperationSubmission, HumanReview, PresentedEntry, Screen } from "@contracts/client";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { operationId } from "../support/service-foundation.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
 
-type Model = ComponentProps<typeof OperationReview>["model"];
+type Model = ComponentProps<typeof ReviewDialog>["model"];
 const model = (input: OperationSubmission, review: HumanReview): Model => ({
   prepared: prepareRequest("operation.execute", input),
   review,
@@ -98,7 +98,7 @@ it("preserves Core-supplied target and technical values without changing the pre
   const operation = model(correction, review);
   const prepared = operation.prepared!;
   const { bytes } = prepared;
-  render(<OperationReview model={operation} />);
+  render(<ReviewDialog model={operation} />);
   const dialog = screen.getByRole("dialog");
   expect(dialog.querySelector('[data-region="IDENTITY"]')).toHaveTextContent("CASE-1");
   expect(within(dialog).queryByText("Grant scope", { exact: true })).toBeNull();
@@ -169,7 +169,7 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
 it.each(["INSTALLATION", "CASE"] as const)(
   "people review displays supplied %s scope and literal token-looking subject",
   (kind) => {
-    render(<OperationReview model={peopleReviewModel(kind)} />);
+    render(<ReviewDialog model={peopleReviewModel(kind)} />);
     const dialog = screen.getByRole("dialog");
     const request = dialog.querySelector<HTMLElement>(".screen-details")!;
     fireEvent.click(request.querySelector("summary")!);
@@ -219,7 +219,7 @@ it.each(localized)(
       }),
     );
     render(
-      <OperationReview
+      <ReviewDialog
         model={model(correction, {
           ...review,
           presentation: {
@@ -302,7 +302,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
       },
     },
   };
-  render(<OperationReview model={model(input, proposed)} />);
+  render(<ReviewDialog model={model(input, proposed)} />);
   expect(screen.getByRole("dialog")).toHaveTextContent(/Copies held elsewhere are not affected/u);
 });
 it("shows Core profile changes rather than recomputing proposed values from authored input", () => {
@@ -358,7 +358,7 @@ it("shows Core profile changes rather than recomputing proposed values from auth
       unchanged: [],
     },
   };
-  render(<OperationReview model={model(input, proposed)} />);
+  render(<ReviewDialog model={model(input, proposed)} />);
   const dialog = screen.getByRole("dialog");
   for (const text of [
     "Recorded name",

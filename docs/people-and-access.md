@@ -64,7 +64,7 @@ For a case-specific role, choose reference or ID and enter only that target. Swi
 replaces the active target; blank or malformed active text is retained for a precise correction. An
 existing seeded grant keeps its supplied target. All-cases roles send neither selector.
 
-The directory uses the full available width; person details and changes open in drawers. Empty access
+The directory uses the full available width; person details and changes open in centered dialogs. Empty access
 requests omit their table. No-pending status requires all collected pages to be empty with no further
 page; a failed or incomplete read does not establish that there are no requests.
 

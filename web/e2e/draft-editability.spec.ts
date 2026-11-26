@@ -28,6 +28,7 @@ test("automatic opening reviews pending assignment and records a copyable case r
   await openAuthenticated(page);
   await startOpen(page);
   const custom = page.getByRole("checkbox", { name: "Use a custom case reference" });
+  await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveCount(0);
   if (systemOnly) {
     await expect(custom).toHaveCount(0);
   } else {
@@ -36,12 +37,15 @@ test("automatic opening reviews pending assignment and records a copyable case r
   }
   await expect(
     page.getByRole("status").filter({ hasText: "Assigned when the case is opened." }),
-  ).toBeVisible();
+  ).toHaveCount(1);
+  await expect(page.getByText(/Leave the case reference blank/u)).toHaveCount(0);
   const identity = await reviewDraft(page);
   const review = page.getByRole("dialog");
-  await expect(
-    review.getByText("Assigned when the case is opened.", { exact: true }),
-  ).toBeVisible();
+  await expect(review.getByText("Assigned when the case is opened.", { exact: true })).toHaveCount(
+    1,
+  );
+  await expect(review.getByText(/Leave the case reference blank/u)).toHaveCount(0);
+  await expect(review.getByText(/Nothing is recorded until you confirm/u)).toBeVisible();
   await expect(review.getByRole("button", { name: /Copy.*Case reference/u })).toHaveCount(0);
   await expect(review.getByRole("link", { name: /Case reference/u })).toHaveCount(0);
   await noHorizontalOverflow(page, "narrow");

@@ -1,3 +1,4 @@
+import { ProductBrand } from "./ProductBrand";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { Page } from "../ui/Page";
 import { renderCatalogKey } from "../presentation/messages";
@@ -48,8 +49,7 @@ export const AccessState = ({
   return (
     <main className="access-state">
       <span className="product-name">
-        <img className="product-mark" src="/brand.svg" alt="" />
-        ClaimCore
+        <ProductBrand />
       </span>
       <Page id="access-state-title" title={renderCatalogKey(p, titleId)} headingRef={heading}>
         <ScreenView

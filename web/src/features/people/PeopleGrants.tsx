@@ -14,7 +14,7 @@ import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { PresentedValue } from "../../components/PresentedValue";
 import { IconButton } from "../../ui/IconButton";
-import { Dialog } from "../../ui/Dialog";
+import { WorkDialog } from "../../ui/WorkDialog";
 import { Button } from "../../ui/Button";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { followLink } from "../../routing/followLink";
@@ -220,7 +220,7 @@ export const PeopleGrants = ({
   const zone = page.page?.basis.timeZone ?? "UTC";
   const countLink = responsibilityLink(document);
   return (
-    <Dialog
+    <WorkDialog
       title={
         caption === undefined ? (
           p.text("label.account")
@@ -230,7 +230,6 @@ export const PeopleGrants = ({
       }
       identity={<PersonAccountFacts body={body} timeZone={zone} countLink={countLink} />}
       closeLabel={p.text("ui.close")}
-      placement="end"
       headerEnd={
         <div className="actions">
           {settings === null ? null : (
@@ -253,6 +252,6 @@ export const PeopleGrants = ({
       }
     >
       <PersonContents page={page} actions={actions} onRevoke={onRevoke} />
-    </Dialog>
+    </WorkDialog>
   );
 };

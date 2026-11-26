@@ -23,11 +23,11 @@ export const showAccountActions = async (page: Page): Promise<void> => {
   }
 };
 export const workspaceSettingsNavigation = async (page: Page): Promise<Locator> => {
-  const drawer = page.locator(
+  const dialog = page.locator(
     '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
   );
-  if (await drawer.isVisible()) {
-    return drawer;
+  if (await dialog.isVisible()) {
+    return dialog;
   }
   await showAccountActions(page);
   return page.locator('[data-menu-item="settings"], .shell-more a[href="/settings"]');

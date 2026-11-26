@@ -14,7 +14,7 @@ import {
   openPersonEditor,
   chooseAdmissionRole,
   DisclosureRefreshDriver,
-} from "../support/people-drawer.fixtures";
+} from "../support/people-dialog.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelineDocument } from "../support/timeline-document.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";

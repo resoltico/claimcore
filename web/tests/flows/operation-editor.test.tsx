@@ -10,7 +10,7 @@ import { editor, previewReply, deferredResponse } from "../support/presentation-
 import { wireResponse } from "../support/reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("returns focus to the drawer review action after returning to editing", async () => {
+it("returns focus to the work dialog review action after returning to editing", async () => {
   const pending = deferredResponse();
   vi.mocked(fetch).mockReturnValueOnce(pending.promise);
   render(editor());

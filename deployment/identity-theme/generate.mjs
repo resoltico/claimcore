@@ -20,6 +20,7 @@ const font = tokens.foundation["font-body"].$value;
 const radius = tokens.foundation["radius-sm"].$value;
 const cardRadius = tokens.foundation["radius-md"].$value;
 const control = tokens.foundation["size-control-touch"].$value;
+const markSize = tokens.foundation["size-product-mark"].$value;
 
 mkdirSync(join(target, "resources/css"), { recursive: true });
 mkdirSync(join(target, "resources/img"), { recursive: true });
@@ -31,6 +32,7 @@ writeFileSync(
   join(target, "resources/css/claimcore.css"),
   `:root {
 ${variables("light")}
+  color-scheme: light dark;
   --keycloak-card-top-color: transparent;
   --pf-v5-global--FontFamily--text: ${font};
   --pf-v5-global--FontFamily--heading: ${font};
@@ -53,11 +55,9 @@ ${variables("dark")}
 }
 #kc-header-wrapper::before {
   content: "";
-  display: grid;
-  place-items: center;
-  inline-size: ${control};
-  block-size: ${control};
-  border-radius: ${radius};
+  flex: none;
+  inline-size: ${markSize};
+  block-size: ${markSize};
   background: url("../img/brand.svg") center / contain no-repeat;
 }
 .pf-v5-c-login__main, #kc-content {

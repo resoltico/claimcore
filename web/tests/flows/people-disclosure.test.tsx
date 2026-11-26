@@ -11,7 +11,7 @@ import {
   openPersonEditor,
   chooseAdmissionRole,
   DisclosureRefreshDriver,
-} from "../support/people-drawer.fixtures";
+} from "../support/people-dialog.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
@@ -421,7 +421,7 @@ it.each([
       "true",
     );
     // Leaving the area requests discard through the global navigation boundary,
-    // even when current disclosure has removed the operation drawer entirely.
+    // even when current disclosure has removed the operation dialog entirely.
     await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),

@@ -9,7 +9,6 @@ import { isReviewPresentationComplete } from "../../presentation/review";
 import { taskForCommand } from "../../protocol/taskCatalog";
 import type { HumanReview } from "@contracts/client";
 import type { PreparedRequest } from "../../protocol/preparedRequest";
-import { Dialog } from "../../ui/Dialog";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { renderCatalogKey } from "../../presentation/messages";
@@ -163,8 +162,6 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     ),
   };
 };
-const reviewOpen = (phase: string) =>
-  phase === "REVIEWING" || phase === "PREPARING" || phase === "SUBMITTING";
 const ReviewContents = ({
   review,
   complete,
@@ -224,13 +221,13 @@ export const OperationReview = ({
   model: ReviewModel;
   paused?: boolean;
   showsSubject?: boolean;
-  children?: (parts: { body: ReactNode; actions: ReactNode } | null) => ReactNode;
+  children: (parts: { body: ReactNode; actions: ReactNode } | null) => ReactNode;
 }) => {
   const p = usePresentation();
   const complete = model.review === null || isReviewPresentationComplete(model.review.presentation);
   const controls = useReviewControls(model, paused || !complete);
   if (model.review === null || model.prepared === null || controls === null) {
-    return children?.(null) ?? null;
+    return children(null);
   }
   const body = (
     <ReviewContents
@@ -249,21 +246,5 @@ export const OperationReview = ({
       {controls.action}
     </>
   );
-  if (children !== undefined) {
-    return children({ body, actions });
-  }
-  return (
-    <Dialog
-      title={p.text("label.reviewTitle")}
-      placement="end"
-      closeLabel={p.text("ui.returnToEdit")}
-      description={p.text("ui.reviewDescription")}
-      isOpen={reviewOpen(model.phase)}
-      isDismissable={!model.busy}
-      onOpenChange={model.returnToEdit}
-      footer={actions}
-    >
-      {body}
-    </Dialog>
-  );
+  return children({ body, actions });
 };

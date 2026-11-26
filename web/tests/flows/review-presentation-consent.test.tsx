@@ -5,7 +5,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { reviewConfirm } from "../support/review-controls";
 import { preparedFor } from "../support/operation-form.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
-import { OperationReview } from "../../src/features/operation/OperationReview";
+import { ReviewDialog } from "../support/operation-review.fixtures";
 const reviewed = (labelId: string): Review => ({
   ...closeReview,
   presentation: {
@@ -42,7 +42,7 @@ it.each([
     const confirm = vi.fn();
     const returnToEdit = vi.fn();
     render(
-      <OperationReview
+      <ReviewDialog
         model={{
           prepared,
           review,

@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "案件擦除后，自定义编号仍会保留。请勿在其中包含个人信息。",
-    "source": "2156c99e44ef",
+    "text": "自定义编号在更正或擦除后仍会保留。请勿在编号中包含个人信息。",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

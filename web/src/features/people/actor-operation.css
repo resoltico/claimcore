@@ -1,0 +1,15 @@
+@layer views {
+  .actor-actions {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-3);
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .actor-actions:not(:empty) {
+    margin-block-end: var(--space-3);
+  }
+}

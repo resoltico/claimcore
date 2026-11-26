@@ -20,7 +20,7 @@ Filters opens a bottom sheet.
 Core supplies chip tones, table prominence, column joins, recommendations, consequences and empty
 wording. DataTables use wide rows from a 64rem container, medium rows from 50rem and cards at
 smaller widths. The root reserves space for classic scrollbars, so short and long lists keep the
-same width and opening a drawer keeps the page behind it still. The
+same width and opening a work dialog keeps the page behind it still. The
 [layout styles](../web/src/ui/layout.css) set table column measures of 10rem for identifiers,
 14rem for text, 12rem for people, 9rem for money and 18rem for chips. Wide and medium cells have at least 12px
 between contents and align on the first text line. Medium rows stack secondary values under the
@@ -53,4 +53,9 @@ motion and forced colours.
 L5 confines form controls to the UI components. L6 protects word wrapping. The browser matrix checks
 control geometry, word integrity, primary emphasis, page offsets, minimum type size, disclosure
 placement, page titles, first-row position and feedback focus. See [Verification](contributing.md#verification).
-Drawer geometry checks also measure the focus outline against the clipping scroll container.
+Work dialogs center within the usable viewport with a shared 48rem cap and stable top edge. The body
+scrolls when space permits persistent actions. At short heights the entire surface scrolls so the
+actions remain reachable. The [design matrix](../web/e2e/design-matrix.spec.ts) exercises balanced
+gutters, focus outlines, wheel and keyboard access, and transitions through selection and review.
+The [deployment qualification](../web/e2e/deployment-qualification.mjs) checks the framed mark in
+Web and Keycloak using the served SVG and rendered pixels.

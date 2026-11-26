@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Eine eigene Referenz bleibt auch nach dem Löschen reserviert. Geben Sie darin keine personenbezogenen Daten an.",
-    "source": "2156c99e44ef",
+    "text": "Eine benutzerdefinierte Referenz bleibt auch nach einer Korrektur oder Löschung reserviert. Geben Sie darin keine personenbezogenen Informationen an.",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

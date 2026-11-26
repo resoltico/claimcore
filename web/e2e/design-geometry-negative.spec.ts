@@ -11,7 +11,7 @@ import {
 import { expect, test } from "@playwright/test";
 import { clippedControlEdges } from "./layout-support";
 
-test("drawer containment accepts fractional fits and rejects clipping @engine", async ({
+test("work dialog containment accepts fractional fits and rejects clipping @engine", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
@@ -30,7 +30,7 @@ test("drawer containment accepts fractional fits and rejects clipping @engine", 
   expect(await clippedControlEdges(control)).toEqual(["scrollport: bottom"]);
 });
 
-test("drawer containment rejects clipping at the viewport edge @engine", async ({ page }) => {
+test("work dialog containment rejects clipping at the viewport edge @engine", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await page.setContent(`<!doctype html>
     <style>textarea { position: fixed; bottom: 0; left: 16px; }</style>
@@ -42,7 +42,7 @@ test("drawer containment rejects clipping at the viewport edge @engine", async (
   expect(await clippedControlEdges(control)).toEqual(["viewport: bottom"]);
 });
 
-test("drawer containment detects focus paint outside an otherwise fitting scrollport @engine", async ({
+test("work dialog containment detects focus paint outside an otherwise fitting scrollport @engine", async ({
   page,
 }) => {
   await page.setContent(`<!doctype html>
@@ -243,7 +243,7 @@ const limitsWitnesses: ReadonlyArray<readonly [GeometryId, string, string]> = [
   ],
   [
     "G19",
-    '<div class="drawer"><div class="control-box"><button>Options</button></div></div>',
+    '<div class="work-dialog"><div class="control-box"><button>Options</button></div></div>',
     ".control-box { width: 20rem } .control-box button { border: 1px solid }",
   ],
   [
@@ -253,7 +253,7 @@ const limitsWitnesses: ReadonlyArray<readonly [GeometryId, string, string]> = [
   ],
   [
     "G21",
-    '<div class="drawer"><div class="case-title-line"><bdi class="identifier-value">CASE-1</bdi></div><bdi class="identifier-value">CASE-1</bdi></div>',
+    '<div class="work-dialog"><div class="case-title-line"><bdi class="identifier-value">CASE-1</bdi></div><bdi class="identifier-value">CASE-1</bdi></div>',
     "",
   ],
   ["G22", "<ul><li>Marker</li></ul>", ""],

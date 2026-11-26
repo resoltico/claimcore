@@ -1,4 +1,4 @@
-import { openPersonEditor } from "./people-drawer.fixtures";
+import { openPersonEditor } from "./people-dialog.fixtures";
 import { isOperationAffordance, allActions } from "../../src/operation/affordances";
 import type { PersonDocument } from "../../src/protocol/types";
 import { withRecommendation, operationAffordance } from "./affordances.fixtures";

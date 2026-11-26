@@ -458,10 +458,6 @@
     "text": "Pārbaudīts {when}.",
     "source": "e249af3ff82a"
   },
-  "ui.reviewDescription": {
-    "text": "Pārbaudiet izmaiņas un pēc tam apstipriniet.",
-    "source": "5c2b1066dca1"
-  },
   "ui.rightToLeft": {
     "text": "No labās uz kreiso",
     "source": "4667424121a6"

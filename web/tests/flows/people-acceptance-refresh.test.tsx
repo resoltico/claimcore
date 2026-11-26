@@ -2,7 +2,7 @@ import { withRecommendation, operationAffordance } from "../support/affordances.
 
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import type { HumanDocument } from "@contracts/client";
-import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
+import { openPersonEditor, chooseAdmissionRole } from "../support/people-dialog.fixtures";
 import { workBasis } from "../support/inputs";
 import {
   reviewConfirm,

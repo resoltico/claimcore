@@ -7,7 +7,7 @@ import { useEndpoint } from "../../../hooks/useEndpoint";
 
 import { usePresentation } from "../../../presentation/context";
 import { NoticeView } from "../../../presentation/Message";
-import { Dialog } from "../../../ui/Dialog";
+import { WorkDialog } from "../../../ui/WorkDialog";
 import { WorkOperation } from "../WorkOperation";
 
 export type ReassignmentSelection = { row: CaseListControl; readId: string };
@@ -43,12 +43,11 @@ export const CaseReassignment = ({
   }
   if (parent === null) {
     return (
-      <Dialog
+      <WorkDialog
         title={p.text("label.assignmentAction")}
         closeLabel={p.text("ui.close")}
         isOpen
         isDismissable
-        placement="end"
         onOpenChange={(open) => {
           if (!open) {
             close();
@@ -62,7 +61,7 @@ export const CaseReassignment = ({
             <NoticeView value={query.message ?? { kind: "local", reason: "incomplete" }} />
           </p>
         )}
-      </Dialog>
+      </WorkDialog>
     );
   }
   return (

@@ -6,6 +6,8 @@ import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../operation/useOperation";
 import type { PeopleTarget } from "./usePeopleTarget";
 import { OperationPanel } from "../operation/OperationPanel";
+import "./actor-operation.css";
+
 type Props = {
   model: OperationModel;
   target: PeopleTarget;
@@ -26,7 +28,7 @@ export const ActorActions = ({
   onOpen: () => void;
   onDisclosureRefused?: ((notice?: Notice) => void) | undefined;
 }) => (
-  <fieldset disabled={busy}>
+  <fieldset className="actor-actions" disabled={busy}>
     <TaskControls
       compact
       actions={target.actions.filter(isOperationAffordance)}

@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Pielāgota atsauce paliek rezervēta arī pēc dzēšanas. Neiekļaujiet tajā personas datus.",
-    "source": "2156c99e44ef",
+    "text": "Pielāgota atsauce paliek rezervēta arī pēc labošanas vai dzēšanas. Neiekļaujiet tajā personas informāciju.",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

@@ -1,4 +1,4 @@
-import { openPersonEditor } from "../support/people-drawer.fixtures";
+import { openPersonEditor } from "../support/people-dialog.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { fireEvent, within } from "@testing-library/react";

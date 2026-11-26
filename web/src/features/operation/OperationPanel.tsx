@@ -1,6 +1,6 @@
 import { TechnicalDetails } from "../../ui/TechnicalDetails";
 import { useCompact } from "../../hooks/useCompact";
-import { Drawer } from "../../ui/Drawer";
+import { WorkDialog } from "../../ui/WorkDialog";
 import { useReviewEntry } from "./useReviewEntry";
 import { SubjectHeader } from "../../ui/SubjectHeader";
 import { Entries } from "../../ui/regions/Entries";
@@ -348,7 +348,7 @@ const useFieldSelection = (editorIdentity: unknown) => {
   );
   return { onFieldBlur, onMount };
 };
-const DrawerSubject = ({
+const OperationSubject = ({
   current,
   person,
 }: {
@@ -489,13 +489,13 @@ export const OperationPanel = (props: Props) => {
         showsSubject={props.current !== null && model.task.subject === "CASE"}
       >
         {(review) => (
-          <Drawer
+          <WorkDialog
             {...reviewEntry}
             title={renderCatalogKey(p, model.task.labelId)}
             identity={
               <>
                 {hasCurrentDisclosure(model, disclosureAvailable) ? (
-                  <DrawerSubject person={props.person} current={props.current} />
+                  <OperationSubject person={props.person} current={props.current} />
                 ) : null}
                 {steps}
               </>
@@ -547,7 +547,7 @@ export const OperationPanel = (props: Props) => {
           >
             <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
             <FreshPrecondition model={model} />
-          </Drawer>
+          </WorkDialog>
         )}
       </OperationReview>
     </DateEntryDraftContext>

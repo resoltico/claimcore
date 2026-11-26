@@ -63,10 +63,13 @@ const replaceLayoutEffects = (path, source) => {
         )
         .replace(/style: \{\n {12}display: 'contents'\n {8}\}/u, '"data-cc-portal-group": ""');
     case "Modal":
-      // The application uses viewport units rather than the optional upstream size variables.
+      // Keep the keyboard-aware height without introducing inline styles.
       return source
         .replace(/ {4}let style = \{\n {8}\.\.\.renderProps\.style,[\s\S]*?\n {4}\};/u, "")
-        .replace("        style: style,\n", "");
+        .replace(
+          "        style: style,\n",
+          '        "data-cc-viewport-height": viewport.height > 0 ? viewport.height : undefined,\n',
+        );
     case "DismissButton":
       return source.replace(
         /style: \{\n {12}width: 1,\n {12}height: 1\n {8}\}/u,

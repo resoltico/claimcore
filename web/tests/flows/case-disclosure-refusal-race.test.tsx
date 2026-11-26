@@ -1,4 +1,4 @@
-import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
+import { DisclosureRefreshDriver } from "../support/people-dialog.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { timelineDocument } from "../support/timeline-document.fixtures";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";

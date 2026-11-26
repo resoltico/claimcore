@@ -342,7 +342,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     await expect
       .poll(() => clippedControlEdges(summary, true), {
         message:
-          "The handling summary's focus outline fits inside the drawer scrollport and viewport",
+          "The handling summary's focus outline fits inside the work dialog scrollport and viewport",
       })
       .toEqual([]);
   }

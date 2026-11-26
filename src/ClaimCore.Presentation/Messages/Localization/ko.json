@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "사용자 지정 참조는 삭제 후에도 예약됩니다. 개인정보를 포함하지 마세요.",
-    "source": "2156c99e44ef",
+    "text": "사용자 지정 참조는 정정하거나 삭제한 후에도 예약된 상태로 유지됩니다. 개인정보를 포함하지 마세요.",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

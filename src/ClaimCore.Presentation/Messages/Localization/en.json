@@ -418,7 +418,7 @@
   "field.claimedCurrency.rule": "{length} uppercase ASCII letters from the supported active ISO 4217 currency list; no fund or non-national codes.",
   "field.claimedCurrency.hint": "The currency of the claimed amount.",
   "field.caseReference.rule": "Use 1 to {maximumCharacters} ASCII characters. Custom references start with a letter and use letters, digits and single hyphens between groups. The CC- prefix is reserved for system-assigned references.",
-  "field.caseReference.hint": "A custom reference stays reserved even after erasure. Keep personal information out of it.",
+  "field.caseReference.hint": "A custom reference stays reserved even after correction or erasure. Keep personal information out of it.",
   "field.paymentDecisionDate.hint": "When you decided the amount to pay.",
   "field.payableAmount.rule": "Use up to {maximumIntegerDigits} digits before the decimal point and up to {maximumFractionDigits} after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros.",
   "field.payableAmount.hint": "How much you decided should be paid.",

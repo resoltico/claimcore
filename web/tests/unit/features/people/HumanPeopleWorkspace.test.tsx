@@ -1,6 +1,6 @@
 import { fireEvent } from "@testing-library/react";
 import { selectRowAction } from "../../../support/workspace-actions";
-import { openPersonEditor } from "../../../support/people-drawer.fixtures";
+import { openPersonEditor } from "../../../support/people-dialog.fixtures";
 import { withRecommendation, operationAffordance } from "../../../support/affordances.fixtures";
 import {
   installationActions,
