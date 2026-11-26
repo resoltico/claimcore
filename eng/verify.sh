@@ -62,17 +62,20 @@ for stage in "${stages[@]}"; do
   esac
 done
 
-# MTP rejects empty runs; review discovery and skipped outcomes for the selected scope.
+# MTP rejects empty discovery. Check the fresh report for partial completion.
 tests() { # <project> [configuration] [timeout] [settings]
   local report_directory="${PWD}/artifacts/verification/${stage}"
+  local report="${report_directory}/results.trx"
   mkdir -p "${report_directory}"
+  if [[ -e "${report}" || -L "${report}" ]]; then rm -- "${report}"; fi
   local test_command=(dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore
     --zero-tests-policy=strict --timeout="${3:-30m}"
-    --report-trx --report-trx-filename="${report_directory}/results.trx")
+    --report-trx --report-trx-filename="${report}")
   local filter="${5:-}"
   if [[ -n "${filter}" ]]; then test_command+=(--filter "${filter}"); fi
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
     -- --settings="${PWD}/${4:-eng/expecto.runsettings}"
+  python3 eng/native_test_report.py "${report}"
 }
 
 native_restored=false
@@ -114,40 +117,27 @@ lint() {
 
 advisories() {
   restore_native
-  restore_node
-  local report
-  report="$(mktemp)"
   local result=0
-  dotnet list ClaimCore.slnx package --vulnerable --include-transitive --format json > "${report}" || result=$?
-  if [[ ${result} -eq 0 ]]; then
-    node -e '
-      const fs = require("node:fs");
-      const report = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-      if (report.problems?.length) {
-        console.error(report.problems);
-        process.exit(1);
-      }
-      let findings = 0;
-      for (const project of report.projects ?? []) {
-        for (const framework of project.frameworks ?? []) {
-          for (const pkg of [...(framework.topLevelPackages ?? []), ...(framework.transitivePackages ?? [])]) {
-            for (const vulnerability of pkg.vulnerabilities ?? []) {
-              console.error(project.path, pkg.id, vulnerability.severity, vulnerability.advisoryurl);
-              findings++;
-            }
-          }
-        }
-      }
-      process.exit(findings ? 1 : 0);
-    ' "${report}" || result=$?
-  fi
-  rm -f "${report}"
-  npm --prefix web audit --audit-level=low || result=$?
+  dotnet list ClaimCore.slnx package --vulnerable --include-transitive --no-restore --format json --output-version 1 \
+    | python3 eng/validate_advisories.py || result=$?
+  npm --prefix web audit --package-lock-only --audit-level=low || result=$?
   return "${result}"
 }
 
 unit() {
   local stage=unit project
+  python3 eng/versioning.py check
+  python3 - <<'PYTHON'
+import sys
+import unittest
+
+sys.path.insert(0, "eng")
+suites = [unittest.defaultTestLoader.loadTestsFromName(name) for name in ("test_versioning", "test_native_completion")]
+if any(suite.countTestCases() == 0 for suite in suites):
+    sys.exit("A required engineering test module is empty.")
+result = unittest.TextTestRunner().run(unittest.TestSuite(suites))
+sys.exit(not result.wasSuccessful() or result.testsRun == 0 or bool(result.skipped or result.expectedFailures))
+PYTHON
   for project in "${unit_projects[@]}"; do
     restore_native "${project}"
     dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
@@ -172,9 +162,10 @@ workflows() {
   for script in eng/*.sh deployment/*.sh; do
     if [[ -f "${script}" ]]; then scripts+=("${script}"); fi
   done
-  shellcheck "${scripts[@]}"
-  docker run --rm --label claimcore.workflow-check=actionlint -v "${PWD}:/repo:ro" -w /repo \
-    rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+  python3 eng/test_ci.py
+  docker run --rm --label claimcore.workflow-check=actionlint -v "${PWD}:/repo:ro" -w /repo --entrypoint /bin/sh \
+    rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
+    -ec 'shellcheck "$@"; exec actionlint -color' workflow-lint "${scripts[@]}"
 }
 
 integration() {

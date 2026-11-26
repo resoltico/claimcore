@@ -7,7 +7,7 @@ client contracts in [Integrating](integrating.md), and deployment tasks in [Oper
 
 Install the SDK from [global.json](../global.json), Node from [.node-version](../.node-version), and npm
 from [web/package.json](../web/package.json). Bash and Python 3 are required. Docker is required for
-PostgreSQL, Server and published acceptance tests; workflow checks also require ShellCheck.
+PostgreSQL, Server, published acceptance tests and workflow checks.
 NSS `certutil` is required by certificate acceptance (`nss` on Homebrew, `libnss3-tools` on Ubuntu).
 The [CI workflow](../.github/workflows/ci.yml) declares the supported verification platforms.
 
@@ -199,9 +199,9 @@ The existing frontend lint also rejects task/endpoint literals outside generated
 transport/types/routing adapters. Select operations from Core controls and definitions; lookups use
 choicesFrom, and all matching choicesWhen conditions constrain choices. Core owns business wording
 in all nine catalogs; interaction chrome stays with the browser.
-Local Vitest name filters may deliberately deselect tests. The completion lint rejects authored skip,
-todo, conditional exclusion and focused-test APIs. Required CI rejects any incomplete collected test,
-including runner deselection; run the complete selected files there.
+Local Vitest name filters may deliberately deselect tests. The completion lint rejects authored skips,
+expected failures, conditional exclusions and focused-test APIs. Required CI checks actual results
+for every selected test. Declare browser engine scope in the runner configuration.
 
 See the [web UI guide](web-ui.md) for building blocks, tokens and accessibility.
 
@@ -219,10 +219,12 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 ```
 
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
-commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
+commit: PRs run Linux x64 and three Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
 Linux musl, macOS ARM64 and all three engines. Use the automatic full main-push result for a release candidate; do not dispatch a duplicate matrix.
-Deployment, schema and database-host changes also run `bash eng/compose-restart-smoke.sh` in the separate
-[Compose restart workflow](../.github/workflows/compose.yml) (weekly as well); it is outside the Gate, so check it.
+The required Gate includes [Compose restart](../.github/workflows/compose.yml) on full runs and on
+PRs that affect the image build or stack. It also runs weekly and on demand. For a focused local check,
+run `bash eng/compose-restart-smoke.sh`. The [CI policy](../eng/ci_policy.py) owns change selection
+and checks that every required job completed.
 
 Locale goldens keep exact dates, times, offsets and surrounding wording while admitting only verified
 locale-data variants. Full ICU data can still vary by version: [ICU 77](https://github.com/unicode-org/icu/blob/release-77-1/icu4c/source/i18n/dtfmtsym.cpp#L2228)
@@ -248,13 +250,13 @@ establish that unrun stages passed. Avoid duplicate full runs solely because bot
 | lint | Fantomas over src, tests and eng |
 | unit | Native behavior, properties, vectors and architecture |
 | frontend | Formatting, design/theme lint, types, units, Knip, licenses and build |
-| advisories | Native transitive vulnerabilities and npm audit at low severity; full CI events only |
-| workflows | ShellCheck and pinned Actionlint |
+| advisories | Locked native and npm audits at low severity on dependency-changing PRs and full CI runs |
+| workflows | Pinned ShellCheck and Actionlint, with qualification and advisory report controls |
 | integration | PostgreSQL and Web suites |
 | postgres / server | One isolated suite |
 | browsers | Install locked Playwright engines when their version changes |
 | acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
-| acceptance-browser | Chromium complete in two `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` or `2/2` shards; Firefox/WebKit `@engine` cases |
+| acceptance-browser | Chromium complete in three shards, `1/3` through `3/3`; Firefox/WebKit `@engine` cases |
 | acceptance | Native acceptance, then the browser scopes |
 
 With current Release applications, acceptance assembly and frontend assets built, select a browser file:
@@ -288,8 +290,9 @@ Tests discover vocabulary from product declarations; reviewed contract diffs, ha
 provide independent expectations. Builders supply inputs, never expected business outcomes. There is no
 fixture update mode. Keep `--zero-tests-policy=strict` and fail-on-focused controls.
 
-Each native stage writes `artifacts/verification/<stage>/results.trx`. CI uploads evidence on failure.
-Strict nonempty discovery and substantive security negative controls remain required.
+Each native stage writes a fresh `artifacts/verification/<stage>/results.trx` and requires every
+selected case to pass. CI uploads evidence on failure. Strict nonempty discovery and substantive
+security negative controls remain required.
 
 Private failure directories can contain credentials. Inspect their logs locally and share redacted
 findings only. Retain useful failure evidence; remove only owned temporary resources. Teardown and
@@ -328,26 +331,39 @@ Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and d
 Versioning, tags and publication require owner authorization. The release publishes the tagged
 commit's dated CHANGELOG section, its source and CLI archives with checksums, and its server image.
 See the [release workflow](../.github/workflows/release.yml).
-Prepare dependencies, documentation, the version in [Directory.Build.props](../Directory.Build.props)
-and the dated release notes together. Regenerate contracts after changing the version. Keep an empty
-`Unreleased` section above the dated section and leave published release history unchanged.
+Prepare dependencies, documentation and dated release notes together.
+[Directory.Build.props](../Directory.Build.props) owns the product version. After changing it,
+regenerate contracts and refresh the NuGet lockfiles so their project-reference versions also
+reflect the release. Locked restore verifies package resolution and accepts stale project-reference
+versions. Review the refreshed lockfiles before qualifying the candidate.
+
+```sh
+dotnet restore ClaimCore.slnx --force-evaluate -p:RestoreLockedMode=false
+dotnet restore ClaimCore.slnx --locked-mode
+dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --output contracts
+python3 eng/versioning.py check
+```
+
+Keep an empty `Unreleased` section above the dated section and leave published release history unchanged.
 
 Qualify the complete candidate in one pull request, including its dependency, documentation, version
 and release-note changes. Merge after review and the automatic PR checks pass. Use the automatic
-main-push CI result for the exact merged commit; do not dispatch a duplicate qualification run. Deployment
-changes also require the separate Compose restart workflow. After those checks succeed, create an
+main-push CI result for the exact merged commit; do not dispatch a duplicate qualification run.
+After that Gate succeeds, create an
 annotated `vMAJOR.MINOR.PATCH` tag at that commit, push it and dispatch publication from main.
 Start from a clean main checkout synchronized with origin, and confirm its SHA matches the successful CI run:
 
 ```sh
 claimcore_release_sha="$(git rev-parse main)"
-claimcore_release_tag="v$(sed -nE 's/.*<Version>([^<]+)<\/Version>.*/\1/p' Directory.Build.props)"
+claimcore_release_version="$(python3 eng/versioning.py version)"
+claimcore_release_tag="v${claimcore_release_version}"
 git tag -a "$claimcore_release_tag" "$claimcore_release_sha" -m "Release $claimcore_release_tag"
 git push origin "$claimcore_release_tag"
 gh workflow run release.yml --ref main -f tag="$claimcore_release_tag" -f expected_sha="$claimcore_release_sha"
 ```
 
-Publication checks the annotated tag, expected SHA, main-branch CI evidence and all offered translations.
+Publication checks the annotated tag against the evaluated product version, requires one matching dated
+changelog section with notes, and verifies the expected SHA, main-branch CI evidence and all offered translations.
 The tag must match the commit on `main` when publication is dispatched, because the attestation
 identifies that commit. Confirm the workflow succeeded and the public release contains the dated
 changelog section, archive checksums and server image digest. Verify the image and archive

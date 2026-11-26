@@ -1,8 +1,11 @@
 import { expect, it } from "vitest";
 import {
   defaults,
-  loadPreferences,
+  loadPreferenceState,
   parsePreferences,
+  preferenceKey,
+  resetPreferences,
+  savePreferences,
   resolveLanguage,
   negotiatePreferences,
   resolveDisplayLocale,
@@ -30,22 +33,29 @@ it("accepts exactly bounded settings and refuses valid JSON beyond its storage b
     mode: "system" as const,
     accent: "green" as const,
   });
-  expect(parsePreferences(`${bounded} `)).toEqual({
-    language: "en",
-    displayLocale: "en-GB",
-    mode: "system" as const,
-    accent: "blue" as const,
-  });
+  expect(parsePreferences(`${bounded} `)).toBeNull();
 });
-it("resets version-one settings and accepts only the current stored record", () => {
+it("reports a retired key as incompatible without interpreting or overwriting it", () => {
   localStorage.setItem(
     "claimcore.presentation.v1",
     '{"version":1,"language":"lv","displayLocale":"ar-EG"}',
   );
-  expect(loadPreferences()).toEqual(defaults);
-  expect(parsePreferences('{"version":1,"language":"lv","displayLocale":"ar-EG"}')).toEqual(
-    defaults,
-  );
+  expect(loadPreferenceState().persistence.kind).toBe("incompatible");
+  expect(parsePreferences('{"version":1,"language":"lv","displayLocale":"ar-EG"}')).toBeNull();
+  expect(savePreferences(defaults).kind).toBe("incompatible");
+  expect(localStorage.getItem(preferenceKey)).toBeNull();
+});
+it("refuses an unrecognized current record and refreshes a stale reset decision", () => {
+  localStorage.setItem(preferenceKey, JSON.stringify({ version: 3, ...defaults, mode: "invalid" }));
+  const observed = loadPreferenceState().persistence;
+  if (observed.kind !== "incompatible") {
+    throw new Error("Expected an incompatible current record");
+  }
+  const newer = '{"version":4}';
+  localStorage.setItem(preferenceKey, newer);
+  expect(savePreferences(defaults).kind).toBe("incompatible");
+  expect(resetPreferences(defaults, observed).kind).toBe("incompatible");
+  expect(localStorage.getItem(preferenceKey)).toBe(newer);
 });
 
 it.each([

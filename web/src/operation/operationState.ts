@@ -29,12 +29,7 @@ import {
   type OperationState,
   type OperationAction,
 } from "./operationTypes";
-export type {
-  EffectIdentity,
-  OperationEffect,
-  OperationState,
-  OperationAction,
-} from "./operationTypes";
+export type { EffectIdentity, OperationState, OperationAction } from "./operationTypes";
 const operationBusy = (state: OperationState) => deliveryBusy(state.delivery);
 const canEdit = (state: OperationState) => deliveryEditable(state.delivery);
 const current = (state: OperationState, identity: EffectIdentity): boolean =>

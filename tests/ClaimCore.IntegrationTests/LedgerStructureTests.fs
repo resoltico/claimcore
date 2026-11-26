@@ -60,7 +60,18 @@ let private controls (database: PostgresFixture.Database) =
         let! _ = DatabaseSession.execute owner appendFunction [||] token
         use! runtime = database.RuntimeSource.OpenConnectionAsync()
 
-        let append aggregate aggregateId kind partId revision key erase erasedId privateContent =
+        let appendWithFormat
+            format
+            aggregate
+            aggregateId
+            kind
+            partId
+            revision
+            key
+            erase
+            erasedId
+            privateContent
+            =
             task {
                 let! _ =
                     DatabaseSession.execute
@@ -77,12 +88,16 @@ let private controls (database: PostgresFixture.Database) =
                             nullable erase
                             nullable erasedId
                             box privateContent
-                            box (int16 InstallationFormat.Current)
+                            box (format: int16)
                         |]
                         token
 
                 return ()
             }
+
+        let currentFormat = int16 InstallationFormat.Current
+        let incompatibleFormat = currentFormat - 1s
+        let append = appendWithFormat currentFormat
 
         let clear kind identity =
             task {
@@ -96,7 +111,57 @@ let private controls (database: PostgresFixture.Database) =
                 return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
             }
 
+        do!
+            expectSql
+                PostgresErrorCodes.CheckViolation
+                (Some "installation_installation_format_check")
+                (fun () ->
+                    task {
+                        let! _ =
+                            DatabaseSession.execute
+                                owner
+                                "UPDATE claimcore.installation SET installation_format = $1"
+                                [| box incompatibleFormat |]
+                                token
+
+                        return ()
+                    })
+
+        do!
+            expectSql "CC004" None (fun () ->
+                appendWithFormat
+                    incompatibleFormat
+                    "FAMILY"
+                    (id 10)
+                    "THING"
+                    (id 11)
+                    1L
+                    None
+                    None
+                    None
+                    true)
+
         do! append "FAMILY" (id 10) "THING" (id 11) 1L None None None true
+
+        do!
+            expectSql
+                PostgresErrorCodes.CheckViolation
+                (Some "ledger_installation_format_check")
+                (fun () ->
+                    task {
+                        let! _ =
+                            DatabaseSession.execute
+                                owner
+                                """
+INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,operation_id,actor_id,recorded_at,business_date,aggregate_kind,task,structure)
+SELECT sequence+1,entry_hash,decode(repeat('ff',32),'hex'),$1,gen_random_uuid(),actor_id,recorded_at,business_date,aggregate_kind,task,structure
+FROM claimcore.ledger
+"""
+                                [| box incompatibleFormat |]
+                                token
+
+                        return ()
+                    })
 
         do!
             expectSql "CC004" (Some "part_revision_chain") (fun () ->

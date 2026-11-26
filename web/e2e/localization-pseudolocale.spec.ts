@@ -54,6 +54,8 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
     width: 320,
     height: 720,
   });
+  // The shell mounts its compact controls when the media-query change reaches React.
+  await expect(page.locator(".phone-app-bar")).toBeAttached();
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await selectLanguage(page, "ar");
@@ -151,6 +153,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
     width: 320,
     height: 720,
   });
+  await expect(page.locator(".phone-app-bar")).toBeAttached();
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await page.setViewportSize({

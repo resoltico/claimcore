@@ -79,11 +79,7 @@ module internal DatabaseSession =
             use command = statement connection sql parameters
             // These callers opt in only for fixed SQL. Plans are reused by Npgsql's physical pool;
             // every execution still binds current values and runs in the current transaction.
-            // Multiplexed connections already supported by the store keep their unprepared path.
-            if
-                prepare
-                && not (NpgsqlConnectionStringBuilder(connection.ConnectionString).Multiplexing)
-            then
+            if prepare then
                 do! command.PrepareAsync(token)
 
             use! reader = command.ExecuteReaderAsync(token)
@@ -195,7 +191,7 @@ module internal DatabaseSession =
     let namedRecordedInstant name row =
         recordedText (namedValue<string> name row)
 
-    let transaction (source: NpgsqlDataSource) isolation token action =
+    let private transactionWithOptions (source: NpgsqlDataSource) isolation options token action =
         task {
             use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
 
@@ -213,7 +209,7 @@ module internal DatabaseSession =
             let! outcome =
                 task {
                     try
-                        let! started = connection.BeginTransactionAsync(isolation, token)
+                        let! started = connection.BeginTransactionAsync(isolation, options, token)
                         transaction <- Some started
                         let! result = action connection started
                         return Ok result
@@ -239,10 +235,18 @@ module internal DatabaseSession =
                 return Unchecked.defaultof<_>
         }
 
+    let transaction source isolation token action =
+        transactionWithOptions source isolation NpgsqlTransactionOptions.None token action
+
     let read source token action =
-        transaction source Data.IsolationLevel.RepeatableRead token (fun connection _ ->
-            FailureDiagnostics.phase FailurePhase.Read
-            action connection)
+        transactionWithOptions
+            source
+            Data.IsolationLevel.RepeatableRead
+            NpgsqlTransactionOptions.ReadOnly
+            token
+            (fun connection _ ->
+                FailureDiagnostics.phase FailurePhase.Read
+                action connection)
 
     let commitUncertain (error: PostgresException) =
         error.InvariantSeverity = "FATAL"

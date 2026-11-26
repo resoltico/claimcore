@@ -22,14 +22,15 @@ env:
 
 jobs:
   configuration:
-    name: Derive matrices and Node image
+    name: Derive qualification scope, matrices and Node image
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       platforms: ${{ steps.inputs.outputs.platforms }}
       engines: ${{ steps.inputs.outputs.engines }}
-      full: ${{ steps.inputs.outputs.full }}
       docs_only: ${{ steps.inputs.outputs.docs_only }}
+      advisories: ${{ steps.inputs.outputs.advisories }}
+      compose_restart: ${{ steps.inputs.outputs.compose_restart }}
       node_image: ${{ steps.inputs.outputs.node_image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,39 +38,12 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - id: inputs
-        name: Read authoritative image declarations
+        name: Plan qualification
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          python3 - <<'PYTHON'
-          import json, os, pathlib, re, subprocess
-          full = os.environ["EVENT_NAME"] != "pull_request"
-          platforms = [{"os": "ubuntu-24.04", "rid": "linux-x64"}]
-          if full:
-              platforms += [{"os": "ubuntu-24.04", "rid": "linux-musl-x64"}, {"os": "macos-15", "rid": "osx-arm64"}]
-          engines = [{"engine": "chromium", "shard": "1/2"}, {"engine": "chromium", "shard": "2/2"}]
-          if full:
-              engines += [{"engine": engine, "shard": "1/1"} for engine in ["firefox", "webkit"]]
-          docs_only = False
-          if not full:
-              paths = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"] + "..." + os.environ["HEAD_SHA"]]).decode().split("\0")[:-1]
-              def documentation(path):
-                  if path in {"LICENSE", "PROJECT-NOTICE.md", "LICENSE-COMMERCIAL.md"}:
-                      return False
-                  return path.startswith("docs/") or (path.endswith(".md") and not path.startswith(("src/", "web/", "tests/")))
-              docs_only = bool(paths) and all(documentation(path) for path in paths)
-          images = re.findall(r"^FROM (node:[^\s]+@sha256:[0-9a-f]{64}) AS node$", pathlib.Path("deployment/Dockerfile").read_text(), re.M)
-          if len(images) != 1:
-              raise ValueError("Expected one pinned Node stage in deployment/Dockerfile")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              output.write("platforms=" + json.dumps({"include": platforms}, separators=(",", ":")) + "\n")
-              output.write("engines=" + json.dumps({"include": engines}, separators=(",", ":")) + "\n")
-              output.write("docs_only=" + str(docs_only).lower() + "\n")
-              output.write("full=" + str(full).lower() + "\n")
-              output.write("node_image=" + images[0] + "\n")
-          PYTHON
+        run: python3 eng/ci_policy.py plan
 
   lint:
     name: Native formatting and workflow hygiene
@@ -196,7 +170,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Cache npm downloads for the SDK-free frontend # zizmor: ignore[cache-poisoning] -- npm verifies lockfile integrity; no build outputs cached.
+      - name: Cache npm downloads for the SDK-free frontend
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/claimcore-npm-cache
@@ -218,7 +192,7 @@ jobs:
                 exit 1
               fi
               test "$(node --version)" = "v$(tr -d "\r\n" < .node-version)"
-              npm install --global --prefix /tmp/claimcore-npm "npm@$(node -p "require(\"./web/package.json\").engines.npm")"
+              npm install --global --ignore-scripts --prefix /tmp/claimcore-npm "npm@$(node -p "require(\"./web/package.json\").engines.npm")"
               export PATH="/tmp/claimcore-npm/bin:${PATH}"
               test "$(npm --version)" = "$(node -p "require(\"./web/package.json\").engines.npm")"
               bash eng/verify.sh frontend
@@ -289,7 +263,7 @@ jobs:
           path: artifacts/verification/**
 
   advisories:
-    if: needs.configuration.outputs.docs_only != 'true'
+    if: needs.configuration.outputs.advisories == 'true'
     name: Dependency advisories
     needs: [configuration]
     runs-on: ubuntu-24.04
@@ -298,11 +272,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- checkout supplies this pinned action.
-        if: needs.configuration.outputs.full == 'true'
-      - name: Audit dependencies on full runs
-        if: needs.configuration.outputs.full == 'true'
-        run: bash eng/verify.sh advisories
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: bash eng/verify.sh advisories
+
+  compose_restart:
+    name: Compose stack survives down and up
+    if: needs.configuration.outputs.compose_restart == 'true'
+    needs: [configuration]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash eng/compose-restart-smoke.sh
 
   release_artifacts:
     name: Build release artifacts without publishing
@@ -350,23 +333,17 @@ jobs:
   gate:
     name: Gate
     if: always()
-    needs: [configuration, lint, unit, integration, server, frontend, acceptance_native, acceptance, advisories, release_artifacts]
+    needs: [configuration, lint, unit, integration, server, frontend, acceptance_native, acceptance, advisories, compose_restart, release_artifacts]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require every job
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Require every job in scope
         env:
           RESULTS: ${{ toJSON(needs) }}
           DOCS_ONLY: ${{ needs.configuration.outputs.docs_only }}
-        run: |
-          python3 - <<'PYTHON'
-          import json, os
-          jobs = json.loads(os.environ["RESULTS"])
-          docs_only = os.environ["DOCS_ONLY"] == "true"
-          for name, job in jobs.items():
-              result = job["result"]
-              print(name + ": " + result)
-              allowed = {"success", "skipped"} if docs_only and name not in {"configuration", "lint", "unit", "release_artifacts"} else {"success"}
-              if result not in allowed:
-                  raise SystemExit(1)
-          PYTHON
+          ADVISORIES: ${{ needs.configuration.outputs.advisories }}
+          COMPOSE_RESTART: ${{ needs.configuration.outputs.compose_restart }}
+        run: python3 eng/ci_policy.py gate

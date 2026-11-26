@@ -11,6 +11,7 @@ open System
 open System.Security.Cryptography
 open System.Threading
 open Expecto
+open Npgsql
 open ClaimCore.Application
 open ClaimCore.Application.Administration
 open ClaimCore.Application.Storage
@@ -237,6 +238,51 @@ let tests =
     testList
         "PostgreSQL administration"
         [
+            testCaseAsync
+                "storage reads use a repeatable snapshot and PostgreSQL rejects writes"
+                (run (fun database ->
+                    task {
+                        let! sqlState =
+                            task {
+                                try
+                                    return!
+                                        DatabaseSession.read
+                                            database.OwnerSource
+                                            token
+                                            (fun connection ->
+                                                task {
+                                                    let! settings =
+                                                        DatabaseSession.rows
+                                                            connection
+                                                            "SHOW transaction_isolation"
+                                                            [||]
+                                                            token
+
+                                                    Expect.equal
+                                                        (DatabaseSession.value<string>
+                                                            0
+                                                            settings.Head)
+                                                        "repeatable read"
+                                                        "Reads retain their snapshot isolation"
+
+                                                    let! _ =
+                                                        DatabaseSession.execute
+                                                            connection
+                                                            "UPDATE claimcore.installation SET installation_format = installation_format WHERE false"
+                                                            [||]
+                                                            token
+
+                                                    return None
+                                                })
+                                with :? PostgresException as error ->
+                                    return Some error.SqlState
+                            }
+
+                        Expect.equal
+                            sqlState
+                            (Some PostgresErrorCodes.ReadOnlySqlTransaction)
+                            "PostgreSQL enforces the read boundary"
+                    }))
             testCaseAsync
                 "installation owner admission rejects unsafe role attributes and a non-owner"
                 (run ownerAdmission)

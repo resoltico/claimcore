@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "Velciet vai ielīmējiet failu",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore nevar nolasīt saglabātos iestatījumus. Līdz iestatījumu atiestatīšanai izmaiņas attiecas tikai uz šo sesiju.",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "Atiestatīt saglabātos iestatījumus",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

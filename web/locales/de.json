@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "Eine Datei ablegen oder einfügen",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore kann Ihre gespeicherten Einstellungen nicht lesen. Änderungen gelten nur für diese Sitzung, bis Sie die Einstellungen zurücksetzen.",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "Gespeicherte Einstellungen zurücksetzen",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

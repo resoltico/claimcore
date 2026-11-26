@@ -78,11 +78,25 @@ let private byteProfile () =
     Expect.isError (strict [| 0xffuy |]) "Fatal UTF8"
     Expect.isError (StrictJson.read 1 (bytes "{}")) "Byte limit"
 
-    let nested count =
-        bytes (String('[', count) + "0" + String(']', count))
+    for opening, closing, empty in [ "[", "]", "[]"; "{\"child\":", "}", "{}" ] do
+        for depth, admitted in [ 31, true; 32, true; 33, false ] do
+            // These limits describe the published byte profile, independently of the decoder.
+            for levels, leaf in [ depth, "0"; depth - 1, empty ] do
+                let nested =
+                    String.replicate levels opening + leaf + String.replicate levels closing
 
-    Expect.isOk (strict (nested 32)) "Maximum depth"
-    Expect.isError (strict (nested 33)) "Beyond maximum depth"
+                let result = StrictJson.readClassified 65536 (bytes nested)
+
+                if admitted then
+                    Expect.isOk result $"Container depth {depth} admits"
+                else
+                    match result with
+                    | Error failure ->
+                        Expect.equal
+                            failure.Kind
+                            JsonFailureReason.NotJson
+                            $"Container depth {depth} refuses"
+                    | Ok _ -> failtestf "Container depth %d unexpectedly admitted" depth
 
     for raw in [ "-0"; "9007199254740991"; "-9007199254740991"; "\"索赔😀\"" ] do
         Expect.isOk (strict (bytes raw)) "Supported lexical values"

@@ -5,6 +5,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application
 
 open System
+open System.Globalization
 open System.Reflection
 open System.Security.Cryptography
 open System.Text
@@ -15,7 +16,9 @@ open ClaimCore.Application.Contracts
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore-format-9"
+    let identifier =
+        "claimcore-format-"
+        + InstallationFormat.Current.ToString(CultureInfo.InvariantCulture)
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()

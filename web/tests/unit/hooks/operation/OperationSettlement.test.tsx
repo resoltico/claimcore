@@ -12,12 +12,76 @@ import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import { render } from "../../../support/presentation-test-support";
 import { activeRequester } from "../../../support/human-requester.fixtures";
-import { pendingLookup } from "../../../support/operation-lookup.fixtures";
+import { absentLookup, pendingLookup } from "../../../support/operation-lookup.fixtures";
 import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
+import { runOperationEffect } from "../../../../src/hooks/operation/operationEffects";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
+import { prepareRequest } from "../../../../src/protocol/preparedRequest";
 import type { CurrentCase } from "../../../../src/protocol/types";
 const caseId = "00000000-0000-4000-8000-000000000001";
+it.each([false, true])(
+  "retains a terminal attempt in memory only when its durable retirement fails (%s)",
+  async (cleanupFails) => {
+    const scope = {
+      serviceOrigin: "https://claimcore.example",
+      installationId: "00000000-0000-4000-8000-000000000002",
+      actorId: "00000000-0000-4000-8000-000000000003",
+    };
+    const operationId = "10000000-0000-4000-8000-000000000001";
+    const attempt: RecoveryRecord = {
+      ...scope,
+      format: 2,
+      attemptId: "00000000-0000-4000-8000-000000000004",
+      operationId,
+      subject: "CASE",
+      act: "case.close",
+    };
+    const attempts = new Map([[operationId, attempt]]);
+    const remove: RecoveryJournal["remove"] = vi.fn(() =>
+      cleanupFails ? Promise.reject(new Error("Storage denied")) : Promise.resolve(),
+    );
+    vi.spyOn(service, "operationGet").mockResolvedValue(absentLookup(operationId));
+    const decision = await runOperationEffect(
+      {
+        kind: "CHECK_OPERATION",
+        identity: {
+          owner: { ...scope, sessionEpoch: 0 },
+          id: "lookup",
+          credential: "test",
+          contextGeneration: 0,
+          target: "case",
+        },
+        source: {
+          prepared: prepareRequest("operation.execute", {
+            operationId,
+            task: "case.close",
+            binding: { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 1 },
+            inputs: { "field:outcome": "OTHER" },
+          }),
+          submittedRows: {},
+        },
+      },
+      {
+        journal: {
+          list: () => Promise.resolve([attempt]),
+          put: () => Promise.resolve("existing"),
+          remove,
+        },
+        current: () => true,
+        handoff: vi.fn(),
+        upload: undefined,
+        scope,
+        attempts,
+        reads: new Map(),
+        transfers: new Map(),
+      },
+    );
+    expect(decision.type).toBe("NOT_ACCEPTED");
+    expect(remove).toHaveBeenCalledExactlyOnceWith(attempt);
+    expect(attempts.get(operationId)).toBe(cleanupFails ? attempt : undefined);
+  },
+);
 const basis = {
   kind: "SNAPSHOT",
   observation: {

@@ -123,58 +123,84 @@ let private ambientEffects () =
 
     rejects ArchitectureRule.Pure typeof<ClockCall>
 
-let private importedReference () =
+let private importedReference projects =
     let directory = Directory.CreateTempSubdirectory("claimcore-project-edge-")
 
     try
         let properties = Path.Combine(directory.FullName, "edge.props")
 
+        let library = projects |> Map.find "ClaimCore.Application"
+        let escaped = System.Security.SecurityElement.Escape library
+
         File.WriteAllText(
             properties,
-            """<Project><ItemGroup><ProjectReference Include="ClaimCore.Application.fsproj" /></ItemGroup></Project>"""
+            $"""<Project><ItemGroup Condition="'$(Configuration)' == 'Release'"><ProjectReference Include="{escaped}" /></ItemGroup></Project>"""
         )
 
         let path = Path.Combine(directory.FullName, "client.fsproj")
         File.WriteAllText(path, "<Project><Import Project=\"edge.props\" /></Project>")
-        let references = ProjectReferences.read path
+
+        Expect.isEmpty
+            (ProjectReferences.read ("Debug", None) path)
+            "This imported edge is absent in Debug"
+
+        let references = ProjectReferences.read ("Release", None) path
 
         Expect.equal
             references
-            (Set.singleton "ClaimCore.Application")
-            "Unused imported project edge is evaluated"
+            (Set.singleton library)
+            "The Release-only imported project edge is evaluated"
 
         Expect.isFalse
-            (ProjectReferences.permitted "ClaimCore.Wire" references)
+            (ProjectReferences.permitted projects "ClaimCore.Wire" references)
             "Wire cannot declare the Application edge"
+
+        let lookalike = Path.Combine(directory.FullName, "ClaimCore.Domain.fsproj")
+
+        Expect.isFalse
+            (ProjectReferences.permitted projects "ClaimCore.Wire" (Set.singleton lookalike))
+            "A different project with an allowed filename is refused"
     finally
         directory.Delete true
 
 let private jsonDependencies () =
     let path = Path.Combine(root, "src", "ClaimCore.Json", "ClaimCore.Json.fsproj")
-    Expect.isEmpty (ProjectReferences.read path) "JSON has no product dependencies"
+    Expect.isEmpty (ProjectReferences.read ("Debug", None) path) "JSON has no product dependencies"
 
 let private projectEdges () =
+    let projects =
+        projectPaths.Value
+        |> Array.map (fun path -> Path.GetFileNameWithoutExtension path, Path.GetFullPath path)
+        |> Map.ofArray
+
+    Expect.equal projects.Count projectPaths.Value.Length "Product project names are unique"
+
     Expect.equal
-        (projectPaths.Value |> Array.map Path.GetFileNameWithoutExtension |> Set.ofArray)
+        (projects |> Map.keys |> Set.ofSeq)
         (ProjectReferences.allowed |> Map.keys |> Set.ofSeq)
         "Every product project has an edge policy"
 
-    for path in projectPaths.Value do
-        let name = Path.GetFileNameWithoutExtension path
-
-        Expect.isTrue
-            (ProjectReferences.permitted name (ProjectReferences.read path))
-            (name + " evaluated project references")
+    for configuration in ProjectReferences.shippingConfigurations projects["ClaimCore.Cli"] do
+        for KeyValue(name, path) in projects do
+            Expect.isTrue
+                (ProjectReferences.permitted
+                    projects
+                    name
+                    (ProjectReferences.read configuration path))
+                $"{name} evaluated project references for {configuration}"
 
     Expect.isTrue
-        (ProjectReferences.permitted "ClaimCore.Wire" (Set.singleton "ClaimCore.Domain"))
+        (ProjectReferences.permitted
+            projects
+            "ClaimCore.Wire"
+            (Set.singleton projects["ClaimCore.Domain"]))
         "A smaller dependency surface preserves the boundary"
 
     Expect.isFalse
-        (ProjectReferences.permitted "Unknown.Product" Set.empty)
+        (ProjectReferences.permitted projects "Unknown.Product" Set.empty)
         "A new project requires an explicit boundary policy"
 
-    importedReference ()
+    importedReference projects
 
 let private serializer () =
     for name in [ "ClaimCore.Json"; "ClaimCore.Wire"; "ClaimCore.RecordFormat" ] do

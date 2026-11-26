@@ -41,9 +41,9 @@ export default class RequiredTestReporter {
       const result = test.result();
       return (
         test.options.mode === "only" ||
-        result.state === "skipped" ||
-        result.state === "pending" ||
-        (test.diagnostic()?.retryCount ?? 0) > 0
+        test.options.fails === true ||
+        result.state !== "passed" ||
+        test.attempts().length !== 1
       );
     });
     const excludedSuite = modules.some((module) =>
@@ -56,7 +56,7 @@ export default class RequiredTestReporter {
     );
     if (reason === "interrupted" || selected.length === 0 || incomplete || excludedSuite) {
       throw new Error(
-        "Required test completion refused: empty, interrupted, excluded or retried tests.",
+        "Required test completion refused: empty, interrupted, excluded, expected-failing or repeated test attempts.",
       );
     }
   }

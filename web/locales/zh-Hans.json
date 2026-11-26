@@ -753,5 +753,15 @@
   "ui.attachments.drop": {
     "text": "拖放或粘贴文件",
     "source": "4ee57a15a346"
+  },
+  "ui.incompatiblePreferences": {
+    "text": "ClaimCore 无法读取您保存的偏好设置。在重置之前，更改仅适用于本次会话。",
+    "source": "e68a6f605405",
+    "machineMade": true
+  },
+  "ui.resetSavedPreferences": {
+    "text": "重置保存的偏好设置",
+    "source": "fc93ea1e629a",
+    "machineMade": true
   }
 }

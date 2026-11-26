@@ -6,8 +6,7 @@ open System.Diagnostics
 open System.IO
 open System.Text.Json
 
-/// Evaluate imports and conditions without maintaining a second project graph.
-let read path =
+let private evaluate path arguments =
     let start =
         ProcessStartInfo(
             "dotnet",
@@ -16,7 +15,7 @@ let read path =
             RedirectStandardError = true
         )
 
-    for argument in [ "msbuild"; path; "-nologo"; "-verbosity:quiet"; "-getItem:ProjectReference" ] do
+    for argument in [ "msbuild"; path; "-nologo"; "-verbosity:quiet" ] @ arguments do
         start.ArgumentList.Add argument
 
     use child = Process.Start start |> nonNull
@@ -30,13 +29,35 @@ let read path =
     if child.ExitCode <> 0 then
         invalidOp ("Project reference evaluation failed: " + errors.Result)
 
-    use document = JsonDocument.Parse output.Result
+    output.Result
+
+let shippingConfigurations cli =
+    let runtimes = (evaluate cli [ "-getProperty:RuntimeIdentifiers" ]).Trim()
+
+    [
+        "Debug", None
+        "Release", None
+        for runtime in runtimes.Split(';', System.StringSplitOptions.RemoveEmptyEntries) do
+            "Release", Some runtime
+    ]
+
+/// Evaluate imports and conditions without maintaining a second project graph.
+let read (configuration, runtime) path =
+    let arguments =
+        [
+            $"-property:Configuration={configuration}"
+            match runtime with
+            | Some value ->
+                $"-property:RuntimeIdentifier={value}"
+                $"-property:ClaimCoreCliReleaseRid={value}"
+            | None -> ()
+            "-getItem:ProjectReference"
+        ]
+
+    use document = JsonDocument.Parse(evaluate path arguments)
 
     document.RootElement.GetProperty("Items").GetProperty("ProjectReference").EnumerateArray()
-    |> Seq.map (fun item ->
-        item.GetProperty("Identity").GetString()
-        |> nonNull
-        |> Path.GetFileNameWithoutExtension)
+    |> Seq.map (fun item -> item.GetProperty("FullPath").GetString() |> nonNull |> Path.GetFullPath)
     |> Set.ofSeq
 
 /// Allowed direct edges; removing an unnecessary edge preserves the boundary.
@@ -92,7 +113,7 @@ let allowed =
     |> List.map (fun (name, edges) -> name, Set.ofList edges)
     |> Map.ofList
 
-let permitted project references =
+let permitted (projects: Map<string, string>) project references =
     match Map.tryFind project allowed with
-    | Some permitted -> Set.isSubset references permitted
+    | Some permitted -> Set.isSubset references (Set.map (fun name -> projects[name]) permitted)
     | None -> false

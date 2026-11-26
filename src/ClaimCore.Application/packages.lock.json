@@ -10,14 +10,14 @@
       },
       "Npgsql": {
         "type": "Direct",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "ozQ8GJcEAiW6XSKz2RUpdJDvM4l380BdHx/MRB7QJHL2cTH/0js7f/cisCaYMrZvVUj4/HIW80UjXxI+ikQQzQ=="
       },
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.19.0, )",
+          "ClaimCore.Domain": "[0.22.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
@@ -36,8 +36,8 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.19.0, )",
-          "ClaimCore.Json": "[0.19.0, )",
+          "ClaimCore.Domain": "[0.22.0, )",
+          "ClaimCore.Json": "[0.22.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       }

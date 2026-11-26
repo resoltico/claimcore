@@ -94,6 +94,21 @@ it("keeps retained text outside current admission policy unchanged during wire p
   expect(admitBytes(new TextEncoder().encode(JSON.stringify(value)))).toEqual(value);
 });
 const parse = (source: string) => admitBytes(new TextEncoder().encode(source));
+it.each([
+  ["empty array", "[", "[]", "]"],
+  ["populated array", "[", "[0]", "]"],
+  ["empty object", '{"child":', "{}", "}"],
+  ["populated object", '{"child":', '{"value":0}', "}"],
+] as const)(
+  "enforces the published container depth with an innermost %s",
+  (_name, open, inner, close) => {
+    const nested = (depth: number): string =>
+      open.repeat(depth - 1) + inner + close.repeat(depth - 1);
+    expect(() => parse(nested(31))).not.toThrow();
+    expect(() => parse(nested(32))).not.toThrow();
+    expect(() => parse(nested(33))).toThrow("JSON exceeds its structural profile.");
+  },
+);
 it("separates array and object scopes and ignores structural text inside string values", () => {
   expect(parse('{"a":{"id":1},"b":{"id":2},"c":[{"id":3},{"id":4}]}')).toEqual({
     a: {
