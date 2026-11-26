@@ -128,35 +128,40 @@ module internal ReviewDocumentParts =
                     Entries = section.Entries |> List.filter (ScreenEntries.technical >> not)
                 })
 
+        let notices =
+            [
+                match review.Target with
+                | ReviewTarget.Opening _ -> ()
+                | _ ->
+                    {
+                        MessageId = PresentationKeys.consequence review.Task
+                        Reason = None
+                        Tone =
+                            if TaskConsequences.ofTask review.Task = Consequence.Routine then
+                                NoticeTone.Info
+                            else
+                                NoticeTone.Warning
+                    }
+                if review.ChangesOwnSignInIdentity then
+                    {
+                        MessageId = "notice.changesOwnSignInIdentity"
+                        Reason = None
+                        Tone = NoticeTone.Warning
+                    }
+            ]
+
         let screen =
             Screen.create (
                 identity
-                @ [
-                    ScreenEntries.region
-                        RegionRole.Notice
-                        None
-                        (RegionContent.Notice
-                            [
-                                {
-                                    MessageId = PresentationKeys.consequence review.Task
-                                    Reason = None
-                                    Tone =
-                                        if
-                                            TaskConsequences.ofTask review.Task =
-                                                Consequence.Routine
-                                        then
-                                            NoticeTone.Info
-                                        else
-                                            NoticeTone.Warning
-                                }
-                                if review.ChangesOwnSignInIdentity then
-                                    {
-                                        MessageId = "notice.changesOwnSignInIdentity"
-                                        Reason = None
-                                        Tone = NoticeTone.Warning
-                                    }
-                            ])
-                ]
+                @ (if notices.IsEmpty then
+                       []
+                   else
+                       [
+                           ScreenEntries.region
+                               RegionRole.Notice
+                               None
+                               (RegionContent.Notice notices)
+                       ])
                 @ ScreenEntries.factRegions facts
                 @ (if details.IsEmpty then
                        []

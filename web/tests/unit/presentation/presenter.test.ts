@@ -8,7 +8,7 @@ it("keeps human widget hints separate from precise catalog rules and formats dec
   const hint = (name: string) =>
     p.hint(definition.catalog.fields.find((field) => field.name === name)!);
   expect(hint("caseReference")).toBe(
-    "A custom reference stays reserved even after erasure. Keep personal information out of it.",
+    "A custom reference stays reserved even after correction or erasure. Keep personal information out of it.",
   );
   expect(hint("policyNumber")).toBe("The policy number used by the insurer.");
   expect(hint("incidentDate")).toBe("When the incident happened.");

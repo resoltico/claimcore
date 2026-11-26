@@ -26,7 +26,7 @@ import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice"
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 
 import { fields } from "../support/service-ui.fixtures";
-import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
+import { DisclosureRefreshDriver } from "../support/people-dialog.fixtures";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { productMetadata } from "../../src/protocol/productMetadata";

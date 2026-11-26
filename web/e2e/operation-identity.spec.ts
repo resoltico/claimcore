@@ -35,11 +35,15 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
     }
   });
   await open.click();
-  const drawer = page.getByRole("dialog", { name: "Open a case" });
-  const custom = drawer.getByRole("checkbox", { name: "Use a custom case reference" });
+  const dialog = page.getByRole("dialog", { name: "Open a case" });
+  const custom = dialog.getByRole("checkbox", { name: "Use a custom case reference" });
+  await expect(custom).toBeEnabled();
   await custom.check();
-  const reference = drawer.getByRole("textbox", { name: "Case reference", exact: true });
-  const review = drawer.getByRole("button", { name: "Review changes" });
+  const reference = dialog.getByRole("textbox", { name: "Case reference", exact: true });
+  const review = dialog.getByRole("button", { name: "Review changes" });
+  await expect(reference).toHaveAccessibleDescription(
+    /stays reserved even after correction or erasure/u,
+  );
   await reference.focus();
   await reference.evaluate((element) => {
     element.scrollIntoView({ block: "center" });
@@ -51,18 +55,18 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
   await reference.fill("RESTORE");
   await reference.fill("");
   await review.click();
-  await expect(drawer.getByRole("alert").first()).toBeVisible();
+  await expect(dialog.getByRole("alert").first()).toBeVisible();
   await expect(reference).toBeFocused();
-  await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
   const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
   await expect(discard).toBeVisible();
   await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(custom).toBeChecked();
   await expect(reference).toHaveValue("");
-  await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
   await discard.getByRole("button", { name: "Discard and leave", exact: true }).click();
   await expect(discard).toHaveCount(0);
-  await expect(drawer).toHaveCount(0);
+  await expect(dialog).toHaveCount(0);
   expect(executions).toEqual([]);
 
   await open.click();
@@ -70,10 +74,10 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
   const query = `INTAKE-${randomUUID().slice(0, 8)}`;
   await reference.fill(`${query}-ACTIVE`);
   await expect(
-    drawer.getByText("Leave both blank, or enter both amount and currency."),
+    dialog.getByText("Leave both blank, or enter both amount and currency."),
   ).toBeVisible();
-  await drawer.getByRole("textbox", { name: "Claimed amount", exact: true }).fill("0");
-  await drawer.getByRole("combobox", { name: "Claimed currency", exact: true }).fill("EUR");
+  await dialog.getByRole("textbox", { name: "Claimed amount", exact: true }).fill("0");
+  await dialog.getByRole("combobox", { name: "Claimed currency", exact: true }).fill("EUR");
   await page.getByRole("option", { name: "EUR", exact: true }).click();
   await reviewDraft(page, { "Policy number": "SYNTHETIC-INTAKE" });
   await recordReviewed(page);

@@ -402,6 +402,158 @@ const verifyProviderAppearance = async (page, dark) => {
     throw new Error("The inherited and branded provider styles must render in order.");
   }
 };
+const sourceMark = readFileSync(new URL("../public/brand.svg", import.meta.url));
+const verifyMarkResponse = async (response) => {
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("image/svg+xml");
+  expect(await response.body()).toEqual(sourceMark);
+};
+
+const markGeometry = (host, pseudoElement) =>
+  host.evaluate((element, pseudo) => {
+    const style = getComputedStyle(element, pseudo);
+    const box = element.getBoundingClientRect();
+    const width = parseFloat(style.width);
+    const height = parseFloat(style.height);
+    let x = box.left;
+    if (pseudo !== null) {
+      const headerStyle = getComputedStyle(element);
+      const text = document.createRange();
+      text.selectNodeContents(element);
+      const wordmark = text.getBoundingClientRect();
+      const gap = parseFloat(headerStyle.columnGap);
+      x = headerStyle.direction === "ltr" ? wordmark.left - gap - width : wordmark.right + gap;
+    }
+    const sides = ["Top", "Right", "Bottom", "Left"];
+    return {
+      clip: {
+        x,
+        y: pseudo === null ? box.top : box.top + (box.height - height) / 2,
+        width,
+        height,
+      },
+      clean:
+        sides.every((side) => parseFloat(style[`border${side}Width`]) === 0) &&
+        style.borderRadius === "0px" &&
+        style.filter === "none" &&
+        style.clipPath === "none",
+    };
+  }, pseudoElement);
+
+const markPixels = async (page, clip) => {
+  const png = await page.screenshot({ clip });
+  return page.evaluate(async (bytes) => {
+    const bitmap = await createImageBitmap(
+      new Blob([Uint8Array.from(bytes)], { type: "image/png" }),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d");
+    context.drawImage(bitmap, 0, 0);
+    const brightness = (x, y) => {
+      const [r, g, b] = context.getImageData(
+        Math.floor(x * bitmap.width),
+        Math.floor(y * bitmap.height),
+        1,
+        1,
+      ).data;
+      return (r + g + b) / 3;
+    };
+    return {
+      frame: brightness(0.5, 0.035),
+      letter: brightness(0.17, 0.5),
+      interior: brightness(0.5, 0.5),
+      surround: brightness(0.02, 0.02),
+    };
+  }, Array.from(png));
+};
+
+const verifyRenderedMark = async (page, host, pseudo, mode) => {
+  await expect(host).toBeVisible();
+  const { clip, clean } = await markGeometry(host, pseudo);
+  expect(clean, "Consumer mark frame").toBe(true);
+  expect([clip.width, clip.height], "Rendered mark dimensions in CSS pixels").toEqual([44, 44]);
+  const ink = await markPixels(page, clip);
+  expect(Math.abs(ink.frame - ink.letter), "The frame and C use the same ink").toBeLessThan(40);
+  expect(Math.abs(ink.frame - ink.interior), "Frame contrast against the SVG fill").toBeGreaterThan(
+    120,
+  );
+  expect(Math.abs(ink.frame - ink.surround), "Frame contrast against the page").toBeGreaterThan(
+    100,
+  );
+  if (mode !== "forced") {
+    expect(ink.frame > ink.interior, "Artwork follows the surrounding color scheme").toBe(
+      mode === "dark",
+    );
+  }
+};
+
+const verifyWebMark = async (context, origin) => {
+  const page = await context.newPage();
+  try {
+    const served = page.waitForResponse((response) => response.url() === `${origin}/brand.svg`);
+    await page.goto(`${origin}/cases`);
+    await verifyMarkResponse(await served);
+    const mark = page.locator(".workspace-sidebar img.product-mark");
+    await expect(mark).toHaveAttribute("alt", "");
+    await expect(page.locator(".workspace-sidebar .product-name")).toHaveAccessibleName(
+      "ClaimCore",
+    );
+    for (const mode of ["light", "dark", "forced"]) {
+      await page.emulateMedia({
+        colorScheme: mode === "dark" ? "dark" : "light",
+        forcedColors: mode === "forced" ? "active" : "none",
+      });
+      await verifyRenderedMark(page, mark, null, mode);
+    }
+    // A consumer frame changes the painted mark even when the fetched bytes match.
+    await mark.evaluate((element) => {
+      element.style.border = "2px solid red";
+    });
+    expect((await markGeometry(mark, null)).clean).toBe(false);
+    await mark.evaluate((element) => element.removeAttribute("style"));
+    await page.evaluate(() => {
+      const key = "claimcore.presentation.v3";
+      const preferences = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(key, JSON.stringify({ ...preferences, accent: "green" }));
+    });
+    await page.emulateMedia({ forcedColors: "none" });
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "green");
+    await verifyRenderedMark(page, mark, null, "light");
+    process.stdout.write(
+      "Rendered Web mark in light, dark, forced colors and a user accent. The consumer-border control was rejected.\n",
+    );
+  } catch (error) {
+    process.stderr.write(`Web brand check failed: ${error.message.split("\n")[0]}.\n`);
+    throw error;
+  } finally {
+    await page.close();
+  }
+};
+
+const verifyProviderBrand = async (page, language) => {
+  if (language === "en" || language === "ar") {
+    const header = page.locator("#kc-header-wrapper");
+    await expect(header).toHaveText("ClaimCore");
+    await verifyRenderedMark(page, header, "::before", language === "ar" ? "dark" : "light");
+    if (language === "en") {
+      await page.emulateMedia({ forcedColors: "active" });
+      await verifyRenderedMark(page, header, "::before", "forced");
+      await page.emulateMedia({ forcedColors: "none" });
+    }
+  }
+  if (language === "en") {
+    await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
+    await expect(page.locator("#kc-login")).toHaveAccessibleName("Sign in");
+    const top = await page
+      .locator(".pf-v5-c-login__main")
+      .evaluate((card) => getComputedStyle(card).borderTopWidth);
+    expect(top).toBe("0px");
+  }
+};
+
 const verifyProviderTheme = async (browser, origin, provider, languages) => {
   for (const [index, language] of languages.entries()) {
     // Do not overrun the real five-per-minute app challenge window in a clean installation.
@@ -419,14 +571,14 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
     try {
       const page = await context.newPage();
       let brandedStyles = false;
-      let brandedMark = false;
+      const brandedMark = page.waitForResponse((response) => {
+        const url = new URL(response.url());
+        return url.origin === provider && url.pathname.endsWith("/img/brand.svg");
+      });
       page.on("response", (response) => {
         const url = new URL(response.url());
         if (url.origin === provider && url.pathname.endsWith("/css/claimcore.css")) {
           brandedStyles = response.ok();
-        }
-        if (url.origin === provider && url.pathname.endsWith("/img/brand.svg")) {
-          brandedMark = response.ok();
         }
       });
       // English in a fresh context is the no-hint control.
@@ -443,18 +595,16 @@ const verifyProviderTheme = async (browser, origin, provider, languages) => {
       await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
       await expect(page.locator("#kc-login")).toBeVisible();
       await verifyProviderAppearance(page, language === "ar");
-      await expect.poll(() => brandedMark).toBe(true);
-      if (language === "en") {
-        await expect(page.locator("#kc-page-title")).toHaveText("Sign in to ClaimCore");
-        await expect(page.locator("#kc-login")).toHaveAccessibleName("Sign in");
-        const top = await page
-          .locator(".pf-v5-c-login__main")
-          .evaluate((card) => getComputedStyle(card).borderTopWidth);
-        expect(top).toBe("0px");
-      }
+      await verifyMarkResponse(await brandedMark);
+      await verifyProviderBrand(page, language);
       process.stdout.write(
         `Rendered provider locale ${language} (form, direction, inherited and branded styles).\n`,
       );
+    } catch (error) {
+      process.stderr.write(
+        `Provider theme check failed in ${language}: ${error.message.split("\n")[0]}.\n`,
+      );
+      throw error;
     } finally {
       await context.close();
     }
@@ -549,13 +699,8 @@ const qualify = async (origin, provider, ca) => {
     await verifyCliTheme(browser, provider);
     await verifyPriorRealm(browser, origin, provider);
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
-    const brand = await context.request.get(`${origin}/brand.svg`);
-    expect(brand.status()).toBe(200);
-    expect(brand.headers()["content-type"]).toBe("image/svg+xml");
-    expect(await brand.body()).toEqual(
-      readFileSync(new URL("../public/brand.svg", import.meta.url)),
-    );
     await login(context, origin, provider);
+    await verifyWebMark(context, origin);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
     const dateFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: businessZone });

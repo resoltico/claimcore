@@ -5,7 +5,7 @@
   }
   .ui-dialog-overlay--bottom .ui-dialog {
     inline-size: 100%;
-    max-inline-size: var(--width-drawer);
+    max-inline-size: var(--width-sheet);
     border-end-start-radius: 0;
     border-end-end-radius: 0;
   }
@@ -40,12 +40,6 @@
     box-shadow: var(--shadow-2);
     padding-inline: var(--padding-workspace);
   }
-  .ui-dialog-overlay--end {
-    --dialog-width: var(--width-dialog);
-    place-items: stretch end;
-    padding: 0;
-    overflow: hidden;
-  }
   .review-consequence-stewardship {
     background: var(--warning-bg);
     color: var(--warning-text);
@@ -57,29 +51,6 @@
     color: var(--danger-text);
     border-inline-start: var(--border-width) solid var(--danger-text);
     padding: var(--space-3);
-  }
-  .ui-dialog-overlay--end [role="dialog"] {
-    display: var(--drawer-flow, flex);
-    flex-direction: column;
-    block-size: var(--drawer-block-size);
-    min-block-size: 0;
-  }
-  .ui-dialog-overlay--end .ui-dialog-header {
-    flex-shrink: 0;
-  }
-  .ui-dialog-overlay--end .ui-dialog-body {
-    flex: 1;
-    min-block-size: 0;
-    overflow: var(--drawer-body-overflow, auto);
-    padding-block: var(--space-3);
-    scroll-padding-block: var(--space-3);
-  }
-  .ui-dialog-overlay--end .ui-dialog-actions {
-    flex-shrink: 0;
-    margin-block-start: var(--space-3);
-    flex-wrap: wrap;
-    padding-block-start: var(--space-3);
-    border-block-start: var(--border-width) solid var(--border-control);
   }
 
   .ui-dialog-heading {
@@ -161,13 +132,6 @@
     font-size: var(--text-lg);
     font-weight: 700;
     line-height: var(--line-heading);
-  }
-  .ui-dialog-overlay--end .ui-dialog {
-    block-size: var(--viewport-block);
-    max-block-size: var(--viewport-block);
-    border-radius: 0;
-    overflow: hidden;
-    border-inline-start: var(--border-width) solid var(--border-subtle);
   }
   .ui-dialog-actions {
     display: flex;

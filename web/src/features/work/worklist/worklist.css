@@ -111,7 +111,7 @@
   }
   .filter-sheet {
     inline-size: 100%;
-    max-inline-size: var(--width-drawer);
+    max-inline-size: var(--width-sheet);
     background: var(--bg-surface);
     border-radius: var(--radius-md);
     padding: var(--space-4);

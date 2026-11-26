@@ -326,7 +326,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       );
     });
 
-    const drawers = [...document.querySelectorAll(".drawer")].filter(visible);
+    const dialogs = [...document.querySelectorAll(".work-dialog")].filter(visible);
     const border = (element: Element) => {
       const style = getComputedStyle(element);
       return [
@@ -336,8 +336,8 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
         parseFloat(style.borderLeftWidth),
       ] as const;
     };
-    const wrongFields = drawers.some((drawer) => {
-      const badButton = [...drawer.querySelectorAll(".control-box button")]
+    const wrongFields = dialogs.some((dialog) => {
+      const badButton = [...dialog.querySelectorAll(".control-box button")]
         .filter(visible)
         .some((button) => {
           const parent = button.closest(".control-box")!;
@@ -352,7 +352,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       const gap =
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--space-5")) *
         parseFloat(getComputedStyle(document.documentElement).fontSize);
-      const badGap = [...drawer.querySelectorAll(".task-field-grid")].some((grid) => {
+      const badGap = [...dialog.querySelectorAll(".task-field-grid")].some((grid) => {
         const fields = [...grid.children]
           .filter(visible)
           .map((field) => field.getBoundingClientRect());
@@ -369,7 +369,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
           return above !== undefined && Math.abs(field.top - above.bottom - gap) > 1;
         });
       });
-      const groupGap = [...drawer.querySelectorAll(".task-field-section + .task-field-grid")]
+      const groupGap = [...dialog.querySelectorAll(".task-field-section + .task-field-grid")]
         .filter(visible)
         .some(
           (grid) =>
@@ -382,25 +382,28 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       return badButton || badGap || groupGap;
     });
 
-    const crowdedDrawer = drawers.some((drawer) => {
-      const subject = drawer.querySelector(".case-title-line .identifier-value")?.textContent;
+    const crowdedWorkDialog = dialogs.some((dialog) => {
+      const subject = dialog.querySelector(".case-title-line .identifier-value")?.textContent;
       const duplicate =
         subject !== undefined &&
-        [...drawer.querySelectorAll(".identifier-value")].filter(
+        [...dialog.querySelectorAll(".identifier-value")].filter(
           (element) => visible(element) && element.textContent === subject,
         ).length > 1;
-      const { width } = drawer.getBoundingClientRect();
-      const card = [
-        ...drawer.querySelectorAll(".ui-dialog-body :is(div, section, form, fieldset)"),
-      ].some(
-        (element) =>
-          visible(element) &&
-          element.closest(".control-box") === null &&
-          element.getBoundingClientRect().width > width * 0.6 &&
-          border(element).every((side) => side >= 1),
-      );
+      const { width } = dialog.getBoundingClientRect();
+      const editsOrSelects =
+        dialog.querySelector(".operation-form, [data-confirm-operation], .case-title-line") !==
+        null;
+      const card =
+        editsOrSelects &&
+        [...dialog.querySelectorAll(".ui-dialog-body :is(div, section, form, fieldset)")].some(
+          (element) =>
+            visible(element) &&
+            element.closest(".control-box") === null &&
+            element.getBoundingClientRect().width > width * 0.6 &&
+            border(element).every((side) => side >= 1),
+        );
       const firstInput = [
-        ...drawer.querySelectorAll(
+        ...dialog.querySelectorAll(
           "input:not([type=hidden]), textarea, [role=spinbutton], [role=combobox], [role=radio]",
         ),
       ].find(visible);
@@ -989,7 +992,7 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       ["G18", rowControlsOutside],
       ["G19", wrongFields],
       ["G20", labelsMisaligned],
-      ["G21", crowdedDrawer || nestedCard],
+      ["G21", crowdedWorkDialog || nestedCard],
       ["G22", markers],
       ...anatomyChecks,
     ];
@@ -1131,3 +1134,19 @@ export const stableTableLayout = (
   before: Awaited<ReturnType<typeof tableLayoutState>>,
   after: Awaited<ReturnType<typeof tableLayoutState>>,
 ) => before.layout === after.layout && Math.abs(before.width - after.width) <= 0.5;
+
+export const workFrame = (dialog: ReturnType<Page["getByRole"]>) =>
+  dialog.evaluate((element) => {
+    const surface = element.closest(".ui-dialog")!;
+    const { x, y, width, right } = surface.getBoundingClientRect();
+    const viewport = document.documentElement.getBoundingClientRect();
+    const leftGutter = x - viewport.left;
+    const rightGutter = viewport.right - right;
+    return {
+      x,
+      y,
+      width,
+      centered: Math.abs(leftGutter - rightGutter) <= 1,
+      contained: leftGutter >= -1 && rightGutter >= -1,
+    };
+  });

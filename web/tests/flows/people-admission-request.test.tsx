@@ -13,7 +13,7 @@ import { PeoplePanel } from "../../src/features/people/PeoplePanel";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { peoplePreview } from "../support/people-operation.fixtures";
-import { chooseAdmissionRole } from "../support/people-drawer.fixtures";
+import { chooseAdmissionRole } from "../support/people-dialog.fixtures";
 import { service } from "../../src/api/service";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 const request = {

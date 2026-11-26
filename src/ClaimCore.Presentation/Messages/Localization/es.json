@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "La referencia personalizada queda reservada incluso después del borrado. Evite incluir datos personales.",
-    "source": "2156c99e44ef",
+    "text": "Una referencia personalizada sigue reservada incluso después de una corrección o supresión. No incluya información personal en ella.",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

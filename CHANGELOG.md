@@ -18,6 +18,9 @@
 - Browser JSON admission enforces the published nesting limit for empty and populated containers.
 - CI requires selected tests to pass, checks shipping project references, and qualifies dependency and Compose changes before merge.
 - Trace core tasks to their owners and checks in the [source guide](docs/source-guide.md). Run `bash eng/verify.sh --help` to find stages and acceptance selectors.
+- Case work, payment selection and People dialogs open in the center. Scroll the dialog to reach its actions on short screens.
+- The opening form and review show when a case reference will be assigned. Custom entry explains that the reference stays reserved after correction or erasure.
+- Web and the Keycloak login theme display the same framed ClaimCore mark.
 
 ## [0.22.0] - 2026-11-26
 

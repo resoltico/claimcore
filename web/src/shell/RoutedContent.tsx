@@ -1,5 +1,5 @@
 import { DocumentTitleScope, useDocumentTitle } from "../hooks/useDocumentTitle";
-import { Drawer } from "../ui/Drawer";
+import { WorkDialog } from "../ui/WorkDialog";
 import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
 import { SubjectHeader } from "../ui/SubjectHeader";
@@ -236,7 +236,7 @@ export const EntrySelection = ({
   }
   const loading = page.loading || exact;
   return (
-    <Drawer
+    <WorkDialog
       title={p.actLabel(route.act)}
       closeLabel={p.text("ui.close")}
       isOpen
@@ -291,7 +291,7 @@ export const EntrySelection = ({
           {p.text("ui.nextPage")}
         </Button>
       )}
-    </Drawer>
+    </WorkDialog>
   );
 };
 

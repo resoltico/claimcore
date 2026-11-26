@@ -445,7 +445,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
       },
     },
   });
-  // Close the untouched grant and person drawers through their actual controls, then exercise a rendered admission refusal.
+  // Close the untouched grant and person dialogs through their actual controls, then exercise a rendered admission refusal.
   await page
     .getByRole("dialog")
     .getByRole("button", {

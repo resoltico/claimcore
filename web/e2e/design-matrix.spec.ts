@@ -1,4 +1,4 @@
-import { geometryFailures, narrowTableFailures } from "./design-geometry";
+import { geometryFailures, narrowTableFailures, workFrame } from "./design-geometry";
 import {
   dimensions,
   limitDimensions,
@@ -6,6 +6,7 @@ import {
   type Dimension,
 } from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
+import { clippedControlEdges } from "./layout-support";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "./fixtures";
 import {
@@ -162,8 +163,8 @@ const editorLayout = async (page: Page) => {
   expect(received).not.toBeNull();
   expect(narrative).not.toBeNull();
   if ((page.viewportSize()?.width ?? 0) >= 640) {
-    const drawer = await page.locator(".drawer").boundingBox();
-    expect(drawer?.width).toBeGreaterThanOrEqual(640);
+    const dialog = await page.locator(".work-dialog").boundingBox();
+    expect(dialog?.width).toBeGreaterThanOrEqual(640);
     expect(Math.abs(date!.y - received!.y)).toBeLessThan(2);
     expect(Math.abs(date!.x - received!.x)).toBeGreaterThan(date!.width);
     expect(narrative!.width).toBeGreaterThan(date!.width * 1.5);
@@ -270,7 +271,7 @@ test.describe("adopted work surface design matrix", () => {
   });
   plannedDimensions.forEach(registerDimension);
   test(
-    "case action drawers retain the case route and restore the opener",
+    "case action dialogs retain the case route and restore the opener",
     { tag: ["@engine"] },
     async ({ page }) => {
       const dimension: Dimension = { language: "en", width: 1440, mode: "light", accent: "green" };
@@ -283,11 +284,11 @@ test.describe("adopted work surface design matrix", () => {
       const caseUrl = page.url();
       const opener = page.locator(".case-title-line .ui-button--primary").first();
       await opener.click();
-      const drawer = page.getByRole("dialog");
-      await expect(drawer).toBeVisible();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
       await expect(page.locator("main h1")).toHaveCount(1);
       await expect(heading).toHaveText(reference);
-      await expect(drawer.locator(".case-title-line .identifier-value")).toHaveText(reference);
+      await expect(dialog.locator(".case-title-line .identifier-value")).toHaveText(reference);
       await expect(page).toHaveTitle(`Record payment decision · ${reference} · ClaimCore`);
       const actUrl = page.url();
 
@@ -296,18 +297,190 @@ test.describe("adopted work surface design matrix", () => {
       await expect(opener).toBeFocused();
 
       await opener.click();
-      await expect(drawer).toBeVisible();
+      await expect(dialog).toBeVisible();
       await page.goBack();
       await expect(page).toHaveURL(caseUrl);
       await expect(opener).toBeFocused();
 
       await page.goto(actUrl);
-      await expect(drawer).toBeVisible();
+      await expect(dialog).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(page).toHaveURL(caseUrl);
       await expect(heading).toBeFocused();
     },
   );
+  const registerOpeningGeometry = (language: "en" | "ar") => {
+    test(`opening work is centered and capped in ${language} @engine`, async ({ page }) => {
+      const dimension: Dimension = { language, width: 1440, mode: "light", accent: "green" };
+      await page.context().addCookies(dataset.cookies);
+      await configureDimension(page, dimension);
+      await visitRoute(
+        page,
+        dataset.routes.find(({ id }) => id === "editor-open")!,
+        dimension,
+      );
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toHaveCount(1);
+      for (const viewport of [
+        { width: 1440, height: 900 },
+        { width: 2560, height: 1400 },
+      ]) {
+        await page.setViewportSize(viewport);
+        expect(await workFrame(dialog)).toMatchObject({
+          centered: true,
+          contained: true,
+          width: 768,
+        });
+      }
+      const shiftWorkFrame = (alignToEnd: boolean) =>
+        dialog.evaluate((element, shift) => {
+          const surface = element.closest<HTMLElement>(".ui-dialog")!;
+          if (shift) {
+            const { direction } = getComputedStyle(surface);
+            surface.style.justifySelf = "end";
+            return direction;
+          }
+          surface.removeAttribute("style");
+          return null;
+        }, alignToEnd);
+      try {
+        expect(await shiftWorkFrame(true)).toBe(language === "ar" ? "rtl" : "ltr");
+        expect((await workFrame(dialog)).centered).toBe(false);
+      } finally {
+        await shiftWorkFrame(false);
+      }
+      const incident = dialog.locator('[data-field-name="incidentDate"]');
+      const received = dialog.locator('[data-field-name="receivedDate"]');
+      for (const width of [639, 640]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await workFrame(dialog)).toMatchObject({ centered: true, contained: true });
+        const first = await incident.boundingBox();
+        const second = await received.boundingBox();
+        expect(first).not.toBeNull();
+        expect(second).not.toBeNull();
+        expect(Math.abs(first!.y - second!.y) < 2).toBe(width >= 640);
+      }
+    });
+  };
+  registerOpeningGeometry("en");
+  registerOpeningGeometry("ar");
+
+  test("opening work reaches its actions by wheel and keyboard at short heights @engine", async ({
+    page,
+  }) => {
+    const dimension: Dimension = { language: "en", width: 844, mode: "light", accent: "green" };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    await visitRoute(
+      page,
+      dataset.routes.find(({ id }) => id === "editor-open")!,
+      dimension,
+    );
+    const dialog = page.getByRole("dialog");
+    const review = dialog.getByRole("button", { name: "Review changes" });
+    const settings = dialog.getByRole("button", { name: "Settings", exact: true });
+    const surface = dialog.locator("..");
+    const reset = async () => {
+      await settings.focus();
+      await surface.evaluate((panel) => {
+        panel.scrollTop = 0;
+      });
+    };
+    const focusReview = async () => {
+      // The footer is the last stop in the dialog's tab order.
+      await page.keyboard.press("Shift+Tab");
+      await expect(review).toBeFocused();
+    };
+    const scrollState = () =>
+      surface.evaluate((panel) => ({
+        surface: panel.scrollTop,
+        body: panel.querySelector(".ui-dialog-body")!.scrollTop,
+        page: document.scrollingElement!.scrollTop,
+      }));
+    for (const viewport of [
+      { width: 844, height: 390 },
+      { width: 320, height: 500 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await reset();
+      expect(await workFrame(dialog)).toMatchObject({ centered: true, contained: true });
+      await expect(review).not.toBeInViewport();
+      const before = await scrollState();
+      const frame = await workFrame(dialog);
+      await page.mouse.move(frame.x + frame.width / 2, viewport.height / 2);
+      await expect(async () => {
+        await page.mouse.wheel(0, 2600);
+        await expect(review).toBeInViewport({ timeout: 200 });
+      }).toPass({ timeout: 5000, intervals: [50] });
+      const after = await scrollState();
+      expect(after).toMatchObject({ body: 0, page: before.page });
+      expect(after.surface).toBeGreaterThan(0);
+      await expect.poll(() => clippedControlEdges(review)).toEqual([]);
+
+      await reset();
+      await expect(review).not.toBeInViewport();
+      await focusReview();
+      await expect.poll(() => clippedControlEdges(review, true)).toEqual([]);
+      await page.keyboard.press("Enter");
+      await expect(dialog.getByRole("button", { name: "Return to editing" })).toBeVisible();
+      expect(await workFrame(dialog)).toEqual(frame);
+      await dialog.getByRole("button", { name: "Return to editing" }).click();
+      await expect(review).toBeFocused();
+    }
+    await reset();
+    await surface.evaluate((panel) => {
+      panel.style.overflow = "clip";
+    });
+    try {
+      await page.mouse.wheel(0, 2600);
+      await focusReview();
+      expect(await clippedControlEdges(review)).not.toEqual([]);
+      await expect(review).not.toBeInViewport();
+    } finally {
+      await surface.evaluate((panel) => {
+        panel.removeAttribute("style");
+      });
+    }
+  });
+
+  test("People session action has space above and below at both widths @engine", async ({
+    page,
+  }) => {
+    const dimension: Dimension = { language: "en", width: 1440, mode: "light", accent: "blue" };
+    await page.context().addCookies(dataset.cookies);
+    await configureDimension(page, dimension);
+    await visitRoute(
+      page,
+      dataset.routes.find(({ id }) => id === "people-detail")!,
+      dimension,
+    );
+    const dialog = page.getByRole("dialog");
+    for (const width of [1440, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      const accountActions = dialog.locator(".actor-actions");
+      await expect(accountActions).toHaveCount(1);
+      const sessionAction = accountActions.locator(":scope > button");
+      await expect(sessionAction).toHaveCount(1);
+      const gaps = await sessionAction.evaluate((button) => {
+        const group = button.parentElement!;
+        const actions = group.querySelector(".actions")!;
+        const grants = group.nextElementSibling!;
+        const bounds = button.getBoundingClientRect();
+        return {
+          above: bounds.top - actions.getBoundingClientRect().bottom,
+          below: grants.getBoundingClientRect().top - bounds.bottom,
+        };
+      });
+      expect(
+        gaps.above,
+        "Space between account actions and the browser-session action",
+      ).toBeGreaterThanOrEqual(8);
+      expect(gaps.below, "Space between the browser-session action and the grants box").toBeCloseTo(
+        gaps.above,
+      );
+    }
+  });
+
   test("payment entry selection uses the declared prompt and visible row action @engine", async ({
     page,
   }) => {
@@ -321,6 +494,7 @@ test.describe("adopted work surface design matrix", () => {
     const dialog = page.getByRole("dialog");
     const prompt = dialog.getByText("Choose the payment entry to correct.");
     await expect(prompt).toBeFocused();
+    const selectionFrame = await workFrame(dialog);
     await expect(dialog.locator(".case-title-line")).toHaveCount(1);
     await expect(dialog.locator("meter, .money-meter, .section-card")).toHaveCount(0);
     const action = dialog.locator("tbody").getByRole("button").first();
@@ -328,6 +502,11 @@ test.describe("adopted work surface design matrix", () => {
     await action.click();
     await expect(dialog.locator(".lookup-input").getByRole("combobox")).toBeVisible();
     await expect(prompt).toHaveCount(0);
+    await expect(dialog).toHaveCount(1);
+    expect(await workFrame(dialog)).toEqual(selectionFrame);
+    await expect
+      .poll(() => dialog.evaluate((node) => node.contains(document.activeElement)))
+      .toBe(true);
     await page.keyboard.press("Escape");
     await expect(page).toHaveURL(caseUrl);
     await expect(page.locator("main h1")).toBeFocused();

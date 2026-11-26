@@ -58,7 +58,7 @@
     margin-block: var(--space-5);
   }
 
-  .drawer .selected-fact {
+  :is(.work-dialog, .ui-completion-popover) .selected-fact {
     border: 0;
     padding-inline: 0;
   }

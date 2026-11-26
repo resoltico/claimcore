@@ -2,6 +2,7 @@ import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
+import { WorkDialog } from "../../../src/ui/WorkDialog";
 import { Dialog } from "../../../src/ui/Dialog";
 import { Button } from "../../../src/ui/Button";
 
@@ -64,19 +65,18 @@ it("does not expose dismissal or accept Escape while a protected operation is pe
   expect(within(dialog).getByRole("textbox", { name: "Draft" })).toHaveValue("Preserved");
 });
 
-it("lets keyboard users enter a read-only drawer body before its fixed footer", async () => {
+it("lets keyboard users enter a read-only work dialog body before its fixed footer", async () => {
   const user = userEvent.setup();
   render(
-    <Dialog
+    <WorkDialog
       title="Read-only review"
       closeLabel="Close"
       isOpen
       isDismissable
-      placement="end"
       onOpenChange={vi.fn()}
     >
       <p>Complete proposed effects</p>
-    </Dialog>,
+    </WorkDialog>,
   );
   const dialog = screen.getByRole("dialog", { name: "Read-only review" });
   const body = screen.getByText("Complete proposed effects").closest(".ui-dialog-body")!;

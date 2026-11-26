@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "案件清除後，自訂識別碼仍會保留。請勿在其中包含個人資料。",
-    "source": "2156c99e44ef",
+    "text": "自訂編號在更正或清除後仍會保留。請勿在編號中包含個人資訊。",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

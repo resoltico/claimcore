@@ -54,10 +54,10 @@ business date.
 
 ## Open a case
 
-Choose **Open a case**. The register assigns a reference when you record the case, and the receipt
+Choose **Open a case** to open the centered work dialog. On a short screen, scroll the dialog to reach **Review changes**. The register assigns a reference when you record the case, and the receipt
 shows the assigned value. In a register that allows custom case references, select **Use a custom
 case reference** to enter your own. Use a reference free of personal data because it remains
-reserved after erasure. The review shows your request, and the register checks availability when
+reserved after correction or erasure. The review shows your request, and the register checks availability when
 you record the case. You can add the incident date and country, Received
 date, narrative, policy number, insurer claim reference and claimed amount with its currency. Received
 means the date your office received the claim. Each observed date must be a valid calendar date at

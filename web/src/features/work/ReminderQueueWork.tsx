@@ -14,7 +14,7 @@ import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 
 import { renderCatalogKey } from "../../presentation/messages";
-import { Dialog } from "../../ui/Dialog";
+import { WorkDialog } from "../../ui/WorkDialog";
 import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
 
@@ -60,7 +60,7 @@ const SelectedReminder = ({
   const title = renderCatalogKey(p, task.labelId);
   if (parent === null) {
     return (
-      <Dialog
+      <WorkDialog
         title={title}
         closeLabel={p.text("ui.close")}
         isOpen
@@ -70,7 +70,6 @@ const SelectedReminder = ({
             close();
           }
         }}
-        placement="end"
       >
         {query.loading ? (
           <p role="status">{p.text("ui.loadingCurrentCase")}</p>
@@ -79,7 +78,7 @@ const SelectedReminder = ({
             <NoticeView value={query.message ?? { kind: "local", reason: "incomplete" }} />
           </p>
         )}
-      </Dialog>
+      </WorkDialog>
     );
   }
   return (

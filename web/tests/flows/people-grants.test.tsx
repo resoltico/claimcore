@@ -8,7 +8,7 @@ import {
   chooseAdmissionRole,
   closePersonDetails,
   DisclosureRefreshDriver,
-} from "../support/people-drawer.fixtures";
+} from "../support/people-dialog.fixtures";
 import { workBasis } from "../support/inputs";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";

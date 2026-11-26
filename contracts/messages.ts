@@ -1301,7 +1301,6 @@ export type MessageArgs = {
   "ui.returnToCase": Readonly<Record<string, never>>;
   "ui.returnToEdit": Readonly<Record<string, never>>;
   "ui.review.checked": { readonly "when": string };
-  "ui.reviewDescription": Readonly<Record<string, never>>;
   "ui.rightToLeft": Readonly<Record<string, never>>;
   "ui.rolesEnd": Readonly<Record<string, never>>;
   "ui.rolesPartial": Readonly<Record<string, never>>;

@@ -1683,8 +1683,8 @@
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "يبقى المرجع المخصص محجوزًا حتى بعد المحو. لا تضمّن فيه معلومات شخصية.",
-    "source": "2156c99e44ef",
+    "text": "يظل المرجع المخصص محجوزًا حتى بعد التصحيح أو المحو. لا تدرج فيه معلومات شخصية.",
+    "source": "4936b3dc4560",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {

@@ -1,3 +1,4 @@
+import { ProductBrand } from "./ProductBrand";
 import { Avatar } from "../ui/Avatar";
 import { actorName } from "../presentation/actorName";
 import {
@@ -322,8 +323,7 @@ export const Shell = ({
               });
             }}
           >
-            <img className="product-mark" src="/brand.svg" alt="" />
-            <span className="shell-brand">ClaimCore</span>
+            <ProductBrand wordmarkClassName="shell-brand" />
           </a>
           {cases ? find(false) : null}
         </div>

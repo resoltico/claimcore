@@ -5,7 +5,7 @@ import {
 } from "../../support/human-requester.fixtures";
 import { act } from "@testing-library/react";
 
-import { DisclosureRefreshDriver } from "../../support/people-drawer.fixtures";
+import { DisclosureRefreshDriver } from "../../support/people-dialog.fixtures";
 import { humanReadReply } from "../../support/human-read-reply.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";

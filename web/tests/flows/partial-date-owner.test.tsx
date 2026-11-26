@@ -5,7 +5,7 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../../src/shell/Dashboard";
-import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
+import { DisclosureRefreshDriver } from "../support/people-dialog.fixtures";
 import { App } from "../../src/shell/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";

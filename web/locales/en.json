@@ -113,7 +113,6 @@
   "ui.returnToCase": "Return to case",
   "ui.returnToEdit": "Return to editing",
   "ui.review.checked": "Checked {when}.",
-  "ui.reviewDescription": "Check the changes, then confirm.",
   "ui.rightToLeft": "Right-to-left",
   "ui.scalarCount": "Characters: {count}/{maximum}",
   "ui.settings": "Settings",

@@ -35,7 +35,7 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
     });
 
     [1440, 1366, 1280].forEach((width) => {
-      test(`lists and drawer at ${width}px`, async ({ page }) => {
+      test(`lists and work dialog at ${width}px`, async ({ page }) => {
         test.setTimeout(120_000);
         await page.context().addCookies(dataset.cookies);
         await configureDimension(page, { width, language: "en", mode: "light", accent: "blue" });
@@ -79,7 +79,7 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
             await expect(page.getByRole("dialog")).toBeVisible();
             expect(
               stableTableLayout(atTall, await tableLayoutState(page)),
-              `G29 ${path} drawer`,
+              `G29 ${path} work dialog`,
             ).toBe(true);
             await page.keyboard.press("Escape");
           }

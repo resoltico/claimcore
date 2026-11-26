@@ -981,10 +981,10 @@ test("@engine exact reminder URLs retain completed selection and the case refere
   await expect(selected).toContainText("Exact completed reminder");
   const reopen = selected.getByRole("button", { name: /^Reopen reminder/u });
   await reopen.click();
-  const drawer = page.getByRole("dialog");
-  await expect(drawer.getByRole("button", { name: "Review changes", exact: true })).toBeVisible();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Review changes", exact: true })).toBeVisible();
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
-  await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
   await page
     .getByRole("dialog", { name: "Discard these draft changes?" })
     .getByRole("button", { name: "Discard and leave", exact: true })

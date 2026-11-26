@@ -25,8 +25,10 @@ type Props = {
   isOpen: boolean;
   isDismissable: boolean;
   onOpenChange: (open: boolean) => void;
-  placement?: "center" | "top" | "bottom" | "end";
+  placement?: "center" | "top" | "bottom";
   className?: string;
+  overlayClassName?: string;
+  scrollableBody?: boolean;
   navigationGuard?: boolean;
   anchorRef?: RefObject<HTMLElement | null>;
 };
@@ -72,12 +74,13 @@ export const Dialog = ({
   onOpenChange,
   placement = "center",
   className = "",
+  overlayClassName = "",
   navigationGuard,
   anchorRef,
+  scrollableBody = anchorRef !== undefined,
 }: Props) => {
   const generatedTitleId = useId();
   const titleId = headingId ?? generatedTitleId;
-  const scrollableBody = placement === "end" || anchorRef !== undefined;
   const contents = (
     <AriaDialog
       aria-labelledby={titleId}
@@ -151,7 +154,7 @@ export const Dialog = ({
   }
   return (
     <ModalOverlay
-      className={`ui-dialog-overlay ui-dialog-overlay--${placement}`}
+      className={`ui-dialog-overlay ui-dialog-overlay--${placement} ${overlayClassName}`}
       isOpen={isOpen}
       isDismissable={isDismissable}
       isKeyboardDismissDisabled={!isDismissable}

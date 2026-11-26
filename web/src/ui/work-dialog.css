@@ -1,0 +1,67 @@
+@layer components {
+  .ui-dialog-overlay.work-dialog-overlay {
+    padding-block: var(--work-top) var(--work-bottom);
+    padding-inline: var(--work-inline);
+    block-size: var(--work-height);
+    container: work-viewport / size;
+    place-items: start center;
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .ui-dialog.work-dialog {
+    block-size: 100%;
+    max-block-size: none;
+    max-inline-size: var(--width-work-dialog);
+    overflow: hidden;
+  }
+
+  .work-dialog [role="dialog"] {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .work-dialog :is(.ui-dialog-header, .ui-dialog-actions) {
+    flex-shrink: 0;
+  }
+
+  .work-dialog .ui-dialog-body {
+    --focus-clearance: calc(var(--focus-width) + var(--focus-offset));
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+    margin-inline: calc(-1 * var(--focus-clearance));
+    padding-inline: var(--focus-clearance);
+    padding-block: var(--space-3);
+    scroll-padding-block: var(--space-3);
+  }
+
+  .work-dialog .ui-dialog-actions {
+    flex-wrap: wrap;
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-3);
+  }
+
+  :is(.work-dialog, .ui-completion-popover) .collection-item {
+    border: 0;
+    border-radius: 0;
+    padding-inline: 0;
+  }
+
+  @container work-viewport (height < 34rem) {
+    .ui-dialog.work-dialog {
+      overflow: auto;
+      scroll-padding-block: var(--space-3);
+    }
+
+    .work-dialog [role="dialog"] {
+      display: block;
+      block-size: auto;
+    }
+
+    .work-dialog .ui-dialog-body {
+      overflow: visible;
+    }
+  }
+}

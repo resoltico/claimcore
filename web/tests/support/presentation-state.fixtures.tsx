@@ -149,7 +149,7 @@ export const setEditorLanguage = async (
 ) => {
   const open = document.querySelector<HTMLButtonElement>("[data-open-settings]");
   if (open === null) {
-    throw new Error("Expected current drawer Settings action.");
+    throw new Error("Expected current work dialog Settings action.");
   }
   await user.click(open);
   const control = await waitFor(() => languageControl(language));
