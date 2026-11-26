@@ -1278,27 +1278,35 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
 
   const recordsBeforeReload = await page.evaluate(
-    async ({ previous, current }) => {
+    async ({ previous: oldAttempt, current: newAttempt }) => {
       const name = "claimcore.recovery";
       const old = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open(name, 1);
         request.onupgradeneeded = () => {
           request.result.createObjectStore("attempts");
         };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Cannot create the previous recovery database."));
+        };
       });
       try {
         await new Promise<void>((resolve, reject) => {
           const tx = old.transaction("attempts", "readwrite");
-          tx.objectStore("attempts").add(previous, [
-            previous.serviceOrigin,
-            previous.installationId,
-            previous.actorId,
-            previous.attemptId,
+          tx.objectStore("attempts").add(oldAttempt, [
+            oldAttempt.serviceOrigin,
+            oldAttempt.installationId,
+            oldAttempt.actorId,
+            oldAttempt.attemptId,
           ]);
-          tx.oncomplete = () => resolve();
-          tx.onabort = () => reject(tx.error);
+          tx.oncomplete = () => {
+            resolve();
+          };
+          tx.onabort = () => {
+            reject(new Error("Cannot seed the previous recovery attempt."));
+          };
         });
       } finally {
         old.close();
@@ -1306,8 +1314,8 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
       const path = "/__claimcore_qa__/recovery/indexedJournal.js";
       const module = (await import(path)) as typeof IndexedJournalModule;
       const journal = module.createIndexedJournal(indexedDB);
-      const before = await journal.list(current);
-      await journal.put(current);
+      const before = await journal.list(newAttempt);
+      await journal.put(newAttempt);
       return before;
     },
     { previous, current },
@@ -1325,7 +1333,9 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
             request.transaction?.abort();
             reject(new Error("The earlier database was missing."));
           };
-          request.onerror = () => reject(request.error);
+          request.onerror = () => {
+            reject(new Error("Cannot read the previous recovery database."));
+          };
           request.onsuccess = () => {
             const old = request.result;
             const tx = old.transaction("attempts", "readonly");
@@ -1340,7 +1350,7 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
             };
             tx.onabort = () => {
               old.close();
-              reject(tx.error);
+              reject(new Error("Cannot verify the previous recovery attempt."));
             };
           };
         },
