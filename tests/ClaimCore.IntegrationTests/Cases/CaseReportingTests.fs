@@ -320,7 +320,11 @@ let private monthReporting (database: PostgresFixture.Database) =
             "Changed case access requires a fresh report traversal"
 
         let! refreshed = read scoped all CaseGrouping.ReceivedMonth
-        Expect.equal refreshed.Counts.Total 3L "A fresh report counts the newly authorized selection"
+
+        Expect.equal
+            refreshed.Counts.Total
+            3L
+            "A fresh report counts the newly authorized selection"
 
         Expect.equal
             (groups refreshed)
@@ -334,7 +338,9 @@ let private monthReporting (database: PostgresFixture.Database) =
             ("0", 1L)
             "New zero claim replaces the revoked 100 amount"
 
-        Expect.isEmpty (refreshed.Rows |> List.choose _.NetPaid) "The revoked case's return is excluded"
+        Expect.isEmpty
+            (refreshed.Rows |> List.choose _.NetPaid)
+            "The revoked case's return is excluded"
 
         Expect.isTrue
             (refreshed.Basis.ObservedAt >= initial.Basis.ObservedAt)
