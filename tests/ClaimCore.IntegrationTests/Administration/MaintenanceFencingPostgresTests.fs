@@ -350,6 +350,106 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
                 "The accepted current command really advances the frontier"
     }
 
+let private sharedPublicationFence (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+        let! _ = change database (MaintenanceChange.Acquire(0L, pauseA))
+        let handle = handle 1L pauseA
+
+        let prepare
+            (work:
+                NpgsqlConnection
+                    -> RegisterMaintenanceStore.Publication
+                    -> InstallationCipher
+                    -> Task<RegisterMaintenanceStore.Publication>)
+            =
+            RegisterMaintenanceStore.prepare
+                database.OwnerSource
+                database.MasterKey
+                handle
+                token
+                work
+
+        let waiting =
+            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let resume =
+            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let snapshot =
+            prepare (fun _ publication _ ->
+                task {
+                    waiting.SetResult()
+                    do! resume.Task.WaitAsync(TimeSpan.FromSeconds 10.)
+                    return publication
+                })
+
+        do! waiting.Task.WaitAsync(TimeSpan.FromSeconds 10.)
+
+        try
+            use! writer = database.OwnerSource.OpenConnectionAsync()
+            use! transaction = writer.BeginTransactionAsync()
+            let! _ = Transactions.head writer token
+            do! transaction.CommitAsync()
+        finally
+            resume.TrySetResult() |> ignore
+
+        let! first = snapshot
+        let! second = prepare (fun _ publication _ -> Task.FromResult publication)
+
+        Expect.equal
+            first
+            second
+            "Both preparations observed the exact same stable maintenance state"
+
+        let publish evidence =
+            RegisterMaintenanceStore.publish
+                database.OwnerSource
+                database.MasterKey
+                evidence
+                token
+                (fun _ _ -> Task.FromResult(Ok(): Result<unit, unit>))
+
+        let! applied = publish first
+        Expect.isOk applied "The first prepared publication succeeds"
+
+        let refuses evidence =
+            task {
+                let! rejected =
+                    task {
+                        try
+                            let! _ = publish evidence
+                            return None
+                        with :? OperatorFaultException as error ->
+                            return Some error.Fault
+                    }
+
+                Expect.equal
+                    rejected
+                    (Some OperatorFault.StaleRecoveryPreparation)
+                    "A changed recovery fence explicitly refuses publication"
+            }
+
+        do! refuses second
+
+        let observe () =
+            prepare (fun _ publication _ -> Task.FromResult publication)
+
+        let! beforeExpiry = observe ()
+        use! frontierWriter = database.RuntimeSource.OpenConnectionAsync()
+
+        let! _ =
+            ExpiryFrontierStorage.advance frontierWriter (DateTimeOffset.UtcNow.AddHours 1.) token
+
+        do! refuses beforeExpiry
+
+        let! beforeKey = observe ()
+        use replacement = MasterKey.admit (Array.create MasterKey.Size 23uy) |> Option.get
+        let! _ = Baseline.rotate database.OwnerSource database.MasterKey replacement token
+        do! refuses beforeKey
+
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -364,6 +464,9 @@ let tests =
                     testCaseAsync
                         (sprintf "%A %A reports uncertainty and only current status" transition drop)
                         (run (lostAcknowledgement transition drop landed))
+            testCaseAsync
+                "preparation leaves the head available and the first publication fences its peer"
+                (run sharedPublicationFence)
             testCaseAsync
                 "queued rebuild refuses an old handle after actual head acquisition"
                 (run (queuedCommand true))

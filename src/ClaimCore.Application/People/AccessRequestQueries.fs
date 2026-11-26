@@ -38,42 +38,51 @@ module internal AccessRequestQueries =
                                     elif not (validLimit request.Limit) then
                                         return invalidLimit ()
                                     else
-                                        match
-                                            cursor
+                                        let requester = actor.Actor |> Option.get |> _.ActorId
+
+                                        let traversal =
+                                            ScopedTraversal.pageWithBasis
+                                                tx
+                                                "access-request-traversal"
+                                                requester
+                                                None
                                                 (Cursors.decodeAccessRequests
                                                     Paging.MaximumAccessRequestCursorCharacters
                                                     services.InstallationId)
+                                                (Cursors.encodeAccessRequests
+                                                    services.InstallationId)
+                                                (fun () ->
+                                                    AccessRequests.witness
+                                                        tx.Connection
+                                                        tx.ObservedAt
+                                                        token)
+                                                (fun after ->
+                                                    PeopleReads.accessRequestPage
+                                                        tx
+                                                        {
+                                                            After = after
+                                                            ObservedAt = tx.ObservedAt
+                                                            Limit = request.Limit
+                                                        })
+                                                _.Next
                                                 request.AfterCursor
-                                        with
+
+                                        match! traversal with
                                         | Error refusal -> return Outcome.Rejected refusal
-                                        | Ok after ->
-                                            let! result =
-                                                PeopleReads.accessRequestPage
-                                                    tx
+                                        | Ok(page, _) when page.Items.Length > request.Limit ->
+                                            return Outcome.Failed CoreFault.StoreIntegrityError
+                                        | Ok(page, next) ->
+                                            return
+                                                Outcome.Succeeded
                                                     {
-                                                        After = after
-                                                        ObservedAt = tx.ObservedAt
-                                                        Limit = request.Limit
+                                                        AccessRequestPage.Basis =
+                                                            ServiceContext.basis
+                                                                services
+                                                                tx.ObservedAt
+                                                        Items = page.Items
+                                                        NextCursor = next
                                                     }
 
-                                            if result.Items.Length > request.Limit then
-                                                return Outcome.Failed CoreFault.StoreIntegrityError
-                                            else
-                                                return
-                                                    Outcome.Succeeded
-                                                        {
-                                                            AccessRequestPage.Basis =
-                                                                ServiceContext.basis
-                                                                    services
-                                                                    tx.ObservedAt
-                                                            Items = result.Items
-                                                            NextCursor =
-                                                                result.Next
-                                                                |> Option.map (
-                                                                    Cursors.encodeAccessRequests
-                                                                        services.InstallationId
-                                                                )
-                                                        }
                                 }
                     }
 

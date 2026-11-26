@@ -28,6 +28,11 @@ type Command =
     | RotateMasterKey of newKeyFile: string
     | Verify of InstallationCheckpoint option
     | Rebuild of InstallationCheckpoint * MaintenanceHandle
+    | RepairAttachment of
+        (InstallationCheckpoint * MaintenanceHandle) *
+        CaseId *
+        AttachmentId *
+        string
     | AdmitRestoredInstallation of InstallationCheckpoint * MaintenanceHandle
     | Head
     | Status
@@ -42,6 +47,7 @@ type CommandName =
     | RotateMasterKey
     | Verify
     | Rebuild
+    | RepairAttachment
     | AdmitRestoredInstallation
     | Head
     | Status
@@ -73,6 +79,7 @@ module Command =
         | RotateMasterKey _ -> CommandName.RotateMasterKey
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
+        | RepairAttachment _ -> CommandName.RepairAttachment
         | AdmitRestoredInstallation _ -> CommandName.AdmitRestoredInstallation
         | Head -> CommandName.Head
         | Status -> CommandName.Status
@@ -130,6 +137,11 @@ module CommandName =
             [
                 CommandArgument.Operand
                     "--checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID"
+            ]
+        | CommandName.RepairAttachment ->
+            [
+                CommandArgument.Operand
+                    "--checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID --case-id ID --blob-id ID --payload-file FILE"
             ]
         | CommandName.Maintenance ->
             [
@@ -390,6 +402,31 @@ module Inputs =
                 )
             )
 
+    let private repairAttachment arguments =
+        match arguments with
+        | [ "--checkpoint"
+            path
+            "--pause-generation"
+            generation
+            "--pause-id"
+            id
+            "--case-id"
+            caseId
+            "--blob-id"
+            blobId
+            "--payload-file"
+            file ] ->
+            match Guid.TryParseExact(caseId, "D"), Guid.TryParseExact(blobId, "D") with
+            | (true, family), (true, blob) ->
+                match CaseId.create family, AttachmentId.create blob with
+                | Some family, Some blob ->
+                    checkpointCommand
+                        (fun admission -> RepairAttachment(admission, family, blob, file))
+                        [ "--checkpoint"; path; "--pause-generation"; generation; "--pause-id"; id ]
+                | _ -> Error(UsageProblem(UsageError.InvalidValue("--case-id/--blob-id", "")))
+            | _ -> Error(UsageProblem(UsageError.InvalidValue("--case-id/--blob-id", "")))
+        | _ -> Error(UsageProblem(UsageError.NotApplicable("arguments", "repair-attachment")))
+
     let private parse name arguments =
         let usage result = Result.mapError UsageProblem result
 
@@ -408,6 +445,7 @@ module Inputs =
         | CommandName.Maintenance -> maintenance arguments |> usage
         | CommandName.Verify -> verify arguments
         | CommandName.Rebuild -> checkpointCommand Rebuild arguments
+        | CommandName.RepairAttachment -> repairAttachment arguments
         | CommandName.AdmitRestoredInstallation ->
             checkpointCommand AdmitRestoredInstallation arguments
 

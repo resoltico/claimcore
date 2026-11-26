@@ -114,6 +114,29 @@ type internal InstallationCipher(installationId: Guid, key: byte array) =
 
     member _.InstallationId = installationId
 
+    member _.SealCursor(purpose, requester: Guid, plain: byte array) =
+        let aad =
+            CipherEnvelope.associatedData purpose installationId [ requester.ToString("D") ]
+
+        CipherEnvelope.seal key aad plain
+        |> System.Buffers.Text.Base64Url.EncodeToString
+
+    member _.OpenCursor(purpose, requester: Guid, token: string) =
+        try
+            let envelope = System.Buffers.Text.Base64Url.DecodeFromChars(token.AsSpan())
+            let canonical = System.Buffers.Text.Base64Url.EncodeToString envelope
+
+            if canonical <> token then
+                None
+            else
+                let aad =
+                    CipherEnvelope.associatedData purpose installationId [ requester.ToString("D") ]
+
+                Some(CipherEnvelope.openEnvelope key aad envelope)
+        with
+        | :? FormatException
+        | :? CryptographicException -> None
+
     member _.Wrap(master: MasterKey) =
         CipherEnvelope.seal
             master.Bytes

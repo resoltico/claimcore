@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/superuser.password
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
+    entrypoint: [/bin/bash, /etc/claimcore-postgres-roles.sh, start]
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key, -c, hba_file=/etc/claimcore-postgres-hba.conf]
     volumes:
       - postgres-data:/var/lib/postgresql
@@ -19,7 +20,13 @@ services:
           create_host_path: false
       - type: bind
         source: ../postgres-roles.sh
-        target: /docker-entrypoint-initdb.d/10-claimcore-roles.sh
+        target: /etc/claimcore-postgres-roles.sh
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/ca.pem
+        target: /etc/claimcore-postgres-ca.pem
         read_only: true
         bind:
           create_host_path: false
@@ -38,16 +45,11 @@ services:
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
     security_opt: ["no-new-privileges:true"]
     pids_limit: 512
-    # The entrypoint starts a socket-only server while it initializes the database.
+    # Health observes the listener, existing SQL roles and verified TLS logins.
     healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          pg_isready -h /var/run/postgresql -U postgres -d claimcore &&
-          test "$$(psql -XwAt -h /var/run/postgresql -U postgres -d claimcore
-          -c "SELECT current_setting('listen_addresses') <> ''")" = t
+      test: [CMD, /bin/bash, /etc/claimcore-postgres-roles.sh, ready]
       interval: 5s
-      timeout: 3s
+      timeout: 8s
       retries: 30
     restart: unless-stopped
 

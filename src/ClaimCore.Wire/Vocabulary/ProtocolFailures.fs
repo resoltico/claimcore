@@ -12,6 +12,8 @@ type HostFailureReason =
     | MediaTypeRejected
     | BodyTooLarge
     | SessionRejected
+    | IdentityProviderUnavailable
+    | IdentityProviderUntrusted
     | MethodRejected
     | AntiforgeryRejected
     | EndpointMissing

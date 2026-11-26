@@ -72,6 +72,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         }
       }
@@ -149,6 +152,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -261,6 +267,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -373,6 +382,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -485,6 +497,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -597,6 +612,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -709,6 +727,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -821,6 +842,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -933,6 +957,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1045,6 +1072,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1157,6 +1187,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1269,6 +1302,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1381,6 +1417,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1493,6 +1532,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1605,6 +1647,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1717,6 +1762,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1829,6 +1877,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -1941,6 +1992,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2053,6 +2107,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2165,6 +2222,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2277,6 +2337,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2389,6 +2452,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2501,6 +2567,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2613,6 +2682,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2725,6 +2797,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2837,6 +2912,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         },
         "requestBody": {
@@ -2972,6 +3050,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         }
       }
@@ -3132,6 +3213,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         }
       }
@@ -3273,6 +3357,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         }
       }
@@ -3409,6 +3496,9 @@
           },
           "500": {
             "$ref": "#/components/responses/Host500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Host503"
           }
         }
       }
@@ -3996,6 +4086,74 @@
                             },
                             "phase": {
                               "type": "null"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "phase"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "hostFailure"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Host503": {
+        "description": "HTTP 503",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "hostFailure": {
+                      "$ref": "#/components/schemas/HostFailure"
+                    }
+                  },
+                  "required": [
+                    "hostFailure"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "hostFailure": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "const": "IDENTITY_PROVIDER_UNAVAILABLE"
+                            },
+                            "phase": {
+                              "const": "NOT_STARTED"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "phase"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "const": "IDENTITY_PROVIDER_UNTRUSTED"
+                            },
+                            "phase": {
+                              "const": "NOT_STARTED"
                             }
                           },
                           "required": [
@@ -13846,13 +14004,13 @@
             "$ref": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED"
           },
           {
+            "$ref": "#/components/schemas/DataRejection.TRAVERSAL_CHANGED"
+          },
+          {
             "$ref": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE"
           },
           {
             "$ref": "#/components/schemas/DataRejection.NOT_AUTHORIZED"
-          },
-          {
-            "$ref": "#/components/schemas/DataRejection.INVALID_CURSOR"
           }
         ],
         "discriminator": {
@@ -13890,9 +14048,10 @@
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT",
             "ATTACHMENT_CAPACITY_REACHED": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED",
             "REGISTER_MAINTENANCE": "#/components/schemas/DataRejection.ATTACHMENT_CAPACITY_REACHED",
+            "TRAVERSAL_CHANGED": "#/components/schemas/DataRejection.TRAVERSAL_CHANGED",
+            "INVALID_CURSOR": "#/components/schemas/DataRejection.TRAVERSAL_CHANGED",
             "RESOURCE_UNAVAILABLE": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE",
-            "NOT_AUTHORIZED": "#/components/schemas/DataRejection.NOT_AUTHORIZED",
-            "INVALID_CURSOR": "#/components/schemas/DataRejection.INVALID_CURSOR"
+            "NOT_AUTHORIZED": "#/components/schemas/DataRejection.NOT_AUTHORIZED"
           }
         }
       },
@@ -14022,26 +14181,6 @@
         "required": [
           "code",
           "action"
-        ]
-      },
-      "DataRejection.INVALID_CURSOR": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "INVALID_CURSOR"
-          },
-          "action": {
-            "const": "READ_CURRENT"
-          },
-          "target": {
-            "const": "cursor"
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target"
         ]
       },
       "DataRejection.INVALID_INPUT": {
@@ -14286,6 +14425,29 @@
           "action",
           "actualRevision",
           "changes"
+        ]
+      },
+      "DataRejection.TRAVERSAL_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "TRAVERSAL_CHANGED",
+              "INVALID_CURSOR"
+            ]
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "target": {
+            "const": "cursor"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target"
         ]
       },
       "DataRejection.WORK_NO_CHANGES": {
@@ -16273,6 +16435,38 @@
             "additionalProperties": false,
             "properties": {
               "code": {
+                "const": "IDENTITY_PROVIDER_UNAVAILABLE"
+              },
+              "phase": {
+                "const": "NOT_STARTED"
+              }
+            },
+            "required": [
+              "code",
+              "phase"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "const": "IDENTITY_PROVIDER_UNTRUSTED"
+              },
+              "phase": {
+                "const": "NOT_STARTED"
+              }
+            },
+            "required": [
+              "code",
+              "phase"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
                 "const": "METHOD_REJECTED"
               },
               "phase": {
@@ -16454,7 +16648,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 512
+                "maxLength": 32768
               },
               {
                 "type": "null"
@@ -17617,10 +17811,50 @@
           "fields"
         ]
       },
-      "LogoutLocation": {
+      "LogoutHandoff": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LogoutHandoff.PROVIDER"
+          },
+          {
+            "$ref": "#/components/schemas/LogoutHandoff.LOCAL_ONLY"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "PROVIDER": "#/components/schemas/LogoutHandoff.PROVIDER",
+            "LOCAL_ONLY": "#/components/schemas/LogoutHandoff.LOCAL_ONLY"
+          }
+        }
+      },
+      "LogoutHandoff.LOCAL_ONLY": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "kind": {
+            "const": "LOCAL_ONLY"
+          },
+          "reason": {
+            "enum": [
+              "NO_PROVIDER_SESSION",
+              "IDENTITY_PROVIDER_UNAVAILABLE",
+              "IDENTITY_PROVIDER_UNTRUSTED"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ]
+      },
+      "LogoutHandoff.PROVIDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PROVIDER"
+          },
           "location": {
             "type": "string",
             "minLength": 1,
@@ -17628,6 +17862,7 @@
           }
         },
         "required": [
+          "kind",
           "location"
         ]
       },
@@ -17672,7 +17907,7 @@
             "const": "SUCCEEDED"
           },
           "data": {
-            "$ref": "#/components/schemas/LogoutLocation"
+            "$ref": "#/components/schemas/LogoutHandoff"
           },
           "view": {
             "$ref": "#/components/schemas/Screen"

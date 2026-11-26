@@ -9,8 +9,9 @@ precedence over region defaults.
 
 English is the source. All eight translated languages have current authored catalogs. Release
 qualification requires complete, current translations in every offered language. During development,
-coverage checks require en, lv and ar; other languages warn. Runtime resolution uses English for
-missing or stale translations. All translations are AI-assisted; native-speaker approval is unverified.
+coverage checks require English, Latvian and Arabic and warn for other languages. Browser catalog
+preparation and native catalog loading use English for missing or stale translations. Translations
+are AI-assisted and await human linguistic review.
 
 | Language | Current status |
 | --- | --- |

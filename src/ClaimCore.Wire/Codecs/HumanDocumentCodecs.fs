@@ -152,6 +152,13 @@ module HumanDocumentCodecs =
             AttachmentObservation = value.AttachmentObservation
         }
 
+    // All HUMAN endpoints share one document schema, including their declared paging outputs.
+    let private maximumCursorCharacters =
+        EndpointDeclarations.all
+        |> List.choose _.Page
+        |> List.map _.MaximumCursorCharacters
+        |> List.max
+
     let document =
         record (fun subject screen actions links cursor basis disclosure history observation ->
             {
@@ -169,7 +176,7 @@ module HumanDocumentCodecs =
         |> field "screen" _.Screen ScreenCodecs.screen
         |> field "actions" _.Actions AffordanceCodecs.actions
         |> field "links" _.Links (list LinkCodecs.MaximumLinks LinkCodecs.namedLink)
-        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 maximumCursorCharacters))
         |> field "basis" _.Basis basis
         |> field "disclosure" _.Disclosure disclosure
         |> field

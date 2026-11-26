@@ -105,6 +105,35 @@ const RequestFeedback = ({
     </>
   );
 };
+const RequestContinuation = ({
+  page,
+  disabled,
+}: {
+  page: Pick<ReturnType<typeof useEndpointPage>, "cursor" | "load" | "loading" | "message">;
+  disabled: boolean;
+}) => {
+  const p = usePresentation();
+  const restart =
+    page.message?.kind === "human" &&
+    ["diagnostic.TRAVERSAL_CHANGED", "diagnostic.INVALID_CURSOR"].includes(
+      page.message.advice.message.messageId,
+    );
+  if (!restart && page.cursor === null) {
+    return null;
+  }
+  return (
+    <Button
+      variant={restart ? "secondary" : "quiet"}
+      compact
+      isDisabled={disabled || page.loading}
+      onPress={() => {
+        void page.load(restart ? null : page.cursor);
+      }}
+    >
+      {p.text(restart ? "ui.tryAgain" : "ui.loadMore")}
+    </Button>
+  );
+};
 const AvailableRequests = ({
   busy,
   mayAdmit = true,
@@ -258,18 +287,7 @@ const AvailableRequests = ({
             : [],
         ),
       )}
-      {page.cursor === null ? null : (
-        <Button
-          variant="quiet"
-          compact
-          isDisabled={disabled || page.loading}
-          onPress={() => {
-            void page.load(page.cursor);
-          }}
-        >
-          {p.text("ui.loadMore")}
-        </Button>
-      )}
+      <RequestContinuation page={page} disabled={disabled} />
       {page.refreshBusy ? (
         <p role="status">
           {p.text("ui.refreshFailed")}{" "}

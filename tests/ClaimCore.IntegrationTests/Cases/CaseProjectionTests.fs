@@ -53,6 +53,7 @@ let private mismatch =
         {
             Sequence = None
             Finding = VerificationFinding.CaseProjection
+            Attachment = None
         }
 
 let private compare histories rows =

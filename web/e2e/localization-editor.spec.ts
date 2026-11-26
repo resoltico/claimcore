@@ -239,7 +239,7 @@ test("an in-flight language activation preserves an open review awaiting explici
   await selectFormat(page, "ar-EG");
   const languageReady = Promise.withResolvers<void>();
   const languageRelease = Promise.withResolvers<void>();
-  const languageAsset = /\/catalogs\/lv\.json$/u;
+  const languageAsset = "**/assets/catalogs/lv.*.json";
   await page.route(languageAsset, async (route) => {
     languageReady.resolve();
     await languageRelease.promise;

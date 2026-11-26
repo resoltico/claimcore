@@ -175,6 +175,7 @@ let private checkpointRefusal database =
                 {
                     Sequence = Some checkpoint.Position.Sequence
                     Finding = VerificationFinding.ExpectedPosition
+                    Attachment = None
                 })
             "An untrusted checkpoint cannot authorize replacement"
 

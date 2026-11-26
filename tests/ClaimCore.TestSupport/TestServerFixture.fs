@@ -150,7 +150,7 @@ let private pipeline files (application: WebApplication) sink readiness =
     )
     |> ignore
 
-    let publicFiles = HostRoutes.publicAssets files application
+    HostRoutes.publicAssets files application |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
@@ -158,7 +158,6 @@ let private pipeline files (application: WebApplication) sink readiness =
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
-    HostRoutes.catalogs publicFiles application
     RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
@@ -219,8 +218,33 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
         ]
         |> List.map (fun (path, text) -> path, Encoding.UTF8.GetBytes text)
 
+    let root = Path.Combine(RepositoryRoot.find (), "web", "locales")
+
+    let source language =
+        [
+            NativeCatalog.core language
+            File.ReadAllBytes(Path.Combine(root, language + ".json"))
+        ]
+
+    let catalogs =
+        LocalizationPolicy.languages
+        |> List.map (fun language ->
+            let entries, _ = LocalizationPolicy.load language (source "en") (source language)
+            let bytes = LocalizationPolicy.browserCatalog (Map.toList entries)
+            let hash = sha256 bytes |> Convert.ToHexStringLower
+            language, ($"assets/catalogs/{language}.{hash}.json", bytes))
+
+    let catalogManifest =
+        catalogs
+        |> List.map (fun (language, (path, _)) -> language, "/" + path)
+        |> Map.ofList
+        |> JsonSerializer.SerializeToUtf8Bytes
+
     let assets =
-        documents @ buildAssets
+        documents
+        @ [ "catalog-manifest.json", catalogManifest ]
+        @ List.map snd catalogs
+        @ buildAssets
         |> Map.ofList
         |> Map.toList
         |> List.map (fun (path, bytes) ->
@@ -237,7 +261,7 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
         Path.Combine(directory, "public-assets.json"),
         JsonSerializer.SerializeToUtf8Bytes
             {|
-                schema = 3
+                schema = 4
                 assets = assets
                 viewer =
                     {|
@@ -254,7 +278,8 @@ type Host
         ?forActor: PrincipalKey -> ServiceContext,
         ?installationId: Guid,
         ?sessions: ClaimCore.Application.ISessionStore,
-        ?buildAssets: (string * byte array) list
+        ?buildAssets: (string * byte array) list,
+        ?serviceSetup: IServiceCollection -> unit
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
@@ -266,14 +291,9 @@ type Host
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     do
-        let inventory =
-            (Directory.GetFiles(Path.Combine(RepositoryRoot.find (), "web", "locales"), "*.json")
-             |> Array.map (fun path -> "locales/" + Path.GetFileName path, File.ReadAllBytes path)
-             |> Array.toList)
-            @ defaultArg buildAssets []
-
-        publishedInventory assets inventory
+        publishedInventory assets (defaultArg buildAssets [])
         services builder sessions
+        serviceSetup |> Option.iter (fun configure -> configure builder.Services)
 
     let files = PublicAssets.Inventory assets
     let application = builder.Build()
@@ -285,7 +305,7 @@ type Host
         HostRoutes.map
             files
             (configuration certificate)
-            (Uri "https://issuer.example.test/logout")
+            (Some(Uri "https://issuer.example.test/logout"))
             (if forActor.IsSome then
                  ClaimCore.Server.ApiRoutes.route
              else

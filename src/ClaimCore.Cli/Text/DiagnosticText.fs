@@ -180,7 +180,8 @@ module internal DiagnosticText =
                 let message = diagnostic rendering code parameters
 
                 match refusal with
-                | Refusal.InvalidCursor ->
+                | Refusal.InvalidCursor
+                | Refusal.TraversalChanged ->
                     [
                         label rendering (diagnosticTargetIdentity InputTarget.Cursor)
                         + ": "

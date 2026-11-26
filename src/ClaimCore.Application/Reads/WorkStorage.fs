@@ -341,75 +341,86 @@ module internal WorkStorage =
                     |> Map.ofList
         }
 
+    let private selection (query: PageQuery) =
+        let due =
+            query.Due
+            |> Option.map (CaseSelectionSql.datePredicate "r.due")
+            |> Option.defaultValue "TRUE"
+
+        let view =
+            query.View
+            |> Option.map ViewCountStorage.reminderPredicate
+            |> Option.defaultValue "TRUE"
+
+        let active = CaseSelectionSql.selectionPredicate WorkSelection.activeOpen
+
+        let outcome, outcomeParameters =
+            match query.DeadlineOutcome with
+            | None -> "TRUE", [||]
+            | Some outcome ->
+                let state, timing = DeadlineOutcome.plan outcome
+
+                let date =
+                    match timing with
+                    | DeadlineTiming.PendingPastDue ->
+                        active
+                        + " AND "
+                        + CaseSelectionSql.datePredicate "r.due" ReminderDue.Overdue
+                    | DeadlineTiming.FinishedByDue -> "r.done_on <= r.due"
+                    | DeadlineTiming.FinishedAfterDue -> "r.done_on > r.due"
+                    | DeadlineTiming.Unrestricted -> "TRUE"
+
+                let condition =
+                    $"r.kind={CaseSelectionSql.suffix 9} AND r.state={CaseSelectionSql.suffix 10} AND ({date})"
+
+                condition,
+                [|
+                    box (ReminderKind.token ReminderKind.Deadline)
+                    box (ReminderState.token state)
+                |]
+
+        let predicate =
+            $"FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ({CaseSelectionSql.suffix 1}::uuid IS NULL OR r.case_id={CaseSelectionSql.suffix 1}) AND ({CaseSelectionSql.suffix 2}::text IS NULL OR r.state={CaseSelectionSql.suffix 2}) AND ({CaseSelectionSql.suffix 8}::text IS NULL OR r.kind={CaseSelectionSql.suffix 8}) AND ({view}) AND ({outcome}) AND ({CaseSelectionSql.suffix 3} OR ({active})) AND ({due}) AND ({CaseSelectionSql.suffix 4}::text IS NULL OR r.search_text LIKE '%%'||{CaseSelectionSql.suffix 4}||'%%' ESCAPE chr(92))"
+
+        let parameters =
+            Array.append
+                (CaseSelectionSql.parameters query.Selection)
+                [|
+                    DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
+                    DatabaseSession.parameter (query.State |> Option.map ReminderState.token)
+                    box query.IncludeInactive
+                    DatabaseSession.parameter (
+                        query.Text |> Option.map (CaseSearchText.value >> LikePattern.escapeLiteral)
+                    )
+                    DatabaseSession.parameter (
+                        query.After |> Option.map (fun p -> CalendarDate.format p.Due)
+                    )
+                    DatabaseSession.parameter (
+                        query.After |> Option.map (fun p -> ReminderId.value p.ReminderId)
+                    )
+                    box (query.Limit + 1)
+                    DatabaseSession.parameter (query.Kind |> Option.map ReminderKind.token)
+                |]
+
+        predicate, Array.append parameters outcomeParameters
+
+    let witness connection query token =
+        let predicate, parameters = selection { query with After = None }
+        let date = DatabaseSession.dateExpression "r.due"
+
+        let sql =
+            $"SELECT jsonb_build_array(r.case_id,r.reminder_id,{date})::text {predicate} AND ({CaseSelectionSql.suffix 5}::date IS NULL AND {CaseSelectionSql.suffix 6}::uuid IS NULL AND {CaseSelectionSql.suffix 7}::integer>0) ORDER BY r.reminder_id"
+
+        DatabaseSession.witness connection sql parameters token
+
     let page connection (query: PageQuery) token =
         task {
-            let due =
-                query.Due
-                |> Option.map (CaseSelectionSql.datePredicate "r.due")
-                |> Option.defaultValue "TRUE"
-
-            let view =
-                query.View
-                |> Option.map ViewCountStorage.reminderPredicate
-                |> Option.defaultValue "TRUE"
-
-            let active = CaseSelectionSql.selectionPredicate WorkSelection.activeOpen
-
-            let outcome, outcomeParameters =
-                match query.DeadlineOutcome with
-                | None -> "TRUE", [||]
-                | Some outcome ->
-                    let state, timing = DeadlineOutcome.plan outcome
-
-                    let date =
-                        match timing with
-                        | DeadlineTiming.PendingPastDue ->
-                            active
-                            + " AND "
-                            + CaseSelectionSql.datePredicate "r.due" ReminderDue.Overdue
-                        | DeadlineTiming.FinishedByDue -> "r.done_on <= r.due"
-                        | DeadlineTiming.FinishedAfterDue -> "r.done_on > r.due"
-                        | DeadlineTiming.Unrestricted -> "TRUE"
-
-                    let condition =
-                        $"r.kind={CaseSelectionSql.suffix 9} AND r.state={CaseSelectionSql.suffix 10} AND ({date})"
-
-                    condition,
-                    [|
-                        box (ReminderKind.token ReminderKind.Deadline)
-                        box (ReminderState.token state)
-                    |]
+            let predicate, parameters = selection query
 
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ({CaseSelectionSql.suffix 1}::uuid IS NULL OR r.case_id={CaseSelectionSql.suffix 1}) AND ({CaseSelectionSql.suffix 2}::text IS NULL OR r.state={CaseSelectionSql.suffix 2}) AND ({CaseSelectionSql.suffix 8}::text IS NULL OR r.kind={CaseSelectionSql.suffix 8}) AND ({view}) AND ({outcome}) AND ({CaseSelectionSql.suffix 3} OR ({active})) AND ({due}) AND ({CaseSelectionSql.suffix 4}::text IS NULL OR r.search_text LIKE '%%'||{CaseSelectionSql.suffix 4}||'%%' ESCAPE chr(92)) AND ({CaseSelectionSql.suffix 5}::date IS NULL OR (r.due,r.reminder_id)>({CaseSelectionSql.suffix 5}::date,{CaseSelectionSql.suffix 6}::uuid)) ORDER BY r.due,r.reminder_id LIMIT {CaseSelectionSql.suffix 7}"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot {predicate} AND ({CaseSelectionSql.suffix 5}::date IS NULL OR (r.due,r.reminder_id)>({CaseSelectionSql.suffix 5}::date,{CaseSelectionSql.suffix 6}::uuid)) ORDER BY r.due,r.reminder_id LIMIT {CaseSelectionSql.suffix 7}"
 
-            let parameters =
-                Array.append
-                    (CaseSelectionSql.parameters query.Selection)
-                    [|
-                        DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
-                        DatabaseSession.parameter (query.State |> Option.map ReminderState.token)
-                        box query.IncludeInactive
-                        DatabaseSession.parameter (
-                            query.Text
-                            |> Option.map (CaseSearchText.value >> LikePattern.escapeLiteral)
-                        )
-                        DatabaseSession.parameter (
-                            query.After |> Option.map (fun p -> CalendarDate.format p.Due)
-                        )
-                        DatabaseSession.parameter (
-                            query.After |> Option.map (fun p -> ReminderId.value p.ReminderId)
-                        )
-                        box (query.Limit + 1)
-                        DatabaseSession.parameter (query.Kind |> Option.map ReminderKind.token)
-                    |]
-
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    sql
-                    (Array.append parameters outcomeParameters)
-                    token
+            let! rows = DatabaseSession.namedRows connection sql parameters token
 
             let rows =
                 rows

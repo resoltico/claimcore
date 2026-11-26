@@ -287,7 +287,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=10; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=10)"
+                    "UPDATE claimcore.installation SET installation_format=11; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=11)"
                     [||]
 
             let! wrapped =
@@ -310,7 +310,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,case_reference_policy,wrapped_data_key) VALUES(10,$1,'Etc/UTC','CUSTOM_ALLOWED',$2)"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,case_reference_policy,wrapped_data_key) VALUES(11,$1,'Etc/UTC','CUSTOM_ALLOWED',$2)"
                     [| box database.Fixture.InstallationId; box wrapped |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]

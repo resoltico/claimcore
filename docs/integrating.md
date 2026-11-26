@@ -1,13 +1,9 @@
 # Integrating
 
-Regenerate HUMAN clients when changing builds. Use supplied region empty messages, row recommendations,
-view and column prominence, and typed state details. The generated client also provides review modes,
-collection labels and the presentation tone table. Creation reviews supply their missing-field labels.
-
 Use the human CLI for interactive work, structured calls for automation, or HTTPS for your own client.
 The [OpenAPI contract](../contracts/openapi.json) specifies exact requests, replies and byte bounds.
-The [catalog](../contracts/catalog.json) supplies meanings and choices. `claimcore help` derives the
-current verbs and flags from task declarations; use these sources instead of copying field lists.
+The [catalog](../contracts/catalog.json) supplies meanings and choices. `claimcore help` derives
+verbs and flags from task declarations.
 
 Use matching server, browser and CLI builds. Regenerate integrations when the contract identity changes.
 `claimcore version --json` includes `contractIdentity`, the lowercase SHA-256 identity used in
@@ -65,7 +61,28 @@ claimcore people history
 Every HUMAN read uses the shared `HumanReadReply` and `HumanDocument` grammar. Operation outcomes
 embed that same document. Its closed subject identifies the resource; screen regions, actions, links,
 continuation, observation basis, disclosure and history describe the current presentation. DATA replies
-retain endpoint-specific automation types.
+retain endpoint-specific automation types. Use the supplied region empty messages, row recommendations,
+view and column prominence, typed state details, review modes, collection labels and presentation
+tones. Creation reviews supply their missing-field labels.
+
+Use opaque continuations exactly as returned. Cases and Reminders bind the continuation to the
+requester, installation, filter and relevant business date. Changes to the authorized membership
+or canonical order return `TRAVERSAL_CHANGED`. Reports also bind the underlying contributions
+and account captions. On `TRAVERSAL_CHANGED`, restart from the first page. Continuation tokens
+belong to the build and installation that issued them.
+Case and reminder rows still show current authorized values for fields outside the traversal
+witness. Timeline and people history traverse immutable accepting positions and apply current
+disclosure on every read. The access-request inbox binds its continuation to the authorized
+requester and the unexpired membership and last-seen order. A refresh that moves a requester,
+a new or dismissed request, or expiry that changes membership returns `TRAVERSAL_CHANGED`.
+Use Try again in Web or start the CLI traversal without the cursor.
+
+The people directory orders by immutable actor ID. Grants order by role and scope, and case
+lookups use immutable IDs. These remain live selections for choosing a currently eligible item.
+A row that continues to match retains its position. An item that becomes eligible behind the
+cursor can appear on a fresh traversal. Case history, disclosure history, payments, notes and attachments
+use immutable accepting or recording positions. Their pages apply current authorization and
+retention. A newly hidden or withdrawn item can therefore disappear from subsequent pages.
 
 An empty initial `case.list` DATA page sets `authorizedScopeEmpty` to true when there is no
 authorized exact-reference result and no case exists in the requester's readable scope with display
@@ -316,6 +333,11 @@ Recovery records belong to a specific service, installation and account. The CLI
 and stores the task token with operation/attempt identity and ownership scope. Journal admission
 requires the supported format; incompatible records are refused without conversion.
 
+The Web build uses its own browser recovery database. It preserves saved identities across
+reloads of this build and leaves any earlier browser recovery database untouched. Keep the
+operation IDs of unconfirmed changes before replacing a build so you can check them directly
+against the installation that received them.
+
 If delivery is uncertain:
 
 1. Keep the original operation ID and frozen request bytes.
@@ -327,6 +349,18 @@ If delivery is uncertain:
 An accepted operation remains accepted even if its receipt is later partly or wholly withheld by
 current access or erasure. A final `NOT_ACCEPTED` is conclusive; an earlier `PENDING` or transport
 failure is not. Do not create a replacement operation merely because a reply was lost.
+
+In Web, a visible tab renews a 2.5-second automatic-recovery lease for its account and
+installation. Hiding, suspending, or closing the tab lets another visible tab take over.
+Each identity keeps its backoff. A lookup renews a three-second permit while its tab can
+run. If the permit expires, another tab can make the same read under its own authorization,
+even if the original network request has yet to finish. Recovery discards replies from
+expired permits. The browser passes identity-only handoff between tabs and never resends a
+change automatically. If browser storage blocks coordination, the workspace shows the
+problem and pauses automatic lookups for that account and installation. It checks whether
+coordination storage is writable before resuming. An explicit check can issue a fresh
+authorized read of the selected operation if its permit cannot be maintained. The attempt
+stays in the journal until an authorized terminal result is available.
 
 See `claimcore help recovery`, `claimcore help delivery` and [Operating](operating.md) for local journal,
 checkpoint and restored-installation procedures. Restore admission changes session validity; clients
@@ -359,10 +393,14 @@ and delivery. A later-page refusal, storage failure, impossible continuation or 
 not produce a successful partial file. Narrow the selection or use existing CLI traversal when the
 bounded download is insufficient.
 
-Every page reauthorizes through the existing Core query in a fresh snapshot. An export is not a
-cross-page database snapshot and does not promise retroactive withdrawal of bytes authorized in
-an earlier snapshot. CSV scalar formatting is canonical; shared fallback account captions use the
-source English catalog. Browser downloads validate media, identity encoding, complete declared byte
+All pages in a bounded download are prepared in one read-only snapshot. Before release,
+ClaimCore takes a fresh authorized snapshot and checks the protected subjects and values
+against the buffered output. A changed or erased disclosure fails the download. The fresh
+observation is the disclosure cut. Revocation after that cut applies to subsequent requests.
+ClaimCore commits the disclosure audit event before sending successful bytes.
+CSV scalar formatting is canonical and fallback account captions use the source English catalog.
+CLI streaming keeps bytes already emitted and exits nonzero with the failure and last cursor when
+a traversal becomes incomplete. It does not restart automatically. Browser downloads validate media, identity encoding, complete declared byte
 length and owner/installation scope before creating a Blob, then release temporary object URLs.
 
 ## CLI use

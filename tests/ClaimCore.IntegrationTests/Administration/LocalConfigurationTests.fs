@@ -185,7 +185,7 @@ let private literalComposePaths directory (document: JsonDocument) =
                 let target = volume.GetProperty("target").GetString() |> nonNull
 
                 if
-                    target <> "/docker-entrypoint-initdb.d/10-claimcore-roles.sh"
+                    target <> "/etc/claimcore-postgres-roles.sh"
                     && target <> "/etc/claimcore-postgres-hba.conf"
                 then
                     let source = volume.GetProperty("source").GetString() |> nonNull
@@ -358,8 +358,7 @@ let private inspectRoleMount directory file project expected =
         let role =
             document.RootElement.EnumerateArray()
             |> Seq.find (fun mount ->
-                mount.GetProperty("Destination").GetString() =
-                    "/docker-entrypoint-initdb.d/10-claimcore-roles.sh")
+                mount.GetProperty("Destination").GetString() = "/etc/claimcore-postgres-roles.sh")
 
         Expect.equal
             (role.GetProperty("Source").GetString())
@@ -438,7 +437,7 @@ let private checkoutMount directory =
         let structured =
             """      - type: bind
         source: ./postgres-roles.sh
-        target: /docker-entrypoint-initdb.d/10-claimcore-roles.sh
+        target: /etc/claimcore-postgres-roles.sh
         read_only: true
         bind:
           create_host_path: false"""
@@ -455,7 +454,7 @@ let private checkoutMount directory =
             negative,
             source.Replace(
                 structured,
-                "      - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro",
+                "      - ./postgres-roles.sh:/etc/claimcore-postgres-roles.sh:ro",
                 StringComparison.Ordinal
             )
         )

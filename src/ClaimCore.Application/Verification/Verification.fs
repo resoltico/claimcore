@@ -41,61 +41,58 @@ module internal Verification =
                 if rows.IsEmpty then
                     running <- false
                 else
+                    let identity = DatabaseSession.value<Guid> 2
+
+                    let! roots =
+                        OperationStorage.prepareMany
+                            connection
+                            cipher
+                            (List.map identity rows)
+                            token
+
                     for row in rows do
                         if Result.isOk state then
+                            token.ThrowIfCancellationRequested()
+
                             let sequence =
                                 DatabaseSession.value<int64> 0 row
                                 |> DatabaseSession.admitted Sequence.create
 
                             let previous = DatabaseSession.value<byte array> 1 row
 
-                            let identity =
-                                DatabaseSession.value<Guid> 2 row
-                                |> DatabaseSession.admitted OperationId.create
-
-                            match
+                            state <-
                                 state
-                                |> Result.bind (fun state -> Replay.link state sequence previous)
-                            with
-                            | Error error -> state <- Error error
-                            | Ok() ->
-                                try
-                                    let! found =
-                                        OperationStorage.find connection cipher identity token
+                                |> Result.bind (fun state ->
+                                    result {
+                                        do! Replay.link state sequence previous
 
-                                    state <-
-                                        state
-                                        |> Result.bind (fun state ->
-                                            match found with
-                                            | Some root when
-                                                sequence <> Sequence.first
-                                                || Baseline.matchesBootstrap installation root
-                                                ->
-                                                Replay.append
-                                                    installation.InstallationId
-                                                    installation.CaseReferencePolicy
-                                                    expected
-                                                    state
-                                                    root
-                                            | Some _ ->
-                                                Error(
-                                                    divergence
-                                                        (Some sequence)
-                                                        VerificationFinding.BootstrapPolicy
-                                                )
-                                            | None ->
-                                                Error(
-                                                    divergence
-                                                        (Some sequence)
-                                                        VerificationFinding.PayloadFormat
-                                                ))
-                                with :? RecordCorruptException ->
-                                    state <-
-                                        Error(
-                                            divergence
+                                        let! restore =
+                                            Map.tryFind (identity row) roots
+                                            |> known
+                                                (Some sequence)
+                                                VerificationFinding.MissingRoot
+
+                                        let! root =
+                                            VerificationRows.capture
                                                 (Some sequence)
                                                 VerificationFinding.PayloadFormat
-                                        )
+                                                restore
+
+                                        do!
+                                            require
+                                                (Some sequence)
+                                                VerificationFinding.BootstrapPolicy
+                                                (sequence <> Sequence.first
+                                                 || Baseline.matchesBootstrap installation root)
+
+                                        return!
+                                            Replay.append
+                                                installation.InstallationId
+                                                installation.CaseReferencePolicy
+                                                expected
+                                                state
+                                                root
+                                    })
 
                             after <- Sequence.value sequence
 
@@ -127,32 +124,30 @@ module internal Verification =
     let private attachments connection cipher state token =
         task {
             let! references =
-                task {
-                    try
-                        return!
-                            AttachmentStorage.checkReferences
-                                connection
-                                (Replay.attachmentReferences state)
-                                token
-                    with :? RecordCorruptException ->
-                        return false
-                }
+                AttachmentStorage.checkReferences
+                    connection
+                    (Replay.attachmentReferences state)
+                    token
 
-            if not references then
-                return Error(divergence None VerificationFinding.AttachmentReferences)
-            else
-                try
-                    let! payloads =
-                        AttachmentStorage.checkBlobs
-                            connection
-                            cipher
-                            (Replay.attachmentBlobs state)
-                            (Replay.attachmentDescriptors state)
-                            token
+            let! blobs =
+                AttachmentStorage.checkBlobs
+                    connection
+                    cipher
+                    (Replay.attachmentBlobs state)
+                    (Replay.attachmentDescriptors state)
+                    token
 
-                    return require None VerificationFinding.AttachmentPayloads payloads
-                with :? RecordCorruptException ->
-                    return Error(divergence None VerificationFinding.AttachmentPayloads)
+            return
+                match references, blobs with
+                | Ok(), result
+                | result, Ok() -> result
+                | Error link, Error blob ->
+                    let order (finding: VerificationDivergence) =
+                        finding.Sequence.IsNone,
+                        finding.Sequence,
+                        finding.Attachment |> Option.bind _.EffectIndex
+
+                    Error(if order link <= order blob then link else blob)
         }
 
     let private erasureAndAttachments connection cipher state token =
@@ -160,17 +155,14 @@ module internal Verification =
         | Error error -> System.Threading.Tasks.Task.FromResult(Error error)
         | Ok() -> attachments connection cipher state token
 
-    /// Authoritative scan for maintenance; projection divergence must not prevent repair.
-    let authoritative connection installation cipher expected token =
+    let history connection installation cipher expected token =
         task {
             let! scanned = scan connection installation cipher expected token
 
             match scanned with
             | Error finding -> return Error finding
             | Ok state ->
-                let! evidence = erasureAndAttachments connection cipher state token
-
-                match evidence with
+                match Replay.erasure state with
                 | Error finding -> return Error finding
                 | Ok() ->
                     let! checkedHead = head connection state token
@@ -181,9 +173,21 @@ module internal Verification =
                         |> Result.map (fun _ -> state)
         }
 
-    let private payments connection (state: Replay.Scan) token =
+    /// Authoritative scan for maintenance; projection divergence must not prevent repair.
+    let authoritative connection installation cipher expected token =
         task {
-            let expected = Replay.payments state
+            let! verified = history connection installation cipher expected token
+
+            match verified with
+            | Error finding -> return Error finding
+            | Ok state ->
+                let! checkedAttachments = attachments connection cipher state token
+                return checkedAttachments |> Result.map (fun () -> state)
+        }
+
+    let private payments connection families token =
+        task {
+            let expected = Replay.payments families
 
             try
                 let! rows = PaymentStorage.projections connection token
@@ -200,10 +204,14 @@ module internal Verification =
                 return Error(divergence None VerificationFinding.CasePaymentsProjection)
         }
 
-    let private paymentTotals connection state token =
+    let private paymentTotals
+        connection
+        (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>)
+        token
+        =
         task {
             let expected =
-                Replay.familyRows state
+                families
                 |> Result.map (fun rows ->
                     rows
                     |> Map.toList
@@ -240,29 +248,29 @@ module internal Verification =
                 return Error(divergence None VerificationFinding.CaseAttachmentsProjection)
         }
 
-    let projections connection installationId (state: Replay.Scan) token =
+    let projections connection installationId families people state token =
         task {
-            let! cases = VerificationRows.cases connection installationId state token
+            let! cases = VerificationRows.cases connection installationId families token
 
             match cases with
             | Error error -> return Error error
             | Ok workIndexes ->
-                let! people = VerificationRows.people connection state token
+                let! people = VerificationRows.people connection people token
 
                 match people with
                 | Error error -> return Error error
                 | Ok() ->
-                    let! work = VerificationRows.family connection state workIndexes token
+                    let! work = VerificationRows.family connection families workIndexes token
 
                     match work with
                     | Error finding -> return Error finding
                     | Ok() ->
-                        let! payments = payments connection state token
+                        let! payments = payments connection families token
 
                         match payments with
                         | Error finding -> return Error finding
                         | Ok() ->
-                            let! totals = paymentTotals connection state token
+                            let! totals = paymentTotals connection families token
 
                             match totals with
                             | Error finding -> return Error finding
@@ -283,7 +291,14 @@ module internal Verification =
             match evidence with
             | Error error -> return VerificationResult.Diverged error
             | Ok() ->
-                let! projections = projections connection installationId state token
+                let! projections =
+                    projections
+                        connection
+                        installationId
+                        (Replay.familyRows state)
+                        (Replay.peopleRows state)
+                        state
+                        token
 
                 match projections with
                 | Error error -> return VerificationResult.Diverged error

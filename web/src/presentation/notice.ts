@@ -13,6 +13,8 @@ const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): 
       return "ui.resourceUnavailable";
     case "recoveryCleanupUnavailable":
       return "ui.recoveryCleanupUnavailable";
+    case "recoveryCoordinationUnavailable":
+      return "ui.recoveryCoordinationUnavailable";
     case "recoveryListingUnavailable":
       return "ui.recoveryListingUnavailable";
     case "recoveryUnavailable":

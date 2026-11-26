@@ -1181,7 +1181,8 @@ let tests =
                         "Payment values unavailable"
 
                     Expect.equal
-                        (after.Parts[(PartKind.Payment, OperationId.value (operation 4))]
+                        (after.Parts[CompartmentOwner.Family family.Id]
+                            .[(PartKind.Payment, OperationId.value (operation 4))]
                             .Stamp.Position
                          |> EffectPosition.index)
                         0
@@ -1201,7 +1202,11 @@ let tests =
                         (family.Reminders |> Map.forall (fun _ part -> part.Value.Plan.IsNone))
                         "Reminder content unavailable"
 
-                    match after.Parts[(PartKind.Note, OperationId.value (operation 8))].Value with
+                    match
+                        after.Parts[CompartmentOwner.Family family.Id]
+                            .[(PartKind.Note, OperationId.value (operation 8))]
+                            .Value
+                    with
                     | PartValue.Note value -> Expect.isNone value.Text "Note content unavailable"
                     | _ -> failtest "Expected the accepted note part")
         ]

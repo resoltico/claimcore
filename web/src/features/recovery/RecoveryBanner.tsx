@@ -13,6 +13,9 @@ export const RecoveryBanner = () => {
   return (
     <aside className="shell-warning recovery-banner" aria-label={p.text("ui.recovery")}>
       <p>{p.text("ui.shell.unresolved", { count: p.integer(recovery.operations.length) })}</p>
+      {recovery.coordinationUnavailable ? (
+        <p role="alert">{p.text("ui.recoveryCoordinationUnavailable")}</p>
+      ) : null}
       <a
         href="/recovery"
         onClick={(event) => {

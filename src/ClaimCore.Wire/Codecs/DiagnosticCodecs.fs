@@ -135,7 +135,8 @@ module DiagnosticCodecs =
         let fields = record () |> actionField (Refusals.action refusal)
 
         match refusal with
-        | Refusal.InvalidCursor ->
+        | Refusal.InvalidCursor
+        | Refusal.TraversalChanged ->
             fields |> Codec.fixedField "target" (InputTarget.token InputTarget.Cursor)
         | _ -> fields
 

@@ -191,6 +191,43 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     }),
   );
 });
+it("restarts access requests at page one when a refresh changes ordering", async () => {
+  const read = mockEndpoint("people.requests");
+  read.mockResolvedValueOnce(succeeded([request], "old-page"));
+  read.mockResolvedValueOnce({
+    kind: "outcome",
+    status: 200,
+    value: {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            action: "READ_CURRENT",
+            message: { messageId: "diagnostic.TRAVERSAL_CHANGED", arguments: [] },
+          },
+        },
+      },
+    },
+  });
+  read.mockResolvedValueOnce(succeeded([]));
+  setup();
+  const user = userEvent.setup();
+
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Start again from the first page");
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Try again" }));
+  await waitFor(() => {
+    expect(read.mock.calls.map((call) => call[1])).toEqual([
+      { limit: 50 },
+      { limit: 50, cursor: "old-page" },
+      { limit: 50 },
+    ]);
+  });
+  expect(screen.queryByText("Unverified hint")).toBeNull();
+});
 it("requires dismiss confirmation and sends the actual principal kind, issuer and subject", async () => {
   mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
   const dismiss = mockEndpoint("people.requests.dismiss");

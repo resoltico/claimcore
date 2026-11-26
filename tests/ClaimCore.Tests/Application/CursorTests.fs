@@ -526,15 +526,12 @@ let private accessRequestBinding () =
     let after =
         {
             AccessRequestPosition.LastSeen = DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.Zero)
-            Principal = principal
+            PrincipalKey = PrincipalKey.naturalKey principal
         }
 
     let cursor = Cursors.encodeAccessRequests installation after
 
-    Expect.isTrue
-        (cursor.Length > 512
-         && cursor.Length <= Paging.MaximumAccessRequestCursorCharacters)
-        "Longest authenticated principal keys fit the dedicated cursor budget"
+    Expect.isTrue (cursor.Length <= 512) "Even the longest principal uses a compact position"
 
     Expect.equal
         (Cursors.decodeAccessRequests
@@ -542,7 +539,7 @@ let private accessRequestBinding () =
             installation
             cursor)
         (Ok after)
-        "Exact full identity survives cursor encoding"
+        "The canonical principal key survives cursor encoding"
 
     Expect.equal
         (Cursors.decodeAccessRequests Paging.MaximumAccessRequestCursorCharacters Guid.Empty cursor)
@@ -568,7 +565,7 @@ let private accessRequestBinding () =
         "Encoder cannot manufacture unsupported sub-microsecond positions"
 
     let raw =
-        """{"installationId":"90000000-0000-4000-8000-000000000001","issuer":"https://issuer.example/","kind":"ACCESS_REQUESTS","lastSeen":"2026-11-04T00:00:00.0000001+00:00","principalKind":"HUMAN","subject":"waiting","v":1}"""
+        $"""{{"installationId":"90000000-0000-4000-8000-000000000001","key":"{after.PrincipalKey}","kind":"ACCESS_REQUESTS","lastSeen":"2026-11-04T00:00:00.0000001+00:00","v":2}}"""
 
     Expect.equal
         (Cursors.decodeAccessRequests

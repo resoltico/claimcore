@@ -306,42 +306,61 @@ module internal WorkQueries =
                                                             string includeInactive
                                                         ]
 
-                                                match
-                                                    QueryResults.cursor
+                                                let query: WorkStorage.PageQuery =
+                                                    {
+                                                        Selection = selection
+                                                        TargetCaseId = parentId
+                                                        State = state
+                                                        Kind = kind
+                                                        DeadlineOutcome = request.DeadlineOutcome
+                                                        View = request.View
+                                                        Due = request.Due
+                                                        Text = text
+                                                        IncludeInactive = includeInactive
+                                                        After = None
+                                                        Limit = request.Limit
+                                                    }
+
+                                                let paged =
+                                                    ScopedTraversal.page
+                                                        tx
+                                                        "reminder-traversal"
+                                                        selection.ActorId
+                                                        selection.DateBasis.BusinessDate
                                                         (Cursors.decodeReminders
                                                             services.InstallationId
                                                             binding)
+                                                        (fun (position: ReminderPosition) ->
+                                                            Cursors.encodeReminders
+                                                                services.InstallationId
+                                                                binding
+                                                                position.Due
+                                                                position.ReminderId)
+                                                        (fun () ->
+                                                            WorkStorage.witness
+                                                                tx.Connection
+                                                                query
+                                                                token)
+                                                        (fun after ->
+                                                            let after =
+                                                                after
+                                                                |> Option.map (fun (due, id) ->
+                                                                    {
+                                                                        ReminderPosition.Due = due
+                                                                        ReminderId = id
+                                                                    })
+
+                                                            ReminderReads.reminderPage
+                                                                tx
+                                                                { query with After = after })
+                                                        _.Next
                                                         request.AfterCursor
-                                                with
+
+                                                match! paged with
                                                 | Error refusal -> return Outcome.Rejected refusal
-                                                | Ok after ->
+                                                | Ok(page, next) ->
                                                     let! maintenance =
                                                         RegisterReads.maintenance tx ()
-
-                                                    let! page =
-                                                        ReminderReads.reminderPage
-                                                            tx
-                                                            {
-                                                                Selection = selection
-                                                                TargetCaseId = parentId
-                                                                State = state
-                                                                Kind = kind
-                                                                DeadlineOutcome =
-                                                                    request.DeadlineOutcome
-                                                                View = request.View
-                                                                Due = request.Due
-                                                                Text = text
-                                                                IncludeInactive = includeInactive
-                                                                After =
-                                                                    after
-                                                                    |> Option.map (fun (due, id) ->
-                                                                        {
-                                                                            ReminderPosition.Due =
-                                                                                due
-                                                                            ReminderId = id
-                                                                        })
-                                                                Limit = request.Limit
-                                                            }
 
                                                     let! currentFamilies =
                                                         CaseWorkReads.families
@@ -467,15 +486,7 @@ module internal WorkQueries =
                                                                 ReminderPage.Basis =
                                                                     selection.DateBasis
                                                                 Items = items
-                                                                NextCursor =
-                                                                    page.Next
-                                                                    |> Option.map (fun position ->
-                                                                        Cursors.encodeReminders
-                                                                            services
-                                                                                .InstallationId
-                                                                            binding
-                                                                            position.Due
-                                                                            position.ReminderId)
+                                                                NextCursor = next
                                                             })
                                                         |> Result.map Outcome.Succeeded
                                                         |> Result.defaultWith Outcome.Failed

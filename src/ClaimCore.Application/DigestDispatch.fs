@@ -1,5 +1,6 @@
 namespace ClaimCore.Application
 
+open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application.Storage
@@ -10,34 +11,86 @@ module internal DigestDispatch =
         source
         installation
         basis
-        (send: EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<bool>)
+        (send:
+            EmailAddress
+                -> Map<DigestCountKind, int64>
+                -> CancellationToken
+                -> Task<DigestRelayResult>)
         (record: ActorId -> DigestOutcome -> unit)
-        token
+        (token: CancellationToken)
         =
+        let finish actor claim outcome =
+            task {
+                use cleanup = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
+
+                try
+                    let! settled =
+                        DigestStorage.complete source installation claim outcome cleanup.Token
+
+                    settled |> Option.iter (record actor)
+                with error ->
+                    // A later dispatcher reconciles claims whose DB completion is still unavailable.
+                    FailureDiagnostics.report error
+            }
+
+        let attempt actor claim =
+            task {
+                let mutable mayHaveSubmitted = false
+
+                try
+                    let! prepared = DigestStorage.prepare source installation basis actor token
+
+                    match prepared with
+                    | Some(recipient, counts) when not counts.IsEmpty ->
+                        let! started = DigestStorage.start source installation claim token
+
+                        match started with
+                        | None -> do! finish actor claim DigestOutcome.Unknown
+                        | Some remaining ->
+                            if remaining <= TimeSpan.Zero || token.IsCancellationRequested then
+                                do! finish actor claim DigestOutcome.FailedBeforeAcceptance
+                            else
+                                use sendDeadline =
+                                    CancellationTokenSource.CreateLinkedTokenSource token
+
+                                sendDeadline.CancelAfter remaining
+                                mayHaveSubmitted <- true
+                                let! relay = send recipient counts sendDeadline.Token
+
+                                let outcome =
+                                    match relay with
+                                    | DigestRelayResult.Accepted -> DigestOutcome.RelayAccepted
+                                    | DigestRelayResult.Refused ->
+                                        DigestOutcome.FailedBeforeAcceptance
+                                    | DigestRelayResult.Uncertain -> DigestOutcome.Unknown
+
+                                do! finish actor claim outcome
+                    | _ -> do! finish actor claim DigestOutcome.SkippedEmpty
+                with _ ->
+                    let outcome =
+                        if mayHaveSubmitted then
+                            DigestOutcome.Unknown
+                        else
+                            DigestOutcome.FailedBeforeAcceptance
+
+                    do! finish actor claim outcome
+            }
+
         task {
+            do! DigestStorage.reconcile source installation token
             let today = basis.BusinessDate
             let! candidates = DigestStorage.candidates source installation today token
 
             for actor in candidates do
-                let! claimed = DigestStorage.claim source installation today actor token
+                if not token.IsCancellationRequested then
+                    try
+                        let! claim = DigestStorage.claim source installation today actor token
 
-                if claimed then
-                    let! prepared = DigestStorage.prepare source installation basis actor token
+                        match claim with
+                        | Some claim -> do! attempt actor claim
+                        | None -> ()
+                    with error ->
+                        FailureDiagnostics.report error
 
-                    let! outcome =
-                        task {
-                            match prepared with
-                            | Some(recipient, counts) when not counts.IsEmpty ->
-                                let! accepted = send recipient counts token
-
-                                return
-                                    if accepted then
-                                        DigestOutcome.Sent
-                                    else
-                                        DigestOutcome.Failed
-                            | _ -> return DigestOutcome.SkippedEmpty
-                        }
-
-                    do! DigestStorage.complete source installation today actor outcome token
-                    record actor outcome
+            return! DigestStorage.summary source installation token
         }

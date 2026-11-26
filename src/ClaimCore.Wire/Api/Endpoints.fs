@@ -281,7 +281,7 @@ module Api =
               (EndpointId.Host HostEndpoint.Logout)
               HttpMethod.Post
               RequestCodecs.empty
-              (ReplyCodecs.readReply "LogoutReply" ResponseCodecs.logoutLocation) with
+              (ReplyCodecs.readReply "LogoutReply" ResponseCodecs.logoutHandoff) with
             Effect = EndpointEffect.OperationalWrite
         }
 

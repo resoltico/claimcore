@@ -170,6 +170,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- checkout supplies the pinned SDK action.
+        with:
+          node: "false"
+      - name: Prepare resolved browser catalogs
+        run: bash eng/prepare-browser-catalogs.sh
       - name: Cache npm downloads for the SDK-free frontend
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -183,6 +188,7 @@ jobs:
           docker run --rm --user "$(id -u):$(id -g)" \
             --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
             --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --env CLAIMCORE_BROWSER_CATALOGS_PREPARED=1 \
             --volume "${RUNNER_TEMP}/claimcore-npm-cache:/tmp/claimcore-npm-cache" \
             --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
             bash -euo pipefail -c '

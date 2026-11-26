@@ -31,7 +31,13 @@ gh attestation verify claimcore-cli-linux-x64.tar.gz \
   --repo resoltico/claimcore --signer-workflow "$claimcore_release_workflow"
 ```
 
-Check each archive against its entry in the release's `SHA256SUMS` before extracting it.
+Verify the checksum manifest against the same release workflow, then compare each downloaded
+archive with its entry before extracting it.
+
+```sh
+gh attestation verify SHA256SUMS \
+  --repo resoltico/claimcore --signer-workflow "$claimcore_release_workflow"
+```
 
 | Platform | CLI archive |
 | --- | --- |
@@ -62,6 +68,7 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 | `data.key` | A private 32-byte master key file, mounted read-only by Web and administration. Generate it using a cryptographic random source and set mode 0600. |
 | `postgres/superuser.password` | Separate bootstrap password for `postgres`, mounted only in PostgreSQL. Use 64 lowercase hexadecimal characters and mode 0600. |
 | `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for each. |
+| `ca.pem` | PostgreSQL trust root for the Compose database health probe. |
 | `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
 | `web/server.pfx` | A passwordless PFX with one private key, its publicly trusted HTTPS leaf certificate for the web origin, and all required intermediate certificates. |
 | `web/client.secret` | The confidential browser client's OIDC client secret. |
@@ -88,20 +95,42 @@ docker compose --env-file /PRIVATE/production.env -f deployment/production/compo
 Use the same administration profile to run later owner commands. The web host works with the
 runtime connection, and the owner connection is mounted only by the administration service.
 The Compose database accepts TCP connections only for those two roles over TLS with SCRAM on the
-`claimcore` database. The bootstrap superuser connects through the local socket inside PostgreSQL.
+`claimcore` database. The container validates password syntax, TLS PEM, private key ownership and permissions, key
+pairing, and the certificate chain and hostname `postgres` before it launches the pinned
+upstream PostgreSQL entrypoint. After the final listener starts, the startup wrapper uses the local socket
+to provision a pristine database in one transaction. Restarting reuses a database interrupted
+between initialization and provisioning. The observational health command verifies the database
+profile, role grants and both TLS logins.
+
+If startup finds an initialized cluster with no `claimcore` database, it stops with a missing
+database diagnostic. Preserve the volume. Have the database operator inspect the cluster
+through its local `postgres` control database and restore any missing data using the recovery
+procedure. If the operator independently confirms an interrupted, pristine installation,
+they can create the empty database as `postgres` using the profile below. Leave the
+application roles absent and restart Compose to finish role provisioning.
+
+```sql
+CREATE DATABASE claimcore OWNER postgres TEMPLATE template0 ENCODING 'UTF8'
+  LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8';
+```
+
+Startup leaves database creation for an already-initialized cluster to the operator. A repeat
+start checks the configured credentials without modifying them. Have the database operator
+inspect partial provisioning, owner or grant drift, and credential mismatches. Preserve the
+existing volume while investigating.
 Compose limits each service's process and thread count. Set memory limits to suit the installation's
 workload and host capacity.
 
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 10 and
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 11 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
 [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
-before accessing installation data. Use a fresh database when the format changes. Preserve any
-existing database and recovery records separately. The available owner commands initialize,
-verify, rebuild or restore matching data. There is no migration or cross-format reader.
+before accessing installation data. Initialize a fresh database for a new register. Backup
+restore requires the supported format and baseline. Preserve any nonmatching database and recovery
+records separately. This build refuses them without conversion.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
@@ -112,10 +141,9 @@ the supplied application images include their pinned runtime.
 
 ### PostgreSQL database profile
 
-Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings.
-Npgsql 11 rejects either setting, even when multiplexing was disabled. If you collect Npgsql metrics
-and set `Application Name`, use that value when filtering `db.client.connection.pool.name`.
-See the [Npgsql 11 release notes](https://www.npgsql.org/doc/release-notes/11.0.html).
+Connection strings with `Multiplexing` or `Write Coalescing Buffer Threshold Bytes` are
+refused. If you set `Application Name`, use that value when filtering the Npgsql
+`db.client.connection.pool.name` metric label.
 
 Use PostgreSQL 19. Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
 The PostgreSQL cluster must have data checksums enabled. The Compose files initialize this profile.
@@ -161,11 +189,12 @@ uncertain result. Remote database connections require verified TLS.
 | --- | --- |
 | `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone, case-reference policy and first owner atomically. |
 | `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
-| `status` | Read identity, formats, zone, policy, head, maintenance and bounded counts. |
+| `status` | Read identity, formats, zone, policy, head, maintenance, recovery publication generation and counts. |
 | `maintenance acquire GENERATION PAUSE_ID` | Serialize with earlier writes and pause register writes. |
 | `maintenance resume GENERATION PAUSE_ID` | End the current pause after inspecting status. |
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
-| `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Rebuild projections during explicit maintenance. |
+| `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Check projections under a maintenance fence and rebuild when they diverge. |
+| `repair-attachment --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID --case-id ID --blob-id ID --payload-file FILE` | Restore the exact retained bytes for an authenticated accepting blob during maintenance. |
 | `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
 ## Recover owner access
@@ -330,10 +359,18 @@ pruned. Inspect an unconfirmed acknowledgement before deliberately starting anot
 It reports no count, and repeating deletion could also end sessions created since the original
 attempt. These actions have no operation.get recovery record.
 
-Ordinary Sign out deletes the current browser ticket and sends the browser to the identity provider
-to end its session. The provider returns the browser to the signed-out page after logout. Complete
-any confirmation the provider presents. Session-ending actions leave independent bearer tokens
-and the ledger untouched.
+Ordinary Sign out deletes the current browser ticket first. When validated provider metadata
+and the session's provider hint are available, the browser continues to provider sign-out.
+Complete any confirmation the provider presents. During an outage ClaimCore confirms local sign-out
+and reports that provider sign-out could not proceed. Session-ending actions leave independent bearer
+tokens and the ledger untouched.
+
+The configured issuer and TLS policy govern one refreshed discovery and signing-key cache. The
+HTTPS listener and local readiness can come up while discovery is unavailable. Existing local
+sessions continue under their normal limits. Check `GET /health/identity` separately for
+identity-dependent access. It reports a bounded 503 with a sanitized dependency reason for
+temporary unavailability or invalid trust. A new login or bearer request requiring unavailable
+trust fails closed. Discovery and signing keys refresh without restarting the host.
 
 Session creation and deletion serialize on the canonical principal index, including principal kind,
 issuer and subject. The index is derived from the validated protected ticket, not names or sign-in
@@ -398,11 +435,14 @@ when the relay uses a private trust root. The relay hostname is verified in both
 See [Private configuration](#private-configuration) for file admission. A digest worker consumes
 one additional connection pool slot.
 
-Hosts coordinate claims through the installation database. A claim allows one attempt across all
-hosts. An empty queue skips delivery. Relay failures and missed days are recorded or skipped with
-no resend. Monitor the digest outcomes in host logs and the `claimcore_digest_total` counter.
-Logs identify the account and the outcome. The counter is grouped by outcome. Housekeeping prunes
-claims older than 30 days.
+Hosts coordinate one durable attempt per recipient and business day. The database clock fences
+the start and the send has a one-minute attempt budget. The durable outcomes are
+`RELAY_ACCEPTED`, `FAILED_BEFORE_ACCEPTANCE`, `SKIPPED_EMPTY` and `UNKNOWN`. Acceptance confirms
+the relay acknowledged submission. A later worker records expired incomplete claims as unknown.
+ClaimCore does not automatically resend, including after an uncertain acknowledgement. Monitor
+`digest_runs` log summaries for durable outcome counts, in-flight attempts and expired claims. The
+`claimcore_digest_total` counter reports observations from the current process. Neither includes
+recipient addresses or relay replies. Housekeeping prunes claims older than 30 days.
 
 ## Database clock
 
@@ -461,11 +501,10 @@ frontier. Capture evidence while traffic is isolated or account for activity aft
 Observations newer than every independently retained trusted checkpoint cannot be recovered from
 that evidence.
 
-Restore the base backup and replay archived WAL into an isolated PostgreSQL cluster with the
-matching PostgreSQL major and `pg_trgm` 1.6 available. A PostgreSQL 18 physical backup must stay
-with its matching build and cluster. Start with a fresh PostgreSQL 19 installation for this baseline.
-Restore requires the current ClaimCore installation format. Keep application servers and all client traffic isolated, including
-browser, bearer/CLI and automation traffic, throughout restore admission and verification.
+Restore the base backup and replay archived WAL into an isolated cluster on the supported
+PostgreSQL major with `pg_trgm` 1.6. The backup and WAL must match that PostgreSQL major and the
+supported ClaimCore installation format. Keep application servers and all browser, CLI, bearer
+and automation traffic isolated throughout restore admission and verification.
 
 With traffic still isolated, use the independently retained checkpoint to admit and verify the restored
 installation:
@@ -550,9 +589,10 @@ remain ledger metadata. Closing notes, reopening reasons and decision bases are 
 
 Case erasure clears all attachment bytes and private file descriptors, including withdrawn and
 reattached files. Verification checks retained attachment bytes against accepted commitments.
-Projection rebuild repairs the list and reports authoritative byte loss as a fault requiring trusted
-restore. Withdrawn files remain in the database and its backups until the applicable erasure and
-backup retention policies take effect.
+Projection rebuild repairs the list. Use [exact payload repair](#repair-exact-attachment-payloads)
+when the accepting record is intact and you have independently retained bytes. Use trusted restore
+for damage to the accepting record or its references. Withdrawn files remain in the database and
+its backups until the applicable erasure and backup retention policies take effect.
 Verification compares available payment facts with accepted history and checks the cleared shape
 after erasure. It uses the retained opening effect and any retained custom input to check policy,
 assignment format, exact spelling, Case ID and uniqueness. The ledger does not preserve the entropy
@@ -653,13 +693,15 @@ These choices do not alter facts, business dates or rights.
 
 Publish the entire frontend build directory, including the private `public-assets.json` inventory.
 Startup verifies and captures the workspace and sign-in recovery documents, legal notices and source
-archive, build assets, and catalogs listed in the inventory. File replacement does not update a
-running host. Restart to replace served files, and retain older hashed assets while old tabs may
-request deferred views or languages.
-Only verified assets without Set-Cookie receive immutable public caching. Runtime catalogs use strong ETags and no-cache; HTML, authentication, APIs,
-refusals and fallback routes remain no-store; business data and recovery identities are not service-worker cached.
-Failed language activation keeps the working language. Protect an unconfirmed change's identity before reload;
-reloading cannot reconstruct a discarded request body.
+archive, build assets and catalogs listed in the inventory. Replace the complete matching asset
+set and restart the host to serve it. A tab still using a different bundle may need to reload to
+request the assets listed by the replacement host.
+Only verified assets without Set-Cookie receive immutable public caching. Build-bound catalogs
+are content-addressed and use strong ETags. HTML, authentication, APIs, refusals and fallback routes
+remain no-store. Startup refuses a missing catalog or a mismatched manifest. Failed language
+activation keeps the working language and offers reload. Startup, deferred workspace views and
+sign-in recovery also offer reload if old assets are missing. Reload leaves the identity-only
+recovery journal available. A discarded request body cannot be reconstructed.
 
 The PDF viewer at `/attachment-preview/viewer` serves a startup-verified document with its own
 Content Security Policy (CSP). The workspace requires Trusted Types for script sinks and disallows
@@ -682,8 +724,13 @@ checkpoint custody, and aggregate queries can still scan a growing history.
 Accepted writes serialize at one ledger head. Verification replays retained requests through the same
 Domain decisions, using each entry's stored business date and authority at that position. It checks
 hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes
-the replayed state as projections. One fold supplies the historical environment, applies effects and
-checks reproduced part changes. Erased history is checked from retained inputs and available facts,
+the replayed state as projections. It prepares and checks the replay in a repeatable-read snapshot.
+Attachment evidence is read in bounded pages ordered by accepting position in that snapshot.
+Publication rechecks the active pause, head, expiry frontier, key admission and recovery
+publication generation before replacing and reading back projections in one transaction. If the
+preparation is stale, inspect status and rerun with current evidence. After a lost acknowledgement,
+inspect the trusted checkpoint, maintenance and publication generation before any further action.
+Replay supplies the environment for each recorded operation and checks reproduced part changes. Erased history is checked from retained inputs and available facts,
 including owner/compartment consistency; cleared private values cannot be reconstructed. First-execution
 windows and present maintenance are not replayed.
 
@@ -695,6 +742,25 @@ older prefix is accepted in newer verified history; a foreign installation, miss
 or insufficient restored expiry frontier refuses. Restore admission requires maintenance, preserves
 accepted history and cannot lower the frontier.
 See [Integrating](integrating.md) for results and [Support](../SUPPORT.md) for redacted reporting.
+
+A healthy register returns `PROJECTIONS_CURRENT` after checking the fence. This path leaves both
+the projections and the recovery publication generation intact. For damaged projections, the
+command streams rows into transaction-local tables before acquiring the head. The live
+replacement uses one delete and one insert per derived table, then verifies the live result
+before committing. Existing MVCC readers keep their snapshot.
+
+Table replacement, constraints, principal locks and readback still process installation data
+while the head is held. Plan maintenance for that work.
+
+### Repair exact attachment payloads
+
+Use the protected attachment finding from `verify` to identify the case, blob and accepting
+position. Use independently retained bytes and the owner connection during active maintenance.
+Keep the payload file, checkpoint and command output private. The repair checks live retention,
+the accepted descriptor and the supplied bytes, then encrypts the replacement and verifies
+readback. It preserves the original accepting position. Damage to accepting history, identity
+or references requires restore. A retained erasure cannot be reversed by payload repair. Verify
+against the trusted checkpoint before resuming traffic.
 
 ## Licensing and modified deployments
 

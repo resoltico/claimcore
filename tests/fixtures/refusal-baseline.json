@@ -306,6 +306,11 @@
       "target": "cursor"
     },
     {
+      "code": "TRAVERSAL_CHANGED",
+      "action": "ReadCurrent",
+      "target": "cursor"
+    },
+    {
       "code": "INVALID_INPUT",
       "action": "CorrectInput",
       "issues": [

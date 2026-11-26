@@ -118,6 +118,7 @@ let private invalidProjectionRows () =
         | Error {
                     Sequence = None
                     Finding = VerificationFinding.PeopleProjection
+                    Attachment = None
                 } -> ()
         | _ -> failtest "Malformed projections must return the stable people finding"
 
@@ -334,7 +335,7 @@ let tests =
                 (fun () ->
                     let _, before, record = opened ()
                     let state = append before record |> required
-                    let expected = Replay.caseRecords state |> required
+                    let expected = Replay.caseRecords (Replay.familyRows state) |> required
 
                     Expect.isOk
                         (ProjectionVerification.rows

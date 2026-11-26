@@ -193,6 +193,32 @@ let private malformed () =
         (Codec.decode 1024 Codec.uuid (bytes "\"10000000-0000-7000-8000-000000000001\\n\""))
         "UUID cannot hide a trailing newline"
 
+let private humanCursor () =
+    let cursor = String('a', Paging.MaximumAccessRequestCursorCharacters)
+    let document = HumanDocument.empty HumanDisclosure.None
+    let codec = HumanDocumentCodecs.document
+
+    let decoded =
+        Codec.encode
+            codec
+            { document with
+                NextCursor = Some cursor
+            }
+        |> Codec.decode Limits.MaximumResponseBytes codec
+        |> accepted
+
+    Expect.equal decoded.NextCursor (Some cursor) "HUMAN carries the largest declared continuation"
+
+    Expect.throwsT<ArgumentException>
+        (fun () ->
+            Codec.encode
+                codec
+                { document with
+                    NextCursor = Some(cursor + "a")
+                }
+            |> ignore)
+        "The shared response still enforces a bounded cursor"
+
 let private frames () =
     let raw = """{"endpoint":"case.list","input":{ "limit" : 1 }}"""
     let frame = ClaimCore.Cli.Frames.admit (bytes raw) |> accepted
@@ -214,9 +240,7 @@ let private frames () =
                         (Outcome.Succeeded(
                             Presented.create
                                 (fun _ -> Screen.create [])
-                                {
-                                    Location = "https://issuer.example.test/logout"
-                                }
+                                (LogoutHandoff.Provider "https://issuer.example.test/logout")
                         ))
                 )
         }
@@ -347,6 +371,7 @@ let tests =
         [
             testCase "independent examples cover every endpoint and outcome" examples
             testCase "fixed policies and conditional advice reject inconsistent shapes" malformed
+            testCase "the HUMAN cursor covers the declared page limits" humanCursor
             testCase "CLI frames freeze prepared input bytes and round trip typed replies" frames
             testCase "OpenAPI is complete deterministic and presentation free" openApi
         ]

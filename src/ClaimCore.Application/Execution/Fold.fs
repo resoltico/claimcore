@@ -27,8 +27,9 @@ type internal FoldState =
         Head: LedgerPosition
         Families: Map<CaseId, CaseFamily>
         People: Map<ActorId, Person>
-        Parts: Map<PartKind * Guid, PartChange>
+        Parts: Map<CompartmentOwner, Map<PartKind * Guid, PartChange>>
         Origins: Map<PartKind * Guid, SubjectStamp>
+        PartOwners: Map<PartKind * Guid, CompartmentOwner>
         Summaries: Map<CaseId, Attribution>
         ReportDates: Map<CaseId, CaseReportDates>
         Accepted: Set<OperationId>
@@ -46,6 +47,7 @@ module internal Fold =
             People = Map.empty
             Parts = Map.empty
             Origins = Map.empty
+            PartOwners = Map.empty
             Summaries = Map.empty
             ReportDates = Map.empty
             Accepted = Set.empty
@@ -179,13 +181,11 @@ module internal Fold =
                 task
                 (familyEnvironment policy state principal maintenance (before |> Option.map _.Id))
                 (before |> Option.map DecisionFacts.fromReplay)
-                (state.Parts
-                 |> Map.values
-                 |> Seq.filter (fun change ->
-                     before
-                     |> Option.exists (fun family ->
-                         change.Aggregate = AggregateReference.Family family.Id))
-                 |> Seq.toList)
+                (before
+                 |> Option.bind (fun family ->
+                     Map.tryFind (CompartmentOwner.Family family.Id) state.Parts)
+                 |> Option.map (Map.values >> Seq.toList)
+                 |> Option.defaultValue [])
                 state.Origins
         | Task.Opening _ -> invalidOp "Opening uses its own recorded evidence."
         | Task.Person task ->
@@ -248,22 +248,25 @@ module internal Fold =
                         then
                             Error FoldProblem.NaturalKey
                         else
+                            let owner = PartChange.owner change
+
+                            let parts =
+                                Map.tryFind owner state.Parts |> Option.defaultValue Map.empty
+
                             let parts =
                                 match change.Erases with
-                                | None -> state.Parts
-                                | Some owner ->
-                                    state.Parts
+                                | None -> parts
+                                | Some _ ->
+                                    parts
                                     |> Map.map (fun _ part ->
-                                        if PartChange.owner part = owner then
-                                            { part with
-                                                Value = PartValue.clear part.Value
-                                            }
-                                        else
-                                            part)
+                                        { part with
+                                            Value = PartValue.clear part.Value
+                                        })
 
                             Ok
                                 { state with
-                                    Parts = Map.add key change parts
+                                    Parts = Map.add owner (Map.add key change parts) state.Parts
+                                    PartOwners = Map.add key owner state.PartOwners
                                     Origins =
                                         if Map.containsKey key state.Origins then
                                             state.Origins
@@ -335,19 +338,28 @@ module internal Fold =
         |> List.fold
             (fun result (change: PartChange) ->
                 result
-                |> Result.bind (fun parts ->
+                |> Result.bind (fun (parts, owners) ->
                     let key = change.Kind, change.PartId
 
+                    let owner = PartChange.owner change
+                    let owned = Map.tryFind owner parts |> Option.defaultValue Map.empty
+
                     let prior =
-                        Map.tryFind key parts
+                        Map.tryFind key owned
                         |> Option.map _.Revision
                         |> Option.defaultValue Revision.zero
 
-                    if PartChange.successor prior change.Revision then
-                        Ok(Map.add key change parts)
+                    if
+                        (Map.tryFind key owners |> Option.forall ((=) owner))
+                        && PartChange.successor prior change.Revision
+                    then
+                        Ok(
+                            Map.add owner (Map.add key change owned) parts,
+                            Map.add key owner owners
+                        )
                     else
                         Error(FoldProblem.State RecordViolation.InvalidRevisionSequence)))
-            (Ok state.Parts)
+            (Ok(state.Parts, state.PartOwners))
         |> Result.map ignore
 
     let private rejected =

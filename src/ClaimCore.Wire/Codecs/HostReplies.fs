@@ -14,6 +14,8 @@ type HostFailureCode =
     | MediaTypeRejected
     | BodyTooLarge
     | SessionRejected
+    | IdentityProviderUnavailable
+    | IdentityProviderUntrusted
     | MethodRejected
     | AntiforgeryRejected
     | EndpointMissing
@@ -36,7 +38,20 @@ type Session =
         AntiforgeryToken: string option
     }
 
-type LogoutLocation = { Location: string }
+[<RequireQualifiedAccess>]
+type LocalSignOutReason =
+    | NoProviderSession
+    | IdentityProviderUnavailable
+    | IdentityProviderUntrusted
+
+module LocalSignOutReason =
+    let vocabulary =
+        Vocabulary.ofUnion<LocalSignOutReason> "localSignOutReason" TokenCasing.ScreamingSnake None
+
+[<RequireQualifiedAccess>]
+type LogoutHandoff =
+    | Provider of location: string
+    | LocalOnly of reason: LocalSignOutReason
 
 /// The public host failure carries no server prose or transport status.
 type HostFailure =

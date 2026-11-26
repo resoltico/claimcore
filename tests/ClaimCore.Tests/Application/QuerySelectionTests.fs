@@ -30,7 +30,6 @@ let private peopleAndCursor () =
 
     Expect.equal
         (CaseSetQueries.selectCases
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             DomainInputs.workBasis
             (ClaimCore.TestSupport.Inputs.caseListPage (page))

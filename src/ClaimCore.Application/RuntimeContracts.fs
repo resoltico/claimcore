@@ -68,6 +68,7 @@ type InstallationStatus =
         ObservedAt: DateTimeOffset
         Position: LedgerPosition
         Maintenance: RegisterMaintenance
+        RecoveryPublicationGeneration: int64
         InstallationFormat: int
         InitialOwner: ActorRef option
         Actors: int64

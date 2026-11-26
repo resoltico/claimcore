@@ -604,6 +604,60 @@ let private qualify () =
                 (List.ofSeq observed)
                 [ 1L; 1L ]
                 "Cleanup preserves the single outer read lease"
+
+            let! steward =
+                grant
+                    service
+                    (id fixture 60005)
+                    principal
+                    {
+                        Role = Role.DataSteward
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedPeople steward
+            inject <- true
+            reads <- 0
+            let! beforeErasure = trail "EXPORT"
+
+            afterFirst <-
+                fun () ->
+                    task {
+                        let! erased =
+                            Service.executeSubmission
+                                service
+                                (request fixture 60006 "CSV-002" 1L "case.erase" Map.empty)
+                                token
+
+                        accepted erased |> ignore
+                    }
+
+            use! withheld =
+                host.CallResponse(
+                    ExportTransport.token,
+                    Codec.encode ExportTransport.request (ExportSelection.Cases filter),
+                    credential
+                )
+
+            let! withheldBytes = withheld.Content.ReadAsByteArrayAsync()
+
+            match
+                Codec.decode Limits.MaximumResponseBytes ExportTransport.failure withheldBytes
+            with
+            | Ok(ExportFailure.Rejected _) -> ()
+            | value ->
+                failtestf
+                    "The release snapshot must refuse earlier retained bytes after erasure: %A"
+                    value
+
+            Expect.equal reads 2 "Preparation and release each consume one whole snapshot"
+            let! afterErasure = trail "EXPORT"
+
+            Expect.equal
+                afterErasure.Length
+                beforeErasure.Length
+                "A rejected release creates no success audit"
         finally
             database.Fixture.Dispose()
     }

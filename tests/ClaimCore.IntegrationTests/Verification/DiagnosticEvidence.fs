@@ -356,7 +356,7 @@ let internal stateEvidence () =
         return List.ofSeq evidence
     }
 
-let internal queryEvidence actor =
+let internal queryEvidence fixture actor =
     task {
         let! limit =
             (Service.list
@@ -371,6 +371,42 @@ let internal queryEvidence actor =
                     { AfterCursor = Some "bad"; Limit = 1 }
                 )))
                 (ct))
+
+        for number, reference in [ 1700, "TRAVERSAL-A"; 1701, "TRAVERSAL-B" ] do
+            let! opened = execute actor (openRequest fixture number reference)
+            accepted opened |> ignore
+
+        let traversal: CaseListRequest =
+            {
+                Page = { AfterCursor = None; Limit = 1 }
+                Filter = CaseListFilter.create [] [] [] (Some "TRAVERSAL") CaseListOrder.Reference
+            }
+
+        let! first = Service.list actor traversal ct
+
+        let continuation =
+            match first with
+            | Outcome.Succeeded page when page.NextCursor.IsSome -> page.NextCursor
+            | other -> failtestf "Expected an authorized continuation: %A" other
+
+        let! additional = execute actor (openRequest fixture 1702 "TRAVERSAL-C")
+        accepted additional |> ignore
+
+        let! stale =
+            Service.list
+                actor
+                { traversal with
+                    Page =
+                        { traversal.Page with
+                            AfterCursor = continuation
+                        }
+                }
+                ct
+
+        Expect.equal
+            stale
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "An accepted case changes the authorized traversal"
 
         let! missing =
             (Service.get
@@ -421,6 +457,7 @@ let internal queryEvidence actor =
             [
                 queryRefused limit
                 queryRefused cursor
+                queryRefused stale
                 queryRefused missing
                 queryRefused reversed
             ]
@@ -771,7 +808,7 @@ let internal boundaryEvidence () =
                 (core fixture reader)
                 (request (fixture) (37) ("REACH-1") (1L) "case.close" (CaseTransitionInputs.closed))
 
-        let! queries = queryEvidence actor
+        let! queries = queryEvidence fixture actor
         let! people = peopleEvidence fixture actor
         let! principals = principalEvidence fixture actor
         let! profiles = profileAndDirectoryEvidence fixture actor

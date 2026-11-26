@@ -138,6 +138,9 @@ frontend_built=false
 build_frontend() {
   ${frontend_built} && return
   restore_node
+  if [[ "${CLAIMCORE_BROWSER_CATALOGS_PREPARED:-0}" != 1 ]]; then
+    npm --prefix web run prepare:catalogs
+  fi
   npm --prefix web run build
   frontend_built=true
 }
@@ -177,7 +180,7 @@ PYTHON
   done
 }
 
-frontend() { # Node only: no generated contract prerequisite or .NET process.
+frontend() {
   restore_node
   npm --prefix web run format:check
   npm --prefix web run lint
@@ -264,6 +267,12 @@ acceptance-browser() {
   build_native "${acceptance_projects[0]}"
   build_native src/ClaimCore.Server/ClaimCore.Server.fsproj
   build_frontend
+  # Run once on the Chromium qualification shard with the SDK, Node, and browser available.
+  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE:-chromium}" == chromium &&
+        "${CLAIMCORE_ACCEPTANCE_BROWSER_SHARD:-1/1}" == 1/* &&
+        -z "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC:-}" ]]; then
+    node web/tests/qualification/catalog-cutover.mjs
+  fi
   # One native case sequences selected engines with their own fixture/bootstrap/readback.
   local stage=acceptance-browser project browser_timeout=45m
   if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then browser_timeout=130m; fi

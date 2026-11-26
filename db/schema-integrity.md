@@ -35,3 +35,13 @@ Permanent representability checks deliberately admit values that current busines
 refuse, including a retained negative amount. Those checks protect faithful decoding of accepted
 history rather than silently imposing today's policy on old records. Operational session payload and
 calendar framing are separate from ledger business text admission.
+
+Recovery publications and key rewrap serialize on the ledger head before changing the publication
+generation. Prepared evidence also binds the exact maintenance handle and expiry frontier.
+The owner-only attachment payload repair preserves the accepting identity and requires the
+original reference and retained compartment. The structural repair path refuses erased owners.
+Native replay and byte verification establish the retained descriptor and content before repair.
+
+Digest claims are unique per recipient and business day and preserve their attempt identity,
+deadline and first start. The database guard rejects updates to terminal outcomes. Core supplies
+the outcome vocabulary and decides when an expired incomplete attempt becomes unknown.

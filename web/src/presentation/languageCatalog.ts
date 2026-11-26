@@ -3,7 +3,7 @@ import { messageShapes as coreShapes } from "@contracts/messages";
 import { chromeShapes } from "./chromeMessages";
 import { presentationDefaults, presentationPseudolanguage } from "@contracts/client";
 import { isObject } from "../protocol/client";
-import { templateParts } from "./templates";
+import { admitCatalog } from "./catalogAdmission";
 import type { Language } from "./preferences";
 
 export type CatalogLanguage = Exclude<Language, typeof presentationPseudolanguage>;
@@ -11,41 +11,16 @@ export type TextCatalog = Readonly<Record<string, string>>;
 const installed = new Map<CatalogLanguage, TextCatalog>();
 export const catalogLanguage = (language: Language): CatalogLanguage =>
   language === presentationPseudolanguage ? presentationDefaults.language : language;
-const admit = (
-  raw: unknown,
-  shapes: Readonly<Record<string, Readonly<Record<string, string>>>>,
-): TextCatalog => {
-  if (!isObject(raw)) {
-    throw new Error("Invalid language catalog");
-  }
-  const values: Record<string, string> = {};
-  for (const [key, shape] of Object.entries(shapes)) {
-    const text = raw[key];
-    if (typeof text !== "string") {
-      throw new Error("Incomplete language catalog");
-    }
-    const names = new Set(
-      templateParts(text)
-        .filter((part) => part.kind !== "literal")
-        .map((part) => part.value),
-    );
-    if (
-      names.size !== Object.keys(shape).length ||
-      Object.keys(shape).some((name) => !names.has(name))
-    ) {
-      throw new Error("Invalid language arguments");
-    }
-    values[key] = text;
-  }
-  return Object.freeze(values);
-};
 /** Both owners are admitted before a pair can become available to a presenter. */
 export const installLanguage = (
   language: CatalogLanguage,
   core: unknown,
   chrome: unknown,
 ): TextCatalog => {
-  const complete = Object.freeze({ ...admit(core, coreShapes), ...admit(chrome, chromeShapes) });
+  const complete = Object.freeze({
+    ...admitCatalog(core, coreShapes),
+    ...admitCatalog(chrome, chromeShapes),
+  });
   const existing = installed.get(language);
   if (existing !== undefined) {
     return existing;

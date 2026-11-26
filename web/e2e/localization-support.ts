@@ -52,7 +52,13 @@ test.beforeEach(async ({ page }) => {
     return;
   }
   for (const { value: language } of presentationLanguageOptions) {
-    const response = await page.request.get(`/catalogs/${language}.json`);
+    const inventory = await page.request.get("/catalog-manifest.json");
+    expect(inventory.ok()).toBe(true);
+    const assets: unknown = await inventory.json();
+    if (!isObject(assets) || typeof assets[language] !== "string") {
+      throw new Error("Expected a build-bound catalog path");
+    }
+    const response = await page.request.get(assets[language]);
     expect(response.status()).toBe(200);
     const catalog: unknown = await response.json();
     if (!isObject(catalog)) {

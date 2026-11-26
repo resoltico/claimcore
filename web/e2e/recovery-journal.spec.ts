@@ -20,7 +20,7 @@ import {
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startClose } from "./case-workflow";
 import { isHostFailure } from "../src/protocol/client";
-import { recoveryRecords } from "./recovery-storage";
+import { recoveryDatabaseName, recoveryRecords } from "./recovery-storage";
 
 /** A not-started admission refusal is not the pending/final lookup observation. */
 const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
@@ -204,6 +204,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
       httpStatus: response.status(),
       value: (await response.json()) as unknown,
     }));
+  await page.close();
   await second.reload();
   const { httpStatus, value: status } = await checked;
   expect(admissionRefusals).toBe(1);
@@ -231,8 +232,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
       exact: false,
     }),
   ).toBeVisible();
-  expect(await records(page, scope)).toEqual([secondRecord]);
-  await page.close();
+  expect(await records(second, scope)).toEqual([secondRecord]);
   // A separate expired fixture exercises final absence without waiting ten minutes or changing a dispatched identity.
   await second.evaluate(async (record) => {
     const path = "/__claimcore_qa__/recovery/indexedJournal.js";
@@ -252,6 +252,300 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
 });
+const savedCaseAttempt = (scope: RecoveryScope): RecoveryRecord => ({
+  ...scope,
+  format: 2,
+  operationId: expiredOperationId(),
+  attemptId: randomUUID(),
+  subject: "CASE",
+  act: "case.close",
+});
+const saveAttempt = (page: Page, record: RecoveryRecord) =>
+  page.evaluate(async (saved) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    return module.createIndexedJournal(indexedDB).put(saved);
+  }, record);
+
+test("a foreground workspace resolves the same in-flight identity while its peer is suspended @chromium @engine", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  const follower = await context.newPage();
+  await openAuthenticated(follower);
+  await adapter(follower);
+  await page.bringToFront();
+
+  const countRequests = { execute: 0, original: 0, follower: 0 };
+  const initial = savedCaseAttempt(scope);
+  context.on("request", (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname === "/api/operation.execute") {
+      countRequests.execute += 1;
+    }
+    if (
+      pathname === "/api/operation.get" &&
+      (request.postDataJSON() as RequestByEndpoint["operation.get"]).operationId ===
+        initial.operationId
+    ) {
+      const key = request.frame().page() === page ? "original" : "follower";
+      countRequests[key] += 1;
+    }
+  });
+  const lifecycle = await context.newCDPSession(page);
+  await lifecycle.send("Debugger.enable");
+  const arrived = Promise.withResolvers<void>();
+  const completeOriginal = Promise.withResolvers<void>();
+  const responseSent = Promise.withResolvers<void>();
+  let intercepted = false;
+  await page.route("**/api/operation.get", async (route) => {
+    const request = route.request().postDataJSON() as RequestByEndpoint["operation.get"];
+    if (request.operationId !== initial.operationId || intercepted) {
+      await route.continue();
+      return;
+    }
+    intercepted = true;
+    arrived.resolve();
+    await completeOriginal.promise;
+    await route.fulfill({
+      status: 429,
+      headers: { "retry-after": "120" },
+      json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+    });
+    responseSent.resolve();
+  });
+  await saveAttempt(page, initial);
+  await arrived.promise;
+  // Pause after dispatch, even on headless Chromium where both tabs report visible.
+  const suspended = new Promise<void>((resolve) => {
+    lifecycle.once("Debugger.paused", () => {
+      resolve();
+    });
+  });
+  await lifecycle.send("Debugger.pause");
+  await suspended;
+  try {
+    const received = follower.waitForResponse(
+      (response) => lookupObservation(response, initial.operationId),
+      { timeout: 8000 },
+    );
+    completeOriginal.resolve();
+    await responseSent.promise;
+    await follower.bringToFront();
+    expect(await (await received).json()).toMatchObject({
+      operationId: initial.operationId,
+      outcome: { kind: "NOT_ACCEPTED" },
+    });
+    await expect.poll(() => records(follower, scope)).toEqual([]);
+    expect(countRequests).toEqual({ execute: 0, original: 1, follower: 1 });
+  } finally {
+    await lifecycle.send("Debugger.resume");
+    await lifecycle.detach();
+  }
+
+  await follower.close();
+  await page.bringToFront();
+  const afterResume = savedCaseAttempt(scope);
+  const received = page.waitForResponse((response) =>
+    lookupObservation(response, afterResume.operationId),
+  );
+  await saveAttempt(page, afterResume);
+  expect(await (await received).json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+  // A long backoff from the stale response would still be visible after the old tab resumed.
+  expect(
+    await page.evaluate(
+      (id) =>
+        Object.keys(localStorage).some(
+          (key) =>
+            key.startsWith("claimcore-recovery-schedule:") &&
+            key.includes(id) &&
+            Number(localStorage.getItem(key)?.split(":")[0]) > Date.now(),
+        ),
+      initial.operationId,
+    ),
+  ).toBe(false);
+  expect(countRequests.execute).toBe(0);
+});
+
+test("a writable journal supports manual checks when the recovery lease write fails @engine", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await page.addInitScript(() => {
+    // oxlint-disable-next-line typescript/unbound-method -- Preserve the native receiver when forwarding storage writes.
+    const { setItem: nativeSetItem } = Storage.prototype;
+    Storage.prototype.setItem = function setItem(this: Storage, key: string, value: string) {
+      if (
+        this === localStorage &&
+        key.startsWith("claimcore-recovery-leader:") &&
+        document.documentElement?.dataset["allowRecoveryLease"] !== "true"
+      ) {
+        throw new DOMException("Synthetic recovery coordination quota", "QuotaExceededError");
+      }
+      nativeSetItem.call(this, key, value);
+    };
+  });
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  let executed = 0;
+  const checked: string[] = [];
+  page.on("request", (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname === "/api/operation.execute") {
+      executed += 1;
+    }
+    if (pathname === "/api/operation.get") {
+      checked.push((request.postDataJSON() as RequestByEndpoint["operation.get"]).operationId);
+    }
+  });
+
+  const manual = savedCaseAttempt(scope);
+  const automatic = { ...savedCaseAttempt(scope), act: "case.reopen" } as const;
+  await saveAttempt(page, manual);
+  await saveAttempt(page, automatic);
+  const warning = page.getByRole("alert").filter({ hasText: "Automatic recovery is paused." });
+  await expect(warning).toBeVisible();
+  const saved = await records(page, scope);
+  expect(saved).toHaveLength(2);
+  expect(saved).toEqual(expect.arrayContaining([manual, automatic]));
+  expect(checked).toEqual([]);
+  await page.locator(".recovery-banner").getByRole("link", { name: "Check now" }).click();
+  const selected = page
+    .locator(".recovery-attempt")
+    .filter({ has: page.getByText("Close the case", { exact: true }) })
+    .getByRole("button", { name: "Check now" });
+  const [manualReply] = await Promise.all([
+    page.waitForResponse((response) => lookupObservation(response, manual.operationId), {
+      timeout: 8000,
+    }),
+    selected.click({ timeout: 5000 }),
+  ]);
+  expect(await manualReply.json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+  await expect.poll(() => records(page, scope)).toEqual([automatic]);
+  expect(checked).toEqual([manual.operationId]);
+  const autoReply = page.waitForResponse((response) =>
+    lookupObservation(response, automatic.operationId),
+  );
+  await page.locator("html").evaluate((html) => {
+    html.dataset["allowRecoveryLease"] = "true";
+  });
+  expect(await (await autoReply).json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+  await expect.poll(() => records(page, scope)).toEqual([]);
+  await expect(warning).toHaveCount(0);
+  expect(checked).toEqual([manual.operationId, automatic.operationId]);
+  expect(executed).toBe(0);
+});
+
+for (const failure of ["renewal", "terminal clear"] as const) {
+  test(`a read permit ${failure} fault pauses automatic recovery and permits a fresh selected check @engine`, async ({
+    page,
+  }) => {
+    test.setTimeout(freshLoginWorkflowTimeout);
+    await page.addInitScript((phase) => {
+      // oxlint-disable-next-line typescript/unbound-method -- Forward with the original receiver.
+      const { setItem: nativeSet } = Storage.prototype;
+      // oxlint-disable-next-line typescript/unbound-method -- Forward with the original receiver.
+      const { getItem: nativeGet } = Storage.prototype;
+      // oxlint-disable-next-line typescript/unbound-method -- Forward with the original receiver.
+      const { removeItem: nativeRemove } = Storage.prototype;
+      const affected = (storage: Storage, key: string) =>
+        storage === localStorage &&
+        key.startsWith("claimcore-recovery-schedule:") &&
+        document.documentElement?.dataset["restoreReadStorage"] !== "true";
+      Storage.prototype.setItem = function setItem(this: Storage, key: string, value: string) {
+        if (phase === "renewal" && affected(this, key)) {
+          const [, , previousOwner] = nativeGet.call(this, key)?.split(":") ?? [];
+          const [, , nextOwner] = value.split(":");
+          if (previousOwner !== undefined && previousOwner !== "" && previousOwner === nextOwner) {
+            throw new DOMException("Synthetic permit renewal failure", "QuotaExceededError");
+          }
+        }
+        nativeSet.call(this, key, value);
+      };
+      Storage.prototype.removeItem = function removeItem(this: Storage, key: string) {
+        if (phase === "terminal clear" && affected(this, key)) {
+          throw new DOMException("Synthetic terminal clear failure", "SecurityError");
+        }
+        nativeRemove.call(this, key);
+      };
+    }, failure);
+    await openAuthenticated(page);
+    await adapter(page);
+    const scope = await scopeFor(page);
+    const automatic = savedCaseAttempt(scope);
+    const manual = { ...savedCaseAttempt(scope), act: "case.reopen" } as const;
+    const counts = new Map<string, number>();
+    let executed = 0;
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/operation.execute") {
+        executed += 1;
+      }
+    });
+    await page.route("**/api/operation.get", async (route) => {
+      const { operationId } = route.request().postDataJSON() as RequestByEndpoint["operation.get"];
+      const count = (counts.get(operationId) ?? 0) + 1;
+      counts.set(operationId, count);
+      if (failure === "renewal" && count === 1) {
+        const response = await route.fetch();
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+        await route.fulfill({ response });
+      } else {
+        await route.continue();
+      }
+    });
+
+    const warning = page.getByRole("alert").filter({ hasText: "Automatic recovery is paused." });
+    const terminal =
+      failure === "terminal clear"
+        ? page.waitForResponse((response) => lookupObservation(response, automatic.operationId))
+        : null;
+    await saveAttempt(page, automatic);
+    if (terminal !== null) {
+      expect(await (await terminal).json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+    }
+    await expect(warning).toBeVisible({ timeout: 8000 });
+    expect(counts.get(automatic.operationId)).toBe(1);
+    expect(await records(page, scope)).toEqual([automatic]);
+
+    // Manual recovery must survive a separate fault after acquiring its own permit.
+    await saveAttempt(page, manual);
+    await page.locator(".recovery-banner").getByRole("link", { name: "Check now" }).click();
+    const selected = page
+      .locator(".recovery-attempt")
+      .filter({ has: page.getByText("Reopen the case", { exact: true }) })
+      .getByRole("button", { name: "Check now" });
+    await selected.click({ timeout: 8000 });
+    await expect.poll(() => records(page, scope), { timeout: 8000 }).toEqual([automatic]);
+    await expect(page.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+    // Let two ordinary journal polling cycles pass while the fault remains active.
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 2200);
+    });
+    await expect(warning).toBeVisible();
+    expect(counts.get(manual.operationId)).toBe(2);
+    expect(counts.get(automatic.operationId)).toBe(1);
+
+    const resumed = page.waitForResponse((response) =>
+      lookupObservation(response, automatic.operationId),
+    );
+    await page.locator("html").evaluate((html) => {
+      html.dataset["restoreReadStorage"] = "true";
+    });
+    expect(await (await resumed).json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+    await expect.poll(() => records(page, scope)).toEqual([]);
+    await expect(warning).toHaveCount(0);
+    expect(counts.get(automatic.operationId)).toBe(2);
+    expect(executed).toBe(0);
+  });
+}
+
 test("a first explicit non-start keeps the draft and leaves no unconfirmed record @engine", async ({
   page,
 }) => {
@@ -566,9 +860,9 @@ test("a real blocked open refuses preparation and retains the earlier record @en
   const holder = await context.newPage();
   await openAuthenticated(holder);
   await holder.evaluate(
-    () =>
+    (databaseName) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("claimcore.recovery", 1);
+        const request = indexedDB.open(databaseName, 1);
         request.onerror = () => {
           reject(new Error("Hold connection failed"));
         };
@@ -582,6 +876,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
           resolve();
         };
       }),
+    recoveryDatabaseName,
   );
   const blocked = await page.evaluate(
     async ({ selectedScope, id }) => {
@@ -916,6 +1211,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
         const request = indexedDB.open("claimcore.qa.old-identity", 1);
         request.onupgradeneeded = () => {
           request.result.createObjectStore("attempts");
+          request.result.createObjectStore("confirmed");
         };
         request.onsuccess = () => {
           resolve(request.result);
@@ -969,6 +1265,98 @@ test("real IndexedDB retains only current work and reminder identities and refus
     ...work,
     format: 1,
   });
+});
+
+test("the current IndexedDB journal neither reads nor changes the previous database @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  const previous = savedCaseAttempt(scope);
+  const current = savedCaseAttempt(scope);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
+
+  const recordsBeforeReload = await page.evaluate(
+    async ({ previous: oldAttempt, current: newAttempt }) => {
+      const name = "claimcore.recovery";
+      const old = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name, 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore("attempts");
+        };
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Cannot create the previous recovery database."));
+        };
+      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const tx = old.transaction("attempts", "readwrite");
+          tx.objectStore("attempts").add(oldAttempt, [
+            oldAttempt.serviceOrigin,
+            oldAttempt.installationId,
+            oldAttempt.actorId,
+            oldAttempt.attemptId,
+          ]);
+          tx.oncomplete = () => {
+            resolve();
+          };
+          tx.onabort = () => {
+            reject(new Error("Cannot seed the previous recovery attempt."));
+          };
+        });
+      } finally {
+        old.close();
+      }
+      const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const module = (await import(path)) as typeof IndexedJournalModule;
+      const journal = module.createIndexedJournal(indexedDB);
+      const before = await journal.list(newAttempt);
+      await journal.put(newAttempt);
+      return before;
+    },
+    { previous, current },
+  );
+  expect(recordsBeforeReload).toEqual([]);
+
+  await page.reload();
+  expect(await records(page, scope)).toEqual([current]);
+  const earlier = await page.evaluate(
+    () =>
+      new Promise<{ version: number; stores: string[]; records: RecoveryRecord[] }>(
+        (resolve, reject) => {
+          const request = indexedDB.open("claimcore.recovery");
+          request.onupgradeneeded = () => {
+            request.transaction?.abort();
+            reject(new Error("The earlier database was missing."));
+          };
+          request.onerror = () => {
+            reject(new Error("Cannot read the previous recovery database."));
+          };
+          request.onsuccess = () => {
+            const old = request.result;
+            const tx = old.transaction("attempts", "readonly");
+            const read = tx.objectStore("attempts").getAll();
+            tx.oncomplete = () => {
+              resolve({
+                version: old.version,
+                stores: Array.from(old.objectStoreNames),
+                records: read.result as RecoveryRecord[],
+              });
+              old.close();
+            };
+            tx.onabort = () => {
+              old.close();
+              reject(new Error("Cannot verify the previous recovery attempt."));
+            };
+          };
+        },
+      ),
+  );
+  expect(earlier).toEqual({ version: 1, stores: ["attempts"], records: [previous] });
 });
 
 test("one-step note delivery journals first and recovers the same interrupted operation", async ({

@@ -126,6 +126,23 @@ module internal TransactionPages =
 
         sql, parameters
 
+    // One ordered pass over selected IDs and canonical sort columns. No case contents
+    // or unrelated register counters become part of the continuation.
+    let caseTraversalWitness connection (selection: CaseSelection) (token: CancellationToken) =
+        let sortValue =
+            match selection.Filter.Order with
+            | CaseListOrder.Reference -> "NULL::text"
+            | CaseListOrder.Recent -> DatabaseSession.instantExpression "c.changed_at"
+            | CaseListOrder.Received -> DatabaseSession.dateExpression "c.received_on"
+            | CaseListOrder.FollowUp -> DatabaseSession.dateExpression "c.follow_up"
+
+        let sql =
+            "SELECT jsonb_build_array(c.case_id,upper(c.case_reference COLLATE \"C\"),"
+            + sortValue
+            + $")::text FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} ORDER BY c.case_id"
+
+        DatabaseSession.witness connection sql (CaseSelectionSql.parameters selection) token
+
     let cases connection installation (query: CaseQuery) token =
         task {
             let sql, parameters = caseQuery query

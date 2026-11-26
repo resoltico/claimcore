@@ -178,7 +178,11 @@ let private commandPath () =
                     ]
                     ExitCode.Success
 
-            Expect.equal (kind rebuilt) "REBUILT" "Published rebuild accepts trusted evidence"
+            Expect.equal
+                (kind rebuilt)
+                "PROJECTIONS_CURRENT"
+                "Published rebuild accepts trusted evidence"
+
             let! older = invoke [ "verify"; "--checkpoint"; file ] ExitCode.Success
             Expect.equal (kind older) "VERIFIED" "Older evidence remains valid"
 

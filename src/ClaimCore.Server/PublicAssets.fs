@@ -10,6 +10,7 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Primitives
 open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// A process serves the exact verified public bytes captured from its published build inventory.
 module internal PublicAssets =
@@ -74,6 +75,7 @@ module internal PublicAssets =
             [
                 indexPath
                 recoveryPath
+                "/catalog-manifest.json"
                 "/" + LegalNotice.licenseFile + ".txt"
                 "/" + LegalNotice.projectNotice
                 "/" + LegalNotice.commercialNotice
@@ -103,7 +105,7 @@ module internal PublicAssets =
         let manifest = Path.Combine(directory, "public-assets.json")
         use document = JsonDocument.Parse(File.ReadAllBytes manifest)
 
-        if document.RootElement.GetProperty("schema").GetInt32() <> 3 then
+        if document.RootElement.GetProperty("schema").GetInt32() <> 4 then
             invalidOp "Unsupported public inventory."
 
         let viewer = readViewer directory document.RootElement
@@ -127,7 +129,6 @@ module internal PublicAssets =
                         || path = "/react-aria-pressable.css"
                         || path = "/styles.css"
                         || path = "/brand.svg"
-                        || path.StartsWith("/locales/", StringComparison.Ordinal)
                         || requiredPaths.Contains path
                     )
                     || path <> canonical
@@ -157,6 +158,27 @@ module internal PublicAssets =
         if requiredPaths |> Set.exists (fun path -> not (Map.containsKey path files)) then
             invalidOp "Required public build document missing from its inventory."
 
+        use catalogManifest = JsonDocument.Parse(files["/catalog-manifest.json"].Bytes)
+
+        let catalogPaths =
+            catalogManifest.RootElement.EnumerateObject()
+            |> Seq.map (fun entry ->
+                let path = entry.Value.GetString() |> nonNull
+                let bytes = files[path].Bytes
+                let expected = $"/assets/catalogs/{entry.Name}.{digest bytes}.json"
+
+                if path <> expected then
+                    invalidOp "Public catalog content identity differs."
+
+                entry.Name, path)
+            |> Seq.toList
+
+        if
+            (catalogPaths |> List.map fst |> List.sort)
+            <> List.sort LocalizationPolicy.languages
+        then
+            invalidOp "The public catalog inventory must cover every offered language exactly once."
+
         files, viewer
 
     let private serveAsset (context: HttpContext) (path: string) asset : Task =
@@ -178,7 +200,10 @@ module internal PublicAssets =
 
                 let matched =
                     context.Request.Headers.IfNoneMatch
-                    |> Seq.exists (fun value -> value = asset.ETag || value = "*")
+                    |> Seq.collect (fun value -> (nonNull value).Split(','))
+                    |> Seq.map _.Trim()
+                    |> Seq.exists (fun value ->
+                        value = asset.ETag || value = "W/" + asset.ETag || value = "*")
 
                 if matched then
                     context.Response.StatusCode <- StatusCodes.Status304NotModified

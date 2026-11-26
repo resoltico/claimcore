@@ -141,23 +141,111 @@ module internal ExportRoutes =
                                                                 principal)
                                                             services
                                                         |> Service.withReadCancellation
-                                                            context.RequestAborted
+                                                            budget.Token
 
-                                                    let! result =
+                                                    let read () =
+                                                        Service.readExportSnapshot
+                                                            services
+                                                            selection
+                                                            budget.Token
+                                                            (fun snapshot ->
+                                                                CsvExport.materialize
+                                                                    Limits.MaximumResponseBytes
+                                                                    budget.Token
+                                                                    (CsvExport.traversal
+                                                                        snapshot
+                                                                        selection))
+
+                                                    let outcome =
+                                                        function
+                                                        | Outcome.Failed fault ->
+                                                            Error(ExportFailure.Failed fault)
+                                                        | Outcome.Rejected refusal ->
+                                                            Error(
+                                                                ExportFailure.Rejected(
+                                                                    HumanReplies.rejection refusal
+                                                                )
+                                                            )
+                                                        | Outcome.Succeeded value -> Ok value
+
+                                                    let! document =
                                                         task {
                                                             try
-                                                                return!
-                                                                    CsvExport.materialize
-                                                                        Limits.MaximumResponseBytes
-                                                                        budget.Token
-                                                                        (CsvExport.traversal
-                                                                            services
-                                                                            selection)
+                                                                match! read () with
+                                                                | Outcome.Succeeded(Ok prepared,
+                                                                                    basis) ->
+                                                                    // The second authorized snapshot is the release cut. Buffer evidence
+                                                                    // includes source subjects plus the delivered bytes.
+                                                                    match! read () with
+                                                                    | Outcome.Succeeded(Ok current,
+                                                                                        releaseBasis) ->
+                                                                        let disclosure =
+                                                                            ExportSelection
+                                                                                .disclosure
+                                                                                prepared.RowCount
+                                                                                prepared.CaseId
+                                                                                selection
+
+                                                                        let! released =
+                                                                            Service.releaseExport
+                                                                                services
+                                                                                (basis,
+                                                                                 prepared.Manifest)
+                                                                                (releaseBasis,
+                                                                                 current.Manifest)
+                                                                                prepared.CaseId
+                                                                                disclosure
+                                                                                budget.Token
+
+                                                                        return
+                                                                            outcome released
+                                                                            |> Result.map
+                                                                                (fun () ->
+                                                                                    prepared)
+                                                                    | Outcome.Succeeded(Error _, _) ->
+                                                                        return
+                                                                            Error(
+                                                                                ExportFailure
+                                                                                    .Rejected(
+                                                                                        HumanReplies
+                                                                                            .rejection (
+                                                                                                ClaimCore
+                                                                                                    .Domain
+                                                                                                    .Refusal
+                                                                                                    .Access
+                                                                                                    ClaimCore
+                                                                                                        .Domain
+                                                                                                        .AccessRefusal
+                                                                                                        .ResourceUnavailable
+                                                                                            )
+                                                                                    )
+                                                                            )
+                                                                    | result ->
+                                                                        return
+                                                                            outcome result
+                                                                            |> Result.map (fun _ ->
+                                                                                prepared)
+                                                                | Outcome.Succeeded(Error failure,
+                                                                                    _) ->
+                                                                    return Error failure
+                                                                | Outcome.Rejected refusal ->
+                                                                    return
+                                                                        Error(
+                                                                            ExportFailure.Rejected(
+                                                                                HumanReplies
+                                                                                    .rejection
+                                                                                    refusal
+                                                                            )
+                                                                        )
+                                                                | Outcome.Failed fault ->
+                                                                    return
+                                                                        Error(
+                                                                            ExportFailure.Failed
+                                                                                fault
+                                                                        )
                                                             with
-                                                            | :? OperationCanceledException as error when
-                                                                error.CancellationToken =
-                                                                    budget.Token
-                                                                && StorageFailureLog
+                                                            | :? OperationCanceledException when
+                                                                StorageFailureLog
                                                                     .clientDisconnected ()
                                                                 ->
                                                                 return
@@ -166,12 +254,7 @@ module internal ExportRoutes =
                                                                             context.RequestAborted
                                                                         )
                                                                     )
-                                                            | :? OperationCanceledException when
-                                                                not (
-                                                                    StorageFailureLog
-                                                                        .clientDisconnected ()
-                                                                )
-                                                                ->
+                                                            | :? OperationCanceledException ->
                                                                 return
                                                                     Error(
                                                                         ExportFailure
@@ -183,55 +266,24 @@ module internal ExportRoutes =
 
                                                     RouteSupport.markCompleted context
 
-                                                    match result with
-                                                    | Error error -> return Ok(failureReply error)
-                                                    | Ok document ->
-                                                        let disclosure =
-                                                            ExportSelection.disclosure
-                                                                document.RowCount
-                                                                document.CaseId
-                                                                selection
-
-                                                        match!
-                                                            Service.recordExport
-                                                                services
-                                                                document.CaseId
-                                                                disclosure
-                                                                budget.Token
-                                                        with
-                                                        | Outcome.Failed fault ->
-                                                            return
-                                                                Ok(
-                                                                    failureReply (
-                                                                        ExportFailure.Failed fault
-                                                                    )
-                                                                )
-                                                        | Outcome.Rejected refusal ->
-                                                            return
-                                                                Ok(
-                                                                    failureReply (
-                                                                        ExportFailure.Rejected(
-                                                                            HumanReplies.rejection
-                                                                                refusal
+                                                    return
+                                                        match document with
+                                                        | Error failure -> Ok(failureReply failure)
+                                                        | Ok document ->
+                                                            Ok
+                                                                {
+                                                                    RouteReply.Response =
+                                                                        RouteBody.Csv(
+                                                                            document.Bytes,
+                                                                            ExportTransport
+                                                                                .filename
+                                                                                selection,
+                                                                            installation
                                                                         )
-                                                                    )
-                                                                )
-                                                        | Outcome.Succeeded() ->
-                                                            return
-                                                                Ok
-                                                                    {
-                                                                        RouteReply.Response =
-                                                                            RouteBody.Csv(
-                                                                                document.Bytes,
-                                                                                ExportTransport
-                                                                                    .filename
-                                                                                    selection,
-                                                                                installation
-                                                                            )
-                                                                        RecordedBy = None
-                                                                        ExpireBrowserSession =
-                                                                            false
-                                                                    }
+                                                                    RecordedBy = None
+                                                                    ExpireBrowserSession = false
+                                                                }
+
                                             })
 
                                 match result with

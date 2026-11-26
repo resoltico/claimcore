@@ -1,6 +1,7 @@
 namespace ClaimCore.Presentation
 
 open System
+open ClaimCore.Json
 
 /// Language and display preferences are independent, finite consumer capabilities.
 module LocalizationPolicy =
@@ -340,3 +341,20 @@ module LocalizationPolicy =
                 |> unique language
 
             resolve language english translations
+
+
+    let browserCatalog (entries: (string * string) list) =
+        let values predicate =
+            entries
+            |> List.filter (fst >> predicate)
+            |> List.map (fun (key, value) -> key, JsonValue.String value)
+            |> JsonValue.Object
+
+        let chrome (key: string) =
+            key.StartsWith("ui.", StringComparison.Ordinal)
+
+        let core (key: string) =
+            not (chrome key) && not (key.StartsWith("cli.", StringComparison.Ordinal))
+
+        JsonValue.Object [ "core", values core; "chrome", values chrome ]
+        |> CanonicalWriter.bytes

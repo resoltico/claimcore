@@ -24,10 +24,10 @@ let private setMember name value =
 [<Tests>]
 let tests =
     testList
-        "format 10 operation roots"
+        "format 11 operation roots"
         [
             testCase
-                "independently framed public metadata derives the literal format 10 digest"
+                "independently framed public metadata derives the literal format 11 digest"
                 (fun () ->
                     let record = publicRecord ()
                     let root = record.Root
@@ -39,7 +39,7 @@ let tests =
 
                     Expect.equal
                         (EntryHash.toBytes root.Hash |> Convert.ToHexStringLower)
-                        "8cac99f53eb4078820f74425aae03a9d373b882f2824a4ad92a0a75db42c4d9f"
+                        "be5231e533f30cd858a64b7fc724ccaef286fe31d8aed0d945daea932b1c8703"
                         "Literal SHA-256 vector"
 
                     Expect.equal

@@ -40,7 +40,8 @@ module Refusals =
         | Refusal.AttachmentDuplicate _
         | Refusal.AttachmentCapacityReached
         | Refusal.RegisterMaintenance
-        | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
+        | Refusal.InvalidCursor
+        | Refusal.TraversalChanged -> RecommendedAction.ReadCurrent
         | Refusal.OperationClockUnavailable _
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | Refusal.AttachmentPreviewUnavailable

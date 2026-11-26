@@ -14,33 +14,10 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.IntegrationTests.WorklistFixtures
 
-let private moveOneTick (cursor: string) (time: DateTimeOffset) =
-    let padded =
-        cursor.Replace('-', '+').Replace('_', '/')
-        + String('=', (4 - cursor.Length % 4) % 4)
-
-    let original = Convert.FromBase64String padded |> Encoding.UTF8.GetString
-
-    let format (value: DateTimeOffset) =
-        value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
-
-    let changed = original.Replace(format time, format (time.AddTicks 1L))
-
-    Expect.notEqual
-        original
-        changed
-        "The negative control changes the actual serialized keyset instant"
-
-    Convert
-        .ToBase64String(Encoding.UTF8.GetBytes changed)
-        .TrimEnd('=')
-        .Replace('+', '-')
-        .Replace('/', '_')
-
 [<Tests>]
 let tests =
     testCaseAsync
-        "recent sub-microsecond cursors are refused by PostgreSQL"
+        "recent PostgreSQL traversal authenticates its continuation and refuses the old grammar"
         (run (fun fixture ->
             task {
                 let filter =
@@ -68,22 +45,31 @@ let tests =
                     | Outcome.Succeeded page -> page.NextCursor |> Option.get
                     | _ -> failtest "Fixture page"
 
-                let position =
-                    Cursors.decodeCases fixture.Database.Fixture.InstallationId admitted cursor
-                    |> Result.defaultWith (fun _ -> failtest "Fixture cursor")
+                let! baseline = read fixture.Service (Some cursor)
 
-                let time =
-                    match position with
-                    | CaseListPosition.Recent(time, _) -> time
-                    | _ -> failtest "Recent position required"
+                match baseline with
+                | Outcome.Succeeded _ -> ()
+                | _ -> failtest "The unmodified opaque continuation must be admitted"
 
-                let forged = moveOneTick cursor time
-
-                let actor = fixture.Service
-                let! result = read actor (Some forged)
+                let last = cursor[cursor.Length - 1]
+                let forged = cursor[.. cursor.Length - 2] + (if last = 'A' then "B" else "A")
+                let! result = read fixture.Service (Some forged)
 
                 Expect.equal
                     result
                     (Outcome.Rejected Refusal.InvalidCursor)
-                    "A plain cursor cannot select a precision with a different database timestamp meaning"
+                    "Changing even one encoded character cannot change the keyset"
+
+                let legacy =
+                    Cursors.encodeCases
+                        fixture.Database.Fixture.InstallationId
+                        admitted
+                        (CaseListPosition.Recent(DateTimeOffset.UnixEpoch, "CASE-1"))
+
+                let! rejected = read fixture.Service (Some legacy)
+
+                Expect.equal
+                    rejected
+                    (Outcome.Rejected Refusal.InvalidCursor)
+                    "A previous plain cursor is refused"
             }))

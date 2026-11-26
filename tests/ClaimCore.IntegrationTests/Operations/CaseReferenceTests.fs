@@ -698,11 +698,76 @@ let private reservationReads () =
             database.Fixture.Dispose()
     }
 
+let private traversalRestarts (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let service = core fixture fixture.Owner
+
+        for index, reference in [ 741, "CASE-A"; 742, "CASE-B"; 743, "CASE-C" ] do
+            let! _ = assigned service (custom fixture index reference)
+            ()
+
+        let read cursor limit =
+            Service.list
+                service
+                {
+                    Page = { AfterCursor = cursor; Limit = limit }
+                    Filter = CaseListFilter.empty
+                }
+                token
+
+        let! before = read None 1
+        let page = succeeds before
+
+        Expect.equal
+            (page.Items |> List.map (_.Reference >> CaseReference.format))
+            [ "CASE-A" ]
+            "The first item was consumed"
+
+        let original = page.NextCursor
+        Expect.isSome original "The ordered case list continues"
+
+        for index, oldName, newName in [ 744, "CASE-A", "CASE-Z"; 745, "CASE-B", "AAA" ] do
+            let! _ =
+                assigned
+                    service
+                    (request
+                        fixture
+                        index
+                        oldName
+                        1L
+                        "case.changeReference"
+                        (Map.ofList
+                            [
+                                Submissions.input InputTarget.NewCaseReference,
+                                SubmissionValue.Text newName
+                            ]))
+
+            ()
+
+        let! stale = read original 1
+
+        Expect.equal
+            stale
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "A consumed and unseen row crossing the cursor needs a restart"
+
+        let! restarted = read None 10
+
+        Expect.equal
+            ((succeeds restarted).Items |> List.map (_.Reference >> CaseReference.format))
+            [ "AAA"; "CASE-C"; "CASE-Z" ]
+            "A new traversal returns all three cases exactly once"
+    }
+
 [<Tests>]
 let tests =
     testList
         "case reference issuance with PostgreSQL"
         [
+            testCaseAsync
+                "reference corrections crossing a continuation require restarting the traversal"
+                (run CaseReferencePolicy.CustomAllowed traversalRestarts)
             testCaseAsync
                 "system-only policy, offer parity, pending preview and exact lookup"
                 (run CaseReferencePolicy.SystemAssignedOnly systemPolicy)

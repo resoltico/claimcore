@@ -65,6 +65,7 @@ let private discovery binary connection keyFile =
                     "rotate-master-key"
                     "verify"
                     "rebuild"
+                    "repair-attachment"
                     "admit-restored-installation"
                     "head"
                     "status"
@@ -278,7 +279,10 @@ let private checkpoints binary connection keyFile =
         let! rebuilt =
             invoke binary connection keyFile (checkpointArguments "rebuild" "1" pause) 0
 
-        Expect.equal (kind rebuilt) "REBUILT" "Reconstruction consumes the exact active handle"
+        Expect.equal
+            (kind rebuilt)
+            "PROJECTIONS_CURRENT"
+            "Reconstruction consumes the exact active handle"
 
         Expect.isTrue
             (JsonElement.DeepEquals(rebuilt.GetProperty("position"), position))

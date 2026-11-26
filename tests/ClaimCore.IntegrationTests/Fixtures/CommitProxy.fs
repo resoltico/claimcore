@@ -65,7 +65,14 @@ let private errorState (bytes: byte array) =
 
 /// A protocol relay drops a real connection at the commit boundary; no store result is mocked.
 type internal Proxy
-    (host: string, port: int, drop: Drop, ?terminate: int -> Task<unit>, ?commitNumber: int) =
+    (
+        host: string,
+        port: int,
+        drop: Drop,
+        ?terminate: int -> Task<unit>,
+        ?commitNumber: int,
+        ?allowReconnect: bool
+    ) =
     let listener = new TcpListener(IPAddress.Loopback, 0)
     let cancellation = new CancellationTokenSource()
 
@@ -167,7 +174,16 @@ type internal Proxy
         }
 
     do listener.Start()
-    let serving = serve ()
+
+    let serving =
+        if defaultArg allowReconnect false then
+            task {
+                while not cancellation.IsCancellationRequested do
+                    do! serve ()
+            }
+        else
+            serve ()
+
     member _.Port = (listener.LocalEndpoint :?> IPEndPoint).Port
     member _.Intercepted = intercepted.Task
     member _.FatalSqlState = fatalSqlState

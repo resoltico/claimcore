@@ -1,18 +1,34 @@
 module ClaimCore.ServerTests.RuntimeCatalogTests
 
+open System
+open System.IO
 open System.Net
 open System.Net.Http
 open System.Text
 open System.Text.Json
 open Expecto
+open ClaimCore.Server
 open ClaimCore.TestSupport.TestServerFixture
+
+let private catalogPath (host: Host) (language: string) =
+    use manifest =
+        JsonDocument.Parse(
+            File.ReadAllBytes(Path.Combine(host.AssetsDirectory, "catalog-manifest.json"))
+        )
+
+    manifest.RootElement.GetProperty(language).GetString() |> nonNull
 
 let private publicCatalog () =
     task {
         use host = new Host(true)
-        use! first = host.SendResponse(HttpMethod.Get, "/catalogs/en.json", None, [])
+        let path = catalogPath host "en"
+        use! first = host.SendResponse(HttpMethod.Get, path, None, [])
         Expect.equal first.StatusCode HttpStatusCode.OK "Public words need no credentials"
-        Expect.isTrue (first.Headers.CacheControl |> nonNull).NoCache "Catalogs revalidate"
+
+        Expect.isTrue
+            (first.Headers.CacheControl |> nonNull).Public
+            "Content-addressed catalogs are public"
+
         Expect.isFalse (first.Headers.Contains "Set-Cookie") "No cookie is established"
         let etag = first.Headers.ETag |> nonNull
         Expect.isFalse etag.IsWeak "The ETag identifies the exact resolved bytes"
@@ -34,7 +50,7 @@ let private publicCatalog () =
         use! unchanged =
             host.SendResponse(
                 HttpMethod.Get,
-                "/catalogs/en.json",
+                path,
                 None,
                 [ "If-None-Match", "W/" + etag.ToString() ]
             )
@@ -49,12 +65,12 @@ let private publicCatalog () =
             "Catalog reads do not renew an authenticated session"
 
         Expect.isTrue
-            (unchanged.Headers.CacheControl |> nonNull).NoCache
-            "304 retains revalidation policy"
+            (unchanged.Headers.CacheControl |> nonNull).Public
+            "304 retains the immutable asset policy"
 
         let! empty = unchanged.Content.ReadAsByteArrayAsync()
         Expect.isEmpty empty "304 sends no body"
-        use! unknown = host.Client.GetAsync "/catalogs/unknown.json"
+        use! unknown = host.Client.GetAsync "/assets/catalogs/old-build.json"
 
         Expect.equal
             unknown.StatusCode
@@ -64,40 +80,26 @@ let private publicCatalog () =
         Expect.isFalse (unknown.Headers.Contains "Set-Cookie") "Unknown languages set no cookies"
     }
 
-let private stale () =
-    task {
-        let translated =
-            Encoding.UTF8.GetBytes
-                "{\"ui.loading\":{\"text\":\"STALE_CANARY\",\"source\":\"000000000000\"}}"
+let private incomplete () =
+    use host = new Host(true)
+    let path = catalogPath host "lv"
+    File.Delete(Path.Combine(host.AssetsDirectory, path.TrimStart('/')))
 
-        use host = new Host(true, buildAssets = [ "locales/lv.json", translated ])
-        use! response = host.Client.GetAsync "/catalogs/lv.json"
+    let refused =
+        try
+            PublicAssets.Inventory host.AssetsDirectory |> ignore
+            false
+        with WebStartupException WebStartupProblem.AssetsMissing ->
+            true
 
-        Expect.equal
-            response.StatusCode
-            HttpStatusCode.OK
-            "A stale entry falls back without regeneration"
-
-        let! bytes = response.Content.ReadAsByteArrayAsync()
-        use body = JsonDocument.Parse bytes
-
-        Expect.equal
-            (body.RootElement.GetProperty("chrome").GetProperty("ui.loading").GetString())
-            "Loading…"
-            "Stale Latvian cannot accompany changed English"
-
-        Expect.isFalse
-            ((Encoding.UTF8.GetString bytes).Contains "STALE_CANARY")
-            "The stale payload never reaches the browser"
-    }
+    Expect.isTrue refused "An inventoried catalog missing from the package refuses startup."
 
 [<Tests>]
 let tests =
     testList
-        "runtime public catalogs"
+        "build-bound public catalogs"
         [
             testCase "GET is public conditional cookie-free and exact-language only" (fun () ->
                 publicCatalog().GetAwaiter().GetResult())
-            testCase "stale Latvian chrome falls back at HTTP runtime" (fun () ->
-                stale().GetAwaiter().GetResult())
+            testCase "a missing published catalog refuses startup" incomplete
         ]

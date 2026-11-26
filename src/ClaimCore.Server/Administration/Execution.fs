@@ -47,6 +47,24 @@ module Execution =
             | Rebuild(expected, handle) ->
                 let! result = administration.Rebuild(expected, handle, token)
                 return Replies.rebuild result
+            | RepairAttachment((checkpoint, handle), caseId, blob, file) ->
+                match ClaimCore.HostSecurity.PrivateFile.read AttachmentLimits.FileBytes file with
+                | Error _ -> return Replies.operatorFault OperatorFault.AttachmentFileRefused
+                | Ok bytes ->
+                    try
+                        let! result =
+                            administration.RepairAttachment(
+                                checkpoint,
+                                handle,
+                                caseId,
+                                blob,
+                                ReadOnlyMemory bytes,
+                                token
+                            )
+
+                        return Replies.attachmentRepair result
+                    finally
+                        System.Security.Cryptography.CryptographicOperations.ZeroMemory(Span bytes)
             | AdmitRestoredInstallation(checkpoint, handle) ->
                 let! result = administration.AdmitRestoredInstallation(checkpoint, handle, token)
 

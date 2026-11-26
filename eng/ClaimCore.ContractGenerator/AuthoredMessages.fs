@@ -53,6 +53,21 @@ module AuthoredMessages =
     let issues () =
         admitted.Value |> Map.toList |> List.collect (snd >> snd)
 
+    let browserSources () =
+        let assembly = Assembly.GetExecutingAssembly()
+
+        let digest name =
+            use stream = assembly.GetManifestResourceStream(name) |> nonNull
+            Security.Cryptography.SHA256.HashData stream |> Convert.ToHexStringLower
+
+        [
+            for language in ClaimCore.Presentation.LocalizationPolicy.languages do
+                $"core/{language}", digest $"ClaimCore.Localization.{language}.json"
+                $"chrome/{language}", digest $"ClaimCore.Localization.{language}.browser.json"
+            "policy", digest "ClaimCore.BrowserCatalogPolicy.fs"
+        ]
+        |> Map.ofList
+
     let required (issues: Issue list) =
         issues
         |> List.filter (fun issue ->

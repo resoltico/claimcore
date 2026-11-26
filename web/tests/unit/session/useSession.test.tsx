@@ -116,7 +116,7 @@ it("refuses an invalid refresh and clears credentials after confirmed logout", a
     endpointResponse("session.logout", {
       outcome: {
         kind: "SUCCEEDED",
-        data: { location: "https://issuer.example.test/logout" },
+        data: { kind: "PROVIDER", location: "https://issuer.example.test/logout" },
         view: { regions: [] },
       },
     }),

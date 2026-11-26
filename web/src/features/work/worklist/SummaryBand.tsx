@@ -25,7 +25,9 @@ import { useSettingsDetour } from "../../../hooks/SettingsDetourContext";
 const isInvalidContinuation = (rejection: HumanRejection | null, cursor: string | undefined) =>
   cursor !== undefined &&
   rejection?.kind === "REFUSED" &&
-  rejection.advice.message.messageId === "diagnostic.INVALID_CURSOR";
+  ["diagnostic.INVALID_CURSOR", "diagnostic.TRAVERSAL_CHANGED"].includes(
+    rejection.advice.message.messageId,
+  );
 
 const useReportExportAvailable = (
   result: ApiResult<EndpointOutcome> | null,

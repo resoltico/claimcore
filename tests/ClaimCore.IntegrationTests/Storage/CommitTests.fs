@@ -91,6 +91,65 @@ let private terminate (database: PostgresFixture.Database) backendId =
             "Only the fixture's proxied backend is terminated"
     }
 
+let private lostDigestCompletion drop (database: PostgresFixture.Database) =
+    task {
+        let! _ = bootstrap database.Fixture
+        let claim = Guid.NewGuid()
+
+        do!
+            VerificationSupport.sql
+                database
+                """INSERT INTO claimcore.digest_runs(actor_id,digest_date,claim_id,claimed_at,deadline,started_at)
+                   SELECT $1,DATE '2026-11-22',$2,now,now+interval '1 minute',now
+                   FROM (SELECT clock_timestamp() AS now) observation"""
+                [| box (id database.Fixture 1); box claim |]
+
+        let settings =
+            NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
+
+        use proxy =
+            new CommitProxy.Proxy(
+                nonNull settings.Host,
+                settings.Port,
+                drop,
+                terminate = terminate database,
+                allowReconnect = true
+            )
+
+        settings.Password <- "synthetic-only"
+        settings.Host <- "127.0.0.1"
+        settings.Port <- proxy.Port
+        settings.SslMode <- SslMode.Disable
+        settings.GssEncryptionMode <- GssEncryptionMode.Disable
+        use source = NpgsqlDataSource.Create settings.ConnectionString
+
+        let! resolved =
+            DigestStorage.complete
+                source
+                database.Installation
+                claim
+                DigestOutcome.RelayAccepted
+                token
+
+        do! proxy.Intercepted.WaitAsync(TimeSpan.FromSeconds 5.)
+
+        let expected =
+            if drop = CommitProxy.Drop.BeforeCommit then
+                None
+            else
+                Some DigestOutcome.RelayAccepted
+
+        Expect.equal
+            resolved
+            expected
+            "An uncertain commit is resolved only by the stored terminal state"
+
+        let! secondStart =
+            DigestStorage.start database.RuntimeSource database.Installation claim token
+
+        Expect.isNone secondStart "Neither commit outcome permits another relay submission"
+    }
+
 let private lostLookup drop (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
@@ -454,6 +513,10 @@ let tests =
 
                             do! resolveInitialization database
                         }))
+            for drop in [ CommitProxy.Drop.BeforeCommit; CommitProxy.Drop.AfterCommit ] do
+                testCaseAsync
+                    ($"digest completion reads durable state after {drop}")
+                    (run (lostDigestCompletion drop))
             testCase "a SQLSTATE is not by itself proof that a dispatched commit aborted" (fun () ->
                 for severity, state in
                     [ "FATAL", "57P01"; "PANIC", "XX000"; "ERROR", "08007"; "ERROR", "40003" ] do

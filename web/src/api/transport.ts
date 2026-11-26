@@ -14,12 +14,11 @@ export const sendHttp = (
   });
 
 /** Public text never establishes or refreshes a session. */
-export const getCatalogHttp = (language: string, signal: AbortSignal): Promise<Response> =>
-  fetch(`/catalogs/${language}.json`, {
+export const getCatalogHttp = (path: string, signal: AbortSignal): Promise<Response> =>
+  fetch(path, {
     method: "GET",
     credentials: "omit",
     redirect: "error",
-    cache: "no-cache",
     headers: { Accept: "application/json" },
     signal,
   });

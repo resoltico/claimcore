@@ -808,11 +808,26 @@ module ResponseCodecs =
         |> build
         |> named "ActorsPage"
 
-    let logoutLocation =
-        (record (fun value -> { LogoutLocation.Location = value }): Fields<LogoutLocation, _>)
-        |> field "location" _.Location nonempty
-        |> build
-        |> named "LogoutLocation"
+    let logoutHandoff =
+        tagged
+            "LogoutHandoff"
+            [
+                variant
+                    "PROVIDER"
+                    LogoutHandoff.Provider
+                    (function
+                    | LogoutHandoff.Provider location -> Some location
+                    | _ -> None)
+                    (record id |> field "location" id nonempty)
+                variant
+                    "LOCAL_ONLY"
+                    LogoutHandoff.LocalOnly
+                    (function
+                    | LogoutHandoff.LocalOnly reason -> Some reason
+                    | _ -> None)
+                    (record id
+                     |> field "reason" id (VocabularyCodec.create LocalSignOutReason.vocabulary))
+            ]
 
     let session =
         (record (fun v0 v1 v2 ->

@@ -370,6 +370,11 @@
     "text": "没有未确认的更改。",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "自动恢复已暂停。请手动检查已保存的操作，或恢复对浏览器存储的访问以继续自动检查。",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "无法读取或更新恢复标识信息。现有记录已保留。请先恢复存储访问，或使用匹配的客户端处理旧记录，再重试。",
     "source": "e2277d9e955f"

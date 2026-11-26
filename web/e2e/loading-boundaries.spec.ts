@@ -49,7 +49,7 @@ for (const language of ["lv", "zh-Hant"] as const) {
   test(`a missing ${language} catalog leaves the working pair and direction intact and supports explicit recovery`, async ({
     page,
   }) => {
-    const languageModule = `**/catalogs/${language}.json`;
+    const languageModule = `**/assets/catalogs/${language}.*.json`;
     await openAuthenticated(page);
     await page.route(languageModule, (route) =>
       route.fulfill({

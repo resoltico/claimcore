@@ -67,9 +67,14 @@ module internal VerificationRows =
             return state
         }
 
-    let cases connection installationId (state: Replay.Scan) token =
+    let cases
+        connection
+        installationId
+        (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>)
+        token
+        =
         task {
-            let expected = Replay.caseRecords state
+            let expected = Replay.caseRecords families
 
             let basic (record: StoredCase) =
                 record.CaseId, record.Snapshot, record.SnapshotBytes
@@ -331,9 +336,13 @@ module internal VerificationRows =
             return seen |> Result.bind (ProjectionVerification.finishRows finding expected)
         }
 
-    let people connection (state: Replay.Scan) token =
+    let people
+        connection
+        (people: Result<Map<ActorId, PersonProjection>, VerificationDivergence>)
+        token
+        =
         task {
-            match Replay.peopleRows state with
+            match people with
             | Error finding -> return Error finding
             | Ok expected ->
                 let identities =
@@ -431,7 +440,12 @@ module internal VerificationRows =
                                 token
         }
 
-    let family connection (state: Replay.Scan) workIndexes token =
+    let family
+        connection
+        (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>)
+        workIndexes
+        token
+        =
         task {
             let! work =
                 DatabaseSession.namedRows
@@ -477,10 +491,10 @@ module internal VerificationRows =
                         capture None VerificationFinding.CaseNotesProjection (fun () ->
                             notes |> List.map NoteStorage.row)
 
-                    let! expectedWork = Replay.workRows state
-                    let! expectedReminders = Replay.reminderRows state
-                    let! expectedNotes = Replay.noteRows state
-                    let! expectedParties = Replay.partyRows state
+                    let! expectedWork = Replay.workRows families
+                    let! expectedReminders = Replay.reminderRows families
+                    let! expectedNotes = Replay.noteRows families
+                    let! expectedParties = Replay.partyRows families
 
                     let! parties =
                         capture None VerificationFinding.CasePartiesProjection (fun () ->
@@ -514,7 +528,7 @@ module internal VerificationRows =
                             expectedReminders
                             reminders
 
-                    let! expectedCases = Replay.familyRows state
+                    let! expectedCases = families
 
                     let expectedLinks =
                         expectedCases

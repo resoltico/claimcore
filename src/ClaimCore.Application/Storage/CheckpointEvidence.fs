@@ -19,6 +19,7 @@ module internal CheckpointEvidence =
                 {
                     Sequence = Some checkpoint.Position.Sequence
                     Finding = VerificationFinding.CheckpointInstallation
+                    Attachment = None
                 }
 
     let trustedInstallation actual (checkpoint: InstallationCheckpoint) =
@@ -29,6 +30,7 @@ module internal CheckpointEvidence =
                     {
                         Sequence = Some checkpoint.Position.Sequence
                         Finding = VerificationFinding.CheckpointPredatesBootstrap
+                        Attachment = None
                     }
             else
                 Ok())
@@ -51,6 +53,7 @@ module internal CheckpointEvidence =
                         {
                             Sequence = None
                             Finding = VerificationFinding.ExpiryFrontier
+                            Attachment = None
                         }
         }
 

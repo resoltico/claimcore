@@ -44,6 +44,10 @@ module internal RouteSupport =
             hostFailure context HostFailureReason.MediaTypeRejected
         | GateFailure.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
         | GateFailure.SessionRejected -> hostFailure context HostFailureReason.SessionRejected
+        | GateFailure.IdentityProviderUnavailable ->
+            hostFailure context HostFailureReason.IdentityProviderUnavailable
+        | GateFailure.IdentityProviderUntrusted ->
+            hostFailure context HostFailureReason.IdentityProviderUntrusted
         | GateFailure.AdmissionRejected -> hostFailure context HostFailureReason.RateLimited
         | GateFailure.AntiforgeryRejected ->
             hostFailure context HostFailureReason.AntiforgeryRejected

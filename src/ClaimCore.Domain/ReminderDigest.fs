@@ -4,15 +4,30 @@ open System
 
 [<RequireQualifiedAccess>]
 type DigestOutcome =
-    | Sent
-    | Failed
+    | RelayAccepted
+    | FailedBeforeAcceptance
     | SkippedEmpty
+    | Unknown
 
 module DigestOutcome =
     let vocabulary =
         Vocabulary.ofUnion<DigestOutcome> "digestOutcome" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
+
+/// A relay acknowledgement states acceptance by that relay, independent of final delivery.
+[<RequireQualifiedAccess>]
+type DigestRelayResult =
+    | Accepted
+    | Refused
+    | Uncertain
+
+type DigestRunSummary =
+    {
+        InFlight: int64
+        Expired: int64
+        Terminal: Map<DigestOutcome, int64>
+    }
 
 [<RequireQualifiedAccess>]
 type DigestCountKind =
@@ -29,6 +44,7 @@ module DigestCountKind =
 module ReminderDigest =
     let principalKind = PrincipalKind.Human
     let selection = ReminderView.plan ReminderView.Mine
+    let attemptDuration = TimeSpan.FromMinutes 1.
 
     [<Literal>]
     let UpcomingDays = 7

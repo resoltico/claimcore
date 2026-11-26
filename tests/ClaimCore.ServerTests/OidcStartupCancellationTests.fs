@@ -37,7 +37,8 @@ let private cancelsBlockedStartup () =
             CliClientId = "cli"
         }
 
-    let pending = OidcStartup.verify client configuration stop.Token
+    use issuer = new IssuerMetadata(configuration, client, TimeProvider.System)
+    let pending = issuer.Get stop.Token
     handler.Entered.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
     stop.Cancel()
 
@@ -47,4 +48,4 @@ let private cancelsBlockedStartup () =
 
 [<Tests>]
 let tests =
-    testCase "controlled stop cancels blocked OIDC startup" cancelsBlockedStartup
+    testCase "controlled stop cancels blocked OIDC evidence acquisition" cancelsBlockedStartup

@@ -83,6 +83,25 @@ const echoesOperationId = <K extends EndpointId>(
 const structurallyValid = (id: EndpointId, value: unknown): boolean =>
   isEndpointResponse(id, value);
 
+const retryAfterDelay = (response: Response): number | null => {
+  const value = response.status === 429 ? response.headers.get("retry-after") : null;
+  if (value === null) {
+    return null;
+  }
+  if (/^[0-9]{1,3}$/u.test(value)) {
+    const delay = Number(value) * 1000;
+    return delay <= 300_000 ? delay : null;
+  }
+  const timestamp = Date.parse(value);
+  const delay = timestamp - Date.now();
+  return Number.isFinite(timestamp) &&
+    new Date(timestamp).toUTCString() === value &&
+    delay >= 0 &&
+    delay <= 300_000
+    ? delay
+    : null;
+};
+
 const result = async <K extends EndpointId, R extends Representation>(
   id: K,
   response: Response,
@@ -106,7 +125,13 @@ const result = async <K extends EndpointId, R extends Representation>(
     return { kind: "outcome", value: value as ServiceResponse<K, R>, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
-    return { kind: "hostFailure", failure: value.hostFailure, status: response.status };
+    const retryAfterMs = retryAfterDelay(response);
+    return {
+      kind: "hostFailure",
+      failure: value.hostFailure,
+      status: response.status,
+      ...(retryAfterMs === null ? {} : { retryAfterMs }),
+    };
   }
   return { kind: "deliveryFailure", notice: { kind: "invalidHttp", status: response.status } };
 };

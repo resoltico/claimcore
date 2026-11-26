@@ -84,11 +84,22 @@ module internal AccessRequests =
             return ()
         }
 
+    // The inbox already caps membership at 1000 rows. Witness only identity and last-seen
+    // order. Hint edits on the same row can remain live.
+    let witness connection observed token =
+        let timestamp = DatabaseSession.instantExpression "last_seen"
+        let expires = expiredPredicate ""
+
+        let sql =
+            $"SELECT jsonb_build_array(principal_key,{timestamp})::text FROM claimcore.access_request WHERE NOT ({expires}) ORDER BY principal_key"
+
+        DatabaseSession.witness connection sql [| box observed |] token
+
     let page connection (query: PageQuery) token =
         task {
             let seen, key =
                 match query.After with
-                | Some after -> Some after.LastSeen, Some(PrincipalKey.naturalKey after.Principal)
+                | Some after -> Some after.LastSeen, Some after.PrincipalKey
                 | None -> None, None
 
             let! rows =
@@ -155,7 +166,7 @@ module internal AccessRequests =
                             |> Option.map (fun value ->
                                 {
                                     AccessRequestPosition.LastSeen = value.LastSeen
-                                    Principal = value.Principal
+                                    PrincipalKey = PrincipalKey.naturalKey value.Principal
                                 })
                         else
                             None

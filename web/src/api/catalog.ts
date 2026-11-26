@@ -4,9 +4,19 @@ import { getCatalogHttp } from "./transport";
 import { responseBytes } from "./responseBytes";
 import { withinResponseDeadline } from "./responseDeadline";
 
+let paths: Readonly<Record<string, string>> = {};
+
+export const installCatalogAssets = (assets: Readonly<Record<string, string>>): void => {
+  paths = assets;
+};
+
 export const readCatalog = async (language: string): Promise<unknown> => {
+  const path = paths[language];
+  if (path === undefined) {
+    throw new Error("Language is absent from this build");
+  }
   const result = await withinResponseDeadline(async (signal) => {
-    const response = await getCatalogHttp(language, signal);
+    const response = await getCatalogHttp(path, signal);
     if (
       !response.ok ||
       response.headers.get("content-type")?.split(";", 1)[0]?.trim() !== "application/json"

@@ -1,17 +1,24 @@
 module ClaimCore.ServerTests.OidcStartupTests
 
-open ClaimCore.Domain
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
 open System
 open System.Net
 open System.Net.Http
+open System.Security.Cryptography
 open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Server
+
+type private Clock() =
+    inherit TimeProvider()
+    let mutable elapsed = 0L
+
+    member _.Advance(seconds: int64) =
+        elapsed <- elapsed + seconds * TimeSpan.TicksPerSecond
+
+    override _.TimestampFrequency = TimeSpan.TicksPerSecond
+    override _.GetTimestamp() = elapsed
 
 type private SuspendedContent() =
     inherit HttpContent()
@@ -23,18 +30,49 @@ type private SuspendedContent() =
     override _.SerializeToStreamAsync(_, _) = Task.Delay(Timeout.Infinite)
     override _.SerializeToStreamAsync(_, _, token) = Task.Delay(Timeout.Infinite, token)
 
-type private DiscoveryHandler(issuer: Uri, suspend: bool, endSession: bool) =
+type private DiscoveryHandler(issuer: Uri, endSession: bool) =
     inherit HttpMessageHandler()
-    let mutable observed = None
-    member _.Observed = observed
+    let observed = ResizeArray<Uri>()
+    let mutable unavailable = false
+    let mutable suspend = false
+
+    let key =
+        use rsa = RSA.Create(2048)
+        let parameters = rsa.ExportParameters(false)
+
+        let encode (value: byte array) =
+            System.Buffers.Text.Base64Url.EncodeToString(ReadOnlySpan<byte> value)
+
+        let modulus = encode (nonNull parameters.Modulus)
+        let exponent = encode (nonNull parameters.Exponent)
+
+        $"""{{"keys":[{{"kty":"RSA","kid":"synthetic-first","use":"sig","n":"{modulus}","e":"{exponent}"}}]}}"""
+
+    member _.Observed = List.ofSeq observed
+
+    member _.Unavailable
+        with set value = unavailable <- value
+
+    member _.Suspend
+        with set value = suspend <- value
 
     override _.SendAsync(request, _) =
-        observed <- Some request.RequestUri
-        let response = new HttpResponseMessage(HttpStatusCode.OK)
+        let url = nonNull request.RequestUri
+        observed.Add url
+
+        let response =
+            new HttpResponseMessage(
+                if unavailable then
+                    HttpStatusCode.ServiceUnavailable
+                else
+                    HttpStatusCode.OK
+            )
 
         response.Content <-
             if suspend then
                 new SuspendedContent() :> HttpContent
+            elif url.AbsolutePath = "/keys/" then
+                new StringContent(key, Encoding.UTF8) :> HttpContent
             else
                 let logout =
                     if endSession then
@@ -67,70 +105,114 @@ let private discoveryPaths () =
             "https://synthetic.example/realm/"
             "https://synthetic.example/realm"
         ] do
-        let issuer = Uri source
-        use handler = new DiscoveryHandler(issuer, false, true)
-        use client = new HttpClient(handler, false)
+        let authority = Uri source
+        use handler = new DiscoveryHandler(authority, true)
 
-        let endpoint =
-            OidcStartup.verify client (configuration issuer) CancellationToken.None
+        use issuer =
+            new IssuerMetadata(configuration authority, new HttpClient(handler, false), Clock())
+
+        let admitted =
+            issuer.Get CancellationToken.None
             |> _.GetAwaiter().GetResult()
+            |> Result.defaultWith (fun failure -> failtestf "Valid trust refused: %A" failure)
 
-        Expect.equal endpoint (Uri "https://issuer.example.test/logout") "Provider logout endpoint"
+        Expect.equal
+            admitted.EndSessionEndpoint
+            "https://issuer.example.test/logout"
+            "Provider endpoint"
 
         Expect.equal
             handler.Observed
-            (Some(Uri(source.TrimEnd('/') + "/.well-known/openid-configuration")))
-            "One joining separator and unchanged issuer identity"
+            [
+                Uri(source.TrimEnd('/') + "/.well-known/openid-configuration")
+                Uri "https://synthetic.example/keys/"
+            ]
+            "Reads one exact issuer location before its advertised signing keys"
 
-let private suspendedStartup () =
-    let issuer = Uri("https://synthetic.example/")
-    use handler = new DiscoveryHandler(issuer, true, true)
+let private outage () =
+    task {
+        let authority = Uri "https://synthetic.example/"
+        let clock = Clock()
+        use handler = new DiscoveryHandler(authority, true)
+        handler.Unavailable <- true
 
-    use client =
-        new HttpClient(handler, false, Timeout = TimeSpan.FromMilliseconds 100.)
+        use issuer =
+            new IssuerMetadata(configuration authority, new HttpClient(handler, false), clock)
 
-    let work =
-        Task.Run(fun () ->
-            try
-                OidcStartup.verify
-                    client
-                    (configuration issuer)
-                    System.Threading.CancellationToken.None
-                |> _.GetAwaiter().GetResult()
-                |> ignore
+        let! cold = issuer.Get CancellationToken.None
 
-                false
-            with WebStartupException WebStartupProblem.OidcConfigurationInvalid ->
-                true)
+        Expect.equal
+            (Result.map ignore cold)
+            (Error OidcDependencyFailure.Unavailable)
+            "Cold 503 is recoverable"
 
-    Expect.isTrue (work.Wait(2000)) "Startup does not wait forever on a body after headers"
-    Expect.isTrue work.Result "The bounded startup diagnostic contains no provider body"
+        let! repeat = issuer.Get CancellationToken.None
 
-let private missingLogoutEndpoint () =
-    let issuer = Uri "https://synthetic.example/realm"
-    use handler = new DiscoveryHandler(issuer, false, false)
-    use client = new HttpClient(handler, false)
+        Expect.equal
+            (Result.map ignore repeat)
+            (Error OidcDependencyFailure.Unavailable)
+            "Outage retries are bounded"
 
-    let refused =
-        try
-            OidcStartup.verify client (configuration issuer) CancellationToken.None
-            |> _.GetAwaiter().GetResult()
-            |> ignore
+        Expect.equal handler.Observed.Length 1 "The cooldown coalesces consumers"
 
-            false
-        with WebStartupException WebStartupProblem.OidcConfigurationInvalid ->
-            true
+        handler.Unavailable <- false
+        clock.Advance 3L
+        let! ready = issuer.Get CancellationToken.None
+        Expect.isOk ready "The same host can resume federation without restarting"
 
-    Expect.isTrue refused "Discovery without an end-session endpoint refuses startup"
+        handler.Unavailable <- true
+        clock.Advance 121L
+        let! expired = issuer.Get CancellationToken.None
+
+        Expect.equal
+            (Result.map ignore expired)
+            (Error OidcDependencyFailure.Unavailable)
+            "Expired trust cannot authorize new federation"
+    }
+
+let private missingLogout () =
+    task {
+        let authority = Uri "https://synthetic.example/realm"
+        use handler = new DiscoveryHandler(authority, false)
+
+        use issuer =
+            new IssuerMetadata(configuration authority, new HttpClient(handler, false), Clock())
+
+        let! unavailable = issuer.Get CancellationToken.None
+
+        Expect.equal
+            (Result.map ignore unavailable)
+            (Error OidcDependencyFailure.Untrusted)
+            "Missing required metadata cannot establish trust"
+
+        Expect.equal handler.Observed.Length 1 "Keys are never fetched from rejected metadata"
+    }
+
+let private suspendedBody () =
+    task {
+        let authority = Uri "https://synthetic.example/"
+        use handler = new DiscoveryHandler(authority, true)
+        handler.Suspend <- true
+
+        use issuer =
+            new IssuerMetadata(configuration authority, new HttpClient(handler, false), Clock())
+
+        let! unavailable =
+            (issuer.Get CancellationToken.None).WaitAsync(TimeSpan.FromSeconds 8.)
+
+        Expect.equal
+            (Result.map ignore unavailable)
+            (Error OidcDependencyFailure.Unavailable)
+            "The provider deadline covers body reads"
+    }
 
 [<Tests>]
 let tests =
     testList
-        "OIDC startup requests"
+        "OIDC issuer evidence"
         [
-            testCase
-                "startup requests one exact discovery path for root and path issuers"
-                discoveryPaths
-            testCase "startup refuses missing OIDC end-session endpoint" missingLogoutEndpoint
-            testCase "startup deadline covers a suspended metadata body" suspendedStartup
+            testCase "one exact discovery path for root and path issuers" discoveryPaths
+            testTask "outage and restoration use the same lifecycle" { do! outage () }
+            testTask "missing trust evidence fails closed" { do! missingLogout () }
+            testTask "a stalled body reaches a bounded dependency outcome" { do! suspendedBody () }
         ]

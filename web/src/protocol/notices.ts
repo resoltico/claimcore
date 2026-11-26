@@ -14,6 +14,7 @@ export type LocalNoticeReason =
   | "notAccepted"
   | "unresolved"
   | "recoveryUnavailable"
+  | "recoveryCoordinationUnavailable"
   | "recoveryListingUnavailable"
   | "recoveryCleanupUnavailable";
 export type Notice =

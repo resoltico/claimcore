@@ -202,6 +202,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                 {
                     Sequence = Some(CaseFixtures.sequence (sequence))
                     Finding = expected
+                    Attachment = None
                 })
             "Ambiguous accepted identities refuse at the first affected root; earlier corruption retains precedence"
     }

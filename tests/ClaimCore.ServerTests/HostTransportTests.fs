@@ -8,7 +8,9 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 open System
+open System.Net
 open System.Net.Http
+open Microsoft.Extensions.DependencyInjection
 open System.Text
 open System.Text.Json
 open System.Threading
@@ -100,6 +102,52 @@ let private catalogueRoutes () =
             let! status, _ = host.Call("context", body "context", token)
             Expect.equal status 401 "Revoked cookie cannot call core"
         })
+
+[<Tests>]
+let identityOutage =
+    let check () =
+        task {
+            let services (services: IServiceCollection) =
+                services.AddSingleton<IssuerMetadata>(fun _ ->
+                    let handler =
+                        { new HttpMessageHandler() with
+                            override _.SendAsync(_, _) =
+                                Task.FromResult(
+                                    new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                                )
+                        }
+
+                    new IssuerMetadata(oidc, new HttpClient(handler), TimeProvider.System))
+                |> ignore
+
+            use host = new Host(true, serviceSetup = services)
+            let! _ = host.Login()
+            let! token = host.Token()
+            let! status, _ = host.Call("context", body "context", token)
+            Expect.equal status 200 "The existing local ticket still authorizes the request"
+
+            let! status, bytes = host.Call("session.logout", body "session.logout", token)
+            Expect.equal status 200 "Local sign-out completed"
+            use document = JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
+            let handoff = document.RootElement.GetProperty("outcome").GetProperty("data")
+
+            Expect.equal
+                (handoff.GetProperty("kind").GetString())
+                "LOCAL_ONLY"
+                "No provider handoff"
+
+            Expect.equal
+                (handoff.GetProperty("reason").GetString())
+                "IDENTITY_PROVIDER_UNAVAILABLE"
+                "Typed provider outage"
+
+            let! status, _ = host.Call("context", body "context", token)
+            Expect.equal status 401 "The previous browser ticket was invalidated"
+        }
+
+    testCaseAsync
+        "current browser sessions and local logout work during an issuer outage"
+        (async { do! check () |> Async.AwaitTask })
 
 let private handshakeRefusals () =
     loggedIn true (fun host token ->

@@ -46,16 +46,63 @@ module internal DigestStorage =
             (fun connection transaction ->
                 task {
                     do! admitted installation connection token
+                    let claimId = Guid.NewGuid()
 
                     let! rows =
                         DatabaseSession.execute
                             connection
-                            "INSERT INTO claimcore.digest_runs(actor_id,digest_date,claimed_at) SELECT actor_id,$2,clock_timestamp() FROM claimcore.actors WHERE actor_id=$1 AND enabled AND principal_kind=$3 AND digest_email IS NOT NULL ON CONFLICT DO NOTHING"
-                            [| box (ActorId.value actor); box today; box principal |]
+                            """WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS now)
+                           INSERT INTO claimcore.digest_runs(actor_id,digest_date,claim_id,claimed_at,deadline)
+                           SELECT actor_id,$2,$4,now,now+$5 FROM claimcore.actors CROSS JOIN clock
+                           WHERE actor_id=$1 AND enabled AND principal_kind=$3 AND digest_email IS NOT NULL
+                           ON CONFLICT (actor_id,digest_date) DO NOTHING"""
+                            [|
+                                box (ActorId.value actor)
+                                box today
+                                box principal
+                                box claimId
+                                box ReminderDigest.attemptDuration
+                            |]
                             token
 
                     do! DatabaseSession.commit transaction token
-                    return rows = 1
+                    return if rows = 1 then Some claimId else None
+                })
+
+    let start (source: NpgsqlDataSource) installation claimId token =
+        let requestedAt = System.Diagnostics.Stopwatch.GetTimestamp()
+
+        DatabaseSession.transaction
+            source
+            IsolationLevel.ReadCommitted
+            token
+            (fun connection transaction ->
+                task {
+                    do! admitted installation connection token
+
+                    let! result =
+                        DatabaseSession.rows
+                            connection
+                            """WITH claim AS MATERIALIZED (
+                               SELECT claim_id FROM claimcore.digest_runs WHERE claim_id=$1 FOR UPDATE
+                           ), clock AS MATERIALIZED (
+                               SELECT clock_timestamp() AS now FROM claim
+                           )
+                           UPDATE claimcore.digest_runs d SET started_at=clock.now FROM clock
+                           WHERE claim_id=$1 AND started_at IS NULL AND outcome IS NULL
+                             AND clock.now>=claimed_at AND clock.now<deadline
+                           RETURNING deadline-clock.now"""
+                            [| box claimId |]
+                            token
+
+                    do! DatabaseSession.commit transaction token
+
+                    let elapsed = System.Diagnostics.Stopwatch.GetElapsedTime requestedAt
+
+                    return
+                        result
+                        |> List.tryExactlyOne
+                        |> Option.map (fun row -> DatabaseSession.value<TimeSpan> 0 row - elapsed)
                 })
 
     let prepare (source: NpgsqlDataSource) installation (basis: WorkDateBasis) actor ct =
@@ -152,7 +199,65 @@ module internal DigestStorage =
                     return prepared
                 })
 
-    let complete (source: NpgsqlDataSource) installation (today: DateOnly) actor outcome token =
+    let private decodeOutcome value =
+        Vocabulary.tryParse DigestOutcome.vocabulary value
+        |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid digest outcome."))
+
+    let private settled source installation claimId token =
+        DatabaseSession.read source token (fun connection ->
+            task {
+                do! admitted installation connection token
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT outcome FROM claimcore.digest_runs WHERE claim_id=$1"
+                        [| box claimId |]
+                        token
+
+                return
+                    rows
+                    |> List.tryExactlyOne
+                    |> Option.bind (DatabaseSession.optional<string> 0)
+                    |> Option.map decodeOutcome
+            })
+
+    let complete (source: NpgsqlDataSource) installation claimId outcome token =
+        let write () =
+            DatabaseSession.transaction
+                source
+                IsolationLevel.ReadCommitted
+                token
+                (fun connection transaction ->
+                    task {
+                        do! admitted installation connection token
+
+                        let! changed =
+                            DatabaseSession.execute
+                                connection
+                                """UPDATE claimcore.digest_runs
+                               SET outcome=$2,completed_at=GREATEST(claimed_at,clock_timestamp())
+                               WHERE claim_id=$1 AND outcome IS NULL"""
+                                [| box claimId; box (DigestOutcome.token outcome) |]
+                                token
+
+                        do! DatabaseSession.commit transaction token
+                        return changed = 1
+                    })
+
+        task {
+            try
+                let! committed = write ()
+
+                if committed then
+                    return Some outcome
+                else
+                    return! settled source installation claimId token
+            with :? AdministrationOutcomeUnknownException ->
+                return! settled source installation claimId token
+        }
+
+    let reconcile (source: NpgsqlDataSource) installation token =
         DatabaseSession.transaction
             source
             IsolationLevel.ReadCommitted
@@ -161,19 +266,55 @@ module internal DigestStorage =
                 task {
                     do! admitted installation connection token
 
-                    let! changed =
+                    let! _ =
                         DatabaseSession.execute
                             connection
-                            "UPDATE claimcore.digest_runs SET outcome=$3,completed_at=GREATEST(claimed_at,clock_timestamp()) WHERE actor_id=$1 AND digest_date=$2 AND outcome IS NULL"
-                            [|
-                                box (ActorId.value actor)
-                                box today
-                                box (DigestOutcome.token outcome)
-                            |]
+                            """WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS now),
+                           stale AS MATERIALIZED (
+                               SELECT claim_id FROM claimcore.digest_runs,clock
+                               WHERE outcome IS NULL AND deadline<=clock.now
+                               ORDER BY deadline,claim_id LIMIT 128 FOR UPDATE OF digest_runs SKIP LOCKED
+                           )
+                           UPDATE claimcore.digest_runs d SET outcome=$1,completed_at=clock.now
+                           FROM stale,clock WHERE d.claim_id=stale.claim_id AND d.outcome IS NULL"""
+                            [| box (DigestOutcome.token DigestOutcome.Unknown) |]
                             token
-
-                    if changed <> 1 then
-                        raise (RecordCorruptException "Digest claim is absent or completed.")
 
                     do! DatabaseSession.commit transaction token
                 })
+
+    let summary source installation token =
+        DatabaseSession.read source token (fun connection ->
+            task {
+                do! admitted installation connection token
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        """WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS now)
+                           SELECT outcome, outcome IS NULL AND deadline<=clock.now AS expired,count(*)
+                           FROM claimcore.digest_runs,clock GROUP BY outcome,expired"""
+                        [||]
+                        token
+
+                return
+                    rows
+                    |> List.fold
+                        (fun state row ->
+                            let count = DatabaseSession.value<int64> 2 row
+
+                            match DatabaseSession.optional<string> 0 row with
+                            | Some outcome ->
+                                { state with
+                                    Terminal =
+                                        Map.add (decodeOutcome outcome) count state.Terminal
+                                }
+                            | None when DatabaseSession.value<bool> 1 row ->
+                                { state with Expired = count }
+                            | None -> { state with InFlight = count })
+                        {
+                            InFlight = 0L
+                            Expired = 0L
+                            Terminal = Map.empty
+                        }
+            })

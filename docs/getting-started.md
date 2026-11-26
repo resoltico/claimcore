@@ -40,8 +40,9 @@ ID is minted during initialization, so generated configuration has no dispatch d
 database refuses initialization; inspect `claimcore-server status` after an uncertain result.
 
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
-Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
-listener is container-loopback only. The service uses a read-only root/configuration, bounded temporary
+The evaluation Compose startup waits for the identity provider before starting Web. The HTTPS host
+reports local readiness separately from [identity readiness](operating.md#access-review-and-sessions).
+PostgreSQL has no host port and the identity management listener listens on container loopback. The service uses a read-only root/configuration, bounded temporary
 storage and a protected persistent key ring. Tickets live in PostgreSQL.
 
 Configuration generation refuses existing paths and paths containing carriage returns or line feeds.
@@ -127,12 +128,12 @@ case work, payment entry and stewardship rights. ClaimCore roles remain separate
 On a phone, use the plus button in the app bar to open a case. After recording it, use **View receipt** in the feedback banner.
 
 Choose **Open a case**. The register assigns a reference when you record the case. Add optional facts
-and party rows. Use observed dates at or before the current business date, as in this example.
+and party rows. Use observed dates at or before the current business date.
 
 | Input | Value |
 | --- | --- |
-| Incident | 1 September 2026 |
-| Received | 2 September 2026 |
+| Incident | Today in the installation business zone |
+| Received | Today in the installation business zone |
 | Country | LV |
 | Claimant | Synthetic claimant |
 | Insurer | Synthetic insurer |
@@ -179,7 +180,7 @@ export PATH="$claimcore_source/artifacts/local-cli:$PATH"
 export XDG_CONFIG_HOME="$claimcore_config/cli"
 export XDG_STATE_HOME="$claimcore_config/cli-state"
 claimcore configure --show
-claimcore case list --text START-0001
+claimcore case list
 ```
 
 Use the generated public CA, not its private key or a client secret. CLI PKCE opens the system browser;
@@ -188,8 +189,12 @@ browser chosen above and finish login there. The one-use 127.0.0.1 callback uses
 traffic stays HTTPS.
 Tokens remain process-local. Mutation recovery identities stay in the isolated state directory selected
 above. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
-commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and
+commands with one sign-in. Type `case list`, then `exit`. The generated reference appears in the list.
+Use that reference with `case get` to open your case from the CLI. The shell keeps history and
 access/refresh tokens in memory, discards tokens after 15 idle minutes and writes no history file.
+
+The `shell` command requires an interactive terminal and interactive sign-in. Redirected stdin or
+automation mode returns usage status 64. Use `batch` for piped requests.
 
 Offline `help`, `help configuration`, `help call`, `help delivery` and `help case open` need no
 credentials. `--dry-run` validates offline and may omit a version; incomplete drafts cannot be sent. The service
@@ -215,6 +220,3 @@ container users, so removing the configuration directory needs root (or a root c
 For startup or login problems, inspect this project's status and private diagnostics. Check ports,
 certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
 redacted reporting and [Operations](operating.md) for backups and erasure limits.
-
-The `shell` command requires an interactive terminal and interactive sign-in. Redirected stdin or
-automation mode is a usage error (exit 64); use `batch` for piped requests.

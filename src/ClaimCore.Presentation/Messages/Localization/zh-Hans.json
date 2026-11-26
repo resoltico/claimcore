@@ -3963,14 +3963,6 @@
     "text": "今天到期的跟进事项",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.label": {
-    "text": "已发送",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.label": {
-    "text": "发送失败",
-    "source": "031a8f0f659d"
-  },
   "digestOutcome.SKIPPED_EMPTY.label": {
     "text": "无可发送的提醒",
     "source": "4a763133b808"
@@ -4031,14 +4023,6 @@
     "text": "今天到期的跟进事项",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.shortLabel": {
-    "text": "已发送",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.shortLabel": {
-    "text": "发送失败",
-    "source": "031a8f0f659d"
-  },
   "digestCount.OVERDUE_DEADLINES.description": {
     "text": "已过截止日期且尚未完成的事项。",
     "source": "130012281e15"
@@ -4058,14 +4042,6 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
     "text": "今天到期且尚未完成的跟进事项。",
     "source": "2fdacdd03551"
-  },
-  "digestOutcome.SENT.description": {
-    "text": "邮件中继服务器已接收每日摘要。",
-    "source": "a7e4ddb9f020"
-  },
-  "digestOutcome.FAILED.description": {
-    "text": "每日摘要发送失败。",
-    "source": "d5f2b3e0e0f0"
   },
   "digestOutcome.SKIPPED_EMPTY.shortLabel": {
     "text": "无提醒",
@@ -4695,6 +4671,66 @@
   "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
     "source": "a743fa65aff6",
     "text": "请选择受支持的案件编号策略。",
+    "machineMade": true
+  },
+  "diagnostic.TRAVERSAL_CHANGED": {
+    "text": "结果已更改。请从第一页重新开始。",
+    "source": "665b6f15d945",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNAVAILABLE": {
+    "text": "身份提供程序暂时不可用。",
+    "source": "9e961be2f3bb",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNTRUSTED": {
+    "text": "无法验证身份提供程序。",
+    "source": "25a9d3b553db",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.label": {
+    "text": "中继已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.description": {
+    "text": "中继已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.shortLabel": {
+    "text": "中继已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.label": {
+    "text": "在中继接受前失败",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.description": {
+    "text": "在中继接受前失败",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.shortLabel": {
+    "text": "在中继接受前失败",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.label": {
+    "text": "中继是否接受未知",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.description": {
+    "text": "中继是否接受未知",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.shortLabel": {
+    "text": "中继是否接受未知",
+    "source": "77ee1f586df5",
     "machineMade": true
   }
 }

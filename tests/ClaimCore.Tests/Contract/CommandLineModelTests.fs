@@ -84,6 +84,7 @@ let tests =
                             {
                                 Sequence = None
                                 Finding = VerificationFinding.Head
+                                Attachment = None
                             },
                             12L
                         )

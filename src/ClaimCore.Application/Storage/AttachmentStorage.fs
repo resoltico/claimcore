@@ -4,6 +4,7 @@ open System
 open System.Data
 open System.Security.Cryptography
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 
@@ -342,130 +343,266 @@ module internal AttachmentStorage =
             | _ -> return corrupt ()
         }
 
-    let checkReferences
+    let private finding kind issue anchor =
+        {
+            Sequence = anchor |> Option.map (fun (_, _, at) -> EffectPosition.sequence at)
+            Finding = kind
+            Attachment =
+                Some
+                    {
+                        Issue = issue
+                        CaseId = anchor |> Option.map (fun (caseId, _, _) -> caseId)
+                        AttachmentId = anchor |> Option.map (fun (_, id, _) -> id)
+                        EffectIndex =
+                            anchor |> Option.map (fun (_, _, at) -> EffectPosition.index at)
+                    }
+        }
+
+    let private referencesFinding = finding VerificationFinding.AttachmentReferences
+    let private payloadFinding = finding VerificationFinding.AttachmentPayloads
+
+    let private anchor (caseId, id) at = Some(caseId, id, at)
+
+    // Bounded driver draining and statement work, even if the failing row is first.
+    let internal evidencePageSize = 4
+
+    let private evidencePage =
+        $" WHERE (operation_sequence,effect_index)>($1,$2) ORDER BY operation_sequence,effect_index LIMIT {evidencePageSize}"
+
+    // SQL orders by the permanent accepting position. Compare against the authenticated stream
+    // before interpreting each payload, so earlier missing evidence wins over later corruption.
+    let private compareEvidence
         connection
-        (expected: Map<CaseId * AttachmentId, EffectPosition * AttachmentId option>)
+        sql
+        parameters
+        (expected: Map<CaseId * AttachmentId, EffectPosition * 'evidence>)
+        finding
+        check
         token
         =
         task {
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    "SELECT case_id,attachment_id,operation_sequence,effect_index,blob_id FROM claimcore.attachment_references"
-                    [||]
-                    token
+            use entries = (expected |> Map.toSeq |> Seq.sortBy (snd >> fst)).GetEnumerator()
 
-            let actual =
-                rows
-                |> List.map (fun row ->
-                    let caseId =
-                        DatabaseSession.value<Guid> 0 row |> DatabaseSession.admitted CaseId.create
+            let mutable hasExpected = entries.MoveNext()
+            let mutable more = true
+            let mutable failure = None
+            let mutable lastSequence = 0L
+            let mutable lastIndex = -1
 
-                    let id =
-                        DatabaseSession.value<Guid> 1 row
-                        |> DatabaseSession.admitted AttachmentId.create
+            while more && failure.IsNone do
+                let bounds = [| box lastSequence; box lastIndex |]
 
-                    let position =
-                        position
-                            (DatabaseSession.value<int64> 2 row)
-                            (DatabaseSession.value<int> 3 row)
+                use command =
+                    DatabaseSession.statement connection sql (Array.append bounds parameters)
 
-                    let blob =
-                        DatabaseSession.optional<Guid> 4 row
-                        |> Option.map (DatabaseSession.admitted AttachmentId.create)
+                use! reader = command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, token)
+                let mutable reading = true
+                let mutable count = 0
 
-                    (caseId, id), (position, blob))
-                |> Map.ofList
+                while reading && failure.IsNone do
+                    let! present = reader.ReadAsync token
+                    reading <- present
 
-            return rows.Length = actual.Count && actual = expected
+                    if present then
+                        count <- count + 1
+                        lastSequence <- reader.GetInt64 0
+                        lastIndex <- reader.GetInt32 1
+                        let ordinal = position lastSequence lastIndex
+                        let caseId = CaseId.create (reader.GetGuid 2)
+                        let id = AttachmentId.create (reader.GetGuid 3)
+
+                        if hasExpected then
+                            let key, (at, value) = entries.Current
+
+                            if ordinal > at then
+                                failure <-
+                                    Some(finding AttachmentEvidenceIssue.Missing (anchor key at))
+                            elif ordinal < at then
+                                failure <- Some(finding AttachmentEvidenceIssue.Extra None)
+                            elif (caseId, id) <> (Some(fst key), Some(snd key)) then
+                                failure <-
+                                    Some(finding AttachmentEvidenceIssue.Mismatched (anchor key at))
+                            else
+                                let! issue = check reader key value token
+
+                                failure <-
+                                    issue |> Option.map (fun issue -> finding issue (anchor key at))
+
+                                hasExpected <- entries.MoveNext()
+                        else
+                            failure <- Some(finding AttachmentEvidenceIssue.Extra None)
+
+                more <- count = evidencePageSize
+
+            if failure.IsNone && hasExpected then
+                let key, (at, _) = entries.Current
+                failure <- Some(finding AttachmentEvidenceIssue.Missing (anchor key at))
+
+            return
+                match failure with
+                | Some error -> Error error
+                | None -> Ok()
         }
+
+    let checkReferences connection expected token =
+        compareEvidence
+            connection
+            ("SELECT operation_sequence,effect_index,case_id,attachment_id,blob_id FROM claimcore.attachment_references"
+             + evidencePage)
+            [||]
+            expected
+            referencesFinding
+            (fun reader _ expected _ ->
+                task {
+                    let stored =
+                        if reader.IsDBNull 4 then
+                            None
+                        else
+                            AttachmentId.create (reader.GetGuid 4)
+
+                    return
+                        if stored = expected && (stored.IsSome || reader.IsDBNull 4) then
+                            None
+                        else
+                            Some AttachmentEvidenceIssue.Mismatched
+                })
+            token
+
+    let matchesDescriptors (descriptors: AttachmentDescriptor list) (bytes: byte array) =
+        let digest = AttachmentDigest.hash (ReadOnlySpan<byte> bytes)
+
+        descriptors
+        |> List.forall (fun descriptor ->
+            int64 bytes.Length = AttachmentIntent.length descriptor.Intent
+            && digest = AttachmentIntent.digest descriptor.Intent
+            && descriptor.Preview =
+                AttachmentPreviewProfile.forName
+                    (AttachmentIntent.name descriptor.Intent)
+                    (ReadOnlySpan<byte> bytes))
 
     let checkBlobs
         connection
-        cipher
-        (expected: Map<CaseId * AttachmentId, EffectPosition * AttachmentDescriptor option>)
+        (cipher: InstallationCipher)
+        expected
         (descriptors: Map<CaseId * AttachmentId, AttachmentDescriptor list>)
         token
         =
-        task {
-            use command =
-                DatabaseSession.statement
-                    connection
-                    """SELECT case_id,blob_id,operation_sequence,effect_index,length,
-                        digest IS NOT NULL, CASE WHEN octet_length(digest)=32 THEN digest END,
-                        octet_length(payload)::bigint,payload FROM claimcore.attachment_blobs"""
-                    [||]
+        compareEvidence
+            connection
+            ("""SELECT operation_sequence,effect_index,case_id,blob_id,length,
+                      digest IS NOT NULL, CASE WHEN octet_length(digest)=32 THEN digest END,
+                      octet_length(payload)::bigint,
+                      CASE WHEN octet_length(payload)<=$3 THEN payload END
+               FROM claimcore.attachment_blobs"""
+             + evidencePage)
+            [| box (AttachmentLimits.FileBytes + InstallationCipher.envelopeOverhead) |]
+            expected
+            payloadFinding
+            (fun reader (caseId, id) intent token ->
+                task {
+                    match intent with
+                    | Some(descriptor: AttachmentDescriptor) when not (reader.IsDBNull 4) ->
+                        let length = reader.GetInt64 4
+                        let storedLength = length + int64 InstallationCipher.envelopeOverhead
 
-            use! reader = command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, token)
-            let mutable unmatched = expected
-            let mutable matches = true
-            let mutable reading = true
-
-            while matches && reading do
-                let! found = reader.ReadAsync token
-                reading <- found
-
-                if found then
-                    let caseId = DatabaseSession.admitted CaseId.create (reader.GetGuid 0)
-                    let id = DatabaseSession.admitted AttachmentId.create (reader.GetGuid 1)
-                    let actual = position (reader.GetInt64 2) (reader.GetInt32 3)
-                    let key = caseId, id
-
-                    match Map.tryFind key unmatched with
-                    | Some(position, intent) when position = actual ->
-                        unmatched <- Map.remove key unmatched
-
-                        match intent with
-                        | Some descriptor when not (reader.IsDBNull 4) ->
-                            let length = reader.GetInt64 4
-
-                            let expectedDigest =
-                                AttachmentIntent.digest descriptor.Intent
-                                |> AttachmentDigest.value
-                                |> Convert.FromHexString
-
-                            let storedLength = length + int64 InstallationCipher.envelopeOverhead
+                        if
+                            length <> AttachmentIntent.length descriptor.Intent
+                            || reader.IsDBNull 6
+                        then
+                            return Some AttachmentEvidenceIssue.Mismatched
+                        else
+                            let digest = reader.GetFieldValue<byte array> 6
 
                             if
-                                length <> AttachmentIntent.length descriptor.Intent
-                                || reader.IsDBNull 6
+                                reader.IsDBNull 7
+                                || reader.GetInt64 7 <> storedLength
+                                || reader.IsDBNull 8
                             then
-                                matches <- false
+                                return Some AttachmentEvidenceIssue.Mismatched
                             else
-                                let digest = reader.GetFieldValue<byte array>(6)
+                                use stream = reader.GetStream 8
+                                let envelope = Array.zeroCreate<byte>(int storedLength)
+                                do! stream.ReadExactlyAsync(Memory envelope, token)
 
-                                if
-                                    reader.IsDBNull 7
-                                    || reader.GetInt64(7) <> storedLength
-                                    || reader.IsDBNull 8
-                                then
-                                    matches <- false
-                                else
-                                    use stream = reader.GetStream 8
-                                    let envelope = Array.zeroCreate<byte>(int storedLength)
-                                    do! stream.ReadExactlyAsync(Memory envelope, token)
-                                    let bytes = decrypt cipher caseId id digest envelope
+                                try
+                                    let bytes =
+                                        cipher.DecryptBlob(
+                                            CaseId.value caseId,
+                                            AttachmentId.value id,
+                                            envelope
+                                        )
 
-                                    matches <-
-                                        SHA256.HashData bytes = expectedDigest
-                                        && (Map.find key descriptors
-                                            |> List.forall (fun descriptor ->
-                                                let media =
-                                                    AttachmentPreviewProfile.forName
-                                                        (AttachmentIntent.name descriptor.Intent)
-                                                        (ReadOnlySpan<byte> bytes)
+                                    return
+                                        if
+                                            cipher.AttachmentDigest bytes = digest
+                                            && matchesDescriptors descriptors[caseId, id] bytes
+                                        then
+                                            None
+                                        else
+                                            Some AttachmentEvidenceIssue.Mismatched
+                                with :? RecordCorruptException ->
+                                    return Some AttachmentEvidenceIssue.Unreadable
+                    | None when
+                        reader.IsDBNull 4
+                        && not (reader.GetBoolean 5)
+                        && reader.IsDBNull 7
+                        && reader.IsDBNull 8
+                        ->
+                        return None
+                    | _ -> return Some AttachmentEvidenceIssue.Mismatched
+                })
+            token
 
-                                                descriptor.Preview = media))
-                        | None ->
-                            matches <-
-                                reader.IsDBNull 4
-                                && not (reader.GetBoolean 5)
-                                && reader.IsDBNull 7
-                                && reader.IsDBNull 8
-                        | _ -> matches <- false
-                    | _ -> matches <- false
+    let repair
+        connection
+        (cipher: InstallationCipher)
+        (caseId, id)
+        at
+        (descriptor: AttachmentDescriptor)
+        bytes
+        token
+        =
+        task {
+            let digest = cipher.AttachmentDigest bytes
+            let envelope = cipher.EncryptBlob(CaseId.value caseId, AttachmentId.value id, bytes)
 
-            return matches && unmatched.IsEmpty
+            let args =
+                [|
+                    family caseId
+                    identity id
+                    box (EffectPosition.sequence at |> Sequence.value)
+                    box (EffectPosition.index at)
+                    box (AttachmentIntent.length descriptor.Intent)
+                    box digest
+                    box envelope
+                |]
+
+            let! updated =
+                DatabaseSession.rows
+                    connection
+                    "SELECT claimcore.repair_attachment_payload($1,$2,$3,$4,$5,$6,$7)"
+                    args
+                    token
+
+            match updated with
+            | [ row ] when DatabaseSession.value<bool> 0 row ->
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        """SELECT payload FROM claimcore.attachment_blobs
+                           WHERE (case_id,blob_id,operation_sequence,effect_index,length,digest)=($1,$2,$3,$4,$5,$6)
+                             AND octet_length(payload)::bigint=$5+28"""
+                        args[..5]
+                        token
+
+                match rows with
+                | [ row ] ->
+                    let stored =
+                        decrypt cipher caseId id digest (DatabaseSession.value<byte array> 0 row)
+
+                    return ReadOnlySpan<byte>(stored).SequenceEqual(ReadOnlySpan<byte>(bytes))
+                | _ -> return false
+            | _ -> return false
         }
 
     let checkProjection connection expected token =
@@ -491,24 +628,4 @@ module internal AttachmentStorage =
                 |> Set.ofList
 
             return actual.Count = rows.Length && actual = expected
-        }
-
-    let rebuildProjection connection (expected: Set<CaseId * AttachmentId>) token =
-        task {
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    "DELETE FROM claimcore.case_attachments"
-                    [||]
-                    token
-
-            for caseId, id in expected do
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.case_attachments(case_id,attachment_id) VALUES($1,$2)"
-                        [| family caseId; identity id |]
-                        token
-
-                ()
         }

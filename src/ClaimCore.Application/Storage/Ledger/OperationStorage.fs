@@ -350,10 +350,9 @@ module internal OperationStorage =
 
     /// A selected metadata page hydrates full authenticated records in a fixed number of
     /// queries. Attachment binary payloads belong to a separate store and are not acquired here.
-    let findMany connection (cipher: InstallationCipher) (operations: OperationId list) token =
+    let prepareMany connection (cipher: InstallationCipher) (operations: Guid list) token =
         task {
-            let identities =
-                operations |> List.distinct |> List.map OperationId.value |> List.toArray
+            let identities = operations |> List.distinct |> List.toArray
 
             if identities.Length = 0 then
                 return Map.empty
@@ -403,35 +402,48 @@ module internal OperationStorage =
                     let effectsBySequence = group 2 effects
                     let contentsBySequence = group 7 contents
 
-                    let records =
+                    // Keep ambiguity at its own identity so ordered verification can report
+                    // an earlier broken link or invalid root before forcing this restoration.
+                    return
                         roots
-                        |> List.map (fun root ->
-                            let operation =
-                                DatabaseSession.value<Guid> 9 root
-                                |> DatabaseSession.admitted OperationId.create
-
-                            let sequence = DatabaseSession.value<int64> 0 root
-
-                            let rows =
-                                Map.tryFind sequence effectsBySequence |> Option.defaultValue []
-
-                            let compartments =
-                                Map.tryFind sequence contentsBySequence |> Option.defaultValue []
-
+                        |> List.groupBy (DatabaseSession.value<Guid> 9)
+                        |> List.map (fun (operation, matches) ->
                             operation,
-                            restoreRecord
-                                cipher.InstallationId
-                                (Some cipher)
-                                operation
-                                root
-                                rows
-                                compartments)
-                        |> Map.ofList
+                            fun () ->
+                                match matches with
+                                | [ root ] ->
+                                    let sequence = DatabaseSession.value<int64> 0 root
 
-                    if records.Count <> roots.Length then
-                        return corrupt ()
-                    else
-                        return records
+                                    let rows =
+                                        Map.tryFind sequence effectsBySequence
+                                        |> Option.defaultValue []
+
+                                    let compartments =
+                                        Map.tryFind sequence contentsBySequence
+                                        |> Option.defaultValue []
+
+                                    restoreRecord
+                                        cipher.InstallationId
+                                        (Some cipher)
+                                        (DatabaseSession.admitted OperationId.create operation)
+                                        root
+                                        rows
+                                        compartments
+                                | _ -> corrupt ())
+                        |> Map.ofList
+        }
+
+    let findMany connection cipher operations token =
+        task {
+            let! prepared =
+                prepareMany connection cipher (List.map OperationId.value operations) token
+
+            return
+                prepared
+                |> Map.toSeq
+                |> Seq.map (fun (operation, restore) ->
+                    DatabaseSession.admitted OperationId.create operation, restore ())
+                |> Map.ofSeq
         }
 
     let previous connection cipher (change: PartChange) token =

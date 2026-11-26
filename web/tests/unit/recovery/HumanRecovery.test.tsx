@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import { activeRequester } from "../../support/human-requester.fixtures";
 import type { HumanDocument } from "@contracts/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import {
   render,
@@ -20,7 +20,10 @@ import type { RecoveryJournal } from "../../../src/protocol/recoveryJournal";
 import { humanReadReply } from "../../support/human-read-reply.fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
-const record = recoveryRecord();
+let record = recoveryRecord();
+beforeEach(() => {
+  record = { ...recoveryRecord(), operationId: crypto.randomUUID() };
+});
 const attachmentCaseId = "00000000-0000-4000-8000-000000000003";
 const receipt: HumanDocument = {
   screen: {

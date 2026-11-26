@@ -22,6 +22,7 @@ let tests =
                     {
                         Sequence = None
                         Finding = VerificationFinding.Head
+                        Attachment = None
                     },
                  "DIVERGED",
                  5)

@@ -3963,14 +3963,6 @@
     "text": "Heute fällige Folgemaßnahmen",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.label": {
-    "text": "Gesendet",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.label": {
-    "text": "Fehlgeschlagen",
-    "source": "031a8f0f659d"
-  },
   "digestOutcome.SKIPPED_EMPTY.label": {
     "text": "Keine Erinnerungen zum Senden",
     "source": "4a763133b808"
@@ -4031,14 +4023,6 @@
     "text": "Heute fällige Folgemaßnahmen",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.shortLabel": {
-    "text": "Gesendet",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.shortLabel": {
-    "text": "Fehlgeschlagen",
-    "source": "031a8f0f659d"
-  },
   "digestCount.OVERDUE_DEADLINES.description": {
     "text": "Offene Fristen, deren Fälligkeitstag verstrichen ist.",
     "source": "130012281e15"
@@ -4058,14 +4042,6 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
     "text": "Offene Folgemaßnahmen, die heute fällig sind.",
     "source": "2fdacdd03551"
-  },
-  "digestOutcome.SENT.description": {
-    "text": "Der Mailserver hat die tägliche Übersicht angenommen.",
-    "source": "a7e4ddb9f020"
-  },
-  "digestOutcome.FAILED.description": {
-    "text": "Der Versand der täglichen Übersicht ist fehlgeschlagen.",
-    "source": "d5f2b3e0e0f0"
   },
   "digestOutcome.SKIPPED_EMPTY.shortLabel": {
     "text": "Leer",
@@ -4695,6 +4671,66 @@
   "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
     "source": "a743fa65aff6",
     "text": "Wählen Sie eine unterstützte Regel für Fallreferenzen.",
+    "machineMade": true
+  },
+  "diagnostic.TRAVERSAL_CHANGED": {
+    "text": "Die Ergebnisse haben sich geändert. Beginnen Sie erneut auf der ersten Seite.",
+    "source": "665b6f15d945",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNAVAILABLE": {
+    "text": "Der Identitätsanbieter ist vorübergehend nicht verfügbar.",
+    "source": "9e961be2f3bb",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNTRUSTED": {
+    "text": "Der Identitätsanbieter konnte nicht überprüft werden.",
+    "source": "25a9d3b553db",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.label": {
+    "text": "Vom Relay angenommen",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.description": {
+    "text": "Vom Relay angenommen",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.shortLabel": {
+    "text": "Vom Relay angenommen",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.label": {
+    "text": "Vor Annahme durch das Relay fehlgeschlagen",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.description": {
+    "text": "Vor Annahme durch das Relay fehlgeschlagen",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.shortLabel": {
+    "text": "Vor Annahme durch das Relay fehlgeschlagen",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.label": {
+    "text": "Annahme durch das Relay unklar",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.description": {
+    "text": "Annahme durch das Relay unklar",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.shortLabel": {
+    "text": "Annahme durch das Relay unklar",
+    "source": "77ee1f586df5",
     "machineMade": true
   }
 }

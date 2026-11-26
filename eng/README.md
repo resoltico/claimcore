@@ -13,7 +13,8 @@ the applicable final stages once, choosing CI or local execution as their owner.
 | [compose-restart-smoke.sh](compose-restart-smoke.sh) | Builds the evaluation Compose stack and proves `down`/`up` keeps the installation in [CI qualification and scheduled runs](../.github/workflows/compose.yml) |
 | [ci_policy.py](ci_policy.py) | Selects qualification work and checks required GitHub job results |
 | [validate_advisories.py](validate_advisories.py) | Checks native advisory report coverage before interpreting findings |
-| [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Only contracts; runtime catalogs resolve in Presentation; [generation instructions](../docs/contributing.md#generated-contracts) |
+| [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Generates tracked contracts and prepares resolved browser catalogs through the shared Presentation language policy |
+| [prepare-browser-catalogs.sh](prepare-browser-catalogs.sh) | Restores the pinned SDK project and emits the browser catalog input under `web/artifacts/catalogs` |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; native and acceptance checks verify actual publication contents |
 
 The [release procedure](../docs/contributing.md#releases) explains the owner's inputs to the
@@ -35,7 +36,7 @@ Each job owns its fixtures.
 published smoke per category. The [verification policy](../docs/contributing.md#verification)
 describes the docs-only Gate and full event coverage.
 Contract generation checks catalog structure, term namespaces, producer arguments and wording
-ownership. Browser production builds use the app and protocol sources. Frontend verification
+ownership. Browser production builds verify their prepared catalog input. Frontend verification
 checks the full TypeScript solution and runs the browser unit tests.
 [Wire boundary properties](../tests/ClaimCore.Tests/Contract/WireBoundaryProperties.fs) exercise
 decoder totality. Hand-authored boundary cases assert acceptance and refusal separately.

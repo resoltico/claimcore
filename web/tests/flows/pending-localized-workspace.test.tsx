@@ -10,6 +10,7 @@ import { defaults, savePreferences } from "../../src/presentation/preferences";
 import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { service } from "../../src/api/service";
+import { operationId } from "../../src/operation/operationId";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { recoveryRecord, testJournal } from "../support/recovery.fixtures";
 
@@ -19,7 +20,7 @@ it.each(["ar", "en-XA"] as const)(
     expect(savePreferences({ ...defaults, language, displayLocale: "ar-EG" }).kind).toBe(
       "available",
     );
-    const record = recoveryRecord();
+    const record = { ...recoveryRecord(), operationId: operationId() };
     await testJournal.put(record);
     const lookup = vi
       .spyOn(service, "operationGet")

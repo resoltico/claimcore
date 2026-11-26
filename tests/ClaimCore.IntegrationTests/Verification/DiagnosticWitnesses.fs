@@ -120,7 +120,8 @@ let internal diagnostic reason =
     | reason ->
         let target =
             match reason with
-            | Refusal.InvalidCursor -> Some(InputTarget.token InputTarget.Cursor)
+            | Refusal.InvalidCursor
+            | Refusal.TraversalChanged -> Some(InputTarget.token InputTarget.Cursor)
             | Refusal.OperationIdOutOfWindow _ -> Some(InputTarget.token InputTarget.OperationId)
             | _ -> None
 

@@ -71,12 +71,18 @@ module internal Replay =
         }
 
     let link (state: Scan) sequence previous =
-        require
-            (Some sequence)
-            VerificationFinding.Link
-            (Sequence.value state.Head.Sequence < Sequence.Maximum
-             && sequence = Sequence.successor state.Head.Sequence
-             && previous = EntryHash.toBytes state.Head.EntryHash)
+        if Sequence.value state.Head.Sequence = Sequence.Maximum then
+            Error(divergence (Some sequence) VerificationFinding.Link)
+        else
+            let expected = Sequence.successor state.Head.Sequence
+
+            if sequence > expected then
+                Error(divergence (Some expected) VerificationFinding.MissingRoot)
+            else
+                require
+                    (Some sequence)
+                    VerificationFinding.Link
+                    (sequence = expected && previous = EntryHash.toBytes state.Head.EntryHash)
 
     let private attachmentStep (families: Map<CaseId, AttachmentFamily>) (change: PartChange) =
         let invalid =
@@ -270,11 +276,9 @@ module internal Replay =
                 result
                 |> Result.bind (fun rows ->
                     let parts =
-                        state.Fold.Parts
-                        |> Map.values
-                        |> Seq.filter (fun change ->
-                            change.Aggregate = AggregateReference.Family id)
-                        |> Seq.toList
+                        Map.tryFind (CompartmentOwner.Family id) state.Fold.Parts
+                        |> Option.map (Map.values >> Seq.toList)
+                        |> Option.defaultValue []
 
                     ProjectionRows.family
                         family
@@ -300,8 +304,8 @@ module internal Replay =
                     |> Result.map (fun row -> Map.add id row rows)))
             (Ok Map.empty)
 
-    let caseRecords state =
-        familyRows state
+    let caseRecords (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>) =
+        families
         |> Result.map (
             Map.map (fun id row ->
                 {
@@ -313,8 +317,8 @@ module internal Replay =
                 })
         )
 
-    let workRows state =
-        familyRows state
+    let workRows (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>) =
+        families
         |> Result.map (
             Map.map (fun id row ->
                 let work = row.Work
@@ -334,8 +338,10 @@ module internal Replay =
                 })
         )
 
-    let reminderRows state =
-        familyRows state
+    let reminderRows
+        (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>)
+        =
+        families
         |> Result.map (fun rows ->
             rows
             |> Map.toList
@@ -360,8 +366,8 @@ module internal Replay =
                     }))
             |> Map.ofList)
 
-    let noteRows state =
-        familyRows state
+    let noteRows (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>) =
+        families
         |> Result.map (fun rows ->
             rows
             |> Map.toList
@@ -377,8 +383,8 @@ module internal Replay =
                     }))
             |> Map.ofList)
 
-    let partyRows state =
-        familyRows state
+    let partyRows (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>) =
+        families
         |> Result.map (fun rows ->
             rows
             |> Map.toList
@@ -395,8 +401,8 @@ module internal Replay =
                     }))
             |> Map.ofList)
 
-    let payments state =
-        familyRows state
+    let payments (families: Result<Map<CaseId, FamilyProjectionDelta>, VerificationDivergence>) =
+        families
         |> Result.map (fun rows ->
             rows
             |> Map.toList

@@ -3963,14 +3963,6 @@
     "text": "Seguimientos para hoy",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.label": {
-    "text": "Enviado",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.label": {
-    "text": "Fallido",
-    "source": "031a8f0f659d"
-  },
   "digestOutcome.SKIPPED_EMPTY.label": {
     "text": "Sin recordatorios para enviar",
     "source": "4a763133b808"
@@ -4031,14 +4023,6 @@
     "text": "Seguimientos para hoy",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.shortLabel": {
-    "text": "Enviado",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.shortLabel": {
-    "text": "Fallido",
-    "source": "031a8f0f659d"
-  },
   "digestCount.OVERDUE_DEADLINES.description": {
     "text": "Plazos pendientes cuya fecha límite ya pasó.",
     "source": "130012281e15"
@@ -4058,14 +4042,6 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
     "text": "Seguimientos pendientes para hoy.",
     "source": "2fdacdd03551"
-  },
-  "digestOutcome.SENT.description": {
-    "text": "El servidor de correo aceptó el resumen diario.",
-    "source": "a7e4ddb9f020"
-  },
-  "digestOutcome.FAILED.description": {
-    "text": "Falló el envío del resumen diario.",
-    "source": "d5f2b3e0e0f0"
   },
   "digestOutcome.SKIPPED_EMPTY.shortLabel": {
     "text": "Vacío",
@@ -4695,6 +4671,66 @@
   "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
     "source": "a743fa65aff6",
     "text": "Elige una política de referencias del expediente compatible.",
+    "machineMade": true
+  },
+  "diagnostic.TRAVERSAL_CHANGED": {
+    "text": "Los resultados han cambiado. Vuelva a empezar desde la primera página.",
+    "source": "665b6f15d945",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNAVAILABLE": {
+    "text": "El proveedor de identidad no está disponible temporalmente.",
+    "source": "9e961be2f3bb",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNTRUSTED": {
+    "text": "No se pudo verificar el proveedor de identidad.",
+    "source": "25a9d3b553db",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.label": {
+    "text": "Aceptado por el servidor de retransmisión",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.description": {
+    "text": "Aceptado por el servidor de retransmisión",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.shortLabel": {
+    "text": "Aceptado por el servidor de retransmisión",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.label": {
+    "text": "Falló antes de la aceptación",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.description": {
+    "text": "Falló antes de la aceptación",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.shortLabel": {
+    "text": "Falló antes de la aceptación",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.label": {
+    "text": "Se desconoce si el servidor lo aceptó",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.description": {
+    "text": "Se desconoce si el servidor lo aceptó",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.shortLabel": {
+    "text": "Se desconoce si el servidor lo aceptó",
+    "source": "77ee1f586df5",
     "machineMade": true
   }
 }

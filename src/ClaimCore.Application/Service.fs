@@ -12,6 +12,15 @@ open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
+/// Private snapshot membership and requester evidence carried between preparation and release.
+type ExportReadBasis =
+    internal
+        {
+            Installation: Guid
+            Actor: ActorId
+            GroupMembers: string option
+        }
+
 /// The typed application boundary owns orchestration; hosts supply immutable request dependencies.
 module Service =
     /// Hosts add their instruments to the single application meter.
@@ -83,6 +92,126 @@ module Service =
                 })
             services
 
+    /// Run the entire bounded export traversal through one read-only provider snapshot.
+    let readExportSnapshot (services: ServiceContext) selection token work =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        CancellationToken = token
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! actor = AccessReads.access tx services.Principal None
+
+                                    match actor.Actor with
+                                    | Some requester when Access.validActor services.Principal actor ->
+                                        let! membership =
+                                            task {
+                                                match selection with
+                                                | ExportSelection.CaseSummary summary ->
+                                                    let request =
+                                                        {
+                                                            CaseListRequest.Filter = summary.Filter
+                                                            Page =
+                                                                {
+                                                                    Limit = Paging.MaximumPageSize
+                                                                    AfterCursor = None
+                                                                }
+                                                        }
+
+                                                    match
+                                                        CaseSetQueries.selectCases
+                                                            services.Principal
+                                                            (ServiceContext.basis
+                                                                services
+                                                                tx.ObservedAt)
+                                                            request
+                                                            actor
+                                                    with
+                                                    | Error refusal -> return Error refusal
+                                                    | Ok query ->
+                                                        let! witness =
+                                                            CaseSummaryQuery.witness
+                                                                tx.Connection
+                                                                query.Selection
+                                                                summary.GroupBy
+                                                                token
+
+                                                        return Ok(Some witness)
+                                                | _ -> return Ok None
+                                            }
+
+                                        match membership with
+                                        | Error refusal -> return Outcome.Rejected refusal
+                                        | Ok members ->
+                                            let exportTx = tx.ForExport
+
+                                            let snapshot =
+                                                mapStore
+                                                    (fun _ ->
+                                                        { new IStore with
+                                                            member _.Read operation =
+                                                                task {
+                                                                    operation.CancellationToken
+                                                                        .ThrowIfCancellationRequested()
+
+                                                                    let! value =
+                                                                        operation.Work exportTx
+
+                                                                    return Ok value
+                                                                }
+
+                                                            member _.Context _ =
+                                                                invalidOp
+                                                                    "Export cannot change requester context."
+
+                                                            member _.Write _ =
+                                                                invalidOp
+                                                                    "Export cannot change register state."
+
+                                                            member _.RecordDisclosure(_, _) =
+                                                                invalidOp
+                                                                    "Export disclosure must follow the release read."
+                                                        })
+                                                    services
+
+                                            let! rendered = work snapshot
+
+                                            return
+                                                Outcome.Succeeded(
+                                                    rendered,
+                                                    {
+                                                        Installation = tx.InstallationId
+                                                        Actor = requester.ActorId
+                                                        GroupMembers = members
+                                                    }
+                                                )
+                                    | _ -> return QueryResults.unavailable
+                                }
+                    }
+
+            return QueryResults.readResult result
+        }
+
+    let releaseExport
+        (services: ServiceContext)
+        (before, manifest)
+        (after, current)
+        caseId
+        export
+        token
+        =
+        if before <> after || manifest <> current then
+            Task.FromResult(QueryResults.unavailable)
+        else
+            let disclosure =
+                { DisclosureReads.success after.Actor DisclosureKind.Export caseId None with
+                    Export = Some export
+                }
+
+            DisclosureReads.release services token (Outcome.Succeeded(), Some disclosure)
+
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let executeSubmission = OperationService.executeSubmission
@@ -115,7 +244,6 @@ module Service =
 
     let timeline = TimelineQueries.read
     let timelineForExport = TimelineQueries.forExport
-    let recordExport = DisclosureReads.recordExport
     let disclosureTrail = DisclosureReads.page
 
     let operationGet services (input: OperationLookup) ct =

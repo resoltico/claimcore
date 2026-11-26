@@ -116,6 +116,7 @@ type Refusal =
     | AttachmentCapacityReached
     | AttachmentPreviewUnavailable
     | InvalidCursor
+    | TraversalChanged
     | CaseDateRange of upper: CaseDateFilter
     | RegisterMaintenance
 
@@ -143,5 +144,6 @@ module Refusal =
         | Refusal.AttachmentCapacityReached
         | Refusal.AttachmentPreviewUnavailable
         | Refusal.InvalidCursor
+        | Refusal.TraversalChanged
         | Refusal.CaseDateRange _
         | Refusal.RegisterMaintenance -> false

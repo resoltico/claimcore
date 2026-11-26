@@ -156,6 +156,33 @@ module internal CaseSummaryQuery =
             |> Option.map CaseGroupKey.Missing
             |> Option.defaultWith (fun () -> invalid "Missing required report grouping key.")
 
+    // Report pages promise stable aggregate content. Include the contribution of each
+    // selected case and any reported responsible label. Scope filtering happens first.
+    let witness connection selection groupBy token =
+        let expression, parameters = grouping groupBy
+
+        let responsibleLabel =
+            if groupBy = Some CaseGrouping.Responsible then
+                "(SELECT jsonb_build_array(a.display_name,a.enabled,a.principal_kind) FROM claimcore.actors a WHERE a.actor_id=c.responsible_actor)"
+            else
+                "NULL::jsonb"
+
+        let sql =
+            $"""
+SELECT jsonb_build_array(c.case_id,({expression}),({CaseSelectionSql.responsibility}),
+       ({CaseSelectionSql.due}),c.state,c.status,c.progress,c.claimed_currency,c.claimed_amount,
+       c.payable_currency,c.payable_amount,({responsibleLabel}),
+       (SELECT jsonb_agg(jsonb_build_array(p.currency,p.paid-p.returned) ORDER BY p.currency COLLATE "C")
+        FROM claimcore.case_payment_totals p WHERE p.case_id=c.case_id))::text
+FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} ORDER BY c.case_id
+"""
+
+        DatabaseSession.witness
+            connection
+            sql
+            (Array.append (CaseSelectionSql.parameters selection) parameters)
+            token
+
     let read connection selection groupBy (after: CaseReportPosition option) limit token =
         task {
             let expression, groupParameters = grouping groupBy
