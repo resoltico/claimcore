@@ -314,24 +314,31 @@ let private monthReporting (database: PostgresFixture.Database) =
                 }
                 token
 
-        let continued = success continued
-        Expect.equal continued.Counts.Total 3L "Continuation counts the newly authorized selection"
+        Expect.equal
+            continued
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "Changed case access requires a fresh report traversal"
+
+        let! refreshed = read scoped all CaseGrouping.ReceivedMonth
+        Expect.equal refreshed.Counts.Total 3L "A fresh report counts the newly authorized selection"
 
         Expect.equal
-            (groups continued)
-            (Map.ofList [ "2026-11", 1L ])
-            "The remaining month uses fresh facts and grants"
+            (groups refreshed)
+            (Map.ofList [ "2026-10", 1L; "2026-11", 1L; "NOT_RECORDED", 1L ])
+            "A fresh report groups only currently readable cases"
 
-        let claim = continued.Rows |> List.choose _.Claimed |> List.exactlyOne
+        let claim = refreshed.Rows |> List.choose _.Claimed |> List.exactlyOne
 
         Expect.equal
             (DecimalTotal.format claim.Amount, claim.Cases)
             ("0", 1L)
             "New zero claim replaces the revoked 100 amount"
 
+        Expect.isEmpty (refreshed.Rows |> List.choose _.NetPaid) "The revoked case's return is excluded"
+
         Expect.isTrue
-            (continued.Basis.ObservedAt >= initial.Basis.ObservedAt)
-            "Each page states its own observation"
+            (refreshed.Basis.ObservedAt >= initial.Basis.ObservedAt)
+            "The fresh report states its own observation"
     }
 
 let private outcomes (database: PostgresFixture.Database) =
@@ -616,6 +623,7 @@ let private currencyBoundary (database: PostgresFixture.Database) =
 
         let! first = Service.caseSummary owner request token
         let first = success first
+        Expect.isSome first.NextCursor "The responsible account spans multiple currency rows"
 
         let account row =
             match (row: CaseMoneyRow).Group with
@@ -648,25 +656,45 @@ let private currencyBoundary (database: PostgresFixture.Database) =
                 }
                 token
 
-        let continued = success continued
+        Expect.equal
+            continued
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "A changed responsible-account caption requires a fresh traversal"
 
         Expect.equal
             (account first.Rows.Head).ActorId
             who
             "The first row uses immutable actor identity"
 
-        Expect.equal
-            (account continued.Rows.Head).ActorId
-            who
-            "The renamed account continues the same group"
+        let! refreshed = Service.caseSummary owner request token
+        let refreshed = success refreshed
+        Expect.isSome refreshed.NextCursor "The renamed account still spans multiple currency rows"
+
+        let! next =
+            Service.caseSummary
+                owner
+                { request with
+                    Page =
+                        { request.Page with
+                            AfterCursor = refreshed.NextCursor
+                        }
+                }
+                token
+
+        let next = success next
 
         Expect.equal
-            (continued.Rows.Head.Currency |> Option.map Currency.format)
+            (account next.Rows.Head).ActorId
+            who
+            "A fresh traversal preserves the renamed account's group identity"
+
+        Expect.equal
+            (next.Rows.Head.Currency |> Option.map Currency.format)
             (Some currencies[1])
             "The next row is still the second currency"
 
         Expect.equal
-            (account continued.Rows.Head).DisplayName
+            (account next.Rows.Head).DisplayName
             (DisplayName.Named(
                 PartyName.parse "Renamed report owner"
                 |> Result.defaultWith (string >> failtest)

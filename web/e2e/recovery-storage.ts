@@ -1,14 +1,16 @@
 import type { Page } from "@playwright/test";
 
+export const recoveryDatabaseName = "claimcore.operation-recovery";
+
 /** Inspect committed native state independently of the application adapter. */
 export const recoveryRecords = (
   page: Page,
   { allowMissing = false }: { allowMissing?: boolean } = {},
 ): Promise<Record<string, unknown>[]> =>
   page.evaluate(
-    (missingIsEmpty) =>
+    ({ missingIsEmpty, databaseName }) =>
       new Promise<Record<string, unknown>[]>((resolve, reject) => {
-        const request = indexedDB.open("claimcore.recovery");
+        const request = indexedDB.open(databaseName);
         request.onupgradeneeded = () => {
           request.transaction?.abort();
           if (missingIsEmpty) {
@@ -40,5 +42,5 @@ export const recoveryRecords = (
           tx.onerror = failed;
         };
       }),
-    allowMissing,
+    { missingIsEmpty: allowMissing, databaseName: recoveryDatabaseName },
   );

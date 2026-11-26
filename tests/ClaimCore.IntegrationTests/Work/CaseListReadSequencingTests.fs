@@ -6,7 +6,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -168,7 +167,7 @@ let tests =
         "case-list exact reference disclosure"
         [
             testCase
-                "empty scope ignores lifecycle filters and excludes continuation pages"
+                "empty scope ignores lifecycle filters and only applies to initial pages"
                 (fun () ->
                     withCases (fun core _ _ ->
                         let all =
@@ -176,11 +175,11 @@ let tests =
                                 View = Some CaseView.All
                             }
 
-                        let read filter after =
+                        let read filter after limit =
                             Service.list
                                 core
                                 {
-                                    Page = { AfterCursor = after; Limit = 50 }
+                                    Page = { AfterCursor = after; Limit = limit }
                                     Filter = filter
                                 }
                                 CancellationToken.None
@@ -188,7 +187,7 @@ let tests =
                             |> page
 
                         for lifecycle in [ Lifecycle.Erased; Lifecycle.Voided ] do
-                            let filtered = read { all with Lifecycles = [ lifecycle ] } None
+                            let filtered = read { all with Lifecycles = [ lifecycle ] } None 50
 
                             Expect.isEmpty filtered.Items "The fixture only has active cases"
 
@@ -196,14 +195,20 @@ let tests =
                                 filtered.AuthorizedScopeEmpty
                                 "The active cases remain in scope"
 
-                        let after =
-                            Cursors.encodeCases
-                                core.InstallationId
-                                (CaseListFilter.admit all |> accepted)
-                                (CaseListPosition.Reference "ZZZ-AFTER")
+                        let first = read all None 1
+                        Expect.isSome first.NextCursor "The initial page has a continuation"
 
-                        let trailing = read all (Some after)
-                        Expect.isEmpty trailing.Items "The cursor follows every readable case"
+                        let trailing = read all first.NextCursor 1
+
+                        Expect.equal
+                            (trailing.Items
+                             |> List.map (fun item -> CaseReference.format item.Reference))
+                            [ "Match-1" ]
+                            "The continuation returns the remaining readable case"
+
+                        Expect.isNone
+                            trailing.NextCursor
+                            "The continuation completes the traversal"
 
                         Expect.isFalse
                             trailing.AuthorizedScopeEmpty

@@ -28,7 +28,7 @@ const sameAttempt = (left: unknown, right: RecoveryRecord): boolean =>
   left.act === right.act;
 const open = (factory: IDBFactory, name: string): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
-    const request = factory.open(name, 2);
+    const request = factory.open(name, 1);
     let refused = false;
     request.onblocked = () => {
       refused = true;
@@ -37,10 +37,8 @@ const open = (factory: IDBFactory, name: string): Promise<IDBDatabase> =>
     request.onerror = () => {
       reject(new Error("Recovery storage is unavailable."));
     };
-    request.onupgradeneeded = (event) => {
-      if (event.oldVersion === 0) {
-        request.result.createObjectStore(storeName);
-      }
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(storeName);
       request.result.createObjectStore(confirmedName);
     };
     request.onsuccess = () => {
@@ -219,7 +217,7 @@ const listConfirmations = (
 /** Per-attempt transactions neither overwrite nor clear another pending identity. */
 export const createIndexedJournal = (
   factory: IDBFactory,
-  name = "claimcore.recovery",
+  name = "claimcore.operation-recovery",
 ): RecoveryJournal => ({
   put: (record) =>
     transaction<JournalPublication>(factory, name, "readwrite", (store, complete) => {

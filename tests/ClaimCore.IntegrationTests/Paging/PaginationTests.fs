@@ -155,10 +155,7 @@ let private freshAdvice (actor: ServiceContext) cursor current =
             "Paused rows retain the same registrar snapshot advice"
 
         let! fresh =
-            (Service.list
-                actor
-                ((ClaimCore.TestSupport.Inputs.caseListPage (query None 50)))
-                (token))
+            Service.list actor (ClaimCore.TestSupport.Inputs.caseListPage (query None 1)) token
 
         Expect.isFalse
             ((page fresh).Offers
@@ -167,18 +164,34 @@ let private freshAdvice (actor: ServiceContext) cursor current =
                  | _ -> false))
             "Fresh reader page has no OPEN advice"
 
+        let! stale =
+            Service.list actor (ClaimCore.TestSupport.Inputs.caseListPage (query cursor 50)) token
+
+        Expect.equal
+            stale
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "The new case changes the authorized traversal for a fresh read"
+
+        let freshCursor = (page fresh).NextCursor
+        Expect.isSome freshCursor "Restarting returns a new continuation"
+
         let! next =
-            (Service.list
+            Service.list
                 actor
-                ((ClaimCore.TestSupport.Inputs.caseListPage (query cursor 50)))
-                (token))
+                (ClaimCore.TestSupport.Inputs.caseListPage (query freshCursor 50))
+                token
+
+        Expect.equal
+            ((page next).Items |> List.map reference)
+            [ "CASE-AFTER"; "CASE-B"; "CASE-C" ]
+            "The restarted traversal includes the newly accepted case"
 
         Expect.isFalse
             ((page next).Offers
              |> List.exists (function
                  | InstallationOffer.Open _ -> true
                  | _ -> false))
-            "Plain continuation uses current people and does not restore registrar advice"
+            "Restarted continuation uses current people and does not restore registrar advice"
     }
 
 let private snapshot (database: PostgresFixture.Database) =
@@ -202,6 +215,7 @@ let private snapshot (database: PostgresFixture.Database) =
             (Service.list actor ((ClaimCore.TestSupport.Inputs.caseListPage (query None 1))) (token))
 
         let cursor = (page first).NextCursor
+        Expect.isSome cursor "The paused request will use a real continuation"
 
         let entered =
             TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)

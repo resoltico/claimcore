@@ -402,34 +402,35 @@ module internal OperationStorage =
                     let effectsBySequence = group 2 effects
                     let contentsBySequence = group 7 contents
 
-                    let records =
+                    // Keep ambiguity at its own identity so ordered verification can report
+                    // an earlier broken link or invalid root before forcing this restoration.
+                    return
                         roots
-                        |> List.map (fun root ->
-                            let operation = DatabaseSession.value<Guid> 9 root
-
-                            let sequence = DatabaseSession.value<int64> 0 root
-
-                            let rows =
-                                Map.tryFind sequence effectsBySequence |> Option.defaultValue []
-
-                            let compartments =
-                                Map.tryFind sequence contentsBySequence |> Option.defaultValue []
-
+                        |> List.groupBy (DatabaseSession.value<Guid> 9)
+                        |> List.map (fun (operation, matches) ->
                             operation,
                             fun () ->
-                                restoreRecord
-                                    cipher.InstallationId
-                                    (Some cipher)
-                                    (DatabaseSession.admitted OperationId.create operation)
-                                    root
-                                    rows
-                                    compartments)
-                        |> Map.ofList
+                                match matches with
+                                | [ root ] ->
+                                    let sequence = DatabaseSession.value<int64> 0 root
 
-                    if records.Count <> roots.Length then
-                        return corrupt ()
-                    else
-                        return records
+                                    let rows =
+                                        Map.tryFind sequence effectsBySequence
+                                        |> Option.defaultValue []
+
+                                    let compartments =
+                                        Map.tryFind sequence contentsBySequence
+                                        |> Option.defaultValue []
+
+                                    restoreRecord
+                                        cipher.InstallationId
+                                        (Some cipher)
+                                        (DatabaseSession.admitted OperationId.create operation)
+                                        root
+                                        rows
+                                        compartments
+                                | _ -> corrupt ())
+                        |> Map.ofList
         }
 
     let findMany connection cipher operations token =

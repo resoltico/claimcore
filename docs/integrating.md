@@ -333,6 +333,11 @@ Recovery records belong to a specific service, installation and account. The CLI
 and stores the task token with operation/attempt identity and ownership scope. Journal admission
 requires the supported format; incompatible records are refused without conversion.
 
+The Web build uses its own browser recovery database. It preserves saved identities across
+reloads of this build and leaves any earlier browser recovery database untouched. Keep the
+operation IDs of unconfirmed changes before replacing a build so you can check them directly
+against the installation that received them.
+
 If delivery is uncertain:
 
 1. Keep the original operation ID and frozen request bytes.

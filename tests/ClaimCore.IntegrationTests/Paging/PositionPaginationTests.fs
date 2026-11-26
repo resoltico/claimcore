@@ -60,7 +60,7 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.isNone rest.NextCursor "No omitted row"
     }
 
-let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
+let private requesterBinding (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases fixture admin
@@ -71,16 +71,31 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
                 ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
                 (CancellationToken.None))
 
-        let token = (succeeded first).NextCursor
+        let issued = (succeeded first).NextCursor
+        Expect.isSome issued "The first requester receives a continuation"
         let! _, another = reader fixture admin
+
+        let! ownPage =
+            Service.list
+                another
+                (ClaimCore.TestSupport.Inputs.caseListPage { AfterCursor = None; Limit = 1 })
+                CancellationToken.None
+
+        Expect.equal
+            ((succeeded ownPage).Items |> List.map reference)
+            [ "case-A" ]
+            "The second requester can independently read the same cases"
 
         let! crossed =
             (Service.list
                 another
-                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = token; Limit = 1 })))
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = issued; Limit = 1 })))
                 (CancellationToken.None))
 
-        Expect.equal (succeeded crossed).Items.Length 1 "Current people permits sharing a position"
+        Expect.equal
+            crossed
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "A different authorized requester cannot use the cursor"
 
         let! extra =
             grant
@@ -98,7 +113,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
         let! changed =
             (Service.list
                 admin
-                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = token; Limit = 1 })))
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = issued; Limit = 1 })))
                 (CancellationToken.None))
 
         Expect.equal
@@ -208,7 +223,10 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
                 )))
                 (CancellationToken.None))
 
-        Expect.equal (succeeded old).Items.Length 1 "Plain continuation survives facade restart"
+        Expect.equal
+            (succeeded old).Items.Length
+            1
+            "A continuation survives restart for the same requester"
     }
 
 let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
@@ -428,13 +446,13 @@ let tests =
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)
             testCaseAsync
-                "case positions may be shared under current people and survive irrelevant grant changes"
-                (run sharedPosition)
+                "case continuations bind the requester and survive irrelevant grant changes"
+                (run requesterBinding)
             testCaseAsync
                 "timeline positions bind the normalized resource and permit changed limits"
                 (run historyBinding)
             testCaseAsync
-                "malformed tokens refuse and plain positions survive restart"
+                "malformed tokens refuse and requester-bound continuations survive restart"
                 (run malformedAndRestart)
             testCaseAsync
                 "all pagination endpoints authorize and fetch within one read operation"

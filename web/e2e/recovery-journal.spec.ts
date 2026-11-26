@@ -20,7 +20,7 @@ import {
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startClose } from "./case-workflow";
 import { isHostFailure } from "../src/protocol/client";
-import { recoveryRecords } from "./recovery-storage";
+import { recoveryDatabaseName, recoveryRecords } from "./recovery-storage";
 
 /** A not-started admission refusal is not the pending/final lookup observation. */
 const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
@@ -860,9 +860,9 @@ test("a real blocked open refuses preparation and retains the earlier record @en
   const holder = await context.newPage();
   await openAuthenticated(holder);
   await holder.evaluate(
-    () =>
+    (databaseName) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("claimcore.recovery", 2);
+        const request = indexedDB.open(databaseName, 1);
         request.onerror = () => {
           reject(new Error("Hold connection failed"));
         };
@@ -876,6 +876,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
           resolve();
         };
       }),
+    recoveryDatabaseName,
   );
   const blocked = await page.evaluate(
     async ({ selectedScope, id }) => {
@@ -885,7 +886,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
       const protocol = (await import(protocolPath)) as typeof RecoveryModule;
       // The injected factory requests an upgrade so the browser emits a genuine blocked event.
       const factory = {
-        open: (name: string) => indexedDB.open(name, 3),
+        open: (name: string) => indexedDB.open(name, 2),
       } as IDBFactory;
       let dispatched = false;
       const record: RecoveryRecord = {
@@ -1015,7 +1016,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
                 }
               };
               upgraded = new Promise<void>((resolve, reject) => {
-                const upgrade = indexedDB.open(name, 3);
+                const upgrade = indexedDB.open(name, 2);
                 upgrade.onsuccess = () => {
                   upgrade.result.close();
                   resolve();
@@ -1031,7 +1032,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
         await module.createIndexedJournal(factory, name).put(identity);
         await upgraded;
         const retained = await new Promise<unknown>((resolve, reject) => {
-          const request = indexedDB.open(name, 3);
+          const request = indexedDB.open(name, 2);
           request.onsuccess = () => {
             const database = request.result;
             const tx = database.transaction("attempts", "readonly");
@@ -1210,6 +1211,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
         const request = indexedDB.open("claimcore.qa.old-identity", 1);
         request.onupgradeneeded = () => {
           request.result.createObjectStore("attempts");
+          request.result.createObjectStore("confirmed");
         };
         request.onsuccess = () => {
           resolve(request.result);
@@ -1263,6 +1265,88 @@ test("real IndexedDB retains only current work and reminder identities and refus
     ...work,
     format: 1,
   });
+});
+
+test("the current IndexedDB journal neither reads nor changes the previous database @engine", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  const previous = savedCaseAttempt(scope);
+  const current = savedCaseAttempt(scope);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
+
+  const recordsBeforeReload = await page.evaluate(
+    async ({ previous, current }) => {
+      const name = "claimcore.recovery";
+      const old = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name, 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore("attempts");
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const tx = old.transaction("attempts", "readwrite");
+          tx.objectStore("attempts").add(previous, [
+            previous.serviceOrigin,
+            previous.installationId,
+            previous.actorId,
+            previous.attemptId,
+          ]);
+          tx.oncomplete = () => resolve();
+          tx.onabort = () => reject(tx.error);
+        });
+      } finally {
+        old.close();
+      }
+      const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const module = (await import(path)) as typeof IndexedJournalModule;
+      const journal = module.createIndexedJournal(indexedDB);
+      const before = await journal.list(current);
+      await journal.put(current);
+      return before;
+    },
+    { previous, current },
+  );
+  expect(recordsBeforeReload).toEqual([]);
+
+  await page.reload();
+  expect(await records(page, scope)).toEqual([current]);
+  const earlier = await page.evaluate(
+    () =>
+      new Promise<{ version: number; stores: string[]; records: RecoveryRecord[] }>(
+        (resolve, reject) => {
+          const request = indexedDB.open("claimcore.recovery");
+          request.onupgradeneeded = () => {
+            request.transaction?.abort();
+            reject(new Error("The earlier database was missing."));
+          };
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const old = request.result;
+            const tx = old.transaction("attempts", "readonly");
+            const read = tx.objectStore("attempts").getAll();
+            tx.oncomplete = () => {
+              resolve({
+                version: old.version,
+                stores: Array.from(old.objectStoreNames),
+                records: read.result as RecoveryRecord[],
+              });
+              old.close();
+            };
+            tx.onabort = () => {
+              old.close();
+              reject(tx.error);
+            };
+          };
+        },
+      ),
+  );
+  expect(earlier).toEqual({ version: 1, stores: ["attempts"], records: [previous] });
 });
 
 test("one-step note delivery journals first and recovers the same interrupted operation", async ({

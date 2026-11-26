@@ -7,6 +7,7 @@
 - Start a [fresh installation](docs/operating.md#install-a-fresh-register) for format 11. Keep previous databases and backups with their matching builds.
 - Supply the PostgreSQL trust root at `ca.pem` for Compose. Startup validates TLS before initialization and refuses an initialized cluster with no application database.
 - Prepare browser catalogs before building Web. Deploy the matching immutable catalogs with the server's verified public asset inventory.
+- The browser uses a fresh recovery journal. Keep earlier journal records with the builds that wrote them.
 - For custom opening references, replace the positional reference in `claimcore case open` with `--case-reference REF`. With no reference supplied, ClaimCore assigns one.
 - Regenerate API clients for opening reference inputs, offers and previews, `REFERENCE_UNAVAILABLE`, `TRAVERSAL_CHANGED`, typed logout and identity dependency failures.
 - Update owner automation for structured attachment verification findings, `PROJECTIONS_CURRENT` and the publication generation in `status`.
