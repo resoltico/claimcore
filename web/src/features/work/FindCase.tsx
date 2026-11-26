@@ -250,6 +250,7 @@ export const FindCase = ({
       headingId={titleId}
       closeInHeader
       placement="top"
+      className="find-dialog"
       closeLabel={p.text("ui.close")}
       isOpen={open}
       isDismissable

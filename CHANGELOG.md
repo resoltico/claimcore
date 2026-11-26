@@ -21,6 +21,8 @@
 - Case work, payment selection and People dialogs open in the center. Scroll the dialog to reach its actions on short screens.
 - The opening form and review show when a case reference will be assigned. Custom entry explains that the reference stays reserved after correction or erasure.
 - Web and the Keycloak login theme display the same framed ClaimCore mark.
+- Malformed case-reference links explain the reference problem and offer Find a case when search is available.
+- The [CLI integration guide](docs/integrating.md) shows executable dry-run examples for operands after `--`.
 
 ## [0.22.0] - 2026-11-26
 

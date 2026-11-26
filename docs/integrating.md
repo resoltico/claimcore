@@ -405,13 +405,18 @@ value and before the `--` marker. For example,
 `claimcore people list --text='--urgent'` preserves the exact text filter. Repeated choices and
 collection rows use repeated assigned options, such as `--lifecycle=ACTIVE --lifecycle=VOIDED`.
 
-`--` ends option parsing. Put flags before it when a reference looks like an option:
-`claimcore case get --format=json -- --claim` and
-`claimcore case close --expected-revision=7 --preview -- --claim` retain the literal reference
-`--claim`. Tokens after the marker are operands, including `--help` and preference-looking values;
-profile defaults are inserted before the marker. Text acquired from files, stdin or an editor is
-passed as an assigned value and cannot become an option. Contextual read-form hints include required
-acquisition placeholders such as `<operation-id>`; replace the placeholder with the intended value.
+`--` ends option parsing. Put options before the marker. Tokens after it are operands, and each
+operand still has to satisfy its normal validation. The CLI inserts profile defaults before the
+marker. These dry runs build a read request and a close preview without contacting the service.
+
+```sh
+claimcore case get --format=json --dry-run -- CC-7K3M-Q8T2-PW6D-X9HR-49
+claimcore case close --expected-revision=7 --outcome settled --preview --dry-run -- CC-7K3M-Q8T2-PW6D-X9HR-49
+```
+
+Text acquired from files, stdin or an editor is passed as an assigned value and cannot become an
+option. Contextual read-form hints include required acquisition placeholders such as
+`<operation-id>`. Replace the placeholder with the intended value.
 
 ### CLI language and display locale
 

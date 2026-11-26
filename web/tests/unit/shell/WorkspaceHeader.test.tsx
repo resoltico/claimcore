@@ -12,7 +12,7 @@ import {
 
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import type { ComponentProps } from "react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { actorRefInput, workBasis } from "../../support/inputs";
 
@@ -87,6 +87,7 @@ it("shows only supplied account identity and keeps navigation independent from r
 });
 
 it("offers named global Find from other screens and respects the lock", async () => {
+  const launchFind = vi.fn();
   const header = (locked: boolean) => (
     <Shell
       route={{ screen: "reminders", query: "" }}
@@ -94,16 +95,22 @@ it("offers named global Find from other screens and respects the lock", async ()
       views={["case.list"]}
       tasks={[]}
       locked={locked}
+      onFind={launchFind}
     />
   );
   const view = render(header(false));
   const trigger = screen.getByRole("button", { name: /^Find a case/u });
   expect(trigger).toBeEnabled();
   await userEvent.click(trigger);
-  expect(screen.getByRole("dialog", { name: "Find a case" })).toBeVisible();
-  await userEvent.keyboard("{Escape}");
+  expect(launchFind).toHaveBeenCalledWith(trigger.id);
+  const modifier = /Mac|iPhone|iPad|iPod/u.test(navigator.platform) ? "Meta" : "Control";
+  const shortcut = `{${modifier}>}k{/${modifier}}`;
+  await userEvent.keyboard(shortcut);
+  expect(launchFind).toHaveBeenLastCalledWith();
   view.rerender(header(true));
   expect(trigger).toBeDisabled();
+  await userEvent.keyboard(shortcut);
+  expect(launchFind).toHaveBeenCalledTimes(2);
 });
 
 it("keeps compact sidebar links named when their visual tooltip captions are hidden", () => {

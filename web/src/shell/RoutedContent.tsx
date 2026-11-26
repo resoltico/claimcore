@@ -455,11 +455,13 @@ const CaseRoute = ({
   caseAvailable,
   caseAuthoringAvailable,
   refresh,
+  onFind,
   setLocked,
   committed,
 }: CaseRouteProps & {
   route: Extract<Route, { screen: "case" | "caseAct" }>;
   refresh: number;
+  onFind: ComponentProps<typeof CaseDetailType>["onFind"];
   caseAuthoringAvailable: boolean;
 }) => {
   const act = route.screen === "caseAct" ? route.act : null;
@@ -498,6 +500,7 @@ const CaseRoute = ({
       authoringAvailable={caseAuthoringAvailable}
       definition={productMetadata.catalog}
       onBack={caseNavigation.backToCases}
+      onFind={onFind}
       onAct={caseNavigation.openAct}
       onMutationLockChange={setLocked}
       operation={operation}
@@ -513,12 +516,14 @@ export const RoutedContent = ({
   caseAvailable = true,
   caseAuthoringAvailable = caseAvailable,
   caseNavigation,
+  onFind,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
   peopleAvailable?: boolean;
   caseAvailable?: boolean;
   caseAuthoringAvailable?: boolean;
+  onFind?: ComponentProps<typeof CaseDetailType>["onFind"];
   caseNavigation: ReturnType<typeof useCaseNavigation>;
 }) => {
   const callbacks = { setLocked, committed, caseAvailable, caseNavigation };
@@ -534,6 +539,7 @@ export const RoutedContent = ({
         <CaseRoute
           route={route}
           refresh={refresh}
+          onFind={onFind}
           caseAuthoringAvailable={caseAuthoringAvailable}
           {...callbacks}
         />
