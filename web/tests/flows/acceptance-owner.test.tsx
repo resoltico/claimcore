@@ -4,7 +4,7 @@ import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { beforeEach, expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render } from "../support/presentation-test-support";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { SessionContext } from "../../src/session/SessionContext";
 
 import type { ActiveRequester } from "../../src/hooks/useRequesterContext";
@@ -45,7 +45,7 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
           },
   }),
 }));
-vi.mock("../../src/views/RoutedContent", () => ({
+vi.mock("../../src/shell/RoutedContent", () => ({
   RoutedContent: ({
     committed,
   }: {

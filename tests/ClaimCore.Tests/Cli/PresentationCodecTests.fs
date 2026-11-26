@@ -12,7 +12,8 @@ open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private read value = PresentationCodecs.value.Read "$" value
+let private read value =
+    PresentedValueCodecs.value.Read "$" value
 
 let private money amount scale =
     JsonValue.Object
@@ -40,7 +41,7 @@ let tests =
                 let role = PresentedValue.Code("partyRole", "CLAIMANT")
 
                 Expect.equal
-                    (PresentationCodecs.value.Write role)
+                    (PresentedValueCodecs.value.Write role)
                     (wire "CLAIMANT")
                     "A case party role has an encoded human representation"
 
@@ -67,7 +68,7 @@ let tests =
                 let value = read (wire "OVERDUE") |> CaseBuilders.accepted
 
                 Expect.equal
-                    (PresentationCodecs.value.Write value)
+                    (PresentedValueCodecs.value.Write value)
                     (wire "OVERDUE")
                     "Both parts survive"
 
@@ -87,7 +88,7 @@ let tests =
                 | _ -> failtest "Expected money"
 
                 Expect.equal
-                    (PresentationCodecs.value.Write value)
+                    (PresentedValueCodecs.value.Write value)
                     provided
                     "No facet metadata is masked during decode/write"
 
@@ -138,7 +139,7 @@ let tests =
                         "Unknown semantic tags refuse"
 
                     Expect.isError
-                        (PresentationCodecs.review.Read
+                        (PresentedValueCodecs.review.Read
                             "$"
                             (JsonValue.Object [ "changes", JsonValue.Array [] ]))
                         "Unchanged identity list is required")

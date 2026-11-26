@@ -163,3 +163,28 @@ module WorkViewsScreen =
                             })
                     |> withEmpty "empty.workViews"
             ]
+
+    let document (value: WorkViews) =
+        let links =
+            (value.CaseViews
+             |> List.map (fun item ->
+                 NamedLink.create
+                     (labelId (CaseView.token item.View))
+                     LinkRelation.View
+                     (Link.caseList (Some item.View))))
+            @ (value.ReminderViews
+               |> List.map (fun item ->
+                   NamedLink.create
+                       (labelId (ReminderView.token item.View))
+                       LinkRelation.View
+                       (Link.reminderList item.View)))
+
+        HumanDocument.snapshot
+            value.Basis
+            (view value)
+            DocumentSubject.List
+            []
+            links
+            None
+            HumanDisclosure.Current
+            None

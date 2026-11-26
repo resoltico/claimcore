@@ -2,6 +2,7 @@
 
 Use this guide to build, change and verify ClaimCore. User tasks belong in [Case work](case-work.md),
 client contracts in [Integrating](integrating.md), and deployment tasks in [Operating](operating.md).
+Trace a behavior to its owners and checks in the [source guide](source-guide.md).
 
 ## First checkout
 
@@ -56,12 +57,6 @@ field kinds and money relationships; typed records retain validated structure th
 [CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 
-[Work selections](../src/ClaimCore.Domain/WorklistSemantics.fs),
-[filter/classification plans](../src/ClaimCore.Domain/Reads.fs) and
-[assignee eligibility](../src/ClaimCore.Domain/Access.fs) own worklist policy. The SQL adapters
-interpret their closed facts before paging or aggregation; lists, counts and displayed assignee
-availability use those same declarations. Keep database witnesses literal and independent of them.
-
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 [Task modules](../src/ClaimCore.Domain/Tasks/Registry.fs) own declarations, checks, availability and decisions.
 [CaseFamily](../src/ClaimCore.Domain/Aggregates/CaseFamily.fs) and [Person](../src/ClaimCore.Domain/Aggregates/Person.fs)
@@ -76,11 +71,6 @@ reviews, receipts and history.
 [endpoint declarations](../src/ClaimCore.Application.Contracts/EndpointDeclarations.fs) for clients; [OperationSubmission](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) assembles
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
 Generated types and task metadata live in `contracts/client.ts`; collection row keys stay outside submissions.
-
-Browser operations use one reducer in `web/src/operation/operationState.ts`. Draft authoring,
-delivery transitions and disclosed reads have separate owners in the adjacent modules; the reducer
-coordinates their transitions. `protocol/ownerScope.ts` defines ephemeral origin/installation/actor/
-session ownership; durable recovery records retain principal scope without a session epoch.
 
 RecordFormat owns canonical business-input codecs and the single installation format. Wire owns closed submission maps and transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
@@ -245,19 +235,8 @@ Do not duplicate that full qualification locally. Diagnose failures from their o
 and rerun the affected paths; preserve earlier failures in the report. Passing focused checks does not
 establish that unrun stages passed. Avoid duplicate full runs solely because both local and CI are available.
 
-| Stage | Scope |
-| --- | --- |
-| lint | Fantomas over src, tests and eng |
-| unit | Native behavior, properties, vectors and architecture |
-| frontend | Formatting, design/theme lint, types, units, Knip, licenses and build |
-| advisories | Locked native and npm audits at low severity on dependency-changing PRs and full CI runs |
-| workflows | Pinned ShellCheck and Actionlint, with qualification and advisory report controls |
-| integration | PostgreSQL and Web suites |
-| postgres / server | One isolated suite |
-| browsers | Install locked Playwright engines when their version changes |
-| acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
-| acceptance-browser | Chromium complete in three shards, `1/3` through `3/3`; Firefox/WebKit `@engine` cases |
-| acceptance | Native acceptance, then the browser scopes |
+Run `bash eng/verify.sh --help` for stage names and supported acceptance selectors.
+The [engineering guide](../eng/README.md) describes the verification tools and hosted checks.
 
 With current Release applications, acceptance assembly and frontend assets built, select a browser file:
 

@@ -123,3 +123,44 @@ module PersonScreen =
                     ]
             ]
         )
+
+    let document (value: PeopleGrantPage) =
+        let actor = value.Actor.Actor.ActorId
+
+        let actions =
+            (value.Controls |> List.choose TaskAffordances.fromOffer)
+            @ (if value.CanTerminateSessions then
+                   [ Affordance.command (CommandRequest.TerminatePersonSessions actor) ]
+               else
+                   [])
+
+        let links =
+            value.Actor.ResponsibleCases
+            |> Option.map (fun selection ->
+                NamedLink.create
+                    "field.responsibleActor.label"
+                    LinkRelation.View
+                    (Link.CaseList
+                        {
+                            Page =
+                                {
+                                    AfterCursor = None
+                                    Limit = Paging.DefaultPageSize
+                                }
+                            Filter =
+                                { CaseListFilter.activeOpen<string> with
+                                    View = Some selection.View
+                                    ResponsibleActor = Some selection.ResponsibleActor
+                                }
+                        }))
+            |> Option.toList
+
+        HumanDocument.snapshot
+            value.Basis
+            (view value)
+            (DocumentSubject.Person actor)
+            actions
+            links
+            value.NextCursor
+            HumanDisclosure.Current
+            None

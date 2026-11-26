@@ -267,7 +267,7 @@ let internal grant (actor: ServiceContext) operationId target (grant: GrantInput
         let! observed =
             actor.Store.Read
                 {
-                    Work = (fun tx -> AggregateStorage.principal tx target)
+                    Work = (fun tx -> PersonAcquisition.principal tx target)
                     CancellationToken = CancellationToken.None
                 }
 

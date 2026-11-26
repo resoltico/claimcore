@@ -3,6 +3,58 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+default_stages=(lint unit frontend workflows advisories integration acceptance)
+fast_stages=(lint unit frontend)
+valid_stages=("${default_stages[@]}" postgres server browsers acceptance-native acceptance-browser)
+
+if [[ $# -eq 1 && "$1" == --help ]]; then
+  printf 'Usage: bash eng/verify.sh [--help | --fast | STAGE ...]\n\n'
+  printf 'Default stages: %s\n' "${default_stages[*]}"
+  printf 'Fast path without Docker: %s\n' "${fast_stages[*]}"
+  printf 'Valid stages: %s\n\n' "${valid_stages[*]}"
+  cat <<'EOF'
+Native acceptance selector
+  CLAIMCORE_ACCEPTANCE_SHARD=walkthrough|remaining
+
+Browser selectors
+  CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=chromium|firefox|webkit
+  CLAIMCORE_ACCEPTANCE_BROWSER_SPEC=<Playwright file filter>
+  CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=<index>/<total> (Chromium only)
+  See eng/ci_policy.py for the hosted Chromium shard allocation.
+
+With no selectors, native acceptance runs both groups and browser acceptance
+runs all engines. Firefox and WebKit run the @engine cases.
+EOF
+  exit 0
+fi
+
+if [[ $# -eq 0 ]]; then
+  stages=("${default_stages[@]}")
+elif [[ "$1" == --fast ]]; then
+  if [[ $# -ne 1 ]]; then
+    echo "--fast must be the sole argument" >&2
+    exit 64
+  fi
+  stages=("${fast_stages[@]}")
+else
+  stages=("$@")
+fi
+
+# Validate all arguments before restoring inputs or running a partial gate.
+for stage in "${stages[@]}"; do
+  valid=false
+  for candidate in "${valid_stages[@]}"; do
+    if [[ "${stage}" == "${candidate}" ]]; then
+      valid=true
+      break
+    fi
+  done
+  if ! ${valid}; then
+    echo "unknown stage: ${stage}" >&2
+    exit 64
+  fi
+done
+
 # These assignments are also the inputs each native stage executes.
 unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj)
 postgres_projects=(tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj)
@@ -27,26 +79,6 @@ for project in tests/*/*Tests.fsproj; do
     exit 64
   fi
 done
-
-if [[ $# -eq 0 ]]; then
-  stages=(lint unit frontend workflows advisories integration acceptance)
-elif [[ "$1" == --fast ]]; then
-  if [[ $# -ne 1 ]]; then
-    echo "--fast must be the sole argument" >&2
-    exit 64
-  fi
-  stages=(lint unit frontend)
-else
-  stages=("$@")
-fi
-# Validate all arguments before restoring inputs or running a partial gate.
-for stage in "${stages[@]}"; do
-  case "${stage}" in
-    lint | unit | frontend | workflows | advisories | integration | postgres | server | browsers | acceptance | acceptance-native | acceptance-browser) ;;
-    *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
-  esac
-done
-
 
 # Check the daemon once before any restore, build or browser download. Each fixture still
 # validates its pinned images and owns its isolated resources.

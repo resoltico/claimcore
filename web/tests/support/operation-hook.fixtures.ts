@@ -3,7 +3,7 @@ import type { PreparedRequest } from "../../src/protocol/preparedRequest";
 import { recoveryOptions } from "./recovery.fixtures";
 import { renderHook } from "@testing-library/react";
 import { vi } from "vitest";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { current, preparedFor } from "./operation-form.fixtures";
 import { closeReview, openReview } from "./operation-documents.fixtures";

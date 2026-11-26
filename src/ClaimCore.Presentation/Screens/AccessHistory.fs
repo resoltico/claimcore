@@ -125,3 +125,6 @@ module AccessHistoryScreen =
             ]
 
     let view (reply: PeopleHistoryPage) = rows reply.Entries
+
+    let document (value: PeopleHistoryPage) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor

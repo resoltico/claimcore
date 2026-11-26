@@ -4,7 +4,7 @@ import { basename, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 
-const viewerEntry = fileURLToPath(new URL("../src/views/case/pdf/viewer.ts", import.meta.url));
+const viewerEntry = fileURLToPath(new URL("../src/features/case/pdf/viewer.ts", import.meta.url));
 const contracts = fileURLToPath(new URL("../../contracts", import.meta.url));
 const pdfjs = new URL("../node_modules/pdfjs-dist/", import.meta.url);
 const resourceModule = "virtual:attachment-preview-resources";

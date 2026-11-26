@@ -18,7 +18,7 @@ module internal OperationQueries =
             let! entry =
                 OperationStorage.find tx.Connection tx.Cipher operation tx.CancellationToken
 
-            let! person = AggregateStorage.principal tx services.Principal
+            let! person = PersonAcquisition.principal tx services.Principal
 
             let caller =
                 person

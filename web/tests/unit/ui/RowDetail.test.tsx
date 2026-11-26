@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { Screen, PresentedSection } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { endpointResponse } from "../../support/transport-response.fixtures";
-import { CaseTimeline } from "../../../src/views/case/CaseTimeline";
+import { CaseTimeline } from "../../../src/features/case/CaseTimeline";
 import { DataTable } from "../../../src/ui/DataTable";
 import { actorRefInput, workBasis } from "../../support/inputs";
 

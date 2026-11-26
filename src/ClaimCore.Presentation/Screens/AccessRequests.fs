@@ -87,3 +87,11 @@ module AccessRequestsScreen =
                             }
                         ])
             ]
+
+    let document (value: AccessRequestPage) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor
+
+    let dismissedDocument () =
+        { HumanDocument.empty HumanDisclosure.Current with
+            Screen = dismissed ()
+        }

@@ -38,7 +38,7 @@ let private actor =
     }
 
 let private document offers seed =
-    HumanReadDocuments.grants
+    PersonScreen.document
         {
             Revision = Revision.first
             Controls =
@@ -177,7 +177,7 @@ let tests =
                             else
                                 []
 
-                        HumanReadDocuments.grants
+                        PersonScreen.document
                             {
                                 Revision = Revision.first
                                 Basis = DomainInputs.workBasis

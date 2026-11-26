@@ -3,7 +3,7 @@ import { recoveryOptions } from "../support/recovery.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { peopleAcceptance, peoplePreview } from "../support/people-operation.fixtures";
 import { peopleReceipt } from "../support/reply.fixtures";

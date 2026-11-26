@@ -5,7 +5,7 @@ import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 it("focuses the selected person dialog and restores its originating control on return", async () => {
   stubDashboardContext();
   mockEndpoint("case.list").mockResolvedValue({

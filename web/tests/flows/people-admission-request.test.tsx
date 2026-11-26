@@ -9,7 +9,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { peoplePreview } from "../support/people-operation.fixtures";

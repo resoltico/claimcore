@@ -1,7 +1,7 @@
 import { actorRefInput } from "../support/inputs";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { OperationLookup } from "../../src/views/OperationLookup";
+import { OperationLookup } from "../../src/features/recovery/OperationLookup";
 import { peopleReceipt } from "../support/reply.fixtures";
 import { definition } from "../support/service-ui.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";

@@ -251,7 +251,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.context
-                HumanReadDocuments.context
+                ContextScreen.document
                 (Outcome.Succeeded
                     {
                         Requester =
@@ -286,7 +286,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.casePayments
-                HumanReadDocuments.payments
+                PaymentsScreen.document
                 (Outcome.Succeeded
                     {
                         CasePaymentPage.Basis = basis
@@ -305,7 +305,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseAttachments
-                HumanReadDocuments.attachments
+                AttachmentsScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -318,7 +318,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseNotes
-                HumanReadDocuments.notes
+                NotesScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -335,7 +335,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseList
-                HumanReadDocuments.cases
+                CaseListScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -348,7 +348,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseSummary
-                HumanReadDocuments.summary
+                CaseTotalsScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -378,7 +378,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseAssignees
-                HumanReadDocuments.assignees
+                AssigneesScreen.document
                 (Outcome.Succeeded
                     {
                         CaseId = snapshot.CaseId
@@ -390,7 +390,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseParties
-                HumanReadDocuments.parties
+                PartiesScreen.document
                 (Outcome.Succeeded
                     {
                         PartyChoicePage.Basis = basis
@@ -411,7 +411,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.caseTimeline
-                HumanReadDocuments.timeline
+                TimelineScreen.document
                 (Outcome.Succeeded
                     {
                         Disclosure = HistoryDisclosure.Full
@@ -425,7 +425,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.workViews
-                HumanReadDocuments.views
+                WorkViewsScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -447,7 +447,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.reminder
-                HumanReadDocuments.reminder
+                ReminderScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -467,7 +467,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.reminders
-                (HumanReadDocuments.reminders (
+                (ReminderListScreen.document (
                     {
                         View = None
                         Target = None
@@ -491,7 +491,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.peopleList
-                HumanReadDocuments.actors
+                PeopleScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -501,7 +501,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.peopleGrants
-                HumanReadDocuments.grants
+                PersonScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -517,7 +517,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.peopleHistory
-                HumanReadDocuments.history
+                AccessHistoryScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -527,7 +527,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.peopleRequests
-                HumanReadDocuments.requests
+                AccessRequestsScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -537,7 +537,7 @@ let internal replies () : IEndpointOutput list =
         yield!
             actorRead
                 Api.disclosureTrail
-                HumanReadDocuments.disclosureTrail
+                DisclosureTrailScreen.document
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -560,7 +560,10 @@ let internal replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            actorRead Api.peopleRequestsDismiss HumanReadDocuments.dismissed (Outcome.Succeeded())
+            actorRead
+                Api.peopleRequestsDismiss
+                AccessRequestsScreen.dismissedDocument
+                (Outcome.Succeeded())
         for outcome in
             [
                 preview.Outcome

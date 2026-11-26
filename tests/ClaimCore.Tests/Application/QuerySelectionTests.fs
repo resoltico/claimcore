@@ -29,7 +29,7 @@ let private peopleAndCursor () =
     let read = ungranted
 
     Expect.equal
-        (Queries.selectCases
+        (CaseSetQueries.selectCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             DomainInputs.workBasis
@@ -39,7 +39,7 @@ let private peopleAndCursor () =
         "Visibility precedes token parsing"
 
     Expect.equal
-        (Queries.selectActors
+        (PeopleQueries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {
@@ -53,7 +53,7 @@ let private peopleAndCursor () =
         "People precedes token parsing"
 
     Expect.equal
-        (Queries.selectActors
+        (PeopleQueries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {
@@ -79,7 +79,7 @@ let private peopleAndCursor () =
     let view = target.Actor
 
     Expect.equal
-        (Queries.selectGrants
+        (PeopleQueries.selectGrants
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             grants
@@ -92,7 +92,7 @@ let private peopleAndCursor () =
         target.Actor |> Option.map (fun value -> { value with Enabled = false })
 
     Expect.equal
-        (Queries.selectGrants
+        (PeopleQueries.selectGrants
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             grants
@@ -102,7 +102,7 @@ let private peopleAndCursor () =
         "Disabled target remains reviewable"
 
     Expect.equal
-        (Queries.selectGrants
+        (PeopleQueries.selectGrants
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             grants
@@ -112,7 +112,7 @@ let private peopleAndCursor () =
         "Absent target remains private"
 
     Expect.equal
-        (Queries.selectGrants
+        (PeopleQueries.selectGrants
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             grants
@@ -164,7 +164,7 @@ let private resources () =
     let expected = Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     Expect.equal
-        (Queries.caseResult
+        (CaseDetailQueries.caseResult
             (ReadFixtures.services installation calendar owner)
             tx
             read
@@ -178,7 +178,7 @@ let private resources () =
         "Inaccessible live case"
 
     Expect.equal
-        (Queries.caseResult
+        (CaseDetailQueries.caseResult
             (ReadFixtures.services installation calendar owner)
             tx
             { read with Case = None }
@@ -200,7 +200,7 @@ let private resources () =
         }
 
     Expect.equal
-        (Queries.caseResult
+        (CaseDetailQueries.caseResult
             (ReadFixtures.services installation calendar owner)
             tx
             { read with Case = Some erased }
@@ -219,7 +219,7 @@ let private context () =
     let view = ungranted
 
     match
-        Queries.contextResult
+        RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
@@ -243,7 +243,7 @@ let private context () =
     | other -> failtestf "Enabled ungranted actor needs NO_ROLES context, got %A" other
 
     match
-        Queries.contextResult
+        RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
@@ -267,7 +267,7 @@ let private context () =
         }
 
     match
-        Queries.contextResult
+        RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
@@ -297,7 +297,7 @@ let private context () =
         "Scoped auditor cannot observe installation people"
 
     Expect.equal
-        (Queries.selectActors
+        (PeopleQueries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {

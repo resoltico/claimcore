@@ -17,7 +17,7 @@ let private principal kind =
     |> Option.get
 
 let private requestPage key =
-    HumanReadDocuments.requests
+    AccessRequestsScreen.document
         {
             Basis = DomainInputs.workBasis
             NextCursor = None
@@ -200,7 +200,7 @@ let tests =
                         ])
                     "Explicit nonledger uncertainty"
 
-                let document = HumanReadDocuments.terminationUnknown ()
+                let document = SessionTerminationScreen.terminationUnknown ()
 
                 let text =
                     ViewText.renderDocument false (RenderingContext.forLanguage "en") document

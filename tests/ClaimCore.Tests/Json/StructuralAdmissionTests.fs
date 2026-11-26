@@ -126,7 +126,7 @@ let tests =
                                 entry
 
                         Expect.equal
-                            (Codec.validate 8192 PresentationCodecs.view (bytes raw) |> Result.isOk)
+                            (Codec.validate 8192 ScreenCodecs.screen (bytes raw) |> Result.isOk)
                             expected
                             "Only fact regions repeat"
 
@@ -149,7 +149,7 @@ let tests =
                                 rows
 
                         Expect.equal
-                            (Codec.validate 8192 PresentationCodecs.view (bytes raw) |> Result.isOk)
+                            (Codec.validate 8192 ScreenCodecs.screen (bytes raw) |> Result.isOk)
                             expected
                             "Unique column and row identities and one value per column")
             testCase "structural message arguments cannot silently overwrite one another" (fun () ->
@@ -162,7 +162,7 @@ let tests =
                             arguments
 
                     Expect.equal
-                        (Codec.validate 8192 PresentationCodecs.view (bytes raw) |> Result.isOk)
+                        (Codec.validate 8192 ScreenCodecs.screen (bytes raw) |> Result.isOk)
                         expected
                         "Message argument identity is structural")
             testCase

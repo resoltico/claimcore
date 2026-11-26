@@ -1,6 +1,6 @@
 import type { taskChoices, HumanDocument, PresentedValue } from "@contracts/client";
 
-import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
+import type { CaseCounts, ReminderCounts } from "../../src/features/work/WorkspaceViews";
 import { workBasis } from "./inputs";
 
 type CaseViewFixture = {

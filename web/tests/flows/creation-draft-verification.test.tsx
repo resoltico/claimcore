@@ -6,7 +6,7 @@ import {
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import { RequesterContext, type ActiveRequester } from "../../src/hooks/useRequesterContext";
 import { service } from "../../src/api/service";
 import { TestProviders } from "../support/presentation-test-support";

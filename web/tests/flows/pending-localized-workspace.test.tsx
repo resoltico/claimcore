@@ -7,7 +7,7 @@ import {
   waitFor,
 } from "../support/presentation-test-support";
 import { defaults, savePreferences } from "../../src/presentation/preferences";
-import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
+import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { service } from "../../src/api/service";
 import { pendingLookup } from "../support/operation-lookup.fixtures";

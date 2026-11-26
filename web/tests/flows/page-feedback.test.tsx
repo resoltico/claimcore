@@ -1,5 +1,5 @@
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { CaseTimeline } from "../../src/views/case/CaseTimeline";
+import { CaseTimeline } from "../../src/features/case/CaseTimeline";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { ListFooter } from "../../src/ui/ListFooter";

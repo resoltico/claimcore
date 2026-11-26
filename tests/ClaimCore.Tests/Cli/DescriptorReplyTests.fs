@@ -185,7 +185,7 @@ let tests =
                                 render
                                     Api.peopleList
                                     (HumanReplies.read
-                                        HumanReadDocuments.actors
+                                        PeopleScreen.document
                                         (Outcome.Succeeded
                                             {
                                                 Basis = DomainInputs.workBasis
@@ -196,7 +196,7 @@ let tests =
                                 render
                                     Api.peopleGrants
                                     (HumanReplies.read
-                                        HumanReadDocuments.grants
+                                        PersonScreen.document
                                         (Outcome.Succeeded
                                             {
                                                 Revision = Revision.first
@@ -226,7 +226,7 @@ let tests =
                                 render
                                     Api.peopleRequests
                                     (HumanReplies.read
-                                        HumanReadDocuments.requests
+                                        AccessRequestsScreen.document
                                         (Outcome.Succeeded
                                             {
                                                 Basis = DomainInputs.workBasis
@@ -252,7 +252,7 @@ let tests =
                                 render
                                     Api.peopleRequestsDismiss
                                     (HumanReplies.read
-                                        HumanReadDocuments.dismissed
+                                        AccessRequestsScreen.dismissedDocument
                                         (Outcome.Succeeded())
                                      |> RepresentationReply.Human)
                             ]
@@ -405,7 +405,7 @@ let assigneePresentation =
                             CliReplies.ofValue
                                 Api.caseAssignees
                                 (HumanReplies.read
-                                    HumanReadDocuments.assignees
+                                    AssigneesScreen.document
                                     (Outcome.Succeeded page)
                                  |> RepresentationReply.Human)
                         ))
@@ -569,7 +569,7 @@ let fullDirectoryAndAuditDetails =
             let wire =
                 HumanReplies.read
                     (fun value ->
-                        { HumanReadDocuments.history value with
+                        { AccessHistoryScreen.document value with
                             Screen = view
                         })
                     (Outcome.Succeeded history)
@@ -647,7 +647,7 @@ let fullDirectoryAndAuditDetails =
                 }
 
             let directory =
-                HumanReplies.read HumanReadDocuments.actors (Outcome.Succeeded page)
+                HumanReplies.read PeopleScreen.document (Outcome.Succeeded page)
                 |> RepresentationReply.Human
                 |> CliReplies.ofValue Api.peopleList
 
@@ -702,7 +702,7 @@ let emptyGrantPageDetails =
             }
 
         let reply =
-            HumanReplies.read HumanReadDocuments.grants (Outcome.Succeeded page)
+            HumanReplies.read PersonScreen.document (Outcome.Succeeded page)
             |> RepresentationReply.Human
             |> CliReplies.ofValue Api.peopleGrants
 

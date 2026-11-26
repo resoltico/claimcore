@@ -191,9 +191,14 @@ module HumanReplies =
     let sessionTermination =
         function
         | SessionTerminationResult.Succeeded value ->
-            HumanSessionTerminationResult.Succeeded(value.Self, HumanReadDocuments.terminated value)
+            HumanSessionTerminationResult.Succeeded(
+                value.Self,
+                SessionTerminationScreen.terminated value
+            )
         | SessionTerminationResult.Rejected refusal ->
             HumanSessionTerminationResult.Rejected(rejection refusal)
         | SessionTerminationResult.Failed fault -> HumanSessionTerminationResult.Failed fault
         | SessionTerminationResult.OutcomeUnknown ->
-            HumanSessionTerminationResult.OutcomeUnknown(HumanReadDocuments.terminationUnknown ())
+            HumanSessionTerminationResult.OutcomeUnknown(
+                SessionTerminationScreen.terminationUnknown ()
+            )

@@ -62,7 +62,7 @@ const { root } = parse(checkout);
 const allowed = (path: string) => fileURLToPath(new URL(path, import.meta.url)).slice(root.length);
 
 const presentationImport = {
-  group: ["**/views/**", "**/components/**", "**/presentation/**"],
+  group: ["**/features/**", "**/shell/**", "**/components/**", "**/presentation/**"],
   message: "Lower layers must not import presentation layers.",
 };
 
@@ -304,7 +304,8 @@ const config: OxlintConfig = defineConfig({
                   "react",
                   "react-*",
                   "node:*",
-                  "**/views/**",
+                  "**/features/**",
+                  "**/shell/**",
                   "**/components/**",
                   "**/presentation/**",
                   "**/hooks/**",
@@ -409,7 +410,7 @@ const config: OxlintConfig = defineConfig({
           {
             zones: [
               {
-                target: ["./src/api", "./src/operation", "./src/hooks"],
+                target: coordinatorFiles,
                 from: "./src/presentation",
                 message: "Keep presentation outside transport and request coordination.",
               },

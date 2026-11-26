@@ -7,7 +7,7 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
-import { CaseDetail } from "../../src/views/CaseDetail";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { definition, fields } from "../support/service-ui.fixtures";
 const pending = <T,>() => {

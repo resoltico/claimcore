@@ -3,7 +3,7 @@ import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import { CaseDetail } from "../../src/views/CaseDetail";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";

@@ -1,8 +1,8 @@
-import { OperationFeedback } from "../../src/views/operation/ReceiptFeedback";
+import { OperationFeedback } from "../../src/features/operation/ReceiptFeedback";
 import { useAcceptedOperation } from "../../src/hooks/useAcceptedOperation";
 import { vi } from "vitest";
-import { InlineNoteDraftProvider } from "../../src/views/case/InlineNoteDraft";
-import { WorkspaceViewsContext } from "../../src/views/WorkspaceViews";
+import { InlineNoteDraftProvider } from "../../src/features/case/InlineNoteDraft";
+import { WorkspaceViewsContext } from "../../src/features/work/WorkspaceViews";
 import { testWorkspaceViews } from "./view-counts.fixtures";
 import { JournalContext } from "../../src/recovery/JournalContext";
 import { testJournal } from "./recovery.fixtures";

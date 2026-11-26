@@ -435,7 +435,7 @@ let nextAndConflicts =
                             |> List.map (fun (key, value) ->
                                 key,
                                 if key = "screen" then
-                                    PresentationCodecs.view.Write supplied
+                                    ScreenCodecs.screen.Write supplied
                                 else
                                     replace value)
                             |> ClaimCore.Json.JsonValue.Object

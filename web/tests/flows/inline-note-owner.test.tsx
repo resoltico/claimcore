@@ -7,7 +7,7 @@ import {
   InlineNoteDraftProvider,
   useInlineNoteDraft,
   type NoteIntent,
-} from "../../src/views/case/InlineNoteDraft";
+} from "../../src/features/case/InlineNoteDraft";
 const id = "20000000-0000-4000-8000-000000000001";
 let notes: ReturnType<typeof useInlineNoteDraft>;
 const Probe = ({ caseId = id }: { caseId?: string }) => {

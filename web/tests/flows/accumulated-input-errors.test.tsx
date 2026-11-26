@@ -2,7 +2,7 @@ import { endpointResponse } from "../support/transport-response.fixtures";
 import { expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, getButton, waitFor } from "../support/presentation-test-support";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { definition } from "../support/service-ui.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import type { HumanInputIssue } from "@contracts/client";

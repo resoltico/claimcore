@@ -38,6 +38,7 @@ run `claimcore work views` to inspect work queues or `claimcore operation get OP
 | Find verbs and flags | `claimcore help` |
 | Find exit codes | `claimcore help exit-codes` |
 | Build, change and verify source | [Contributing](docs/contributing.md) |
+| Trace a behavior to its source and checks | [Source guide](docs/source-guide.md) |
 | Understand terms and language status | [Glossary](docs/glossary.md) |
 
 ## Scope comparison

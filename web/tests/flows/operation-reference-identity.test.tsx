@@ -8,7 +8,7 @@ import { findButton, getButton, render, screen } from "../support/presentation-t
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({

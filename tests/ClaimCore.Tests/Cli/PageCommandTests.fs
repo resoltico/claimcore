@@ -115,7 +115,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                         (Api.caseList.Output.Write(
                             match Frames.representation frame with
                             | Representation.Human ->
-                                HumanReplies.read HumanReadDocuments.cases response
+                                HumanReplies.read CaseListScreen.document response
                                 |> RepresentationReply.Human
                             | Representation.Data -> RepresentationReply.Data response
                         ))

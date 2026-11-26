@@ -11,8 +11,8 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { CaseDetail } from "../../src/views/CaseDetail";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { service, type CurrentCase } from "../../src/api/service";
 
 import type { Screen } from "@contracts/client";

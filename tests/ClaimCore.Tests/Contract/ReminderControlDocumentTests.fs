@@ -64,7 +64,7 @@ let tests =
         "list and detail carry the same versioned reminder affordances and permitted seeds"
         (fun () ->
             let document =
-                (HumanReadDocuments.reminders (
+                (ReminderListScreen.document (
                     {
                         View = None
                         Target = None
@@ -136,7 +136,7 @@ let tests =
             Expect.isEmpty controls.Tail.Head.Seeds "Completion carries no editable action or date"
 
             let detail =
-                HumanReadDocuments.reminder
+                ReminderScreen.document
                     {
                         Basis = DomainInputs.workBasis
                         Item = item

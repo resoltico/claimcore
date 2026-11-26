@@ -1,6 +1,7 @@
 # Engineering commands
 
-Use focused checks while editing and `bash eng/verify.sh --fast` for a broader checkpoint. Run
+Use focused checks while editing and `bash eng/verify.sh --fast` for a broader checkpoint.
+Run `bash eng/verify.sh --help` for stages and acceptance selectors. Run
 the applicable final stages once, choosing CI or local execution as their owner. See the
 [verification policy](../docs/contributing.md#verification) for scope and evidence reuse.
 

@@ -48,7 +48,7 @@ module internal SessionTerminationQueries =
                                                                         .ResourceUnavailable
                                                             )
                                                     | Some id ->
-                                                        let! person = AggregateStorage.person tx id
+                                                        let! person = PersonAcquisition.person tx id
 
                                                         return
                                                             person

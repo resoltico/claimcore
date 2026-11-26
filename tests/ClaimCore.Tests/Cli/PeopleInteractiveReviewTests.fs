@@ -78,7 +78,7 @@ let private run words (answer: string option) =
                                 Api.peopleGrants
                                 (RepresentationReply.Human(
                                     HumanReplies.read
-                                        HumanReadDocuments.grants
+                                        PersonScreen.document
                                         (Outcome.Succeeded
                                             {
                                                 Revision = Revision.first

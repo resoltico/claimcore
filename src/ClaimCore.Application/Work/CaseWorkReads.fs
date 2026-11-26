@@ -210,7 +210,8 @@ module internal CaseWorkReads =
             let mutable families = Map.empty
 
             for id, selected in selected |> List.distinct |> List.groupBy fst do
-                let! acquired = AggregateStorage.familyForReminders tx id (selected |> List.map snd)
+                let! acquired =
+                    CaseFamilyAcquisition.familyForReminders tx id (selected |> List.map snd)
 
                 match acquired with
                 | Some acquired -> families <- Map.add id acquired.Facts families

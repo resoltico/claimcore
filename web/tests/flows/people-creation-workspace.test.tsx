@@ -5,7 +5,7 @@ import { fireEvent, within } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { setupActorTargets, listRoute } from "../support/actor-target.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
 import { service } from "../../src/api/service";
 const start = async () => {
   const preview = setupActorTargets(["people.register", "people.admit"]);

@@ -302,3 +302,132 @@ module ContextScreen =
 
     let logoutView () =
         Screen.create [ entryRegion RegionRole.Notice None (logout () |> List.collect _.Entries) ]
+
+    let document (value: ContextReply) =
+        let identity, basis, actions, links =
+            match value.Requester with
+            | RequesterState.Active actor ->
+                let actions =
+                    if actor.Maintenance.Active then
+                        []
+                    else
+                        actor.Offers
+                        |> List.map (TaskAffordances.installationOffer (Some actor.Issuer))
+
+                let links =
+                    actor.View
+                    |> List.map (function
+                        | View.Cases ->
+                            NamedLink.create
+                                "view.CASES.label"
+                                LinkRelation.View
+                                (Link.caseList (Some CaseView.NeedsAttention))
+                        | View.People ->
+                            NamedLink.create
+                                "view.PEOPLE.label"
+                                LinkRelation.View
+                                (Link.PeopleList
+                                    {
+                                        Role = None
+                                        AfterCursor = None
+                                        Limit = Paging.DefaultPageSize
+                                        Text = None
+                                    })
+                        | View.Operations ->
+                            NamedLink.create
+                                "view.OPERATIONS.label"
+                                LinkRelation.View
+                                Link.OperationLookupForm)
+
+                let links =
+                    links
+                    @ [
+                        if List.contains View.Cases actor.View then
+                            yield
+                                NamedLink.create
+                                    "label.reminders"
+                                    LinkRelation.View
+                                    (Link.reminderList ReminderView.Pending)
+                        if List.contains Capability.ReadAccess actor.Capability then
+                            yield
+                                NamedLink.create
+                                    "endpoint.people.history.label"
+                                    LinkRelation.View
+                                    (Link.PeopleHistory
+                                        {
+                                            TargetActorId = None
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
+                        if List.contains Capability.ReadDisclosureTrail actor.Capability then
+                            yield
+                                NamedLink.create
+                                    "endpoint.disclosure.trail.label"
+                                    LinkRelation.View
+                                    (Link.DisclosureTrail
+                                        {
+                                            ActorId = None
+                                            CaseId = None
+                                            Kind = None
+                                            From = None
+                                            Until = None
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
+                        if List.contains Capability.ManageAccess actor.Capability then
+                            yield
+                                NamedLink.create
+                                    "endpoint.people.requests.label"
+                                    LinkRelation.View
+                                    (Link.PeopleRequests
+                                        {
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
+                    ]
+
+                {
+                    State = RequesterKind.Active
+                    InstallationId = Some actor.InstallationId
+                    ActorId = Some actor.ActorId
+                },
+                ObservationBasis.Snapshot actor.Runtime.Basis,
+                actions,
+                links
+            | RequesterState.NoRoles actor ->
+                {
+                    State = RequesterKind.NoRoles
+                    InstallationId = Some actor.InstallationId
+                    ActorId = Some actor.Self.ActorId
+                },
+                ObservationBasis.Unavailable,
+                [],
+                []
+            | RequesterState.Disabled actor ->
+                {
+                    State = RequesterKind.Disabled
+                    InstallationId = None
+                    ActorId = Some actor.ActorId
+                },
+                ObservationBasis.Unavailable,
+                [],
+                []
+            | RequesterState.NotRegistered _ ->
+                {
+                    State = RequesterKind.NotRegistered
+                    InstallationId = None
+                    ActorId = None
+                },
+                ObservationBasis.Unavailable,
+                [],
+                []
+
+        HumanDocument.create
+            (DocumentSubject.Requester identity)
+            (view value)
+            (actions @ [ Affordance.command CommandRequest.TerminateOwnSessions ])
+            links
+            None
+            basis
+            HumanDisclosure.Current
+            None

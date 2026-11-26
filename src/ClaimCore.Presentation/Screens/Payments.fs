@@ -303,3 +303,17 @@ module PaymentsScreen =
             ]
             @ body
         )
+
+    let document (value: CasePaymentPage) =
+        HumanDocument.snapshot
+            value.Basis
+            (page value)
+            (DocumentSubject.Case(value.CaseId, value.Revision, value.WorkRevision))
+            []
+            []
+            value.NextCursor
+            (if CaseState.lifecycle value.State = Lifecycle.Erased then
+                 HumanDisclosure.Erased
+             else
+                 HumanDisclosure.Current)
+            None

@@ -61,7 +61,7 @@ module internal Advice =
         =
         task {
             let! current =
-                AggregateStorage.familyForPayments
+                CaseFamilyAcquisition.familyForPayments
                     tx
                     record.CaseId
                     (latestPayments |> List.map PaymentEntry.id)

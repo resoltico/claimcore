@@ -199,7 +199,7 @@ let tests =
                             Api.reminders
                             (RepresentationReply.Human(
                                 HumanReplies.read
-                                    (HumanReadDocuments.reminders (query [ "--state"; "ANY" ]))
+                                    (ReminderListScreen.document (query [ "--state"; "ANY" ]))
                                     result
                             ))
 

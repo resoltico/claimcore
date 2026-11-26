@@ -76,3 +76,6 @@ module DisclosureTrailScreen =
                 region RegionRole.Results None (RegionContent.Table rows)
                 |> withEmpty "empty.disclosureTrail"
             ]
+
+    let document (value: DisclosureTrailPage) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor

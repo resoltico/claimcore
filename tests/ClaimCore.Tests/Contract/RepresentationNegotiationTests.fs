@@ -37,7 +37,7 @@ let tests =
                 (fun () ->
                     let human =
                         Codec.record id
-                        |> Codec.field "document" id PresentationCodecs.view
+                        |> Codec.field "document" id ScreenCodecs.screen
                         |> Codec.build
 
                     let data =

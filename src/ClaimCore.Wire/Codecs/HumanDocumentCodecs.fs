@@ -166,12 +166,9 @@ module HumanDocumentCodecs =
                 AttachmentObservation = observation
             })
         |> field "subject" _.Subject subject
-        |> field "screen" _.Screen PresentationCodecs.view
-        |> field
-            "actions"
-            _.Actions
-            (list PresentationCodecs.MaximumActions PresentationCodecs.affordance)
-        |> field "links" _.Links (list PresentationCodecs.MaximumLinks PresentationCodecs.namedLink)
+        |> field "screen" _.Screen ScreenCodecs.screen
+        |> field "actions" _.Actions AffordanceCodecs.actions
+        |> field "links" _.Links (list LinkCodecs.MaximumLinks LinkCodecs.namedLink)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> field "basis" _.Basis basis
         |> field "disclosure" _.Disclosure disclosure
@@ -206,7 +203,7 @@ module HumanDocumentCodecs =
                 Presentation = presentation
             })
         |> field "document" _.Document document
-        |> field "presentation" _.Presentation PresentationCodecs.review
+        |> field "presentation" _.Presentation PresentedValueCodecs.review
         |> build
         |> named "HumanReview"
 
@@ -233,7 +230,7 @@ module HumanDocumentCodecs =
         : Fields<HumanInputIssue, _>)
         |> field "input" _.Input input
         |> field "row" (fun value -> value.Row |> Option.map TaskRowTarget.ordinal) (nullable row)
-        |> field "message" _.Message PresentationCodecs.message
+        |> field "message" _.Message PresentedMessageCodecs.message
         |> build
         |> named "HumanInputIssue"
 
@@ -248,7 +245,7 @@ module HumanDocumentCodecs =
                     | HumanRejection.Input(advice, issues) -> Some(advice, issues)
                     | _ -> None)
                     (record (fun advice issues -> advice, issues)
-                     |> field "advice" fst PresentationCodecs.advice
+                     |> field "advice" fst PresentedMessageCodecs.advice
                      |> field "issues" snd (boundedList 1 DiagnosticCodecs.MaximumInputIssues issue))
                 variant
                     "CONFLICT"
@@ -258,7 +255,7 @@ module HumanDocumentCodecs =
                         Some(advice, revision, document)
                     | _ -> None)
                     (record (fun advice revision document -> advice, revision, document)
-                     |> field "advice" (fun (value, _, _) -> value) PresentationCodecs.advice
+                     |> field "advice" (fun (value, _, _) -> value) PresentedMessageCodecs.advice
                      |> field "actualRevision" (fun (_, value, _) -> value) ResponseScalars.revision
                      |> field "document" (fun (_, _, value) -> value) document)
                 variant
@@ -267,7 +264,7 @@ module HumanDocumentCodecs =
                     (function
                     | HumanRejection.Refused value -> Some value
                     | _ -> None)
-                    (record id |> field "advice" id PresentationCodecs.advice)
+                    (record id |> field "advice" id PresentedMessageCodecs.advice)
             ]
 
     let readReply =

@@ -65,7 +65,8 @@
     <Compile Include="Reads/NoteReads.fs" />
     <Compile Include="Reads/LedgerReads.fs" />
     <Compile Include="Reads/PeopleReads.fs" />
-    <Compile Include="Storage/AggregateStorage.fs" />
+    <Compile Include="Storage/CaseFamilyAcquisition.fs" />
+    <Compile Include="Storage/PersonAcquisition.fs" />
     <Compile Include="Execution/ExecutionEnvironment.fs" />
     <Compile Include="Storage/WriteTransaction.fs" />
     <Compile Include="Execution/Engine.fs" />
@@ -92,7 +93,10 @@
     <Compile Include="People/SessionTerminationQueries.fs" />
     <Compile Include="Notes/NoteQueries.fs" />
     <Compile Include="Cases/PaymentQueries.fs" />
-    <Compile Include="Cases/Queries.fs" />
+    <Compile Include="Cases/CaseDetailQueries.fs" />
+    <Compile Include="Cases/CaseLookupQueries.fs" />
+    <Compile Include="Requester/RequesterContextQueries.fs" />
+    <Compile Include="Cases/CaseSetQueries.fs" />
     <Compile Include="Operations/OperationQueries.fs" />
     <Compile Include="Work/WorkQueries.fs" />
     <Compile Include="Work/ViewQueries.fs" />

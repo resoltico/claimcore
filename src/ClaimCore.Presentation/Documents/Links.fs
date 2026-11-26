@@ -78,6 +78,36 @@ module Link =
                 Limit = Paging.DefaultPageSize
             }
 
+    let caseList view =
+        Link.CaseList
+            {
+                Page =
+                    {
+                        AfterCursor = None
+                        Limit = Paging.DefaultPageSize
+                    }
+                Filter =
+                    { CaseListFilter.empty<string> with
+                        View = view
+                    }
+            }
+
+    let reminderList view =
+        Link.ReminderList
+            {
+                View = Some view
+                Target = None
+                State = None
+                Kind = None
+                DeadlineOutcome = None
+                Due = None
+                Assignment = None
+                Text = None
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
+                IncludeInactive = None
+            }
+
 [<RequireQualifiedAccess>]
 type LinkRelation =
     | OpenCase
@@ -95,3 +125,11 @@ type NamedLink =
         LabelId: string
         Link: Link
     }
+
+module NamedLink =
+    let create label relation link =
+        {
+            NamedLink.Relation = relation
+            LabelId = label
+            Link = link
+        }

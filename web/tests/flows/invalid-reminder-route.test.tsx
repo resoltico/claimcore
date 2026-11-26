@@ -3,7 +3,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { navigate } from "../../src/routing/navigation";
-import { App } from "../../src/App";
+import { App } from "../../src/shell/App";
 const session = vi.hoisted(() => ({
   state: { kind: "authenticated", token: "csrf", epoch: 1 },
   refresh: vi.fn(),

@@ -88,21 +88,21 @@ module ExportTransport =
                     (function
                     | ExportFailure.LimitExceeded value -> Some value
                     | _ -> None)
-                    (record id |> field "advice" id PresentationCodecs.advice)
+                    (record id |> field "advice" id PresentedMessageCodecs.advice)
                 variant
                     "PROCESSING_TIMEOUT"
                     ExportFailure.ProcessingTimeout
                     (function
                     | ExportFailure.ProcessingTimeout value -> Some value
                     | _ -> None)
-                    (record id |> field "advice" id PresentationCodecs.advice)
+                    (record id |> field "advice" id PresentedMessageCodecs.advice)
                 variant
                     "INVALID_CONTINUATION"
                     ExportFailure.InvalidContinuation
                     (function
                     | ExportFailure.InvalidContinuation value -> Some value
                     | _ -> None)
-                    (record id |> field "advice" id PresentationCodecs.advice)
+                    (record id |> field "advice" id PresentedMessageCodecs.advice)
             ]
 
     let failure =

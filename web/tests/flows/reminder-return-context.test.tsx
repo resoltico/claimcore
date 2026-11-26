@@ -7,7 +7,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { caseDocumentInput } from "../support/case-document.fixtures";
 import { workBasis } from "../support/inputs";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { navigate, routeSnapshot, setNavigationBlocker } from "../../src/routing/navigation";
 
 it("waits for the initial reminder page before restoring filtered queue focus and scroll", async () => {

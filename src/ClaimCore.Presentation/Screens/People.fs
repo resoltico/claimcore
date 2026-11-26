@@ -84,3 +84,6 @@ module PeopleScreen =
             rows
 
     let view (reply: ActorReviewPage) = rows reply.Items
+
+    let document (value: ActorReviewPage) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor

@@ -200,3 +200,29 @@ module CaseListScreen =
                     screen
 
         screen
+
+    let document (value: CaseSummaryPage) =
+        let links =
+            value.ExactReference
+            |> Option.map (fun value ->
+                let destination =
+                    match value.MatchedReference with
+                    | Some matched ->
+                        Link.CaseGet
+                            {
+                                Target = CaseSelector.Reference(CaseReference.format matched)
+                            }
+                    | None -> Link.caseById value.CaseId
+
+                NamedLink.create "field.caseReference.label" LinkRelation.OpenCase destination)
+            |> Option.toList
+
+        HumanDocument.snapshot
+            value.Basis
+            (view value)
+            DocumentSubject.List
+            (value.Offers |> List.map (TaskAffordances.installationOffer None))
+            links
+            value.NextCursor
+            HumanDisclosure.Current
+            None

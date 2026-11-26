@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { within } from "@testing-library/react";
-import { useOperation } from "../../src/hooks/operation/useOperation";
-import { OperationPanel, OperationDiscard } from "../../src/views/operation/OperationPanel";
+import { useOperation } from "../../src/operation/useOperation";
+import { OperationPanel, OperationDiscard } from "../../src/features/operation/OperationPanel";
 const locked = vi.fn();
 const Workspace = ({ epoch }: { epoch: number }) => {
   const model = useOperation({

@@ -1,7 +1,7 @@
 import { act, fireEvent } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
-import { useReviewEntry } from "../../../src/views/operation/useReviewEntry";
+import { useReviewEntry } from "../../../src/features/operation/useReviewEntry";
 import type { EffectIdentity } from "../../../src/operation/operationTypes";
 const first: EffectIdentity = {
   owner: testWorkspaceIdentity,

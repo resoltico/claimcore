@@ -30,7 +30,7 @@ import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
 import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 beforeEach(() => {
   stubViewCounts();
