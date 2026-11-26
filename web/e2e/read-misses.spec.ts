@@ -3,7 +3,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { openRecovery, showExactLookup, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "./fixtures";
+import { expect, test, type Page } from "./fixtures";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import {
@@ -15,6 +15,7 @@ import {
   noHorizontalOverflow,
 } from "./localization-support";
 import { endpoints } from "@contracts/client";
+import { openCase } from "./case-workflow";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup", async ({
   page,
@@ -75,6 +76,96 @@ test("keeps absent cases private and unknown operation outcomes pending", async 
   await expectAccessible(page);
 });
 
+const caseReadAt = async (page: Page, path: string) => {
+  const held = await pauseJsonReply(page, "case.get");
+  try {
+    await page.goto(path);
+    const { reply } = await held.ready;
+    expect(reply.outcome.kind).toBe("REJECTED");
+    if (reply.outcome.kind !== "REJECTED") {
+      throw new Error("Expected the case selector to be refused.");
+    }
+    return reply.outcome.rejection;
+  } finally {
+    held.release();
+  }
+};
+
+test("recovers from a malformed reference through the existing Find dialog", async ({ page }) => {
+  await openAuthenticated(page);
+  const reference = `FIND-ROUTE-${randomUUID().slice(0, 8).toUpperCase()}`;
+  await openCase(page, reference);
+  const casePath = new URL(page.url()).pathname;
+  const malformed = "CC-0000-0000-0000-0000-01";
+  const malformedPath = `/cases/reference/${malformed}`;
+  const main = page.getByRole("main");
+  await page.setViewportSize({ width: 320, height: 720 });
+
+  const english = await caseReadAt(page, malformedPath);
+  expect(english).toMatchObject({
+    kind: "INPUT",
+    advice: { action: "CORRECT_INPUT" },
+    issues: [
+      {
+        input: "field:caseReference",
+        row: null,
+        message: { messageId: "diagnostic.REFERENCE_FORMAT", arguments: [] },
+      },
+    ],
+  });
+  await expect(main.getByRole("alert")).toHaveText(ui("en", "diagnostic.REFERENCE_FORMAT.gui"));
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText(malformed);
+  await expect(main.getByText("Fields to check: 1.", { exact: true })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Try again", exact: true })).toHaveCount(0);
+  await expect(page.locator(".operation-form")).toHaveCount(0);
+
+  await selectLanguage(page, "lv");
+  expect(await caseReadAt(page, malformedPath)).toEqual(english);
+  await expect(main.getByRole("alert")).toHaveText(ui("lv", "diagnostic.REFERENCE_FORMAT.gui"));
+  await noHorizontalOverflow(page, "narrow");
+  await expectAccessible(page);
+
+  const findName = ui("lv", "ui.findCase");
+  const launcher = main.getByRole("button", { name: findName, exact: true });
+  const dialog = page.getByRole("dialog", { name: findName });
+  const search = dialog.getByRole("combobox");
+  await launcher.press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("");
+  await search.press("Escape");
+  await expect(launcher).toBeFocused();
+  await launcher.press("Enter");
+  await search.fill(reference.toLowerCase());
+  await search.press("Enter");
+  await expect(page).toHaveURL((url) => url.pathname === casePath);
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        id: document.activeElement?.id,
+        tag: document.activeElement?.tagName,
+      })),
+    )
+    .toEqual({ id: "case-detail-title", tag: "H1" });
+
+  await page.goBack();
+  await expect(page).toHaveURL((url) => url.pathname === malformedPath);
+  await expect(launcher).toBeVisible();
+  await expect
+    .poll(() => main.evaluate((area) => area.contains(document.activeElement)))
+    .toBe(true);
+
+  const absent = await caseReadAt(page, "/cases/reference/CC-7K3M-Q8T2-PW6D-X9HR-49");
+  expect(absent).toMatchObject({
+    kind: "REFUSED",
+    advice: { action: "ASK_FOR_ACCESS" },
+  });
+  await expect(main.getByRole("alert")).toBeVisible();
+  await expect(main.getByRole("alert")).not.toHaveText(ui("lv", "diagnostic.REFERENCE_FORMAT.gui"));
+  await expect(launcher).toHaveCount(0);
+  await expect(page.locator(".operation-form")).toHaveCount(0);
+});
+
 for (const language of ["ar", "en-XA"] as const) {
   test(`published pending lookup preserves its supplied deadline and reflows accessibly in ${language} at 320px`, async ({
     page,
@@ -94,7 +185,10 @@ for (const language of ["ar", "en-XA"] as const) {
     const submit = scope.locator('button[type="submit"]');
     const first = await pauseJsonReply(page, "operation.get");
     await field.fill(operationId);
-    await submit.press("Enter");
+    await expect(submit).toBeEnabled();
+    await submit.focus();
+    await expect(submit).toBeFocused();
+    await page.keyboard.press("Enter");
     const captured = await first.ready;
     first.release();
     expect(captured.reply.operationId).toBe(operationId);

@@ -48,20 +48,31 @@ type CaseDetailProps = {
   authoringAvailable?: boolean;
   definition: CatalogDocument;
   onBack: (worklist?: string) => void;
+  onFind?: ((invoker: string) => void) | undefined;
   onMutationLockChange?: MutationLockChange;
   onAct: (current: CurrentCase, action: Affordance, origin?: string) => void;
 };
+
+const referenceFindId = "case-reference-find";
 
 const CurrentFeedback = ({
   message,
   loading,
   onRetry,
+  onFind,
 }: {
   message: Notice | null;
   loading: boolean;
   onRetry: () => void;
+  onFind: CaseDetailProps["onFind"];
 }) => {
   const p = usePresentation();
+  const correction = message?.kind === "humanIssues";
+  const retry =
+    message !== null &&
+    !correction &&
+    (message.kind !== "human" ||
+      ["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(message.advice.action));
   return (
     <>
       {message === null ? null : (
@@ -69,13 +80,22 @@ const CurrentFeedback = ({
           <NoticeView value={message} />
         </p>
       )}
-      {message === null ||
-      (message.kind === "human" &&
-        !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(message.advice.action)) ? null : (
+      {correction && onFind !== undefined ? (
+        <Button
+          id={referenceFindId}
+          variant="secondary"
+          onPress={() => {
+            onFind(referenceFindId);
+          }}
+        >
+          {p.text("ui.findCase")}
+        </Button>
+      ) : null}
+      {retry ? (
         <Button variant="secondary" onPress={onRetry}>
           {p.text("ui.tryAgain")}
         </Button>
-      )}
+      ) : null}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
     </>
   );
@@ -467,6 +487,7 @@ const operationIsAvailable = (
 const CaseDisclosure = ({
   target,
   onBack,
+  onFind,
   onAct,
   onMutationLockChange = ignoreMutationLock,
   operation,
@@ -511,6 +532,7 @@ const CaseDisclosure = ({
       <CurrentFeedback
         message={current.message}
         loading={current.loading}
+        onFind={onFind}
         onRetry={() => {
           current.revalidate();
           document.getElementById("case-detail-title")?.focus();

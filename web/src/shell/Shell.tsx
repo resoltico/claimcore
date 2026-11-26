@@ -26,7 +26,7 @@ import { Icon } from "../ui/icons";
 import { ActionMenu } from "../ui/ActionMenu";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
-import { FindCase } from "../features/work/FindCase";
+import { workspaceFindId } from "./useWorkspaceFind";
 import {} from "./shell.css";
 
 const areas = [
@@ -192,6 +192,7 @@ export const Shell = ({
   locked,
   phoneActionRef,
   phoneTitle,
+  onFind,
 }: {
   route: Route;
   presentation: Screen | null;
@@ -200,6 +201,7 @@ export const Shell = ({
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
   phoneTitle?: string | undefined;
+  onFind?: ((invoker?: string) => void) | undefined;
   phoneActionRef?: (node: HTMLDivElement | null) => void;
 }) => {
   const p = usePresentation();
@@ -207,7 +209,6 @@ export const Shell = ({
   const counts = useNavigationCounts();
   const recovery = useRecovery();
   const { logout } = useSessionContext();
-  const [findOrigin, setFindOrigin] = useState<Route | null>(null);
   const [moreOrigin, setMoreOrigin] = useState<Route | null>(null);
   const cases = views.includes(apiEndpoints.caseList);
   const available: Record<Area["name"], boolean> = {
@@ -262,19 +263,20 @@ export const Shell = ({
       if (
         cases &&
         !locked &&
+        onFind !== undefined &&
         (apple ? event.metaKey : event.ctrlKey) &&
         !event.altKey &&
         event.key.toLowerCase() === "k"
       ) {
         event.preventDefault();
-        setFindOrigin(route);
+        onFind();
       }
     };
     window.addEventListener("keydown", keyDown);
     return () => {
       window.removeEventListener("keydown", keyDown);
     };
-  }, [cases, locked, apple, route]);
+  }, [cases, locked, apple, onFind]);
 
   const link = (area: Area) => (
     <ShellLink
@@ -286,27 +288,30 @@ export const Shell = ({
       counts={counts}
     />
   );
-  const find = (iconOnly: boolean) => (
-    <Button
-      id={iconOnly ? "workspace-phone-find" : "workspace-find"}
-      variant="quiet"
-      isDisabled={locked}
-      {...(iconOnly ? { "aria-label": p.text("ui.findCase") } : {})}
-      aria-keyshortcuts={apple ? "Meta+K" : "Control+K"}
-      className="shell-find"
-      onPress={() => {
-        setFindOrigin(route);
-      }}
-    >
-      <Icon name="search" />
-      {iconOnly ? null : (
-        <>
-          <span className="shell-link-label">{p.text("ui.findCase")}</span>
-          <kbd aria-hidden="true">{shortcut}</kbd>
-        </>
-      )}
-    </Button>
-  );
+  const find = (iconOnly: boolean) => {
+    const id = workspaceFindId(iconOnly);
+    return (
+      <Button
+        id={id}
+        variant="quiet"
+        isDisabled={locked || onFind === undefined}
+        {...(iconOnly ? { "aria-label": p.text("ui.findCase") } : {})}
+        aria-keyshortcuts={apple ? "Meta+K" : "Control+K"}
+        className="shell-find"
+        onPress={() => {
+          onFind?.(id);
+        }}
+      >
+        <Icon name="search" />
+        {iconOnly ? null : (
+          <>
+            <span className="shell-link-label">{p.text("ui.findCase")}</span>
+            <kbd aria-hidden="true">{shortcut}</kbd>
+          </>
+        )}
+      </Button>
+    );
+  };
 
   return (
     <>
@@ -407,13 +412,6 @@ export const Shell = ({
           </Dialog>
         </>
       ) : null}
-      <FindCase
-        open={findOrigin === route}
-        returnFocusId={compact ? "workspace-phone-find" : "workspace-find"}
-        setOpen={(open) => {
-          setFindOrigin(open ? route : null);
-        }}
-      />
     </>
   );
 };

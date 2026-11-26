@@ -24,6 +24,8 @@ import {
 import type { SessionState } from "../session/useSession";
 import { AccessState } from "./AccessState";
 import { useCaseNavigation } from "../routing/useCaseNavigation";
+import { FindCase } from "../features/work/FindCase";
+import { useWorkspaceFind } from "./useWorkspaceFind";
 import { WorkspaceViewsProvider } from "../features/work/WorkspaceViews";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import {} from "./workspace.css";
@@ -165,7 +167,7 @@ const useRouteHeading = (
       // A departing sheet or guard can still own focus during the route render.
       if (
         loading ||
-        document.querySelector("[data-navigation-guard], .shell-more, .find-control") !== null
+        document.querySelector("[data-navigation-guard], .shell-more, .find-dialog") !== null
       ) {
         return false;
       }
@@ -537,6 +539,7 @@ export const Dashboard = () => {
   );
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
+  const find = useWorkspaceFind(focusScope, views.includes(apiEndpoints.caseList), locked);
   const [refresh, setRefresh] = useState(0);
   const [phoneTitle, setPhoneTitle] = useState<{ path: string; title: string } | null>(null);
   const publishPhoneTitle = useCallback((title: string) => {
@@ -592,12 +595,18 @@ export const Dashboard = () => {
                   views={views}
                   tasks={tasks}
                   locked={locked}
+                  onFind={find.onFind}
                   phoneActionRef={setPhoneAction}
                   phoneTitle={
                     phoneTitle?.path === location.pathname + location.search
                       ? phoneTitle.title
                       : undefined
                   }
+                />
+                <FindCase
+                  open={find.open}
+                  returnFocusId={find.returnFocusId}
+                  setOpen={find.dismiss}
                 />
                 <PhoneTitleTarget value={publishPhoneTitle}>
                   <PhoneActionTarget value={phoneAction}>
@@ -620,6 +629,7 @@ export const Dashboard = () => {
                               key={ownerIdentity}
                               route={route}
                               caseNavigation={caseNavigation}
+                              onFind={find.onFind}
                               views={views}
                               noViews={noViews}
                               tasks={tasks}
