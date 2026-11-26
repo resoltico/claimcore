@@ -5,6 +5,7 @@ open System.Collections.Generic
 open System.IO
 open System.Text.Json
 open Expecto
+open ClaimCore.Domain
 
 let private engines =
     match Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE" with
@@ -209,9 +210,17 @@ let private reportSpecTimings (report: JsonElement) =
         printfn "Browser spec %s: %.0f ms across selected tests." name duration
 
 
-let private run engine =
+let private draftSpec = "draft-editability.spec.ts"
+
+let private browserShard =
+    Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SHARD"
+    |> Option.ofObj
+
+let private run engine policy =
     task {
-        use fixture = new PublishedFixture.Fixture()
+        use fixture = new PublishedFixture.Fixture(referencePolicy = policy)
+        let systemOnly = policy = CaseReferencePolicy.SystemAssignedOnly
+        let spec = if systemOnly then Some draftSpec else specification
 
         let failureReport =
             Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
@@ -225,12 +234,25 @@ let private run engine =
 
         do! fixture.Start()
         CliCalls.setup fixture
+
+        if systemOnly then
+            let registrar =
+                {|
+                    kind = "HUMAN"
+                    issuer = fixture.Issuer
+                    subject = ClaimCore.TestSupport.IdentityRealm.ownerSubject
+                |}
+
+            CliCalls.grant fixture registrar (Role.token Role.CaseRegistrar)
+            CliCalls.setGrant fixture registrar (Role.token Role.CaseHandler) false
+
         let output = Path.Combine(fixture.Directory, engine)
         Directory.CreateDirectory output |> ignore
         let values = Dictionary<string, string>()
         values["CLAIMCORE_WEB_BASE_URL"] <- fixture.Origin
         values["CLAIMCORE_WEB_E2E_BACKEND_URL"] <- fixture.Backend
         values["CLAIMCORE_WEB_E2E_ENGINE"] <- engine
+        values["CLAIMCORE_WEB_E2E_REFERENCE_POLICY"] <- CaseReferencePolicy.token policy
         values["CLAIMCORE_WEB_E2E_REDIRECT_STATE_DIR"] <- fixture.Directory
         values["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"] <- output
 
@@ -242,17 +264,18 @@ let private run engine =
 
         let arguments =
             [ "exec"; "--"; "playwright"; "test" ]
-            @ (specification |> Option.toList)
-            @ (if engine = "chromium" then
+            @ (spec |> Option.toList)
+            @ (if engine = "chromium" && not systemOnly then
                    [ "--project"; engine; "--project"; "chromium-classic" ]
                else
                    [ "--project"; engine ])
-            @ (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SHARD"
-               |> Option.ofObj
-               |> Option.filter (fun _ -> engine = "chromium")
+            @ (browserShard
+               |> Option.filter (fun _ -> engine = "chromium" && not systemOnly)
                |> Option.map (fun shard -> [ "--shard"; shard ])
                |> Option.defaultValue [])
-            @ (if engine = "chromium" then [] else [ "--grep"; "@engine" ])
+            @ (if systemOnly then [ "--grep"; "automatic opening" ]
+               elif engine = "chromium" then []
+               else [ "--grep"; "@engine" ])
 
         let start = PublishedProcesses.start "npm" arguments values
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
@@ -293,7 +316,15 @@ let private run engine =
                 failureReport |> Option.iter (retainFailureFiles output)
                 reraise ()
 
-        printfn "Published browser %s: %d passed on the first attempt." engine passed
+        if systemOnly then
+            Expect.equal passed 2 "Both system-only opening journeys must run"
+
+        printfn
+            "Published browser %s (%s): %d passed on the first attempt."
+            engine
+            (CaseReferencePolicy.token policy)
+            passed
+
         reportSpecTimings report.RootElement
 
         if
@@ -330,5 +361,16 @@ let tests =
         "published browser acceptance"
         (async {
             for engine in engines do
-                do! run engine |> Async.AwaitTask
+                do! run engine CaseReferencePolicy.CustomAllowed |> Async.AwaitTask
+
+            // Qualify both policies once in the Chromium matrix, or when the opening spec is selected locally.
+            if
+                List.contains "chromium" engines
+                && (browserShard
+                    |> Option.forall (fun shard -> shard.StartsWith("1/", StringComparison.Ordinal)))
+                && (specification
+                    |> Option.forall (fun filter ->
+                        Text.RegularExpressions.Regex.IsMatch("e2e/" + draftSpec, filter)))
+            then
+                do! run "chromium" CaseReferencePolicy.SystemAssignedOnly |> Async.AwaitTask
         })

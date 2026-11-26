@@ -291,6 +291,7 @@ module internal CaseSetQueries =
                                                                         []
                                                                     else
                                                                         Advice.installationOffers
+                                                                            tx.CaseReferencePolicy
                                                                             principal
                                                                             actor
                                                                 NextCursor =

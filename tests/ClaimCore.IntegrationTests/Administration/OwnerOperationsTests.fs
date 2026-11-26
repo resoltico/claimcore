@@ -28,10 +28,15 @@ let private changed (database: PostgresFixture.Database) change =
 
 let private statusAndModes (database: PostgresFixture.Database) =
     task {
-        let! initial = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! initial = inspectSchemaStatus database
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 9 "Fresh installations use the consolidated grammar"
+
+        Expect.equal
+            initial.InstallationFormat
+            10
+            "Fresh installations use the consolidated grammar"
+
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -65,6 +70,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
                 (id database.Fixture 1)
                 DomainInputs.ownerProfile
                 []
+                CaseReferencePolicy.CustomAllowed
                 token
 
         Expect.equal
@@ -108,7 +114,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
             changed database (MaintenanceChange.Resume(next.State.Handle |> Option.get))
 
         Expect.isFalse finalOff.State.Active "Only the exact later handle resumes"
-        let! final = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! final = inspectSchemaStatus database
 
         Expect.equal
             final.Position
@@ -365,7 +371,7 @@ let private pruning (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,7) n"
                 [||]
 
-        let! before = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! before = inspectSchemaStatus database
 
         Expect.equal
             (before.Sessions, before.ExpiredSessions)
@@ -390,7 +396,7 @@ let private pruning (database: PostgresFixture.Database) =
             (Some [| 1uy |])
             "Live ticket remains available"
 
-        let! after = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! after = inspectSchemaStatus database
 
         Expect.equal
             (after.Sessions, after.ExpiredSessions)
@@ -568,7 +574,7 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
 
         let! ticket = sessions.Retrieve(live.Value, token)
         Expect.isNone ticket.Value "Concurrent renewal cannot resurrect a logged-out ticket"
-        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! status = inspectSchemaStatus database
 
         Expect.equal
             (status.Sessions, status.ExpiredSessions)
@@ -580,6 +586,7 @@ let private recoverPausedOwner (database: PostgresFixture.Database) =
     task {
         let fixture = database.Fixture
         let! owner = bootstrap fixture
+        let! firstRoot = VerificationSupport.row database Sequence.first
 
         let principal subject =
             PrincipalKey.human "https://issuer.example/" subject
@@ -697,6 +704,21 @@ let private recoverPausedOwner (database: PostgresFixture.Database) =
         let! after = administration.Head token
         Expect.equal repeated (OwnerRecoveryResult.Unchanged personId) "Repeating returns unchanged"
         Expect.equal before after "No operation is appended for unchanged recovery"
+
+        let! retainedBootstrap = VerificationSupport.row database Sequence.first
+
+        Expect.equal
+            retainedBootstrap.Root.Hash
+            firstRoot.Root.Hash
+            "Owner recovery does not replace the policy evidence"
+
+        let! status = administration.Status token
+
+        Expect.equal
+            status.CaseReferencePolicy
+            CaseReferencePolicy.CustomAllowed
+            "Owner recovery leaves the effective policy unchanged"
+
         let! _ = verified database
         ()
     }

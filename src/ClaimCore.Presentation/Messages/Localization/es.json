@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Abra un caso con una referencia. Registre los datos que conozca.",
-    "source": "39967b35166c"
+    "text": "Abra un expediente con los datos de registro que conozca. Deje en blanco la referencia del expediente para que se asigne automáticamente. Si su registro lo permite, puede introducir una referencia de expediente personalizada.",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "Configurar el primer propietario",
@@ -423,10 +424,6 @@
     "text": "Usa una fecha de calendario válida con el formato YYYY-MM-DD.",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "La referencia del expediente ya existe.",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "No se permiten caracteres de control.",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "Usa entre 1 y 80 caracteres ASCII imprimibles sin espacios.",
-    "source": "a4d1a5f9f416"
+    "text": "Use una referencia de expediente válida. Una referencia personalizada empieza con una letra ASCII y tiene hasta 32 caracteres entre letras, dígitos y guiones simples entre grupos. El prefijo CC- está reservado para las referencias asignadas por el sistema.",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "Los cambios están pausados por mantenimiento. Puedes seguir viendo expedientes y comprobando cambios anteriores.",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "Usa entre 1 y {maximumCharacters} caracteres ASCII imprimibles sin espacios. Las mayúsculas y minúsculas identifican el mismo expediente; se conserva la escritura original.",
-    "source": "b43a33360aed"
+    "text": "Use de 1 a {maximumCharacters} caracteres ASCII. Las referencias personalizadas empiezan con una letra y usan letras, dígitos y guiones simples entre grupos. El prefijo CC- está reservado para las referencias asignadas por el sistema.",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Su propia referencia para este expediente, por ejemplo CLM-2026-0001.",
-    "source": "adde9fba1cc3"
+    "text": "La referencia personalizada queda reservada incluso después del borrado. Evite incluir datos personales.",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "Cuándo decidiste el importe a pagar.",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "Introduce una referencia de expediente sin espacios.",
-    "source": "5722da0c601c"
+    "text": "Revise la referencia del expediente y sus guiones. Una referencia personalizada empieza con una letra y admite hasta 32 letras, dígitos y guiones. El prefijo CC- está reservado.",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "Elige un rol que pueda usarse aquí.",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "Introduzca la referencia que desea usar para este expediente.",
-    "source": "d66b4efc4776"
+    "text": "La referencia anterior sigue permitiendo encontrar este expediente. Evite incluir datos personales en la nueva referencia.",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "Referencia anterior",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "Introduzca el importe y la moneda.",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "Referencia del expediente no disponible.",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "Este registro asigna todas las referencias automáticamente. Quite la referencia personalizada para continuar.",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "Se asignará al abrir el expediente.",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "Usar una referencia de expediente personalizada",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "Solo asignadas por el sistema",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "Se permiten referencias del expediente personalizadas",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "Política de referencias del expediente",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "La política de asignación de referencias elegida durante la configuración.",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "Elige si se pueden introducir referencias del expediente personalizadas.",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "Elige una política de referencias del expediente compatible.",
+    "machineMade": true
   }
 }

@@ -13,17 +13,17 @@ module Execution =
     let private perform (administration: Administration) token command =
         task {
             match command with
-            | Initialize(zone, owner, true) ->
-                let! result = administration.InitializeIfMissing(zone, owner, token)
+            | Initialize(zone, owner, policy, true) ->
+                let! result = administration.InitializeIfMissing(zone, owner, policy, token)
 
                 return
                     match result with
                     | InitializationResult.Initialized id -> Replies.initialized id
                     | InitializationResult.ExistingInstallation id ->
                         Replies.initializationSkipped id
-            | Initialize(zone, owner, false) ->
-                let! id = administration.Initialize(zone, owner, token)
-                return Replies.initialized id
+            | Initialize(zone, owner, policy, false) ->
+                let! installation = administration.Initialize(zone, owner, policy, token)
+                return Replies.initialized installation
             | RecoverOwner input ->
                 let! result = administration.RecoverOwner(input, token)
                 return Replies.ownerRecovery result

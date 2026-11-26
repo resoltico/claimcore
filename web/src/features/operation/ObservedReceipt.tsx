@@ -18,6 +18,7 @@ export const ObservedReceipt = ({ operationId }: { operationId: string }) => {
       {observation.receipt === null || observation.receipt.basis.kind !== "SNAPSHOT" ? null : (
         <ScreenView
           embedded
+          copyReferences
           view={observation.receipt.screen}
           timeZone={observation.receipt.basis.observation.timeZone}
         />

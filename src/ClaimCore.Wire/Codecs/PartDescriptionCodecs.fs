@@ -318,6 +318,38 @@ module PartDescriptionCodecs =
         |> build
         |> named "PartyPartDescription"
 
+    let opening =
+        let case =
+            (record (fun fields money lifecycle ->
+                {
+                    OpeningCaseDescription.Fields = fields
+                    Money = money
+                    Lifecycle = lifecycle
+                })
+            : Fields<OpeningCaseDescription, _>)
+            |> field
+                "fields"
+                _.Fields
+                (list CaseFields.declarations.Length TimelineCodecs.fieldDifference)
+            |> field
+                "money"
+                _.Money
+                (list CaseFields.declarations.Length TimelineCodecs.moneyDifference)
+            |> field "lifecycle" _.Lifecycle (VocabularyCodec.create Lifecycle.vocabulary)
+            |> build
+            |> named "OpeningCaseDescription"
+
+        (record (fun case parties ->
+            {
+                OpeningReview.Case = case
+                Parties = parties
+            })
+        : Fields<OpeningReview, _>)
+        |> field "case" _.Case case
+        |> field "parties" _.Parties (list PartyContent.MaximumCurrent party)
+        |> build
+        |> named "OpeningReview"
+
     let description =
         tagged
             "PartDescription"

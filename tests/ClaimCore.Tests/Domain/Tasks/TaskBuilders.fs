@@ -57,6 +57,7 @@ let environment =
         FamilyEnvironment.Requester = access
         RequesterPrincipal = principal
         Maintenance = false
+        CaseReferencePolicy = CaseReferencePolicy.CustomAllowed
         RelatedCase = fun _ -> None
         ReferenceOwner = fun _ -> None
         AssigneeEligible = fun _ -> true
@@ -251,6 +252,12 @@ let profileInputs =
 let peopleInputs principal =
     inputs (principalInputs principal @ profileInputs)
 
+let bootstrapInputs principal =
+    inputs (
+        text InputTarget.CaseReferencePolicy "CUSTOM_ALLOWED"
+        :: (principalInputs principal @ profileInputs)
+    )
+
 let personApply state changes =
     changes
     |> List.fold (fun state change -> Some(Person.apply state change |> accepted)) (Some state)
@@ -294,7 +301,7 @@ let owner () =
             environment
             None
             (Binding.PeopleNew Revision.zero)
-            (peopleInputs newPrincipal)
+            (bootstrapInputs newPrincipal)
         |> accepted
 
     Person.apply None changes.Head |> accepted
@@ -304,6 +311,14 @@ let openingInputs =
     |> List.map (fun (field, value) -> text (InputTarget.Field field) value)
     |> fun values ->
         inputs (text (InputTarget.Field BusinessField.CaseReference) "TASK-1" :: values)
+
+let openCustom context environment state binding inputs =
+    ClaimCore.Domain.Tasks.Case.Open.admit context environment state binding inputs
+    |> Result.bind (fun opening ->
+        match opening.Intent with
+        | OpeningIntent.Custom reference ->
+            ClaimCore.Domain.Tasks.Case.Open.accept reference None opening
+        | OpeningIntent.Automatic -> failtest "This fixture requires a custom reference.")
 
 let caseBinding (state: CaseFamily) =
     Binding.Case(target state, state.Case.Revision)

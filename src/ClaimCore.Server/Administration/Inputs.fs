@@ -19,7 +19,11 @@ open ClaimCore.HostSecurity
 open ClaimCore.RecordFormat
 
 type Command =
-    | Initialize of timeZone: string * owner: InitialOwner * skipExisting: bool
+    | Initialize of
+        timeZone: string *
+        owner: InitialOwner *
+        policy: CaseReferencePolicy option *
+        skipExisting: bool
     | RecoverOwner of OwnerRecoveryInput
     | RotateMasterKey of newKeyFile: string
     | Verify of InstallationCheckpoint option
@@ -48,6 +52,9 @@ type CommandName =
 module Command =
     [<Literal>]
     let ProgramName = "claimcore-server"
+
+    [<Literal>]
+    let CaseReferencePolicyFlag = "--case-reference-policy"
 
     let supportedExitCodes =
         [
@@ -104,6 +111,10 @@ module CommandName =
                 CommandArgument.Operand "--owner-name NAME"
                 CommandArgument.Optional("--owner-contact", "TEXT")
                 CommandArgument.Optional("--owner-role", "ROLE")
+                CommandArgument.Optional(
+                    Command.CaseReferencePolicyFlag,
+                    Vocabulary.tokens CaseReferencePolicy.vocabulary |> String.concat "|"
+                )
                 CommandArgument.Switch "--skip-existing"
             ]
         | CommandName.RecoverOwner ->
@@ -176,6 +187,9 @@ module Inputs =
         [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--owner-contact" ]
 
     let private initialize arguments =
+        let policyFlag = Command.CaseReferencePolicyFlag
+        let valueFlags = policyFlag :: ownerValueFlags
+
         let rec options values roles skipExisting =
             function
             | [] -> Ok(values, List.rev roles, skipExisting)
@@ -197,14 +211,14 @@ module Inputs =
                             ClaimCore.Domain.Tasks.Registry.initialOwnerRoles |> List.map Role.token
                         )
                     )
-            | flag :: raw :: rest when List.contains flag ownerValueFlags ->
+            | flag :: raw :: rest when List.contains flag valueFlags ->
                 if raw.StartsWith("--", StringComparison.Ordinal) then
                     Error(UsageError.MissingValue flag)
                 elif Map.containsKey flag values then
                     Error(UsageError.DuplicateOption flag)
                 else
                     options (Map.add flag raw values) roles skipExisting rest
-            | [ flag ] when flag = "--owner-role" || List.contains flag ownerValueFlags ->
+            | [ flag ] when flag = "--owner-role" || List.contains flag valueFlags ->
                 Error(UsageError.MissingValue flag)
             | flag :: _ -> Error(UsageError.UnknownOption(flag, None))
 
@@ -213,6 +227,20 @@ module Inputs =
         | zone :: flags ->
             options Map.empty [] false flags
             |> Result.bind (fun (values, roles, skipExisting) ->
+                match Map.tryFind policyFlag values with
+                | None -> Ok(values, roles, skipExisting, None)
+                | Some raw ->
+                    match CaseReferencePolicy.parse raw with
+                    | Some policy -> Ok(values, roles, skipExisting, Some policy)
+                    | None ->
+                        Error(
+                            UsageError.InvalidChoice(
+                                policyFlag,
+                                raw,
+                                Vocabulary.tokens CaseReferencePolicy.vocabulary
+                            )
+                        ))
+            |> Result.bind (fun (values, roles, skipExisting, policy) ->
                 match
                     [ "--owner-issuer"; "--owner-subject"; "--owner-name" ]
                     |> List.tryFind (fun flag -> not (Map.containsKey flag values))
@@ -238,6 +266,7 @@ module Inputs =
                                     Profile = profile
                                     Roles = roles
                                 },
+                                policy,
                                 skipExisting
                             )
                         )
@@ -401,6 +430,10 @@ module Inputs =
                 parse name rest
                 |> Result.mapError (function
                     | OperatorProblem fault -> CommandInputFailure.Operator fault
+                    | UsageProblem(UsageError.InvalidChoice(Command.CaseReferencePolicyFlag, _, _)) when
+                        name = CommandName.Initialize
+                        ->
+                        CommandInputFailure.Operator OperatorFault.CaseReferencePolicyInvalid
                     | UsageProblem(UsageError.InvalidValue _ | UsageError.InvalidChoice _) when
                         name = CommandName.Initialize
                         ->

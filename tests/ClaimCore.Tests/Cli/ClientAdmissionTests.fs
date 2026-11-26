@@ -193,7 +193,8 @@ let private reminderRevisionAdmission () =
 
     for arguments in
         [
-            CliExamples.complete [ "case"; "open"; "INITIAL-CASE" ] @ [ "--dry-run" ]
+            CliExamples.complete [ "case"; "open"; "--case-reference"; "INITIAL-CASE" ]
+            @ [ "--dry-run" ]
             [
                 "work"
                 "update"

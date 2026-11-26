@@ -132,8 +132,10 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
     }
 
-let private readinessCancellation database =
+let private readinessCancellation (database: PostgresFixture.Database) =
     task {
+        let! _ = bootstrap database.Fixture
+
         let! opened =
             ClaimCore.Server.Composition.Runtime.openConnection
                 (connectionString database)
@@ -184,14 +186,8 @@ let tests =
                 "readiness checks schema availability and closes after shutdown without reading case payloads"
                 (run (fun database ->
                     task {
+                        let! _ = bootstrap database.Fixture
                         use! owner = database.OwnerSource.OpenConnectionAsync token
-
-                        let! _ =
-                            ClaimCore.Application.Storage.DatabaseSession.execute
-                                owner
-                                "REVOKE SELECT ON claimcore.ledger FROM claimcore_runtime; GRANT SELECT(sequence,entry_hash) ON claimcore.ledger TO claimcore_runtime"
-                                [||]
-                                token
 
                         let! opened =
                             ClaimCore.Server.Composition.Runtime.openConnection
@@ -200,6 +196,13 @@ let tests =
                                 token
 
                         use runtime = configuredRuntime opened
+
+                        let! _ =
+                            ClaimCore.Application.Storage.DatabaseSession.execute
+                                owner
+                                "REVOKE SELECT ON claimcore.ledger FROM claimcore_runtime; GRANT SELECT(sequence,entry_hash) ON claimcore.ledger TO claimcore_runtime"
+                                [||]
+                                token
 
                         let! ready = runtime.Ready token
                         Expect.isTrue ready "Current reachable schema"

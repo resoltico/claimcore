@@ -76,8 +76,11 @@ module internal RegisterMaintenanceStore =
                     do! OwnerAdmission.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! position, observed = Transactions.head connection token
-                    let! installation, _ = Baseline.require connection token
-                    use! _cipher = Baseline.loadCipher connection installation masterKey token
+                    let! installation = Baseline.require connection token
+
+                    use! _cipher =
+                        Baseline.loadCipher connection installation.InstallationId masterKey token
+
                     let! after, changed = changeWithinHeadLock connection change token
 
                     do! DatabaseSession.commit transaction token

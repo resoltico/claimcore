@@ -87,9 +87,9 @@ let private acceptAttachment fixture (actor: ServiceContext) number preview payl
                                         None
 
                                 let plan =
-                                    reviewed
-                                    |> Result.defaultWith (fun error ->
-                                        failtestf "Fixture input cannot be reviewed: %A" error)
+                                    match reviewed with
+                                    | Ok(PreparedDecision.Ordinary(plan, _)) -> plan
+                                    | other -> failtestf "Expected an attachment decision: %A" other
 
                                 let! committed =
                                     let changes =

@@ -105,8 +105,9 @@ module internal PaymentQueries =
                                                         | Some { Facts = family } ->
                                                             let environment =
                                                                 {
-                                                                    FamilyEnvironment.Requester =
-                                                                        view.Actor
+                                                                    FamilyEnvironment.CaseReferencePolicy =
+                                                                        tx.CaseReferencePolicy
+                                                                    Requester = view.Actor
                                                                     RequesterPrincipal =
                                                                         services.Principal
                                                                     Maintenance =

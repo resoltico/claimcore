@@ -84,7 +84,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
 };
 export const opaqueCaseRefusal = async (page: Page, reference: string) => {
   const actual = await directCaseRefusal(page, reference);
-  const missing = await directCaseRefusal(page, `MISSING-${randomUUID()}`);
+  const missing = await directCaseRefusal(page, `MISSING-${randomUUID().slice(0, 8)}`);
   expect(actual).toEqual(missing);
 };
 export const noCaseWorkspace = async (page: Page) => {

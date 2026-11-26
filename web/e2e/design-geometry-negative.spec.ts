@@ -300,7 +300,7 @@ test("lowering the wide transition by 2rem rejects overflowing controls at its b
 
 test("G4 allows caret scrolling inside a bounded search field", async ({ page }) => {
   await authorFixture(page);
-  await page.locator('input[type="search"]').fill("W".repeat(80));
+  await page.locator('input[type="search"]').fill("W".repeat(32));
   await page.addStyleTag({ content: ".toolbar input { inline-size: 18ch; overflow: clip }" });
   const scrolls = await page
     .locator('input[type="search"]')

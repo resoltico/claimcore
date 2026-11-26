@@ -12,8 +12,8 @@ open ClaimCore.Application.Verification
 
 [<RequireQualifiedAccess>]
 type InitializationResult =
-    | Initialized of Guid
-    | ExistingInstallation of Guid
+    | Initialized of Installation
+    | ExistingInstallation of Installation
 
 module internal LedgerAdministration =
     let verify source masterKey expected cancellationToken =
@@ -23,12 +23,20 @@ module internal LedgerAdministration =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
                 do! OwnerAdmission.require connection cancellationToken
-                let! installation, _ = Baseline.require connection cancellationToken
+                let! installation = Baseline.require connection cancellationToken
 
                 use! _cipher =
-                    Baseline.loadCipher connection installation masterKey cancellationToken
+                    Baseline.loadCipher
+                        connection
+                        installation.InstallationId
+                        masterKey
+                        cancellationToken
 
-                return! CheckpointEvidence.read connection installation cancellationToken
+                return!
+                    CheckpointEvidence.read
+                        connection
+                        installation.InstallationId
+                        cancellationToken
             })
 
     let initialize
@@ -36,6 +44,7 @@ module internal LedgerAdministration =
         masterKey
         productVersion
         timeZone
+        requestedPolicy
         (owner: InitialOwner)
         initialized
         existing
@@ -57,32 +66,29 @@ module internal LedgerAdministration =
             source
             masterKey
             timeZone
-            (fun connection installationId cipher ->
+            requestedPolicy
+            (fun connection (installation: Installation) cipher ->
                 task {
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token
 
                     let store =
-                        LedgerStore(
-                            source,
-                            {
-                                InstallationId = installationId
-                                BusinessTimeZone = timeZone
-                            },
-                            cipher,
-                            Transactions.timeouts
-                        )
-                        :> IStore
+                        LedgerStore(source, installation, cipher, Transactions.timeouts) :> IStore
 
                     let calendar = InstallationCheck.calendar timeZone
 
                     let services =
-                        Service.create productVersion installationId store calendar owner.Principal
+                        Service.create
+                            productVersion
+                            installation.InstallationId
+                            store
+                            calendar
+                            owner.Principal
 
                     let tx =
                         LedgerStore.InTransaction(
                             connection,
-                            installationId,
+                            installation,
                             cipher,
                             head,
                             observed,
@@ -96,6 +102,7 @@ module internal LedgerAdministration =
                             (Transactions.operationId observed)
                             owner.Profile
                             owner.Roles
+                            installation.CaseReferencePolicy
 
                     match result with
                     | Verdict.Proceed _ -> return ()
@@ -125,15 +132,18 @@ module internal LedgerAdministration =
             (fun connection transaction ->
                 task {
                     do! OwnerAdmission.require connection token
-                    let! installationId, timeZone = Baseline.require connection token
-                    use! cipher = Baseline.loadCipher connection installationId masterKey token
+                    let! installation = Baseline.require connection token
+
+                    use! cipher =
+                        Baseline.loadCipher connection installation.InstallationId masterKey token
+
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! head, observed = Transactions.head connection token
 
                     let tx =
                         LedgerStore.InTransaction(
                             connection,
-                            installationId,
+                            installation,
                             cipher,
                             head,
                             observed,
@@ -157,23 +167,14 @@ module internal LedgerAdministration =
                         | _ -> refuse OperatorFault.OwnerRecoveryRefused
 
                     let store =
-                        LedgerStore(
-                            source,
-                            {
-                                InstallationId = installationId
-                                BusinessTimeZone = timeZone
-                            },
-                            cipher,
-                            Transactions.timeouts
-                        )
-                        :> IStore
+                        LedgerStore(source, installation, cipher, Transactions.timeouts) :> IStore
 
                     let services =
                         Service.create
                             productVersion
-                            installationId
+                            installation.InstallationId
                             store
-                            (InstallationCheck.calendar timeZone)
+                            (InstallationCheck.calendar installation.BusinessTimeZone)
                             input.Principal
 
                     let operation =
@@ -283,29 +284,35 @@ type Administration(connectionString: string, productVersion: string, masterKey:
 
     static member ClassifyFailure error = AdministrationFailures.classify error
 
-    member _.Initialize(timeZone, owner, cancellationToken) =
+    member _.Initialize(timeZone, owner, requestedPolicy, cancellationToken) =
         LedgerAdministration.initialize
             source
             masterKey
             productVersion
             timeZone
+            requestedPolicy
             owner
             id
             Baseline.refuseExisting
             cancellationToken
 
-    member _.InitializeIfMissing(timeZone, owner, cancellationToken) =
+    member _.InitializeIfMissing(timeZone, owner, requestedPolicy, cancellationToken) =
         LedgerAdministration.initialize
             source
             masterKey
             productVersion
             timeZone
+            requestedPolicy
             owner
             InitializationResult.Initialized
             (fun connection installation token ->
                 task {
-                    let! status = InstallationStatus.readConnection connection installation token
-                    return InitializationResult.ExistingInstallation status.InstallationId
+                    do! Baseline.requireBootstrap installation connection token
+
+                    if Option.exists ((<>) installation.CaseReferencePolicy) requestedPolicy then
+                        raise (OperatorFaultException OperatorFault.CaseReferencePolicyMismatch)
+
+                    return InitializationResult.ExistingInstallation installation
                 })
             cancellationToken
 

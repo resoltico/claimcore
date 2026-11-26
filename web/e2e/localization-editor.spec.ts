@@ -211,7 +211,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   test(`preserves authored Unicode and cleared calendar input with real ${language} policy refusals`, async ({
     page,
   }) => {
-    const reference = `LOCALE-VALIDATE-${randomUUID()}`;
+    const reference = `LOCALE-VALIDATE-${randomUUID().slice(0, 8)}`;
     await openAuthenticated(page);
     await selectLanguage(page, language);
     await startOpen(page, reference, ui(language, "task.case.open.label"));
@@ -249,7 +249,7 @@ test("an in-flight language activation preserves an open review awaiting explici
   try {
     await requestLanguage(page, "lv");
     await languageReady.promise;
-    await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
+    await startOpen(page, `LOCALE-REVIEW-${randomUUID().slice(0, 8)}`);
     const requests = trackForegroundRequests(page);
     const pending = await pauseJsonReply(page, "operation.preview");
     releasePreview = pending.release;

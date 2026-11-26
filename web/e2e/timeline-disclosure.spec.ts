@@ -11,7 +11,7 @@ test("successful summary continuation removes previously loaded full history aft
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `DISCLOSURE-${randomUUID()}`;
+  const reference = `DISCLOSURE-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   for (let revision = 1; revision <= 12; revision += 1) {
     await applyPeople(page, {

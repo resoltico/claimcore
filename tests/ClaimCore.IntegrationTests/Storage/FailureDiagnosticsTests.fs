@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -210,7 +211,9 @@ let tests =
             testTask "startup sessions and housekeeping report real provider failures once" {
                 do!
                     task {
-                        let! database = PostgresFixture.create ()
+                        let! database =
+                            PostgresFixture.createWithReferencePolicy
+                                CaseReferencePolicy.CustomAllowed
 
                         try
                             let settings =

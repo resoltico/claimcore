@@ -64,7 +64,7 @@ test("renders both related directions together and retains self-rebind review no
 }) => {
   test.setTimeout(120_000);
   const access = await owner(page);
-  const prefix = `LINKFIELD-${randomUUID()}`;
+  const prefix = `LINKFIELD-${randomUUID().slice(0, 8)}`;
   const a = `${prefix}-A`;
   const b = `${prefix}-B`;
   const c = `${prefix}-C`;
@@ -190,7 +190,7 @@ const nextSummaryRequest = (page: Page) =>
 for (const releaseOn of ["Settings", "return"] as const) {
   test(`retires a real report reply released on ${releaseOn} @engine`, async ({ page }) => {
     await owner(page);
-    const reference = `REPORT-DET${randomUUID()}`;
+    const reference = `REPORT-DET${randomUUID().slice(0, 8)}`;
     const writer = await page.context().newPage();
     try {
       await writer.goto("/cases");
@@ -466,7 +466,7 @@ test("traverses the live 51-month report and complete CSV with independent page 
 }) => {
   test.setTimeout(120_000);
   const access = await owner(page);
-  const prefix = `REPORTFIELD-${randomUUID()}`;
+  const prefix = `REPORTFIELD-${randomUUID().slice(0, 8)}`;
   for (let index = 0; index < 51; index += 1) {
     const month = new Date(Date.UTC(2018, index, 1)).toISOString().slice(0, 10);
     await execute(page, access, {

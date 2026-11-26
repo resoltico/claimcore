@@ -15,17 +15,30 @@ type internal ExecutionStop =
     | AlreadyAccepted of RetainedOperation
 
 [<NoEquality; NoComparison>]
-type internal DecisionPlan =
+type internal DecisionFrame =
     {
-        Snapshot: DecisionSnapshot
+        Declaration: TaskDeclaration
+        Requester: AccessView
         Header: OperationHeader
         Binding: Binding
         Inputs: InputMap
-        Changes: PartChange list
-        Descriptions: DescribedPart list
+    }
+
+[<NoEquality; NoComparison>]
+type internal DecisionPlan =
+    {
+        Frame: DecisionFrame
+        Before: AggregateState
         After: AggregateState
+        Origins: Map<PartKind * System.Guid, SubjectStamp>
+        Changes: PartChange list
         AttachmentPayload: VerifiedAttachment option
     }
+
+[<RequireQualifiedAccess; NoEquality; NoComparison>]
+type internal PreparedDecision =
+    | Ordinary of DecisionPlan * DescribedPart list
+    | Opening of DecisionFrame * AdmittedOpening
 
 /// One decision path for previews and commits, independent of receipt and document transport.
 module internal Engine =
@@ -214,74 +227,108 @@ module internal Engine =
                                 return Error(ExecutionStop.AlreadyAccepted record)
                             | Some _ ->
                                 return Error(ExecutionStop.Refused Refusal.IdempotencyConflict)
+                    | None when Sequence.value head.Sequence >= Sequence.Maximum ->
+                        return Error(ExecutionStop.Failed CoreFault.InternalError)
                     | None ->
-                        let! snapshot =
-                            ExecutionEnvironment.fromStorage
-                                tx
-                                context.Principal
-                                access
-                                context.Maintenance
-                                selected
-                                binding
-                                (Some inputs)
-                                (Some operation)
+                        let! resolve = resolver tx binding inputs None
+                        let resolvedBinding = OperationIntent.resolveBinding resolve binding
 
-                        if Sequence.value head.Sequence >= Sequence.Maximum then
-                            return Error(ExecutionStop.Failed CoreFault.InternalError)
-                        else
-                            let! resolve = resolver tx binding inputs None
-                            let resolvedBinding = OperationIntent.resolveBinding resolve binding
+                        let authority =
+                            match declaration.Exposure with
+                            | TaskExposure.Operator -> Some Authority.Operator
+                            | TaskExposure.Client ->
+                                access.Actor |> Option.map (_.ActorId >> Authority.Actor)
 
-                            let authority =
-                                match declaration.Exposure with
-                                | TaskExposure.Operator -> Some Authority.Operator
-                                | TaskExposure.Client ->
-                                    snapshot.Requester.Actor
-                                    |> Option.map (_.ActorId >> Authority.Actor)
-
-                            match authority with
-                            | None ->
-                                return
-                                    Error(
-                                        ExecutionStop.Refused(
-                                            Refusal.Access AccessRefusal.ResourceUnavailable
-                                        )
+                        match authority with
+                        | None ->
+                            return
+                                Error(
+                                    ExecutionStop.Refused(
+                                        Refusal.Access AccessRefusal.ResourceUnavailable
                                     )
-                            | Some authority ->
-                                let businessDate =
-                                    if declaration.Aggregate = AggregateKind.Person then
-                                        None
-                                    else
-                                        context.BusinessDate
+                                )
+                        | Some authority ->
+                            let businessDate =
+                                if declaration.Aggregate = AggregateKind.Person then
+                                    None
+                                else
+                                    context.BusinessDate
 
-                                let header =
-                                    {
-                                        OperationHeader.InstallationId = tx.InstallationId
-                                        Sequence = Sequence.successor head.Sequence
-                                        PreviousHash = head.EntryHash
-                                        OperationId = operation
-                                        Authority = authority
-                                        RecordedAt = tx.ObservedAt
-                                        BusinessDate = businessDate
-                                    }
+                            let header =
+                                {
+                                    OperationHeader.InstallationId = tx.InstallationId
+                                    Sequence = Sequence.successor head.Sequence
+                                    PreviousHash = head.EntryHash
+                                    OperationId = operation
+                                    Authority = authority
+                                    RecordedAt = tx.ObservedAt
+                                    BusinessDate = businessDate
+                                }
 
-                                let decision =
-                                    {
-                                        TaskContext.Decision =
-                                            { context with
-                                                BusinessDate = businessDate
-                                                Access = snapshot.Requester
-                                            }
-                                        Stamp =
-                                            {
-                                                OperationId = operation
-                                                Authority = authority
-                                                RecordedAt = tx.ObservedAt
-                                                Position =
-                                                    EffectPosition.create header.Sequence 0
-                                                    |> Option.get
-                                            }
-                                    }
+                            let frame =
+                                {
+                                    Declaration = declaration
+                                    Requester = access
+                                    Header = header
+                                    Binding = resolvedBinding
+                                    Inputs = inputs
+                                }
+
+                            let decision =
+                                {
+                                    TaskContext.Decision =
+                                        { context with
+                                            BusinessDate = businessDate
+                                            Access = access
+                                        }
+                                    Stamp =
+                                        {
+                                            OperationId = operation
+                                            Authority = authority
+                                            RecordedAt = tx.ObservedAt
+                                            Position =
+                                                EffectPosition.create header.Sequence 0
+                                                |> Option.get
+                                        }
+                                }
+
+                            match selected with
+                            | Task.Opening opening ->
+                                let! acquired =
+                                    ExecutionEnvironment.opening
+                                        tx
+                                        context.Principal
+                                        access
+                                        context.Maintenance
+                                        opening
+                                        resolvedBinding
+                                        inputs
+                                        operation
+
+                                return
+                                    acquired
+                                    |> Result.mapError ExecutionStop.Refused
+                                    |> Result.bind (fun (environment, state) ->
+                                        opening.Admit
+                                            decision
+                                            environment
+                                            state
+                                            resolvedBinding
+                                            inputs
+                                        |> Result.mapError (rejection binding))
+                                    |> Result.map (fun facts ->
+                                        PreparedDecision.Opening(frame, facts))
+                            | _ ->
+                                let! snapshot =
+                                    ExecutionEnvironment.fromStorage
+                                        tx
+                                        context.Principal
+                                        access
+                                        context.Maintenance
+                                        selected
+                                        binding
+                                        (Some inputs)
+                                        (Some operation)
 
                                 match snapshot.Decide decision resolvedBinding inputs with
                                 | Error rejected -> return Error(rejection binding rejected)
@@ -299,18 +346,23 @@ module internal Engine =
                                                 snapshot.Describe changes
                                             with
                                             | Ok after, Ok descriptions ->
+                                                let plan =
+                                                    {
+                                                        Frame = frame
+                                                        Before = snapshot.State
+                                                        After = after
+                                                        Origins = snapshot.Origins
+                                                        Changes = changes
+                                                        AttachmentPayload = payload
+                                                    }
+
                                                 return
-                                                    Ok
-                                                        {
-                                                            Snapshot = snapshot
-                                                            Header = header
-                                                            Binding = resolvedBinding
-                                                            Inputs = inputs
-                                                            Changes = changes
-                                                            Descriptions = descriptions
-                                                            After = after
-                                                            AttachmentPayload = payload
-                                                        }
+                                                    Ok(
+                                                        PreparedDecision.Ordinary(
+                                                            plan,
+                                                            descriptions
+                                                        )
+                                                    )
                                             | _ ->
                                                 return
                                                     Error(
@@ -319,21 +371,67 @@ module internal Engine =
                                                     )
         }
 
+    let acceptOpening (tx: WriteTx) frame (opening: AdmittedOpening) =
+        let owner = ClaimCore.Application.Reads.CaseIdentityReads.referenceOwner tx
+
+        let rec draw remaining =
+            task {
+                if remaining = 0 then
+                    return Error(ExecutionStop.Failed CoreFault.InternalError)
+                else
+                    let candidate = tx.DrawCaseReference()
+                    let! reserved = owner candidate
+
+                    match reserved with
+                    | Some _ -> return! draw (remaining - 1)
+                    | None -> return Ok(candidate, reserved)
+            }
+
+        task {
+            let! reserved =
+                match opening.Intent with
+                | OpeningIntent.Automatic -> draw 8
+                | OpeningIntent.Custom reference ->
+                    task {
+                        let! reserved = owner reference
+                        return Ok(reference, reserved)
+                    }
+
+            return
+                reserved
+                |> Result.bind (fun (candidate, owner) ->
+                    Registry.openCase.Accept candidate owner opening
+                    |> Result.mapError (rejection frame.Binding))
+                |> Result.bind (fun changes ->
+                    DecisionFacts.apply None changes
+                    |> Result.mapError (fun _ ->
+                        ExecutionStop.Failed CoreFault.StoreIntegrityError)
+                    |> Result.map (fun after ->
+                        {
+                            Frame = frame
+                            Before = AggregateState.Family None
+                            After = AggregateState.Family(Some after)
+                            Origins = Map.empty
+                            Changes = changes
+                            AttachmentPayload = None
+                        }))
+        }
+
     let commit (tx: WriteTx) plan =
         task {
             if
-                plan.Header.PreviousHash <> tx.Head.EntryHash
-                || plan.Header.Sequence <> Sequence.successor tx.Head.Sequence
-                || plan.Header.RecordedAt <> tx.ObservedAt
+                plan.Frame.Header.PreviousHash <> tx.Head.EntryHash
+                || plan.Frame.Header.Sequence <> Sequence.successor tx.Head.Sequence
+                || plan.Frame.Header.RecordedAt <> tx.ObservedAt
             then
                 return Error CoreFault.StoreIntegrityError
             else
                 match
                     RetainedOperation.create
-                        plan.Header
-                        plan.Snapshot.Declaration.Id
-                        plan.Binding
-                        plan.Inputs
+                        plan.Frame.Header
+                        plan.Frame.Declaration.Id
+                        plan.Frame.Binding
+                        plan.Frame.Inputs
                         plan.Changes
                         tx.NewPayloadNonce
                 with
@@ -361,10 +459,10 @@ module internal Engine =
                                         origins
                                     else
                                         Map.add key change.Stamp origins)
-                                plan.Snapshot.Origins
+                                plan.Origins
 
                         let before =
-                            match plan.Snapshot.State with
+                            match plan.Before with
                             | AggregateState.Family(Some family) ->
                                 Map.ofList [ family.Id, family.Work |> Option.bind _.Value ]
                             | _ -> Map.empty
@@ -392,7 +490,7 @@ module internal Engine =
                                 plan.Changes
                                 origins
                                 (Map.tryFind family.Id summaries)
-                                (CalendarDate.ofDate plan.Header.BusinessDate.Value)
+                                (CalendarDate.ofDate plan.Frame.Header.BusinessDate.Value)
                                 reportDates
                         with
                         | Error _ -> return Error CoreFault.StoreIntegrityError

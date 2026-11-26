@@ -10,11 +10,13 @@ open ClaimCore.Tests.TaskBuilders
 let private familyTask =
     function
     | Task.Family task -> task
+    | Task.Opening _
     | Task.Person _ -> failtest "Expected family task"
 
 let private personTask =
     function
     | Task.Person task -> task
+    | Task.Opening _
     | Task.Family _ -> failtest "Expected person task"
 
 [<Tests>]
@@ -116,10 +118,10 @@ let tests =
                         (TimelineEvent.ResponsibilityAssigned reference)
                         "An erased current reference remains exact")
             testCase "case creation and closure describe only the changed facts" (fun () ->
-                let task = ClaimCore.Domain.Tasks.Case.Open.task |> familyTask
-
                 let description =
-                    task.Describe None Map.empty [ initialChange ] |> accepted |> List.exactlyOne
+                    PartDescriptions.family None Map.empty [ initialChange ]
+                    |> accepted
+                    |> List.exactlyOne
 
                 match description.Description with
                 | PartDescription.Case change ->

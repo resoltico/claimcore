@@ -10,7 +10,7 @@ test("records supplementary scalar boundaries through Web for published native r
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `UNICODE-${randomUUID()}`;
+  const reference = `UNICODE-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   const name = "🙂".repeat(80);
   await fillNamedField(page, "Country", "LT");

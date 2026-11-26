@@ -117,10 +117,12 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
     }),
   );
   render(editor({ current: null, initialAct: "case.open" }));
-  await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("checkbox", { name: "Use a custom case reference" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const input = screen.getByLabelText("Case reference", { exact: true });
   await waitFor(() => {
-    expect(screen.getByRole("alert")).toHaveFocus();
+    expect(input).toHaveFocus();
   });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("PRIVATE_CANARY");

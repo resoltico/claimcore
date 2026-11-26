@@ -126,7 +126,9 @@ let private peopleAndCursor () =
         [ View.Operations ]
         "A valid ungranted actor retains recovery without business or people views"
 
-    Expect.isEmpty (Advice.installationOffers owner ungranted) "Context carries no implied offers"
+    Expect.isEmpty
+        (Advice.installationOffers CaseReferencePolicy.CustomAllowed owner ungranted)
+        "Context carries no implied offers"
 
     Expect.isTrue
         (Access.validActor owner ungranted)
@@ -222,6 +224,7 @@ let private context () =
         RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
+            CaseReferencePolicy.CustomAllowed
             RegisterMaintenance.initial
             view
             []
@@ -246,6 +249,7 @@ let private context () =
         RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
+            CaseReferencePolicy.CustomAllowed
             RegisterMaintenance.initial
             AccessView.empty
             []
@@ -270,6 +274,7 @@ let private context () =
         RequesterContextQueries.contextResult
             (ReadFixtures.services installation calendar owner)
             instant
+            CaseReferencePolicy.CustomAllowed
             RegisterMaintenance.initial
             disabled
             []

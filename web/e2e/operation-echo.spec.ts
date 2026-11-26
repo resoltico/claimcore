@@ -8,7 +8,7 @@ test("a mismatched operation echo retains the draft and cannot enable confirmati
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `ECHO-${randomUUID()}`;
+  const reference = `ECHO-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
   let executions = 0;
   page.on("request", (request) => {

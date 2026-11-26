@@ -115,7 +115,7 @@ test("offline Settings navigation guard preserves raw entry, review identity and
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `CHUNK-DRAFT-${randomUUID()}`);
+  await startOpen(page, `CHUNK-DRAFT-${randomUUID().slice(0, 8)}`);
   const amount = page.locator('input[name="field:claimedAmount"]');
   await amount.fill("1,234");
   const executions: string[] = [];

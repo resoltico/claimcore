@@ -22,7 +22,7 @@ let private required result =
 
 let private selected (witness: Oracle.Witness) =
     match Registry.find (TaskId.ofLiteral witness.Task) with
-    | Some(Task.Family task) -> task
+    | Some task -> task
     | _ -> failtest "Expected a case task."
 
 let private context number sequence =
@@ -51,18 +51,13 @@ let private initialChanges () =
                 }
         }
 
-    let task = selected Oracle.opening
-
-    let changes =
-        task.Decide
-            context
-            ClaimCore.Tests.TaskBuilders.environment
-            None
-            (Binding.CaseNew Revision.zero)
-            Oracle.opening.Inputs
-        |> required
-
-    changes
+    ClaimCore.Tests.TaskBuilders.openCustom
+        context
+        ClaimCore.Tests.TaskBuilders.environment
+        None
+        (Binding.CaseNew Revision.zero)
+        Oracle.opening.Inputs
+    |> required
 
 let private initial () =
     initialChanges ()
@@ -76,7 +71,7 @@ let private binding (model: Oracle.Model) stale witness =
 
     let target = CaseSelector.Id model.Snapshot.CaseId
 
-    match TaskDeclaration.bindingShape (selected witness).Declaration with
+    match TaskDeclaration.bindingShape (Task.declaration (selected witness)) with
     | BindingShape.CaseNew -> Binding.CaseNew Revision.zero
     | BindingShape.Case -> Binding.Case(target, expected)
     | BindingShape.CasePayment ->
@@ -90,15 +85,43 @@ let private binding (model: Oracle.Model) stale witness =
     | BindingShape.CaseErase -> Binding.CaseErase(target, expected, model.Sequence)
     | _ -> failtest "The sequence vocabulary contains only case tasks."
 
-let private execute number sequence (current: CaseFamily) model stale witness =
-    let task = selected witness
+let private decide number sequence (current: CaseFamily) model stale (witness: Oracle.Witness) =
+    let context = context number sequence
+    let environment = ClaimCore.Tests.TaskBuilders.environment
+    let binding = binding model stale witness
 
-    task.Decide
-        (context number sequence)
-        ClaimCore.Tests.TaskBuilders.environment
-        (Some(DecisionFacts.fromReplay current))
-        (binding model stale witness)
-        witness.Inputs
+    match selected witness with
+    | Task.Opening task ->
+        task.Admit context environment None binding witness.Inputs
+        |> Result.bind (fun opening ->
+            match opening.Intent with
+            | OpeningIntent.Custom reference ->
+                let owner =
+                    if
+                        String.Equals(
+                            CaseReference.format reference,
+                            CaseReference.format current.Reference,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    then
+                        Some current.Id
+                    else
+                        None
+
+                task.Accept reference owner opening
+            | OpeningIntent.Automatic ->
+                failtest "The competing fixture supplies a custom reference.")
+    | Task.Family task ->
+        task.Decide
+            context
+            environment
+            (Some(DecisionFacts.fromReplay current))
+            binding
+            witness.Inputs
+    | Task.Person _ -> failtest "Expected a case task."
+
+let private execute number sequence current model stale witness =
+    decide number sequence current model stale witness
     |> Result.bind (fun changes ->
         changes
         |> List.fold
@@ -134,15 +157,7 @@ let private checkSequence steps =
                         (ClaimCore.Tests.TaskBuilders.operation number)
                         sequence
 
-                let task = selected step.Witness
-
-                let decision =
-                    task.Decide
-                        (context number sequence)
-                        ClaimCore.Tests.TaskBuilders.environment
-                        (Some(DecisionFacts.fromReplay current))
-                        (binding model step.Stale step.Witness)
-                        step.Witness.Inputs
+                let decision = decide number sequence current model step.Stale step.Witness
 
                 match decision with
                 | Ok changes -> acceptedChanges <- acceptedChanges @ changes

@@ -170,7 +170,7 @@ let private configureLines () =
 
 let private nativeAcquisition () =
     let id () = "11111111-2222-7333-8444-555555555555"
-    let opening = [ "case"; "open"; "CASE-EXAMPLE" ]
+    let opening = [ "case"; "open"; "--case-reference"; "CASE-EXAMPLE" ]
     let privateValue = "private-party-canary"
 
     for arguments, expected, machine in
@@ -354,6 +354,7 @@ let private authoredHelp () =
             [
                 "case"
                 "open"
+                "--case-reference"
                 "CASE-EXAMPLE"
                 "--party"
                 row

@@ -16,7 +16,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 module internal InstallationStatus =
-    let readConnection connection (installation, zone) token =
+    let readConnection connection (installation: Installation) token =
         task {
             let! _ = Transactions.configure connection Transactions.timeouts token
             let! instant = SessionRows.now connection token
@@ -48,10 +48,11 @@ module internal InstallationStatus =
             | [ row ] ->
                 return
                     {
-                        InstallationId = installation
+                        InstallationId = installation.InstallationId
                         Baseline = Baseline.identifier
                         BaselineSha256 = Convert.ToHexStringLower Baseline.digest
-                        BusinessTimeZone = zone
+                        BusinessTimeZone = installation.BusinessTimeZone
+                        CaseReferencePolicy = installation.CaseReferencePolicy
                         ObservedAt = instant
                         Position =
                             StoredEntries.position
@@ -75,6 +76,10 @@ module internal InstallationStatus =
             task {
                 do! OwnerAdmission.require connection token
                 let! installation = Baseline.require connection token
-                use! _cipher = Baseline.loadCipher connection (fst installation) masterKey token
+                do! Baseline.requireBootstrap installation connection token
+
+                use! _cipher =
+                    Baseline.loadCipher connection installation.InstallationId masterKey token
+
                 return! readConnection connection installation token
             })

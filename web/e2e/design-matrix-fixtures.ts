@@ -724,7 +724,7 @@ const maximumLength = (input: TaskInputId): number => {
 const seedLimits = async (page: Page, marker: string, date: string, issuer: string) => {
   const referenceLimit = maximumLength("field:caseReference");
   const prefix = marker.replaceAll("-", "");
-  const first = `${prefix}-A/`.padEnd(referenceLimit, "A");
+  const first = `${prefix}-A`.padEnd(referenceLimit, "A");
   const second = prefix.padEnd(referenceLimit, "B");
   expect(first).toHaveLength(referenceLimit);
   expect(second).toHaveLength(referenceLimit);
@@ -866,7 +866,7 @@ export const prepareDesignDataset = async (
     ) {
       throw new Error("E2E_MATRIX_CONTEXT_REFUSED");
     }
-    const marker = `DM-${randomUUID()}`;
+    const marker = `DM-${randomUUID().slice(0, 8)}`;
     const date = contextReply.outcome.data.requester.businessDate;
     if (fixture === "limits") {
       const limitRoutes = await seedLimits(page, marker, date, stewardship.inventory.issuer);

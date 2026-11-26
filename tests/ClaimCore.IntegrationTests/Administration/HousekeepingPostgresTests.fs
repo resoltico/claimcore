@@ -44,7 +44,7 @@ let private lockedRenewal (database: PostgresFixture.Database) =
                 [| box (humanPrincipalKey "https://issuer.example/" "fresh") |]
 
         do! enterMaintenance database
-        let! before = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! before = inspectSchemaStatus database
         use! holder = database.OwnerSource.OpenConnectionAsync()
         use! transaction = holder.BeginTransactionAsync()
 
@@ -97,7 +97,7 @@ let private lockedRenewal (database: PostgresFixture.Database) =
             (0L, 0L)
             "Renewed and fresh operational rows are not deleted"
 
-        let! after = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! after = inspectSchemaStatus database
         Expect.equal after.Position before.Position "Housekeeping takes no ledger step"
 
         Expect.isTrue

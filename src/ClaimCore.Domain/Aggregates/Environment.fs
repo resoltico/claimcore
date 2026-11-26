@@ -8,6 +8,7 @@ type FamilyEnvironment =
         Requester: AccessView
         RequesterPrincipal: PrincipalKey
         Maintenance: bool
+        CaseReferencePolicy: CaseReferencePolicy
         AssigneeEligible: ActorId -> bool
         ReferenceOwner: CaseReference -> CaseId option
         RelatedCase: CaseSelector -> (CaseId * Lifecycle) option

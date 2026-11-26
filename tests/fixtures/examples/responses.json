@@ -696,7 +696,8 @@
             "nextCursor": "x",
             "offers": [
               {
-                "kind": "case.open"
+                "kind": "case.open",
+                "editable": ["field:incidentDate", "field:caseReference"]
               },
               {
                 "kind": "PEOPLE_ACT",
@@ -1200,7 +1201,8 @@
               "timeZone": "x",
               "offers": [
                 {
-                  "kind": "case.open"
+                  "kind": "case.open",
+                  "editable": ["field:incidentDate"]
                 },
                 {
                   "kind": "PEOPLE_ACT",
@@ -2139,6 +2141,37 @@
       }
     },
     {
+      "name": "automatic-opening-preview",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "task": "case.open",
+              "target": { "kind": "OPENING" },
+              "references": { "actors": [], "cases": [] },
+              "binding": { "kind": "CASE", "expectedRevision": 0 },
+              "changes": [],
+              "opening": {
+                "case": { "fields": [], "money": [], "lifecycle": "ACTIVE" },
+                "parties": []
+              },
+              "context": {
+                "productVersion": "0.8.0",
+                "observedAt": "2026-11-02T04:00:00.000000Z",
+                "businessDate": "2026-11-02",
+                "timeZone": "Etc/UTC"
+              }
+            }
+          }
+        },
+        "representation": "DATA"
+      }
+    },
+    {
       "name": "people-admit-compound-part",
       "endpoint": "operation.preview",
       "valid": true,
@@ -2162,7 +2195,7 @@
                 "cases": [
                   {
                     "caseId": "20000000-0000-7000-8000-000000000001",
-                    "caseReference": "10000000-0000-7000-8000-000000000777"
+                    "caseReference": "Case-777"
                   }
                 ]
               },

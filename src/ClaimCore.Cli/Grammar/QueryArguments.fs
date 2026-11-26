@@ -118,7 +118,11 @@ module internal QueryArguments =
                             CaseSelector.Id(CaseId.create id |> Option.get)
                         ))
                 | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
-                    Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
+                    match CaseReference.parse value with
+                    | Ok _ -> Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
+                    | Error _ ->
+                        problems.Add(UsageError.InvalidValue(flag name, value))
+                        None
                 | TaskInputId.ActorId
                 | TaskInputId.ResponsibleActorFilter
                 | TaskInputId.DisclosureCaseId

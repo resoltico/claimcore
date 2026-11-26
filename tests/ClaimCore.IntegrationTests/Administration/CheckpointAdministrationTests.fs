@@ -96,6 +96,9 @@ let private checkpoints () =
 
         let trusted = create fixture.InstallationId older.Position (Some cutoff)
 
+        let predatesBootstrap =
+            create fixture.InstallationId LedgerPosition.genesis (Some cutoff)
+
         for checkpoint, finding in
             [
                 foreign, VerificationFinding.CheckpointInstallation
@@ -168,6 +171,34 @@ let private checkpoints () =
         | Ok _ -> failtest "Rebuild bypassed trusted expiry evidence"
 
         addSession ()
+
+        let handle =
+            MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
+            |> Option.get
+
+        let noBootstrap =
+            {
+                Sequence = Some Sequence.zero
+                Finding = VerificationFinding.CheckpointPredatesBootstrap
+            }
+
+        Expect.equal
+            (administration.Rebuild(predatesBootstrap, handle, token) |> sync)
+            (Error noBootstrap)
+            "Genesis cannot authenticate bootstrap for a rebuild"
+
+        Expect.equal
+            (administration.AdmitRestoredInstallation(predatesBootstrap, handle, token)
+             |> sync)
+            (Error noBootstrap)
+            "Genesis cannot authenticate bootstrap for restore admission"
+
+        Expect.equal (sessions ()) 1L "Admission refusal preserves all restored session rows"
+
+        Expect.equal
+            (administration.Head token |> sync)
+            current
+            "Admission refusal preserves the ledger and does not advance expiry"
 
         let restored =
             administration.AdmitRestoredInstallation(

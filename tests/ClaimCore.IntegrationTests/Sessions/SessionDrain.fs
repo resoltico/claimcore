@@ -77,6 +77,8 @@ let private closedAdmission (runtime: ClaimCore.Server.Composition.IRuntime) key
 
 let run (database: PostgresFixture.Database) =
     task {
+        let! _ = ClaimCore.TestSupport.StoreFixtures.bootstrap database.Fixture
+
         let storage =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 

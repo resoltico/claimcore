@@ -64,7 +64,6 @@ module internal Declarations =
             Aggregate = aggregate
             Target = target
             Creates = creates
-            SubjectInput = None
             Selection = None
             Family = family
             Consequence = consequence

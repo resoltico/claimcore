@@ -319,6 +319,20 @@ module OperationSubmission =
             Error(SubmissionProblem.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         )
 
+    let private selectorSyntax =
+        function
+        | OperationBinding.Case(CaseSelector.Reference value, _, _, _)
+        | OperationBinding.Work(CaseSelector.Reference value, _)
+        | OperationBinding.Note(CaseSelector.Reference value, _)
+        | OperationBinding.Attachment(CaseSelector.Reference value, _)
+        | OperationBinding.Party(CaseSelector.Reference value, _)
+        | OperationBinding.Link(CaseSelector.Reference value, _)
+        | OperationBinding.Reminder(CaseSelector.Reference value, _) ->
+            CaseReference.parse value
+            |> Result.map ignore
+            |> Result.mapError (issue (field BusinessField.CaseReference))
+        | _ -> Ok()
+
     let admitBinding (declaration: TaskDeclaration) raw =
         let binds input =
             declaration.Inputs
@@ -451,7 +465,8 @@ module OperationSubmission =
                             SubmittedOperation.Binding = binding
                             Inputs = inputs
                         })
-                    (admitBinding declaration submission.Binding)
+                    (selectorSyntax submission.Binding
+                     |> bind (fun () -> admitBinding declaration submission.Binding))
                     (mapInputs declaration.Collections values)))
 
     let admit envelope =
@@ -607,6 +622,7 @@ module OperationSubmission =
 
         let issues =
             match selected with
+            | ClaimCore.Domain.Tasks.Task.Opening selected -> selected.Check inputs
             | ClaimCore.Domain.Tasks.Task.Family selected -> selected.Check inputs
             | ClaimCore.Domain.Tasks.Task.Person selected -> selected.Check inputs
 
@@ -640,6 +656,7 @@ module OperationSubmission =
             collect
                 [
                     operationIdentity draft.OperationId
+                    selectorSyntax draft.Binding
                     draftBinding declaration draft.Binding
                     authored
                 ]

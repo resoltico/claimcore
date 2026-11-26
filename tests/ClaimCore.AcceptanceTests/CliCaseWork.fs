@@ -35,7 +35,7 @@ let lifecycleEmptyView =
             invoke
                 fixture
                 environment
-                [ "case"; "open"; "--format"; "json"; "--"; reference ]
+                [ "case"; "open"; "--format"; "json"; "--case-reference"; reference ]
                 Array.empty
                 0
             |> parse 0
@@ -63,14 +63,23 @@ let lifecycleEmptyView =
         })
 
 let private historicalReference (fixture: PublishedFixture.Fixture) environment =
-    let earlier = "-CLI:EARLIER-" + id ()
-    let current = "CLI-CURRENT-" + id ()
+    let earlier = "CLI-EARLIER-" + (id ()).Substring(24)
+    let current = "CLI-CURRENT-" + (id ()).Substring(24)
 
     let opened =
         invoke
             fixture
             environment
-            [ "case"; "open"; "--operation-id"; id (); "--format"; "json"; "--"; earlier ]
+            [
+                "case"
+                "open"
+                "--operation-id"
+                id ()
+                "--format"
+                "json"
+                "--case-reference"
+                earlier
+            ]
             Array.empty
             0
         |> parse 0
@@ -122,19 +131,15 @@ let private historicalReference (fixture: PublishedFixture.Fixture) environment 
         |> Encoding.UTF8.GetString
 
     let text = render search
-    let prefix = "claimcore case get -- "
+    let prefix = "claimcore case get "
     let position = text.IndexOf(prefix, StringComparison.Ordinal)
 
-    Expect.isGreaterThanOrEqual
-        position
-        0
-        "Native hints include the historical selector and operand separator"
+    Expect.isGreaterThanOrEqual position 0 "Native hints include the historical selector"
 
     let command = text.Substring(position).Split('\n') |> Array.head |> _.TrimEnd('\r')
-    Expect.equal command (prefix + "'" + earlier + "'") "Copy the exact quoted hint"
+    Expect.equal command (prefix + earlier) "Copy the exact historical hint"
 
-    // The reviewed hint uses one quoted synthetic operand and no shell expansion.
-    let operand = command.Substring(prefix.Length).Trim('\'')
+    let operand = command.Substring(prefix.Length)
 
     let followed =
         invoke
@@ -155,7 +160,7 @@ let private historicalReference (fixture: PublishedFixture.Fixture) environment 
 
 let qualify (fixture: PublishedFixture.Fixture) =
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
-    let reference = "CLI-WORK-" + id ()
+    let reference = "CLI-WORK-" + (id ()).Substring(24)
     historicalReference fixture environment
 
     let context =
@@ -235,6 +240,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             [
                 "case"
                 "open"
+                "--case-reference"
                 reference
                 "--operation-id"
                 id ()

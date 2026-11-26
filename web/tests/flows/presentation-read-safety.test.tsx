@@ -212,7 +212,7 @@ it.each(languages)(
     preferences(language);
     for (const { value, points } of [
       {
-        value: "<script>",
+        value: "cc-0000-0000-0000-0000-98",
         points: null,
       },
     ]) {

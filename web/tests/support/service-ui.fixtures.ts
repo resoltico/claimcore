@@ -11,5 +11,5 @@ export const context = actorContextInput({
   ...runtime,
   capabilities: ["REGISTER"],
   views: ["CASES", "PEOPLE", "OPERATIONS"],
-  offers: [{ kind: "case.open" }],
+  offers: [{ kind: "case.open", editable: ["field:caseReference", "field:policyNumber"] }],
 });

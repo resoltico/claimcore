@@ -56,7 +56,7 @@ let private nativePublication () =
 
     let mutable passed = false
 
-    let run executable arguments =
+    let runWithExit expected executable arguments =
         let start =
             ProcessStartInfo(
                 executable,
@@ -84,10 +84,13 @@ let private nativePublication () =
 
         Expect.equal
             result.ExitCode
-            0
-            ("Native CLI process succeeds: " + Encoding.UTF8.GetString result.StandardError)
+            expected
+            ("Native CLI exit status: " + Encoding.UTF8.GetString result.StandardError)
 
-        result.StandardOutput
+        result
+
+    let run executable arguments =
+        (runWithExit 0 executable arguments).StandardOutput
 
     try
         let configuration =
@@ -208,23 +211,19 @@ let private nativePublication () =
                 "claimcore people list"
                 "Standalone help aliases remain offline discovery"
 
-            use literal =
-                JsonDocument.Parse(
-                    (run executable [ "case"; "get"; "--dry-run"; "--"; alias ]).AsMemory()
-                )
+            let literal = runWithExit 64 executable [ "case"; "get"; "--dry-run"; "--"; alias ]
 
-            Expect.equal
-                (literal.RootElement
-                    .GetProperty("input")
-                    .GetProperty("target")
-                    .GetProperty("caseReference")
-                    .GetString())
-                alias
-                "The published terminator keeps a help-like operand literal"
+            Expect.isEmpty literal.StandardOutput "A malformed literal produces no command result"
+
+            Expect.stringContains
+                (Encoding.UTF8.GetString literal.StandardError)
+                ("Invalid value " + alias + " for --case-reference.")
+                "The published terminator preserves the literal for reference validation"
 
         use selected =
             JsonDocument.Parse(
-                (run executable [ "case"; "get"; "--dry-run"; "--"; "--claim" ]).AsMemory()
+                (run executable [ "case"; "get"; "--dry-run"; "--"; "cc-0000-0000-0000-0000-98" ])
+                    .AsMemory()
             )
 
         Expect.equal
@@ -233,12 +232,14 @@ let private nativePublication () =
                 .GetProperty("target")
                 .GetProperty("caseReference")
                 .GetString())
-            "--claim"
-            "The published argv boundary preserves an option-looking reference"
+            "cc-0000-0000-0000-0000-98"
+            "The published argv boundary preserves a valid generated selector"
 
         use draft =
             JsonDocument.Parse(
-                (run executable [ "note"; "add"; "--dry-run"; "--text=--urgent"; "--"; "--claim" ])
+                (run
+                    executable
+                    [ "note"; "add"; "--dry-run"; "--text=--urgent"; "--"; "Claim-Mixed" ])
                     .AsMemory()
             )
 
@@ -250,7 +251,7 @@ let private nativePublication () =
                 .GetProperty("target")
                 .GetProperty("caseReference")
                 .GetString())
-            "--claim"
+            "Claim-Mixed"
             "Published offline preparation preserves the selected case"
 
         Expect.equal

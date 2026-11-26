@@ -9,39 +9,40 @@ module internal CaseIdentityReads =
     let referenceAt caseId revisionCondition =
         $"(SELECT e.retained->>'reference' FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id={caseId} AND e.retained->>'reference' IS NOT NULL {revisionCondition} ORDER BY e.revision DESC LIMIT 1)"
 
-    let resolve (tx: ReadTx) selector =
+    let private findId (tx: ReadTx) identity key =
         task {
-            let key, identity =
-                match selector with
-                | CaseSelector.Id id -> None, Some id
-                | CaseSelector.Reference raw ->
-                    CaseReference.parse raw |> Result.toOption |> Option.map CaseReference.identity,
-                    None
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT part_id FROM claimcore.ledger_effects WHERE part_kind=$1 AND (($2::uuid IS NOT NULL AND part_id=$2 AND revision=1) OR ($3::text IS NOT NULL AND upper(natural_key COLLATE \"C\")=$3))"
+                    [|
+                        box (PartKind.token PartKind.Case)
+                        DatabaseSession.parameter (identity |> Option.map CaseId.value)
+                        DatabaseSession.parameter key
+                    |]
+                    tx.CancellationToken
 
-            if key.IsNone && identity.IsNone then
-                return None
-            else
-                let! rows =
-                    DatabaseSession.rows
-                        tx.Connection
-                        "SELECT part_id FROM claimcore.ledger_effects WHERE part_kind=$1 AND (($2::uuid IS NOT NULL AND part_id=$2 AND revision=1) OR ($3::text IS NOT NULL AND upper(natural_key COLLATE \"C\")=$3))"
-                        [|
-                            box (PartKind.token PartKind.Case)
-                            DatabaseSession.parameter (identity |> Option.map CaseId.value)
-                            DatabaseSession.parameter key
-                        |]
-                        tx.CancellationToken
-
-                match rows with
-                | [] -> return None
-                | [ row ] ->
-                    return
-                        Some(
-                            DatabaseSession.value<System.Guid> 0 row
-                            |> DatabaseSession.admitted CaseId.create
-                        )
-                | _ -> return raise (RecordCorruptException "Family selection is ambiguous.")
+            match rows with
+            | [] -> return None
+            | [ row ] ->
+                return
+                    Some(
+                        DatabaseSession.value<System.Guid> 0 row
+                        |> DatabaseSession.admitted CaseId.create
+                    )
+            | _ -> return raise (RecordCorruptException "Family selection is ambiguous.")
         }
+
+    let referenceOwner tx reference =
+        findId tx None (Some(CaseReference.identity reference))
+
+    let resolve tx =
+        function
+        | CaseSelector.Id id -> findId tx (Some id) None
+        | CaseSelector.Reference raw ->
+            match CaseReference.parse raw with
+            | Ok reference -> referenceOwner tx reference
+            | Error _ -> System.Threading.Tasks.Task.FromResult None
 
     let referenceBefore (tx: ReadTx) id revision =
         task {

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Start a [fresh installation](docs/operating.md#install-a-fresh-register) for format 10. Previous databases and backups require their matching builds.
+- Replace the positional reference in `claimcore case open` with `--case-reference REF` when custom assignment is enabled. With no reference supplied, ClaimCore assigns one.
+- Update API clients for optional non-clearable opening references, pending opening previews, editable opening offers and the `REFERENCE_UNAVAILABLE` refusal.
+- Choose `CUSTOM_ALLOWED` at initialization to permit custom assignment and corrections. The default is system assigned only. Custom references stay reserved after correction or erasure.
+- Custom references are limited to 32 ASCII characters, begin with a letter and use single hyphens between groups. ClaimCore reserves the `CC-` prefix.
+- Use a trusted checkpoint at sequence one or later for rebuild and restore admission. The first owner operation binds the installation's reference policy.
+- Generated case references have 80 random bits and two check digits. They cannot be corrected. Exact lookup checks the complete reference and case work still links by Case ID.
 - Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings for Npgsql 11.0.0.
 - If you set `Application Name`, update any Npgsql connection pool metric filters that select the previous pool label.
 - PostgreSQL enforces read-only snapshots for ClaimCore's shared read and verification paths.

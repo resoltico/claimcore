@@ -9,7 +9,7 @@ test("one submit reports every invalid input in summary order and links to its f
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `ACCUMULATE-${randomUUID()}`);
+  await startOpen(page, `ACCUMULATE-${randomUUID().slice(0, 8)}`);
   const incident = page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first();
   const amount = page.getByLabel("Claimed amount", {
     exact: true,

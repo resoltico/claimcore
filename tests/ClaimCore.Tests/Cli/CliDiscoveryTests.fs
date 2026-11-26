@@ -163,6 +163,7 @@ let tests =
                             [
                                 "case"
                                 "open"
+                                "--case-reference"
                                 "WITNESS"
                                 "--clear-incident-description"
                                 "--dry-run"

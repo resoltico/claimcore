@@ -27,12 +27,7 @@ let private opened rows =
             (Map.ofList [ TaskCollectionId.Parties, rows ])
         |> Option.get
 
-    ClaimCore.Domain.Tasks.Case.Open.decide
-        (context 23)
-        environment
-        None
-        (Binding.CaseNew Revision.zero)
-        submitted
+    openCustom (context 23) environment None (Binding.CaseNew Revision.zero) submitted
 
 let private named role name = row role (Some name) None
 

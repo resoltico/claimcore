@@ -23,7 +23,11 @@ let private token = CancellationToken.None
 let identities (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let reference = "80000000-0000-4000-8000-000000000609"
+        let reference = "a0000000000040008000000000000609"
+
+        let identityWithThoseDigits =
+            CaseFixtures.caseId (Guid.Parse "a0000000-0000-4000-8000-000000000609")
+
         let expected = CaseFixtures.caseId (id fixture 610)
 
         let openInput: OperationSubmission =
@@ -84,7 +88,7 @@ let identities (fixture: Fixture) =
             Service.get
                 actor
                 {
-                    Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 609))
+                    Target = CaseSelector.Id identityWithThoseDigits
                 }
                 token
 

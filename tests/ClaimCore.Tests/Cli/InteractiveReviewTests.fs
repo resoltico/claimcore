@@ -440,7 +440,7 @@ let tests =
                             harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
 
                         let arguments =
-                            [ "case"; "open"; "x" ]
+                            [ "case"; "open"; "--case-reference"; "x" ]
                             @ CliExamples.registrationArguments DomainInputs.registration
 
                         Expect.equal (run arguments h) 0 "Human completion"
@@ -859,6 +859,7 @@ let reminderReviewDetails =
                                             else
                                                 "reminder.create"
                                         )
+                                    Opening = None
                                     Target = ReviewTarget.Case(current.CaseId, current.Reference)
                                     Binding =
                                         if compound then

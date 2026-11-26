@@ -136,8 +136,9 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "使用參考編號開立案件，並記錄已知的登記資訊。",
-    "source": "39967b35166c"
+    "text": "使用已知的登記資料開立案件。將案件編號留空，系統便會自動分配編號。如果登記冊允許，可以輸入自訂案件編號。",
+    "source": "debda0b6773d",
+    "machineMade": true
   },
   "task.people.provisionOwner.label": {
     "text": "設置首位所有者",
@@ -423,10 +424,6 @@
     "text": "請使用 YYYY-MM-DD 格式的有效日曆日期。",
     "source": "568f83da1b98"
   },
-  "diagnostic.CASE_ALREADY_EXISTS": {
-    "text": "此案件編號已存在。",
-    "source": "a3f9c947fa47"
-  },
   "diagnostic.CONTROL_CHARACTERS": {
     "text": "不允許使用控制字符。",
     "source": "27b9975ce3fa"
@@ -504,8 +501,9 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "請使用 1 至 80 個可輸出的非空格 ASCII 字元。",
-    "source": "a4d1a5f9f416"
+    "text": "請輸入有效的案件識別碼。自訂識別碼以 ASCII 字母開頭，最多 32 個字元，可使用字母、數字及組間單一連字號。CC- 前綴保留給系統分配的識別碼。",
+    "source": "f856f6f13ef0",
+    "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
     "text": "因維護暫停更改。您仍可查看案件並檢查此前的更改。",
@@ -1680,12 +1678,14 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "請使用 1 至 {maximumCharacters} 個可輸出的非空格 ASCII 字元。字母大小寫不同仍視為同一案件編號，並保留原始寫法。",
-    "source": "b43a33360aed"
+    "text": "使用 1 至 {maximumCharacters} 個 ASCII 字元。自訂識別碼以字母開頭，使用字母、數字及組間單一連字號。CC- 前綴保留給系統分配的識別碼。",
+    "source": "e7fc63264856",
+    "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "您為此案件指定的編號，例如 CLM-2026-0001。",
-    "source": "adde9fba1cc3"
+    "text": "案件清除後，自訂識別碼仍會保留。請勿在其中包含個人資料。",
+    "source": "2156c99e44ef",
+    "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
     "text": "決定賠付金額的日期。",
@@ -1989,8 +1989,9 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "請輸入不含空格的案件編號。",
-    "source": "5722da0c601c"
+    "text": "請檢查案件識別碼與連字號。自訂識別碼以字母開頭，最多使用 32 個字母、數字與連字號。CC- 是保留前綴。",
+    "source": "00e1c36eb2e1",
+    "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
     "text": "請選擇適用於此處的角色。",
@@ -3437,8 +3438,9 @@
     "source": "b905bbf44b8b"
   },
   "field.newReference.hint": {
-    "text": "輸入此案件今後使用的編號。",
-    "source": "d66b4efc4776"
+    "text": "仍可使用舊識別碼查找此案件。請勿在新識別碼中包含個人資料。",
+    "source": "2712ad08d240",
+    "machineMade": true
   },
   "label.referenceChangedFrom": {
     "text": "變更前的編號",
@@ -4644,5 +4646,55 @@
   "label.moneyPairTogether": {
     "text": "請輸入金額和幣別。",
     "source": "11da00ab5ba1"
+  },
+  "diagnostic.REFERENCE_UNAVAILABLE": {
+    "text": "案件識別碼無法使用。",
+    "source": "233033263ef9",
+    "machineMade": true
+  },
+  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
+    "text": "此登記冊會自動分配所有案件識別碼。請移除自訂識別碼以繼續。",
+    "source": "072632d9c59c",
+    "machineMade": true
+  },
+  "label.caseReferencePending": {
+    "text": "開立案件時分配。",
+    "source": "9fcad855f05a",
+    "machineMade": true
+  },
+  "label.useCustomCaseReference": {
+    "text": "使用自訂案件識別碼",
+    "source": "3796d7f0af59",
+    "machineMade": true
+  },
+  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
+    "source": "22c0bf147040",
+    "text": "僅由系統分配",
+    "machineMade": true
+  },
+  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
+    "source": "2126c4e1b515",
+    "text": "允許自訂案件編號",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.label": {
+    "source": "00276badc096",
+    "text": "案件編號政策",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.rule": {
+    "source": "d15f3878c38a",
+    "text": "初始設定時選取的編號分配政策。",
+    "machineMade": true
+  },
+  "field.caseReferencePolicy.hint": {
+    "source": "8e971dfd9ae8",
+    "text": "請選擇是否允許輸入自訂案件編號。",
+    "machineMade": true
+  },
+  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
+    "source": "a743fa65aff6",
+    "text": "請選擇支援的案件編號政策。",
+    "machineMade": true
   }
 }

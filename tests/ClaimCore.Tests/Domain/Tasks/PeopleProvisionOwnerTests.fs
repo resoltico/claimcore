@@ -44,7 +44,7 @@ let tests =
                         environment
                         None
                         (Binding.PeopleNew Revision.zero)
-                        (peopleInputs newPrincipal)
+                        (bootstrapInputs newPrincipal)
                     |> expectRefusal (Refusal.People PeopleRefusal.ActorAlreadyRegistered)
 
                     let service =
@@ -58,6 +58,6 @@ let tests =
                         }
                         None
                         (Binding.PeopleNew Revision.zero)
-                        (peopleInputs service)
+                        (bootstrapInputs service)
                     |> expectRefusal (Refusal.People PeopleRefusal.HumanPrincipalRequired))
         ]

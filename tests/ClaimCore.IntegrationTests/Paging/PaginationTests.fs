@@ -148,7 +148,10 @@ type internal PausedPageStore
 let private freshAdvice (actor: ServiceContext) cursor current =
     task {
         Expect.isTrue
-            ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
+            ((page current).Offers
+             |> List.exists (function
+                 | InstallationOffer.Open _ -> true
+                 | _ -> false))
             "Paused rows retain the same registrar snapshot advice"
 
         let! fresh =
@@ -158,7 +161,10 @@ let private freshAdvice (actor: ServiceContext) cursor current =
                 (token))
 
         Expect.isFalse
-            ((page fresh).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
+            ((page fresh).Offers
+             |> List.exists (function
+                 | InstallationOffer.Open _ -> true
+                 | _ -> false))
             "Fresh reader page has no OPEN advice"
 
         let! next =
@@ -168,7 +174,10 @@ let private freshAdvice (actor: ServiceContext) cursor current =
                 (token))
 
         Expect.isFalse
-            ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
+            ((page next).Offers
+             |> List.exists (function
+                 | InstallationOffer.Open _ -> true
+                 | _ -> false))
             "Plain continuation uses current people and does not restore registrar advice"
     }
 

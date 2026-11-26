@@ -40,31 +40,61 @@ module ReviewScreen =
             | PresentedValue.Absent _ -> false
             | _ -> true)
 
+    let private caseChanges
+        prefix
+        (fields: CaseFieldDifference list)
+        (money: CaseMoneyDifference list)
+        =
+        let fields =
+            fields
+            |> List.map (fun field ->
+                changed
+                    (prefix + BusinessField.key field.FieldName)
+                    (FieldPresentation.labelId field.FieldName)
+                    scalar
+                    {
+                        Before = field.Before
+                        After = field.After
+                    })
+
+        let money =
+            money
+            |> List.map (fun field ->
+                changed
+                    (prefix + BusinessField.key field.FieldName)
+                    (FieldPresentation.labelId field.FieldName)
+                    PresentedValue.money
+                    field.Change)
+
+        fields @ money
+
+    let private partyChanges prefix (part: PartyPartDescription) =
+        let difference key label format select =
+            changed
+                (prefix + key)
+                label
+                format
+                {
+                    Before = part.Content.Before |> Option.bind select
+                    After = part.Content.After |> Option.bind select
+                }
+
+        [
+            difference "role" "field.partyRole.label" (code PartyRole.vocabulary) (fun party ->
+                Some party.Role)
+            difference "name" "field.partyName.label" PresentedValue.Party _.Name
+            difference
+                "details"
+                "field.partyDetails.label"
+                (PartyDetails.format >> PresentedValue.Narrative)
+                _.Details
+        ]
+
     let describePart references (partId: System.Guid) description =
         let prefix = partId.ToString("D") + "."
 
         match description with
         | PartDescription.Case value ->
-            let fields =
-                value.Fields
-                |> List.map (fun field ->
-                    changed
-                        (prefix + BusinessField.key field.FieldName)
-                        (FieldPresentation.labelId field.FieldName)
-                        scalar
-                        {
-                            Before = field.Before
-                            After = field.After
-                        })
-
-            let money =
-                value.Money
-                |> List.map (fun field ->
-                    changed
-                        (prefix + BusinessField.key field.FieldName)
-                        (FieldPresentation.labelId field.FieldName)
-                        PresentedValue.money
-                        field.Change)
 
             let lifecycle =
                 value.Lifecycle
@@ -90,7 +120,7 @@ module ReviewScreen =
                     after |> List.filter (fun entry -> not (Set.contains entry.Key changedFields))
 
             let removals =
-                fields @ money
+                caseChanges prefix value.Fields value.Money
                 |> List.map (fun change ->
                     if value.Lifecycle |> Option.bind _.After = Some Lifecycle.Erased then
                         match change.After with
@@ -273,28 +303,7 @@ module ReviewScreen =
                 ]
 
             differences, unchanged
-        | PartDescription.Party part ->
-            let difference key label format select =
-                changed
-                    (prefix + key)
-                    label
-                    format
-                    {
-                        Before = part.Content.Before |> Option.bind select
-                        After = part.Content.After |> Option.bind select
-                    }
-
-            [
-                difference "role" "field.partyRole.label" (code PartyRole.vocabulary) (fun party ->
-                    Some party.Role)
-                difference "name" "field.partyName.label" PresentedValue.Party _.Name
-                difference
-                    "details"
-                    "field.partyDetails.label"
-                    (PartyDetails.format >> PresentedValue.Narrative)
-                    _.Details
-            ],
-            []
+        | PartDescription.Party part -> partyChanges prefix part, []
         | PartDescription.Link link ->
             [
                 changed
@@ -499,15 +508,31 @@ module ReviewScreen =
         let creation = (TaskDeclarations.describe (TaskId.token review.Task)).Creates
 
         let changes =
-            review.Changes
-            |> List.collect (fun part ->
-                let description =
-                    if creation then
-                        authoredCreationFields inputs part.Description
-                    else
-                        part.Description
+            match review.Opening with
+            | Some opening ->
+                let fields =
+                    opening.Case.Fields
+                    |> List.filter (fun field ->
+                        field.FieldName <> BusinessField.Status
+                        && field.FieldName <> BusinessField.CaseReference)
 
-                describePart review.References part.PartId description |> fst)
+                caseChanges "opening." fields opening.Case.Money
+                @ (opening.Parties
+                   |> List.mapi (fun index part -> partyChanges $"opening.party.{index}." part)
+                   |> List.concat)
+            | None ->
+                review.Changes
+                |> List.collect (fun part ->
+                    let description =
+                        if creation then
+                            authoredCreationFields inputs part.Description
+                        else
+                            part.Description
+
+                    describePart review.References part.PartId description |> fst)
+
+        let changes =
+            changes
             |> List.filter (fun change ->
                 change.Before <> change.After
                 && (not creation

@@ -15,7 +15,7 @@ let private qualify () =
     task {
         use fixture = new PublishedFixture.Fixture()
         do! fixture.Start()
-        let canary = "private-storage-" + Guid.NewGuid().ToString("N")
+        let canary = "private-storage-" + Guid.NewGuid().ToString("N").Substring(0, 16)
 
         let connectionString =
             File.ReadAllText(Path.Combine(fixture.Directory, "owner.connection"))

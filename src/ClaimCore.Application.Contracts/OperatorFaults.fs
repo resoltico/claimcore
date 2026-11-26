@@ -22,6 +22,8 @@ type OperatorFault =
     | OwnerRecoveryNameRequired
     | OwnerRecoveryIdentityReserved
     | AlreadyInitialized
+    | CaseReferencePolicyInvalid
+    | CaseReferencePolicyMismatch
     | UnsupportedServer
     | UnsupportedDatabase
     | SchemaMismatch

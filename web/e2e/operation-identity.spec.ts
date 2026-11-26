@@ -8,13 +8,15 @@ import { openAuthenticated } from "./session-helpers";
 
 test("rotates a exposed OPEN identity when only its target reference changes", async ({ page }) => {
   await openAuthenticated(page);
-  await startOpen(page, `FIRST-${randomUUID()}`);
+  await startOpen(page, `FIRST-${randomUUID().slice(0, 8)}`);
   const first = await reviewDraft(page);
   await page.getByRole("button", { name: "Return to editing" }).click();
   await expect(page.getByRole("dialog", { name: "Open a case" })).toBeVisible();
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toHaveCount(0);
   await expect(page.getByLabel("Case reference", { exact: true })).toBeVisible();
-  await page.getByLabel("Case reference", { exact: true }).fill(`SECOND-${randomUUID()}`);
+  await page
+    .getByLabel("Case reference", { exact: true })
+    .fill(`SECOND-${randomUUID().slice(0, 8)}`);
   const second = await reviewDraft(page);
   expect(second.operationId).not.toBe(first.operationId);
 });
@@ -34,6 +36,8 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
   });
   await open.click();
   const drawer = page.getByRole("dialog", { name: "Open a case" });
+  const custom = drawer.getByRole("checkbox", { name: "Use a custom case reference" });
+  await custom.check();
   const reference = drawer.getByRole("textbox", { name: "Case reference", exact: true });
   const review = drawer.getByRole("button", { name: "Review changes" });
   await reference.focus();
@@ -48,12 +52,22 @@ test("case intake preserves focus and distinguishes empty lifecycle views", asyn
   await reference.fill("");
   await review.click();
   await expect(drawer.getByRole("alert").first()).toBeVisible();
+  await expect(reference).toBeFocused();
   await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
+  await expect(discard).toBeVisible();
+  await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(custom).toBeChecked();
+  await expect(reference).toHaveValue("");
+  await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  await discard.getByRole("button", { name: "Discard and leave", exact: true }).click();
+  await expect(discard).toHaveCount(0);
   await expect(drawer).toHaveCount(0);
   expect(executions).toEqual([]);
 
   await open.click();
-  const query = `INTAKE-${randomUUID()}`;
+  await custom.check();
+  const query = `INTAKE-${randomUUID().slice(0, 8)}`;
   await reference.fill(`${query}-ACTIVE`);
   await expect(
     drawer.getByText("Leave both blank, or enter both amount and currency."),

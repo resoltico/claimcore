@@ -59,7 +59,7 @@ let private install identifier format (bytes: byte array) (source: NpgsqlDataSou
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,$2)"
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,case_reference_policy,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,'CUSTOM_ALLOWED',$2)"
                 [| box format; box (Array.zeroCreate<byte> 60) |]
                 token
 
@@ -95,7 +95,7 @@ let private refusedInstallation identifier format load =
                 refuses (fun () ->
                     task {
                         let! _ =
-                            Baseline.initialize
+                            SchemaAdministration.initialize
                                 source
                                 key
                                 "Etc/UTC"
@@ -152,17 +152,17 @@ let tests =
         [
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
-                (refusedInstallation Baseline.identifier 9s alteredBaseline)
+                (refusedInstallation Baseline.identifier 10s alteredBaseline)
             testCaseAsync
-                "an installation with format 8 and the preceding baseline identity refuses without mutation"
-                (refusedInstallation "claimcore-format-7" 8s (fun () ->
+                "the preceding installation format and baseline identity refuse without mutation"
+                (refusedInstallation "claimcore-format-9" 9s (fun () ->
                     File
                         .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
-                        .Replace("installation_format = 9", "installation_format = 8")
-                        .Replace("installation_format=9", "installation_format=8")
-                        .Replace("p_format<>9", "p_format<>8")
+                        .Replace("installation_format = 10", "installation_format = 9")
+                        .Replace("installation_format=10", "installation_format=9")
+                        .Replace("p_format<>10", "p_format<>9")
                     |> Encoding.UTF8.GetBytes))
             testCaseAsync
                 "a schema with a different checksum is refused untouched"
-                (refusedInstallation Baseline.identifier 9s differentChecksum)
+                (refusedInstallation Baseline.identifier 10s differentChecksum)
         ]

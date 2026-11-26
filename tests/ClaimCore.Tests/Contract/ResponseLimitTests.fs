@@ -20,7 +20,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 let private id = Guid.Parse "d0000000-0000-7000-8000-000000000001"
-let private reference = String('"', 80)
+let private reference = String('A', 32)
 let private instant = DateTimeOffset(9999, 12, 31, 23, 59, 59, TimeSpan.Zero)
 let private maximum = 9007199254740991L
 

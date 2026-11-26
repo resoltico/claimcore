@@ -75,7 +75,7 @@ let tests =
                             "--include-inactive"
                             "false"
                             "--case-reference"
-                            "00000000-0000-4000-8000-000000000001"
+                            "cc-0000-0000-0000-0000-98"
                         ]
 
                 let value = Frames.value Api.reminders frame |> Option.get
@@ -84,8 +84,8 @@ let tests =
 
                 Expect.equal
                     value.Target
-                    (Some(CaseSelector.Reference "00000000-0000-4000-8000-000000000001"))
-                    "UUID-shaped reference is still a reference"
+                    (Some(CaseSelector.Reference "cc-0000-0000-0000-0000-98"))
+                    "An explicit generated selector preserves the entered case"
 
                 Expect.isError
                     (prepare [ "reminder"; "list"; "--state"; "voided" ])
@@ -97,6 +97,7 @@ let tests =
                         [
                             [ "case"; "list"; "--limit"; "0" ]
                             [ "case"; "list"; "--limit"; "9007199254740992" ]
+                            [ "case"; "get"; "CC-0000-0000-0000-0000-01" ]
                             [ "case"; "notes"; "QUERY"; "--cursor"; "" ]
                             [ "people"; "list"; "--cursor"; String.replicate 513 "x" ]
                         ] do

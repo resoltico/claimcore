@@ -43,6 +43,7 @@ let private withCases check =
                 Contact = None
             }
             []
+            CaseReferencePolicy.CustomAllowed
             CancellationToken.None
         |> fun pending -> pending.GetAwaiter().GetResult()
 

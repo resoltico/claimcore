@@ -7,6 +7,12 @@ local HTTPS, identity and owner setup. Configure the CLI using
 Use synthetic data only. The selected account needs Case handler and Payment recorder for all cases;
 Owner alone supplies no case rights.
 
+These numbered examples use `CUSTOM_ALLOWED` so every frame can use the same synthetic reference.
+Select that policy at initialization. To try the default policy, run `claimcore case open`
+and get the generated reference from the receipt. To reuse the numbered frames on that installation,
+omit `field:caseReference` in the first frame and replace the later target values with the issued
+reference.
+
 From the repository root, send the first six changes in order:
 
 ```sh
@@ -19,7 +25,8 @@ claimcore call < examples/06-revise-decision.json
 ```
 
 Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Structured calls carry the task, binding and declared input-token map. Creation has no target in its
-binding; the opening reference is authored as `field:caseReference`. Payment changes update case totals
+binding. This example requests a custom opening reference as `field:caseReference` (CLI
+`--case-reference DEMO-0001`). Payment changes update case totals
 and a payment record, so history can contain more entries than case versions. Human verbs use the same contract; after step
 three, inspect the next frame offline with:
 

@@ -20,7 +20,7 @@ module internal Verification =
     /// Root batches are bounded and interpreted inside one repeatable-read snapshot.
     let private scan
         connection
-        installationId
+        (installation: Installation)
         cipher
         (expected: LedgerPosition option)
         (token: CancellationToken)
@@ -67,8 +67,22 @@ module internal Verification =
                                         state
                                         |> Result.bind (fun state ->
                                             match found with
-                                            | Some root ->
-                                                Replay.append installationId expected state root
+                                            | Some root when
+                                                sequence <> Sequence.first
+                                                || Baseline.matchesBootstrap installation root
+                                                ->
+                                                Replay.append
+                                                    installation.InstallationId
+                                                    installation.CaseReferencePolicy
+                                                    expected
+                                                    state
+                                                    root
+                                            | Some _ ->
+                                                Error(
+                                                    divergence
+                                                        (Some sequence)
+                                                        VerificationFinding.BootstrapPolicy
+                                                )
                                             | None ->
                                                 Error(
                                                     divergence
@@ -147,9 +161,9 @@ module internal Verification =
         | Ok() -> attachments connection cipher state token
 
     /// Authoritative scan for maintenance; projection divergence must not prevent repair.
-    let authoritative connection installationId cipher expected token =
+    let authoritative connection installation cipher expected token =
         task {
-            let! scanned = scan connection installationId cipher expected token
+            let! scanned = scan connection installation cipher expected token
 
             match scanned with
             | Error finding -> return Error finding
@@ -294,24 +308,33 @@ module internal Verification =
         DatabaseSession.read source token (fun connection ->
             task {
                 do! OwnerAdmission.require connection token
-                let! installationId, _ = Baseline.require connection token
-                use! cipher = Baseline.loadCipher connection installationId masterKey token
+                let! installation = Baseline.require connection token
+
+                use! cipher =
+                    Baseline.loadCipher connection installation.InstallationId masterKey token
 
                 let identity =
                     expected
-                    |> Option.map (CheckpointEvidence.installation installationId)
+                    |> Option.map (CheckpointEvidence.installation installation.InstallationId)
                     |> Option.defaultValue (Ok())
 
                 match identity with
                 | Error finding -> return VerificationResult.Diverged finding
                 | Ok() ->
                     let position = expected |> Option.map _.Position
-                    let! result = scan connection installationId cipher position token
+                    let! result = scan connection installation cipher position token
 
                     match result with
                     | Error error -> return VerificationResult.Diverged error
                     | Ok state ->
-                        let! result = finish connection installationId cipher position state token
+                        let! result =
+                            finish
+                                connection
+                                installation.InstallationId
+                                cipher
+                                position
+                                state
+                                token
 
                         match result with
                         | VerificationResult.Diverged _ -> return result

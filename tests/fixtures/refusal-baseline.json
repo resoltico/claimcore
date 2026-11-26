@@ -42,7 +42,7 @@
       "target": null
     },
     {
-      "code": "CASE_ALREADY_EXISTS",
+      "code": "REFERENCE_UNAVAILABLE",
       "action": "ChooseAnotherReference",
       "target": null
     },

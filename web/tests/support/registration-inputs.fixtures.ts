@@ -1,4 +1,4 @@
-import { changeField } from "./field-entry";
+import { changeField, selectFact } from "./field-entry";
 import { caseFields } from "./service-foundation.fixtures";
 /** Supplies wire-valid authored registration; individual tests override current business admission. */
 export const fillRegistrationInputs = (overrides: Readonly<Record<string, string>> = {}): void => {
@@ -10,6 +10,7 @@ export const fillRegistrationInputs = (overrides: Readonly<Record<string, string
     }),
   );
   for (const [name, value] of authored) {
+    selectFact(name);
     const input = document.querySelector<HTMLElement>(`[data-field-name="${name}"]`);
     if (input !== null) {
       changeField(input, value ?? "");

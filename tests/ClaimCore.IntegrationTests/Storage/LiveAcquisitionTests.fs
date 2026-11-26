@@ -32,7 +32,7 @@ let private inspect (database: PostgresFixture.Database) work =
         work (
             ReadTx(
                 connection,
-                database.Fixture.InstallationId,
+                database.Installation,
                 database.Cipher,
                 DateTimeOffset.UtcNow,
                 token

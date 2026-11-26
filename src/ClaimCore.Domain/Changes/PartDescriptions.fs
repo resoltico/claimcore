@@ -39,20 +39,29 @@ module PartDescriptions =
             Description = description
         }
 
-    let private partyDescription (before: PartyValue option) (after: PartyValue) =
+    let private describeParty (before: PartyValue option) (after: PartyValue) =
         let content (value: PartyValue) =
             if value.Removed then None else value.Content
 
-        PartDescription.Party
+        {
+            PartyPartDescription.Content =
+                {
+                    Before = before |> Option.bind content
+                    After = content after
+                }
+            Removed = Difference.value (before |> Option.map _.Removed) (Some after.Removed)
+        }
+
+    let private partyDescription before after =
+        describeParty before after |> PartDescription.Party |> Ok
+
+    let openingParty content =
+        describeParty
+            None
             {
-                Content =
-                    {
-                        Before = before |> Option.bind content
-                        After = content after
-                    }
-                Removed = Difference.value (before |> Option.map _.Removed) (Some after.Removed)
+                Content = Some content
+                Removed = false
             }
-        |> Ok
 
     let family
         (before: DecisionFacts option)

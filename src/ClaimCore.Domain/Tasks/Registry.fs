@@ -4,12 +4,13 @@ open ClaimCore.Domain
 
 /// The only inventory of ledgered tasks, including the operator-only initializer.
 module Registry =
+    let openCase = ClaimCore.Domain.Tasks.Case.Open.task
     let provisionOwner = ClaimCore.Domain.Tasks.People.ProvisionOwner.task
     let recoverOwner = ClaimCore.Domain.Tasks.People.RecoverOwner.task
 
     let all =
         [
-            ClaimCore.Domain.Tasks.Case.Open.task
+            Task.Opening openCase
             ClaimCore.Domain.Tasks.Case.AmendRegistration.task
             ClaimCore.Domain.Tasks.Case.ChangeReference.task
             ClaimCore.Domain.Tasks.Case.Correct.task
@@ -63,6 +64,9 @@ module Registry =
     let find id = Map.tryFind id byId
     let findDeclaration id = find id |> Option.map Task.declaration
     let initialOwnerRoles = ClaimCore.Domain.Tasks.People.ProvisionOwner.initialRoles
+
+    let initialReferencePolicy =
+        ClaimCore.Domain.Tasks.People.ProvisionOwner.referencePolicy
 
     let validateInitialOwnerRoles =
         ClaimCore.Domain.Tasks.People.ProvisionOwner.validateRoles

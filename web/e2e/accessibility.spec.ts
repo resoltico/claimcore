@@ -26,7 +26,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  const caseReference = `A11Y-${randomUUID()}`;
+  const caseReference = `A11Y-${randomUUID().slice(0, 8)}`;
   await openAccessibleLogin(page);
   await progress("a11y-login");
   await expectAccessible(page);

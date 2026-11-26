@@ -24,7 +24,7 @@ test("updates supplied records without refetching while receipt disclosure refre
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
+  const reference = `LANGUAGE-HISTORY-${randomUUID().slice(0, 8)}`;
   const opening = await openCase(page, reference);
   const history = page.locator(
     `.case-timeline-panel .region-timeline > li[data-effect$=".${opening.operationId}"]`,
@@ -151,7 +151,7 @@ test("preserves language and independent display preferences through real logout
 test("keeps exact old and new facts in the real timeline view", async ({ page }) => {
   await openAuthenticated(page);
   await selectFormat(page, "en-GB");
-  const reference = `EXACT-HISTORY-${randomUUID()}`;
+  const reference = `EXACT-HISTORY-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   await applyPeople(page, {
     operationId: mintOperationId(),

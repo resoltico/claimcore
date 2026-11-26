@@ -670,14 +670,17 @@ let internal atomicWrites fixture =
                                             input.Inputs
                                             None
 
-                                    let plan = prepared |> required
+                                    let plan =
+                                        match prepared |> required with
+                                        | PreparedDecision.Ordinary(plan, _) -> plan
+                                        | _ -> failtest "Expected an ordinary decision."
 
                                     let record =
                                         RetainedOperation.create
-                                            plan.Header
+                                            plan.Frame.Header
                                             submission.Task
-                                            plan.Binding
-                                            plan.Inputs
+                                            plan.Frame.Binding
+                                            plan.Frame.Inputs
                                             plan.Changes
                                             tx.NewPayloadNonce
                                         |> required

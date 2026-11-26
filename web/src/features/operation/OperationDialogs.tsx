@@ -28,6 +28,7 @@ export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOpe
         {p.text("label.recordedChange")}
       </h1>
       <ScreenView
+        copyReferences
         view={receipt.document.screen}
         timeZone={
           receipt.document.basis.kind === "SNAPSHOT"

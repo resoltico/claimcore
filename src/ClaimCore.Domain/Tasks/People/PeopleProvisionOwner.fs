@@ -10,6 +10,8 @@ open ClaimCore.Domain.Tasks.Declarations
 let initialRoles =
     [ Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward; Role.Auditor ]
 
+let policyInput = target InputTarget.CaseReferencePolicy
+
 let declaration =
     { create
           "people.provisionOwner"
@@ -19,7 +21,7 @@ let declaration =
           ActFamily.Business
           Consequence.Routine
           []
-          (operation :: principal @ profile)
+          (operation :: (required policyInput |> retained) :: principal @ profile)
           [
               {
                   Collection = TaskCollectionId.PeopleGrants
@@ -54,6 +56,22 @@ let private roles inputs =
         else
             validateRoles (grants |> List.map _.Role))
 
+let referencePolicy (inputs: InputMap) =
+    match Map.tryFind policyInput inputs.Values with
+    | Some(InputValue.Text value) -> CaseReferencePolicy.parse value
+    | _ -> None
+
+let private checkPolicy inputs =
+    match referencePolicy inputs with
+    | Some _ -> Ok()
+    | None ->
+        Error(
+            Refusal.invalidInput (
+                InputTarget.CaseReferencePolicy,
+                Violation.CaseReferencePolicyFormat
+            )
+        )
+
 let private parse inputs =
     Admission.map2
         (fun (principal, profile) roles ->
@@ -66,7 +84,7 @@ let private parse inputs =
             (fun principal profile -> principal, profile)
             (PersonInputs.principal inputs)
             (PersonInputs.profile inputs))
-        (roles inputs)
+        (Admission.map2 (fun () roles -> roles) (checkPolicy inputs) (roles inputs))
 
 let check inputs = Parsing.check parse inputs
 
@@ -111,7 +129,7 @@ let decideRetained context environment state binding inputs =
         Admission.map2
             (fun principal roles -> principal, roles)
             (PersonInputs.principal inputs)
-            (roles inputs))
+            (Admission.map2 (fun () roles -> roles) (checkPolicy inputs) (roles inputs)))
     |> Result.bind (fun (principal, roles) ->
         PersonRules.registration environment state binding principal true
         |> Result.map (fun () ->

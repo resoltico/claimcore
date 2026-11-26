@@ -72,7 +72,6 @@ module TaskMetadata =
                 meaningId = meaningId
                 consequence = consequence
                 creates = creates
-                subjectInput = ledger |> Option.bind _.SubjectInput |> Option.map TaskInputId.token
                 selection =
                     ledger
                     |> Option.bind _.Selection

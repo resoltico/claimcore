@@ -25,7 +25,6 @@ type TaskDeclaration =
         Aggregate: AggregateKind
         Target: ActSubject
         Creates: bool
-        SubjectInput: TaskInputId option
         Selection: TaskSelection option
         Family: ActFamily
         Consequence: Consequence
@@ -169,6 +168,58 @@ type FamilyTask =
                 -> Result<PartChange list, Rejection>
     }
 
+[<RequireQualifiedAccess>]
+type OpeningIntent =
+    | Automatic
+    | Custom of CaseReference
+
+module OpeningIntent =
+    let requested =
+        function
+        | OpeningIntent.Automatic -> None
+        | OpeningIntent.Custom reference -> Some reference
+
+[<NoComparison>]
+type AdmittedOpening =
+    internal
+        {
+            Context: TaskContext
+            ReferenceIntent: OpeningIntent
+            Registration: Registration
+            Parties: (int * PartyContent) list
+        }
+
+    member this.Intent = this.ReferenceIntent
+
+[<NoEquality; NoComparison>]
+type OpeningTask =
+    {
+        Declaration: TaskDeclaration
+        Check: InputMap -> TaskInputIssue list
+        Authorize: PrincipalKey -> AccessView -> CaseId option -> InputMap -> Result<unit, Refusal>
+        Availability: FamilyEnvironment -> DecisionFacts option -> Binding -> Availability
+        EditableInputs: CaseReferencePolicy -> TaskInputId list
+        Admit:
+            TaskContext
+                -> FamilyEnvironment
+                -> DecisionFacts option
+                -> Binding
+                -> InputMap
+                -> Result<AdmittedOpening, Rejection>
+        Preview: AdmittedOpening -> OpeningReview
+        Accept:
+            CaseReference -> CaseId option -> AdmittedOpening -> Result<PartChange list, Rejection>
+        Replay:
+            TaskContext
+                -> FamilyEnvironment
+                -> DecisionFacts option
+                -> Binding
+                -> InputMap
+                -> bool
+                -> PartChange list
+                -> Result<PartChange list, Rejection>
+    }
+
 [<NoEquality; NoComparison>]
 type PersonTask =
     {
@@ -200,11 +251,13 @@ open ClaimCore.Domain
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
 type Task =
+    | Opening of OpeningTask
     | Family of FamilyTask
     | Person of PersonTask
 
 module Task =
     let declaration =
         function
+        | Task.Opening task -> task.Declaration
         | Task.Family task -> task.Declaration
         | Task.Person task -> task.Declaration

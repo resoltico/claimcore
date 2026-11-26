@@ -12,6 +12,7 @@ type Props = {
   entries: ReadonlyArray<PresentedEntry>;
   timeZone?: string;
   copy?: boolean;
+  copyReferences?: boolean;
   link?: RowLink;
   countLink?: RowLink;
   avatars?: boolean;
@@ -76,6 +77,7 @@ export const Entries = ({
   entries,
   timeZone = "UTC",
   copy = false,
+  copyReferences = false,
   link,
   countLink,
   avatars = false,
@@ -107,7 +109,8 @@ export const Entries = ({
                 countLink={countLink}
                 avatars={avatars}
               />
-              {copy && (entry.value.kind === "REFERENCE" || entry.value.kind === "IDENTIFIER") ? (
+              {((copy || copyReferences) && entry.value.kind === "REFERENCE") ||
+              (copy && entry.value.kind === "IDENTIFIER") ? (
                 <CopyValue
                   label={renderCatalogKey(p, entry.labelId)}
                   value={canonicalPresented(entry.value)}

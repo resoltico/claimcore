@@ -21,8 +21,9 @@ const startPseudo = async (page: Page) => {
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.locator("#open-case").click();
+  await page.locator('input[data-selects-fields="caseReference"]').check();
   const values = {
-    caseReference: `PSEUDO-${randomUUID()}`,
+    caseReference: `PSEUDO-${randomUUID().slice(0, 8)}`,
     ...registration({
       policyNumber: "A\u0308 العربية\u200D",
       claimedAmount: "1.0000",

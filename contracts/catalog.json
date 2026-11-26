@@ -181,9 +181,9 @@
         "kind": "TEXT",
         "format": {
           "minimumCharacters": 1,
-          "grammar": "[!-~]{1,80}"
+          "grammar": "([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc]))"
         },
-        "maximumCharacters": null
+        "maximumCharacters": 32
       },
       "allowsAbsence": false,
       "group": null,
@@ -531,6 +531,13 @@
       "scalar": null
     },
     {
+      "name": "caseReferencePolicy",
+      "labelId": "field.caseReferencePolicy.label",
+      "hintId": "field.caseReferencePolicy.hint",
+      "ruleId": "field.caseReferencePolicy.rule",
+      "scalar": null
+    },
+    {
       "name": "profile.displayName",
       "labelId": "field.profile.displayName.label",
       "hintId": "field.profile.displayName.hint",
@@ -679,9 +686,9 @@
         "kind": "TEXT",
         "format": {
           "minimumCharacters": 1,
-          "grammar": "[!-~]{1,80}"
+          "grammar": "([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc]))"
         },
-        "maximumCharacters": null
+        "maximumCharacters": 32
       }
     },
     {
@@ -700,9 +707,9 @@
         "kind": "TEXT",
         "format": {
           "minimumCharacters": 1,
-          "grammar": "[!-~]{1,80}"
+          "grammar": "([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc]))"
         },
-        "maximumCharacters": null
+        "maximumCharacters": 32
       }
     },
     {

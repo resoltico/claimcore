@@ -15,7 +15,7 @@ test("discovers a case reminder queue, retains visible context through filters a
   test.setTimeout(60_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const reference = `TARGET-${randomUUID()}`;
+  const reference = `TARGET-${randomUUID().slice(0, 8)}`;
   await openCase(page, reference);
   const entry = page.getByRole("link", { name: "Reminders for this case", exact: true });
   await expect(entry).toBeVisible();
@@ -81,7 +81,7 @@ test("focus and visibility revalidate the open reminder queue only once @engine"
   page,
 }) => {
   await openAuthenticated(page);
-  const filter = `RESUME-${randomUUID()}`;
+  const filter = `RESUME-${randomUUID().slice(0, 8)}`;
   await page.goto(`/reminders?view=PENDING&q=${encodeURIComponent(filter)}`);
   const updated = page.locator('.reminder-list[aria-busy="false"] .list-footer time');
   await expect(updated).toBeVisible();

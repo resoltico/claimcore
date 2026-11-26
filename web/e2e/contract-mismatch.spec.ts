@@ -11,7 +11,7 @@ test("a real contract refusal prompts reload without replaying the draft", async
   expect(untouched.status()).toBe(409);
   expect(untouched.headers()["claimcore-host-contract"]).toBe(consumerContractIdentity);
   await openAuthenticated(page);
-  await startOpen(page, `MISMATCH-${randomUUID()}`);
+  await startOpen(page, `MISMATCH-${randomUUID().slice(0, 8)}`);
   let previews = 0;
   let executions = 0;
   page.on("request", (request) => {
@@ -41,7 +41,10 @@ test("a real contract refusal prompts reload without replaying the draft", async
   await expect(
     page.getByRole("dialog").getByRole("heading", { name: "Open a case", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("checkbox", { name: "Use a custom case reference" }),
+  ).not.toBeChecked();
   await expect(page.getByRole("textbox", { name: "Policy number", exact: true })).toHaveValue("");
   expect(previews).toBe(1);
   expect(executions).toBe(0);

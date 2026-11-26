@@ -13,8 +13,8 @@ export type RoleFixture = Awaited<ReturnType<typeof prepareRoleFixture>>;
 
 export const prepareRoleFixture = async (page: Page) => {
   await openAuthenticated(page);
-  const reference = `NARROW-${randomUUID()}`;
-  const unrelated = `UNRELATED-${randomUUID()}`;
+  const reference = `NARROW-${randomUUID().slice(0, 8)}`;
+  const unrelated = `UNRELATED-${randomUUID().slice(0, 8)}`;
   await openCase(page, unrelated);
   await goToView(page, "cases");
   await openCase(page, reference);

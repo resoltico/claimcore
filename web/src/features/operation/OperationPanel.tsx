@@ -20,7 +20,7 @@ import { Dialog } from "../../ui/Dialog";
 import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../operation/useOperation";
-import { operationTask, taskInput, taskScalar } from "../../protocol/taskCatalog";
+import { openingReferenceInput, operationTask } from "../../protocol/taskCatalog";
 type PendingEntry = {
   label: string;
   value: string;
@@ -42,20 +42,16 @@ const pendingMetadata = (
   if (!model.disclosureCurrent) {
     return entries;
   }
-  const { subjectInput } = operationTask(command.task);
-  if (subjectInput !== null) {
-    const value: unknown = Object.entries(command.inputs).find(
-      ([key]) => key === subjectInput,
+  const opening = openingReferenceInput(operationTask(command.task));
+  if (opening !== undefined) {
+    const requested: unknown = Object.entries(command.inputs).find(
+      ([key]) => key === opening.id,
     )?.[1];
-    if (typeof value === "string") {
-      const kind = taskScalar(subjectInput)?.valueKind;
-      entries.push({
-        label: renderCatalogKey(p, taskInput(subjectInput).labelId),
-        value,
-        identifier: kind === "REFERENCE",
-      });
+    if (typeof requested === "string") {
+      entries.push({ label: p.fieldLabel("caseReference"), value: requested, identifier: true });
     }
-  } else if (command.binding.kind === "CASE" && "target" in command.binding) {
+  }
+  if (command.binding.kind === "CASE" && "target" in command.binding) {
     const { target, expectedRevision } = command.binding;
     entries.push(
       target.kind === "REFERENCE"

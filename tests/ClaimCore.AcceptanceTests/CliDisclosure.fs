@@ -18,7 +18,7 @@ let private original (fixture: PublishedFixture.Fixture) =
         |> nonNull
 
     let input = source["input"] |> nonNull
-    let reference = "CLI-DISCLOSURE-" + id ()
+    let reference = "CLI-DISCLOSURE-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create(id ())
 
     (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference

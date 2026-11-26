@@ -9,12 +9,6 @@ open ClaimCore.Application.Reads
 
 /// Live facts are acquired inside the snapshot used for the action, independently of prior offers.
 module internal ExecutionEnvironment =
-    let private caseTarget binding inputs =
-        Binding.caseTarget binding
-        |> Option.orElseWith (fun () ->
-            InputSelection.target (InputTarget.Field BusinessField.CaseReference) inputs
-            |> Option.map CaseSelector.Reference)
-
     let requester (tx: ReadTx) principal =
         task {
             let! person = PersonAcquisition.principal tx principal
@@ -28,7 +22,7 @@ module internal ExecutionEnvironment =
             | Task.Family selected ->
                 let! caseId =
                     task {
-                        match caseTarget binding (Some inputs) with
+                        match Binding.caseTarget binding with
                         | None -> return None
                         | Some target ->
                             let! id =
@@ -41,14 +35,54 @@ module internal ExecutionEnvironment =
                     }
 
                 return selected.Authorize principal access caseId inputs
+            | Task.Opening selected -> return selected.Authorize principal access None inputs
             | Task.Person selected -> return selected.Authorize principal access inputs
+        }
+
+    let opening
+        (tx: ReadTx)
+        principal
+        access
+        maintenance
+        (selected: OpeningTask)
+        binding
+        inputs
+        operation
+        =
+        task {
+            match selected.Authorize principal access None inputs with
+            | Error refusal -> return Error refusal
+            | Ok() ->
+                let id = CaseId.ofOperationId operation
+                let! family = CaseFamilyAcquisition.familyForDecision tx id binding (Some operation)
+
+                let environment =
+                    {
+                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
+                        Requester = access
+                        RequesterPrincipal = principal
+                        Maintenance = maintenance
+                        ReferenceOwner =
+                            fun _ -> invalidOp "Opening admission cannot read reservations."
+                        RelatedCase = fun _ -> None
+                        AssigneeEligible = fun _ -> false
+                    }
+
+                return
+                    Ok(
+                        environment,
+                        Option.map
+                            (fun (acquired: CaseFamilyAcquisition.FamilyAcquisition) ->
+                                acquired.Facts)
+                            family
+                    )
         }
 
     let fromStorage (tx: ReadTx) principal access maintenance selected binding inputs operation =
         task {
             match selected with
             | Task.Family selected ->
-                let target = caseTarget binding inputs
+                let target = Binding.caseTarget binding
 
                 let! family =
                     task {
@@ -84,18 +118,11 @@ module internal ExecutionEnvironment =
 
                 let authoredReference =
                     InputSelection.target InputTarget.NewCaseReference inputs
-                    |> Option.orElseWith (fun () ->
-                        InputSelection.target
-                            (InputTarget.Field BusinessField.CaseReference)
-                            inputs)
-                    |> Option.bind (CaseReference.parse >> Result.toOption)
+                    |> Option.bind (CaseReference.parseCustom >> Result.toOption)
 
                 let! referenceOwner =
                     match authoredReference with
-                    | Some reference ->
-                        CaseIdentityReads.resolve
-                            tx
-                            (CaseSelector.Reference(CaseReference.format reference))
+                    | Some reference -> CaseIdentityReads.referenceOwner tx reference
                     | None -> System.Threading.Tasks.Task.FromResult None
 
                 let relatedSelector =
@@ -133,7 +160,8 @@ module internal ExecutionEnvironment =
 
                 let environment =
                     {
-                        FamilyEnvironment.Requester = access
+                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
+                        Requester = access
                         RequesterPrincipal = principal
                         Maintenance = maintenance
                         ReferenceOwner =
@@ -161,6 +189,7 @@ module internal ExecutionEnvironment =
                     | None -> None, [], Map.empty
 
                 return DecisionSnapshot.family selected environment state parts origins
+            | Task.Opening _ -> return invalidOp "Opening uses its own admitted facts."
             | Task.Person selected ->
                 let! person =
                     task {

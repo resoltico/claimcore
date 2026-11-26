@@ -25,7 +25,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
 
     let input = source["input"] |> nonNull
     let operation = id ()
-    let reference = "CLI-RESOLUTION-" + id ()
+    let reference = "CLI-RESOLUTION-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operation
 
     (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
@@ -185,7 +185,8 @@ let private idlessCall (fixture: PublishedFixture.Fixture) =
     let input = source["input"] |> nonNull
     Expect.isNull input["operationId"] "The public example omits its operation identity"
 
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create("CLI-IDLESS-" + id ())
+    (input["inputs"] |> nonNull)["field:caseReference"] <-
+        JsonValue.Create("CLI-IDLESS-" + (id ()).Substring(24))
 
     let bytes = Encoding.UTF8.GetBytes(source.ToJsonString())
     let result = invoke fixture fixture.Environment [ "call" ] bytes 0

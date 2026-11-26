@@ -51,7 +51,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
 
     let input = request["input"] |> nonNull
     let operation = id ()
-    let reference = "NATIVE-OUTPUT-" + id ()
+    let reference = "NATIVE-OUTPUT-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operation
 
     (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
@@ -458,7 +458,7 @@ let publishedOutput =
         (async { do! run () |> Async.AwaitTask })
 
 let summaryCsv (fixture: PublishedFixture.Fixture) =
-    let prefix = "CSVFIELD-" + id ()
+    let prefix = "CSVFIELD-" + (id ()).Substring(24)
     let reference index = prefix + "-" + string index
     let start = DateOnly(2018, 1, 1)
 
@@ -546,9 +546,9 @@ let publishedRelatedDirections =
                     use fixture = new PublishedFixture.Fixture()
                     do! fixture.Start()
                     setup fixture
-                    let prefix = "NATIVELINK-" + String.replicate 47 "R"
+                    let prefix = "NATIVELINK-" + String.replicate 19 "R"
                     let a, b, c = prefix + "-A", prefix + "-B", prefix + "-C"
-                    let hidden = "UNREADABLE-RELATED-" + id ()
+                    let hidden = "UNREADABLE-RELATED-" + (id ()).Substring(24)
                     let cases = [ a; b; c; hidden ] |> List.map (fun reference -> reference, id ())
 
                     for reference, operation in cases do

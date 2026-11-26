@@ -11,7 +11,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     redirectResponse,
   }) => {
     await openAuthenticated(page);
-    await openCase(page, `REDIRECT-${randomUUID()}`);
+    await openCase(page, `REDIRECT-${randomUUID().slice(0, 8)}`);
     await startClose(page);
     await reviewDraft(page);
     await redirectResponse.arm("/api/operation.execute", status);

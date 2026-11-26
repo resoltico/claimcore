@@ -16,7 +16,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `INVALID-${randomUUID()}`);
+  await startOpen(page, `INVALID-${randomUUID().slice(0, 8)}`);
   const amount = page.getByLabel("Claimed amount", { exact: true });
   await amount.fill("00.10");
   const requests = trackForegroundRequests(page);

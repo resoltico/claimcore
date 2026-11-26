@@ -14,6 +14,7 @@ open System.Security.Cryptography
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Administration
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
@@ -177,20 +178,22 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
                 [||]
                 token
 
+        use setup =
+            new Administration(
+                PostgresFixture.ownerConnectionString database,
+                BuildIdentity.current.Version,
+                database.MasterKey
+            )
+
         let attempts =
             [|
                 for _ in 1..8 ->
                     task {
                         try
-                            let! id =
-                                Baseline.initialize
-                                    database.OwnerSource
-                                    database.MasterKey
-                                    "Etc/UTC"
-                                    (fun _ _ _ -> System.Threading.Tasks.Task.FromResult(()))
-                                    token
+                            let! installation =
+                                setup.Initialize("Etc/UTC", initialOwner database, None, token)
 
-                            return Some id
+                            return Some installation.InstallationId
                         with :? InvalidOperationException ->
                             return None
                     }
@@ -259,7 +262,7 @@ let internal initializationRollback (database: PostgresFixture.Database) =
         do!
             refused
                 (fun () ->
-                    Baseline.initialize
+                    SchemaAdministration.initialize
                         database.OwnerSource
                         database.MasterKey
                         "Etc/UTC"
@@ -292,7 +295,7 @@ let internal initializationRollback (database: PostgresFixture.Database) =
                 token
 
         let! _ =
-            Baseline.initialize
+            SchemaAdministration.initialize
                 database.OwnerSource
                 database.MasterKey
                 "Etc/UTC"

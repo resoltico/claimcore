@@ -27,6 +27,7 @@ let private owner fixture =
             (id fixture 1)
             DomainInputs.ownerProfile
             ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
+            CaseReferencePolicy.CustomAllowed
             token
         |> sync
     with

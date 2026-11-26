@@ -63,7 +63,7 @@ let private fencedLifecycle (database: PostgresFixture.Database) =
 
         do! conflict (change database (MaintenanceChange.Resume(handle 1L pauseA)))
         do! conflict (change database (MaintenanceChange.Takeover(handle 1L pauseA, pauseC)))
-        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! status = inspectSchemaStatus database
 
         Expect.equal
             status.Maintenance
@@ -79,7 +79,7 @@ let private fencedLifecycle (database: PostgresFixture.Database) =
 
         do! conflict (change database (MaintenanceChange.Acquire(0L, pauseA)))
         do! conflict (change database (MaintenanceChange.Resume(handle 2L pauseB)))
-        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! status = inspectSchemaStatus database
 
         Expect.equal
             status.Maintenance
@@ -144,7 +144,7 @@ let private lostAcknowledgement transition drop landed (database: PostgresFixtur
             proxy.Intercepted.IsCompleted
             "The protocol relay reached the actual commit boundary"
 
-        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
+        let! status = inspectSchemaStatus database
 
         Expect.equal
             status.Maintenance

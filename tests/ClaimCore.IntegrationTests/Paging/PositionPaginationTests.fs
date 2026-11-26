@@ -308,7 +308,10 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
                 (CancellationToken.None))
 
         Expect.isFalse
-            ((succeeded readers).Offers |> List.contains InstallationOffer.Open)
+            ((succeeded readers).Offers
+             |> List.exists (function
+                 | InstallationOffer.Open _ -> true
+                 | _ -> false))
             "Case-scoped registrar has no installation registration advice"
 
         let! owners =
@@ -321,7 +324,9 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.contains
             offers
-            InstallationOffer.Open
+            (InstallationOffer.Open(
+                ClaimCore.Domain.Tasks.Case.Open.editableInputs CaseReferencePolicy.CustomAllowed
+            ))
             "Same-page people supplies registration advice"
 
         Expect.contains

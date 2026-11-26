@@ -95,7 +95,7 @@ workload and host capacity.
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 9 and
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 10 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
 [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
@@ -135,13 +135,21 @@ to the ClaimCore database and roles when managing PostgreSQL yourself.
 
 ### Initialize the register
 
-Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
-that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
+Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME`.
+Supply `--owner-contact TEXT` and repeat `--owner-role ROLE` as needed. The canonical IANA business zone is fixed for the installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-Pass `--skip-existing` to keep a readable installation of this build and return
-`INITIALIZATION_SKIPPED` with its installation ID. An empty database is initialized. Connection
-and installation faults still fail the command. The local evaluation Compose file uses this option.
+During fresh setup, omitting `--case-reference-policy` selects `SYSTEM_ASSIGNED_ONLY`. Authorized
+people and service accounts receive generated references. Set `--case-reference-policy CUSTOM_ALLOWED`
+to let those callers supply a custom reference or request generation by omitting it. The database owner
+chooses the policy at initialization. It is fixed for the life of the installation. Owner recovery
+leaves the policy in place.
+
+Initialization and status report the effective policy. On an existing supported installation,
+`--skip-existing` returns `INITIALIZATION_SKIPPED` with its installation ID and recorded policy.
+An explicitly supplied policy must match. Invalid configurations, including discrepancies with the
+first accepted owner operation, refuse without changing the installation. The evaluation Compose
+initializer omits the option, so a fresh evaluation installation uses generated references.
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
 human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles
@@ -151,9 +159,9 @@ uncertain result. Remote database connections require verified TLS.
 
 | Owner command | Task |
 | --- | --- |
-| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
+| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone, case-reference policy and first owner atomically. |
 | `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
-| `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
+| `status` | Read identity, formats, zone, policy, head, maintenance and bounded counts. |
 | `maintenance acquire GENERATION PAUSE_ID` | Serialize with earlier writes and pause register writes. |
 | `maintenance resume GENERATION PAUSE_ID` | End the current pause after inspecting status. |
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
@@ -445,8 +453,10 @@ umask 077
 claimcore-server head > /PRIVATE/checkpoint.json
 ```
 
-The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
-trusted prefix is valid in newer matching history when the current frontier is at least the trusted
+The checkpoint binds the installation, an accepted operation prefix and its hash, and `expiredBefore`.
+For rebuild or restore admission, the prefix must include operation one, which retains the
+case-reference policy. A sequence-zero checkpoint predates that evidence and is refused before changes
+to projections, sessions or the expiry frontier. An older trusted prefix is valid in newer matching history when the current frontier is at least the trusted
 frontier. Capture evidence while traffic is isolated or account for activity after capture.
 Observations newer than every independently retained trusted checkpoint cannot be recovered from
 that evidence.
@@ -495,10 +505,12 @@ without forcibly disposing an active provider. `RUNTIME_DRAIN_BOUND_EXPIRED` and
 Late drain remains awaitable, and a failed close never reports successful drain.
 
 Every runtime read, write, Context, session and housekeeping transaction checks its admitted
-installation ID and canonical business zone before accessing installation data. Retargeting future
-connections to a different installation fails closed; readiness becomes false. This tuple does not
-detect an older restore or a clone retaining the same ID and zone, or protect against trusted-owner
-schema surgery. Checkpoints, traffic isolation and restore admission remain required.
+installation ID, canonical business zone and case-reference policy before accessing installation data.
+Changes to that tuple after startup cause the process to refuse transactions. Startup checks that the
+recorded policy matches the hashed first owner operation without decrypting the profile. Compare
+a separately retained checkpoint to detect changes to its trusted prefix, including a coherent
+rewrite of the policy and bootstrap operation. Checkpoints, traffic isolation and restore admission
+remain required.
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
@@ -527,7 +539,10 @@ sensitive when preparing support reports.
 
 ERASE atomically removes related case, payment, work, reminder, note, party and source-link payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
-change time, attribution and ledger metadata. The reference itself can identify a person.
+change time, attribution and ledger metadata. All earlier custom references stay permanently reserved
+to their case. In `CUSTOM_ALLOWED`, use identifiers free of personal data. The input grammar alone
+cannot prevent personal data from being entered. Authorized registrars can infer whether a custom
+value is reserved from a generic write refusal. Opening review reveals no reservation status.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
 dates, amounts, directions, currencies, references and payees. Removal markers remain and
 rebuild restores them from retained payment effects. Closure outcomes and operation attribution
@@ -539,7 +554,10 @@ Projection rebuild repairs the list and reports authoritative byte loss as a fau
 restore. Withdrawn files remain in the database and its backups until the applicable erasure and
 backup retention policies take effect.
 Verification compares available payment facts with accepted history and checks the cleared shape
-after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
+after erasure. It uses the retained opening effect and any retained custom input to check policy,
+assignment format, exact spelling, Case ID and uniqueness. The ledger does not preserve the entropy
+used to generate an accepted reference or the contents of erased private facts. Authority identity and
+grants remain.
 
 Profile erasure removes saved name/contact and earlier profile payloads/nonces, including private search
 projections. Sign-in identity, enabled state, grants and work references remain. References show a former

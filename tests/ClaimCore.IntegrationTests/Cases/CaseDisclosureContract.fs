@@ -90,7 +90,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
 
         Expect.equal
             reopen.Outcome
-            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseAlreadyExists))
+            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
             "Folded reference remains reserved"
     }
 

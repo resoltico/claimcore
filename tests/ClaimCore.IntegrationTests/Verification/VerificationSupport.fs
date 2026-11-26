@@ -34,6 +34,11 @@ let run action =
             database.Fixture.Dispose()
     }
 
+// Schema-only fixtures can inspect storage without claiming to be initialized installations.
+let inspectSchemaStatus (database: PostgresFixture.Database) =
+    DatabaseSession.read database.OwnerSource token (fun connection ->
+        InstallationStatus.readConnection connection database.Installation token)
+
 let sql (database: PostgresFixture.Database) statement parameters =
     task {
         use! connection = database.OwnerSource.OpenConnectionAsync()

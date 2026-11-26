@@ -114,7 +114,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
 };
 export const startOpen = async (
   page: Page,
-  caseReference: string,
+  caseReference?: string,
   title = "Open a case",
 ): Promise<void> => {
   await retainResponseBodies(page);
@@ -181,7 +181,10 @@ export const startOpen = async (
       await fillBusinessField(page, name, value);
     }
   }
-  await fillBusinessField(page, "caseReference", caseReference);
+  if (caseReference !== undefined) {
+    await page.locator('input[data-selects-fields="caseReference"]').check();
+    await fillBusinessField(page, "caseReference", caseReference);
+  }
   await progress("open-filled");
 };
 

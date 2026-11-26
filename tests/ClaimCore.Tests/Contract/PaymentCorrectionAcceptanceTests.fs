@@ -129,6 +129,7 @@ let private fixture () =
         {
             OperationReview.ChangesOwnSignInIdentity = false
             Task = TaskId.ofLiteral "case.correctPayment"
+            Opening = None
             Target = ReviewTarget.Case(before.Id, before.Reference)
             References = { Actors = []; Cases = [] }
             Binding = binding

@@ -43,6 +43,7 @@ let internal genesis fixture =
                                         (id fixture 1)
                                         DomainInputs.ownerProfile
                                         []
+                                        CaseReferencePolicy.CustomAllowed
                             })
                     CancellationToken = CancellationToken.None
                 }

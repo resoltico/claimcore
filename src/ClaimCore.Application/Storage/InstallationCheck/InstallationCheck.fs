@@ -80,16 +80,18 @@ module internal InstallationCheck =
                         do! DatabaseProfile.require connection token
 
                         do! role connection token
-                        let! id, zone = Baseline.require connection token
+                        let! installation = Baseline.require connection token
                         do! head connection token
-                        let! cipher = Baseline.loadCipher connection id masterKey token
+                        do! Baseline.requireBootstrap installation connection token
 
-                        return
-                            {
-                                InstallationId = id
-                                BusinessTimeZone = zone
-                            },
-                            cipher
+                        let! cipher =
+                            Baseline.loadCipher
+                                connection
+                                installation.InstallationId
+                                masterKey
+                                token
+
+                        return installation, cipher
                     })
         }
 

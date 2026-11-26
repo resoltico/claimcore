@@ -119,7 +119,10 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     binding: await reviewedPeopleBinding(page, await selectedActor(page, principal)),
     inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
   });
-  const references = [`HAND-A-${randomUUID()}`, `HAND-B-${randomUUID()}`] as const;
+  const references = [
+    `HAND-A-${randomUUID().slice(0, 8)}`,
+    `HAND-B-${randomUUID().slice(0, 8)}`,
+  ] as const;
   for (const reference of references) {
     await goToView(page, "cases");
     await openCase(page, reference);

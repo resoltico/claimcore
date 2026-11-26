@@ -3,7 +3,7 @@ import {
   type OperationBinding,
   type OperationTaskDefinition,
 } from "@contracts/client";
-import { operationTask } from "../protocol/taskCatalog";
+import { openingReferenceInput, operationTask } from "../protocol/taskCatalog";
 import type { FormValues } from "../protocol/forms";
 
 type BindingBasis = Readonly<{
@@ -104,10 +104,13 @@ export const mergeSubmissionInputs = (
   seeds: FormValues,
 ): FormValues => {
   const allowed = new Set(editable);
+  // A changed offer must never turn an entered reference into an automatic assignment.
+  const openingReference = openingReferenceInput(declaration)?.id;
   const merged: Record<string, FormValues[string]> = Object.fromEntries(
     Object.entries(values).filter(
       ([key]) =>
         allowed.has(key) ||
+        key === openingReference ||
         declaration.collections.some(
           (collection) => collection.id === key && allowed.has(collection.input),
         ),

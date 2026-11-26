@@ -562,13 +562,15 @@ const qualify = async (origin, provider, ca) => {
     const before = dateFormat.format(new Date());
     const requester = await owner(context, origin, fingerprint, csrf);
     expect([before, dateFormat.format(new Date())]).toContain(requester.businessDate);
+    const opening = requester.offers.find((offer) => offer.kind === "case.open");
+    expect(opening).toBeDefined();
+    expect(opening.editable).not.toContain("field:caseReference");
     progress("first-case");
     const input = {
       operationId: operationId(),
       task: "case.open",
       binding: { kind: "CASE", expectedRevision: 0 },
       inputs: {
-        "field:caseReference": "DEPLOYMENT-001",
         "field:incidentDate": requester.businessDate,
         "field:receivedDate": requester.businessDate,
         "field:incidentCountry": "LV",
@@ -586,7 +588,7 @@ const qualify = async (origin, provider, ca) => {
         "field:claimedCurrency": "EUR",
       },
     };
-    const write = async (endpoint) =>
+    const write = async (endpoint, submission = input) =>
       payload(
         await context.request.post(`${origin}/api/${endpoint}`, {
           headers: {
@@ -595,15 +597,33 @@ const qualify = async (origin, provider, ca) => {
             "X-ClaimCore-Antiforgery": csrf,
             Origin: origin,
           },
-          data: input,
+          data: submission,
         }),
       );
-    if ((await write("operation.preview")).outcome.kind !== "REVIEWED") {
-      throw new Error("The evaluation owner cannot review its first case.");
+    const preview = (await write("operation.preview")).outcome;
+    expect(preview.kind).toBe("REVIEWED");
+    expect(preview.data.review.target).toEqual({ kind: "OPENING" });
+    for (const [reference, code] of [
+      ["DEPLOYMENT-001", "CUSTOM_REFERENCE_NOT_ALLOWED"],
+      [null, "TEXT_REQUIRED"],
+    ]) {
+      const denied = (
+        await write("operation.execute", {
+          ...input,
+          inputs: { ...input.inputs, "field:caseReference": reference },
+        })
+      ).outcome;
+      expect(denied.kind).toBe("REJECTED");
+      expect(denied.rejection.issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code, input: "field:caseReference" })]),
+      );
     }
-    if ((await write("operation.execute")).outcome.kind !== "ACCEPTED") {
-      throw new Error("The evaluation owner cannot open a case immediately after sign-in.");
-    }
+    const acceptance = (await write("operation.execute")).outcome;
+    expect(acceptance.kind).toBe("ACCEPTED");
+    expect(acceptance.data.subject.caseId).toBe(input.operationId);
+    expect(acceptance.data.subject.caseReference).toMatch(
+      /^CC-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}-[0-9]{2}$/u,
+    );
     progress("restart");
     writePriorRealm(origin, "Replacement realm import must be skipped");
     compose("restart", "identity", "web");

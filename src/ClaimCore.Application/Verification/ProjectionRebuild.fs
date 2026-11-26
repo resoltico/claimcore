@@ -32,12 +32,19 @@ module internal ProjectionRebuild =
                     do! OwnerAdmission.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
-                    let! installation, _ = Baseline.require connection token
-                    use! cipher = Baseline.loadCipher connection installation masterKey token
+                    let! installation = Baseline.require connection token
+
+                    use! cipher =
+                        Baseline.loadCipher connection installation.InstallationId masterKey token
+
                     do! RegisterMaintenanceStore.requireActive handle connection token
 
                     let! scanned =
-                        match CheckpointEvidence.installation installation expected with
+                        match
+                            CheckpointEvidence.trustedInstallation
+                                installation.InstallationId
+                                expected
+                        with
                         | Error finding -> System.Threading.Tasks.Task.FromResult(Error finding)
                         | Ok() ->
                             task {
@@ -80,7 +87,12 @@ module internal ProjectionRebuild =
                                         "People rows are incomplete after authoritative replay."
                                 ))
 
-                        let! before = Verification.projections connection installation state token
+                        let! before =
+                            Verification.projections
+                                connection
+                                installation.InstallationId
+                                state
+                                token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
                         for table in
                             [
@@ -120,7 +132,11 @@ module internal ProjectionRebuild =
                                 token
 
                         let! validated =
-                            Verification.projections connection installation state token
+                            Verification.projections
+                                connection
+                                installation.InstallationId
+                                state
+                                token
 
                         match validated with
                         | Error finding -> return Error finding

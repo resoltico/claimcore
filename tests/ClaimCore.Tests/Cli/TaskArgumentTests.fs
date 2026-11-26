@@ -308,7 +308,7 @@ let creationBasis =
         match
             Grammar.prepare
                 (fun () -> operation)
-                [ "case"; "open"; "TASK"; "--expected-revision"; "7" ]
+                [ "case"; "open"; "--case-reference"; "TASK"; "--expected-revision"; "7" ]
         with
         | Error issues ->
             Expect.isTrue

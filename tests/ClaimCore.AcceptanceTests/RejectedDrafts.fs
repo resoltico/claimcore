@@ -19,7 +19,8 @@ let private input (fixture: PublishedFixture.Fixture) (field: string) value =
     let input = authored["input"] |> nonNull
     input["operationId"] <- JsonValue.Create(id ())
 
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create("INVALID-" + id ())
+    (input["inputs"] |> nonNull)["field:caseReference"] <-
+        JsonValue.Create("INVALID-" + (id ()).Substring(24))
 
     let values = input["inputs"] |> nonNull
     values["field:" + field] <- JsonValue.Create<string> value

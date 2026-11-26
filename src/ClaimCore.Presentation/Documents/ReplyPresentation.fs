@@ -16,7 +16,7 @@ type RecommendedAction =
 module Refusals =
     let private caseAction =
         function
-        | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
+        | CaseRefusal.ReferenceUnavailable -> RecommendedAction.ChooseAnotherReference
         | CaseRefusal.CorrectionNoChanges
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
         | CaseRefusal.SelfLink

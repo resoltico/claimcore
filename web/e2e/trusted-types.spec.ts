@@ -8,7 +8,7 @@ import { fillBusinessField } from "./typed-entry";
 
 const editDate = async (page: Page): Promise<void> => {
   await openAuthenticated(page);
-  await startOpen(page, `TT-DATE-${randomUUID()}`);
+  await startOpen(page, `TT-DATE-${randomUUID().slice(0, 8)}`);
   await fillBusinessField(page, "incidentDate", "2026-09-01");
 
   const field = page.locator('[data-field-name="incidentDate"]');
