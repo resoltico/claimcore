@@ -10,6 +10,7 @@
 - Browser preferences preserve incompatible data until you explicitly reset them.
 - Browser JSON admission enforces the published nesting limit for empty and populated containers.
 - CI requires selected tests to pass, checks shipping project references, and qualifies dependency and Compose changes before merge.
+- Trace core tasks to their owners and checks in the [source guide](docs/source-guide.md). Run `bash eng/verify.sh --help` to find stages and acceptance selectors.
 
 ## [0.22.0] - 2026-11-26
 

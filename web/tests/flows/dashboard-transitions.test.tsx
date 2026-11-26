@@ -28,7 +28,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
 const current: CurrentCase = withRecommendation(
   caseDocumentInput(

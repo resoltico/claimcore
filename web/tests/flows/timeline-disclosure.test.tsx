@@ -7,7 +7,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { definition } from "../support/service-ui.fixtures";
-import { CaseDetail } from "../../src/views/CaseDetail";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
 const succeeded = (
   disclosure: "FULL" | "SUMMARY",
 ): ApiResult<ServiceResponse<"case.timeline">> => ({

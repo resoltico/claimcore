@@ -7,7 +7,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { workBasis } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { navigate } from "../../src/routing/navigation";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 const target = { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" };
 const page = (reference: string | null, nextCursor: string | null) => ({
   kind: "outcome" as const,

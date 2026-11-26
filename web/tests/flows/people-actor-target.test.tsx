@@ -9,8 +9,8 @@ import { chooseRoleForReview } from "../support/people-input.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import { act, fireEvent } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
-import { Dashboard } from "../../src/views/Dashboard";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { service } from "../../src/api/service";
 import { getEndpointMock } from "../support/endpoint-mocks";
 import {

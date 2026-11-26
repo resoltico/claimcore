@@ -196,3 +196,6 @@ module ReminderListScreen =
             ]
 
     let view selection state (reply: ReminderPage) = rows selection state reply.Items
+
+    let document (request: ReminderListRequest) (value: ReminderPage) =
+        HumanDocument.listPage value.Basis (view request.View request.State value) value.NextCursor

@@ -7,7 +7,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { RoutedContent } from "../../src/views/RoutedContent";
+import { RoutedContent } from "../../src/shell/RoutedContent";
 import { service, type CurrentCase } from "../../src/api/service";
 const mount = (value: CurrentCase, act: string) => {
   const get = mockEndpoint("case.get").mockResolvedValue({

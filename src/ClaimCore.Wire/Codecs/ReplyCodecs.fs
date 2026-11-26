@@ -25,7 +25,10 @@ module ReplyCodecs =
                         (function
                         | Outcome.Succeeded value -> Some value
                         | _ -> None)
-                        (PresentationCodecs.presented codec)
+                        ((record (fun data view -> { Presented.Data = data; View = view })
+                         : Fields<Presented<'T>, _>)
+                         |> field "data" _.Data codec
+                         |> field "view" _.View ScreenCodecs.screen)
                     variant
                         "REJECTED"
                         Outcome.Rejected

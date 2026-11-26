@@ -34,7 +34,7 @@ let private notes =
 
 let private documents () =
     [
-        HumanReadDocuments.notes
+        NotesScreen.document
             {
                 Basis = DomainInputs.workBasis
                 CaseId = ResponseExamples.caseRead.Snapshot.CaseId
@@ -95,7 +95,7 @@ let tests =
                     }
 
                 let document =
-                    HumanReadDocuments.notes
+                    NotesScreen.document
                         {
                             Basis = DomainInputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId

@@ -19,8 +19,8 @@ import {
 } from "../support/transport-response.fixtures";
 import { emptyPartyChoices, input } from "../support/catalog-transport.fixtures";
 import { reviewConfirm } from "../support/review-controls";
-import { PaymentRows } from "../../src/views/case/PaymentRows";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { PaymentRows } from "../../src/features/case/PaymentRows";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { productMetadata } from "../../src/protocol/productMetadata";
 const oldId = "10000000-0000-7000-8000-000000000003";
 const binding = {

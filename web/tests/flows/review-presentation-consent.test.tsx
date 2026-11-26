@@ -5,7 +5,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { reviewConfirm } from "../support/review-controls";
 import { preparedFor } from "../support/operation-form.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
-import { OperationReview } from "../../src/views/operation/OperationReview";
+import { OperationReview } from "../../src/features/operation/OperationReview";
 const reviewed = (labelId: string): Review => ({
   ...closeReview,
   presentation: {

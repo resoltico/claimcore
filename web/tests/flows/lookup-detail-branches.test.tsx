@@ -6,10 +6,10 @@ import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import { CaseDetail } from "../../src/views/CaseDetail";
-import { OperationLookup } from "../../src/views/OperationLookup";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
+import { OperationLookup } from "../../src/features/recovery/OperationLookup";
 import { hostCases } from "../support/host-failure.fixtures";
-import { FindCase } from "../../src/views/FindCase";
+import { FindCase } from "../../src/features/work/FindCase";
 import { service } from "../../src/api/service";
 import { definition, fields, operationId } from "../support/service-ui.fixtures";
 const unavailable = {

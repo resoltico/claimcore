@@ -964,7 +964,7 @@ let reminderReviewDetails =
                                             frame
                                             Api.reminder
                                             (HumanReplies.read
-                                                HumanReadDocuments.reminder
+                                                ReminderScreen.document
                                                 (Outcome.Succeeded
                                                     {
                                                         Basis = DomainInputs.workBasis

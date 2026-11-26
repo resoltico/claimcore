@@ -49,7 +49,7 @@ let tests =
         "people history links the affected account independently of scoped grant changes"
         (fun () ->
             let document =
-                HumanReadDocuments.history
+                AccessHistoryScreen.document
                     {
                         Basis = DomainInputs.workBasis
                         Entries =

@@ -69,7 +69,7 @@ module internal TimelineHistory =
                 page.Items
                 |> List.map (fun entry -> ProjectionRows.familyActor entry.Authority)
                 |> List.distinct do
-                let! person = AggregateStorage.person tx id
+                let! person = PersonAcquisition.person tx id
 
                 match person with
                 | None -> raise (RecordCorruptException "Timeline author is absent.")

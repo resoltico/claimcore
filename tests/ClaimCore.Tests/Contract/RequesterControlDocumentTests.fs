@@ -31,7 +31,7 @@ let private actor =
     }
 
 let private document actor =
-    HumanReadDocuments.context
+    ContextScreen.document
         {
             Requester = RequesterState.Active actor
         }

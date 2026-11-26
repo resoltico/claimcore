@@ -48,7 +48,7 @@ module internal OperationService =
 
     let private replayReceipt (services: ServiceContext) (tx: ReadTx) record =
         task {
-            let! person = AggregateStorage.principal tx services.Principal
+            let! person = PersonAcquisition.principal tx services.Principal
 
             let access =
                 person

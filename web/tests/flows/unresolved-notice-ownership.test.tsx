@@ -11,7 +11,7 @@ import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { SessionContext } from "../../src/session/SessionContext";
 import { JournalContext } from "../../src/recovery/JournalContext";
 import { activeRequester as requester } from "../support/human-requester.fixtures";
-import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
+import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice";
 import { service } from "../../src/api/service";
 import { pending } from "../support/operation-hook.fixtures";
 import {

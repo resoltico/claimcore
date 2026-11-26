@@ -63,3 +63,6 @@ module AssigneesScreen =
             screen.Regions
             @ [ entryRegion RegionRole.Details (Some "label.technicalDetails") details ]
         )
+
+    let document (value: AssigneePage) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor

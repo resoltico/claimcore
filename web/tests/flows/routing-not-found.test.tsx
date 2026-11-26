@@ -1,6 +1,6 @@
 import { expect, it, vi, afterEach } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { App } from "../../src/App";
+import { App } from "../../src/shell/App";
 import { navigate } from "../../src/routing/navigation";
 import { preferenceKey } from "../../src/presentation/preferences";
 afterEach(() => {

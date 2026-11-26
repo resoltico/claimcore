@@ -15,7 +15,7 @@ import { peopleAcceptance, peoplePreview } from "../support/people-operation.fix
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { wireReply } from "../support/reply.fixtures";
 

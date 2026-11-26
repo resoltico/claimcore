@@ -246,7 +246,7 @@ module internal ControlHints =
 
     let link (value: Link) =
         let task = QueryTaskId.key (Link.endpoint value)
-        let encoded = PresentationCodecs.link.Write value
+        let encoded = LinkCodecs.link.Write value
 
         match JsonValue.tryMember "input" encoded with
         | Some(JsonValue.Object members) ->

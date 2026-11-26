@@ -95,7 +95,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
 
                             match Frames.representation frame with
                             | Representation.Human ->
-                                HumanReplies.read HumanReadDocuments.timeline outcome
+                                HumanReplies.read TimelineScreen.document outcome
                                 |> RepresentationReply.Human
                             | Representation.Data -> RepresentationReply.Data outcome
                         ))

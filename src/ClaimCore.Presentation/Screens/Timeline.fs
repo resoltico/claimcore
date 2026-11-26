@@ -514,3 +514,21 @@ module TimelineScreen =
             ]
 
     let view (reply: CaseTimelinePage) = rows reply.Items
+
+    let document (value: CaseTimelinePage) =
+        let disclosure =
+            match value.Disclosure with
+            | HistoryDisclosure.Full -> HumanDisclosure.Full
+            | HistoryDisclosure.Summary -> HumanDisclosure.Summary
+            | HistoryDisclosure.Erased -> HumanDisclosure.Erased
+
+        HumanDocument.snapshot
+            value.Basis
+            (view value)
+            DocumentSubject.List
+            []
+            []
+            value.NextCursor
+            disclosure
+            None
+        |> HumanDocument.observeAttachments value.CaseId value.AttachmentDisclosure

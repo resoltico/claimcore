@@ -298,3 +298,27 @@ module TaskAffordances =
             Affordance.command (CommandRequest.DismissAccessRequest value.Principal)
 
         [ admit; dismiss ]
+
+    let installationOffer issuer =
+        function
+        | InstallationOffer.Open ->
+            let task =
+                ClaimCore.Domain.Tasks.Registry.clientDeclarations
+                |> List.find (fun declaration ->
+                    TaskDeclaration.bindingShape declaration = BindingShape.CaseNew)
+                |> _.Id
+
+            offered task (Some(Binding.CaseNew Revision.zero)) Map.empty (authored task) Map.empty
+        | InstallationOffer.PeopleAct kind ->
+            let task = kind
+
+            let seeds =
+                [
+                    input InputTarget.PrincipalKind, text "HUMAN"
+                    match issuer with
+                    | Some value -> input InputTarget.PrincipalIssuer, text value
+                    | None -> ()
+                ]
+                |> Map.ofList
+
+            offered task (Some(Binding.PeopleNew Revision.zero)) seeds (authored task) Map.empty

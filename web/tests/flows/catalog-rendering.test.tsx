@@ -22,7 +22,7 @@ import { defaults } from "../../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";

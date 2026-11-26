@@ -1,12 +1,12 @@
 import { absentLookup, pendingLookup } from "../support/operation-lookup.fixtures";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import { current } from "../support/operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, testWorkspaceIdentity } from "../support/presentation-test-support";
 import { service } from "../../src/api/service";
-import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
+import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice";
 import { preview } from "../support/operation-hook.fixtures";
 import {
   recoveryOptions,

@@ -14,7 +14,7 @@ module internal ChangeReferenceReads =
             let cases = ResizeArray<CaseReferenceItem>()
 
             for id in PartDescriptions.relatedActors descriptions do
-                let! person = AggregateStorage.person tx id
+                let! person = PersonAcquisition.person tx id
 
                 match person with
                 | None -> raise (RecordCorruptException "Related account is absent.")

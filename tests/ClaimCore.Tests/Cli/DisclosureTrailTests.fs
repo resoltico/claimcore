@@ -89,7 +89,7 @@ let private humanTable () =
         }
 
     let document =
-        HumanReadDocuments.disclosureTrail
+        DisclosureTrailScreen.document
             {
                 Basis = DomainInputs.workBasis
                 Items =

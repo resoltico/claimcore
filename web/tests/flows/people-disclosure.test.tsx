@@ -21,8 +21,8 @@ import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
-import { Dashboard } from "../../src/views/Dashboard";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
+import { Dashboard } from "../../src/shell/Dashboard";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 beforeEach(() => {
   stubViewCounts();

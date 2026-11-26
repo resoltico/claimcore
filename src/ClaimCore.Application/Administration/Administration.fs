@@ -143,11 +143,11 @@ module internal LedgerAdministration =
                     let! actorId =
                         match input.ActorId with
                         | Some _ -> System.Threading.Tasks.Task.FromResult input.ActorId
-                        | None -> AggregateStorage.principalOwner tx input.Principal
+                        | None -> PersonAcquisition.principalOwner tx input.Principal
 
                     let! target =
                         match actorId with
-                        | Some id -> AggregateStorage.person tx id
+                        | Some id -> PersonAcquisition.person tx id
                         | None -> System.Threading.Tasks.Task.FromResult None
 
                     let binding =

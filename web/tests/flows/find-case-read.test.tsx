@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import { service } from "../../src/api/service";
-import { FindCase } from "../../src/views/FindCase";
+import { FindCase } from "../../src/features/work/FindCase";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 
 it("supersedes repeated Enter and drops a held refusal after closing Find", async () => {

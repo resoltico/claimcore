@@ -55,8 +55,8 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        HumanReadDocuments.reminder { Basis = dateBasis; Item = value }
-        HumanReadDocuments.reminders
+        ReminderScreen.document { Basis = dateBasis; Item = value }
+        ReminderListScreen.document
             {
                 View = None
                 Target = None

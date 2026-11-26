@@ -14,9 +14,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
 import { definition } from "../support/service-ui.fixtures";
-import { WorkOperation } from "../../src/views/work/WorkOperation";
+import { WorkOperation } from "../../src/features/work/WorkOperation";
 import { current } from "../support/presentation-state.fixtures";
-import { CaseDetail } from "../../src/views/CaseDetail";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
 
 const readable = caseDocumentInput(
   {

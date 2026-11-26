@@ -6,7 +6,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { ReminderQueueWork } from "../../src/views/work/ReminderQueueWork";
+import { ReminderQueueWork } from "../../src/features/work/ReminderQueueWork";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { service } from "../../src/api/service";
 import type { HumanDocument } from "@contracts/client";

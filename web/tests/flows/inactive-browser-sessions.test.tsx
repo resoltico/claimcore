@@ -6,7 +6,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { activeRequester } from "../support/human-requester.fixtures";
 import { service } from "../../src/api/service";
-import { App } from "../../src/App";
+import { App } from "../../src/shell/App";
 
 const own: Affordance = {
   task: "session.terminateOwn",

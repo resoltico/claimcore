@@ -42,38 +42,38 @@ module internal ApiRoutes =
     let route =
         function
         | ActorEndpoint.Query QueryTaskId.CasePayments ->
-            Route.representedRead Api.casePayments HumanReadDocuments.payments Service.payments
+            Route.representedRead Api.casePayments PaymentsScreen.document Service.payments
         | ActorEndpoint.Query QueryTaskId.CaseNotes ->
-            Route.representedRead Api.caseNotes HumanReadDocuments.notes Service.notes
+            Route.representedRead Api.caseNotes NotesScreen.document Service.notes
         | ActorEndpoint.Query QueryTaskId.CaseAttachments ->
             Route.representedRead
                 Api.caseAttachments
-                HumanReadDocuments.attachments
+                AttachmentsScreen.document
                 (fun services (request: CaseGetRequest) token ->
                     Service.caseAttachments services request.Target token)
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->
-            Route.representedRead Api.reminder HumanReadDocuments.reminder Service.reminder
+            Route.representedRead Api.reminder ReminderScreen.document Service.reminder
         | ActorEndpoint.Query QueryTaskId.ReminderList ->
             Route.representedReadWithInput
                 Api.reminders
-                HumanReadDocuments.reminders
+                ReminderListScreen.document
                 Service.reminders
         | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
-            Route.representedRead Api.caseTimeline HumanReadDocuments.timeline Service.timeline
+            Route.representedRead Api.caseTimeline TimelineScreen.document Service.timeline
         | ActorEndpoint.Query QueryTaskId.Context ->
-            Route.representedRead Api.context HumanReadDocuments.context Service.context
+            Route.representedRead Api.context ContextScreen.document Service.context
         | ActorEndpoint.Query QueryTaskId.CaseGet ->
             Route.representedRead Api.caseGet HumanCaseDocument.ofCore Service.get
         | ActorEndpoint.Query QueryTaskId.CaseParties ->
-            Route.representedRead Api.caseParties HumanReadDocuments.parties Service.parties
+            Route.representedRead Api.caseParties PartiesScreen.document Service.parties
         | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
-            Route.representedRead Api.caseAssignees HumanReadDocuments.assignees Service.assignees
+            Route.representedRead Api.caseAssignees AssigneesScreen.document Service.assignees
         | ActorEndpoint.Query QueryTaskId.CaseList ->
-            Route.representedRead Api.caseList HumanReadDocuments.cases Service.list
+            Route.representedRead Api.caseList CaseListScreen.document Service.list
         | ActorEndpoint.Query QueryTaskId.CaseSummary ->
-            Route.representedRead Api.caseSummary HumanReadDocuments.summary Service.caseSummary
+            Route.representedRead Api.caseSummary CaseTotalsScreen.document Service.caseSummary
         | ActorEndpoint.Query QueryTaskId.WorkViews ->
-            Route.representedRead Api.workViews HumanReadDocuments.views Service.workViews
+            Route.representedRead Api.workViews WorkViewsScreen.document Service.workViews
         | ActorEndpoint.Query QueryTaskId.OperationGet ->
             Route.represented
                 Api.operationGet
@@ -83,25 +83,28 @@ module internal ApiRoutes =
                 (fun _ -> false)
                 Service.operationGet
         | ActorEndpoint.Query QueryTaskId.PeopleList ->
-            Route.representedRead Api.peopleList HumanReadDocuments.actors Service.actors
+            Route.representedRead Api.peopleList PeopleScreen.document Service.actors
         | ActorEndpoint.Query QueryTaskId.PeopleGrants ->
-            Route.representedRead Api.peopleGrants HumanReadDocuments.grants Service.grants
+            Route.representedRead Api.peopleGrants PersonScreen.document Service.grants
         | ActorEndpoint.Query QueryTaskId.PeopleHistory ->
-            Route.representedRead Api.peopleHistory HumanReadDocuments.history Service.peopleHistory
+            Route.representedRead
+                Api.peopleHistory
+                AccessHistoryScreen.document
+                Service.peopleHistory
         | ActorEndpoint.Query QueryTaskId.PeopleRequests ->
             Route.representedRead
                 Api.peopleRequests
-                HumanReadDocuments.requests
+                AccessRequestsScreen.document
                 Service.accessRequests
         | ActorEndpoint.Query QueryTaskId.DisclosureTrail ->
             Route.representedRead
                 Api.disclosureTrail
-                HumanReadDocuments.disclosureTrail
+                DisclosureTrailScreen.document
                 Service.disclosureTrail
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             Route.representedRead
                 Api.peopleRequestsDismiss
-                HumanReadDocuments.dismissed
+                AccessRequestsScreen.dismissedDocument
                 Service.dismissAccessRequest
         | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->
             Route.represented

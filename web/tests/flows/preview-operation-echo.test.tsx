@@ -16,9 +16,9 @@ import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls"
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { useCredential } from "../../src/session/SessionContext";
-import { useOperation } from "../../src/hooks/operation/useOperation";
-import { OperationEditor } from "../../src/views/OperationEditor";
-import { OperationPanel } from "../../src/views/operation/OperationPanel";
+import { useOperation } from "../../src/operation/useOperation";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
+import { OperationPanel } from "../../src/features/operation/OperationPanel";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const noLock = () => undefined;
 const principal = {

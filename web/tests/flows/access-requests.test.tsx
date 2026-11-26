@@ -5,7 +5,7 @@ import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
-import { AccessRequests } from "../../src/views/people/AccessRequests";
+import { AccessRequests } from "../../src/features/people/AccessRequests";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { render, screen, waitFor, TestSession } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";

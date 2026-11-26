@@ -14,7 +14,7 @@ let private principal =
     |> Result.defaultWith (string >> failtest)
 
 let private document name verified =
-    HumanReadDocuments.requests
+    AccessRequestsScreen.document
         {
             Basis = DomainInputs.workBasis
             NextCursor = Some "request-next"

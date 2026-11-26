@@ -329,6 +329,25 @@ module internal OperationStorage =
     let findStructure connection installation operation token =
         read None connection installation operation token
 
+    /// Reuse a retained root within its acquisition. A structure-only read cannot supply private data.
+    let acquire (tx: ReadTx) includePrivate absent cache operation =
+        task {
+            match Map.tryFind operation cache with
+            | Some(record, loadedPrivate) when loadedPrivate || not includePrivate ->
+                return record, cache, false
+            | _ ->
+                let! record =
+                    if includePrivate then
+                        find tx.Connection tx.Cipher operation tx.CancellationToken
+                    else
+                        findStructure tx.Connection tx.InstallationId operation tx.CancellationToken
+
+                let record =
+                    record |> Option.defaultWith (fun () -> raise (RecordCorruptException absent))
+
+                return record, Map.add operation (record, includePrivate) cache, true
+        }
+
     /// A selected metadata page hydrates full authenticated records in a fixed number of
     /// queries. Attachment binary payloads belong to a separate store and are not acquired here.
     let findMany connection (cipher: InstallationCipher) (operations: OperationId list) token =

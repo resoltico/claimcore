@@ -17,7 +17,7 @@ module internal ExecutionEnvironment =
 
     let requester (tx: ReadTx) principal =
         task {
-            let! person = AggregateStorage.principal tx principal
+            let! person = PersonAcquisition.principal tx principal
             return person |> Option.map Person.access |> AccessView.ofActor
         }
 
@@ -63,7 +63,8 @@ module internal ExecutionEnvironment =
                             | Some id when
                                 Access.can principal access Capability.ReadCase (Scope.Case id)
                                 ->
-                                return! AggregateStorage.familyForDecision tx id binding operation
+                                return!
+                                    CaseFamilyAcquisition.familyForDecision tx id binding operation
                             | Some _ -> return None
                     }
 
@@ -77,7 +78,7 @@ module internal ExecutionEnvironment =
                                 Capability.ManageCaseWork
                                 (Scope.Case family.Id)
                             ->
-                            return! AggregateStorage.person tx id
+                            return! PersonAcquisition.person tx id
                         | _ -> return None
                     }
 
@@ -171,11 +172,11 @@ module internal ExecutionEnvironment =
                             )
                             ->
                             return None
-                        | Binding.People(id, _) -> return! AggregateStorage.person tx id
+                        | Binding.People(id, _) -> return! PersonAcquisition.person tx id
                         | _ ->
                             match InputSelection.principal inputs with
                             | None -> return None
-                            | Some principal -> return! AggregateStorage.principal tx principal
+                            | Some principal -> return! PersonAcquisition.principal tx principal
                     }
 
                 let mutable cases = Map.empty
@@ -214,7 +215,7 @@ module internal ExecutionEnvironment =
 
                 let! owner =
                     match proposed with
-                    | Some key -> AggregateStorage.principalOwner tx key
+                    | Some key -> PersonAcquisition.principalOwner tx key
                     | None -> System.Threading.Tasks.Task.FromResult None
 
                 let environment =

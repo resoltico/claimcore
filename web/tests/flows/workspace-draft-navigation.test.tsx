@@ -8,7 +8,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { service } from "../../src/api/service";
 it("keeps an idle authored draft until explicit consent for navigation and sign out", async () => {
   stubDashboardContext();

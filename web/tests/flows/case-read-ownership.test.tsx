@@ -8,7 +8,7 @@ import { operationAffordance } from "../support/affordances.fixtures";
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import { TestProviders } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
 

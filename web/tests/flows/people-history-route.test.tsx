@@ -15,8 +15,8 @@ import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
-import { Dashboard } from "../../src/views/Dashboard";
-import { App } from "../../src/App";
+import { Dashboard } from "../../src/shell/Dashboard";
+import { App } from "../../src/shell/App";
 
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";

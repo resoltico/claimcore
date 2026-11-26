@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
-import { CaseDetail } from "../../src/views/CaseDetail";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { definition } from "../support/service-ui.fixtures";
 import { caseDocumentInput } from "../support/case-document.fixtures";

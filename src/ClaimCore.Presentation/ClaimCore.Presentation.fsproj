@@ -25,6 +25,7 @@
     <Compile Include="Documents/TimelineEventPresentation.fs" />
     <Compile Include="Documents/ScreenEntries.fs" />
     <Compile Include="Documents/TaskAffordances.fs" />
+    <Compile Include="Documents/HumanDocuments.fs" />
     <Compile Include="Screens/Reminder.fs" />
     <Compile Include="Screens/ReminderList.fs" />
     <Compile Include="Screens/Payments.fs" />
@@ -33,6 +34,7 @@
     <Compile Include="Screens/Case.fs" />
     <Compile Include="Screens/CaseList.fs" />
     <Compile Include="Screens/Assignees.fs" />
+    <Compile Include="Screens/Parties.fs" />
     <Compile Include="Screens/CaseTotals.fs" />
     <Compile Include="Screens/Timeline.fs" />
     <Compile Include="Screens/People.fs" />
@@ -46,7 +48,8 @@
     <Compile Include="Screens/Receipt.fs" />
     <Compile Include="Screens/Operation.fs" />
     <Compile Include="Documents/ExportAdvice.fs" />
-    <Compile Include="Documents/HumanDocuments.fs" />
+    <Compile Include="Screens/CaseDocument.fs" />
+    <Compile Include="Screens/SessionTermination.fs" />
     <Compile Include="Documents/ReviewDocumentParts.fs" />
     <Compile Include="Documents/HumanOperationDocuments.fs" />
     <Compile Include="Messages/ScalarGuidance.fs" />

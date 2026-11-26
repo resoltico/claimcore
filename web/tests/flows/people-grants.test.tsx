@@ -18,9 +18,9 @@ import { peoplePreview, peopleAcceptance } from "../support/people-operation.fix
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { Dashboard } from "../../src/views/Dashboard";
-import { PeoplePanel } from "../../src/views/PeoplePanel";
-import { PeopleGrants } from "../../src/views/PeopleGrants";
+import { Dashboard } from "../../src/shell/Dashboard";
+import { PeoplePanel } from "../../src/features/people/PeoplePanel";
+import { PeopleGrants } from "../../src/features/people/PeopleGrants";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import type { RegionRow } from "@contracts/client";
 import { wireReply } from "../support/reply.fixtures";

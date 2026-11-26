@@ -21,7 +21,7 @@ import { selectFact } from "../support/field-entry";
 import { timelineDocument } from "../support/timeline-document.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 const requestBody = (init?: RequestInit): string => {

@@ -9,7 +9,7 @@ open ClaimCore.Cli
 open ClaimCore.Json
 
 let private decode text =
-    Codec.decode 10000 PresentationCodecs.view (Encoding.UTF8.GetBytes(text: string))
+    Codec.decode 10000 ScreenCodecs.screen (Encoding.UTF8.GetBytes(text: string))
 
 [<Tests>]
 let tests =
@@ -24,7 +24,7 @@ let tests =
                     decode literal |> Result.defaultWith (fun error -> failtestf "%A" error)
 
                 Expect.equal
-                    (PresentationCodecs.view.Write value
+                    (ScreenCodecs.screen.Write value
                      |> CanonicalWriter.bytes
                      |> Encoding.UTF8.GetString
                      |> decode)
@@ -163,7 +163,7 @@ let tests =
                             expected
 
                     Expect.equal
-                        (PresentationCodecs.view.Write empty |> PresentationCodecs.view.Read "$")
+                        (ScreenCodecs.screen.Write empty |> ScreenCodecs.screen.Read "$")
                         (Ok empty)
                         "An empty page retains columns"
 

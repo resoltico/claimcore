@@ -39,7 +39,12 @@ export const transportAdapters = [
   "src/api/csvExport.ts",
 ];
 
-export const coordinatorFiles = ["src/api/**", "src/hooks/**", "src/operation/**"];
+export const coordinatorFiles = [
+  "src/api/**",
+  "src/hooks/**",
+  "src/operation/**",
+  "src/features/people/usePeople*.ts",
+];
 
 export const browserTransportPolicy: Override[] = [
   {

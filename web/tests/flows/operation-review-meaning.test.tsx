@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { fireEvent, within } from "@testing-library/react";
 import { render, screen } from "../support/presentation-test-support";
-import { OperationReview } from "../../src/views/operation/OperationReview";
+import { OperationReview } from "../../src/features/operation/OperationReview";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import type { OperationSubmission, HumanReview, PresentedEntry, Screen } from "@contracts/client";
 import { preferenceKey } from "../../src/presentation/preferences";

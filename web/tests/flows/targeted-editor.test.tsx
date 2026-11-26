@@ -8,7 +8,7 @@ import {
 import { prefixedInputs } from "../support/submission-inputs";
 import { operationAffordance } from "../support/affordances.fixtures";
 
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -17,7 +17,7 @@ import { chooseOption } from "../support/choice-entry";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { productMetadata } from "../../src/protocol/productMetadata";

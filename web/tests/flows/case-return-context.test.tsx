@@ -10,7 +10,7 @@ import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { current } from "../support/presentation-state.fixtures";
-import { Dashboard } from "../../src/views/Dashboard";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { navigate } from "../../src/routing/navigation";
 const descriptors = {
   scrollY: Object.getOwnPropertyDescriptor(window, "scrollY"),

@@ -117,3 +117,23 @@ module AttachmentsScreen =
                 |> withEmpty "empty.attachments"
                 |> withCount "attachments" (int64 page.Items.Length)
             ]
+
+    let document (value: AttachmentPage) =
+        HumanDocument.snapshot
+            value.Basis
+            (page value)
+            DocumentSubject.List
+            (if value.CanAdd then
+                 [ TaskAffordances.attachmentAdd value.CaseId ]
+             else
+                 [])
+            [
+                NamedLink.create
+                    "field.caseReference.label"
+                    LinkRelation.OpenCase
+                    (Link.caseById value.CaseId)
+            ]
+            None
+            HumanDisclosure.Current
+            None
+        |> HumanDocument.observeAttachments value.CaseId value.Disclosure

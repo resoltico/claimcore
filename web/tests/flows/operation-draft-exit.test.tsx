@@ -16,7 +16,7 @@ import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
 const current: CurrentCase = caseDocumentInput({

@@ -7,7 +7,7 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { SessionState } from "../../src/session/useSession";
-import { App } from "../../src/App";
+import { App } from "../../src/shell/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";

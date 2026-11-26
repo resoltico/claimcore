@@ -6,7 +6,7 @@ import { recoveryOptions } from "../support/recovery.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
-import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useOperation } from "../../src/operation/useOperation";
 import { previewReply } from "../support/presentation-state.fixtures";
 
 const current: CurrentCase = caseDocumentInput({

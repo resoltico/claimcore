@@ -36,7 +36,12 @@
     <Compile Include="Codecs/TimelineCodecs.fs" />
     <Compile Include="Codecs/PresentationStructure.fs" />
     <Compile Include="Codecs/CommandControlCodecs.fs" />
-    <Compile Include="Codecs/PresentationCodecs.fs" />
+    <Compile Include="Codecs/PresentationKeys.fs" />
+    <Compile Include="Codecs/PresentedValueCodecs.fs" />
+    <Compile Include="Codecs/PresentedMessageCodecs.fs" />
+    <Compile Include="Codecs/LinkCodecs.fs" />
+    <Compile Include="Codecs/AffordanceCodecs.fs" />
+    <Compile Include="Codecs/ScreenCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCode.fs" />
     <Compile Include="Codecs/WorkCodecs.fs" />

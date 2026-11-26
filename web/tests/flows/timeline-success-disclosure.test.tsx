@@ -6,7 +6,7 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";
 import { openedTimelineEntry, timelineDocument } from "../support/timeline-document.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
-import { CaseTimeline } from "../../src/views/case/CaseTimeline";
+import { CaseTimeline } from "../../src/features/case/CaseTimeline";
 const requestBody = (init?: RequestInit): string => {
   if (typeof init?.body !== "string") {
     throw Error("Serialized request required");

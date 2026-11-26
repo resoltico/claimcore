@@ -1,7 +1,7 @@
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { CaseList } from "../../src/views/CaseList";
+import { CaseList } from "../../src/features/work/CaseList";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("contract mismatch offers explicit reload and never automatically redispatches", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(

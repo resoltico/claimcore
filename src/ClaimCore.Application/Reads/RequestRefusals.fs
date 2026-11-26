@@ -14,7 +14,7 @@ open ClaimCore.Application.Contracts
 module internal RequestRefusals =
     let private current (services: ServiceContext) (tx: ReadTx) refusal =
         task {
-            let! person = AggregateStorage.principal tx services.Principal
+            let! person = PersonAcquisition.principal tx services.Principal
 
             let actor =
                 person

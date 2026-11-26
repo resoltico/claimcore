@@ -9,7 +9,7 @@ import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import { App } from "../../src/App";
+import { App } from "../../src/shell/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";

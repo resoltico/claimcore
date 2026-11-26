@@ -96,19 +96,21 @@ module Service =
     let matchesInstallation (services: ServiceContext) installation =
         services.InstallationId = installation
 
-    let context services () ct = Queries.context services ct
+    let context services () ct =
+        RequesterContextQueries.context services ct
 
-    let get services (input: CaseGetRequest) ct = Queries.get services input.Target ct
+    let get services (input: CaseGetRequest) ct =
+        CaseDetailQueries.get services input.Target ct
 
     let notes = NoteQueries.page
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
     let workViews = ViewQueries.work
 
-    let assignees = Queries.assignees
-    let parties = Queries.parties
-    let list = Queries.list
-    let caseSummary = Queries.caseSummary
+    let assignees = CaseLookupQueries.assignees
+    let parties = CaseLookupQueries.parties
+    let list = CaseSetQueries.list
+    let caseSummary = CaseSetQueries.caseSummary
     let payments = PaymentQueries.page
 
     let timeline = TimelineQueries.read
@@ -127,9 +129,9 @@ module Service =
                 }
         }
 
-    let actors = Queries.actors
-    let grants = Queries.grants
-    let peopleHistory = Queries.peopleHistory
+    let actors = PeopleQueries.actors
+    let grants = PeopleQueries.grants
+    let peopleHistory = PeopleQueries.history
 
     let internal provisionOwnerInTransaction =
         OperationService.provisionOwnerInTransaction

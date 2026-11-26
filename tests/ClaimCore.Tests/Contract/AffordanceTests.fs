@@ -138,7 +138,7 @@ let tests =
                     }
 
                 Expect.isFalse (Affordance.valid role) "Closed choice seeds keep their vocabulary"
-                let encoded = PresentationCodecs.affordance.Write(action ())
+                let encoded = AffordanceCodecs.affordance.Write(action ())
 
                 let malformed =
                     match encoded with
@@ -154,7 +154,7 @@ let tests =
                     | _ -> failtest "An affordance must be an object"
 
                 Expect.isError
-                    (PresentationCodecs.affordance.Read "$" malformed)
+                    (AffordanceCodecs.affordance.Read "$" malformed)
                     "Collection values are not scalar seeds")
             testCase "editable inputs exclude fixed and foreign declarations" (fun () ->
                 let reference = TaskAffordances.field BusinessField.CaseReference
@@ -166,7 +166,7 @@ let tests =
                         Editable = [ closingNote ]
                     }
 
-                let codec = PresentationCodecs.affordance
+                let codec = AffordanceCodecs.affordance
                 let encoded = codec.Write control
 
                 Expect.equal
@@ -203,7 +203,7 @@ let tests =
                         "The wire contract rejects the same invalid input")
             testCase "editable schemas describe task-specific choices and empty arrays" (fun () ->
                 let editable task =
-                    PresentationCodecs.affordance.Definitions["Affordance." + task]
+                    AffordanceCodecs.affordance.Definitions["Affordance." + task]
                     |> SchemaJson.value "#/components/schemas/"
                     |> JsonValue.tryMember "properties"
                     |> Option.bind (JsonValue.tryMember "editable")

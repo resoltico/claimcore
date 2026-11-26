@@ -160,7 +160,10 @@ module internal ReplyText =
 
         let warnings =
             if sessionCommand then
-                ViewText.renderDocument details rendering (HumanReadDocuments.terminationUnknown ())
+                ViewText.renderDocument
+                    details
+                    rendering
+                    (SessionTerminationScreen.terminationUnknown ())
             else
                 [
                     label

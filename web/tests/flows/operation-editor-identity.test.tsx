@@ -25,7 +25,7 @@ import { getButton, render, screen, waitFor } from "../support/presentation-test
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
-import { OperationEditor } from "../../src/views/OperationEditor";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 type SentDraft = Omit<CaseSubmission, "inputs"> & { inputs: Readonly<Record<string, unknown>> };
 const sentDraft = (call: number): SentDraft => {

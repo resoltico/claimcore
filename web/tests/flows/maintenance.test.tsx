@@ -21,8 +21,8 @@ import {
   testWorkspaceIdentity,
 } from "../support/presentation-test-support";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
-import { OperationEditor } from "../../src/views/OperationEditor";
-import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
+import { OperationEditor } from "../../src/features/operation/OperationEditor";
+import { UnresolvedNotice } from "../../src/features/operation/UnresolvedNotice";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 
 import { fields } from "../support/service-ui.fixtures";

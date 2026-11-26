@@ -84,7 +84,7 @@ module internal PeopleHistoryReads =
                     |> List.distinct
 
                 for id in ids do
-                    let! person = AggregateStorage.person tx id
+                    let! person = PersonAcquisition.person tx id
 
                     match person with
                     | None -> raise (RecordCorruptException "History account label is absent.")

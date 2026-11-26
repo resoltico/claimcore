@@ -89,7 +89,7 @@ module internal PaymentQueries =
                                                                     }
 
                                                         let! family =
-                                                            AggregateStorage.familyForPayments
+                                                            CaseFamilyAcquisition.familyForPayments
                                                                 tx
                                                                 parent.CaseId
                                                                 (rows.Items

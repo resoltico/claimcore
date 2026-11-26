@@ -136,3 +136,14 @@ module ReminderScreen =
                     (Some "label.technicalDetails")
                     (identifiers @ observationEntries reply.Basis)
             ]
+
+    let document (value: ReminderRead) =
+        HumanDocument.snapshot
+            value.Basis
+            (view value)
+            DocumentSubject.List
+            (TaskAffordances.reminder value.Item)
+            []
+            None
+            HumanDisclosure.Current
+            None

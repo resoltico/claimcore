@@ -71,9 +71,7 @@ let private contextReply representation installation =
     match representation with
     | Representation.Data -> RepresentationReply.Data(Outcome.Succeeded data)
     | Representation.Human ->
-        RepresentationReply.Human(
-            HumanReplies.read HumanReadDocuments.context (Outcome.Succeeded data)
-        )
+        RepresentationReply.Human(HumanReplies.read ContextScreen.document (Outcome.Succeeded data))
     |> Codec.encode Api.context.Output
 
 let private operation (request: string) =

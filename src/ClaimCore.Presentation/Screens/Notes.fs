@@ -99,3 +99,22 @@ module NotesScreen =
                 |> withEmpty "empty.notes"
                 |> withCount "notes" page.Notes.Count
             ]
+
+    let document (value: CaseNotesPage) =
+        HumanDocument.snapshot
+            value.Basis
+            (page value)
+            DocumentSubject.List
+            (if value.Notes.CanAdd then
+                 [ TaskAffordances.noteAdd value.CaseId ]
+             else
+                 [])
+            [
+                NamedLink.create
+                    "field.caseReference.label"
+                    LinkRelation.OpenCase
+                    (Link.caseById value.CaseId)
+            ]
+            value.NextCursor
+            HumanDisclosure.Current
+            None

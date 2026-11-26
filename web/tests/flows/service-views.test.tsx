@@ -26,9 +26,9 @@ import { findButton, getButton, render, screen } from "../support/presentation-t
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
-import { CaseDetail } from "../../src/views/CaseDetail";
-import { CaseList } from "../../src/views/CaseList";
-import { Dashboard } from "../../src/views/Dashboard";
+import { CaseDetail } from "../../src/features/case/CaseDetail";
+import { CaseList } from "../../src/features/work/CaseList";
+import { Dashboard } from "../../src/shell/Dashboard";
 import { wireReply } from "../support/reply.fixtures";
 import { definition, operationId } from "../support/service-ui.fixtures";
 const current: CurrentCase = withRecommendation(

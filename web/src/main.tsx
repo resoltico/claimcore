@@ -5,8 +5,8 @@ import { PresentationProvider } from "./presentation/PresentationProvider";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { IconSprite } from "./ui/icons";
-import { App } from "./App";
-import "./login.css";
+import { App } from "./shell/App";
+import "./shell/login.css";
 import "./ui/layout.css";
 
 const root = document.getElementById("root");

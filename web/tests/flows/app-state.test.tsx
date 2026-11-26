@@ -17,7 +17,7 @@ const renderState = async (state: SessionState) => {
   const { installLanguage } = await import("../../src/presentation/languageCatalog");
   const { coreCatalogs, chromeCatalogs } = await import("../support/authored-catalogs");
   installLanguage("en", coreCatalogs.en, chromeCatalogs.en);
-  const { App } = await import("../../src/App");
+  const { App } = await import("../../src/shell/App");
   const { PresentationProvider } = await import("../../src/presentation/PresentationProvider");
   return render(
     <PresentationProvider>

@@ -50,7 +50,7 @@ module internal CaseLinkReads =
                         record.CaseId
 
                 let! family =
-                    AggregateStorage.familyForDecision
+                    CaseFamilyAcquisition.familyForDecision
                         tx
                         record.CaseId
                         (Binding.LinkNew target)

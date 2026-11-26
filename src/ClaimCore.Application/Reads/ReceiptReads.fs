@@ -15,13 +15,13 @@ module internal ReceiptReads =
 
     let private actor tx id =
         task {
-            let! person = AggregateStorage.person tx id
+            let! person = PersonAcquisition.person tx id
             return person |> Option.map (fun person -> Actor.currentReference person.Actor)
         }
 
     let private responsible tx caseId id =
         task {
-            let! person = AggregateStorage.person tx id
+            let! person = PersonAcquisition.person tx id
 
             return
                 person
@@ -146,7 +146,9 @@ module internal ReceiptReads =
                                     )
                         | AggregateReference.Family id ->
                             let! projected = FamilyReads.findCase tx id
-                            let! current = AggregateStorage.familyForReceipt tx id record.Changes
+
+                            let! current =
+                                CaseFamilyAcquisition.familyForReceipt tx id record.Changes
 
                             match projected, current with
                             | Some projected, Some current when

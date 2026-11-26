@@ -80,7 +80,7 @@ let private documents () =
         }
 
     [
-        HumanReadDocuments.cases
+        CaseListScreen.document
             {
                 Basis = DomainInputs.workBasis
                 Items = [ case ]
@@ -89,7 +89,7 @@ let private documents () =
                 AuthorizedScopeEmpty = false
                 ExactReference = None
             }
-        (HumanReadDocuments.reminders (
+        (ReminderListScreen.document (
             {
                 View = None
                 Target = None
@@ -109,7 +109,7 @@ let private documents () =
                 Items = [ action ]
                 NextCursor = Some "reminder-next"
             }
-        HumanReadDocuments.actors
+        PeopleScreen.document
             {
                 Basis = DomainInputs.workBasis
                 Items = [ person ]
@@ -132,7 +132,7 @@ let tests =
                             CaseSelector.Reference "-CASE:+OLD"
                         ] do
                         let value =
-                            HumanReadDocuments.cases
+                            CaseListScreen.document
                                 {
                                     Basis = DomainInputs.workBasis
                                     Items = []
@@ -243,7 +243,7 @@ let tests =
                             })
                         "Missing snapshot input is not zero"
 
-                    let document = HumanReadDocuments.views value
+                    let document = WorkViewsScreen.document value
 
                     let totals =
                         document.Screen.Regions

@@ -114,3 +114,6 @@ module CaseTotalsScreen =
                     ]
                 results reply.Rows
             ]
+
+    let document (value: CaseWorklistSummary) =
+        HumanDocument.listPage value.Basis (view value) value.NextCursor

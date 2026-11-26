@@ -1,6 +1,6 @@
 import { useSettingsDetour } from "./SettingsDetourContext";
 import { useCallback, useEffect, useRef } from "react";
-import type { OperationModel } from "./operation/useOperation";
+import type { OperationModel } from "../operation/useOperation";
 import { cancelPendingNavigation, setNavigationBlocker } from "../routing/navigation";
 /** The existing discard/recovery dialog owns consent even for top-level navigation. */
 export const useOperationNavigation = (
