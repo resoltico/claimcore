@@ -406,6 +406,11 @@
     "text": "Nav neapstiprinātu izmaiņu.",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "Automātiskā atkopšana ir apturēta. Pārbaudiet saglabāto darbību manuāli vai atjaunojiet piekļuvi pārlūka krātuvei, lai atsāktu automātiskās pārbaudes.",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "Atkopšanas identitātes nevar nolasīt vai atjaunināt. Esošie ieraksti ir saglabāti. Atjaunojiet piekļuvi krātuvei vai pirms atkārtota mēģinājuma atrisiniet vecākos ierakstus ar atbilstošo klientu.",
     "source": "e2277d9e955f"

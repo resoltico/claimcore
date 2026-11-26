@@ -92,37 +92,6 @@ module internal DisclosureReads =
         | Ok captured -> release services token captured
         | Error failure -> System.Threading.Tasks.Task.FromResult(QueryResults.failure failure)
 
-    let recordExport (services: ServiceContext) caseId export token =
-        task {
-            let! result =
-                services.Store.Read
-                    {
-                        CancellationToken = token
-                        Work =
-                            fun tx ->
-                                task {
-                                    let! view = AccessReads.access tx services.Principal None
-
-                                    return
-                                        if Access.validActor services.Principal view then
-                                            actorId services.Principal view
-                                        else
-                                            None
-                                }
-                    }
-
-            match result with
-            | Error failure -> return QueryResults.failure failure
-            | Ok None -> return QueryResults.unavailable
-            | Ok(Some actor) ->
-                let disclosure =
-                    { success actor DisclosureKind.Export caseId None with
-                        Export = Some export
-                    }
-
-                return! release services token (Outcome.Succeeded(), Some disclosure)
-        }
-
     let private binding caller (request: DisclosureTrailRequest) =
         let optional render =
             Option.map render >> Option.defaultValue ""

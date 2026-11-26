@@ -82,7 +82,7 @@ type TimelinePosition =
 type AccessRequestPosition =
     {
         LastSeen: DateTimeOffset
-        Principal: PrincipalKey
+        PrincipalKey: string
     }
 
 module Cursors =
@@ -395,24 +395,29 @@ module Cursors =
     let decodeParties installation caseId token =
         decodeCaseLookup "PARTIES" PartyId.create installation caseId token
 
-    let encodeAccessRequests installation (after: AccessRequestPosition) =
-        if after.LastSeen.Ticks % 10L <> 0L then
-            invalidArg (nameof after) "Access-request positions require database instant precision."
+    let private accessRequestKey (key: string) =
+        key.Length = 64
+        && Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) key
 
-        let kind, issuer, subject = PrincipalKey.parts after.Principal
+    let encodeAccessRequests installation (after: AccessRequestPosition) =
+        if
+            not (
+                RecordedInstant.hasMicrosecondPrecision after.LastSeen
+                && accessRequestKey after.PrincipalKey
+            )
+        then
+            invalidArg (nameof after) "Invalid access-request position."
 
         encode
             installation
             [
                 "kind", JsonValue.String "ACCESS_REQUESTS"
-                "v", JsonValue.Integer 1L
+                "v", JsonValue.Integer 2L
                 "lastSeen",
                 JsonValue.String(
                     after.LastSeen.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
                 )
-                "principalKind", JsonValue.String((Vocabulary.token PrincipalKind.vocabulary) kind)
-                "issuer", JsonValue.String issuer
-                "subject", JsonValue.String subject
+                "key", JsonValue.String after.PrincipalKey
             ]
 
     let decodeAccessRequests maximum installation token =
@@ -420,30 +425,16 @@ module Cursors =
             installation
             maximum
             (function
-            | JsonValue.Object [ "issuer", JsonValue.String issuer
+            | JsonValue.Object [ "key", JsonValue.String key
                                  "kind", JsonValue.String "ACCESS_REQUESTS"
                                  "lastSeen", JsonValue.String seen
-                                 "principalKind", JsonValue.String kind
-                                 "subject", JsonValue.String subject
-                                 "v", JsonValue.Integer 1L ] ->
-                match
-                    DateTimeOffset.TryParseExact(
-                        seen,
-                        "O",
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None
-                    ),
-                    (Vocabulary.tryParse PrincipalKind.vocabulary) kind
-                with
-                | (true, date), Some kind when date.Offset = TimeSpan.Zero && date.Ticks % 10L = 0L ->
-                    PrincipalKey.ofKind kind issuer subject
-                    |> Result.toOption
-                    |> Option.map (fun principal ->
-                        {
-                            AccessRequestPosition.LastSeen = date
-                            Principal = principal
-                        })
-                | _ -> None
+                                 "v", JsonValue.Integer 2L ] when accessRequestKey key ->
+                instant seen
+                |> Option.map (fun date ->
+                    {
+                        AccessRequestPosition.LastSeen = date
+                        PrincipalKey = key
+                    })
             | _ -> None)
             token
 

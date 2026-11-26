@@ -370,6 +370,11 @@
     "text": "미확인 변경이 없습니다.",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "자동 복구가 일시 중지되었습니다. 저장된 작업을 수동으로 확인하거나 브라우저 저장소에 대한 액세스를 복원해 자동 확인을 재개하세요.",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "복구 식별 정보를 읽거나 수정할 수 없습니다. 기존 기록은 유지됩니다. 저장소 접근을 복원하거나 일치하는 클라이언트로 이전 기록의 결과를 확정한 후 다시 시도하세요.",
     "source": "e2277d9e955f"

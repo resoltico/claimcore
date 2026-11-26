@@ -218,6 +218,7 @@ let private stagingFailure database =
 let private validationFailure database =
     task {
         let! _, checkpoint = seed database
+        do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! trigger database "NEW.status := 'CLOSED';"
         let! before = image database
 
@@ -247,6 +248,7 @@ let private validationFailure database =
 let private cancelledStaging database =
     task {
         let! _, checkpoint = seed database
+        do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! trigger database "PERFORM pg_advisory_xact_lock(734113);"
         let! before = image database
         use! blocker = database.OwnerSource.OpenConnectionAsync()
@@ -286,6 +288,7 @@ let private cancelledStaging database =
 let private writerRace database =
     task {
         let! actor, checkpoint = seed database
+        do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! trigger database "PERFORM pg_advisory_xact_lock(734114);"
         use! blocker = database.OwnerSource.OpenConnectionAsync()
         use! held = blocker.BeginTransactionAsync()
@@ -358,7 +361,9 @@ let private commitLoss drop landed database =
         let settings =
             NpgsqlConnectionStringBuilder(PostgresFixture.ownerConnectionString database)
 
-        use proxy = new CommitProxy.Proxy(nonNull settings.Host, settings.Port, drop)
+        use proxy =
+            new CommitProxy.Proxy(nonNull settings.Host, settings.Port, drop, allowReconnect = true)
+
         settings.Host <- "127.0.0.1"
         settings.Port <- proxy.Port
         settings.SslMode <- SslMode.Disable
@@ -441,7 +446,7 @@ let tests =
                 "cancellation during replacement rolls back all staged effects"
                 (run cancelledStaging)
             testCaseAsync
-                "the head lock excludes a writer throughout the rebuild scan and replacement"
+                "the head lock excludes a writer during projection publication"
                 (run writerRace)
             testCaseAsync
                 "before-commit acknowledgement loss remains uncertain and atomic"

@@ -62,7 +62,25 @@ module HostRoutes =
                     |> fun reply -> RouteSupport.reply reply context
         }
 
-    let private logout configuration (endSessionEndpoint: Uri) (context: HttpContext) =
+    let private identityFailure =
+        function
+        | OidcDependencyFailure.Unavailable -> HostFailureReason.IdentityProviderUnavailable
+        | OidcDependencyFailure.Untrusted -> HostFailureReason.IdentityProviderUntrusted
+
+    let private endSession fallback (context: HttpContext) =
+        task {
+            match context.RequestServices.GetService<IssuerMetadata>() |> Option.ofObj with
+            | Some issuer ->
+                let! metadata = issuer.Get context.RequestAborted
+                return metadata |> Result.map (fun value -> Uri value.EndSessionEndpoint)
+            | None ->
+                return
+                    fallback
+                    |> Option.map Ok
+                    |> Option.defaultValue (Error OidcDependencyFailure.Unavailable)
+        }
+
+    let private logout configuration fallback (context: HttpContext) =
         task {
             if not (ApiRoutes.handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
@@ -107,37 +125,53 @@ module HostRoutes =
 
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
-                                match hint with
-                                | None ->
-                                    return
-                                        RouteSupport.hostFailure
-                                            context
-                                            HostFailureReason.SessionRejected
-                                | Some token ->
-                                    let parameters =
-                                        dict
-                                            [
-                                                "client_id", oidc.ClientId
-                                                "id_token_hint", token
-                                                "post_logout_redirect_uri",
-                                                Uri(configuration.Binding.Origin, "/").AbsoluteUri
-                                            ]
+                                let! handoff =
+                                    task {
+                                        match hint with
+                                        | None ->
+                                            return
+                                                LogoutHandoff.LocalOnly
+                                                    LocalSignOutReason.NoProviderSession
+                                        | Some token ->
+                                            match! endSession fallback context with
+                                            | Error OidcDependencyFailure.Unavailable ->
+                                                return
+                                                    LogoutHandoff.LocalOnly
+                                                        LocalSignOutReason
+                                                            .IdentityProviderUnavailable
+                                            | Error OidcDependencyFailure.Untrusted ->
+                                                return
+                                                    LogoutHandoff.LocalOnly
+                                                        LocalSignOutReason.IdentityProviderUntrusted
+                                            | Ok endpoint ->
+                                                let parameters =
+                                                    dict
+                                                        [
+                                                            "client_id", oidc.ClientId
+                                                            "id_token_hint", token
+                                                            "post_logout_redirect_uri",
+                                                            Uri(configuration.Binding.Origin, "/")
+                                                                .AbsoluteUri
+                                                        ]
 
-                                    let location =
-                                        QueryHelpers.AddQueryString(
-                                            endSessionEndpoint.AbsoluteUri,
-                                            parameters
-                                        )
+                                                return
+                                                    LogoutHandoff.Provider(
+                                                        QueryHelpers.AddQueryString(
+                                                            endpoint.AbsoluteUri,
+                                                            parameters
+                                                        )
+                                                    )
+                                    }
 
-                                    return
-                                        Endpoint.reply
-                                            Api.logout
-                                            (Outcome.Succeeded(
-                                                Presented.create
-                                                    (fun _ -> ContextScreen.logoutView ())
-                                                    { Location = location }
-                                            ))
-                                        |> fun reply -> RouteSupport.reply reply context
+                                return
+                                    Endpoint.reply
+                                        Api.logout
+                                        (Outcome.Succeeded(
+                                            Presented.create
+                                                (fun _ -> ContextScreen.logoutView ())
+                                                handoff
+                                        ))
+                                    |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
 
@@ -157,6 +191,30 @@ module HostRoutes =
                     (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
             | _ -> do! next.Invoke context
+        }
+
+    let identityHealth (context: HttpContext) (next: RequestDelegate) : Task =
+        task {
+            if context.Request.Path.Value <> "/health/identity" then
+                do! next.Invoke context
+            else
+                HttpHeaders.noStore context
+
+                if not (HttpMethods.IsGet context.Request.Method) then
+                    do!
+                        (RouteSupport.hostFailure context HostFailureReason.MethodRejected)
+                            .ExecuteAsync
+                            context
+                else
+                    let issuer = context.RequestServices.GetRequiredService<IssuerMetadata>()
+
+                    match! issuer.Get context.RequestAborted with
+                    | Ok _ -> context.Response.StatusCode <- StatusCodes.Status200OK
+                    | Error failure ->
+                        do!
+                            (RouteSupport.hostFailure context (identityFailure failure))
+                                .ExecuteAsync
+                                context
         }
 
     let private fallback (assets: PublicAssets.Inventory) (context: HttpContext) : Task =
@@ -230,15 +288,6 @@ module HostRoutes =
 
         publicFiles
 
-    let internal catalogs files (application: WebApplication) =
-        let catalogs = CatalogRoutes.Inventory files
-
-        application.Use(
-            Func<HttpContext, RequestDelegate, Task>(fun context next ->
-                catalogs.Serve(context, next))
-        )
-        |> ignore
-
     let internal map
         assets
         configuration
@@ -293,17 +342,39 @@ module HostRoutes =
             .MapGet(
                 "/auth/login",
                 Func<HttpContext, Task>(fun context ->
-                    HttpHeaders.noStore context
-                    let properties = loginReturnProperties ()
-                    let language = context.Request.Query["language"]
+                    task {
+                        HttpHeaders.noStore context
 
-                    if
-                        language.Count = 1
-                        && List.contains language[0] LocalizationPolicy.languages
-                    then
-                        properties.Items["ui_locales"] <- language[0]
+                        let! available =
+                            task {
+                                match
+                                    context.RequestServices.GetService<IssuerMetadata>()
+                                    |> Option.ofObj
+                                with
+                                | None -> return Ok()
+                                | Some issuer ->
+                                    let! answer = issuer.Get context.RequestAborted
+                                    return answer |> Result.map ignore
+                            }
 
-                    context.ChallengeAsync("OpenIdConnect", properties))
+                        match available with
+                        | Error failure ->
+                            do!
+                                (RouteSupport.hostFailure context (identityFailure failure))
+                                    .ExecuteAsync
+                                    context
+                        | Ok() ->
+                            let properties = loginReturnProperties ()
+                            let language = context.Request.Query["language"]
+
+                            if
+                                language.Count = 1
+                                && List.contains language[0] LocalizationPolicy.languages
+                            then
+                                properties.Items["ui_locales"] <- language[0]
+
+                            do! context.ChallengeAsync("OpenIdConnect", properties)
+                    })
             )
             .RequireRateLimiting("login")
         |> ignore

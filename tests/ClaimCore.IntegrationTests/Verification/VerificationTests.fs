@@ -97,6 +97,7 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
                 {
                     Sequence = Some sequence
                     Finding = VerificationFinding.StateSequence
+                    Attachment = None
                 })
             "A self-consistent hash, head and projection cannot substitute for the OPEN request effect"
     }

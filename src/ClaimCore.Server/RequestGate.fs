@@ -20,6 +20,8 @@ type GateFailure =
     | UnsupportedMediaType
     | BodyTooLarge
     | SessionRejected
+    | IdentityProviderUnavailable
+    | IdentityProviderUntrusted
     | AntiforgeryRejected
     | AdmissionRejected
 
@@ -52,7 +54,13 @@ module RequestGate =
             let! authentication = context.AuthenticateAsync(AuthMiddleware.BearerScheme)
 
             if not authentication.Succeeded then
-                return Error GateFailure.SessionRejected
+                return
+                    match OidcDependencyException.tryFind authentication.Failure with
+                    | Some OidcDependencyFailure.Unavailable ->
+                        Error GateFailure.IdentityProviderUnavailable
+                    | Some OidcDependencyFailure.Untrusted ->
+                        Error GateFailure.IdentityProviderUntrusted
+                    | None -> Error GateFailure.SessionRejected
             else
                 match authentication.Principal |> Option.ofObj with
                 | None -> return Error GateFailure.SessionRejected

@@ -67,6 +67,28 @@ module internal DatabaseSession =
     /// Initialize once for each result set, then capture independent rows as the reader advances.
     let namedRow (reader: System.Data.Common.DbDataReader) = NamedRow.Reader reader
 
+    /// Hash an ordered, canonical JSON text row stream without retaining the result set.
+    let witness connection sql parameters (token: CancellationToken) =
+        task {
+            use hash =
+                System.Security.Cryptography.IncrementalHash.CreateHash(
+                    System.Security.Cryptography.HashAlgorithmName.SHA256
+                )
+
+            use command = statement connection sql parameters
+            use! reader = command.ExecuteReaderAsync(token)
+            let mutable reading = true
+
+            while reading do
+                let! available = reader.ReadAsync(token)
+                reading <- available
+
+                if available then
+                    hash.AppendData(System.Text.Encoding.UTF8.GetBytes(reader.GetString(0) + "\n"))
+
+            return hash.GetHashAndReset() |> Convert.ToHexStringLower
+        }
+
     let private readRows
         prepare
         makeReader

@@ -115,23 +115,6 @@ let private configureAntiforgery directory issuer idle sessions (services: IServ
         options.Cookie.SameSite <- SameSiteMode.Strict)
     |> ignore
 
-let private verifyOidcMetadata (configuration: OidcConfiguration) (ct: CancellationToken) =
-    task {
-        try
-            use handler =
-                configuration.TrustRoot
-                |> Option.map AuthMiddleware.syntheticTrustHandler
-                |> Option.defaultWith AuthMiddleware.productionTrustHandler
-
-            handler.AllowAutoRedirect <- false
-            use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds(10.))
-            return! OidcStartup.verify client configuration ct
-        with
-        | :? HttpRequestException
-        | :? InvalidOperationException ->
-            return WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
-    }
-
 let private requireTrustedConnection
     (configuration: WebConfiguration)
     (context: HttpContext)
@@ -211,7 +194,6 @@ let internal configuredBuilder
 let private configureRoutes
     (files: PublicAssets.Inventory)
     (configuration: WebConfiguration)
-    (endSessionEndpoint: Uri)
     (runtime: IRuntime)
     (application: WebApplication)
     =
@@ -244,13 +226,15 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness.Check))
     |> ignore
 
+    application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.identityHealth))
+    |> ignore
+
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
-    HostRoutes.catalogs publicFiles application
     RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
@@ -258,7 +242,7 @@ let private configureRoutes
     HostRoutes.map
         publicFiles
         configuration
-        endSessionEndpoint
+        None
         ClaimCore.Server.ApiRoutes.route
         (fun principal action -> runtime.WithActor(principal, action))
         application
@@ -318,8 +302,6 @@ let private runAsync (ct: CancellationToken) =
             |> Option.defaultWith (fun () ->
                 WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid)
 
-        let! endSessionEndpoint = verifyOidcMetadata oidc ct
-
         let assets = assetDirectory ()
         let files = PublicAssets.Inventory assets
 
@@ -332,7 +314,7 @@ let private runAsync (ct: CancellationToken) =
                     let builder = configuredBuilder assets configuration oidc runtime
                     builder.Services.AddSingleton files |> ignore
                     use application = builder.Build()
-                    configureRoutes files configuration endSessionEndpoint runtime application
+                    configureRoutes files configuration runtime application
 
                     Console.WriteLine(
                         "ClaimCore Web login URL: "
@@ -370,6 +352,9 @@ let private run () =
 let private dispatch arguments =
     match arguments |> Array.toList with
     | [] -> run ()
+    | [ "validate-browser-assets"; directory ] ->
+        PublicAssets.Inventory directory |> ignore
+        0
     | [ "probe"; "live" ] -> WebProbe.run "/health/live" |> _.GetAwaiter().GetResult()
     | [ "probe"; "ready" ] -> WebProbe.run "/health/ready" |> _.GetAwaiter().GetResult()
     | [ "help" ]

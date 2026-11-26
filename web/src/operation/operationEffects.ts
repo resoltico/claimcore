@@ -1,3 +1,4 @@
+import { recoveryLookup, type RecoveryReply } from "../recovery/recoveryLookup";
 import {
   apiEndpoints,
   service,
@@ -63,6 +64,47 @@ const completion = (
     disclosure: isDisclosureRefused(result),
   };
 };
+const lookupAction = (
+  identity: OperationEffect["identity"],
+  result: RecoveryReply,
+): OperationAction => {
+  if (result.kind === "outcome") {
+    if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.byRequester) {
+      return {
+        type: "NOT_ACCEPTED",
+        identity,
+      };
+    }
+    if (result.value.outcome.kind === "ACCEPTED") {
+      return {
+        type: "RECORD",
+        identity,
+        receipt: result.value.outcome.document,
+      };
+    }
+    if (result.value.outcome.kind === "PENDING") {
+      return {
+        type: "OPERATION_PENDING",
+        identity,
+        screen: result.value.outcome.document.screen,
+      };
+    }
+    if (result.value.outcome.kind === "NOT_ACCEPTED") {
+      return {
+        type: "NOT_ACCEPTED",
+        identity,
+      };
+    }
+  }
+  return {
+    type: "REFUSE",
+    identity,
+    notice: resultNotice(result),
+    target: null,
+    uncertain: true,
+    disclosure: isDisclosureRefused(result),
+  };
+};
 const runNetwork = async (
   effect: Extract<
     OperationEffect,
@@ -72,50 +114,21 @@ const runNetwork = async (
   >,
   installationId?: string,
   signal?: AbortSignal,
+  record?: RecoveryRecord,
 ): Promise<OperationAction> => {
   if (effect.kind === "CHECK_OPERATION") {
-    const result = await service.operationGet(
-      effect.source.prepared.input.operationId,
-      effect.identity.credential,
-      installationId,
-      signal,
-    );
-    if (result.kind === "outcome") {
-      if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.byRequester) {
-        return {
-          type: "NOT_ACCEPTED",
-          identity: effect.identity,
-        };
-      }
-      if (result.value.outcome.kind === "ACCEPTED") {
-        return {
-          type: "RECORD",
-          identity: effect.identity,
-          receipt: result.value.outcome.document,
-        };
-      }
-      if (result.value.outcome.kind === "PENDING") {
-        return {
-          type: "OPERATION_PENDING",
-          identity: effect.identity,
-          screen: result.value.outcome.document.screen,
-        };
-      }
-      if (result.value.outcome.kind === "NOT_ACCEPTED") {
-        return {
-          type: "NOT_ACCEPTED",
-          identity: effect.identity,
-        };
-      }
+    if (record === undefined || signal === undefined || effect.identity.owner === null) {
+      throw new Error("Operation recovery requires an owned identity");
     }
-    return {
-      type: "REFUSE",
-      identity: effect.identity,
-      notice: resultNotice(result),
-      target: null,
-      uncertain: true,
-      disclosure: isDisclosureRefused(result),
-    };
+    const result =
+      effect.reply ??
+      (await recoveryLookup(
+        record,
+        effect.identity.credential,
+        effect.identity.owner.sessionEpoch,
+        signal,
+      ));
+    return lookupAction(effect.identity, result);
   }
   return completion(
     effect,
@@ -133,11 +146,12 @@ const ownedNetworkRead = async (
   >,
   reads: Map<string, AbortController>,
   installationId?: string,
+  record?: RecoveryRecord,
 ): Promise<OperationAction> => {
   const controller = new AbortController();
   reads.set(effect.identity.id, controller);
   try {
-    return await runNetwork(effect, installationId, controller.signal);
+    return await runNetwork(effect, installationId, controller.signal, record);
   } finally {
     reads.delete(effect.identity.id);
   }
@@ -146,9 +160,12 @@ const settleAttempt = async (
   journal: RecoveryJournal,
   attempts: Map<string, RecoveryRecord>,
   owned: RecoveryRecord,
+  terminalHandoff = false,
 ): Promise<void> => {
   try {
-    await journal.remove(owned);
+    await (terminalHandoff
+      ? (journal.confirm?.(owned) ?? journal.remove(owned))
+      : journal.remove(owned));
   } catch {
     return;
   }
@@ -185,9 +202,9 @@ const checkOwnedStatus = async (
     };
   }
   // A passive read uses the existing attempt; it never publishes another journal write.
-  const action = await ownedNetworkRead(effect, reads, owned.installationId);
+  const action = await ownedNetworkRead(effect, reads, owned.installationId, owned);
   if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
-    await settleAttempt(journal, attempts, owned);
+    await settleAttempt(journal, attempts, owned, true);
   }
   return action;
 };

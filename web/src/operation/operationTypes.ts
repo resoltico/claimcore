@@ -1,3 +1,4 @@
+import type { RecoveryReply } from "../recovery/recoveryLookup";
 import type { apiEndpoints } from "../api/service";
 import type { OperationAffordance } from "./affordances";
 import type { OwnerScope } from "../protocol/ownerScope";
@@ -102,6 +103,7 @@ export type OperationEffect =
   | {
       kind: "CHECK_OPERATION";
       identity: EffectIdentity;
+      reply?: RecoveryReply;
       source: LocalSource;
     }
   | {
@@ -274,6 +276,7 @@ export type OperationAction =
   | {
       type: "CHECK_OPERATION";
       identity: EffectIdentity;
+      reply?: RecoveryReply;
     }
   | {
       type: "OPERATION_PENDING";

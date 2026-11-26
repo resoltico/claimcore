@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 10),
+    installation_format smallint NOT NULL CHECK (installation_format = 11),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -60,17 +60,30 @@ CREATE TABLE claimcore.installation (
 CREATE TABLE claimcore.register_maintenance (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     generation bigint NOT NULL CHECK (generation BETWEEN 0 AND 9007199254740991),
+    publication_generation bigint NOT NULL DEFAULT 0 CHECK (publication_generation BETWEEN 0 AND 9007199254740991),
     pause_id uuid CHECK (pause_id <> '00000000-0000-0000-0000-000000000000'),
     CHECK (pause_id IS NULL OR generation>0)
 );
 INSERT INTO claimcore.register_maintenance(singleton,generation,pause_id) VALUES (true,0,NULL);
+
+CREATE FUNCTION claimcore.recovery_publication_successor()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF NEW.publication_generation<>OLD.publication_generation+1 THEN
+        RAISE EXCEPTION 'recovery publication must immediately follow its predecessor' USING ERRCODE='CC005';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER recovery_publication_successor BEFORE UPDATE OF publication_generation
+ON claimcore.register_maintenance FOR EACH ROW EXECUTE FUNCTION claimcore.recovery_publication_successor();
 
 -- One immutable root and its ordered part versions advance the installation head.
 CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=10),
+    installation_format smallint NOT NULL CHECK (installation_format=11),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
@@ -214,9 +227,21 @@ CREATE TRIGGER ledger_guard_truncate BEFORE TRUNCATE ON claimcore.ledger FOR EAC
 CREATE TRIGGER effects_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.immutable_ledger_row();
 CREATE TRIGGER effects_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_effects FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
 
+-- The owner-only repair function sets this transaction-local gate after checking the
+-- permanent accepting identity. Append and erasure never set it.
+CREATE FUNCTION claimcore.attachment_repair_active()
+RETURNS boolean LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
+    SELECT current_setting('claimcore.attachment_repair',true)='on'
+       AND session_user=(SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname='claimcore')
+       AND EXISTS(SELECT 1 FROM claimcore.register_maintenance WHERE pause_id IS NOT NULL)
+$$;
+
 CREATE FUNCTION claimcore.new_operation_child()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN
+    IF TG_TABLE_NAME='attachment_blobs' AND claimcore.attachment_repair_active() THEN
+        RETURN NEW;
+    END IF;
     IF NOT EXISTS(SELECT 1 FROM claimcore.ledger root CROSS JOIN claimcore.ledger_head head
                   WHERE head.singleton AND root.sequence=NEW.operation_sequence
                     AND root.sequence=head.sequence+1 AND root.previous_hash=head.entry_hash) THEN
@@ -257,6 +282,14 @@ RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN
     IF TG_OP<>'UPDATE' THEN
         RAISE EXCEPTION 'attachment evidence rows are never removed' USING ERRCODE='CC003';
+    END IF;
+    IF TG_TABLE_NAME='attachment_blobs' THEN
+        IF claimcore.attachment_repair_active()
+           AND (NEW.case_id,NEW.blob_id,NEW.operation_sequence,NEW.effect_index)
+               IS NOT DISTINCT FROM (OLD.case_id,OLD.blob_id,OLD.operation_sequence,OLD.effect_index)
+           AND OLD.payload IS NOT NULL AND NEW.payload IS NOT NULL THEN
+            RETURN NEW;
+        END IF;
     END IF;
     IF (NEW.case_id,NEW.operation_sequence,NEW.effect_index) IS DISTINCT FROM
        (OLD.case_id,OLD.operation_sequence,OLD.effect_index)
@@ -377,6 +410,46 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION claimcore.repair_attachment_payload(
+    p_family uuid,p_blob uuid,p_sequence bigint,p_index integer,
+    p_length bigint,p_digest bytea,p_payload bytea
+) RETURNS boolean LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE affected integer;
+BEGIN
+    PERFORM claimcore.lock_ledger_head();
+    IF NOT EXISTS(SELECT 1 FROM claimcore.register_maintenance WHERE pause_id IS NOT NULL)
+       OR NOT EXISTS(
+          SELECT 1 FROM claimcore.ledger_effects e
+          JOIN claimcore.attachment_references r USING(operation_sequence,effect_index)
+          JOIN claimcore.ledger_compartments c ON (c.operation_sequence,c.ordinal)=(e.operation_sequence,e.compartment)
+          WHERE (e.operation_sequence,e.effect_index)=(p_sequence,p_index)
+            AND (e.aggregate_kind,e.aggregate_id,e.part_kind,e.part_id,e.revision)=('FAMILY',p_family,'ATTACHMENT',p_blob,1)
+            AND (r.case_id,r.attachment_id,r.blob_id)=(p_family,p_blob,p_blob)
+            AND c.payload IS NOT NULL
+       )
+       OR EXISTS(SELECT 1 FROM claimcore.ledger_effects e
+                 WHERE e.erases_kind='FAMILY' AND e.erases_id=p_family)
+       OR EXISTS(SELECT 1 FROM claimcore.attachment_blobs b
+                 WHERE (b.operation_sequence,b.effect_index)=(p_sequence,p_index)
+                   AND (b.case_id,b.blob_id)<>(p_family,p_blob)) THEN
+        RETURN false;
+    END IF;
+
+    PERFORM set_config('claimcore.attachment_repair','on',true);
+    INSERT INTO claimcore.attachment_blobs AS b(case_id,blob_id,operation_sequence,effect_index,length,digest,payload)
+    VALUES(p_family,p_blob,p_sequence,p_index,p_length,p_digest,p_payload)
+    ON CONFLICT (case_id,blob_id) DO UPDATE
+      SET length=excluded.length,digest=excluded.digest,payload=excluded.payload
+      WHERE (b.operation_sequence,b.effect_index)=(p_sequence,p_index) AND b.payload IS NOT NULL;
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    PERFORM set_config('claimcore.attachment_repair','off',true);
+    IF affected=1 THEN
+        PERFORM claimcore.complete_attachment_effect(p_sequence);
+    END IF;
+    RETURN affected=1;
+END;
+$$;
+
 CREATE FUNCTION claimcore.complete_operation()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE root claimcore.ledger%ROWTYPE; root_sequence bigint; first_effect claimcore.ledger_effects%ROWTYPE; n integer; ordinals integer[];
@@ -434,7 +507,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>10
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>11
        OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
        OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
@@ -654,13 +727,32 @@ CREATE TABLE claimcore.digest_runs (
     -- An actor's creation operation survives projection rebuilds.
     actor_id uuid NOT NULL REFERENCES claimcore.ledger(operation_id),
     digest_date date NOT NULL,
+    claim_id uuid NOT NULL UNIQUE CHECK (claim_id<>'00000000-0000-0000-0000-000000000000'),
     claimed_at timestamptz NOT NULL,
+    deadline timestamptz NOT NULL CHECK (deadline>claimed_at),
+    started_at timestamptz CHECK (started_at>=claimed_at AND started_at<deadline),
     outcome text CHECK (outcome IS NULL OR outcome ~ '^[A-Z][A-Z_]{0,39}$'),
     completed_at timestamptz,
     PRIMARY KEY (actor_id,digest_date),
     CHECK ((outcome IS NULL)=(completed_at IS NULL)),
     CHECK (completed_at IS NULL OR completed_at>=claimed_at)
 );
+
+CREATE INDEX digest_runs_pending ON claimcore.digest_runs(deadline) WHERE outcome IS NULL;
+CREATE INDEX digest_runs_retention ON claimcore.digest_runs(digest_date);
+CREATE FUNCTION claimcore.digest_claim_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF OLD.outcome IS NOT NULL
+       OR (NEW.actor_id,NEW.digest_date,NEW.claim_id,NEW.claimed_at,NEW.deadline)
+          IS DISTINCT FROM (OLD.actor_id,OLD.digest_date,OLD.claim_id,OLD.claimed_at,OLD.deadline)
+       OR (OLD.started_at IS NOT NULL AND NEW.started_at IS DISTINCT FROM OLD.started_at) THEN
+        RAISE EXCEPTION 'digest claim identity and terminal outcomes are immutable' USING ERRCODE='CC003';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER digest_claim_guard BEFORE UPDATE ON claimcore.digest_runs FOR EACH ROW EXECUTE FUNCTION claimcore.digest_claim_guard();
 
 -- Bounded authentication hints, never ledger evidence. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
@@ -1033,6 +1125,7 @@ GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.attachment_repair_active() TO claimcore_runtime;
 
 
 GRANT SELECT ON claimcore.disclosure_retention TO claimcore_runtime;

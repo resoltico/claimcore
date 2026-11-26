@@ -451,11 +451,58 @@ let private administration (database: PostgresFixture.Database) =
             "A dismissed caller may request access on a later visit"
     }
 
+let private mutableContinuation (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = bootstrap fixture
+        let make = principal PrincipalKind.Human
+        let newest, middle, oldest = make "audit-a", make "audit-b", make "audit-c"
+
+        for caller in [ newest; middle; oldest ] do
+            let! _ = Service.context (core fixture caller) () token
+            ()
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.access_request SET first_seen=clock_timestamp()-INTERVAL '1 day',last_seen=clock_timestamp()-CASE subject WHEN 'audit-a' THEN INTERVAL '1 hour' WHEN 'audit-b' THEN INTERVAL '2 hours' ELSE INTERVAL '3 hours' END"
+                [||]
+
+        let! first = Service.accessRequests owner { AfterCursor = None; Limit = 1 } token
+        let first = read first
+        Expect.equal (first.Items |> List.map _.Principal) [ newest ] "Fixture starts at A"
+        let! _ = Service.context (core fixture middle) () token
+
+        let! continued =
+            Service.accessRequests
+                owner
+                {
+                    AfterCursor = first.NextCursor
+                    Limit = 3
+                }
+                token
+
+        let! fresh = Service.accessRequests owner { AfterCursor = None; Limit = 3 } token
+
+        Expect.equal
+            continued
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "A normal refresh changes the authorized traversal"
+
+        Expect.equal
+            ((read fresh).Items |> List.map _.Principal)
+            [ middle; newest; oldest ]
+            "Fresh access-requests page has B, A and C"
+    }
+
 [<Tests>]
 let tests =
     testList
         "requester context cache"
         [
+            testCaseAsync
+                "access-request continuation requires restart after a requester refresh"
+                (run mutableContinuation)
             testCaseAsync
                 "owner-only paging and dismissal retain privacy and no ledger effects"
                 (run administration)

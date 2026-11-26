@@ -20,6 +20,10 @@
     "scripts",
     "../contracts/client.ts",
     "../contracts/legal.ts",
+    "../contracts/messages.ts",
+    "src/presentation/catalogAdmission.ts",
+    "src/presentation/chromeMessages.ts",
+    "src/presentation/templates.ts",
     "prettier.config.mjs",
     "browser-transport-lint.config.ts"
   ]

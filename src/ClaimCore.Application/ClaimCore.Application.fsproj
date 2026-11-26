@@ -22,6 +22,7 @@
     <Compile Include="Storage/InstallationCheck/ServerSupport.fs" />
     <Compile Include="Storage/FailureDiagnostics.fs" />
     <Compile Include="Storage/DatabaseSession.fs" />
+    <Compile Include="Storage/ProjectionWrite.fs" />
     <Compile Include="Storage/LikePattern.fs" />
     <Compile Include="Storage/InstallationCipher.fs" />
     <Compile Include="Storage/ReadTransaction.fs" />

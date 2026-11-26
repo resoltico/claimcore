@@ -8,9 +8,14 @@ WORKDIR /source
 COPY SOURCE.tar.gz /tmp/SOURCE.tar.gz
 RUN tar -xzf /tmp/SOURCE.tar.gz -C /source
 
+FROM source AS catalogs
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    bash eng/prepare-browser-catalogs.sh /catalogs
+
 FROM node AS frontend
 WORKDIR /source
 COPY --from=source /source/ ./
+COPY --from=catalogs /catalogs ./web/artifacts/catalogs
 RUN --mount=type=cache,target=/root/.npm \
     test "$(node --version)" = "v$(cat .node-version)" \
     && npm install --global --ignore-scripts "npm@$(node -p 'require("./web/package.json").engines.npm')" \

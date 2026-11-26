@@ -19,6 +19,8 @@ type DatabaseSuccess =
     | OwnerRecovery of OwnerRecoveryResult
     | MasterKeyRotated of installationId: Guid
     | Rebuilt of ProjectionRebuildReport
+    | ProjectionsCurrent of LedgerPosition
+    | AttachmentRepaired of AttachmentRepairReport
     | RestoredInstallationAdmitted of RestoreAdmissionReport
     | Status of InstallationStatus
     | Maintenance of MaintenanceObservation
@@ -60,11 +62,42 @@ module Replies =
                  (EntryHash.toBytes >> Convert.ToHexStringLower))
         |> build
 
+    let private attachmentIdentity =
+        uuid |> map (AttachmentId.create >> Option.get) AttachmentId.value
+
+    let private attachmentEffect =
+        record (fun sequence index -> EffectPosition.create sequence index |> Option.get)
+        |> field
+            "sequence"
+            EffectPosition.sequence
+            (integer 1L SafeInteger.Maximum
+             |> map (Sequence.create >> Option.get) Sequence.value)
+        |> field "effectIndex" EffectPosition.index (integer 0L 49L |> map int int64)
+        |> build
+
+    let private attachmentEvidence =
+        record (fun issue caseId attachmentId effectIndex ->
+            {
+                AttachmentEvidence.Issue = issue
+                CaseId = caseId
+                AttachmentId = attachmentId
+                EffectIndex = effectIndex
+            })
+        |> field
+            "issue"
+            _.Issue
+            (enumeration (Vocabulary.entries AttachmentEvidenceIssue.vocabulary))
+        |> field "caseId" _.CaseId (nullable ResponseScalars.caseId)
+        |> field "attachmentId" _.AttachmentId (nullable attachmentIdentity)
+        |> field "effectIndex" _.EffectIndex (nullable (integer 0L 49L |> map int int64))
+        |> build
+
     let private divergenceCodec =
-        (record (fun sequence finding ->
+        (record (fun sequence finding attachment ->
             {
                 VerificationDivergence.Sequence = sequence
                 Finding = finding
+                Attachment = attachment
             })
         : Fields<VerificationDivergence, _>)
         |> field
@@ -75,6 +108,7 @@ module Replies =
                 |> map (Sequence.create >> Option.get) Sequence.value
             ))
         |> field "finding" _.Finding (enumeration VerificationFinding.all)
+        |> field "attachment" _.Attachment (nullable attachmentEvidence)
         |> build
 
     let private rebuildFields =
@@ -124,6 +158,7 @@ module Replies =
                 instant
                 position
                 maintenance
+                publication
                 installationFormat
                 owner
                 actors
@@ -141,6 +176,7 @@ module Replies =
                     ObservedAt = instant
                     Position = position
                     Maintenance = maintenance
+                    RecoveryPublicationGeneration = publication
                     InstallationFormat = installationFormat
                     InitialOwner = owner
                     Actors = actors
@@ -158,6 +194,7 @@ module Replies =
         |> field "observedAt" _.ObservedAt instant
         |> field "position" _.Position administrativePosition
         |> field "maintenance" _.Maintenance ResponseCodecs.registerMaintenance
+        |> field "recoveryPublicationGeneration" _.RecoveryPublicationGeneration countCodec
         |> field "installationFormat" _.InstallationFormat (integer 1L 32767L |> map int int64)
         |> field "initialOwner" _.InitialOwner (nullable ResponseCodecs.actorRef)
         |> field "actors" _.Actors countCodec
@@ -194,12 +231,35 @@ module Replies =
                 | _ -> None)
                 maintenanceFields
             variant
+                "PROJECTIONS_CURRENT"
+                (DatabaseSuccess.ProjectionsCurrent >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.ProjectionsCurrent position) -> Some position
+                | _ -> None)
+                (record id |> field "position" id administrativePosition)
+            variant
                 "REBUILT"
                 (DatabaseSuccess.Rebuilt >> Reply.Succeeded)
                 (function
                 | Reply.Succeeded(DatabaseSuccess.Rebuilt report) -> Some report
                 | _ -> None)
                 rebuildFields
+            variant
+                "ATTACHMENT_REPAIRED"
+                (DatabaseSuccess.AttachmentRepaired >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.AttachmentRepaired value) -> Some value
+                | _ -> None)
+                ((record (fun caseId id position ->
+                    {
+                        AttachmentRepairReport.CaseId = caseId
+                        BlobId = id
+                        AcceptedAt = position
+                    })
+                 : Fields<AttachmentRepairReport, _>)
+                 |> field "caseId" _.CaseId ResponseScalars.caseId
+                 |> field "blobId" _.BlobId attachmentIdentity
+                 |> field "acceptedAt" _.AcceptedAt attachmentEffect)
             variant
                 "RESTORED_INSTALLATION_ADMITTED"
                 (DatabaseSuccess.RestoredInstallationAdmitted >> Reply.Succeeded)
@@ -290,10 +350,11 @@ module Replies =
                 (function
                 | Reply.Diverged(finding, elapsed) -> Some(finding, elapsed)
                 | _ -> None)
-                ((record (fun sequence finding elapsed ->
+                ((record (fun sequence finding attachment elapsed ->
                     {
                         VerificationDivergence.Sequence = sequence
                         Finding = finding
+                        Attachment = attachment
                     },
                     elapsed)
                  : Fields<VerificationDivergence * int64, _>)
@@ -305,6 +366,7 @@ module Replies =
                          |> map (Sequence.create >> Option.get) Sequence.value
                      ))
                  |> field "finding" (fst >> _.Finding) (enumeration VerificationFinding.all)
+                 |> field "attachment" (fst >> _.Attachment) (nullable attachmentEvidence)
                  |> field "elapsedMilliseconds" snd (integer 0L SafeInteger.Maximum))
         ]
 
@@ -398,6 +460,10 @@ module Replies =
 
     let rebuild =
         function
+        | Ok {
+                 PreviousDivergence = None
+                 Position = position
+             } -> encode (Reply.Succeeded(DatabaseSuccess.ProjectionsCurrent position))
         | Ok report -> encode (Reply.Succeeded(DatabaseSuccess.Rebuilt report))
         | Error finding -> encode (Reply.Diverged(finding, 0L))
 
@@ -443,3 +509,9 @@ module Replies =
                 else
                     ExitCode.Failed
             )
+
+
+    let attachmentRepair =
+        function
+        | Ok report -> encode (Reply.Succeeded(DatabaseSuccess.AttachmentRepaired report))
+        | Error finding -> encode (Reply.Diverged(finding, 0L))

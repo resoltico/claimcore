@@ -350,10 +350,9 @@ module internal OperationStorage =
 
     /// A selected metadata page hydrates full authenticated records in a fixed number of
     /// queries. Attachment binary payloads belong to a separate store and are not acquired here.
-    let findMany connection (cipher: InstallationCipher) (operations: OperationId list) token =
+    let prepareMany connection (cipher: InstallationCipher) (operations: Guid list) token =
         task {
-            let identities =
-                operations |> List.distinct |> List.map OperationId.value |> List.toArray
+            let identities = operations |> List.distinct |> List.toArray
 
             if identities.Length = 0 then
                 return Map.empty
@@ -406,9 +405,7 @@ module internal OperationStorage =
                     let records =
                         roots
                         |> List.map (fun root ->
-                            let operation =
-                                DatabaseSession.value<Guid> 9 root
-                                |> DatabaseSession.admitted OperationId.create
+                            let operation = DatabaseSession.value<Guid> 9 root
 
                             let sequence = DatabaseSession.value<int64> 0 root
 
@@ -419,19 +416,33 @@ module internal OperationStorage =
                                 Map.tryFind sequence contentsBySequence |> Option.defaultValue []
 
                             operation,
-                            restoreRecord
-                                cipher.InstallationId
-                                (Some cipher)
-                                operation
-                                root
-                                rows
-                                compartments)
+                            fun () ->
+                                restoreRecord
+                                    cipher.InstallationId
+                                    (Some cipher)
+                                    (DatabaseSession.admitted OperationId.create operation)
+                                    root
+                                    rows
+                                    compartments)
                         |> Map.ofList
 
                     if records.Count <> roots.Length then
                         return corrupt ()
                     else
                         return records
+        }
+
+    let findMany connection cipher operations token =
+        task {
+            let! prepared =
+                prepareMany connection cipher (List.map OperationId.value operations) token
+
+            return
+                prepared
+                |> Map.toSeq
+                |> Seq.map (fun (operation, restore) ->
+                    DatabaseSession.admitted OperationId.create operation, restore ())
+                |> Map.ofSeq
         }
 
     let previous connection cipher (change: PartChange) token =

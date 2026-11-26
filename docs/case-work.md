@@ -52,6 +52,9 @@ claimcore case summary --view mine
 Responsibility leaves read permissions as they were. Dates and overdue labels use the installation's
 business date.
 
+If case or reminder membership or order changes while paging, start again from the first page.
+Report pages also restart when the facts contributing to their totals change.
+
 ## Open a case
 
 Choose **Open a case** to open the centered work dialog. On a short screen, scroll the dialog to reach **Review changes**. The register assigns a reference when you record the case, and the receipt
@@ -277,8 +280,10 @@ The CLI never silently rebases. In the browser, accepted case receipts show the 
 full available width, with Close above them; closing the receipt returns to the case workspace.
 
 If delivery is uncertain, keep the original change identity. **Unconfirmed changes** checks it
-automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
-request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.
+automatically. If browser storage blocks coordination, open **Unconfirmed changes** and choose
+**Check now** on the affected operation. Checks only read the recorded outcome. Reload retains
+the identity. Keep the original request separately if you may need to resend it. Follow
+[delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.
 
 The browser asks before leaving authored changes, a pending review or an uncertain delivery.
 Closing an untouched invalid attempt needs no discard confirmation. A Settings detour keeps the
@@ -312,9 +317,10 @@ an explanation in place of a file.
 
 ## Daily reminder digest
 
-An owner can add a digest email address to a person's profile. When the installation has SMTP
-configured, ClaimCore sends one daily prompt with counts for the person's readable assigned work.
-The message links to the Reminders queue. The in-app queue supplies the current dates and attention.
+An Owner can add a digest email address to a person's profile. With SMTP enabled, ClaimCore makes
+at most one delivery attempt per business day for an eligible recipient with reminder counts for
+readable work assigned to them. The message links to the Reminders queue, which supplies current
+dates and attention.
 See [Digest configuration](operating.md#daily-reminder-digest).
 
 ### Case reminder queue

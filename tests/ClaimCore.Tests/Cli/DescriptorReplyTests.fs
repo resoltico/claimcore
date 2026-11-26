@@ -342,9 +342,8 @@ let hostReplyPresentation =
                                 (Outcome.Succeeded(
                                     Presented.create
                                         (fun _ -> ContextScreen.logoutView ())
-                                        {
-                                            Location = "https://issuer.example.test/logout"
-                                        }
+                                        (LogoutHandoff.Provider
+                                            "https://issuer.example.test/logout")
                                 ))
                         ))
                     |> String.concat "\n"

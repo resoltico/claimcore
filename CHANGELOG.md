@@ -2,27 +2,33 @@
 
 ## [Unreleased]
 
-- Start a [fresh installation](docs/operating.md#install-a-fresh-register) for format 10. Previous databases and backups require their matching builds.
-- Replace the positional reference in `claimcore case open` with `--case-reference REF` when custom assignment is enabled. With no reference supplied, ClaimCore assigns one.
-- Update API clients for optional non-clearable opening references, pending opening previews, editable opening offers and the `REFERENCE_UNAVAILABLE` refusal.
-- Choose `CUSTOM_ALLOWED` at initialization to permit custom assignment and corrections. The default is system assigned only. Custom references stay reserved after correction or erasure.
-- Custom references are limited to 32 ASCII characters, begin with a letter and use single hyphens between groups. ClaimCore reserves the `CC-` prefix.
-- Use a trusted checkpoint at sequence one or later for rebuild and restore admission. The first owner operation binds the installation's reference policy.
-- Generated case references have 80 random bits and two check digits. They cannot be corrected. Exact lookup checks the complete reference and case work still links by Case ID.
+## [0.23.0] - 2026-11-26
+
+- Start a [fresh installation](docs/operating.md#install-a-fresh-register) for format 11. Keep previous databases and backups with their matching builds.
+- Supply the PostgreSQL trust root at `ca.pem` for Compose. Startup validates TLS before initialization and refuses an initialized cluster with no application database.
+- Prepare browser catalogs before building Web. Deploy the matching immutable catalogs with the server's verified public asset inventory.
+- For custom opening references, replace the positional reference in `claimcore case open` with `--case-reference REF`. With no reference supplied, ClaimCore assigns one.
+- Regenerate API clients for opening reference inputs, offers and previews, `REFERENCE_UNAVAILABLE`, `TRAVERSAL_CHANGED`, typed logout and identity dependency failures.
+- Update owner automation for structured attachment verification findings, `PROJECTIONS_CURRENT` and the publication generation in `status`.
+- Use a trusted checkpoint at sequence one or later for rebuild, restore admission and attachment repair. The first owner operation binds the case-reference policy.
 - Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings for Npgsql 11.0.0.
-- If you set `Application Name`, update any Npgsql connection pool metric filters that select the previous pool label.
-- PostgreSQL enforces read-only snapshots for ClaimCore's shared read and verification paths.
-- Release checks reject stale project versions in NuGet locks and require the tag and dated changelog to match the built product version.
-- Incremental F# builds refresh stale reference assemblies after a product version change.
-- Browser preferences preserve incompatible data until you explicitly reset them.
-- Browser JSON admission enforces the published nesting limit for empty and populated containers.
-- CI requires selected tests to pass, checks shipping project references, and qualifies dependency and Compose changes before merge.
-- Trace core tasks to their owners and checks in the [source guide](docs/source-guide.md). Run `bash eng/verify.sh --help` to find stages and acceptance selectors.
-- Case work, payment selection and People dialogs open in the center. Scroll the dialog to reach its actions on short screens.
-- The opening form and review show when a case reference will be assigned. Custom entry explains that the reference stays reserved after correction or erasure.
-- Web and the Keycloak login theme display the same framed ClaimCore mark.
-- Malformed case-reference links explain the reference problem and offer Find a case when search is available.
-- The [CLI integration guide](docs/integrating.md) shows executable dry-run examples for operands after `--`.
+- If you set `Application Name`, update Npgsql connection pool metric filters that select the previous pool label.
+- System-assigned references use 80 random bits and two check digits. Exact lookup validates the complete reference. System-assigned references stay fixed, and case links use Case IDs.
+- Choose `CUSTOM_ALLOWED` at initialization to permit custom references and corrections. Custom references stay reserved after correction or erasure.
+- Use up to 32 ASCII letters, digits and single separating hyphens for custom references, starting with a letter. ClaimCore reserves the `CC-` prefix.
+- Malformed case-reference links explain the issue and offer Find a case when search is available. The opening form and review identify automatic or custom reference assignment.
+- Cases, Reminders, reports and Access Requests reject stale continuations. Restart from page one. Bounded CSV exports recheck current disclosure and record audit before sending.
+- Healthy rebuilds return `PROJECTIONS_CURRENT` with no projection writes. Repairs stage rows off-lock and publish them together. Check `status` after an uncertain outcome.
+- During maintenance, use `repair-attachment` with a trusted checkpoint and exact retained bytes. Repair preserves the accepting position and refuses erased content.
+- Local readiness and valid sessions continue through discovery outages. Check `/health/identity` for sign-in and bearer dependency status.
+- Browser recovery takes over a suspended tab's in-flight check. Coordination failures pause automatic checks and leave selected manual checks available. Automatic checks resume after storage recovers.
+- Daily digest monitoring reports durable in-flight, expired and terminal counts, including uncertain relay acceptance. ClaimCore never automatically resends.
+- PostgreSQL enforces read-only snapshots for shared read and verification paths.
+- Browser preferences preserve incompatible data until you explicitly reset them. Browser JSON enforces the published nesting limit for empty and populated containers.
+- Case work, payment selection and People dialogs open in the center. Scroll the dialog to reach its actions on short screens. Web and Keycloak share the framed ClaimCore mark.
+- CI checks shipping project references and test discovery, and qualifies dependency, Compose and catalog changes. Release checks bind the tag and notes to the built product version.
+- Incremental F# builds refresh stale reference assemblies after a product version change. Release inputs check project versions in NuGet locks.
+- Build Web with Vite 8.4.0, Node type definitions 26.6.11 and oxlint-tsgolint 7.0.2009.
 
 ## [0.22.0] - 2026-11-26
 

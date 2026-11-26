@@ -180,6 +180,7 @@ let private checkpoints () =
             {
                 Sequence = Some Sequence.zero
                 Finding = VerificationFinding.CheckpointPredatesBootstrap
+                Attachment = None
             }
 
         Expect.equal

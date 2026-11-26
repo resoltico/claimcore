@@ -9,6 +9,10 @@ Use **People and access** to add accounts, update names and contact details, and
 make these changes. An auditor can review people and access without changing them. See the
 [operating guide](operating.md#access-review-and-sessions) for identity-provider and session controls.
 
+If the identity provider is temporarily unavailable, existing ClaimCore sessions continue
+under their normal limits. Sign out still ends the local session. ClaimCore reports when the
+provider handoff could not proceed.
+
 ## Digest address
 
 An Owner can use the profile edit action to set or clear a person's daily reminder digest address.
@@ -53,8 +57,9 @@ identity. The identity provider supplies any name and username hints without ver
 hint shows whether the provider verified that address. Confirm the identity with a trusted source,
 check the suggested profile details, choose roles, and type the subject to add the account.
 
-Dismiss removes a request without granting access. Requests are temporary and bounded; a later sign-in
-can make a new request. Human and service identities with the same issuer and subject stay distinct.
+Dismiss removes a request without granting access. A later sign-in can make a new request. Human
+and service identities with the same issuer and subject stay distinct. If the request list changes
+while you page through it, use **Try again** to restart from the first page.
 
 Someone registered without roles sees **No roles assigned**. A disabled account sees **Account disabled**.
 After an owner changes access, **Check access** refreshes the person's own access state. These pages do
@@ -143,8 +148,8 @@ reads of the trail itself. See [disclosure trail operations](operating.md#disclo
 
 In Settings or on the access screen, **End my ClaimCore browser sessions** ends all of your
 ClaimCore browser sessions, including the current one. The access screen exposes this action before
-registration and without roles. Ordinary **Sign out** ends the current browser session in ClaimCore
-and at the identity provider.
+registration and without roles. Ordinary **Sign out** ends the current ClaimCore browser session
+and hands off to the identity provider when its sign-out endpoint is available.
 
 An owner can select a person and choose **End this person’s ClaimCore browser sessions**. Permission
 is checked again when deletion runs. A confirmed result reports the number of stored session tickets

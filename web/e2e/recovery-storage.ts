@@ -8,7 +8,7 @@ export const recoveryRecords = (
   page.evaluate(
     (missingIsEmpty) =>
       new Promise<Record<string, unknown>[]>((resolve, reject) => {
-        const request = indexedDB.open("claimcore.recovery", 1);
+        const request = indexedDB.open("claimcore.recovery");
         request.onupgradeneeded = () => {
           request.transaction?.abort();
           if (missingIsEmpty) {

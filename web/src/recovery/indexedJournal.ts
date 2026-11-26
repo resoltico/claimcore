@@ -7,6 +7,8 @@ import {
   sameRecoveryScope,
 } from "../protocol/recoveryJournal";
 const storeName = "attempts";
+const confirmedName = "confirmed";
+const handoffLifetime = 60 * 60 * 1000;
 const key = (record: RecoveryRecord): [string, string, string, string] => [
   record.serviceOrigin,
   record.installationId,
@@ -26,7 +28,7 @@ const sameAttempt = (left: unknown, right: RecoveryRecord): boolean =>
   left.act === right.act;
 const open = (factory: IDBFactory, name: string): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
-    const request = factory.open(name, 1);
+    const request = factory.open(name, 2);
     let refused = false;
     request.onblocked = () => {
       refused = true;
@@ -35,8 +37,11 @@ const open = (factory: IDBFactory, name: string): Promise<IDBDatabase> =>
     request.onerror = () => {
       reject(new Error("Recovery storage is unavailable."));
     };
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(storeName);
+    request.onupgradeneeded = (event) => {
+      if (event.oldVersion === 0) {
+        request.result.createObjectStore(storeName);
+      }
+      request.result.createObjectStore(confirmedName);
     };
     request.onsuccess = () => {
       const database = request.result;
@@ -55,11 +60,12 @@ const transaction = async <T>(
   name: string,
   mode: IDBTransactionMode,
   action: (store: IDBObjectStore, complete: (value: T) => void) => void,
+  stores: string[] = [storeName],
 ): Promise<T> => {
   const database = await open(factory, name);
   try {
     return await new Promise<T>((resolve, reject) => {
-      const tx = database.transaction(storeName, mode);
+      const tx = database.transaction(stores, mode);
       let value: T;
       tx.oncomplete = () => {
         resolve(value);
@@ -71,7 +77,7 @@ const transaction = async <T>(
         reject(new Error("Recovery storage transaction failed."));
       };
       try {
-        action(tx.objectStore(storeName), (result) => {
+        action(tx.objectStore(stores[0]!), (result) => {
           value = result;
         });
       } catch {
@@ -153,6 +159,63 @@ const listAttempts = (
     cursor.continue();
   };
 };
+const retainConfirmation = (
+  store: IDBObjectStore,
+  record: RecoveryRecord,
+  complete: () => void,
+) => {
+  const lookup = store.get(key(record));
+  lookup.onsuccess = () => {
+    if (lookup.result === undefined) {
+      complete();
+      return;
+    }
+    if (!sameAttempt(lookup.result, record)) {
+      store.transaction.abort();
+      return;
+    }
+    const confirmed = store.transaction.objectStore(confirmedName);
+    confirmed.put({ record, until: Date.now() + handoffLifetime }, key(record));
+    store.delete(key(record)).onsuccess = complete;
+  };
+};
+
+const listConfirmations = (
+  store: IDBObjectStore,
+  scope: RecoveryScope,
+  complete: (records: RecoveryRecord[]) => void,
+) => {
+  const results: RecoveryRecord[] = [];
+  const request = store.openCursor();
+  request.onsuccess = () => {
+    const cursor = request.result;
+    if (cursor === null) {
+      complete(results);
+      return;
+    }
+    const value: unknown = cursor.value;
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("record" in value) ||
+      !isRecoveryRecord(value.record) ||
+      !("until" in value) ||
+      typeof value.until !== "number" ||
+      !validKey(cursor.key) ||
+      JSON.stringify(key(value.record)) !== JSON.stringify(cursor.key)
+    ) {
+      store.transaction.abort();
+      return;
+    }
+    if (value.until <= Date.now()) {
+      cursor.delete();
+    } else if (sameRecoveryScope(scope, value.record)) {
+      results.push(value.record);
+    }
+    cursor.continue();
+  };
+};
+
 /** Per-attempt transactions neither overwrite nor clear another pending identity. */
 export const createIndexedJournal = (
   factory: IDBFactory,
@@ -168,6 +231,28 @@ export const createIndexedJournal = (
         complete(undefined);
       });
     }),
+  confirm: (record) =>
+    transaction<void>(
+      factory,
+      name,
+      "readwrite",
+      (store, complete) => {
+        retainConfirmation(store, record, () => {
+          complete(undefined);
+        });
+      },
+      [storeName, confirmedName],
+    ),
+  confirmed: (scope) =>
+    transaction<ReadonlyArray<RecoveryRecord>>(
+      factory,
+      name,
+      "readwrite",
+      (store, complete) => {
+        listConfirmations(store, scope, complete);
+      },
+      [confirmedName],
+    ),
   list: (scope) =>
     transaction<ReadonlyArray<RecoveryRecord>>(factory, name, "readonly", (store, complete) => {
       listAttempts(store, scope, complete);
@@ -214,5 +299,7 @@ export const browserJournal: RecoveryJournal = {
     return publication;
   },
   remove: (record) => createIndexedJournal(globalThis.indexedDB).remove(record).then(publish),
+  confirm: (record) => createIndexedJournal(globalThis.indexedDB).confirm!(record).then(publish),
+  confirmed: (scope) => createIndexedJournal(globalThis.indexedDB).confirmed!(scope),
   list: (scope) => createIndexedJournal(globalThis.indexedDB).list(scope),
 };

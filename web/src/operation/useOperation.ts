@@ -1,3 +1,4 @@
+import { useRecoverySubscription } from "../recovery/RecoveryContext";
 import { OperationFeedbackContext } from "../hooks/OperationFeedbackContext";
 import { initialSubmissionBinding } from "./submissionAssembly";
 import { apiEndpoints, type CurrentCase, type OperationReceipt } from "../api/service";
@@ -201,6 +202,7 @@ const useEffects = (
   options: Options,
   ownerVerified: boolean,
 ) => {
+  const subscribe = useRecoverySubscription();
   useEffect(() => {
     if (
       !ownerVerified ||
@@ -209,6 +211,20 @@ const useEffects = (
       options.recoveryScope === undefined
     ) {
       return;
+    }
+    if (subscribe !== null) {
+      return subscribe(state.delivery.phase.source.prepared.input.operationId, (reply, owner) => {
+        if (
+          owner.credential === options.credential &&
+          sameOwnerScope(owner, ownerScope(options.recoveryScope, options.contextEpoch ?? 0))
+        ) {
+          dispatch({
+            type: "CHECK_OPERATION",
+            identity: identity(options, state.disclosed.context.generation),
+            reply,
+          });
+        }
+      });
     }
     const timer = window.setTimeout(() => {
       dispatch({
@@ -219,7 +235,14 @@ const useEffects = (
     return () => {
       window.clearTimeout(timer);
     };
-  }, [state.delivery.phase, state.disclosed.context.generation, dispatch, options, ownerVerified]);
+  }, [
+    state.delivery.phase,
+    state.disclosed.context.generation,
+    dispatch,
+    options,
+    ownerVerified,
+    subscribe,
+  ]);
   const started = useRef(new Set<string>());
   const alive = useRef(true);
   const latest = useRef({

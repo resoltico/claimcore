@@ -37,12 +37,12 @@
     <Compile Include="DigestConfiguration.fs" />
     <Compile Include="DigestSmtp.fs" />
     <Compile Include="Configuration.fs" />
-    <Compile Include="OidcStartup.fs" />
+    <Compile Include="IssuerMetadata.fs" />
     <Compile Include="HttpBody.fs" />
     <Compile Include="Headers.fs" />
     <Compile Include="PublicAssets.fs" />
     <Compile Include="AuthMiddleware.fs" />
-    <Compile Include="CatalogRoutes.fs" />
+    <Compile Include="NativeCatalog.fs" />
     <Compile Include="RequestGate.fs" />
     <Compile Include="AttachmentMultipart.fs" />
     <Compile Include="RequestLog.fs" />
@@ -79,7 +79,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>
   <Target Name="ConsumeFrontendAssets" BeforeTargets="ComputeFilesToPublish">
-    <Error Condition="!Exists('$(WebClientDirectory)/dist/index.html')" Text="Build frontend assets with npm --prefix web run build before publishing." />
+    <Error Condition="!Exists('$(WebClientDirectory)/dist/index.html')" Text="Prepare catalogs and build Web with npm --prefix web run prepare:catalogs and npm --prefix web run build before publishing." />
+    <Error Condition="!Exists('$(WebClientDirectory)/dist/catalog-manifest.json') Or !Exists('$(WebClientDirectory)/dist/public-assets.json')" Text="The built Web package is missing its public or catalog inventory." />
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; validate-browser-assets &quot;$(WebClientDirectory)/dist&quot;" />
     <ItemGroup>
       <FrontendAsset Include="$(WebClientDirectory)/dist/**/*" />
       <ResolvedFileToPublish Include="@(FrontendAsset)">

@@ -9,6 +9,11 @@ import { App } from "./shell/App";
 import "./shell/login.css";
 import "./ui/layout.css";
 
+import catalogAssets from "virtual:claimcore-catalogs";
+import { installCatalogAssets } from "./api/catalog";
+
+installCatalogAssets(catalogAssets);
+
 const root = document.getElementById("root");
 if (root === null) {
   throw new Error("Missing ClaimCore root element.");

@@ -13,14 +13,14 @@ open DotNet.Testcontainers.Configurations
 let private request (name: string) (key: RSA) =
     CertificateRequest(name, key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
 
-let private rootCertificate () =
+let rootCertificate () =
     use key = RSA.Create 2048
     let root = request "CN=ClaimCore synthetic Mailpit root" key
     root.CertificateExtensions.Add(X509BasicConstraintsExtension(true, false, 0, true))
     root.CertificateExtensions.Add(X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, true))
     root.CreateSelfSigned(DateTimeOffset.UtcNow.AddHours(-1.), DateTimeOffset.UtcNow.AddDays 1.)
 
-let private serverCertificate (root: X509Certificate2) (key: RSA) =
+let serverCertificate (root: X509Certificate2) (key: RSA) =
     let server = request "CN=localhost" key
     let names = SubjectAlternativeNameBuilder()
     names.AddDnsName "localhost"

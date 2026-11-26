@@ -3963,14 +3963,6 @@
     "text": "المتابعات المستحقة اليوم",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.label": {
-    "text": "تم الإرسال",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.label": {
-    "text": "تعذّر الإرسال",
-    "source": "031a8f0f659d"
-  },
   "digestOutcome.SKIPPED_EMPTY.label": {
     "text": "لا توجد تذكيرات للإرسال",
     "source": "4a763133b808"
@@ -4031,14 +4023,6 @@
     "text": "المتابعات المستحقة اليوم",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.shortLabel": {
-    "text": "تم الإرسال",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.shortLabel": {
-    "text": "تعذّر الإرسال",
-    "source": "031a8f0f659d"
-  },
   "digestCount.OVERDUE_DEADLINES.description": {
     "text": "المواعيد النهائية المعلّقة التي مضى تاريخ استحقاقها.",
     "source": "130012281e15"
@@ -4058,14 +4042,6 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
     "text": "المتابعات المعلّقة المستحقة اليوم.",
     "source": "2fdacdd03551"
-  },
-  "digestOutcome.SENT.description": {
-    "text": "قبل خادم ترحيل البريد الملخص اليومي.",
-    "source": "a7e4ddb9f020"
-  },
-  "digestOutcome.FAILED.description": {
-    "text": "فشلت محاولة إرسال الملخص اليومي.",
-    "source": "d5f2b3e0e0f0"
   },
   "digestOutcome.SKIPPED_EMPTY.shortLabel": {
     "text": "فارغ",
@@ -4695,6 +4671,66 @@
   "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
     "source": "a743fa65aff6",
     "text": "اختر سياسة مدعومة لمراجع الملفات.",
+    "machineMade": true
+  },
+  "diagnostic.TRAVERSAL_CHANGED": {
+    "text": "تغيّرت النتائج. ابدأ مجددًا من الصفحة الأولى.",
+    "source": "665b6f15d945",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNAVAILABLE": {
+    "text": "موفّر الهوية غير متاح مؤقتًا.",
+    "source": "9e961be2f3bb",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNTRUSTED": {
+    "text": "تعذّر التحقق من موفّر الهوية.",
+    "source": "25a9d3b553db",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.label": {
+    "text": "قبّله خادم الترحيل",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.description": {
+    "text": "قبّله خادم الترحيل",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.shortLabel": {
+    "text": "قبّله خادم الترحيل",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.label": {
+    "text": "فشل قبل قبول خادم الترحيل",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.description": {
+    "text": "فشل قبل قبول خادم الترحيل",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.shortLabel": {
+    "text": "فشل قبل قبول خادم الترحيل",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.label": {
+    "text": "قبول خادم الترحيل غير معلوم",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.description": {
+    "text": "قبول خادم الترحيل غير معلوم",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.shortLabel": {
+    "text": "قبول خادم الترحيل غير معلوم",
+    "source": "77ee1f586df5",
     "machineMade": true
   }
 }

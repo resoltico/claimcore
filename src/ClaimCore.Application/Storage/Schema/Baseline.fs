@@ -221,6 +221,21 @@ module internal Baseline =
             return InstallationCipher.unwrap masterKey installationId wrapped
         }
 
+    // The caller holds the ledger head lock. Recovery publications and key rotation use
+    // the same order, including when the wrapping key changes without changing the data key.
+    let advanceRecoveryPublication connection token =
+        task {
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "UPDATE claimcore.register_maintenance SET publication_generation=publication_generation+1 WHERE singleton"
+                    [||]
+                    token
+
+            if changed <> 1 then
+                raise (RecordCorruptException "Register maintenance state is absent.")
+        }
+
     let rotate (source: NpgsqlDataSource) masterKey newMasterKey token =
         DatabaseSession.transaction
             source
@@ -230,6 +245,14 @@ module internal Baseline =
                 task {
                     do! OwnerAdmission.require connection token
                     let! installation = require connection token
+
+                    let! _ =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT sequence FROM claimcore.lock_ledger_head()"
+                            [||]
+                            token
+
                     let! wrapped = wrappedKey true connection installation.InstallationId token
 
                     use cipher =
@@ -242,6 +265,7 @@ module internal Baseline =
                             [| box (cipher.Wrap newMasterKey); box installation.InstallationId |]
                             token
 
+                    do! advanceRecoveryPublication connection token
                     do! DatabaseSession.commit transaction token
                     return installation.InstallationId
                 })

@@ -370,6 +370,11 @@
     "text": "No hay cambios sin confirmar.",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "La recuperación automática está en pausa. Compruebe manualmente una operación guardada o restablezca el acceso al almacenamiento del navegador para reanudar las comprobaciones automáticas.",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "No se pueden leer ni actualizar las identidades de recuperación. Se conservan los registros existentes. Restablece el acceso al almacenamiento o resuelve los registros anteriores con el cliente correspondiente antes de volver a intentarlo.",
     "source": "e2277d9e955f"

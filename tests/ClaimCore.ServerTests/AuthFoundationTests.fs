@@ -185,15 +185,15 @@ let private middlewarePolicy () =
     Expect.isTrue oidc.UsePkce "BFF uses PKCE"
     Expect.isFalse oidc.SaveTokens "BFF does not save tokens in the cookie ticket"
 
-    for handler in [ bearer.BackchannelHttpHandler; oidc.BackchannelHttpHandler ] do
-        let https =
-            handler
-            |> Option.ofObj
-            |> Option.defaultWith (fun () -> failtest "An issuer backchannel is required")
-            :?> HttpClientHandler
+    Expect.isTrue
+        (obj.ReferenceEquals(bearer.ConfigurationManager, oidc.ConfigurationManager))
+        "Both credential handlers use the same validated configuration manager"
 
-        Expect.isTrue https.CheckCertificateRevocationList "Issuer key fetches check revocation"
-        Expect.isFalse https.AllowAutoRedirect "Issuer backchannels do not follow redirects"
+    Expect.isTrue (obj.ReferenceEquals(bearer.Backchannel, oidc.Backchannel)) "Both use issuer TLS"
+
+    use https = AuthMiddleware.productionTrustHandler ()
+    Expect.isTrue https.CheckCertificateRevocationList "Issuer key fetches check revocation"
+    Expect.isFalse https.AllowAutoRedirect "Issuer backchannels do not follow redirects"
 
     Expect.throws
         (fun () ->
@@ -273,7 +273,14 @@ let private pushedLanguage () =
                         PushedAuthorizationRequestEndpoint = pushed
                     )
 
-                options.BackchannelHttpHandler <- backchannel
+                options.ConfigurationManager <-
+                    Microsoft.IdentityModel.Protocols.StaticConfigurationManager<
+                        OpenIdConnectConfiguration
+                     >(
+                        nonNull options.Configuration
+                    )
+
+                options.Backchannel <- new HttpClient(backchannel, false)
         )
         |> ignore
 

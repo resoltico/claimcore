@@ -12,8 +12,13 @@ type internal ReadTx
         installation: Installation,
         cipher: InstallationCipher,
         observedAt: DateTimeOffset,
-        token: CancellationToken
+        token: CancellationToken,
+        ?exportSnapshot: bool
     ) =
+    member _.ForExport =
+        ReadTx(connection, installation, cipher, observedAt, token, exportSnapshot = true)
+
+    member _.ExportSnapshot = defaultArg exportSnapshot false
     member _.Connection = connection
     member _.InstallationId = installation.InstallationId
     member _.CaseReferencePolicy = installation.CaseReferencePolicy

@@ -21,6 +21,7 @@ module internal InstallationStatus =
             let! _ = Transactions.configure connection Transactions.timeouts token
             let! instant = SessionRows.now connection token
             let! mode = RegisterMaintenanceStore.read connection token
+            let! generation = RegisterMaintenanceStore.publicationGeneration connection token
 
             let! owner =
                 DatabaseSession.rows
@@ -59,6 +60,7 @@ module internal InstallationStatus =
                                 (DatabaseSession.value 0 row)
                                 (DatabaseSession.value 1 row)
                         Maintenance = mode
+                        RecoveryPublicationGeneration = generation
                         InstallationFormat = InstallationFormat.Current
                         InitialOwner = owner
                         Actors = DatabaseSession.value 2 row

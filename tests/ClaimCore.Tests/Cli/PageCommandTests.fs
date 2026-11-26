@@ -464,6 +464,86 @@ let snapshotCsvTests =
         ]
 
 [<Tests>]
+let accessRequestRestart =
+    testCase
+        "native access-request traversal refuses a moved inbox and a fresh command starts at page one"
+        (fun () ->
+            let prepared =
+                Grammar.prepare
+                    (fun () -> failtest "Read allocated an operation")
+                    [ "people"; "requests"; "--all"; "--format"; "json" ]
+                |> CaseBuilders.accepted
+
+            let requester =
+                PrincipalKey.human "https://issuer.example/" "waiting" |> CaseBuilders.accepted
+
+            let first =
+                {
+                    AccessRequestPage.Basis = DomainInputs.workBasis
+                    Items =
+                        [
+                            {
+                                Principal = requester
+                                FirstSeen = moment
+                                LastSeen = moment
+                                Claims = RequesterClaims.empty
+                            }
+                        ]
+                    NextCursor = Some "pending-inbox-page"
+                }
+
+            let run (replies: Outcome<AccessRequestPage> list) =
+                let frames = ResizeArray<Invocation>()
+                let queue = Collections.Generic.Queue<Outcome<AccessRequestPage>>(replies)
+                use errors = new MemoryStream()
+
+                let io =
+                    {
+                        Exchange =
+                            fun frame _ ->
+                                frames.Add frame
+
+                                CliReply.result
+                                    frame
+                                    (Api.peopleRequests.Output.Write(
+                                        RepresentationReply.Data(queue.Dequeue())
+                                    ))
+                                |> CaseBuilders.accepted
+                                |> Task.FromResult
+                        Deliver = fun _ _ -> ()
+                        Output = ignore
+                        Errors = fun bytes -> errors.Write bytes
+                    }
+
+                let code =
+                    PageCommand.run io prepared CancellationToken.None
+                    |> _.GetAwaiter().GetResult()
+
+                let cursors =
+                    frames |> Seq.map (Frames.input >> JsonValue.tryMember "cursor") |> Seq.toList
+
+                code, cursors, Encoding.UTF8.GetString(errors.ToArray())
+
+            let status, requests, stderr =
+                run [ Outcome.Succeeded first; Outcome.Rejected Refusal.TraversalChanged ]
+
+            Expect.notEqual status 0 "A partial traversal exits nonzero"
+
+            Expect.equal
+                requests
+                [ None; Some(JsonValue.String "pending-inbox-page") ]
+                "Refusal stops paging"
+
+            Expect.stringContains
+                stderr
+                "Stopped at cursor pending-inbox-page."
+                "Stable continuation diagnostic"
+
+            let status, requests, _ = run [ Outcome.Succeeded { first with NextCursor = None } ]
+            Expect.equal status 0 "A fresh command succeeds"
+            Expect.equal requests [ None ] "The fresh command requests page one")
+
+[<Tests>]
 let tests =
     testList
         "paged export and traversal"

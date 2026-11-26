@@ -5,6 +5,7 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Threading
 open ClaimCore.HostSecurity
+open ClaimCore.Domain
 open MailKit
 open MailKit.Net.Smtp
 open MailKit.Security
@@ -58,12 +59,30 @@ module internal DigestSmtp =
                 | DigestSmtpTls.StartTls -> SecureSocketOptions.StartTls
 
             use client = new Client(configuration.TrustRoot)
-            do! client.ConnectAsync(configuration.Host, configuration.Port, secure, ct)
+            let mutable submitting = false
 
-            match configuration.Credentials with
-            | None -> ()
-            | Some(user, password) -> do! client.AuthenticateAsync(user, password, ct)
+            try
+                do! client.ConnectAsync(configuration.Host, configuration.Port, secure, ct)
 
-            let! _ = client.SendAsync(SendRequest(message), ct)
-            return ()
+                match configuration.Credentials with
+                | None -> ()
+                | Some(user, password) -> do! client.AuthenticateAsync(user, password, ct)
+
+                ct.ThrowIfCancellationRequested()
+                submitting <- true
+                let! _ = client.SendAsync(SendRequest(message), ct)
+                return DigestRelayResult.Accepted
+            with
+            | :? SmtpCommandException as error when
+                error.ErrorCode = SmtpErrorCode.SenderNotAccepted
+                || error.ErrorCode = SmtpErrorCode.RecipientNotAccepted
+                || error.ErrorCode = SmtpErrorCode.MessageNotAccepted
+                ->
+                return DigestRelayResult.Refused
+            | _ ->
+                return
+                    if submitting then
+                        DigestRelayResult.Uncertain
+                    else
+                        DigestRelayResult.Refused
         }

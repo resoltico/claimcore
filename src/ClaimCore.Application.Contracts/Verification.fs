@@ -11,6 +11,7 @@ type VerificationFinding =
     | OperationEffectGroup
     | EntryHash
     | Commitment
+    | MissingRoot
     | PayloadFormat
     | RevisionSequence
     | HistoryStart
@@ -50,10 +51,30 @@ type VerificationFinding =
     | ExpiryFrontier
     | ExpectedPosition
 
+[<RequireQualifiedAccess>]
+type AttachmentEvidenceIssue =
+    | Missing
+    | Extra
+    | Mismatched
+    | Unreadable
+
+module AttachmentEvidenceIssue =
+    let vocabulary =
+        Vocabulary.ofUnion<AttachmentEvidenceIssue> "issue" TokenCasing.ScreamingSnake None
+
+type AttachmentEvidence =
+    {
+        Issue: AttachmentEvidenceIssue
+        CaseId: CaseId option
+        AttachmentId: AttachmentId option
+        EffectIndex: int option
+    }
+
 type VerificationDivergence =
     {
         Sequence: Sequence option
         Finding: VerificationFinding
+        Attachment: AttachmentEvidence option
     }
 
 [<RequireQualifiedAccess>]
@@ -80,4 +101,11 @@ type RestoreAdmissionReport =
     {
         Checkpoint: InstallationCheckpoint
         InvalidatedSessions: int64
+    }
+
+type AttachmentRepairReport =
+    {
+        CaseId: CaseId
+        BlobId: AttachmentId
+        AcceptedAt: EffectPosition
     }

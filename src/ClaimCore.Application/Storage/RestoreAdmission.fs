@@ -23,63 +23,70 @@ module internal RestoreAdmission =
         (handle: MaintenanceHandle)
         (token: CancellationToken)
         =
-        DatabaseSession.transaction
-            source
-            System.Data.IsolationLevel.ReadCommitted
-            token
-            (fun connection transaction ->
-                task {
-                    do! OwnerAdmission.require connection token
-                    let! _ = Transactions.configure connection Transactions.timeouts token
-                    let! _ = Transactions.head connection token
-                    let! installation = Baseline.require connection token
+        task {
+            let! prepared =
+                RegisterMaintenanceStore.prepare
+                    source
+                    masterKey
+                    handle
+                    token
+                    (fun connection publication cipher ->
+                        task {
+                            let installation = publication.Installation
 
-                    use! cipher =
-                        Baseline.loadCipher connection installation.InstallationId masterKey token
-
-                    do! RegisterMaintenanceStore.requireActive handle connection token
-
-                    match
-                        CheckpointEvidence.trustedInstallation installation.InstallationId trusted
-                    with
-                    | Error finding -> return Error finding
-                    | Ok() ->
-                        let! history =
-                            Verification.authoritative
-                                connection
-                                installation
-                                cipher
-                                (Some trusted.Position)
-                                token
-
-                        match history with
-                        | Error finding -> return Error finding
-                        | Ok _ ->
-                            match trusted.ExpiredBefore with
-                            | Some cutoff ->
-                                let! _ = ExpiryFrontierStorage.advance connection cutoff token
-                                ()
-                            | None -> ()
-
-                            let! removed =
-                                DatabaseSession.execute
-                                    connection
-                                    "DELETE FROM claimcore.sessions"
-                                    [||]
-                                    token
-
-                            let! checkpoint =
-                                CheckpointEvidence.read
-                                    connection
+                            match
+                                CheckpointEvidence.trustedInstallation
                                     installation.InstallationId
-                                    token
+                                    trusted
+                            with
+                            | Error finding -> return Error finding
+                            | Ok() ->
+                                let! history =
+                                    Verification.authoritative
+                                        connection
+                                        installation
+                                        cipher
+                                        (Some trusted.Position)
+                                        token
 
-                            do! DatabaseSession.commit transaction token
+                                return history |> Result.map (fun _ -> publication)
+                        })
 
-                            return
-                                Ok
-                                    {
-                                        Checkpoint = checkpoint
-                                        InvalidatedSessions = int64 removed
-                                    }
-                })
+            match prepared with
+            | Error finding -> return Error finding
+            | Ok publication ->
+                return!
+                    RegisterMaintenanceStore.publish
+                        source
+                        masterKey
+                        publication
+                        token
+                        (fun connection _ ->
+                            task {
+                                match trusted.ExpiredBefore with
+                                | Some cutoff ->
+                                    let! _ = ExpiryFrontierStorage.advance connection cutoff token
+                                    ()
+                                | None -> ()
+
+                                let! removed =
+                                    DatabaseSession.execute
+                                        connection
+                                        "DELETE FROM claimcore.sessions"
+                                        [||]
+                                        token
+
+                                let! checkpoint =
+                                    CheckpointEvidence.read
+                                        connection
+                                        publication.Installation.InstallationId
+                                        token
+
+                                return
+                                    Ok
+                                        {
+                                            Checkpoint = checkpoint
+                                            InvalidatedSessions = int64 removed
+                                        }
+                            })
+        }

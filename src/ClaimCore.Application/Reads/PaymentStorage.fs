@@ -267,50 +267,70 @@ module internal PaymentStorage =
     let owned connection parent token =
         projectionsFor connection (Some parent) token
 
-    let restore connection (payment: PaymentProjectionRow) token =
+    let paymentTable =
+        ProjectionWrite.table
+            "case_payments"
+            "case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,currency,direction,reference,payee_id,removed"
+            "$1,$2,$3,$4,$5::date,$6,$7,$8,$9,$10,$11"
+            "ON CONFLICT(payment_id) DO UPDATE SET payment_date=EXCLUDED.payment_date,paid_amount=EXCLUDED.paid_amount,currency=EXCLUDED.currency,direction=EXCLUDED.direction,reference=EXCLUDED.reference,payee_id=EXCLUDED.payee_id,removed=EXCLUDED.removed WHERE claimcore.case_payments.case_id=EXCLUDED.case_id AND claimcore.case_payments.accepting_sequence=EXCLUDED.accepting_sequence AND claimcore.case_payments.effect_index=EXCLUDED.effect_index"
+
+    let paymentValues (payment: PaymentProjectionRow) =
+        let entry, removed =
+            match payment.Content with
+            | PaymentProjectionContent.Cleared removed -> None, removed
+            | PaymentProjectionContent.Available(entry, removed) -> Some entry, removed
+
+        let optional = DatabaseSession.parameter
+
+        [|
+            box (CaseId.value payment.CaseId)
+            box (OperationId.value payment.PaymentId)
+            box (Sequence.value (EffectPosition.sequence payment.Position))
+            box (EffectPosition.index payment.Position)
+            optional (entry |> Option.map (PaymentEntry.date >> CalendarDate.value))
+            optional (entry |> Option.map (PaymentEntry.amount >> Amount.value))
+            optional (entry |> Option.map (PaymentEntry.money >> Money.currency))
+            optional (entry |> Option.map (PaymentEntry.direction >> PaymentDirection.token))
+            optional (entry |> Option.bind PaymentEntry.reference |> Option.map Identifier.format)
+            optional (entry |> Option.bind PaymentEntry.payee |> Option.map PartyId.value)
+            box removed
+        |]
+
+    let restore connection payment token =
         task {
-            let entry, removed =
-                match payment.Content with
-                | PaymentProjectionContent.Cleared removed -> None, removed
-                | PaymentProjectionContent.Available(entry, removed) -> Some entry, removed
-
-            let optional = DatabaseSession.parameter
-
             let! changed =
-                DatabaseSession.execute
-                    connection
-                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,currency,direction,reference,payee_id,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7,$8,$9,$10,$11) ON CONFLICT(payment_id) DO UPDATE SET payment_date=EXCLUDED.payment_date,paid_amount=EXCLUDED.paid_amount,currency=EXCLUDED.currency,direction=EXCLUDED.direction,reference=EXCLUDED.reference,payee_id=EXCLUDED.payee_id,removed=EXCLUDED.removed WHERE claimcore.case_payments.case_id=EXCLUDED.case_id AND claimcore.case_payments.accepting_sequence=EXCLUDED.accepting_sequence AND claimcore.case_payments.effect_index=EXCLUDED.effect_index"
-                    [|
-                        box (CaseId.value payment.CaseId)
-                        box (OperationId.value payment.PaymentId)
-                        box (Sequence.value (EffectPosition.sequence payment.Position))
-                        box (EffectPosition.index payment.Position)
-                        optional (entry |> Option.map (PaymentEntry.date >> CalendarDate.value))
-                        optional (entry |> Option.map (PaymentEntry.amount >> Amount.value))
-                        optional (entry |> Option.map (PaymentEntry.money >> Money.currency))
-                        optional (
-                            entry |> Option.map (PaymentEntry.direction >> PaymentDirection.token)
-                        )
-                        optional (
-                            entry
-                            |> Option.bind PaymentEntry.reference
-                            |> Option.map Identifier.format
-                        )
-                        optional (
-                            entry |> Option.bind PaymentEntry.payee |> Option.map PartyId.value
-                        )
-                        box removed
-                    |]
-                    token
+                ProjectionWrite.insert connection paymentTable (paymentValues payment) token
 
             if changed <> 1 then
                 raise (RecordCorruptException "Payment projection restoration failed.")
         }
 
+    let totalsTable =
+        ProjectionWrite.table
+            "case_payment_totals"
+            "case_id,currency,paid,returned"
+            "$1,$2,$3::numeric,$4::numeric"
+            ""
+
+    let private formattedTotals totals =
+        totals
+        |> Map.toList
+        |> List.map (fun (currency, (bucket: CurrencyPaymentTotals)) ->
+            Currency.format currency,
+            DecimalTotal.format bucket.Paid,
+            DecimalTotal.format bucket.Returned)
+
+    let totalsValues id totals =
+        formattedTotals totals
+        |> Seq.map (fun (currency, paid, returned) ->
+            [| box (CaseId.value id); box currency; box paid; box returned |])
+
     let updateTotals connection id totals token =
         task {
-            let entries = Map.toList totals
-            let currencies = entries |> List.map (fst >> Currency.format) |> List.toArray
+            let entries = formattedTotals totals
+
+            let currencies =
+                entries |> List.map (fun (currency, _, _) -> currency) |> List.toArray
 
             let! _ =
                 DatabaseSession.execute
@@ -327,22 +347,10 @@ module internal PaymentStorage =
                         [|
                             box (CaseId.value id)
                             box currencies
+                            box (entries |> List.map (fun (_, paid, _) -> paid) |> List.toArray)
                             box (
                                 entries
-                                |> List.map (
-                                    snd
-                                    >> (fun (bucket: CurrencyPaymentTotals) -> bucket.Paid)
-                                    >> DecimalTotal.format
-                                )
-                                |> List.toArray
-                            )
-                            box (
-                                entries
-                                |> List.map (
-                                    snd
-                                    >> (fun (bucket: CurrencyPaymentTotals) -> bucket.Returned)
-                                    >> DecimalTotal.format
-                                )
+                                |> List.map (fun (_, _, returned) -> returned)
                                 |> List.toArray
                             )
                         |]

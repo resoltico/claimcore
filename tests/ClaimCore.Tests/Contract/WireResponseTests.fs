@@ -214,9 +214,7 @@ let private frames () =
                         (Outcome.Succeeded(
                             Presented.create
                                 (fun _ -> Screen.create [])
-                                {
-                                    Location = "https://issuer.example.test/logout"
-                                }
+                                (LogoutHandoff.Provider "https://issuer.example.test/logout")
                         ))
                 )
         }

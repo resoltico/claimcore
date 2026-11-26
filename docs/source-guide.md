@@ -20,7 +20,9 @@ checkout and choose broader verification.
    [totals](../src/ClaimCore.Presentation/Screens/CaseTotals.fs) HUMAN presenter.
 3. Run the [worklist tests](../tests/ClaimCore.IntegrationTests/Work/WorklistQueryTests.fs) with
    `FullyQualifiedName~PostgreSQL worklist contracts` for filters, ordering
-   and cursor binding. Pair it with [reporting](../tests/ClaimCore.IntegrationTests/Cases/CaseReportingTests.fs) using
+   and cursor binding. [CaseReferenceTests](../tests/ClaimCore.IntegrationTests/Operations/CaseReferenceTests.fs)
+   checks that a reference change which moves a case across a cursor requires a fresh traversal.
+   Pair the worklist checks with [reporting](../tests/ClaimCore.IntegrationTests/Cases/CaseReportingTests.fs) using
    `FullyQualifiedName~reporting with the published case selection` and the unit filter
    `FullyQualifiedName~pure query selections` for selection and access boundaries.
 
@@ -71,16 +73,17 @@ checkout and choose broader verification.
    [useOperation](../web/src/operation/useOperation.ts) binds browser effects.
    The [recovery banner](../web/src/features/recovery/RecoveryBanner.tsx) opens the
    [recovery panel](../web/src/features/recovery/RecoveryPanel.tsx).
-   [RecoveryContext](../web/src/recovery/RecoveryContext.tsx) checks journaled attempts, and
-   [OperationLookup](../web/src/features/recovery/OperationLookup.tsx) handles manual lookup.
+   [RecoveryContext](../web/src/recovery/RecoveryContext.tsx) owns the scoped journal and
+   [recoveryLookup](../web/src/recovery/recoveryLookup.ts) owns browser scheduling and read leases.
+   [OperationLookup](../web/src/features/recovery/OperationLookup.tsx) handles direct lookup by ID.
    [Owner scope](../web/src/protocol/ownerScope.ts) binds active edits to the session. The
    [journal protocol](../web/src/protocol/recoveryJournal.ts) retains principal scope across sessions
    and supplies durable records for the [IndexedDB adapter](../web/src/recovery/indexedJournal.ts).
    The [CLI recovery component](../src/ClaimCore.Cli/Recovery/) owns its local recovery records.
 3. Run the [lookup tests](../tests/ClaimCore.IntegrationTests/Operations/OperationLookupTests.fs) with
    `FullyQualifiedName~Bounded operation lookup` for pending and final
-   lookup and disclosure. The [recovery journal spec](../web/e2e/recovery-journal.spec.ts) and
-   [browser settlement test](../web/tests/unit/operation/OperationSettlement.test.tsx)
+   lookup and disclosure. The [recovery journal spec](../web/e2e/recovery-journal.spec.ts),
+   [scheduler spec](../web/e2e/recovery-scheduler.spec.ts) and [browser settlement test](../web/tests/unit/operation/OperationSettlement.test.tsx)
    distinguish status lookup from retrying a submission.
 
 ## Running the checks

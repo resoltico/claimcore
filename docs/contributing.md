@@ -21,8 +21,20 @@ npm --prefix web ci
 dotnet build ClaimCore.slnx --configuration Debug --no-restore
 ```
 
-Ordinary .NET builds do not run npm or generation. The frontend builds independently with
-`npm --prefix web run build`. Publish the complete apphost directory, including its notices and assets.
+Ordinary .NET builds do not run npm or generation. From a clean checkout, prepare browser
+catalogs with `npm --prefix web run prepare:catalogs`, then run `npm --prefix web run build`
+or `npm --prefix web run dev`. Reprepare after changing authored catalogs. The preparation step
+uses the pinned .NET toolchain with locked restore. Vite consumes the prepared catalog manifest and
+bytes from `web/artifacts/catalogs`. Docker runs preparation in its SDK stage and copies that output
+to the Node stage. Publish the complete apphost directory, including its notices and assets.
+
+The Web build checks prepared catalogs against the current authored source and language policy
+and admits each entry using the same shape checks as the browser. Server publish verifies the
+package inventory before copying it. Run
+`node web/tests/qualification/catalog-cutover.mjs` after a successful Web build to qualify
+hash-consistent malformed inputs, stale authored sources and a Chromium reload across two
+compiled Web packages served over local HTTP. Unfiltered browser acceptance runs that witness on
+the first Chromium shard before the browser journeys.
 
 ## Project boundaries
 
@@ -124,8 +136,10 @@ dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --output co
 dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --check
 ```
 
-The generator owns only [contracts](../contracts/). Presentation resolves authored catalogs at runtime for the host and CLI.
-Check mode compares generated contents and does not repair them. Review changes with their producers.
+The generator's contract command owns only [contracts](../contracts/). Its explicit browser
+preparation command packages the resolved Core and browser text with the same language policy used
+by native rendering. Only contract outputs are tracked. Check mode compares generated contents
+and does not repair them. Review changes with their producers.
 A custom output directory contains the contract artifacts only. HUMAN reads share one document/reply
 grammar; affordances and links are generic, while operation submissions and DATA replies remain typed.
 Binding definitions are shared by target shape. Review remaining identical schemas by meaning rather
@@ -149,7 +163,7 @@ business facts. Preview and execution retain the typed operation-ID echo check.
 English strings are the source in three authored catalog directories: Presentation, CLI and web.
 Each non-English entry is `{ "text": "…", "source": "…" }`, where `source` is the first twelve lowercase
 hex digits of SHA-256 over the English text's UTF-8 bytes. Translate the changed English, then record its
-hash. Presentation fills stale or missing entries with English at load time. The generator checks the same resolver and reports translation issues on stderr.
+hash. Presentation fills stale or missing entries with English during browser asset preparation and native catalog loading. The generator checks the same resolver and reports translation issues on stderr.
 
 `--check` gates translation coverage for `en`, `lv` and `ar`. Other languages warn; malformed templates,
 invalid placeholders and forbidden glossary spellings still refuse generation. Generated outputs must
@@ -216,11 +230,10 @@ PRs that affect the image build or stack. It also runs weekly and on demand. For
 run `bash eng/compose-restart-smoke.sh`. The [CI policy](../eng/ci_policy.py) owns change selection
 and checks that every required job completed.
 
-Locale goldens keep exact dates, times, offsets and surrounding wording while admitting only verified
-locale-data variants. Full ICU data can still vary by version: [ICU 77](https://github.com/unicode-org/icu/blob/release-77-1/icu4c/source/i18n/dtfmtsym.cpp#L2228)
-loads Korean wide day periods (`오전`/`오후`), while [ICU 78](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/dtfmtsym.cpp#L2331)
-loads the abbreviated set (`AM`/`PM`). The pinned Alpine SDK image supplies full ICU data. Do not normalize output or alter production
-formatting to hide a locale-data difference; keep wrong-locale and wrong-date negative controls.
+Locale goldens keep exact dates, times, offsets and surrounding wording. They admit verified
+locale-data variants, including the wide Korean day periods `오전` and `오후` and the abbreviated
+`AM` and `PM` supplied by different ICU data sets. The pinned Alpine SDK image supplies full ICU
+data. Preserve production formatting and retain wrong-locale and wrong-date negative controls.
 
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
 published service/client integration runs on Linux x64.

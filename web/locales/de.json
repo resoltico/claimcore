@@ -370,6 +370,11 @@
     "text": "Keine unbestätigten Änderungen.",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "Die automatische Wiederherstellung ist pausiert. Prüfen Sie einen gespeicherten Vorgang manuell oder stellen Sie den Zugriff auf den Browserspeicher wieder her, damit die automatischen Prüfungen fortgesetzt werden.",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "Wiederherstellungskennungen können nicht gelesen oder aktualisiert werden. Bestehende Einträge bleiben erhalten. Stellen Sie den Speicherzugriff wieder her oder klären Sie ältere Einträge mit dem passenden Client, bevor Sie es erneut versuchen.",
     "source": "e2277d9e955f"

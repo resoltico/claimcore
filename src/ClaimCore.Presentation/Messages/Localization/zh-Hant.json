@@ -3963,14 +3963,6 @@
     "text": "今天到期的跟進事項",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.label": {
-    "text": "已傳送",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.label": {
-    "text": "傳送失敗",
-    "source": "031a8f0f659d"
-  },
   "digestOutcome.SKIPPED_EMPTY.label": {
     "text": "無可傳送的提醒",
     "source": "4a763133b808"
@@ -4031,14 +4023,6 @@
     "text": "今天到期的跟進事項",
     "source": "e04e8b1f370c"
   },
-  "digestOutcome.SENT.shortLabel": {
-    "text": "已傳送",
-    "source": "c16bc82bf1f0"
-  },
-  "digestOutcome.FAILED.shortLabel": {
-    "text": "傳送失敗",
-    "source": "031a8f0f659d"
-  },
   "digestCount.OVERDUE_DEADLINES.description": {
     "text": "已過截止日期且尚未完成的事項。",
     "source": "130012281e15"
@@ -4058,14 +4042,6 @@
   "digestCount.FOLLOW_UPS_DUE_TODAY.description": {
     "text": "今天到期且尚未完成的跟進事項。",
     "source": "2fdacdd03551"
-  },
-  "digestOutcome.SENT.description": {
-    "text": "郵件中繼伺服器已接收每日摘要。",
-    "source": "a7e4ddb9f020"
-  },
-  "digestOutcome.FAILED.description": {
-    "text": "每日摘要傳送失敗。",
-    "source": "d5f2b3e0e0f0"
   },
   "digestOutcome.SKIPPED_EMPTY.shortLabel": {
     "text": "無提醒",
@@ -4695,6 +4671,66 @@
   "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
     "source": "a743fa65aff6",
     "text": "請選擇支援的案件編號政策。",
+    "machineMade": true
+  },
+  "diagnostic.TRAVERSAL_CHANGED": {
+    "text": "結果已變更。請從第一頁重新開始。",
+    "source": "665b6f15d945",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNAVAILABLE": {
+    "text": "身分識別提供者暫時無法使用。",
+    "source": "9e961be2f3bb",
+    "machineMade": true
+  },
+  "host.IDENTITY_PROVIDER_UNTRUSTED": {
+    "text": "無法驗證身分識別提供者。",
+    "source": "25a9d3b553db",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.label": {
+    "text": "轉送伺服器已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.description": {
+    "text": "轉送伺服器已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.RELAY_ACCEPTED.shortLabel": {
+    "text": "轉送伺服器已接受",
+    "source": "63f7165a1f87",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.label": {
+    "text": "在轉送伺服器接受前失敗",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.description": {
+    "text": "在轉送伺服器接受前失敗",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.FAILED_BEFORE_ACCEPTANCE.shortLabel": {
+    "text": "在轉送伺服器接受前失敗",
+    "source": "5c880b1e5090",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.label": {
+    "text": "轉送伺服器是否接受未知",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.description": {
+    "text": "轉送伺服器是否接受未知",
+    "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "digestOutcome.UNKNOWN.shortLabel": {
+    "text": "轉送伺服器是否接受未知",
+    "source": "77ee1f586df5",
     "machineMade": true
   }
 }

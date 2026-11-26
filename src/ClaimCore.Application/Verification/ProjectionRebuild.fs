@@ -10,12 +10,48 @@ open System
 open System.Threading
 open Npgsql
 open ClaimCore.Domain
+open ClaimCore.Application.Verification.VerificationChecks
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Owner-only maintenance. The ledger head lock excludes application writers throughout the scan.
+/// Prepare from one owner snapshot; only replacement and readback hold the head lock.
 module internal ProjectionRebuild =
+    let private attachmentTable =
+        ProjectionWrite.table "case_attachments" "case_id,attachment_id" "$1,$2" ""
+
+    let private stagedTables
+        (cases: Map<CaseId, FamilyProjectionDelta>)
+        (people: Map<ActorId, PersonProjection>)
+        attachments
+        =
+        let families = cases |> Map.values
+        let actors = people |> Map.values
+
+        [
+            PartProjections.actorTable, actors |> Seq.map PartProjections.actorValues
+            PartProjections.caseTable, families |> Seq.map PartProjections.caseValues
+            PartProjections.partyTable, families |> Seq.collect PartProjections.partyValues
+            PaymentStorage.paymentTable,
+            families
+            |> Seq.collect (PartProjections.paymentsValues >> Seq.map PaymentStorage.paymentValues)
+            PaymentStorage.totalsTable,
+            families
+            |> Seq.collect (fun row ->
+                PaymentStorage.totalsValues
+                    row.Snapshot.CaseId
+                    (PartProjections.financialTotals row))
+            PartProjections.workTable, families |> Seq.map PartProjections.workValues
+            PartProjections.reminderTable, families |> Seq.collect PartProjections.reminderValues
+            PartProjections.noteTable, families |> Seq.collect PartProjections.noteValues
+            PartProjections.linkTable, families |> Seq.collect PartProjections.linkValues
+            PartProjections.grantTable, actors |> Seq.collect PartProjections.grantsValues
+            attachmentTable,
+            attachments
+            |> Seq.map (fun (caseId, id) ->
+                [| box (CaseId.value caseId); box (AttachmentId.value id) |])
+        ]
+
     let rebuild
         (source: NpgsqlDataSource)
         masterKey
@@ -23,31 +59,24 @@ module internal ProjectionRebuild =
         (handle: MaintenanceHandle)
         (token: CancellationToken)
         =
-        DatabaseSession.transaction
-            source
-            Data.IsolationLevel.ReadCommitted
-            token
-            (fun connection transaction ->
-                task {
-                    do! OwnerAdmission.require connection token
-                    let! _ = Transactions.configure connection Transactions.timeouts token
-                    let! _ = Transactions.head connection token
-                    let! installation = Baseline.require connection token
+        task {
+            let! prepared =
+                RegisterMaintenanceStore.prepare
+                    source
+                    masterKey
+                    handle
+                    token
+                    (fun connection publication cipher ->
+                        task {
+                            let installation = publication.Installation
 
-                    use! cipher =
-                        Baseline.loadCipher connection installation.InstallationId masterKey token
-
-                    do! RegisterMaintenanceStore.requireActive handle connection token
-
-                    let! scanned =
-                        match
-                            CheckpointEvidence.trustedInstallation
-                                installation.InstallationId
-                                expected
-                        with
-                        | Error finding -> System.Threading.Tasks.Task.FromResult(Error finding)
-                        | Ok() ->
-                            task {
+                            match
+                                CheckpointEvidence.trustedInstallation
+                                    installation.InstallationId
+                                    expected
+                            with
+                            | Error finding -> return Error finding
+                            | Ok() ->
                                 let! scanned =
                                     Verification.authoritative
                                         connection
@@ -65,91 +94,223 @@ module internal ProjectionRebuild =
                                             (Some expected)
                                             token
 
-                                    return frontier |> Result.map (fun () -> state)
-                            }
+                                    match frontier with
+                                    | Error finding -> return Error finding
+                                    | Ok() ->
+                                        let cases = Replay.familyRows state
+                                        let people = Replay.peopleRows state
 
-                    match scanned with
-                    | Error finding -> return Error finding
-                    | Ok state ->
-                        let rows =
-                            Replay.familyRows state
-                            |> Result.defaultWith (fun _ ->
-                                raise (
-                                    RecordCorruptException
-                                        "Case rows are incomplete after authoritative replay."
-                                ))
+                                        let! before =
+                                            Verification.projections
+                                                connection
+                                                installation.InstallationId
+                                                cases
+                                                people
+                                                state
+                                                token
 
-                        let people =
-                            Replay.peopleRows state
-                            |> Result.defaultWith (fun _ ->
-                                raise (
-                                    RecordCorruptException
-                                        "People rows are incomplete after authoritative replay."
-                                ))
+                                        return
+                                            result {
+                                                let! caseRows = cases
+                                                let! peopleRows = people
 
-                        let! before =
-                            Verification.projections
-                                connection
-                                installation.InstallationId
-                                state
-                                token
-                        // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
-                        for table in
-                            [
-                                "grants"
-                                "notes"
-                                "case_parties"
-                                "case_links"
-                                "reminders"
-                                "case_work"
-                                "case_payments"
-                                "case_payment_totals"
-                                "cases"
-                                "actors"
-                            ] do
-                            let! _ =
-                                DatabaseSession.execute
-                                    connection
-                                    ("DELETE FROM claimcore." + table)
-                                    [||]
-                                    token
+                                                return
+                                                    publication,
+                                                    state,
+                                                    caseRows,
+                                                    peopleRows,
+                                                    before
+                                            }
+                        })
 
-                            ()
+            match prepared with
+            | Error finding -> return Error finding
+            | Ok(publication, state, _, _, Ok()) ->
+                let report =
+                    {
+                        ProjectionRebuildReport.Position = state.Head
+                        PreviousDivergence = None
+                    }
 
-                        for row in people |> Map.values do
-                            do! PartProjections.personIdentity connection row token
+                return!
+                    RegisterMaintenanceStore.confirm source masterKey publication token (Ok report)
 
-                        for row in rows |> Map.values do
-                            do! PartProjections.family connection row token
+            | Ok(publication, state, caseRows, peopleRows, Error before) ->
+                let tables = stagedTables caseRows peopleRows (Replay.attachmentProjection state)
 
-                        for row in people |> Map.values do
-                            do! PartProjections.personGrants connection row token
+                let stage connection =
+                    task {
+                        for table, rows in tables do
+                            do! ProjectionWrite.stage connection table rows token
+                    }
 
-                        do!
-                            AttachmentStorage.rebuildProjection
-                                connection
-                                (Replay.attachmentProjection state)
-                                token
+                return!
+                    RegisterMaintenanceStore.publishStaged
+                        source
+                        masterKey
+                        publication
+                        token
+                        stage
+                        (fun connection _ ->
+                            task {
+                                let! _ = PrincipalLock.acquireStagedActors connection token
 
-                        let! validated =
-                            Verification.projections
-                                connection
-                                installation.InstallationId
-                                state
-                                token
+                                // DELETE and INSERT preserve old readers' MVCC snapshots. The live
+                                // tables still check foreign keys and deferred erasure guards.
+                                for table, _ in List.rev tables do
+                                    let! _ = ProjectionWrite.clear connection table token
+                                    ()
 
-                        match validated with
-                        | Error finding -> return Error finding
-                        | Ok() ->
-                            do! DatabaseSession.commit transaction token
+                                for table, _ in tables do
+                                    let! _ = ProjectionWrite.replace connection table token
+                                    ()
 
-                            return
-                                Ok
-                                    {
-                                        ProjectionRebuildReport.Position = state.Head
-                                        PreviousDivergence =
-                                            match before with
-                                            | Error finding -> Some finding
-                                            | Ok() -> None
-                                    }
-                })
+                                let! _ =
+                                    DatabaseSession.execute
+                                        connection
+                                        "DELETE FROM claimcore.access_request AS request USING pg_temp.actors AS actor WHERE request.principal_key=actor.principal_key"
+                                        [||]
+                                        token
+
+                                let! validated =
+                                    Verification.projections
+                                        connection
+                                        publication.Installation.InstallationId
+                                        (Ok caseRows)
+                                        (Ok peopleRows)
+                                        state
+                                        token
+
+                                return
+                                    validated
+                                    |> Result.map (fun () ->
+                                        {
+                                            ProjectionRebuildReport.Position = state.Head
+                                            PreviousDivergence = Some before
+                                        })
+                            })
+
+        }
+
+
+    let repairAttachment
+        source
+        masterKey
+        expected
+        handle
+        caseId
+        blobId
+        (payload: ReadOnlyMemory<byte>)
+        token
+        =
+        let refused () =
+            raise (OperatorFaultException OperatorFault.AttachmentRepairRefused)
+
+        task {
+            if payload.Length > AttachmentLimits.FileBytes then
+                refused ()
+
+            let bytes = payload.ToArray()
+
+            try
+                let key = caseId, blobId
+
+                let! prepared =
+                    RegisterMaintenanceStore.prepare
+                        source
+                        masterKey
+                        handle
+                        token
+                        (fun connection publication cipher ->
+                            task {
+                                let installation = publication.Installation
+
+                                match
+                                    CheckpointEvidence.trustedInstallation
+                                        installation.InstallationId
+                                        expected
+                                with
+                                | Error finding -> return Error finding
+                                | Ok() ->
+                                    let! checkedHistory =
+                                        Verification.history
+                                            connection
+                                            installation
+                                            cipher
+                                            (Some expected.Position)
+                                            token
+
+                                    match checkedHistory with
+                                    | Error finding -> return Error finding
+                                    | Ok state ->
+                                        let! frontier =
+                                            CheckpointEvidence.frontier
+                                                connection
+                                                (Some expected)
+                                                token
+
+                                        let! references =
+                                            AttachmentStorage.checkReferences
+                                                connection
+                                                (Replay.attachmentReferences state)
+                                                token
+
+                                        return
+                                            result {
+                                                do! frontier
+                                                do! references
+
+                                                match
+                                                    Map.tryFind key (Replay.attachmentBlobs state)
+                                                with
+                                                | Some(at, Some descriptor) ->
+                                                    let descriptors =
+                                                        Replay.attachmentDescriptors state
+
+                                                    if
+                                                        AttachmentStorage.matchesDescriptors
+                                                            descriptors[key]
+                                                            bytes
+                                                    then
+                                                        return publication, at, descriptor
+                                                    else
+                                                        return refused ()
+                                                | _ -> return refused ()
+                                            }
+                            })
+
+                match prepared with
+                | Error finding -> return Error finding
+                | Ok(publication, at, descriptor) ->
+                    return!
+                        RegisterMaintenanceStore.publish
+                            source
+                            masterKey
+                            publication
+                            token
+                            (fun connection cipher ->
+                                task {
+                                    let! repaired =
+                                        AttachmentStorage.repair
+                                            connection
+                                            cipher
+                                            key
+                                            at
+                                            descriptor
+                                            bytes
+                                            token
+
+                                    if not repaired then
+                                        refused ()
+
+                                    return
+                                        Ok
+                                            {
+                                                AttachmentRepairReport.CaseId = caseId
+                                                BlobId = blobId
+                                                AcceptedAt = at
+                                            }
+                                })
+            finally
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(Span bytes)
+        }

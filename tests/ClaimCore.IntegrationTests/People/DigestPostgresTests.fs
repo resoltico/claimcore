@@ -322,7 +322,7 @@ let private integration (database: PostgresFixture.Database) =
             (Set.ofList rows)
             (set
                 [
-                    workerId, "2026-11-18", Some "SENT"
+                    workerId, "2026-11-18", Some "RELAY_ACCEPTED"
                     emptyId, "2026-11-18", Some "SKIPPED_EMPTY"
                 ])
             "The two hosts send once, skip the empty queue and exclude disabled or opted-out people"
@@ -371,8 +371,8 @@ let private integration (database: PostgresFixture.Database) =
 
         Expect.contains
             failedRows
-            (workerId, "2026-11-19", Some "FAILED")
-            "SMTP refusal is recorded as FAILED"
+            (workerId, "2026-11-19", Some "FAILED_BEFORE_ACCEPTANCE")
+            "SMTP refusal is recorded as FAILED_BEFORE_ACCEPTANCE"
 
         let! firstRefusal = smtpCounts ()
         Expect.equal firstRefusal (1L, 1L) "Mailpit counts one rejected delivery"
@@ -397,15 +397,15 @@ let private integration (database: PostgresFixture.Database) =
             (rows |> List.filter (fun (actor, _, _) -> actor = workerId) |> Set.ofList)
             (set
                 [
-                    workerId, "2026-11-18", Some "SENT"
-                    workerId, "2026-11-19", Some "FAILED"
-                    workerId, "2026-11-20", Some "FAILED"
+                    workerId, "2026-11-18", Some "RELAY_ACCEPTED"
+                    workerId, "2026-11-19", Some "FAILED_BEFORE_ACCEPTANCE"
+                    workerId, "2026-11-20", Some "FAILED_BEFORE_ACCEPTANCE"
                 ])
             "Both rejected attempts have distinct business-date claims"
 
         let deliveryLog = log.ToString()
         Expect.stringContains deliveryLog (workerId.ToString "D") "Logs identify the actor"
-        Expect.stringContains deliveryLog "FAILED" "Logs identify the outcome"
+        Expect.stringContains deliveryLog "FAILED_BEFORE_ACCEPTANCE" "Logs identify the outcome"
         Expect.isFalse (deliveryLog.Contains "example.test") "Logs exclude addresses"
 
         let outcomes =
@@ -417,9 +417,9 @@ let private integration (database: PostgresFixture.Database) =
             (Set.ofList outcomes)
             (set
                 [
-                    [ "outcome", "SENT" ]
+                    [ "outcome", "RELAY_ACCEPTED" ]
                     [ "outcome", "SKIPPED_EMPTY" ]
-                    [ "outcome", "FAILED" ]
+                    [ "outcome", "FAILED_BEFORE_ACCEPTANCE" ]
                 ])
             "Metric dimensions carry only the outcome"
 
@@ -441,6 +441,60 @@ let private integration (database: PostgresFixture.Database) =
             (rows
              |> List.exists (fun (actor, date, _) -> actor = workerId && date = "2026-11-21"))
             "Erasing the profile removes opt-in"
+
+        do! profile 923 worker "worker@allowed.example.test"
+        let attemptTime = instant 22 5 0
+
+        let basis =
+            {
+                WorkDateBasis.ObservedAt = attemptTime
+                BusinessDate = DateOnly(2026, 11, 22)
+                TimeZoneId = database.Installation.BusinessTimeZone
+            }
+
+        use interrupted = CancellationTokenSource.CreateLinkedTokenSource token
+
+        let loseAcknowledgement recipient _ ct =
+            task {
+                let! accepted =
+                    DigestSmtp.send
+                        config.Smtp
+                        (EmailAddress.format recipient)
+                        "Synthetic digest"
+                        "Synthetic aggregate counts"
+                        ct
+
+                Expect.equal
+                    accepted
+                    DigestRelayResult.Accepted
+                    "The real TLS relay accepted the test submission"
+
+                interrupted.Cancel()
+                return raise (OperationCanceledException(interrupted.Token))
+            }
+
+        try
+            let! _ =
+                first.RunDigests(basis, loseAcknowledgement, (fun _ _ -> ()), interrupted.Token)
+
+            ()
+        with :? OperationCanceledException when interrupted.IsCancellationRequested ->
+            ()
+
+        do! runSecond (instant 22 5 10) token
+        let! rows = recorded database
+
+        Expect.contains
+            rows
+            (workerId, "2026-11-22", Some "UNKNOWN")
+            "Cancellation after relay acceptance leaves durable uncertainty across hosts"
+
+        let! smtp = smtpCounts ()
+
+        Expect.equal
+            smtp
+            (2L, 2L)
+            "The second host does not resend the accepted submission with a lost acknowledgement"
 
         let! _ = verified database
 
@@ -470,12 +524,51 @@ let private integration (database: PostgresFixture.Database) =
             "Rebuild preserves attempts for the current day"
 
         let today = fixture.Calendar.DateAt DateTimeOffset.UtcNow
+        let abandoned = today.AddDays(-1)
+        let claim = Guid.NewGuid()
+
+        do!
+            sql
+                database
+                """INSERT INTO claimcore.digest_runs(actor_id,digest_date,claim_id,claimed_at,deadline,started_at)
+                   VALUES($1,$2,$3,clock_timestamp()-interval '2 minutes',
+                          clock_timestamp()-interval '1 minute',clock_timestamp()-interval '90 seconds')"""
+                [| box workerId; box abandoned; box claim |]
+
+        let! expired =
+            DigestStorage.start database.RuntimeSource database.Installation claim token
+
+        Expect.isNone expired "A stalled attempt past its database deadline cannot start"
+
+        do! runFirst (instant 21 5 10) token
+        let! reconciled = recorded database
+
+        Expect.contains
+            reconciled
+            (workerId,
+             abandoned.ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture),
+             Some "UNKNOWN")
+            "A later host observes and records the abandoned submission as unknown"
+
+        let! outcome =
+            DigestStorage.complete
+                database.RuntimeSource
+                database.Installation
+                claim
+                DigestOutcome.RelayAccepted
+                token
+
+        Expect.equal
+            outcome
+            (Some DigestOutcome.Unknown)
+            "A late completion cannot regress a terminal unknown outcome"
+
         let stale = today.AddDays(-31)
 
         do!
             sql
                 database
-                "INSERT INTO claimcore.digest_runs(actor_id,digest_date,claimed_at) VALUES($1,$2,clock_timestamp())"
+                "INSERT INTO claimcore.digest_runs(actor_id,digest_date,claim_id,claimed_at,deadline) VALUES($1,$2,gen_random_uuid(),clock_timestamp(),clock_timestamp()+interval '1 minute')"
                 [| box workerId; box stale |]
 
         let! _ =

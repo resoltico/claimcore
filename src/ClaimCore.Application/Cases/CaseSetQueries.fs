@@ -16,7 +16,6 @@ module internal CaseSetQueries =
     open QueryResults
 
     let selectCases
-        installation
         principal
         basis
         (request: CaseListRequest)
@@ -32,23 +31,36 @@ module internal CaseSetQueries =
                     | CaseSelectionIssue.Text violation ->
                         Refusal.invalidInput (InputTarget.Text, violation)
                     | CaseSelectionIssue.ReversedRange upper -> Refusal.CaseDateRange upper)
-                |> Result.bind (fun filter ->
-                    cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
-                    |> Result.map (fun after ->
-                        {
-                            TransactionPages.CaseQuery.Selection =
-                                {
-                                    DateBasis = basis
-                                    Visibility = visibility
-                                    ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
-                                    ReadRoles = Access.readRoles principal
-                                    ForbiddenRoles = Access.invalidRoles principal
-                                    Filter = filter
-                                }
-                            Limit = request.Page.Limit
-                            AfterPosition = after
-                        })))
+                |> Result.map (fun filter ->
+                    {
+                        TransactionPages.CaseQuery.Selection =
+                            {
+                                DateBasis = basis
+                                Visibility = visibility
+                                ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
+                                ReadRoles = Access.readRoles principal
+                                ForbiddenRoles = Access.invalidRoles principal
+                                Filter = filter
+                            }
+                        Limit = request.Page.Limit
+                        AfterPosition = None
+                    }))
 
+    let private scopedCasePage (tx: ReadTx) (query: TransactionPages.CaseQuery) after =
+        let selected = query.Selection
+
+        ScopedTraversal.page
+            tx
+            "case-traversal"
+            selected.ActorId
+            selected.DateBasis.BusinessDate
+            (Cursors.decodeCases tx.InstallationId selected.Filter)
+            (Cursors.encodeCases tx.InstallationId selected.Filter)
+            (fun () ->
+                TransactionPages.caseTraversalWitness tx.Connection selected tx.CancellationToken)
+            (fun position -> FamilyReads.casePage tx { query with AfterPosition = position })
+            _.Next
+            after
 
     let private summary
         installation
@@ -223,7 +235,6 @@ module internal CaseSetQueries =
 
                                         match
                                             selectCases
-                                                services.InstallationId
                                                 principal
                                                 (ServiceContext.basis services tx.ObservedAt)
                                                 request
@@ -231,78 +242,87 @@ module internal CaseSetQueries =
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
-                                            let! page = FamilyReads.casePage tx selection
-                                            let maintenance = facts.Maintenance
+                                            match!
+                                                scopedCasePage
+                                                    tx
+                                                    selection
+                                                    request.Page.AfterCursor
+                                            with
+                                            | Error refusal -> return Outcome.Rejected refusal
+                                            | Ok(page, next) ->
+                                                let maintenance = facts.Maintenance
 
-                                            if page.Items.Length > Paging.MaximumPageSize then
-                                                return Outcome.Failed CoreFault.StoreIntegrityError
-                                            else
-                                                let! items =
-                                                    summaries
-                                                        services
-                                                        tx
-                                                        selection.Selection.DateBasis
-                                                        facts.Maintenance.Active
-                                                        page.Items
-
-                                                match items with
-                                                | Error fault -> return Outcome.Failed fault
-                                                | Ok items ->
-                                                    let! exact =
-                                                        exactReference
+                                                if page.Items.Length > Paging.MaximumPageSize then
+                                                    return
+                                                        Outcome.Failed
+                                                            CoreFault.StoreIntegrityError
+                                                else
+                                                    let! items =
+                                                        summaries
                                                             services
                                                             tx
-                                                            request.Filter.Text
+                                                            selection.Selection.DateBasis
+                                                            facts.Maintenance.Active
+                                                            page.Items
 
-                                                    let! authorizedScopeEmpty =
-                                                        if
-                                                            List.isEmpty items
-                                                            && page.Next.IsNone
-                                                            && selection.AfterPosition.IsNone
-                                                            && exact.IsNone
-                                                        then
-                                                            task {
-                                                                let scope =
-                                                                    { selection.Selection with
-                                                                        Filter =
-                                                                            CaseListFilter.empty
-                                                                    }
+                                                    match items with
+                                                    | Error fault -> return Outcome.Failed fault
+                                                    | Ok items ->
+                                                        let! exact =
+                                                            exactReference
+                                                                services
+                                                                tx
+                                                                request.Filter.Text
 
-                                                                let! exists =
-                                                                    FamilyReads.caseExists tx scope
+                                                        let! authorizedScopeEmpty =
+                                                            if
+                                                                List.isEmpty items
+                                                                && page.Next.IsNone
+                                                                && request.Page.AfterCursor.IsNone
+                                                                && exact.IsNone
+                                                            then
+                                                                task {
+                                                                    let scope =
+                                                                        { selection.Selection with
+                                                                            Filter =
+                                                                                CaseListFilter
+                                                                                    .empty
+                                                                        }
 
-                                                                return not exists
-                                                            }
-                                                        else
-                                                            System.Threading.Tasks.Task.FromResult
-                                                                false
+                                                                    let! exists =
+                                                                        FamilyReads.caseExists
+                                                                            tx
+                                                                            scope
 
-                                                    return
-                                                        Outcome.Succeeded
-                                                            {
-                                                                CaseSummaryPage.Basis =
-                                                                    selection.Selection.DateBasis
-                                                                Items = items
-                                                                ExactReference = exact
-                                                                AuthorizedScopeEmpty =
-                                                                    authorizedScopeEmpty
-                                                                Offers =
-                                                                    if maintenance.Active then
-                                                                        []
-                                                                    else
-                                                                        Advice.installationOffers
-                                                                            tx.CaseReferencePolicy
-                                                                            principal
-                                                                            actor
-                                                                NextCursor =
-                                                                    page.Next
-                                                                    |> Option.map (
-                                                                        Cursors.encodeCases
-                                                                            services.InstallationId
-                                                                            selection.Selection
-                                                                                .Filter
-                                                                    )
-                                                            }
+                                                                    return not exists
+                                                                }
+                                                            else
+                                                                System.Threading.Tasks
+                                                                    .Task.FromResult
+                                                                    false
+
+                                                        return
+                                                            Outcome.Succeeded
+                                                                {
+                                                                    CaseSummaryPage.Basis =
+                                                                        selection.Selection
+                                                                            .DateBasis
+                                                                    Items = items
+                                                                    ExactReference = exact
+                                                                    AuthorizedScopeEmpty =
+                                                                        authorizedScopeEmpty
+                                                                    Offers =
+                                                                        if maintenance.Active then
+                                                                            []
+                                                                        else
+                                                                            Advice
+                                                                                .installationOffers
+                                                                                tx
+                                                                                    .CaseReferencePolicy
+                                                                                principal
+                                                                                actor
+                                                                    NextCursor = next
+                                                                }
 
                                     })
                             CancellationToken = token
@@ -337,12 +357,7 @@ module internal CaseSetQueries =
                                             }
 
                                         match
-                                            selectCases
-                                                services.InstallationId
-                                                services.Principal
-                                                basis
-                                                request
-                                                actor
+                                            selectCases services.Principal basis request actor
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selected ->
@@ -351,24 +366,42 @@ module internal CaseSetQueries =
                                             let date = CalendarDate.ofDate basis.BusinessDate
 
                                             let scope =
-                                                Cursors.decodeCaseReport
-                                                    services.InstallationId
+                                                ScopedTraversal.page
+                                                    tx
+                                                    "case-report-traversal"
                                                     selection.ActorId
-                                                    date
-                                                    selection.Filter
-                                                    grouping
+                                                    basis.BusinessDate
+                                                    (Cursors.decodeCaseReport
+                                                        services.InstallationId
+                                                        selection.ActorId
+                                                        date
+                                                        selection.Filter
+                                                        grouping)
+                                                    (Cursors.encodeCaseReport
+                                                        services.InstallationId
+                                                        selection.ActorId
+                                                        date
+                                                        selection.Filter
+                                                        grouping)
+                                                    (fun () ->
+                                                        CaseSummaryQuery.witness
+                                                            tx.Connection
+                                                            selection
+                                                            grouping
+                                                            token)
+                                                    (fun position ->
+                                                        FamilyReads.caseSummary
+                                                            tx
+                                                            selection
+                                                            grouping
+                                                            position
+                                                            summary.Page.Limit)
+                                                    (fun (_, _, next) -> next)
+                                                    summary.Page.AfterCursor
 
-                                            match cursor scope summary.Page.AfterCursor with
+                                            match! scope with
                                             | Error refusal -> return Outcome.Rejected refusal
-                                            | Ok position ->
-                                                let! counts, rows, next =
-                                                    FamilyReads.caseSummary
-                                                        tx
-                                                        selection
-                                                        grouping
-                                                        position
-                                                        summary.Page.Limit
-
+                                            | Ok((counts, rows, _), next) ->
                                                 return
                                                     Outcome.Succeeded
                                                         {
@@ -376,16 +409,7 @@ module internal CaseSetQueries =
                                                             Counts = counts
                                                             GroupBy = grouping
                                                             Rows = rows
-                                                            NextCursor =
-                                                                next
-                                                                |> Option.map (
-                                                                    Cursors.encodeCaseReport
-                                                                        services.InstallationId
-                                                                        selection.ActorId
-                                                                        date
-                                                                        selection.Filter
-                                                                        grouping
-                                                                )
+                                                            NextCursor = next
                                                         }
                                     }
                             CancellationToken = token

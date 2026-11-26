@@ -413,6 +413,7 @@ let internal expected (database: PostgresFixture.Database) =
                 {
                     Sequence = Some position.Sequence
                     Finding = VerificationFinding.ExpectedPosition
+                    Attachment = None
                 })
             "External checkpoint differs"
     }

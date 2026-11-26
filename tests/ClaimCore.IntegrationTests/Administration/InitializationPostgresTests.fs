@@ -377,6 +377,7 @@ let private policyAdmission (database: PostgresFixture.Database) =
             {
                 Sequence = Some Sequence.first
                 Finding = VerificationFinding.BootstrapPolicy
+                Attachment = None
             }
 
         let! verified = administration.Verify(Some checkpoint, token)
@@ -434,6 +435,7 @@ let private policyAdmission (database: PostgresFixture.Database) =
             (VerificationResult.Diverged
                 { finding with
                     Finding = VerificationFinding.ExpectedPosition
+                    Attachment = None
                 })
             "The original trusted prefix detects a coherent rewrite"
 
@@ -453,6 +455,7 @@ let private policyAdmission (database: PostgresFixture.Database) =
             (VerificationResult.Diverged
                 { finding with
                     Finding = VerificationFinding.Link
+                    Attachment = None
                 })
             "The correctly hashed first root must follow the zero predecessor"
     }

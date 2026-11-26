@@ -32,6 +32,10 @@ module HostFailureReason =
             HostFailureCode.BodyTooLarge, 413, Some ExecutionPhase.NotStarted
         | HostFailureReason.SessionRejected ->
             HostFailureCode.SessionRejected, 401, Some ExecutionPhase.NotStarted
+        | HostFailureReason.IdentityProviderUnavailable ->
+            HostFailureCode.IdentityProviderUnavailable, 503, Some ExecutionPhase.NotStarted
+        | HostFailureReason.IdentityProviderUntrusted ->
+            HostFailureCode.IdentityProviderUntrusted, 503, Some ExecutionPhase.NotStarted
         | HostFailureReason.MethodRejected ->
             HostFailureCode.MethodRejected, 405, Some ExecutionPhase.NotStarted
         | HostFailureReason.AntiforgeryRejected ->

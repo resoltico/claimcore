@@ -17,6 +17,8 @@ export type JournalPublication = "inserted" | "existing";
 export type RecoveryJournal = {
   readonly put: (record: RecoveryRecord) => Promise<JournalPublication>;
   readonly remove: (record: RecoveryRecord) => Promise<void>;
+  readonly confirm?: (record: RecoveryRecord) => Promise<void>;
+  readonly confirmed?: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
   readonly list: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
 };
 const isScope = (value: Record<string, unknown>): boolean =>

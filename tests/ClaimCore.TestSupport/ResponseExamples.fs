@@ -245,10 +245,7 @@ let internal replies () : IEndpointOutput list =
             hostRead
                 Api.logout
                 (fun _ -> ContextScreen.logoutView ())
-                (Outcome.Succeeded
-                    {
-                        Location = "https://issuer.example.test/logout"
-                    })
+                (Outcome.Succeeded(LogoutHandoff.Provider "https://issuer.example.test/logout"))
         yield!
             actorRead
                 Api.context

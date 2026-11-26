@@ -267,7 +267,9 @@ let private inconsistentPreview (database: PostgresFixture.Database) =
         let! actor = Attachments.setup database
         let! trusted = qualifiedAtBoundary database
         let fixture = database.Fixture
-        let! _ = acceptAttachment fixture actor 620 (Some AttachmentPreview.Png) [| 1uy |]
+
+        let! added =
+            acceptAttachment fixture actor 620 (Some AttachmentPreview.Png) [| 1uy |]
 
         let! offered =
             Service.previewAttachment
@@ -285,7 +287,7 @@ let private inconsistentPreview (database: PostgresFixture.Database) =
             true
             "An offered transfer independently rejects inconsistent media evidence"
 
-        do! rejectedByAll database trusted VerificationFinding.AttachmentPayloads None 2L
+        do! rejectedByAll database trusted VerificationFinding.AttachmentPayloads (Some added) 2L
     }
 
 let private malformedErasedDigest (database: PostgresFixture.Database) =
@@ -296,7 +298,7 @@ let private malformedErasedDigest (database: PostgresFixture.Database) =
         let! added =
             Attachments.upload actor (Attachments.add fixture 700 "evidence.bin") Attachments.bytes
 
-        accepted added |> ignore
+        let added = accepted added
         let! erased = Service.executeSubmission actor (Attachments.erase fixture 701) token
         accepted erased |> ignore
         let! trusted = qualifiedAtBoundary database
@@ -315,7 +317,13 @@ let private malformedErasedDigest (database: PostgresFixture.Database) =
                 "UPDATE claimcore.attachment_blobs SET digest=decode('00','hex')"
                 [||]
 
-        do! rejectedByAll database trusted VerificationFinding.AttachmentPayloads None 2L
+        do!
+            rejectedByAll
+                database
+                trusted
+                VerificationFinding.AttachmentPayloads
+                (Some added.Position.Sequence)
+                2L
     }
 
 let private rootHydrationQueries (connection: Npgsql.NpgsqlConnection) =
@@ -648,6 +656,494 @@ let private externalPayloadStorage (database: PostgresFixture.Database) =
             "The uploaded payload is stored without compression"
     }
 
+let private repairPayload (database: PostgresFixture.Database) =
+    task {
+        let! owner = Attachments.setup database
+        let fixture = database.Fixture
+        let blob = Attachments.attachmentGuid fixture 720
+
+        let! uploaded =
+            Attachments.upload owner (Attachments.add fixture 720 "evidence.bin") Attachments.bytes
+
+        let acceptedUpload = accepted uploaded
+        let! case = Service.get owner { Target = Attachments.target } token
+        let caseId = (read case).Snapshot.CaseId
+        let! trusted = checkpoint database
+        let! handle = joinMaintenance database 0L
+
+        do!
+            guardedSql
+                database
+                "UPDATE claimcore.attachment_blobs SET payload=set_byte(payload,0,1-get_byte(payload,0)%2)"
+                [||]
+
+        let! failure =
+            Verification.verify database.OwnerSource database.MasterKey (Some trusted) token
+
+        match failure with
+        | VerificationResult.Diverged finding ->
+            Expect.equal
+                finding.Sequence
+                (Some acceptedUpload.Position.Sequence)
+                "The original accepting operation is identified"
+
+            Expect.equal
+                (finding.Attachment
+                 |> Option.map (fun evidence ->
+                     evidence.Issue, evidence.CaseId, evidence.AttachmentId))
+                (Some(AttachmentEvidenceIssue.Unreadable, Some caseId, Some blob))
+                "Only authenticated identifiers identify the damaged payload"
+        | _ -> failtest "The damaged ciphertext must refuse verification"
+
+        let repair content =
+            ProjectionRebuild.repairAttachment
+                database.OwnerSource
+                database.MasterKey
+                trusted
+                handle
+                caseId
+                blob
+                content
+                token
+
+        let! wrong =
+            task {
+                try
+                    let! _ = repair (ReadOnlyMemory [| 0uy; 0uy; 0uy |])
+                    return None
+                with :? OperatorFaultException as error ->
+                    return Some error.Fault
+            }
+
+        Expect.equal
+            wrong
+            (Some OperatorFault.AttachmentRepairRefused)
+            "Same length alone does not authorize repair"
+
+        let! repaired = repair (ReadOnlyMemory Attachments.bytes)
+
+        let repairReport =
+            repaired
+            |> Result.defaultWith (fun error -> failtestf "Repair refused: %A" error)
+
+        Expect.equal
+            (EffectPosition.sequence repairReport.AcceptedAt)
+            acceptedUpload.Position.Sequence
+            "Repair preserves accepting provenance"
+
+        let! verifiedAgain = verified database
+        Expect.equal verifiedAgain trusted.Position "Repair did not append an operation"
+
+        let! status = InstallationStatus.read database.OwnerSource database.MasterKey token
+
+        Expect.equal
+            status.RecoveryPublicationGeneration
+            1L
+            "Repair advances the independent publication fence"
+
+        use! runtime = database.RuntimeSource.OpenConnectionAsync(token)
+
+        let! permission =
+            task {
+                try
+                    let! _ =
+                        DatabaseSession.rows
+                            runtime
+                            "SELECT claimcore.repair_attachment_payload(NULL,NULL,NULL,NULL,NULL,NULL,NULL)"
+                            [||]
+                            token
+
+                    return None
+                with :? Npgsql.PostgresException as error ->
+                    return Some error.SqlState
+            }
+
+        Expect.equal
+            permission
+            (Some "42501")
+            "The ordinary runtime role cannot invoke the owner repair"
+
+        do! guardedSql database "DELETE FROM claimcore.attachment_blobs" [||]
+
+        let! missing =
+            Verification.verify database.OwnerSource database.MasterKey (Some trusted) token
+
+        match missing with
+        | VerificationResult.Diverged finding ->
+            Expect.equal
+                (finding.Attachment |> Option.map _.Issue)
+                (Some AttachmentEvidenceIssue.Missing)
+                "Missing bytes have their own authenticated finding"
+        | _ -> failtest "The missing row must be reported"
+
+        let directory = PrivateTestPaths.newPrivateDirectory "claimcore-attachment-repair-"
+
+        try
+            let configuration =
+                typeof<Administration>
+                    .Assembly.GetCustomAttributes(
+                        typeof<System.Reflection.AssemblyConfigurationAttribute>,
+                        false
+                    )
+                |> Array.exactlyOne
+                |> unbox<System.Reflection.AssemblyConfigurationAttribute>
+                |> _.Configuration
+
+            let! binary =
+                AdministrationProcess.publishConfiguration
+                    configuration
+                    (IO.Path.Combine(directory, "published"))
+
+            let privateText = AdministrationProcess.privateText directory
+
+            let connection =
+                privateText "owner.connection" (PostgresFixture.ownerConnectionString database)
+
+            let payload = privateText "protected-payload" "abc"
+
+            let proof =
+                privateText
+                    "checkpoint.json"
+                    (CheckpointRecord.encode trusted |> Text.Encoding.UTF8.GetString)
+
+            let! restored =
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    database.DataKeyFile
+                    [
+                        "repair-attachment"
+                        "--checkpoint"
+                        proof
+                        "--pause-generation"
+                        string handle.Generation
+                        "--pause-id"
+                        handle.PauseId.ToString("D")
+                        "--case-id"
+                        CaseId.format caseId
+                        "--blob-id"
+                        AttachmentId.format blob
+                        "--payload-file"
+                        payload
+                    ]
+                    0
+
+            Expect.equal
+                (restored.GetProperty("kind").GetString())
+                "ATTACHMENT_REPAIRED"
+                "Published owner tool repaired the original missing payload"
+
+            Expect.equal
+                (restored.GetProperty("acceptedAt").GetProperty("sequence").GetInt64())
+                (Sequence.value acceptedUpload.Position.Sequence)
+                "Repair preserves the original acceptance"
+
+            for privateValue in [ payload; "evidence.bin"; "ba7816bf" ] do
+                Expect.isFalse
+                    (restored.GetRawText().Contains privateValue)
+                    "Protected data is absent from the owner reply"
+        finally
+            IO.Directory.Delete(directory, true)
+
+
+        let! _ =
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                database.MasterKey
+                (MaintenanceChange.Resume handle)
+                token
+
+        let! erased = Service.executeSubmission owner (Attachments.erase fixture 721) token
+        accepted erased |> ignore
+        let! erasedCheckpoint = checkpoint database
+        let! erasedHandle = joinMaintenance database 2L
+
+        let! refusal =
+            task {
+                try
+                    let! _ =
+                        ProjectionRebuild.repairAttachment
+                            database.OwnerSource
+                            database.MasterKey
+                            erasedCheckpoint
+                            erasedHandle
+                            caseId
+                            blob
+                            (ReadOnlyMemory Attachments.bytes)
+                            token
+
+                    return None
+                with :? OperatorFaultException as error ->
+                    return Some error.Fault
+            }
+
+        Expect.equal
+            refusal
+            (Some OperatorFault.AttachmentRepairRefused)
+            "Exact pre-erasure backup bytes cannot resurrect legally erased content"
+
+        let! stillErased = verified database
+
+        Expect.equal
+            stillErased
+            erasedCheckpoint.Position
+            "Rejected repair preserves the erased history"
+
+    }
+
+let private addVerificationCases fixture actor =
+    task {
+        for number in 800..929 do
+            let submission =
+                Submissions.create
+                    "case.open"
+                    (id fixture number)
+                    (Binding.CaseNew Revision.zero)
+                    (Map.ofList
+                        [
+                            Submissions.field BusinessField.CaseReference,
+                            SubmissionValue.Text $"VERIFY-{number}"
+                        ])
+
+            let! reply = Service.executeSubmission actor submission token
+            accepted reply |> ignore
+
+    }
+
+let private verificationBatches () =
+    async {
+        let! database = PostgresFixture.createWithStatementCounts () |> Async.AwaitTask
+
+        try
+            let fixture = database.Fixture
+            let! actor = Attachments.setup database |> Async.AwaitTask
+
+            do! addVerificationCases fixture actor |> Async.AwaitTask
+
+            use! sql =
+                database.SuperuserSource.OpenConnectionAsync(token)
+                |> _.AsTask()
+                |> Async.AwaitTask
+
+            let! _ =
+                DatabaseSession.execute sql "CREATE EXTENSION pg_stat_statements" [||] token
+                |> Async.AwaitTask
+
+            let! before = rootHydrationQueries sql |> Async.AwaitTask
+            let! _ = verified database |> Async.AwaitTask
+            let! after = rootHydrationQueries sql |> Async.AwaitTask
+            let (a, b, c), (x, y, z) = before, after
+
+            Expect.equal
+                (x - a, y - b, z - c)
+                (2L, 2L, 2L)
+                "The complete ledger crosses two batches with one query per row family per batch"
+
+            do!
+                guardedSql
+                    database
+                    "UPDATE claimcore.ledger SET previous_hash=decode(repeat('ff',32),'hex') WHERE sequence=5"
+                    [||]
+                |> Async.AwaitTask
+
+            do!
+                guardedSql
+                    database
+                    "UPDATE claimcore.ledger_compartments SET payload=set_byte(payload,0,1-get_byte(payload,0)%2) WHERE operation_sequence=10"
+                    [||]
+                |> Async.AwaitTask
+
+            let! checkedLedger =
+                Verification.verify database.OwnerSource database.MasterKey None token
+                |> Async.AwaitTask
+
+            match checkedLedger with
+            | VerificationResult.Diverged finding ->
+                Expect.equal
+                    (finding.Finding, finding.Sequence)
+                    (VerificationFinding.Link, Sequence.create 5L)
+                    "A later unreadable payload cannot displace the earlier link failure in the same batch"
+            | _ -> failtest "The earlier broken link must be reported"
+        finally
+            database.Fixture.Dispose()
+    }
+
+let private publicationWork () =
+    async {
+        let! database = PostgresFixture.createWithStatementCounts () |> Async.AwaitTask
+
+        try
+            let! actor = Attachments.setup database |> Async.AwaitTask
+
+            use! observer =
+                database.SuperuserSource.OpenConnectionAsync(token)
+                |> _.AsTask()
+                |> Async.AwaitTask
+
+            let! _ =
+                DatabaseSession.execute observer "CREATE EXTENSION pg_stat_statements" [||] token
+                |> Async.AwaitTask
+
+            let measure repair generation =
+                task {
+                    let! trusted = checkpoint database
+                    let! handle = joinMaintenance database generation
+
+                    let! before =
+                        InstallationStatus.read database.OwnerSource database.MasterKey token
+
+                    if repair then
+                        do!
+                            sql
+                                database
+                                "UPDATE claimcore.cases SET search_text='synthetic projection corruption' WHERE case_reference='synthetic-a'"
+                                [||]
+
+                    let! _ =
+                        DatabaseSession.execute
+                            observer
+                            "SELECT public.pg_stat_statements_reset()"
+                            [||]
+                            token
+
+                    let! result =
+                        ProjectionRebuild.rebuild
+                            database.OwnerSource
+                            database.MasterKey
+                            trusted
+                            handle
+                            token
+
+                    let report =
+                        result
+                        |> Result.defaultWith (fun finding ->
+                            failtestf "Rebuild refused: %A" finding)
+
+                    let! statements =
+                        DatabaseSession.rows
+                            observer
+                            """SELECT
+                                 coalesce(sum(calls) FILTER(WHERE query ~ '^(INSERT INTO|DELETE FROM|UPDATE) claimcore\.(actors|cases|case_parties|case_payments|case_payment_totals|case_work|reminders|notes|case_links|grants|case_attachments)($|[ (])'),0)::bigint,
+                                 coalesce(sum(calls) FILTER(WHERE query LIKE 'COPY pg_temp.%'),0)::bigint
+                               FROM public.pg_stat_statements"""
+                            [||]
+                            token
+
+                    let row = List.exactlyOne statements
+
+                    let work =
+                        DatabaseSession.value<int64> 0 row, DatabaseSession.value<int64> 1 row
+
+                    let! after =
+                        InstallationStatus.read database.OwnerSource database.MasterKey token
+
+                    let! confirmed = verified database
+
+                    if repair then
+                        Expect.equal
+                            (report.PreviousDivergence |> Option.map _.Finding)
+                            (Some VerificationFinding.CaseSearchProjection)
+                            "An actual damaged row requires replacement"
+
+                        Expect.equal
+                            after.RecoveryPublicationGeneration
+                            (before.RecoveryPublicationGeneration + 1L)
+                            "Publication advances the fence"
+                    else
+                        Expect.isNone
+                            report.PreviousDivergence
+                            "Healthy projections require no repair"
+
+                        Expect.equal
+                            after.RecoveryPublicationGeneration
+                            before.RecoveryPublicationGeneration
+                            "Healthy rebuild is a fenced no-write check"
+
+                    Expect.equal
+                        confirmed
+                        trusted.Position
+                        "Readback agrees independently with accepted history"
+
+                    let! _ =
+                        RegisterMaintenanceStore.change
+                            database.OwnerSource
+                            database.MasterKey
+                            (MaintenanceChange.Resume handle)
+                            token
+
+                    return work
+                }
+
+            let! small = measure true 0L |> Async.AwaitTask
+            do! addVerificationCases database.Fixture actor |> Async.AwaitTask
+            let! healthy = measure false 2L |> Async.AwaitTask
+            let! large = measure true 4L |> Async.AwaitTask
+
+            Expect.equal
+                healthy
+                (0L, 0L)
+                "A healthy 131-case register has zero projection writes or COPY"
+
+            Expect.equal
+                small
+                (22L, 11L)
+                "One set-based delete and insert plus one staged stream per projection table"
+
+            Expect.equal large small "Publication statement count is independent of case count"
+        finally
+            database.Fixture.Dispose()
+    }
+
+[<Tests>]
+let rebuildWork =
+    testCaseAsync
+        "projection publication uses fixed statement counts and a fenced healthy no-op"
+        (publicationWork ())
+
+let private orderedAttachmentPages (database: PostgresFixture.Database) =
+    task {
+        let! owner = Attachments.setup database
+        let fixture = database.Fixture
+
+        let! acceptedRows =
+            [ 1 .. AttachmentStorage.evidencePageSize + 2 ]
+            |> List.fold
+                (fun previous index ->
+                    task {
+                        let! rows = previous
+                        let payload = [| byte index |]
+
+                        let! added =
+                            Attachments.upload owner (draft fixture (740 + index) payload) payload
+
+                        return (accepted added).Position.Sequence :: rows
+                    })
+                (System.Threading.Tasks.Task.FromResult [])
+
+        let! _ = verified database
+        let ordered = List.rev acceptedRows
+        let first = ordered[AttachmentStorage.evidencePageSize]
+        let later = List.last ordered
+
+        do!
+            guardedSql
+                database
+                """UPDATE claimcore.attachment_blobs
+                   SET payload=set_byte(payload,0,1-get_byte(payload,0)%2)
+                   WHERE operation_sequence IN ($1,$2)"""
+                [| box (Sequence.value first); box (Sequence.value later) |]
+
+        let! check = Verification.verify database.OwnerSource database.MasterKey None token
+
+        match check with
+        | VerificationResult.Diverged finding ->
+            Expect.equal
+                (finding.Sequence, finding.Attachment |> Option.map _.Issue)
+                (Some first, Some AttachmentEvidenceIssue.Unreadable)
+                "The first unreadable blob beyond one full page outranks later damage"
+        | _ -> failtest "Unreadable blob must refuse verification"
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -666,11 +1162,20 @@ let tests =
                 "erased-row verification detects a malformed present digest"
                 (run malformedErasedDigest)
             testCaseAsync
+                "exact owner repair authenticates bytes and keeps the accepting position"
+                (run repairPayload)
+            testCaseAsync
                 "verified bytes reject a sealed descriptor with inconsistent media evidence"
                 (run inconsistentPreview)
             testCaseAsync
                 "attachment listing and timeline continuation succeed without payload-column access"
                 (run metadataWithoutPayloadAccess)
+            testCaseAsync
+                "complete verification batches authoritative roots and keeps earliest finding precedence"
+                (verificationBatches ())
+            testCaseAsync
+                "ordered attachment verification keeps earliest finding beyond a full page"
+                (run orderedAttachmentPages)
             testCaseAsync
                 "metadata hydration batches lists and a historical continuation"
                 (async {

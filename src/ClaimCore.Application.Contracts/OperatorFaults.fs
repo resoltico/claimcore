@@ -32,6 +32,9 @@ type OperatorFault =
     | HeadMismatch
     | MaintenanceRequired
     | MaintenanceConflict
+    | StaleRecoveryPreparation
+    | AttachmentFileRefused
+    | AttachmentRepairRefused
     | CheckpointFileRefused
     | CheckpointInvalid
     | Unavailable

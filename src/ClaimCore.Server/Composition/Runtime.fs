@@ -20,10 +20,10 @@ type internal IRuntime =
 
     abstract RunDigests:
         WorkDateBasis *
-        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<bool>) *
+        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<DigestRelayResult>) *
         (ActorId -> DigestOutcome -> unit) *
         CancellationToken ->
-            Task<unit>
+            Task<DigestRunSummary>
 
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>

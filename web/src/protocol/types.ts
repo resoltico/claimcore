@@ -66,5 +66,10 @@ export const isCurrentCase = (value: HumanDocument): value is CurrentCase =>
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
-  | { readonly kind: "hostFailure"; readonly failure: HostFailure; readonly status: number }
+  | {
+      readonly kind: "hostFailure";
+      readonly failure: HostFailure;
+      readonly status: number;
+      readonly retryAfterMs?: number;
+    }
   | { readonly kind: "deliveryFailure"; readonly notice: Notice; readonly dispatched?: boolean };

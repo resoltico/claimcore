@@ -32,27 +32,38 @@ module internal DigestService =
     let runDue (sink: TextWriter) (origin: Uri) (runtime: IRuntime) (config: DigestConfiguration) =
         let zone = TimeZoneInfo.FindSystemTimeZoneById runtime.BusinessTimeZone
         let language = config.Language
-        let english = CatalogRoutes.core LocalizationPolicy.defaultLanguage
+        let english = NativeCatalog.core LocalizationPolicy.defaultLanguage
 
         let entries, _ =
-            LocalizationPolicy.load language [ english ] [ CatalogRoutes.core language ]
+            LocalizationPolicy.load language [ english ] [ NativeCatalog.core language ]
 
         let catalog = Messages.catalog (Map.toList entries) |> Result.defaultWith invalidOp
         let link = Uri(origin, "/reminders?view=" + ReminderView.token ReminderView.Mine)
 
         let send recipient counts ct =
-            task {
-                let subject, body = DigestMessage.format catalog language link counts
+            let subject, body = DigestMessage.format catalog language link counts
+            DigestSmtp.send config.Smtp (EmailAddress.format recipient) subject body ct
 
-                try
-                    do! DigestSmtp.send config.Smtp (EmailAddress.format recipient) subject body ct
-                    return true
-                with
-                | :? OperationCanceledException when ct.IsCancellationRequested ->
-                    return raise (OperationCanceledException(ct))
-                // SMTP replies and transport exceptions may contain addresses or server responses.
-                | _ -> return false
-            }
+        let observe (summary: DigestRunSummary) =
+            let outcomes =
+                summary.Terminal
+                |> Map.toSeq
+                |> Seq.map (fun (outcome, count) -> DigestOutcome.token outcome, count)
+                |> dict
+
+            try
+                sink.WriteLine(
+                    JsonSerializer.Serialize(
+                        {|
+                            kind = "digest_runs"
+                            inFlight = summary.InFlight
+                            expired = summary.Expired
+                            outcomes = outcomes
+                        |}
+                    )
+                )
+            with _ ->
+                ()
 
         fun (instant: DateTimeOffset) token ->
             let local = TimeZoneInfo.ConvertTime(instant, zone).DateTime
@@ -65,7 +76,10 @@ module internal DigestService =
                         TimeZoneId = zone.Id
                     }
 
-                runtime.RunDigests(basis, send, log sink, token)
+                task {
+                    let! summary = runtime.RunDigests(basis, send, log sink, token)
+                    observe summary
+                }
             else
                 Task.FromResult()
 

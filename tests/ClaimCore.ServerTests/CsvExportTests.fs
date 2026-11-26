@@ -18,6 +18,7 @@ let private page records count next =
     Ok
         {
             ExportPage.Rows = records |> Seq.map bytes
+            Subjects = []
             ItemCount = count
             CaseId = None
             NextCursor = next
@@ -57,13 +58,8 @@ let tests =
                     let! result, requests = run 100 [ page [] 0 None ] |> Async.AwaitTask
 
                     Expect.equal
-                        result
-                        (Ok
-                            {
-                                Bytes = bytes "header\r\n"
-                                RowCount = 0
-                                CaseId = None
-                            })
+                        (Result.map (fun value -> value.Bytes, value.RowCount, value.CaseId) result)
+                        (Ok(bytes "header\r\n", 0, None))
                         "Complete header-only file with zero data rows"
 
                     Expect.equal requests [ None ] "Fresh traversal"
@@ -81,13 +77,8 @@ let tests =
                         |> Async.AwaitTask
 
                     Expect.equal
-                        result
-                        (Ok
-                            {
-                                Bytes = bytes "header\r\na,b\r\nc,d\r\ne,f\r\n"
-                                RowCount = 3
-                                CaseId = None
-                            })
+                        (Result.map (fun value -> value.Bytes, value.RowCount, value.CaseId) result)
+                        (Ok(bytes "header\r\na,b\r\nc,d\r\ne,f\r\n", 3, None))
                         "All expanded rows counted independently of source item count"
 
                     Expect.equal requests [ None; Some "next" ] "Continuation from core only"
@@ -118,6 +109,7 @@ let tests =
                                             {
                                                 ExportPage.Rows =
                                                     Seq.singleton (Array.create count (byte 'x'))
+                                                Subjects = []
                                                 ItemCount = 1
                                                 CaseId = None
                                                 NextCursor = None
@@ -202,6 +194,7 @@ let tests =
                                         Ok
                                             {
                                                 ExportPage.Rows = chunks
+                                                Subjects = []
                                                 ItemCount = 1
                                                 CaseId = None
                                                 NextCursor = None

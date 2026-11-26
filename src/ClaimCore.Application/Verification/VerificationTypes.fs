@@ -25,6 +25,7 @@ module internal VerificationChecks =
         {
             Sequence = sequence
             Finding = finding
+            Attachment = None
         }
 
     let require sequence finding condition =

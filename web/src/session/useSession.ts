@@ -104,8 +104,17 @@ export const useSession = () => {
       return;
     }
     markSignedOut(window.sessionStorage);
-    setState({ kind: "anonymous", token: null, message: null, epoch: logoutEpoch });
-    window.location.replace(data.location);
+    const message =
+      data.kind === "LOCAL_ONLY" && data.reason !== "NO_PROVIDER_SESSION"
+        ? {
+            kind: "diagnostic" as const,
+            diagnostic: { code: data.reason, phase: "NOT_STARTED" as const },
+          }
+        : null;
+    setState({ kind: "anonymous", token: null, message, epoch: logoutEpoch });
+    if (data.kind === "PROVIDER") {
+      window.location.replace(data.location);
+    }
   };
 
   const endedBrowserSessions = (expectedEpoch: number): void => {

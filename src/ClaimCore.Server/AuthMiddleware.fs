@@ -112,6 +112,7 @@ module AuthMiddleware =
     let private oidc
         (syntheticRoot: X509Certificate2 option)
         idTokenSink
+        (metadata: IssuerMetadata)
         (configuration: OidcConfiguration)
         (options: OpenIdConnectOptions)
         =
@@ -128,10 +129,8 @@ module AuthMiddleware =
         if syntheticRoot.IsSome then
             options.PushedAuthorizationBehavior <- PushedAuthorizationBehavior.Disable
 
-        options.BackchannelHttpHandler <-
-            (syntheticRoot |> Option.orElse configuration.TrustRoot)
-            |> Option.map syntheticTrustHandler
-            |> Option.defaultWith productionTrustHandler
+        options.Backchannel <- metadata.Client
+        options.ConfigurationManager <- metadata
 
         options.SaveTokens <- false
         options.MapInboundClaims <- false
@@ -170,7 +169,13 @@ module AuthMiddleware =
         options.Events.OnRemoteFailure <-
             Func<RemoteFailureContext, Task>(fun context ->
                 context.HandleResponse()
-                context.Response.StatusCode <- StatusCodes.Status401Unauthorized
+
+                context.Response.StatusCode <-
+                    if OidcDependencyException.tryFind context.Failure |> Option.isSome then
+                        StatusCodes.Status503ServiceUnavailable
+                    else
+                        StatusCodes.Status401Unauthorized
+
                 context.Response.ContentType <- "text/html; charset=utf-8"
                 context.Response.Headers["Referrer-Policy"] <- "no-referrer"
                 HttpHeaders.noStore context.HttpContext
@@ -187,16 +192,15 @@ module AuthMiddleware =
 
     let private bearer
         (syntheticRoot: X509Certificate2 option)
+        (metadata: IssuerMetadata)
         (configuration: OidcConfiguration)
         (options: JwtBearerOptions)
         =
         options.Authority <- configuration.Issuer.AbsoluteUri
         options.RequireHttpsMetadata <- true
 
-        options.BackchannelHttpHandler <-
-            (syntheticRoot |> Option.orElse configuration.TrustRoot)
-            |> Option.map syntheticTrustHandler
-            |> Option.defaultWith productionTrustHandler
+        options.Backchannel <- metadata.Client
+        options.ConfigurationManager <- metadata
 
         options.Audience <- configuration.ApiAudience
         options.MapInboundClaims <- false
@@ -216,10 +220,15 @@ module AuthMiddleware =
             else
                 TimeSpan.Zero
 
-        options.RefreshOnIssuerKeyNotFound <- true
+        options.Events.OnAuthenticationFailed <-
+            Func<Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticationFailedContext, Task>
+                (fun context ->
+                    if OidcDependencyException.tryFind context.Exception |> Option.isSome then
+                        context.Fail context.Exception
 
-        if syntheticRoot.IsSome then
-            options.RefreshInterval <- TimeSpan.FromSeconds(1.)
+                    Task.CompletedTask)
+
+        options.RefreshOnIssuerKeyNotFound <- true
 
     let private configureWith
         (syntheticRoot: X509Certificate2 option)
@@ -228,13 +237,39 @@ module AuthMiddleware =
         absolute
         (services: IServiceCollection)
         =
+        services.AddSingleton<IssuerMetadata>(fun _ ->
+            let handler =
+                syntheticRoot
+                |> Option.orElse configuration.TrustRoot
+                |> Option.map syntheticTrustHandler
+                |> Option.defaultWith productionTrustHandler
+
+            new IssuerMetadata(
+                configuration,
+                new HttpClient(handler, Timeout = TimeSpan.FromSeconds 10.),
+                TimeProvider.System
+            ))
+        |> ignore
+
         services
             .AddAuthentication(fun options ->
                 options.DefaultScheme <- CookieAuthenticationDefaults.AuthenticationScheme
                 options.DefaultChallengeScheme <- OpenIdConnectDefaults.AuthenticationScheme)
             .AddCookie(cookie absolute)
-            .AddOpenIdConnect(oidc syntheticRoot idTokenSink configuration)
-            .AddJwtBearer(BearerScheme, bearer syntheticRoot configuration)
+            .AddOpenIdConnect()
+            .AddJwtBearer(BearerScheme)
+        |> ignore
+
+        services
+            .AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
+            .Configure<IssuerMetadata>(fun options metadata ->
+                oidc syntheticRoot idTokenSink metadata configuration options)
+        |> ignore
+
+        services
+            .AddOptions<JwtBearerOptions>(BearerScheme)
+            .Configure<IssuerMetadata>(fun options metadata ->
+                bearer syntheticRoot metadata configuration options)
         |> ignore
 
     let configure (configuration: OidcConfiguration) absolute (services: IServiceCollection) =

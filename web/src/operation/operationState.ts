@@ -548,7 +548,10 @@ const reset = (
           confirmedContext: state.disclosed.confirmedContext,
         },
       };
-const checkingStatus = (state: OperationState, identity: EffectIdentity): OperationState =>
+const checkingStatus = (
+  state: OperationState,
+  { identity, reply }: Extract<OperationAction, { type: "CHECK_OPERATION" }>,
+): OperationState =>
   state.delivery.phase.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
     ? append(
         {
@@ -567,6 +570,7 @@ const checkingStatus = (state: OperationState, identity: EffectIdentity): Operat
         {
           kind: "CHECK_OPERATION",
           identity,
+          ...(reply === undefined ? {} : { reply }),
           source: state.delivery.phase.source,
         },
       )
@@ -697,7 +701,7 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
     case "RESET":
       return reset(state, action);
     case "CHECK_OPERATION":
-      return checkingStatus(state, action.identity);
+      return checkingStatus(state, action);
     case "NOT_ACCEPTED":
       return notAccepted(state, action);
     case "EFFECT_STARTED":

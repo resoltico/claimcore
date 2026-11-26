@@ -325,6 +325,19 @@ type Administration(connectionString: string, productVersion: string, masterKey:
     member _.Rebuild(expected, handle, cancellationToken) =
         ProjectionRebuild.rebuild source masterKey expected handle cancellationToken
 
+    member _.RepairAttachment
+        (expected, handle, caseId, blobId, bytes: ReadOnlyMemory<byte>, cancellationToken)
+        =
+        ProjectionRebuild.repairAttachment
+            source
+            masterKey
+            expected
+            handle
+            caseId
+            blobId
+            bytes
+            cancellationToken
+
     /// Call only with all application/bearer/CLI traffic externally isolated and maintenance active.
     member _.AdmitRestoredInstallation(checkpoint, handle, cancellationToken) =
         RestoreAdmission.admit source masterKey checkpoint handle cancellationToken

@@ -1,3 +1,4 @@
+import { guardedDeparture } from "../../routing/navigation";
 import { ChoiceControl } from "../../ui/TextField";
 import { Select } from "../../ui/Select";
 import { Section } from "../../ui/Section";
@@ -103,6 +104,16 @@ export const SettingsPanel = ({ idPrefix }: { idPrefix?: string } = {}) => {
             <p>{p.text("ui.languageLoadFailed")}</p>
             <Button variant="secondary" onPress={p.retryLanguage}>
               {p.text("ui.retryLanguage")}
+            </Button>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                guardedDeparture(() => {
+                  window.location.reload();
+                });
+              }}
+            >
+              {p.text("ui.reloadInterface")}
             </Button>
           </div>
         )}

@@ -43,9 +43,9 @@ def dependency_input(path):
 def compose_input(path):
     # The image restores the entire solution before publishing the server and browser.
     return package_input(path) or path.startswith(
-        ("deployment/", "db/", "src/", "web/", "contracts/", "eng/licenses/")
+        ("deployment/", "db/", "src/", "web/", "contracts/", "eng/licenses/", "eng/ClaimCore.ContractGenerator/")
     ) or path in {
-        ".dockerignore", "eng/compose-restart-smoke.sh", "eng/source-archive.sh", "eng/ci_policy.py",
+        ".dockerignore", "eng/compose-restart-smoke.sh", "eng/source-archive.sh", "eng/prepare-browser-catalogs.sh", "eng/ci_policy.py",
         ".github/workflows/ci.yml", ".github/workflows/compose.yml",
     }
 

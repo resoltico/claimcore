@@ -370,6 +370,11 @@
     "text": "沒有未確認的更改。",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "自動復原已暫停。請手動檢查已儲存的操作，或恢復瀏覽器儲存空間的存取權限以繼續自動檢查。",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "無法讀取或更新恢復識別資訊。現有記錄已保留。請先恢復儲存存取，或使用匹配的用戶端處理舊記錄，再重試。",
     "source": "e2277d9e955f"

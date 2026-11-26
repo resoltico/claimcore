@@ -1847,6 +1847,7 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
+            "kind": "PROVIDER",
             "location": "https://issuer.example.test/logout"
           },
           "view": {

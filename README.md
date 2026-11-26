@@ -45,13 +45,13 @@ run `claimcore work views` to inspect work queues or `claimcore operation get OP
 
 | Need | ClaimCore provides | Operator or external responsibility |
 | --- | --- | --- |
-| Record case handling | Claim facts, parties, related cases, notes, responsibility, reminders and deadlines | Coverage adjudication, fact checking and handling decisions |
-| Handle evidence files | Case-scoped attachments, verified preview eligibility, exact downloads and withdrawal | Evidence collection, classification and control of exported copies |
-| Handle money | Payment decisions, recorded payments and returns, and net totals by currency | Transfers, refunds, banking and accounting |
-| Find and report on work | Case and reminder queues, paged case summaries, and bounded CSV downloads | Use, retention and disposal of exported copies |
-| Control access | OIDC sign-in, scoped roles and current read/write authorization | Identity-provider membership and account security |
+| Record case handling | Generated or policy-permitted custom case references, claim facts, parties, related cases, notes, assignments, reminders and deadlines | Coverage adjudication, fact checking and handling decisions |
+| Handle evidence files | Case-scoped attachments, verified PDF and image previews where eligible, exact downloads and withdrawal | Evidence collection, classification and control of exported copies |
+| Handle money | Recorded payment decisions, payments and returns, with net totals by currency | Transfers, refunds, banking and accounting |
+| Find and report on work | Authorized case and reminder queues, grouped case summaries, bounded CSV downloads and an optional daily count-only reminder digest | Configuring the mail relay and controlling the use, retention and disposal of exported copies |
+| Control access | OIDC sign-in, scoped roles, current read/write authorization and browser-session termination | Identity-provider membership, credential revocation and account security |
 | Coordinate changes | Review, version checks, atomic acceptance and exact-operation recovery | Resolving business conflicts and confirming external actions |
-| Verify recorded work | Authorized receipts and history, a disclosure trail for covered reads and exports, and checkpoint comparison | Independent checkpoint custody, review of access, and trusted administrator access |
+| Verify and recover recorded work | Authorized receipts and history, a disclosure trail for covered reads and exports, checkpoint verification, projection reconstruction and exact attachment repair | Independent checkpoint custody, backup and WAL recovery, and trusted administrator access |
 | Erase private contents | Case and profile erasure in the live register | Retention and disposal of WAL, backups, replicas and other copies |
 | Run the service | Attested server image and CLI archives, a production Compose template and a local evaluation setup | Deployment, capacity, monitoring, HTTPS credentials and backups |
 

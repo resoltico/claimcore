@@ -3,6 +3,11 @@ import { loadLanguage } from "./presentation/languageCatalog";
 import { translate } from "./presentation/messages";
 import { loginPath } from "./routing/loginPath";
 
+import catalogAssets from "virtual:claimcore-catalogs";
+import { installCatalogAssets } from "./api/catalog";
+
+installCatalogAssets(catalogAssets);
+
 const { preferences, persistence } = loadPreferenceState();
 void loadLanguage(preferences.language)
   .then(() => {

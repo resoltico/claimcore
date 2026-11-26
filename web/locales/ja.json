@@ -370,6 +370,11 @@
     "text": "未確認の変更はありません。",
     "source": "c2d34418a5dd"
   },
+  "ui.recoveryCoordinationUnavailable": {
+    "text": "自動復旧は一時停止しています。保存済みの操作を手動で確認するか、ブラウザーのストレージへのアクセスを復元して自動確認を再開してください。",
+    "source": "8a69c206fcd3",
+    "machineMade": true
+  },
   "ui.recoveryListingUnavailable": {
     "text": "復旧用の識別情報を読み取り・更新できません。既存の記録は保持されています。ストレージへのアクセスを復元するか、対応するクライアントで以前の記録を確定してから再試行してください。",
     "source": "e2277d9e955f"

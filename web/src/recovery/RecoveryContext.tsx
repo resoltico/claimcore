@@ -1,9 +1,17 @@
+import {
+  leadRecovery,
+  lookupHasFeedback,
+  recoveryLookup,
+  type RecoveryReply,
+  type RecoveryLeadership,
+} from "./recoveryLookup";
 import { caseLinkId } from "../routing/coreLinks";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { Screen } from "@contracts/client";
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -22,7 +30,7 @@ import {
   type RecoveryScope,
   type RecoveryRecord,
 } from "../protocol/recoveryJournal";
-import { service, resultNotice } from "../api/service";
+import { resultNotice, type service } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 
 import type { Notice } from "../protocol/notices";
@@ -30,6 +38,8 @@ import type { EndpointCache } from "../hooks/endpointCache";
 
 type RecoveryOwner = OwnerScope & { scope: RecoveryScope; credential: string };
 type RecoveryOwnerIdentity = OwnerScope & { credential: string };
+type RecoveryObserver = (reply: RecoveryReply, owner: RecoveryOwner) => void;
+
 export type RecoveryFinalAnswer = {
   generation: number;
   record: RecoveryRecord;
@@ -45,6 +55,24 @@ type RecoveryView = {
   presentations: Readonly<Record<string, { generation: number; view: Screen }>>;
   busy: string | null;
   notice: Notice | null;
+  coordinationUnavailable: boolean;
+};
+const unobservedHandoffs = (
+  scope: RecoveryScope,
+  operations: ReadonlyArray<RecoveryRecord>,
+  confirmed: ReadonlyArray<RecoveryRecord>,
+  observed: ReadonlySet<string>,
+  seen: RecoveryView["finals"],
+  generation: number,
+) => {
+  const active = new Set(operations.map((record) => record.attemptId));
+  return confirmed.filter(
+    (record) =>
+      sameRecoveryScope(scope, record) &&
+      !active.has(record.attemptId) &&
+      !observed.has(record.attemptId) &&
+      seen[record.attemptId]?.generation !== generation,
+  );
 };
 const empty: RecoveryView = {
   owner: null,
@@ -53,6 +81,7 @@ const empty: RecoveryView = {
   presentations: {},
   busy: null,
   notice: null,
+  coordinationUnavailable: false,
 };
 
 type UpdateRecovery = (change: (previous: RecoveryView) => RecoveryView) => void;
@@ -99,25 +128,45 @@ const attemptFeedback = (
   return { kind: "notice", notice: resultNotice(result) };
 };
 
-const checkAttempt = async (
-  record: RecoveryRecord,
-  owner: RecoveryOwner,
+const settleFinal = async (
+  final: RecoveryFinalAnswer,
+  disclose: boolean,
   journal: ReturnType<typeof useRecoveryJournal>,
-  signal: AbortSignal,
-  current: () => boolean,
   update: UpdateRecovery,
   cache: EndpointCache,
 ) => {
-  let generation = cache.invalidation();
-  const result = await service.operationGet(
-    record.operationId,
-    owner.credential,
-    record.installationId,
-    signal,
-  );
-  if (!current()) {
-    return;
+  const show = (previous: RecoveryView, answer: RecoveryFinalAnswer): RecoveryView => {
+    if (!disclose || answer.generation !== cache.invalidation()) {
+      return previous;
+    }
+    return {
+      ...previous,
+      notice: null,
+      finals: { ...previous.finals, [final.record.attemptId]: answer },
+      presentations: Object.fromEntries(
+        Object.entries(previous.presentations).filter(([id]) => id !== final.record.attemptId),
+      ),
+    };
+  };
+  update((previous) => show(previous, final));
+  try {
+    await (journal.confirm?.(final.record) ?? journal.remove(final.record));
+    update((previous) => ({
+      ...show(previous, final),
+      operations: previous.operations.filter((item) => item.attemptId !== final.record.attemptId),
+    }));
+  } catch {
+    update((previous) =>
+      show(previous, {
+        ...final,
+        cleanup: { kind: "local", reason: "recoveryCleanupUnavailable" },
+      }),
+    );
   }
+};
+
+const observeReceipt = (result: RecoveryReply, cache: EndpointCache, initial: number) => {
+  let generation = initial;
   if (isDisclosureRefused(result)) {
     cache.invalidate();
   }
@@ -129,6 +178,32 @@ const checkAttempt = async (
     if (wasCurrent) {
       generation = cache.invalidation();
     }
+  }
+  return { disclose, generation };
+};
+
+const checkAttempt = async (
+  record: RecoveryRecord,
+  owner: RecoveryOwner,
+  journal: ReturnType<typeof useRecoveryJournal>,
+  signal: AbortSignal,
+  current: () => boolean,
+  automatic: boolean,
+  update: UpdateRecovery,
+  cache: EndpointCache,
+  observe: RecoveryObserver,
+) => {
+  const beforeLookup = cache.invalidation();
+  const result = await recoveryLookup(record, owner.credential, owner.sessionEpoch, signal, {
+    admitted: current,
+    automatic,
+  });
+  if (!current() || !lookupHasFeedback(result)) {
+    return false;
+  }
+  const { disclose, generation } = observeReceipt(result, cache, beforeLookup);
+  if (disclose && generation === cache.invalidation()) {
+    observe(result, owner);
   }
   const feedback = attemptFeedback(result);
   if (feedback.kind === "pending") {
@@ -143,7 +218,7 @@ const checkAttempt = async (
         [record.attemptId]: { generation, view: feedback.view },
       },
     }));
-    return;
+    return false;
   }
   if (feedback.kind === "notice") {
     update((previous) => ({
@@ -153,42 +228,16 @@ const checkAttempt = async (
         Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
       ),
     }));
-    return;
+    return false;
   }
-  const final: RecoveryFinalAnswer = {
-    record,
-    generation,
-    outcome: feedback.outcome,
-    cleanup: null,
-  };
-  const show = (previous: RecoveryView, answer: RecoveryFinalAnswer): RecoveryView => {
-    if (!disclose || answer.generation !== cache.invalidation()) {
-      return previous;
-    }
-    return {
-      ...previous,
-      notice: null,
-      finals: { ...previous.finals, [record.attemptId]: answer },
-      presentations: Object.fromEntries(
-        Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
-      ),
-    };
-  };
-  update((previous) => show(previous, final));
-  try {
-    await journal.remove(record);
-    update((previous) => ({
-      ...show(previous, final),
-      operations: previous.operations.filter((item) => item.attemptId !== record.attemptId),
-    }));
-  } catch {
-    update((previous) =>
-      show(previous, {
-        ...final,
-        cleanup: { kind: "local", reason: "recoveryCleanupUnavailable" },
-      }),
-    );
-  }
+  await settleFinal(
+    { record, generation, outcome: feedback.outcome, cleanup: null },
+    disclose,
+    journal,
+    update,
+    cache,
+  );
+  return true;
 };
 
 /** Repeated identity-only reads become final on the service; recovery never resubmits a change. */
@@ -243,6 +292,10 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
     latest.current = owner;
   }, [owner]);
   const [view, setView] = useState<RecoveryView>(empty);
+  const viewRef = useRef(view);
+  useLayoutEffect(() => {
+    viewRef.current = view;
+  }, [view]);
   useEffect(
     () =>
       cache.subscribeInvalidation(() => {
@@ -258,72 +311,186 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
       }),
     [cache],
   );
-  const refresh = useRef<() => void>(() => undefined);
+  const observers = useRef(new Map<string, Set<RecoveryObserver>>());
+  const subscribe = useCallback((operationId: string, observer: RecoveryObserver) => {
+    const listeners = observers.current.get(operationId) ?? new Set<RecoveryObserver>();
+    observers.current.set(operationId, listeners);
+    listeners.add(observer);
+    return () => {
+      listeners.delete(observer);
+      if (listeners.size === 0) {
+        observers.current.delete(operationId);
+      }
+    };
+  }, []);
+  const check = useRef<(record: RecoveryRecord) => void>(() => undefined);
   useEffect(() => {
     if (owner === null) {
       return;
     }
-    let active = true;
-    let running = false;
+    let leader: RecoveryLeadership | null = null;
+    let listing = false;
+    let coordinationFailed = false;
+    let automaticChecks = new AbortController();
     const controller = new AbortController();
-    const current = () => active && latest.current === owner;
+    const observed = new Set<string>();
+    const scheduled = new Set<string>();
+    const current = () => !controller.signal.aborted && latest.current === owner;
     const update = (change: (previous: RecoveryView) => RecoveryView) => {
       if (current()) {
         setView((previous) => change(previous.owner === owner ? previous : { ...empty, owner }));
       }
     };
-    const cycle = async () => {
-      if (running || !current()) {
+    const unavailable = () => {
+      update((previous) => ({
+        ...previous,
+        notice: { kind: "local", reason: "recoveryListingUnavailable" },
+      }));
+    };
+    const enqueue = (
+      record: RecoveryRecord,
+      automatic: boolean,
+      leadership?: RecoveryLeadership,
+    ) => {
+      const signal = automatic
+        ? AbortSignal.any([
+            controller.signal,
+            automaticChecks.signal,
+            leadership?.signal ?? controller.signal,
+          ])
+        : controller.signal;
+      const attemptCurrent = () => !signal.aborted && current() && (leadership?.current() ?? true);
+      if (
+        !attemptCurrent() ||
+        (automatic && coordinationFailed) ||
+        scheduled.has(record.attemptId) ||
+        !sameRecoveryScope(owner.scope, record)
+      ) {
         return;
       }
-      running = true;
+      scheduled.add(record.attemptId);
+      update((previous) => ({ ...previous, busy: record.attemptId }));
+      void checkAttempt(
+        record,
+        owner,
+        journal,
+        signal,
+        attemptCurrent,
+        automatic,
+        update,
+        cache,
+        (reply, lookupOwner) => {
+          for (const observer of observers.current.get(record.operationId) ?? []) {
+            observer(reply, lookupOwner);
+          }
+        },
+      )
+        .then((terminal) => {
+          if (terminal) {
+            observed.add(record.attemptId);
+          }
+        })
+        .catch(unavailable)
+        .finally(() => {
+          scheduled.delete(record.attemptId);
+          update((previous) => ({
+            ...previous,
+            busy: previous.busy === record.attemptId ? null : previous.busy,
+          }));
+        });
+    };
+    const scheduleCandidates = (
+      operations: ReadonlyArray<RecoveryRecord>,
+      handoffs: ReadonlyArray<RecoveryRecord>,
+    ) => {
+      const authority = leader?.current() === true ? leader : null;
+      update((previous) => ({
+        ...previous,
+        operations: authority === null ? [...operations, ...handoffs] : operations,
+      }));
+      if (authority === null) {
+        // A waiting editor needs its own authorized receipt after another tab settles.
+        for (const record of handoffs) {
+          if (observers.current.has(record.operationId)) {
+            enqueue(record, true);
+          }
+        }
+      } else {
+        for (const record of [...operations, ...handoffs]) {
+          enqueue(record, true, authority);
+        }
+      }
+    };
+    const cycle = async () => {
+      if (listing || !current()) {
+        return;
+      }
+      listing = true;
       try {
         const operations = (await journal.list(owner.scope)).filter((record) =>
           sameRecoveryScope(owner.scope, record),
         );
+        const confirmed = (await journal.confirmed?.(owner.scope)) ?? [];
         if (!current()) {
           return;
         }
-        update((previous) => ({ ...previous, operations }));
-        for (const record of operations) {
-          if (!current()) {
-            return;
-          }
-          update((previous) => ({ ...previous, busy: record.attemptId }));
-          // oxlint-disable-next-line no-await-in-loop -- One scoped attempt at a time avoids background bursts and stops on an owner change.
-          await checkAttempt(record, owner, journal, controller.signal, current, update, cache);
-        }
+        const seen = viewRef.current.owner === owner ? viewRef.current.finals : {};
+        const handoffs = unobservedHandoffs(
+          owner.scope,
+          operations,
+          confirmed,
+          observed,
+          seen,
+          cache.invalidation(),
+        );
+        scheduleCandidates(operations, handoffs);
       } catch {
-        update((previous) => ({
-          ...previous,
-          notice: { kind: "local", reason: "recoveryListingUnavailable" },
-        }));
+        unavailable();
       } finally {
-        running = false;
-        update((previous) => ({ ...previous, busy: null }));
+        listing = false;
       }
     };
     const run = () => {
       void cycle();
     };
-    refresh.current = run;
+    const checkSelected = (record: RecoveryRecord) => {
+      enqueue(record, false);
+    };
+    check.current = checkSelected;
+    leadRecovery(
+      owner.scope,
+      controller.signal,
+      (leadership) => {
+        leader = leadership;
+        run();
+      },
+      (coordinationUnavailable) => {
+        coordinationFailed = coordinationUnavailable;
+        if (coordinationUnavailable) {
+          automaticChecks.abort();
+        } else {
+          automaticChecks = new AbortController();
+          run();
+        }
+        update((previous) => ({ ...previous, coordinationUnavailable }));
+      },
+    );
     run();
     const timer = window.setInterval(run, 1000);
     const unsubscribe = subscribeRecovery(run);
     return () => {
-      active = false;
       controller.abort();
       window.clearInterval(timer);
       unsubscribe();
-      if (refresh.current === run) {
-        refresh.current = () => undefined;
+      if (check.current === checkSelected) {
+        check.current = () => undefined;
       }
     };
   }, [owner, journal, cache]);
   const visible = view.owner === owner && owner !== null ? view : empty;
   const disclosed = verified
     ? visible
-    : { ...visible, notice: null, finals: {}, presentations: {} };
+    : { ...visible, notice: null, finals: {}, presentations: {}, coordinationUnavailable: false };
   return {
     ...disclosed,
     // Invalidation hides disclosed results synchronously without aborting an identity-only check.
@@ -336,8 +503,9 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
         .map(([id, answer]) => [id, answer.view]),
     ),
     owner,
-    check: (_record: RecoveryRecord) => {
-      refresh.current();
+    subscribe,
+    check: (record: RecoveryRecord) => {
+      check.current(record);
     },
   };
 };
@@ -361,3 +529,5 @@ export const useRecovery = () => {
   }
   return recovery;
 };
+
+export const useRecoverySubscription = () => useContext(RecoveryContext)?.subscribe ?? null;

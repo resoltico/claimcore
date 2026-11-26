@@ -29,6 +29,9 @@ export const templateParts = (source: string): ReadonlyArray<TemplatePart> => {
     } else if (character === "{") {
       flush();
       const end = source.indexOf("}", i + 1);
+      if (end === -1) {
+        throw new Error("Unterminated language argument");
+      }
       parts.push({ kind: "hole", value: source.slice(i + 1, end).trim() });
       i = end;
     } else {

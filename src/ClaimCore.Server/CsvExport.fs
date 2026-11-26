@@ -2,6 +2,8 @@ namespace ClaimCore.Server
 
 open System
 open System.IO
+open System.Text
+open System.Security.Cryptography
 open System.Collections.Generic
 open System.Threading
 open System.Threading.Tasks
@@ -17,6 +19,7 @@ type internal ExportPage =
     {
         Rows: seq<byte array>
         ItemCount: int
+        Subjects: string list
         CaseId: CaseId option
         NextCursor: string option
     }
@@ -32,6 +35,7 @@ type internal MaterializedExport =
     {
         Bytes: byte array
         RowCount: int
+        Manifest: string
         CaseId: CaseId option
     }
 
@@ -44,6 +48,7 @@ module internal CsvExport =
 
     let materialize maximum (token: CancellationToken) traversal =
         task {
+            use subjects = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
             use bytes = new MemoryStream(min maximum 8192)
 
             let append (chunk: byte array) =
@@ -71,6 +76,9 @@ module internal CsvExport =
                     match page with
                     | Error error -> failure <- Some error
                     | Ok page ->
+                        for subject in page.Subjects do
+                            subjects.AppendData(Encoding.UTF8.GetBytes(subject + "\n"))
+
                         let before = bytes.Length
                         caseId <- caseId |> Option.orElse page.CaseId
 
@@ -107,17 +115,26 @@ module internal CsvExport =
                             {
                                 Bytes = bytes.ToArray()
                                 RowCount = rowCount
+                                Manifest =
+                                    Convert.ToHexStringLower(subjects.GetHashAndReset())
+                                    + ":"
+                                    + Convert.ToHexStringLower(
+                                        SHA256.HashData(
+                                            bytes.GetBuffer().AsSpan(0, int bytes.Length)
+                                        )
+                                    )
                                 CaseId = caseId
                             }
         }
 
-    let private page encode count caseId next outcome =
+    let private page encode count subjects caseId next outcome =
         match outcome with
         | Outcome.Succeeded value ->
             Ok
                 {
                     Rows = encode value
                     ItemCount = count value
+                    Subjects = subjects value
                     CaseId = caseId value
                     NextCursor = next value
                 }
@@ -125,15 +142,19 @@ module internal CsvExport =
         | Outcome.Failed fault -> Error(ExportFailure.Failed fault)
 
     let private noCase _ = None
+    let private noSubjects _ = []
+
+    let private effect op position =
+        OperationId.format op + ":" + string (EffectPosition.index position)
 
     let private english =
         lazy
-            (let entries, _ = LocalizationPolicy.load "en" [ CatalogRoutes.core "en" ] []
+            (let entries, _ = LocalizationPolicy.load "en" [ NativeCatalog.core "en" ] []
              entries |> Map.toList |> Messages.catalog |> Result.defaultWith invalidOp)
 
     let private render key args = Messages.render english.Value key args
 
-    /// Each read opens its own authorized core query transaction. No HTTP admission is reacquired.
+    /// Page encoding consumes the typed queries within the Core export snapshot.
     let traversal services =
         function
         | ExportSelection.Cases filter ->
@@ -160,6 +181,8 @@ module internal CsvExport =
                                     (fun (value: CaseSummaryPage) ->
                                         CaseCsv.csvChunks value.Basis value.Items)
                                     (fun value -> value.Items.Length)
+                                    (fun value ->
+                                        value.Items |> List.map (_.CaseId >> CaseId.format))
                                     noCase
                                     _.NextCursor
                                     result
@@ -188,6 +211,7 @@ module internal CsvExport =
                                 page
                                     CaseSummaryCsv.chunks
                                     (fun result -> result.Rows.Length)
+                                    noSubjects
                                     noCase
                                     _.NextCursor
                                     result
@@ -212,6 +236,11 @@ module internal CsvExport =
                                 page
                                     TimelineCsv.csvChunks
                                     (fun (value: CaseTimelinePage) -> value.Items.Length)
+                                    (fun value ->
+                                        CaseId.format value.CaseId
+                                        :: (value.Items
+                                            |> List.map (fun row ->
+                                                effect row.OperationId row.Position)))
                                     (fun value -> Some value.CaseId)
                                     _.NextCursor
                                     result
@@ -237,6 +266,10 @@ module internal CsvExport =
                                     (fun (value: ReminderPage) ->
                                         ReminderCsv.csvChunks render value.Items)
                                     (fun value -> value.Items.Length)
+                                    (fun value ->
+                                        value.Items
+                                        |> List.map (fun row ->
+                                            Reminder.id row.Reminder |> ReminderId.format))
                                     (fun value ->
                                         match selection.Target with
                                         | None -> None
@@ -269,6 +302,12 @@ module internal CsvExport =
                                     (fun (value: PeopleHistoryPage) ->
                                         PeopleHistoryCsv.csvChunks render value.Entries)
                                     (fun value -> value.Entries.Length)
+                                    (fun value ->
+                                        value.Entries
+                                        |> List.map (fun row ->
+                                            effect row.OperationId row.Position
+                                            + ":"
+                                            + string row.PrivateAvailable))
                                     noCase
                                     _.NextCursor
                                     result
