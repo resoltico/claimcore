@@ -94,8 +94,12 @@ class VersioningTests(unittest.TestCase):
             )
 
             def build(version, *options):
+                # The SDK can restore its bundled FSharp.Core with different bytes from NuGet.org.
                 run = subprocess.run(
-                    ["dotnet", "build", "--disable-build-servers", f"-p:Version={version}", *options],
+                    [
+                        "dotnet", "build", "--disable-build-servers", f"-p:Version={version}",
+                        f"-p:RestorePackagesPath={root / 'packages'}", *options,
+                    ],
                     cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90,
                 )
                 self.assertEqual(run.returncode, 0, run.stdout)
