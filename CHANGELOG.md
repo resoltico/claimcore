@@ -10,6 +10,7 @@
 - The browser uses a fresh recovery journal. Keep earlier journal records with the builds that wrote them.
 - For custom opening references, replace the positional reference in `claimcore case open` with `--case-reference REF`. With no reference supplied, ClaimCore assigns one.
 - Regenerate API clients for opening reference inputs, offers and previews, `REFERENCE_UNAVAILABLE`, `TRAVERSAL_CHANGED`, typed logout and identity dependency failures.
+- Regenerate HUMAN document clients for the larger continuation limit used by scoped case and report queries.
 - Update owner automation for structured attachment verification findings, `PROJECTIONS_CURRENT` and the publication generation in `status`.
 - Use a trusted checkpoint at sequence one or later for rebuild, restore admission and attachment repair. The first owner operation binds the case-reference policy.
 - Remove `Multiplexing` and `Write Coalescing Buffer Threshold Bytes` from database connection strings for Npgsql 11.0.0.
