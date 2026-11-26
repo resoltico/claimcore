@@ -86,7 +86,11 @@ def plan():
         raw_paths = subprocess.check_output(["git", "diff", "--name-only", "--no-renames", "-z", change])
         paths = [os.fsdecode(path) for path in raw_paths.split(b"\0") if path]
     platforms = [{"os": "ubuntu-24.04", "rid": "linux-x64"}]
-    engines = [{"engine": "chromium", "shard": "1/2"}, {"engine": "chromium", "shard": "2/2"}]
+    chromium_shards = 3
+    engines = [
+        {"engine": "chromium", "shard": f"{index}/{chromium_shards}"}
+        for index in range(1, chromium_shards + 1)
+    ]
     if full:
         platforms += [{"os": "ubuntu-24.04", "rid": "linux-musl-x64"}, {"os": "macos-15", "rid": "osx-arm64"}]
         engines += [{"engine": engine, "shard": "1/1"} for engine in ("firefox", "webkit")]

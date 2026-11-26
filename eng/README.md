@@ -27,8 +27,9 @@ and dependency-changing PRs. Compose restart runs on full events and PRs that af
 Gate checks that every job in scope succeeded.
 
 CI splits native acceptance into `walkthrough` and `remaining` via `CLAIMCORE_ACCEPTANCE_SHARD`.
-An unset selector runs all native cases. Chromium uses `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` and
-`2/2`; Firefox and WebKit select `@engine` cases without splitting. Each job owns its fixtures.
+An unset selector runs all native cases. Chromium uses three shards selected by
+`CLAIMCORE_ACCEPTANCE_BROWSER_SHARD`. Firefox and WebKit select `@engine` cases without splitting.
+Each job owns its fixtures.
 `acceptance` runs both complete scopes locally. Offline CLI checks run in-process in unit with one
 published smoke per category. The [verification policy](../docs/contributing.md#verification)
 describes the docs-only Gate and full event coverage.

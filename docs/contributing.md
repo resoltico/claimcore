@@ -219,7 +219,7 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 ```
 
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
-commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
+commit: PRs run Linux x64 and three Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
 Linux musl, macOS ARM64 and all three engines. Use the automatic full main-push result for a release candidate; do not dispatch a duplicate matrix.
 The required Gate includes [Compose restart](../.github/workflows/compose.yml) on full runs and on
 PRs that affect the image build or stack. It also runs weekly and on demand. For a focused local check,
@@ -256,7 +256,7 @@ establish that unrun stages passed. Avoid duplicate full runs solely because bot
 | postgres / server | One isolated suite |
 | browsers | Install locked Playwright engines when their version changes |
 | acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
-| acceptance-browser | Chromium complete in two `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` or `2/2` shards; Firefox/WebKit `@engine` cases |
+| acceptance-browser | Chromium complete in three shards, `1/3` through `3/3`; Firefox/WebKit `@engine` cases |
 | acceptance | Native acceptance, then the browser scopes |
 
 With current Release applications, acceptance assembly and frontend assets built, select a browser file:
